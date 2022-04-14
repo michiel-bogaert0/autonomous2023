@@ -71,7 +71,7 @@ Further remarks about style:
 
 ## C/C++
 We use the Clang linter, to set it up, install the Ubuntu package using: `sudo apt install clang-format-10`.
-To lint an entire directory, including sub-directories: `find ~/autonomous/hardware -name '*.h' -or -name '*.hpp' -or -name '*.cpp' | xargs clang-format-10 -i -style=file`
+To lint an entire directory, including sub-directories: `find ~/hardware -name '*.h' -or -name '*.hpp' -or -name '*.cpp' | xargs clang-format-10 -i -style=file`
 
 # Code content
 
