@@ -6,6 +6,7 @@
 This wiki is an introduction to the different code bases used in our system. It will also cover the different installation procedures. The team uses **Ubuntu LTS 20.04** and **Python 3.8**. It is highly recommended to use this Ubuntu version on a dual boot or WSLg instance. The latter does require Windows 11.
 
 ⚠⚠⚠ Before working in this repository ⚠⚠⚠    
+
 Read the [Coding Guidelines](docs/general/guidelines.md) before doing any work in this repo. This document teaches branching strategy, coding style and more.
 
 ## Installation
