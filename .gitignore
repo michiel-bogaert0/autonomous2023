@@ -1,0 +1,14 @@
+# General
+*.meta
+*.asset
+*.prefab
+__pycache__/
+.idea
+.vscode
+
+# ROS specific
+.catkin_tools/
+*.egg-info
+core
+*.log
+*.bag

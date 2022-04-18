@@ -1,0 +1,28 @@
+site_name: UGent Racing - Autonomous 2023
+site_url: https://www.ugentracing.be/
+nav:
+  - Home: index.md
+  - General:
+    - Guidelines: general/guidelines.md
+    - Installation: general/installation.md
+    - Learn: general/learn.md
+    - ROS: general/ros.md
+    - Stage simulations: general/stage_simulation.md
+    - Transformations (TF2): general/transformations.md
+
+  - Perception: perception/perception.md
+
+  - Localisation and Mapping: 
+    - Overview: localisation_mapping/index.md
+    - Localization: localisation_mapping/localization.md
+    - Generalized nodes: localisation_mapping/generalized_nodes.md
+    - Control Plane: localisation_mapping/control_plane.md
+    - Mapping: localisation_mapping/mapping.md
+    - Supported SLAM packages: localisation_mapping/slam.md
+    - Supported Mapping packages: localisation_mapping/mapping_algos.md
+    
+  - Control:
+    - PID Car Control: control/control.md
+    - Exploration Path Planning: control/exploration_planning.md
+
+theme: material
