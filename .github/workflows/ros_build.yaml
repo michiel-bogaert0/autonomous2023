@@ -1,0 +1,56 @@
+name: ros-build-modules
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    env:
+      ROS_CI_DESKTOP: "`lsb_release -cs`"  # e.g. [trusty|xenial|...]
+      ROS_DISTRO: noetic
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+
+      - name: Configure ROS for install
+        run: |
+          sudo sh -c "echo \"deb http://packages.ros.org/ros/ubuntu $ROS_CI_DESKTOP main\" > /etc/apt/sources.list.d/ros-latest.list"
+          sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+          sudo apt-get update -qq
+
+      - name: Install ROS base packages
+        run: |
+          sudo apt-get install -y python3-catkin-pkg \
+              python3-catkin-tools
+              python3-rosdep
+              python3-wstool
+              python3-osrf-pycommon
+              ros-cmake-modules
+              ros-noetic-catkin
+              ros-noetic-tf2-geometry-msgs \
+              ros-noetic-rqt-multiplot \
+              ros-noetic-joy \
+              ros-noetic-cv-bridge \
+              ros-noetic-image-transport \
+              libyaml-cpp-dev \
+              libcurl4-openssl-dev
+
+      - name: Install ROS packages with rosdep
+        run: |
+          source /opt/ros/noetic/setup.bash
+          sudo rosdep init
+          rosdep update
+          cd ROS
+          rosdep install --from-paths src --ignore-src -r -s  # do a dry-run first
+          rosdep install --from-paths src --ignore-src -r -y
+
+      - name: Build Release
+        run: |
+          source /opt/ros/$ROS_DISTRO/setup.bash
+          cd ROS
+          catkin config --install --cmake-args -DCMAKE_BUILD_TYPE=Release
+          catkin build --no-status
+          source devel/setup.bash
