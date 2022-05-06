@@ -23,18 +23,7 @@ jobs:
 
             - name: Install ROS base packages
               run: |
-                  sudo apt-get install -y python3-catkin-pkg python3-catkin-tools python3-rosdep \
-                      python3-wstool
-                      python3-osrf-pycommon
-                      ros-cmake-modules
-                      ros-noetic-catkin
-                      ros-noetic-tf2-geometry-msgs \
-                      ros-noetic-rqt-multiplot \
-                      ros-noetic-joy \
-                      ros-noetic-cv-bridge \
-                      ros-noetic-image-transport \
-                      libyaml-cpp-dev \
-                      libcurl4-openssl-dev
+                  sudo apt-get install -y python3-catkin-pkg python3-catkin-tools python3-rosdep python3-wstool python3-osrf-pycommon ros-cmake-modules ros-noetic-catkin ros-noetic-tf2-geometry-msgs ros-noetic-rqt-multiplot ros-noetic-joy ros-noetic-cv-bridge ros-noetic-image-transport libyaml-cpp-dev libcurl4-openssl-dev
 
             - name: Install ROS packages with rosdep
               run: |
