@@ -110,7 +110,7 @@
 
     <!-- Also remap the output -->
 
-    <remap from="odometry/filtered" to="ugr/$(arg carname)/odometry/filtered/map_" />
+    <remap from="odometry/filtered" to="ugr/$(arg carname)/odometry/filtered/map" />
 
   </node>
 

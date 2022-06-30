@@ -1,4 +1,4 @@
-# Starts a locmap simulation. Requires a simulation 
+# Starts a locmap simulation. WIP
 uint8 TYPE_SLAM=1
 uint8 simulation_type
 

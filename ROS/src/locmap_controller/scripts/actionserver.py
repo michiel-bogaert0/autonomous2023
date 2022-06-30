@@ -1,5 +1,7 @@
 #! /usr/bin/env python3
 
+#! WIP
+
 import rospy
 import actionlib
 import roslaunch
@@ -21,7 +23,7 @@ class LocMapActionServer:
         self.server.start()
 
     def start_locmap_simulation(self, goal: StartSimulationActionGoal):
-        
+        pass
 
 
 if __name__ == "__main__":

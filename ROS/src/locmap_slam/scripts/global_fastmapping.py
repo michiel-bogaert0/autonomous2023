@@ -23,8 +23,6 @@ class GlobalFastMapping(SLAMNode):
         )
         self.threshold_distance = rospy.get_param("~fastmapping/threshold_distance", 2)
 
-        print(self.threshold_distance)
-        print(self.meas_cov)
 
         self.fastmapping = FastMapping(
             self.threshold_distance,

@@ -1,3 +1,6 @@
+
+#! WIP
+
 from locmap_controller.msg import ServiceRequest, ServiceResponse
 from node_fixture.node_fixture import ROSNode, AddSubscriber
 
