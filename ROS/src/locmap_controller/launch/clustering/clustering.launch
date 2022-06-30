@@ -1,0 +1,27 @@
+<launch>
+
+    <arg name="carname" default="car" />
+
+    <!-- The clustering mapping node -->
+    <node pkg="locmap_clustering" output="screen" type="clustermapping.py" name="local_clustering_$(arg carname)" respawn="True">
+        # Parameters
+        <param name="world_frame" value="ugr/$(arg carname)_map" />
+        <param name="base_link_frame" value="ugr/$(arg carname)_base_link" />
+
+        <param name="clustering/eps" value="0.5" />
+        <param name="clustering/min_samples" value="5" />
+        <param name="clustering/nr_of_classes" value="2" />
+        <param name="clustering/expected_nr_of_landmarks" value="1000" />
+
+        <param name="max_landmark_range" value="0" />
+        <param name="observation_queue_size" value="1"/>
+
+        # Input/output remapping
+        <remap from="/input/observations" to="ugr/$(arg carname)/sensors/perception" />
+
+        <remap from="/output/observations" to="ugr/$(arg carname)/observations/local/clustered" />
+        <remap from="/output/map" to="ugr/$(arg carname)/map/local" />
+        <remap from="/output/samples" to="ugr/$(arg carname)/samples/local/clustered" />
+    </node>
+
+</launch>

@@ -1,0 +1,58 @@
+<!-- This launch file launches all nodes required in order to test and develop mapping -->
+
+<launch>
+
+  <!-- Frames -->
+  <group ns="ugr_static_frames">
+    <node pkg="tf2_ros" type="static_transform_publisher" name="map" args="0 0 0 0 0 0 1 ugr/earth ugr/map" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_map_car_sensors_cam1" args="0 0 0.8 0 0 0 1 ugr/car_base_link ugr/car_sensors_cam1" />
+  </group>
+
+  <!-- The localization nodes for car_gt -->
+  <include file="$(env HOME)/UGentRacing/autonomous/ROS/launch/simulation.localization.launch" >
+    <arg name="carname" value="car"/>
+  </include>
+
+  <!-- Transformation server -->
+
+  <node pkg="tf_service" type="server" output="screen" name="tf_service"/>
+
+  <!-- Our simulations nodes-->
+
+  <group ns="stage_simulation">
+    <node name="perception" type="perception.py" pkg="stage_simulation" output="screen" required="true">
+      <param name="fov" type="double" value="60.0"/>
+      <param name="add_noise" type="bool" value="true"/>
+      <param name="cone_noise" type="double" value="0.2"/>
+      <param name="publish_delay" type="double" value="0.5"/>
+    </node>
+  </group>
+
+  <!-- This is the bridge that connects the AirSim to ROS -->
+
+  <arg name="host" default="172.31.144.1" />
+  <arg name="mission_name" default="trackdrive"/>
+  <arg name="track_name" default="A"/>
+  <arg name="competition_mode" default="false"/>
+  <arg name="manual_mode" default="true"/>
+  <arg name="plot" default="false"/>
+  <arg name="rviz" default="false"/>
+  <arg name="UDP_control" default="false"/>
+
+  <group ns="fsds">
+
+    <node name="ros_bridge" pkg="fsds_ros_bridge" type="fsds_ros_bridge" output="screen" required="true">
+      <param name="update_odom_every_n_sec" type="double" value="0.004" />
+      <param name="update_imu_every_n_sec" type="double" value="0.02" />
+      <param name="update_gps_every_n_sec" type="double" value="0.1" />
+
+      <param name="host_ip" type="string" value="$(arg host)" />
+      <param name="mission_name" type="string" value="$(arg mission_name)"/>
+      <param name="track_name" type="string" value="$(arg track_name)"/>
+      <param name="competition_mode" type="bool" value="$(arg competition_mode)" />
+      <param name="manual_mode" type="bool" value="$(arg manual_mode)" />
+      <param name="UDP_control" type="bool" value="$(arg UDP_control)" />
+    </node>
+
+  </group>
+</launch>

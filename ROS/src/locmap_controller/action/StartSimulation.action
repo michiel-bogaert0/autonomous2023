@@ -1,0 +1,11 @@
+# Starts a locmap simulation. Requires a simulation 
+uint8 TYPE_SLAM=1
+uint8 simulation_type
+
+ugr_msgs/Observations gt_map
+geometry_msgs/Point[] gt_path
+
+---
+bool success 
+---
+float32 percent_complete

@@ -1,0 +1,22 @@
+<launch>
+
+    <arg name="carname" default="car" />
+
+    <!-- The GPS SLAM node -->
+    <node pkg="locmap_slam" output="screen" type="global_fastmapping.py" name="global_fastmapping_$(arg carname)" respawn="True">
+        # Parameters
+        <param name="world_frame" value="ugr/$(arg carname)_odom" />
+        <param name="base_link_frame" value="ugr/$(arg carname)_base_link" />
+
+        <rosparam param="fastslam/measurement_covariance">[0.05, 0, 0, 0.001]</rosparam>
+        <param name="fastslam/threshold_distance" value="2" />
+        # Input/output remapping
+        <remap from="input/observations" to="ugr/$(arg carname)/sensors/perception" />
+        <remap from="input/odometry" to="ugr/$(arg carname)/odometry/filtered/map" />
+
+        <remap from="output/observations" to="ugr/$(arg carname)/observations/global" />
+        <remap from="output/map" to="ugr/$(arg carname)/map/global" />
+        <remap from="output/odom" to="ugr/$(arg carname)/odometry/slam/global" />
+
+    </node>
+</launch>
