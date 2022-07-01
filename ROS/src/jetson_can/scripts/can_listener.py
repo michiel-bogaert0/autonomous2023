@@ -8,7 +8,7 @@ from std_msgs.msg import String
 def listen_on_can() -> None:
     """Listens on the can0 interface of the Jetson and publishes the messages"""
 
-    pub = rospy.Publisher("diagnostics", String, queue_size=10)
+    pub = rospy.Publisher("/diagnostics", String, queue_size=10)
 
     # create a bus instance
     bus = can.interface.Bus(
@@ -20,7 +20,11 @@ def listen_on_can() -> None:
     # iterate over received messages
     # this keeps looping forever
     for msg in bus:
-        pub.publish("/diagnostics", f"[{msg.arbitration_id}] {msg.data}")
+        pub.publish(f"[{msg.arbitration_id}] {msg.data.hex()}")
+
+        # Check for external shutdown
+        if rospy.is_shutdown():
+            return
 
 
 if __name__ == "__main__":
