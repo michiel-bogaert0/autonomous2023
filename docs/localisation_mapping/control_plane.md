@@ -18,8 +18,8 @@ The big launch file has some parameters:
 | Parameter name | Default | Value type | Description |
 |---|---|---|---|
 | `enable_sim_bridge` | `false` | `boolean` | Should `fsds_ros_bridge` be launched or not?
-| `perception_mode` | `pipeline` | `pipeline | simulated | none` |  The system to use for perception.
-| `slam_type` | `local_fastslam` | `perception_check | local_fastslam | global_clustering` | What SLAM configuration to use.
+| `perception_mode` | `pipeline` | `pipeline or simulated or none` |  The system to use for perception.
+| `slam_type` | `local_fastslam` | `perception_check or local_fastslam or global_clustering` | What SLAM configuration to use.
 | `use_sim_time` | `true` | `boolean` | If set to `true`, it will use simulated time. Requires a publisher on `/clock`
 | `use_interface` | `true` | `boolean` | Wether or not to use the LocMap interface, which can be used to convert data. For example from the FSDS to our own topics.
 
