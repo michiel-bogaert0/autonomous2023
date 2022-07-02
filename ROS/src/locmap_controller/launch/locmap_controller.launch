@@ -96,9 +96,9 @@
             <param name="world_frame" value="ugr/car_odom" />
             <param name="base_link_frame" value="ugr/car_base_link" />
 
-            <param name="fastslam/particle_count" value="200" />
-            <rosparam param="fastslam/measurement_covariance">[0.1, 0.1, 0.1, 0.1]</rosparam>
-            <rosparam param="fastslam/input_noise">[0.5, 0.1, 0.5, 0.1, 0.0, 0.0]</rosparam>
+            <param name="fastslam/particle_count" value="50" />
+            <rosparam param="fastslam/measurement_covariance">[0.1, 0.0, 0.0, 0.1]</rosparam>
+            <rosparam param="fastslam/input_noise">[0.5, 0.1, 0.0, 0.05, 0.0, 0.0]</rosparam>
             <param name="fastslam/threshold_distance" value="2" />
             <param name="max_landmark_range" value="20" />
             <param name="observation_queue_size" value="1" />

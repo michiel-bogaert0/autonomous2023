@@ -4,10 +4,12 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import rospy
+import tf2_ros as tf
 from geometry_msgs.msg import Point, TransformStamped
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
-from ugr_msgs.msg import Observation, Observations, Particle, Particles, CarPath
+from ugr_msgs.msg import (CarPath, Observation, Observations, Particle,
+                          Particles)
 
 """
 Generic SLAM node should have the following behaviour

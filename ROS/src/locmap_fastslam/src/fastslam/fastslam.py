@@ -3,7 +3,6 @@ import numpy as np
 from .helper import Helpers
 from .map import Map
 
-
 class FastSLAM:
     """
     This class handles FastSLAM
