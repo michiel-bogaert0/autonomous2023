@@ -3,19 +3,21 @@ import copy
 
 import numpy as np
 import rospy
-import tf2_ros as tf
-from fs_msgs.msg import Cone, Track
+from fs_msgs.msg import Track
 from geometry_msgs.msg import Point, Quaternion
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, DataLatch, ROSNode
 from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import Observation, Observations, PerceptionUpdate
+from ugr_msgs.msg import Observation, Observations
 
 from StageSimulator import StageSimulator
 
 
 class PerceptionSimulator(StageSimulator):
     def __init__(self) -> None:
+        """
+        This node simulates the perception stage by publishing cone "observations".
+        """
 
         self.datalatch = DataLatch()
 
@@ -114,7 +116,6 @@ class PerceptionSimulator(StageSimulator):
                 )
             )
 
-        # print(now - ROSNode.convertROSStampToTimestamp(odom.header.stamp))
         observations = Observations()
         observations.header.stamp = odom.header.stamp
         observations.header.frame_id = self.base_link_frame

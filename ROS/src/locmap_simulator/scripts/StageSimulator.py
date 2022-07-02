@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
+from abc import ABC, abstractmethod
 import rospy
 from node_fixture.node_fixture import ROSNode
 
 
-class StageSimulator(ROSNode):
+class StageSimulator(ROSNode, ABC):
     def __init__(self, name: str) -> None:
         """
-        Requires a name to be used to namespace stuff
+        This is a generic class to simulate a 'stage'
+
+        Args:
+            name: Requires a name to be used to namespace stuff
         """
         super().__init__("stagesimulator_" + name)
 
@@ -23,7 +27,9 @@ class StageSimulator(ROSNode):
         """
         return f"/stage_simulation/{self.name}/{path.lstrip('/')}"
 
+    @abstractmethod
     def simulate(self, timer):
         """
         Dummy function that gets called by rospy.Timer
         """
+        pass
