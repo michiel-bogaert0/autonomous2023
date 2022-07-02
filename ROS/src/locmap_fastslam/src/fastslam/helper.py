@@ -1,5 +1,5 @@
 import numpy as np
-import cython
+
 """
 Class with general helper functions for FastSLAM
 """
@@ -8,10 +8,16 @@ class Helpers:
     @staticmethod
     def calculate_landmark_jacobian(landmark, pose):
         """
-        Returns measurement jacobian
+        Calculates the landmark jacobian
+
+        Args:
+            - landmark_pos: the landmark_pos to "predict" relative to the base_link frame
+            - pose: the current pose estimate of the robot
+
+        Returns:
+            The jacobian H
         """
         observation = Helpers.landmark_pos_to_observation(landmark, pose)
-        theta = pose[2]
         dx, dy = landmark - pose[:2]
 
         expected_range, expected_bearing = observation
@@ -36,10 +42,16 @@ class Helpers:
     @staticmethod
     def calculate_pose_jacobian(landmark, pose):
         """
-        Returns pose jacobian
+        Calculates the pose jacobian
+
+        Args:
+            - landmark_pos: the landmark_pos to "predict" relative to the base_link frame
+            - pose: the current pose estimate of the robot
+
+        Returns:
+            The jacobian H
         """
         observation = Helpers.landmark_pos_to_observation(landmark, pose)
-        theta = pose[2]
         dx, dy = landmark - pose[:2]
 
         expected_range, expected_bearing = observation
@@ -138,6 +150,13 @@ class Helpers:
     def landmark_pos_to_observation(landmark_pos, pose):
         """
         Method to transform a single landmark position [x, y] to an observation [range, bearing]
+
+        Args:
+            landmark_pos: the [x, y] world-referenced landmark
+            pose: the [x, y] world-referenced pose
+
+        Returns:
+            the [r, theta] robot-referenced observation
         """
         theta = pose[2]
         dx, dy = landmark_pos - pose[:2]

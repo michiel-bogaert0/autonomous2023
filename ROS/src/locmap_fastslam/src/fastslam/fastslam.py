@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 
 from .helper import Helpers
@@ -18,7 +16,7 @@ class FastSLAM:
         nr_of_particles: int = 1000,
         threshold_distance=2,
         max_landmark_range=0,
-        motion_model_type="velocity",  # 'velocity' or 'position'
+        motion_model_type="velocity",
     ):
         """
         Init the FastSLAM1.0 algorithm. One particle exists of a state (x, y, theta), a weight and a map with landmarks.
@@ -26,33 +24,31 @@ class FastSLAM:
         Args:
             - meas_cov, 2x2 np array  : The measurement covariance used in "observation predictions" and new landmark initialization
             - input_noises, 3x2 np array or 3x3 array : The noise sigma parameters on the input (so on v, omega)
-
             - nr_of_particles=1000, float : The amount of particles in the particle filter
             - threshold_distance=2, float : The threshold distance used in the detection of new landmarks.
                                             Observation is a new landmark if the distance to the closest landmark is larger than threshold_distance
             - max_landmark_distance=0, float : The maximal range of any landmark before it gets filtered out. Set to 0 to disable this filter
+            - motion_model_type='velocity', string : What kind of motion model should be used to process a FastSLAM step
         """
-
-        self.datatype = np.float64
 
         # Switch between velocity or position model
         if motion_model_type == "position":
             self.motion_model = self.__position_model__
-        else:
+        elif motion_model_type == "velocity":
             self.motion_model = self.__velocity_model__
+        else:
+            raise f"The motion model type {motion_model_type} is unsupported. Please choose 'velocity' or 'position'"
 
         # Parameters
         self.measurement_covariance = meas_cov
         self.input_noises = input_noises
-        print(self.input_noises)
         self.threshold_distance = threshold_distance
         self.max_landmark_range = max_landmark_range
 
         self.nr_of_particles = nr_of_particles
 
         # Internal state
-        self.particle_states = np.zeros((nr_of_particles, 3), dtype=self.datatype)
-
+        self.particle_states = np.zeros((nr_of_particles, 3), dtype=np.float64)
         self.particle_paths = [[] for i in range(nr_of_particles)]
         self.particle_weights = np.ones(nr_of_particles, dtype=np.float128)
         self.particle_map = Map(nr_of_particles)
@@ -62,14 +58,19 @@ class FastSLAM:
 
     def __position_model__(self, u: np.ndarray, dt: float) -> np.ndarray:
         """
-        Position based motion model (delta distance , delta theta)
+        Position based motion model.
+        It directly edits self.particle_states by "sampling" a positional motion model based on the arguments.
+
+        Args:
+            - u: An np.ndarray containing the delta movement regarding position (delta distance, delta theta)
+            - dt: the time between the previous "step" and the current one
         """
 
         dx0, dtheta0 = u
 
         variances = np.dot(
             self.input_noises,
-            np.array([abs(dx0), abs(dtheta0)], dtype=self.datatype),
+            np.array([abs(dx0), abs(dtheta0)], dtype=np.float64),
         )
 
         # Much more efficient to sample the standard normal function!
@@ -84,29 +85,34 @@ class FastSLAM:
         self.particle_states[:, 1] += dx * np.sin(orig_thetas)
         self.particle_states[:, 2] += dtheta
 
+        # Adding some extra theta noise in the end increases the DoF!
         theta_noise = np.random.standard_normal(self.nr_of_particles) * variances[2]
         self.particle_states[:, 2] += theta_noise * dt
 
+        # Makes sure that the angles don't explode
         self.particle_states[:, 2] = Helpers.pi_2_pi(self.particle_states[:, 2])
 
     def __velocity_model__(self, u: np.ndarray, dt: float) -> np.ndarray:
         """
-        Velocity based motion model
-        See slam course for more information
+        Velocity based motion model.
+        It directly edits self.particle_states by "sampling" a velocity based motion model based on the arguments.
+
+        Args:
+            - u: An np.ndarray containing the delta movement regarding velocity (delta linear velocity, delta angular velocity)
+            - dt: the time between the previous "step" and the current one
         """
 
         v0, w0 = u
 
-        # Sample noise on inputs. Also do this per particle
         variances = np.dot(
-            self.input_noises, np.array([abs(v0), abs(w0)], dtype=self.datatype)
+            self.input_noises, np.array([abs(v0), abs(w0)], dtype=np.float64)
         )
 
         # Much more efficient to sample the standard normal function!
         v = v0 + np.random.standard_normal(self.nr_of_particles) * variances[0]
         w = w0 + np.random.standard_normal(self.nr_of_particles) * variances[1]
 
-        pos_update_matrix = np.zeros((self.nr_of_particles, 3), dtype=self.datatype)
+        pos_update_matrix = np.zeros((self.nr_of_particles, 3), dtype=np.float64)
 
         orig_thetas = self.particle_states[:, 2]
 
@@ -123,10 +129,9 @@ class FastSLAM:
             )
             pos_update_matrix[:, 2] = w * dt
 
-        # Super quick and efficient
         self.particle_states += pos_update_matrix
 
-        # Add some theta noise after sampling to overcome the
+        # Add some theta noise after sampling to add an extra DoF
         theta_noise = np.random.standard_normal(self.nr_of_particles) * variances[2]
         self.particle_states[:, 2] += theta_noise * dt
 
@@ -137,8 +142,9 @@ class FastSLAM:
         """
         Samples all particle states based on a motion model "distribution".
         Basically tries to estimate how the car has moved with control inputs u
+
         Args:
-            u:  2x1 control input [v; w]
+            u:  2x1 control input (meaning differs on chosen motion model)
             dt: the time since the last state update
         """
         self.motion_model(u, dt)
@@ -155,6 +161,7 @@ class FastSLAM:
 
         # Put all weight together in one big cumsum, which represents a wheel
         weights = np.cumsum(self.particle_weights)
+
         # Generate 'spokes'
         spokes = (
             np.cumsum(np.ones(self.nr_of_particles) / self.nr_of_particles)
@@ -169,23 +176,26 @@ class FastSLAM:
                 + new_particle_indices[i - 1]
             )
 
+        # Resample step
         self.particle_states = self.particle_states[new_particle_indices]
         self.particle_weights = self.particle_weights[new_particle_indices]
         self.particle_map.landmarks = self.particle_map.landmarks[new_particle_indices]
 
-    def get_prediction(self) -> Union[np.ndarray, Map]:
+    def get_prediction(self):
         """
-        Returns the best state and map at the moment
+        Returns the best predictions so far
 
         Returns: A tuple of
             - the particle state, 1x3 np array
             - the particle map landmarks, A particle_amount x  2 x (3xN) np array, per landmark [[mu_x, sigma_xx, sigma_xy],
-                                                                          [mu_y, sigma_yx, sigma_yy]]
+                                                                                                 [mu_y, sigma_yx, sigma_yy]]
             - the landmark classes (in the same order as the particle map landmarks)
             - the particle path, a list of (previous) particle states
+            - All particle states
+            - All particle weights
         """
 
-        # Particle state is 
+        # Particle state is
 
         return (
             self.particle_states[self.best_particle_index],
@@ -193,14 +203,20 @@ class FastSLAM:
             self.particle_map.get_landmark_classes(self.best_particle_index),
             np.array(self.particle_paths[self.best_particle_index]),
             self.particle_states,
-            self.particle_weights
+            self.particle_weights,
         )
 
     def predict_observation(self, landmark_pos, pose):
         """
-        Returns predicted (and expected) observation of the landmark_pos and H
+        Makes a prediction about what observation should ideally be received based on a received landmark position and current pose
+
+        Args:
+            - landmark_pos: the landmark_pos to "predict" relative to the base_link frame
+            - pose: the current pose estimate of the robot
+
+        Returns:
+            predicted (and expected) observation of the landmark_pos and the jacobian H
         """
-        theta = pose[2]
         dx, dy = landmark_pos - pose[:2]
 
         expected_observation = Helpers.landmark_pos_to_observation(landmark_pos, pose)
@@ -216,7 +232,7 @@ class FastSLAM:
                     [dx, dy],
                     [-1 * dy / expected_range, dx / expected_range],
                 ],
-                dtype=self.datatype,
+                dtype=np.float64,
             )
             / expected_range
         )
@@ -226,9 +242,12 @@ class FastSLAM:
     def step(self, u, dt, observations, resting=False):
         """
         This function applies the fastSLAM algorithm. It is no problem when no observations are given (so only control input and odometry)
+
         Args:
           u: the control inputs
+          dt: the time step between the previous step and this one
           observations: a 3xN np array of N observations. An observation is [radius, bearing, class (or tag)]
+          resting: Should be set to True when the car isn't moving. This prevents the estimates from drifting when not moving.
         """
 
         #
@@ -362,11 +381,15 @@ class FastSLAM:
                         * (((observation_difference.T @ Qinv) @ observation_difference))
                     )
 
+                    # Reset the weight at the start of the procedure
                     if m == 0:
                         self.particle_weights[k] = 1
-                
+
                     self.particle_weights[k] *= factor
 
+                    # The landmark score keeps track of when a certain landmark has been "seen".
+                    # In conjunction with some kind of predictor this can be used to filter out bad landmarks (landmarks with bad scores)
+                    # Predictor: TODO
                     particle_map.increment_landmark_score(k, matched_landmark_id)
 
         #
