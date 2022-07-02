@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-#!WIP
-
 from locmap_controller.srv import *
 import rospy
 import roslaunch
@@ -11,7 +9,7 @@ from collections import deque
 
 class ServiceHandler:
     """
-    This class handles the service calls from locmap_controller
+    This class handles the LaaS (launch as a service) calls fpr locmap_controller
     """
 
     ID = 0
@@ -40,7 +38,7 @@ class ServiceHandler:
         This function is responsible for handling tasks that should be done in the main thread,
         instead of in the service call threads.
 
-        It basically handles all tasks in the task_que
+        It basically handles all tasks currently in the task_que
         """
 
         while len(ServiceHandler.tasks_que) != 0:

@@ -28,7 +28,7 @@ And finally we have the base link frame. The base link should attached to the ce
 
 We use the `robot_localization` package to apply sensor fusion to our car. The package follows the REP105 and REP103 conventions, which we also use. It also uses an onmidirectional motion model, which is not perfect for our application, but good enough to start.
 
-Please take a look at [the `robot_localization` wiki](http://docs.ros.org/en/noetic/api/robot_localization/html/index.html) and [this video](https://www.youtube.com/watch?v=nfvvpYBAMww) for more information about the package. Those together with this documentation and the example launch file (`locmap/template.sensor_fusion.launch`) should get you started, but here is an overview anyways.
+Please take a look at [the `robot_localization` wiki](http://docs.ros.org/en/noetic/api/robot_localization/html/index.html) and [this video](https://www.youtube.com/watch?v=nfvvpYBAMww) for more information about the package. Those together with this documentation and the example launch file (`locmap/sensor_fusion/template.launch`) should get you started, but here is an overview anyways.
 
 <p align="center">
 <img src="../img/loc_sensor_fusion.png" alt="ex1" width="60%" />

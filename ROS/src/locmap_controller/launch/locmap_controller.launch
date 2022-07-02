@@ -1,11 +1,9 @@
 <launch>
 
     <!-- 
-        fsds_simulation.launch
-    
-        Use this launch file to use fsds runs (usually captured with fsds_ros_bridge/launch/fsds_ros_bridge) 
-        as input to a locmap sim run.
-        Be sure to rosbag play with the \-\-clock option !!
+        Main locmap launch file. Use this one (see docs) for everything you do!
+
+        TODO: On the long term this launch file should be "converted" to some kind of high-level controller package that control the whole system
     -->
 
     <!-- !Arguments -->
@@ -19,7 +17,6 @@
     <param name="use_sim_time" value="$(arg use_sim_time)" />
 
     <!-- ! Sim bridge -->
-
     <group if="$(arg enable_sim_bridge)">
         <include file="$(find fsds_ros_bridge)/launch/fsds_ros_bridge.launch" pass_all_args="true" />
     </group>
@@ -169,85 +166,8 @@
         </node>
     </group>
 
-    <group if="$(eval slam_type == 'sotu' )">
-
-        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_map_car_sensors_cam1" args="0 0 0.8 0 0 0 1 ugr/car_base_link fsds/camera/cam1" />
-
-        <!-- <include file="$(find locmap_controller)/launch/sensor_fusion/full.launch" pass_all_args="true" /> -->
-
-        <!-- Simulation nodes -->
-        <node pkg="locmap_simulator" output="screen" type="dropout.py" name="dropout_gps" respawn="True">
-
-            # Parameters
-            <param name="name" value="gps"/>
-            <rosparam param="inputs">["ugr/car/odometry/filtered/map_", "ugr/car/observations/local_"]</rosparam>
-            <rosparam param="outputs">["ugr/car/odometry/filtered/map", "ugr/car/observations/local"]</rosparam>
-
-
-        </node>
-
-        <!-- <node pkg="locmap_slam" output="screen" type="local_fastslam.py" name="local_fastslam_car" respawn="True">
-            # Parameters
-            <param name="world_frame" value="ugr/car_odom" />
-            <param name="base_link_frame" value="ugr/car_base_link" />
-
-            <param name="fastslam/particle_count" value="80" />
-            <rosparam param="fastslam/measurement_covariance">[0.1, 0.0, 0.0, 0.1]</rosparam>
-            <rosparam param="fastslam/input_noise">[0.5, 0.1, 0.0, 0.05, 0.0, 0.0]</rosparam>
-            <param name="fastslam/threshold_distance" value="2" />
-            <param name="max_landmark_range" value="20" />
-            <param name="observation_queue_size" value="1" />
-
-            # Input/output remapping
-            <remap from="/input/observations" to="ugr/car/sensors/perception" />
-            <remap from="/input/odometry" to="ugr/car/odometry/filtered/odom" />
-
-            <remap from="/output/observations" to="ugr/car/observations/local_" />
-            <remap from="/output/map" to="ugr/car/map/local" />
-            <remap from="/output/odom" to="ugr/car/odometry/slam/local" />
-            <remap from="/output/path" to="ugr/car/path/local" />
-            <remap from="/output/particles" to="ugr/car/slam/particles" />
-        </node> -->
-
-        <node pkg="locmap_clustering" output="screen" type="clustermapping.py" name="local_clustering_gt_car" respawn="True">
-            # Parameters
-            <param name="world_frame" value="ugr/car_map" />
-            <param name="base_link_frame" value="ugr/car_base_link" />
-
-            <param name="clustering/eps" value="1" />
-            <param name="clustering/min_samples" value="20" />
-            <param name="clustering/nr_of_classes" value="2" />
-            <param name="clustering/expected_nr_of_landmarks" value="1000" />
-
-            <param name="max_landmark_range" value="0" />
-            <param name="observation_queue_size" value="1" />
-            # Input/output remapping
-            <remap from="/input/observations" to="ugr/car/observations/local" />
-
-            <remap from="/output/observations" to="ugr/car/observations/global" />
-            <remap from="/output/map" to="ugr/car/map/global" />
-            <remap from="/output/samples" to="ugr/car/samples/local/clustered" />
-        </node>
-
-        <!-- <node pkg="locmap_slam" output="screen" type="global_fastmapping.py" name="global_fastmapping_car" respawn="True">
-            # Parameters
-            <param name="world_frame" value="ugr/car_map" />
-            <param name="base_link_frame" value="ugr/car_base_link" />
-    
-            <rosparam param="fastmapping/measurement_covariance">[0.001, 0.0, 0.0, 0.001]</rosparam>
-            <param name="fastmapping/threshold_distance" value="2" />
-            # Input/output remapping
-            <remap from="input/observations" to="ugr/car/observations/local" />
-            <remap from="input/odometry" to="ugr/car/odometry/filtered/map" />
-    
-            <remap from="output/observations" to="ugr/car/observations/global" />
-            <remap from="output/map" to="ugr/car/map/global" />
-            <remap from="output/odom" to="ugr/car/odometry/slam/global" />
-    
-        </node> -->
-        
-    </group>
     <!-- ! Data gathering nodes -->
 
+    <!-- TODO -->
 
 </launch>

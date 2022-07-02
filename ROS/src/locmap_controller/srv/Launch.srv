@@ -1,3 +1,7 @@
+# filename : the file to launch
+# args: the arguments
+# id: the resulting process id used for later reference
+
 string filename
 string args
 ---

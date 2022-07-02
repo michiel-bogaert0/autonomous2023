@@ -1,5 +1,7 @@
 <launch>
 
+    <!-- GPS SLAM is basically a FastMapping algoritm based on GPS -->
+
     <arg name="carname" default="car" />
 
     <!-- The GPS SLAM node -->

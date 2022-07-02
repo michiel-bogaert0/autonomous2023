@@ -1,5 +1,7 @@
 <launch>
 
+    <!-- Local SLAM tries it best to make predictions without GPS, using FastSLAM 1.0 -->
+
     <arg name="carname" default="car" />
 
     <!-- The local SLAM node -->

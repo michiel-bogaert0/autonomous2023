@@ -1,5 +1,7 @@
 <launch>
 
+    <!-- The combination of both local SLAM and GPS SLAM *should* improve the final result and provide some robustness  -->
+
     <arg name="carname" default="car" />
 
     <!-- The local SLAM node -->

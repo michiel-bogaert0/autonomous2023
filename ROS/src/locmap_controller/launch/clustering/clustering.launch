@@ -1,5 +1,9 @@
 <launch>
 
+    <!-- 
+        Clustering launch file. Basically only contains a locmap_clustering/clustermapping node
+    -->
+
     <arg name="carname" default="car" />
 
     <!-- The clustering mapping node -->
