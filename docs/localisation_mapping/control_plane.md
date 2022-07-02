@@ -8,7 +8,37 @@ The control plane of Localization and Mapping is responsible for controlling the
 
 ## Current implementation
 
-Currently the control plane is basically a set of launch files. You can find them in `locmap_controller/launch`.
+Currently the control plane is basically a set of launch files. You can find them in `locmap_controller/launch`. There is one big launch file named `locmap_controller.launch`. You can use this one for most applications.
+
+
+### `locmap_controller.launch` parameters
+
+The big launch file has some parameters:
+
+| Parameter name | Default | Value type | Description |
+|---|---|---|---|
+| `enable_sim_bridge` | `false` | `boolean` | Should `fsds_ros_bridge` be launched or not?
+| `perception_mode` | `pipeline` | `pipeline | simulated | none` |  The system to use for perception.
+| `slam_type` | `local_fastslam` | `perception_check | local_fastslam | global_clustering` | What SLAM configuration to use.
+| `use_sim_time` | `true` | `boolean` | If set to `true`, it will use simulated time. Requires a publisher on `/clock`
+| `use_interface` | `true` | `boolean` | Wether or not to use the LocMap interface, which can be used to convert data. For example from the FSDS to our own topics.
+
+### Examples
+
+Some example commands and applications:
+
+| Command | Description
+|---|---
+| `roslaunch locmap_controller locmap_controller.launch perception_mode:=pipeline slam_type:=none use_interface:=true` | Use this to convert a rosbag captured from fsds (by only using `fsds_ros_bridge`) to something that can be used as input to a locmap-only simulation. It basically runs perception and the LocMap interface. Please see the notes below for some important remarks.
+| `roslaunch locmap_controller fsds_simulation.launch perception_mode:=none slam_type:=perception_check use_interface:=false use_sim_time:=true` | Use this to sanity check the result of perception.
+
+## Important notes regarding ROSBags
+
+Be very careful around rosbags. See notes:
+
+- When using some kind of sensor fusion or when you are relying on `tf` (so practically in all cases) be sure to play a rosbag with the `--clock` option and to set the global parameter `use_sim_time` to `true`.
+- Be sure that when you play a rosbag with the `--clock` option and `use_sim_time:=true`, the rosbag **does not contain any messages on `/clock`**. Otherwise you'll have two publishers on the `/clock` topic, which causes massive problems.
+
 
 
 
