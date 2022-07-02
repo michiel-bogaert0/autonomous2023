@@ -2,19 +2,20 @@
 
 import numpy as np
 import rospy
-from clustering.clustering import Clustering
-from geometry_msgs.msg import TransformStamped
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Point
-from node_fixture.node_fixture import AddSubscriber, ROSNode
-from slam.slam import SLAMNode
-from tf.transformations import euler_from_quaternion
 import tf2_ros as tf
+from clustering.clustering import Clustering
+from geometry_msgs.msg import Point, TransformStamped
+from node_fixture.node_fixture import AddSubscriber, ROSNode
+from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import Observation, Observations
 
 
 class ClusterMapping(ROSNode):
     def __init__(self) -> None:
+        """
+        The ClusterMapping algorithm provides LocMap with a way to create a map based on the clustering of observations.
+        This is the ROS wrapper. For the implementation you have to go to src
+        """
 
         super().__init__("clustermapping", False)
 
@@ -33,8 +34,10 @@ class ClusterMapping(ROSNode):
         )
         self.clustering_rate = rospy.get_param("~clustering/rate", 10)
 
+        # Used to handle the sample output of the clusterer
         self.previous_sample_point = [0 for i in range(self.nr_of_classes)]
 
+        # The clustering implementation
         self.clustering = Clustering(
             self.expected_nr_of_landmarks,
             self.nr_of_classes,
@@ -42,10 +45,10 @@ class ClusterMapping(ROSNode):
             self.min_sampling,
         )
 
+        # It is done this way instead of using decorators because we need to dynamically inject the queue size
         AddSubscriber("input/observations", self.observation_queue_size)(
             self.handle_observation_message
         )
-
         self.add_subscribers()
 
         # Helpers
@@ -72,21 +75,22 @@ class ClusterMapping(ROSNode):
         transformed_observations: Observations = ROSNode.do_transform_observations(
             observations,
             self.tf_buffer.lookup_transform(
-                observations.header.frame_id.strip('/'), self.base_link_frame, rospy.Time(0)
+                observations.header.frame_id.strip("/"),
+                self.base_link_frame,
+                rospy.Time(0),
             ),
         )
 
-        # Now do a "time transformation" to keep delays in mind
-        transform: TransformStamped = self.tf_buffer.lookup_transform_full(
-            self.base_link_frame,
-            rospy.Time(),
-            self.base_link_frame,
-            observations.header.stamp,
-            self.world_frame,  # Needs a fixed frame to use as fixture for the transformation
-            rospy.Duration(1),
-        )
-
         if self.do_time_transform:
+            # Now do a "time transformation" to keep delays in mind
+            transform: TransformStamped = self.tf_buffer.lookup_transform_full(
+                self.base_link_frame,
+                rospy.Time(),
+                self.base_link_frame,
+                observations.header.stamp,
+                self.world_frame,  # Needs a fixed frame to use as fixture for the transformation
+                rospy.Duration(1),
+            )
             time_transformed_observations = ROSNode.do_transform_observations(
                 transformed_observations, transform
             )
@@ -95,11 +99,16 @@ class ClusterMapping(ROSNode):
         else:
             self.process_observations(transformed_observations)
 
-
     def process_observations(self, observations: Observations):
+        """
+        This function gets called when an Observations message needs to be processed into the clustering
 
-        # Transform the cones to the world_frame
+        Args:
+            - observations: The Observations message that needs to be processed
+        """
 
+        # Look up the base_link frame relative to the world at the time of the observations.
+        # This is needed to correctly transform the observations on the "map" (=world frame) before clustering
         transform: TransformStamped = self.tf_buffer.lookup_transform(
             self.world_frame, self.base_link_frame, observations.header.stamp
         )
@@ -113,7 +122,11 @@ class ClusterMapping(ROSNode):
             ]
         )
 
-        self.particle_state = [transform.transform.translation.x, transform.transform.translation.y, yaw]
+        self.particle_state = [
+            transform.transform.translation.x,
+            transform.transform.translation.y,
+            yaw,
+        ]
 
         world_observations: Observations = ROSNode.do_transform_observations(
             observations, transform
@@ -125,19 +138,24 @@ class ClusterMapping(ROSNode):
                 int(observation.observation_class),
             )
 
-        if self.previous_clustering_time < rospy.Time.now().to_sec() - 1 / self.clustering_rate:
+        # Clustering itself is rate limited to limit performance impact
+        if (
+            self.previous_clustering_time
+            < rospy.Time.now().to_sec() - 1 / self.clustering_rate
+        ):
             self.previous_clustering_time = rospy.Time.now().to_sec()
             self.clustering.cluster()
 
         all_landmarks = self.clustering.all_landmarks
 
-        # Publish the "observations" relative to base_link
+        # Publish all the resulting points as "observations" relative to base_link
+        # Note how the output is also an Observations message!
         observations = Observations()
         observations.header.frame_id = self.base_link_frame
         observations.header.stamp = rospy.Time().now()
         observations.observations = []
 
-        # Also publish the same observations but now relative to world_frame (so the "map" estimate)
+        # Also publish the same result but now relative to world_frame (so the "map" estimate)
         new_map = Observations()
         new_map.header.frame_id = self.world_frame
         new_map.header.stamp = rospy.Time().now()
@@ -168,11 +186,12 @@ class ClusterMapping(ROSNode):
 
                 new_obs.observation_class = clss
 
+                # The relative observations are range limited in both the distance (radius) and angle (relative to X-as)
                 if self.max_landmark_range > 0:
                     distance = (landmark[0] - self.particle_state[0]) ** 2 + (
                         landmark[1] - self.particle_state[1]
                     ) ** 2
-                    if distance < self.max_landmark_range ** 2:
+                    if distance < self.max_landmark_range**2:
                         observations.observations.append(new_obs)
                 else:
                     observations.observations.append(new_obs)
@@ -186,51 +205,23 @@ class ClusterMapping(ROSNode):
         self.publish("output/observations", observations)
         self.publish("output/map", new_map)
 
-        # Publish delta samples as well
-        all_samples = self.clustering.samples
+        # Publish delta samples as well. These are the points used to cluster
+        # Could be useful to estimate statistical distributions from
+        # It is an analysis thingy, so only makes sense if relative to the world frame
 
-        # Also publish the same observations but now relative to world_frame (so the "map" estimate)
+        all_samples = self.clustering.samples
         samples = Observations()
         samples.header.frame_id = self.world_frame
         samples.header.stamp = rospy.Time().now()
         samples.observations = []
 
         for clss, landmarks in enumerate(all_samples):
-            
-            for i in range(self.previous_sample_point[clss], self.clustering.sizes[clss]):
+
+            for i in range(
+                self.previous_sample_point[clss], self.clustering.sizes[clss]
+            ):
 
                 landmark = landmarks[i]
-
-                new_obs = Observation()
-                new_obs.location = Point(
-                    x=landmark[0] - self.particle_state[0],
-                    y=landmark[1] - self.particle_state[1],
-                    z=0,
-                )
-
-                # Apply rotation
-                x = (
-                    np.cos(-self.particle_state[2]) * new_obs.location.x
-                    - np.sin(-self.particle_state[2]) * new_obs.location.y
-                )
-                y = (
-                    np.sin(-self.particle_state[2]) * new_obs.location.x
-                    + np.cos(-self.particle_state[2]) * new_obs.location.y
-                )
-
-                new_obs.location.x = x
-                new_obs.location.y = y
-
-                new_obs.observation_class = clss
-
-                if self.max_landmark_range > 0:
-                    distance = (landmark[0] - self.particle_state[0]) ** 2 + (
-                        landmark[1] - self.particle_state[1]
-                    ) ** 2
-                    if distance < self.max_landmark_range ** 2:
-                        observations.observations.append(new_obs)
-                else:
-                    observations.observations.append(new_obs)
 
                 samples_point = Observation()
                 samples_point.location = Point(x=landmark[0], y=landmark[1], z=0)
@@ -239,8 +230,9 @@ class ClusterMapping(ROSNode):
                 samples.observations.append(samples_point)
 
             self.previous_sample_point[clss] = self.clustering.sizes[clss]
-        
+
         self.publish("output/samples", samples)
+
 
 node = ClusterMapping()
 node.start()
