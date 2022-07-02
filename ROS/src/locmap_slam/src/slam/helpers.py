@@ -1,6 +1,7 @@
 from ugr_msgs.msg import Observations
 import numpy as np
 
+
 def observations_to_range_bearings(observations: Observations):
     """
     Transforms Observations message to range_bearing messages
@@ -16,14 +17,15 @@ def observations_to_range_bearings(observations: Observations):
         d = np.sqrt(obs.location.x**2 + obs.location.y**2)
 
         indices[i] = True
-        
+
         angle = pi_2_pi(np.arctan2(obs.location.y, obs.location.x))
         obs_bearings[i] = np.array([d, angle, obs.observation_class])
 
     return obs_bearings[indices, :]
 
+
 def pi_2_pi(theta) -> float:
-        """
-        Returns a normalized angle between [-pi, pi]
-        """
-        return np.remainder(theta + np.pi, 2 * np.pi) - np.pi
+    """
+    Returns a normalized angle between [-pi, pi]
+    """
+    return np.remainder(theta + np.pi, 2 * np.pi) - np.pi

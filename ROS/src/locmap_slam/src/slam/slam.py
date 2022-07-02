@@ -4,14 +4,10 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import rospy
-import tf2_ros as tf
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, TransformStamped
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from ugr_msgs.msg import Observation, Observations, Particle, Particles, CarPath
-
-from .exceptions import ParameterException
-from .helpers import observations_to_range_bearings, pi_2_pi
 
 """
 Generic SLAM node should have the following behaviour
@@ -24,6 +20,7 @@ Outputs:
     - Observations (relative to base_link frame)
     - Map estimate (relative to the world frame)
 """
+
 
 class SLAMNode(ROSNode, ABC):
     """
@@ -53,7 +50,9 @@ class SLAMNode(ROSNode, ABC):
         self.observation_queue_size = rospy.get_param("~observation_queue_size", None)
         self.max_landmark_range = rospy.get_param("~max_landmark_range", 0)
 
-        AddSubscriber("input/observations", self.observation_queue_size)(self.handle_observation_message)
+        AddSubscriber("input/observations", self.observation_queue_size)(
+            self.handle_observation_message
+        )
 
         self.add_subscribers()
 
@@ -74,45 +73,32 @@ class SLAMNode(ROSNode, ABC):
             - observations: The observations to process
         """
 
-        dink1 = observations.header.stamp.to_sec()
-
         # Transform the observations!
         # This only transforms from sensor frame to base link frame, which should be a static transformation in normal conditions
         transformed_observations: Observations = ROSNode.do_transform_observations(
             observations,
             self.tf_buffer.lookup_transform(
-                observations.header.frame_id.strip('/'), self.base_link_frame, rospy.Time(0), rospy.Duration(0.1)
+                observations.header.frame_id.strip("/"),
+                self.base_link_frame,
+                rospy.Time(0),
+                rospy.Duration(0.1),
             ),
         )
-
-    #    print(f"Difference: {dink1 - transformed_observations.header.stamp.to_sec()}")
-     #   print(f"Difference2: {dink1 - observations.header.stamp.to_sec()}")
-
-        now = rospy.Time.now().to_sec()
-      #  print(f"Difference3: {now - observations.header.stamp.to_sec()}")
 
         # Now do a "time transformation" to keep delays in mind
         transform: TransformStamped = self.tf_buffer.lookup_transform_full(
             self.base_link_frame,
-            rospy.Time.from_sec(now),
+            rospy.Time.now(),
             self.base_link_frame,
             observations.header.stamp,
             self.world_frame,  # Needs a fixed frame to use as fixture for the transformation
-            rospy.Duration(1)
+            rospy.Duration(1),
         )
-
-        temp = observations.header.stamp.to_sec()
-       
-
-      #  print(f"Time difference observations: {now - temp}")
 
         if self.do_time_transform:
             time_transformed_observations = ROSNode.do_transform_observations(
                 transformed_observations, transform
             )
-        
-    #    print(f"Time difference observation after transformation: {now - time_transformed_observations.header.stamp.to_sec()}")
-
 
             self.process_observations(time_transformed_observations)
         else:
@@ -120,6 +106,12 @@ class SLAMNode(ROSNode, ABC):
 
     @AddSubscriber("input/odometry")
     def handle_odometry_message(self, odometry: Odometry):
+        """
+        Handles incoming Odometry messages. The header and frames should of course match with what is expected
+
+        Args:
+            - odometry: Odometry message
+        """
 
         if odometry.child_frame_id != self.base_link_frame:
             rospy.logerr(
@@ -135,6 +127,7 @@ class SLAMNode(ROSNode, ABC):
 
         self.process_odometry(odometry)
 
+    # These methods should be implemented by the algos themselves
     @abstractmethod
     def process_odometry(self, odometry: Odometry):
         pass
@@ -149,22 +142,22 @@ class SLAMNode(ROSNode, ABC):
 
     def publish_result(self, timestamp=None):
         """
-        Publishes estimates
-        """
+        Publishes the resulting esimtates
 
-        print(timestamp)
+        Args:
+            timestamp?: the timestamp to publish at. Leave empty to use current time
+        """
 
         timestamp = timestamp if timestamp else rospy.Time.now()
 
         # Get the map and metadata corresponding to it
-
         (
             state_prediction,
             map_prediction,
             landmark_classes,
             path_prediction,
             particle_states,
-            particle_weigthts
+            particle_weigthts,
         ) = self.get_predictions()
 
         # Publish the "observations" relative to base_link
@@ -187,8 +180,14 @@ class SLAMNode(ROSNode, ABC):
             )
 
             # Apply rotation
-            x = np.cos(-state_prediction[2]) * new_obs.location.x - np.sin(-state_prediction[2]) * new_obs.location.y
-            y = np.sin(-state_prediction[2]) * new_obs.location.x + np.cos(-state_prediction[2]) * new_obs.location.y
+            x = (
+                np.cos(-state_prediction[2]) * new_obs.location.x
+                - np.sin(-state_prediction[2]) * new_obs.location.y
+            )
+            y = (
+                np.sin(-state_prediction[2]) * new_obs.location.x
+                + np.cos(-state_prediction[2]) * new_obs.location.y
+            )
 
             new_obs.location.x = x
             new_obs.location.y = y
@@ -196,7 +195,9 @@ class SLAMNode(ROSNode, ABC):
             new_obs.observation_class = landmark_classes[i]
 
             if self.max_landmark_range > 0:
-                distance = (obs_location[0] - state_prediction[0])**2 + (obs_location[1] -  state_prediction[1])**2
+                distance = (obs_location[0] - state_prediction[0]) ** 2 + (
+                    obs_location[1] - state_prediction[1]
+                ) ** 2
                 if distance < self.max_landmark_range**2:
                     observations.observations.append(new_obs)
             else:
@@ -224,16 +225,14 @@ class SLAMNode(ROSNode, ABC):
 
         self.publish("output/odom", slam_prediction)
 
-        
-
         # SLAM path prediction
         path = CarPath()
         path.header.stamp = timestamp
         path.header.frame_id = self.world_frame
-        
+
         for pos in path_prediction:
             path.path.append(Point(pos[0], pos[1], 0))
-        
+
         self.publish("output/path", path)
 
         # SLAM particles
@@ -242,6 +241,8 @@ class SLAMNode(ROSNode, ABC):
         particle_set.header.frame_id = self.world_frame
 
         for particle, weight in zip(particle_states, particle_weigthts):
-            particle_set.particles.append(Particle(position=Point(particle[0], particle[1], 0), weight=weight))
+            particle_set.particles.append(
+                Particle(position=Point(particle[0], particle[1], 0), weight=weight)
+            )
 
         self.publish("output/particles", particle_set)

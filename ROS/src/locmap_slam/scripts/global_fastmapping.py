@@ -14,6 +14,10 @@ from ugr_msgs.msg import Observation, Observations
 
 
 class GlobalFastMapping(SLAMNode):
+    """
+    This is the SLAMNode implementation of FastMapping
+    """
+
     def __init__(self):
         super().__init__("global_fastmapping")
 
@@ -23,10 +27,8 @@ class GlobalFastMapping(SLAMNode):
         )
         self.threshold_distance = rospy.get_param("~fastmapping/threshold_distance", 2)
 
-
         self.fastmapping = FastMapping(
-            self.threshold_distance,
-            np.array(self.meas_cov).reshape((2, 2))
+            self.threshold_distance, np.array(self.meas_cov).reshape((2, 2))
         )
 
         self.observations_receive_buffer = deque([])
@@ -35,10 +37,25 @@ class GlobalFastMapping(SLAMNode):
         self.previous_timestamp = 0
 
     def get_predictions(self):
-
+        """
+        Returns: 
+            A tuple of:
+            - predicted state
+            - predicted map
+            - landmark classes
+            - predicted path
+            - particle states
+            - particle weights 
+        """
         map = self.fastmapping.get_map()
-
-        return self.particle_state, map.get_landmarks(), map.get_landmark_classes(),  [], [self.particle_state], [1]
+        return (
+            self.particle_state,
+            map.get_landmarks(),
+            map.get_landmark_classes(),
+            [],
+            [self.particle_state],
+            [1],
+        )
 
     def process_odometry(self, odometry: Odometry):
         pass
