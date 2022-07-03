@@ -42,5 +42,5 @@ cp settings.json ~/Formula-Student-Driverless-Simulator/
 # Setup some handy bashrc lines
 echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.bashrc
 echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
-echo "source ~/autonomous/ROS/devel/setup.bash" >> ~/.bashrc
+echo "source ~/autonomous2023/ROS/devel/setup.bash" >> ~/.bashrc
 echo "alias sdev=\"source devel/setup.bash\"" >> ~/.bashrc
