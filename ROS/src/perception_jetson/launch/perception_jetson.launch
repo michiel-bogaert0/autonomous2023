@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="perception_jetson" type="run.py" name="detect_cones_using_jetson" output="screen">
+        <param name="rate" value="10" />
+    </node>
+</launch>
