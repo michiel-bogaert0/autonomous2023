@@ -90,7 +90,7 @@ class PerceptionNode:
             image = self.camera.GetImage()
 
             if not image.IsEmpty():
-                image.Convert("RGB8")
+                image = image.Convert("RGB8")
                 ros_img = self.np_to_ros_image(image.GetNPArray())
                 self.pub.publish(ros_img)
 
