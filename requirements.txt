@@ -9,6 +9,13 @@ scipy
 numpy
 pybind11[global]
 
+# Perception
+# YOLOv5
+# TODO
+
+# Keypoint detection
+# TODO
+
 # Jetson CAN
 python-can==4.0.0
 

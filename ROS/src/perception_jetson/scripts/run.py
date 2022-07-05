@@ -1,26 +1,65 @@
 #! /usr/bin/python3.8
 
-import time
-import numpy as np
-import neoapi
+import os
 import sys
+import time
+from pathlib import Path
+from typing import Tuple
 
 import cone_detection
-import torch
+import cone_pnp
+import keypoint_detection
+import neoapi
+import numpy as np
 import rospy
+import torch
 from sensor_msgs.msg import Image
+
+from ugr_msgs.msg import BoundingBox, ConeKeypoints, PerceptionUpdate
 
 
 class PerceptionNode:
     def __init__(self):
         rospy.init_node("perception_jetson")
-        self.pub = rospy.Publisher("/perception/raw_image", Image, queue_size=10)
+        self.pub_raw = rospy.Publisher("/perception/raw_image", Image, queue_size=10)
+        self.pub_keypoints = rospy.Publisher("/processed/cone_keypoints", ConeKeypoints, queue_size=10)
+        self.pub_pnp = rospy.Publisher("/processed/raw_perception_update", PerceptionUpdate, queue_size=10)
 
         self.rate = rospy.get_param("~rate", 10)
 
         # Cone detection
         self.device = "cuda:0" if torch.cuda.is_available() and rospy.get_param("~cuda", True) else "cpu"
         self.cone_detector = cone_detection.ConeDetector(self.device)
+        # The minimum height of a cone detection in px for it to be run through the keypoint detector
+        self.detection_height_threshold = rospy.get_param("~detection_height_threshold", 30)
+
+        # Keypoint detection
+        self.keypoint_detector = keypoint_detection.ConeKeypointDetector(self.device)
+
+        cone_dev = self.cone_detector.yolo_model.device
+        keyp_dev = self.keypoint_detector.model.device
+        rospy.logwarn(f"CUDA devices used: cone={cone_dev} - keypoint={keyp_dev}")
+
+        # PNP
+        # See documentation for more information about these settings!
+        max_distance = rospy.get_param("~max_distance", 20.0)
+        scale = rospy.get_param("~scale", 0.001)
+        cones_location = rospy.get_param("~cones_location", "cones.npz")
+        camcal_location = rospy.get_param("~camcal_location", "camera_calibration_baumer.npz")
+
+        cone_models = np.load(Path(os.getenv("BINARY_LOCATION")) / "pnp" / cones_location)
+        camera_cal_archive = np.load(Path(os.getenv("BINARY_LOCATION")) / "pnp" / camcal_location)
+
+        camera_matrix = camera_cal_archive["camera_matrix"]
+        distortion_matrix = camera_cal_archive["distortion_matrix"]
+
+        self.pnp = cone_pnp.ConePnp(
+            cone_models=cone_models,
+            scale=scale,
+            max_distance=max_distance,
+            camera_matrix=camera_matrix,
+            distortion_matrix=distortion_matrix
+        )
 
         self.setup_camera()
 
@@ -76,7 +115,7 @@ class PerceptionNode:
         ros_img = Image(encoding="rgb8")
         ros_img.height, ros_img.width, _ = arr.shape
         contig = arr  # np.ascontiguousarray(arr)
-        ros_img.data = contig.tostring()
+        ros_img.data = contig.tobytes()
         ros_img.step = contig.strides[0]
         ros_img.is_bigendian = (
             arr.dtype.byteorder == ">"
@@ -100,56 +139,68 @@ class PerceptionNode:
             if not image.IsEmpty():
                 image = image.Convert("RGB8").GetNPArray()
                 ros_img = self.np_to_ros_image(image)
-                self.run_perception_pipeline(image)
-                self.pub.publish(ros_img)
+                self.run_perception_pipeline(image, ros_img)
+                self.pub_raw.publish(ros_img)
 
             rate.sleep()
 
-    def run_perception_pipeline(self, image: np.ndarray) -> None:
+    def run_perception_pipeline(self, image: np.ndarray, ros_image: Image) -> None:
         """
         Given an image, run through the entire perception pipeline and publish to ROS
 
         Args:
-            image: The input image
+            image: The input image as numpy array
+            ros_image: The input image as ROS message
         """
+        timings = []
 
         tic = time.perf_counter()
         bbs = self.cone_detector.detect_cones(image)
         toc = time.perf_counter()
-        rospy.loginfo(f"Inference took {toc-tic:.4f} s")
+        timings.append(toc-tic)
 
-        # keypoints = []
+        keypoints = []
 
-        # # Don't count detections that aren't tall enough
-        # h, w, c = image.shape
-        # detection_height_threshold = self.detection_height_threshold / h
+        # Don't count detections that aren't tall enough
+        h, w, c = image.shape
+        detection_height_threshold = self.detection_height_threshold / h
 
-        # # Filter bbs by height and if they are taller than they are wide
-        # bbs = [bb for bb in bbs if bb.height > bb.width and bb.height > detection_height_threshold]
+        # Filter bbs by height and if they are taller than they are wide
+        bbs = [bb for bb in bbs if bb.height > bb.width and bb.height > detection_height_threshold]
 
-        # if len(bbs) != 0:
-        #     # There were bounding boxes detected
-        #     keypoints = self.keypoint_detector.detect_keypoints(image, bbs)
-        #     keypoints_time = time.time()
+        if len(bbs) != 0:
+            # There were bounding boxes detected
+            tic = time.perf_counter()
+            keypoints = self.keypoint_detector.detect_keypoints(image, bbs)
+            toc = time.perf_counter()
+            timings.append(toc-tic)
 
-        #     self.cone_timing.append(bbs_time - start_time)
-        #     self.keypoint_timing.append(keypoints_time - bbs_time)
-        #     cone_av = sum(self.cone_timing) / len(self.cone_timing)
-        #     keypoint_av = sum(self.keypoint_timing) / len(self.keypoint_timing)
-        #     rospy.loginfo(f"{cone_av:.3f} - {keypoint_av:.3f}")
+            cone_keypoints_msg = ConeKeypoints()
+            cone_keypoints_msg.cone_keypoints = keypoints
+            cone_keypoints_msg.header.stamp = ros_image.header.stamp
+            cone_keypoints_msg.header.frame_id = ros_image.header.frame_id
+            self.pub_keypoints.publish(cone_keypoints_msg)
 
-        #     cone_keypoints_msg = ConeKeypoints()
-        #     cone_keypoints_msg.cone_keypoints = keypoints
-        #     cone_keypoints_msg.img = msg
-        #     cone_keypoints_msg.header.stamp = msg.header.stamp
-        #     cone_keypoints_msg.header.frame_id = msg.header.frame_id
-        #     self.publish(
-        #         "/processed/cone_keypoints",
-        #         cone_keypoints_msg,
-        #     )
+            # Run PNP
+            tic = time.perf_counter()
+            self.run_pnp_pipeline(cone_keypoints_msg, (w, h))
+            toc = time.perf_counter()
+            timings.append(toc-tic)
+        
+        
+        rospy.loginfo(f"Timings {' - '.join([str(x) for x in timings])} s")
 
-        # if self.vis:
-        #     self.visualisation_callback(image, bbs, keypoints)
+    def run_pnp_pipeline(self, msg: ConeKeypoints, img_size: Tuple[int, int]) -> None:
+        """
+        Given a keypoints ROS message, run through the PNP pipeline and publish to ROS
+
+        Args:
+            msg: the input keypoints message
+            img_size: the size of the original image (W, H)
+        """
+
+        update_msg = self.pnp.generate_perception_update(msg, img_size=img_size)
+        self.pub_pnp.publish(update_msg)
 
 if __name__ == "__main__":
     try:
