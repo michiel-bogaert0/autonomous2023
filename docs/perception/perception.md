@@ -20,7 +20,7 @@ The image input can come from three sources, based on the ROS parameter set in t
 ### Camera 
 Set the parameter to `camera` to use the Baumer camera, provided it is in the same subnet as the pc. By default this will use the `UserSet1` which uses an automatic exposure time. You can add your own UserSets in the Baumer Explorer software by setting the parameters as preferred and then writing the configuration to the camera. There is a special menu for this. (TODO: update this doc with more specific info, I currently don't have the software)
 
-The reauired Neoapi for the camera is included in the `requirements.txt` file.
+The required Neoapi for the camera is included in the `requirements.txt` file. All useful Baumer APIs can be found [here](https://ugentracing.sharepoint.com/:f:/s/UGR9/EjE9w_0oC3BLhY7aYIjS-fwBTLD4tUGScFrbzY3JpvrQoA?e=bQkaN6), including the package to install the Python API on the Jetson (the ARM tar.gz). The documentation folder can also be found seperately on the SharePoint and has extensive documentation on programming, connecting, setting up a camera.
 
 ### Simulator
 Set the parameter to `sensor`. To accept input from the simulator, the sim itself will publish its camera data according to the defined cameras inside the `settings.json`. By default we use `cam1`, which means the camera data will be published to `/fsds/cam1`. The launchfile converts this topic to our internal `/sensor/rgb/mono`.
