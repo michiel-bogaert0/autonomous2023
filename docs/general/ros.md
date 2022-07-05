@@ -6,6 +6,8 @@ This is a full overview of all topics used by various subteams:
 | Topic name | Message | Description | Publish frequency (Hz) |
 |---|---|---|---|
 | /perception/raw_image | sensor_msgs/Image | Raw images coming from the camera  | 10 |
+| /processed/cone_keypoints | ugr_msgs/ConeKeypoints | Keypoints after cone & keypoint detections | / |
+| /processed/raw_perception_update | ugr_msgs/PerceptionUpdate | Cone locations | / |
 |  |  |  |  |
 
 # Coordinate frames & rotation
