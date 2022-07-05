@@ -1,8 +1,12 @@
 #! /usr/bin/python3.8
 
+import time
 import numpy as np
 import neoapi
 import sys
+
+import cone_detection
+import torch
 import rospy
 from sensor_msgs.msg import Image
 
@@ -13,6 +17,10 @@ class PerceptionNode:
         self.pub = rospy.Publisher("/perception/raw_image", Image, queue_size=10)
 
         self.rate = rospy.get_param("~rate", 10)
+
+        # Cone detection
+        self.device = "cuda" if torch.cuda.is_available() and rospy.get_param("~cuda", True) else "cpu"
+        self.cone_detector = cones.ConeDetector(self.device)
 
         self.setup_camera()
 
@@ -92,10 +100,55 @@ class PerceptionNode:
             if not image.IsEmpty():
                 image = image.Convert("RGB8")
                 ros_img = self.np_to_ros_image(image.GetNPArray())
+                self.run_perception_pipeline(image)
                 self.pub.publish(ros_img)
 
             rate.sleep()
 
+    def run_perception_pipeline(self, image: np.ndarray) -> None:
+        """
+        Given an image, run through the entire perception pipeline and publish to ROS
+
+        Args:
+            image: The input image
+        """
+
+        tic = time.perf_counter()
+        bbs = self.cone_detector.detect_cones(image)
+        toc = time.perf_counter()
+
+        keypoints = []
+
+        # Don't count detections that aren't tall enough
+        h, w, c = image.shape
+        detection_height_threshold = self.detection_height_threshold / h
+
+        # Filter bbs by height and if they are taller than they are wide
+        bbs = [bb for bb in bbs if bb.height > bb.width and bb.height > detection_height_threshold]
+
+        if len(bbs) != 0:
+            # There were bounding boxes detected
+            keypoints = self.keypoint_detector.detect_keypoints(image, bbs)
+            keypoints_time = time.time()
+
+            self.cone_timing.append(bbs_time - start_time)
+            self.keypoint_timing.append(keypoints_time - bbs_time)
+            cone_av = sum(self.cone_timing) / len(self.cone_timing)
+            keypoint_av = sum(self.keypoint_timing) / len(self.keypoint_timing)
+            rospy.loginfo(f"{cone_av:.3f} - {keypoint_av:.3f}")
+
+            cone_keypoints_msg = ConeKeypoints()
+            cone_keypoints_msg.cone_keypoints = keypoints
+            cone_keypoints_msg.img = msg
+            cone_keypoints_msg.header.stamp = msg.header.stamp
+            cone_keypoints_msg.header.frame_id = msg.header.frame_id
+            self.publish(
+                "/processed/cone_keypoints",
+                cone_keypoints_msg,
+            )
+
+        if self.vis:
+            self.visualisation_callback(image, bbs, keypoints)
 
 if __name__ == "__main__":
     try:
