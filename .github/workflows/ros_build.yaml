@@ -25,6 +25,11 @@ jobs:
               run: |
                   sudo apt-get install -y python3-catkin-pkg python3-catkin-tools python3-rosdep python3-wstool python3-osrf-pycommon ros-cmake-modules ros-noetic-catkin ros-noetic-tf2-geometry-msgs ros-noetic-rqt-multiplot ros-noetic-joy ros-noetic-cv-bridge ros-noetic-image-transport libyaml-cpp-dev libcurl4-openssl-dev
 
+            - name: Python Pip Install
+              # You may pin to the exact commit or the version.
+              # uses: logikal-code/pip-install@51d215f7fc153e741488726defaa8cb84ea35300
+              uses: logikal-code/pip-install@v1.0.0
+
             - name: Install ROS packages with rosdep
               run: |
                   source /opt/ros/noetic/setup.bash
