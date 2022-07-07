@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Tuple
 
 import numpy as np
-
 from ugr_msgs.msg import BoundingBox
 
 

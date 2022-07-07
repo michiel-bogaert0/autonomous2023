@@ -9,7 +9,6 @@ import torch
 from geometry_msgs.msg import Point
 from IntBoundingBox import IntBoundingBox
 from keypoint_detector.module import RektNetModule
-
 from ugr_msgs.msg import BoundingBox, ConeKeypoint
 
 
@@ -37,7 +36,9 @@ class ConeKeypointDetector:
 
         return keypoints.detach().cpu().numpy()
 
-    def create_batch(self, image: np.ndarray, bbs: list("ROSBoundingBox")) -> torch.FloatTensor:
+    def create_batch(
+        self, image: np.ndarray, bbs: list("ROSBoundingBox")
+    ) -> torch.FloatTensor:
         """
         Converts a ConeDetection into a batch Tensor for inference
         Args:
@@ -47,9 +48,11 @@ class ConeKeypointDetector:
         Returns:
         The batched Tensor
         """
-        int_bbs = [self.to_int_bb(bb, image) for bb in bbs]
+        int_bbs = [IntBoundingBox.from_img(bb, image) for bb in bbs]
         crops = [image[bb.top : bb.bottom, bb.left : bb.right] for bb in int_bbs]
-        pytorch_tensors = [self.pytorch_cv_prepare(crop, self.img_size) for crop in crops]
+        pytorch_tensors = [
+            self.pytorch_cv_prepare(crop, self.img_size) for crop in crops
+        ]
 
         return torch.stack(pytorch_tensors)
 
@@ -64,10 +67,14 @@ class ConeKeypointDetector:
         """
         new_keypoints = []
         for x, y in keypoints:
-            new_keypoints.append(Point(x=x / self.img_size[0], y=y / self.img_size[1], z=0.0))
+            new_keypoints.append(
+                Point(x=x / self.img_size[0], y=y / self.img_size[1], z=0.0)
+            )
         return new_keypoints
 
-    def detect_keypoints(self, image: np.ndarray, bbs: list("ROSBoundingBox")) -> list("ConeKeypoint"):
+    def detect_keypoints(
+        self, image: np.ndarray, bbs: list("ROSBoundingBox")
+    ) -> list("ConeKeypoint"):
         """
         Given a cone detection update message, return the detected keypoints of every cone
         Args:
@@ -87,15 +94,9 @@ class ConeKeypointDetector:
 
         return cone_keypoints
 
-    def to_int_bb(self, or_bb: BoundingBox, img: np.ndarray) -> IntBoundingBox:
-        return IntBoundingBox.from_img(or_bb, img)
-
-    def to_channel_in_front(self, img: np.ndarray):
-        return np.moveaxis(img, -1, 0)
-
     def pytorch_cv_prepare(self, img: np.ndarray, img_size: Tuple[int, int]):
         img = cv2.resize(img, img_size)
-        img = self.to_channel_in_front(img)
+        img = np.moveaxis(img, -1, 0)
         img = img.astype(np.float32)
         img /= 255
         return torch.FloatTensor(img)

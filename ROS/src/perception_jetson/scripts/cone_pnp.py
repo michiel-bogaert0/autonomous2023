@@ -7,21 +7,24 @@ from typing import List, Tuple
 
 import cv2
 import numpy as np
-from geometry_msgs.msg import Point
-
 from fs_msgs.msg import Cone
+from geometry_msgs.msg import Point
 from ugr_msgs.msg import ConeKeypoint, ConeKeypoints, PerceptionUpdate
 
 
 class ConePnp:
-    def __init__(self, cone_models, scale, max_distance, camera_matrix, distortion_matrix):
+    def __init__(
+        self, cone_models, scale, max_distance, camera_matrix, distortion_matrix
+    ):
         self.cone_models = cone_models
         self.scale = scale
         self.max_distance = max_distance
         self.camera_matrix = camera_matrix
         self.distortion_matrix = distortion_matrix
 
-    def generate_perception_update(self, cone_keypoints_msg: ConeKeypoints, img_size: Tuple[int, int]) -> PerceptionUpdate:
+    def generate_perception_update(
+        self, cone_keypoints_msg: ConeKeypoints, img_size: Tuple[int, int]
+    ) -> PerceptionUpdate:
         """
         Receives a keypoint update message and applies a PnP algorithm to it.
         It returns a PerceptionUpdate.
@@ -34,7 +37,9 @@ class ConePnp:
 
         for cone_keypoint in cone_keypoints_msg.cone_keypoints:
 
-            ret, relative_position, rvec = self.calculate_relative_position_of_cone(cone_keypoint, img_size)
+            ret, relative_position, rvec = self.calculate_relative_position_of_cone(
+                cone_keypoint, img_size
+            )
 
             if not ret:
                 continue
@@ -46,17 +51,20 @@ class ConePnp:
             if distance >= self.max_distance:
                 continue
 
-            cone_relative_positions.append(Cone(color=cone_keypoint.bb_info.cone_type, location=loc))
-        
+            cone_relative_positions.append(
+                Cone(color=cone_keypoint.bb_info.cone_type, location=loc)
+            )
+
         perception_update = PerceptionUpdate()
         perception_update.cone_relative_positions = cone_relative_positions
         perception_update.header.stamp = cone_keypoints_msg.header.stamp
         perception_update.header.frame_id = cone_keypoints_msg.header.frame_id
-        
-        return perception_update
-        
 
-    def draw_cone(self, img, cone_keypoint: ConeKeypoint, img_size: Tuple[int, int], rvec, tvec):
+        return perception_update
+
+    def draw_cone(
+        self, img, cone_keypoint: ConeKeypoint, img_size: Tuple[int, int], rvec, tvec
+    ):
         """
         Draws a simple visualization on parameter 'img'. In the future this must be implemented in a custom vis node
 
@@ -98,13 +106,21 @@ class ConePnp:
         # bottom = np.array([processed_keypoints[0][0], processed_keypoints[0][1] + cone_keypoint.bb_info.height], int)
         bottom = projection[0].astype(int)
         projection = projection.astype(int)
-        img = cv2.line(img, tuple(bottom.ravel()), tuple(projection[1].ravel()), (255, 0, 0), 5)
-        img = cv2.line(img, tuple(bottom.ravel()), tuple(projection[2].ravel()), (0, 0, 255), 5)
-        img = cv2.line(img, tuple(bottom.ravel()), tuple(projection[3].ravel()), (0, 255, 0), 5)
+        img = cv2.line(
+            img, tuple(bottom.ravel()), tuple(projection[1].ravel()), (255, 0, 0), 5
+        )
+        img = cv2.line(
+            img, tuple(bottom.ravel()), tuple(projection[2].ravel()), (0, 0, 255), 5
+        )
+        img = cv2.line(
+            img, tuple(bottom.ravel()), tuple(projection[3].ravel()), (0, 255, 0), 5
+        )
 
         return img
 
-    def preprocess_keypoints(self, cone_keypoint: ConeKeypoint, img_size: Tuple[int, int]):
+    def preprocess_keypoints(
+        self, cone_keypoint: ConeKeypoint, img_size: Tuple[int, int]
+    ):
         """
         A helper function for processing keypoints on a cone.
 
@@ -125,12 +141,18 @@ class ConePnp:
         bb = cone_keypoint.bb_info
 
         for i, relative_keypoint in enumerate(cone_keypoint.keypoints):
-            processed_keypoints[i, 0] = ((relative_keypoint.x * bb.width) + bb.left) * img_size[0]
-            processed_keypoints[i, 1] = ((relative_keypoint.y * bb.height) + bb.top) * img_size[1]
+            processed_keypoints[i, 0] = (
+                (relative_keypoint.x * bb.width) + bb.left
+            ) * img_size[0]
+            processed_keypoints[i, 1] = (
+                (relative_keypoint.y * bb.height) + bb.top
+            ) * img_size[1]
 
         return processed_keypoints
 
-    def calculate_relative_position_of_cone(self, cone_keypoint: ConeKeypoint, img_size: Tuple[int, int]):
+    def calculate_relative_position_of_cone(
+        self, cone_keypoint: ConeKeypoint, img_size: Tuple[int, int]
+    ):
         """
         Actually applies the PnP algorithm
 

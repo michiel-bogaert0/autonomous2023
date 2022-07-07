@@ -3,18 +3,19 @@ import os
 from pathlib import Path
 
 import numpy as np
+from fs_msgs.msg import Cone
 from sensor_msgs.msg import Image
+from ugr_msgs.msg import BoundingBox
 from yolov5 import YOLOv5
 from yolov5.output import BoundingBox as YOLOVBoundingBox
-
-from fs_msgs.msg import Cone
-from ugr_msgs.msg import BoundingBox
 
 
 class ConeDetector:
     def __init__(self, device: str):
         model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolov5.engine"
-        data_path = Path(os.getenv("BINARY_LOCATION")) / "perception_data" / "ugr_dataset.yaml"
+        data_path = (
+            Path(os.getenv("BINARY_LOCATION")) / "perception_data" / "ugr_dataset.yaml"
+        )
         self.yolo_model = YOLOv5(model_path, data_path, device=device)
 
     def yolo_bb_to_ros_bb(self, input_bb: "YOLOVBoundingBox") -> "BoundingBox":
