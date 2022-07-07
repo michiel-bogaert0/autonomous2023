@@ -11,10 +11,10 @@ pybind11[global]
 
 # Perception
 # YOLOv5
-# TODO
+tools/yolov5
 
 # Keypoint detection
-# TODO
+tools/keypoint_detector
 
 # Jetson CAN
 python-can==4.0.0

@@ -3,7 +3,8 @@ from typing import List
 from setuptools import setup
 
 requirements: List[str] = [
-    "Cython",
+    "cython",
+    "tqdm"
 ]
 
 setup(
@@ -15,6 +16,5 @@ setup(
     install_requires=requirements,
     include_package_data=True,
     name="yolov5",
-    test_suite="tests",
-    version="0.0.1",
+    version="0.0.2",
 )
