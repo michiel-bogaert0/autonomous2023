@@ -29,8 +29,7 @@ git lfs install
 If you don't have your SSH keys set up: [SSH setup](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
 
 1. `cd ~`
-2. `git clone git@github.com:UgentRacing/autonomous.git`
-3. `git clone git@github.com:UgentRacing/autonomous_binaries.git`
+2. `git clone git@github.com:UgentRacing/autonomous2023.git`
 
 ### Install ROS
 
@@ -50,14 +49,14 @@ rosdep update
 
 ### Install dependencies
 
-1. `cd ~/autonomous`
+1. `cd ~/autonomous2023`
 2. `scripts/setup_repo.sh`
 3. `export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"`
 4. `source /opt/ros/noetic/setup.bash`
 
 ### Run ROS pipeline
 
-1. `cd autonomous/ROS`
+1. `cd autonomous2023/ROS`
 2. `catkin init` 
 3. `catkin build` 
 4. `source devel/setup.bash` (Or use your new shortcut `sdev`)

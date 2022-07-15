@@ -1,21 +1,28 @@
 # ../autonomous_binaries/modules/neoapi-1.1.1-py38-none-any.whl
 
 # General
-empy==3.3.4
-catkin_pkg==0.4.24
-rospkg==1.4.0
+empy
+catkin_pkg
+rospkg
 cython
 scipy
 numpy
 pybind11[global]
 
+# Perception
+# YOLOv5
+tools/yolov5
+
+# Keypoint detection
+tools/keypoint_detector
+
 # Jetson CAN
 python-can==4.0.0
 
 # Dev tools
-black==20.8b1
-isort==5.7.0
-mypy==0.800
-pytest==6.2.2
-autoflake==1.4
-mkdocs-material==8.1.10
+black
+isort
+mypy
+pytest
+autoflake
+mkdocs-material
