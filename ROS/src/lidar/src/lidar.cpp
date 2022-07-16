@@ -328,7 +328,8 @@ void Lidar::publishMarkers(const sensor_msgs::PointCloud cones)
     for (auto cone : cones.points)
     {
         visualization_msgs::Marker marker;
-        marker.header.stamp = ros::Time();
+        marker.header.frame_id = cones.header.frame_id;
+        marker.header.stamp = cones.header.stamp;
         marker.ns = "cones";
         marker.type = visualization_msgs::Marker::CYLINDER;
         marker.action = visualization_msgs::Marker::ADD;
@@ -351,7 +352,7 @@ void Lidar::publishMarkers(const sensor_msgs::PointCloud cones)
         marker.color.b = 0.0f;
         marker.color.a = 1.0;
 
-        marker.lifetime = ros::Duration(3.0); // in seconds
+        marker.lifetime = ros::Duration(0); // in seconds (0 means stay forever, or at least until overwritten)
 
         markers.markers.push_back(marker);
     }
