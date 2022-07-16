@@ -7,12 +7,16 @@ Lidar::Lidar(ros::NodeHandle &n) : n_(n)
     // Subscribe to the raw lidar topic
     rawLidarSubscriber_ = n.subscribe("perception/raw_pc", 10, &Lidar::rawPcCallback, this);
 
+    // Publish to the filtered and clustered lidar topic
+    clusteredLidarPublisher_ = n.advertise<sensor_msgs::PointCloud>("perception/clustered_pc", 5);
+
     // Get parameters
     n.param<int>("~num_iter", num_iter_, 3);
     n.param<int>("~num_lpr", num_lpr_, 250);
     n.param<double>("~th_seeds", th_seeds_, 1.2);
     n.param<double>("~th_dist", th_dist_, 0.3);
     n.param<double>("~sensor_height", sensor_height_, 0.3);
+    n.param<double>("~cluster_tolerance", cluster_tolerance_, 0.5);
 }
 
 void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg)
@@ -36,6 +40,13 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg)
     pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points(new pcl::PointCloud<pcl::PointXYZI>());
     pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points(new pcl::PointCloud<pcl::PointXYZI>());
     groundRemoval(preprocessed_pc, notground_points, ground_points);
+
+    // Cone clustering
+    sensor_msgs::PointCloud cluster;
+    cluster = coneClustering(notground_points);
+    cluster.header.stamp = msg.header.stamp;
+
+    clusteredLidarPublisher_.publish(cluster);
 }
 
 void Lidar::preprocessing(
@@ -213,4 +224,65 @@ void Lidar::extractInitialSeeds(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud
             (*seed_points).points.push_back(cloud_sorted[i]);
         }
     }
+}
+
+sensor_msgs::PointCloud Lidar::coneClustering(
+    const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud)
+{
+    /**
+     * @brief Clusters the cones in the final filtered point cloud and generates a ROS message.
+     *
+     */
+
+    sensor_msgs::PointCloud cluster;
+
+    // Creating the KdTree object for the search method of the extraction
+    pcl::search::KdTree<pcl::PointXYZI>::Ptr tree(
+        new pcl::search::KdTree<pcl::PointXYZI>);
+    tree->setInputCloud(cloud);
+
+    // Define the parameters for Euclidian clustering
+    std::vector<pcl::PointIndices> cluster_indices;
+    pcl::EuclideanClusterExtraction<pcl::PointXYZI> ec;
+    ec.setClusterTolerance(cluster_tolerance_);
+    ec.setMinClusterSize(2);
+    ec.setMaxClusterSize(200);
+    ec.setSearchMethod(tree);
+    ec.setInputCloud(cloud);
+    ec.extract(cluster_indices);
+
+    // Iterate over all cluster indices
+    for (const auto &iter : cluster_indices)
+    {
+        pcl::PointCloud<pcl::PointXYZI>::Ptr cone(new pcl::PointCloud<pcl::PointXYZI>);
+        for (auto it : iter.indices)
+        {
+            cone->points.push_back(cloud->points[it]);
+        }
+        cone->width = cone->points.size();
+        cone->height = 1;
+        cone->is_dense = true;
+
+        Eigen::Vector4f centroid;
+        Eigen::Vector4f min;
+        Eigen::Vector4f max;
+        pcl::compute3DCentroid(*cone, centroid);
+        pcl::getMinMax3D(*cone, min, max);
+
+        float bound_x = std::fabs(max[0] - min[0]);
+        float bound_y = std::fabs(max[1] - min[1]);
+        float bound_z = std::fabs(max[2] - min[2]);
+
+        // filter based on the shape of cones
+        if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4 && centroid[2] < 0.4)
+        {
+            geometry_msgs::Point32 tmp;
+            tmp.x = centroid[0];
+            tmp.y = centroid[1];
+            tmp.z = centroid[2];
+            cluster.points.push_back(tmp);
+        }
+    }
+    
+    return cluster;
 }
