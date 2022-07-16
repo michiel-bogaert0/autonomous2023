@@ -25,7 +25,7 @@ sudo apt-get install -y ros-noetic-tf2-geometry-msgs \
     python3-catkin-tools \
     ros-noetic-rqt-multiplot  \
     ros-noetic-joy \
-    ros-noetic-cv-bridge \
+    ros-noetic-perception-pcl \
     ros-noetic-image-transport \
     ros-noetic-tf2-geometry-msgs \
     ros-noetic-robot-localization \
