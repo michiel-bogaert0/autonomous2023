@@ -5,11 +5,7 @@ int main(int argc, char **argv)
 {
     // Initialise the node
     ros::init(argc, argv, "lidar");
-    ros::NodeHandle n;
-
-    int node_rate;
-    n.param<int>("~rate", node_rate, 10);
-    ros::Rate loop_rate(node_rate);
+    ros::NodeHandle n("~");
 
     // Create a LIDAR class object
     Lidar lidar(n);
@@ -19,7 +15,6 @@ int main(int argc, char **argv)
     {
         // Keep the node alive
         ros::spinOnce();
-        loop_rate.sleep();
     }
 
     return 0;

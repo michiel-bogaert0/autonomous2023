@@ -5,18 +5,22 @@
 Lidar::Lidar(ros::NodeHandle &n) : n_(n)
 {
     // Subscribe to the raw lidar topic
-    rawLidarSubscriber_ = n.subscribe("perception/raw_pc", 10, &Lidar::rawPcCallback, this);
+    // rawLidarSubscriber_ = n.subscribe("perception/raw_pc", 10, &Lidar::rawPcCallback, this);
+    rawLidarSubscriber_ = n.subscribe("/os_cloud_node/points", 10, &Lidar::rawPcCallback, this);
 
     // Publish to the filtered and clustered lidar topic
+    preprocessedLidarPublisher_ = n.advertise<sensor_msgs::PointCloud2>("perception/preprocessed_pc", 5);
+    groundRemovalLidarPublisher_ = n.advertise<sensor_msgs::PointCloud2>("perception/groundremoval_pc", 5);
     clusteredLidarPublisher_ = n.advertise<sensor_msgs::PointCloud>("perception/clustered_pc", 5);
+    conePublisher_ = n.advertise<visualization_msgs::MarkerArray>("perception/cones_lidar", 5);
 
     // Get parameters
-    n.param<int>("~num_iter", num_iter_, 3);
-    n.param<int>("~num_lpr", num_lpr_, 250);
-    n.param<double>("~th_seeds", th_seeds_, 1.2);
-    n.param<double>("~th_dist", th_dist_, 0.3);
-    n.param<double>("~sensor_height", sensor_height_, 0.3);
-    n.param<double>("~cluster_tolerance", cluster_tolerance_, 0.5);
+    n.param<int>("num_iter", num_iter_, 3);
+    n.param<int>("num_lpr", num_lpr_, 250);
+    n.param<double>("th_seeds", th_seeds_, 1.2);
+    n.param<double>("th_dist", th_dist_, 0.1);
+    n.param<double>("sensor_height", sensor_height_, 0.5);
+    n.param<double>("cluster_tolerance", cluster_tolerance_, 0.5);
 }
 
 void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg)
@@ -32,21 +36,38 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg)
     pcl::PointCloud<pcl::PointXYZI>::Ptr preprocessed_pc(
         new pcl::PointCloud<pcl::PointXYZI>);
     pcl::fromROSMsg(msg, raw_pc_);
+    ROS_INFO("Raw points: %ld", raw_pc_.size());
 
     // Preprocessing
     preprocessing(raw_pc_, preprocessed_pc);
+    ROS_INFO("Preprocessed points: %ld", preprocessed_pc->size());
+
+    sensor_msgs::PointCloud2 preprocessed_msg;
+    pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
+    preprocessed_msg.header.stamp = msg.header.stamp;
+    preprocessedLidarPublisher_.publish(preprocessed_msg);
 
     // Ground plane removal
     pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points(new pcl::PointCloud<pcl::PointXYZI>());
     pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points(new pcl::PointCloud<pcl::PointXYZI>());
     groundRemoval(preprocessed_pc, notground_points, ground_points);
+    ROS_INFO("Post ground removal points: %ld", notground_points->size());
+
+    sensor_msgs::PointCloud2 groundremoval_msg;
+    pcl::toROSMsg(*notground_points, groundremoval_msg);
+    groundremoval_msg.header.stamp = msg.header.stamp;
+    groundRemovalLidarPublisher_.publish(groundremoval_msg);
 
     // Cone clustering
     sensor_msgs::PointCloud cluster;
     cluster = coneClustering(notground_points);
     cluster.header.stamp = msg.header.stamp;
+    ROS_INFO("Clustered points: %ld", cluster.points.size());
 
     clusteredLidarPublisher_.publish(cluster);
+
+    // Create an array of markers to display in Foxglove
+    publishMarkers(cluster);
 }
 
 void Lidar::preprocessing(
@@ -66,8 +87,8 @@ void Lidar::preprocessing(
     // Clean up the points belonging to the car and noise in the sky
     for (auto &iter : raw.points)
     {
-        // Remove points closer than 2m, higher than 0.7m or further than 20m
-        if (std::hypot(iter.x, iter.y) < sqrt(2) || iter.z > 0.7 || std::hypot(iter.x, iter.y) > sqrt(20))
+        // Remove points closer than 2m, higher than 0.5m or further than 20m
+        if (std::hypot(iter.x, iter.y) < 2 || iter.z > 0.5 || std::hypot(iter.x, iter.y) > 20)
             continue;
         preprocessed_pc->points.push_back(iter);
     }
@@ -234,7 +255,10 @@ sensor_msgs::PointCloud Lidar::coneClustering(
      *
      */
 
+    // Create a PC and channel for the cone colour
     sensor_msgs::PointCloud cluster;
+    sensor_msgs::ChannelFloat32 cone_channel;
+    cone_channel.name = "cone_type";
 
     // Creating the KdTree object for the search method of the extraction
     pcl::search::KdTree<pcl::PointXYZI>::Ptr tree(
@@ -254,6 +278,7 @@ sensor_msgs::PointCloud Lidar::coneClustering(
     // Iterate over all cluster indices
     for (const auto &iter : cluster_indices)
     {
+        // Create PC of the current cone cluster
         pcl::PointCloud<pcl::PointXYZI>::Ptr cone(new pcl::PointCloud<pcl::PointXYZI>);
         for (auto it : iter.indices)
         {
@@ -276,13 +301,60 @@ sensor_msgs::PointCloud Lidar::coneClustering(
         // filter based on the shape of cones
         if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4 && centroid[2] < 0.4)
         {
-            geometry_msgs::Point32 tmp;
-            tmp.x = centroid[0];
-            tmp.y = centroid[1];
-            tmp.z = centroid[2];
-            cluster.points.push_back(tmp);
+            geometry_msgs::Point32 cone_pos;
+            cone_pos.x = centroid[0];
+            cone_pos.y = centroid[1];
+            cone_pos.z = centroid[2];
+            cluster.points.push_back(cone_pos);
+            cone_channel.values.push_back(0); // TODO actually get the intensity
         }
     }
-    
+
+    cluster.channels.push_back(cone_channel);
+
     return cluster;
+}
+
+void Lidar::publishMarkers(const sensor_msgs::PointCloud cones)
+{
+    /**
+     * @brief Publishes a MarkerArray for visualisation purposes
+     *
+     */
+
+    visualization_msgs::MarkerArray markers;
+
+    int i = 0;
+    for (auto cone : cones.points)
+    {
+        visualization_msgs::Marker marker;
+        marker.header.stamp = ros::Time();
+        marker.ns = "cones";
+        marker.type = visualization_msgs::Marker::CYLINDER;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.id = i++;
+
+        marker.pose.position.x = cone.x;
+        marker.pose.position.y = cone.y;
+        marker.pose.position.z = cone.z;
+        marker.pose.orientation.x = 0.0;
+        marker.pose.orientation.y = 0.0;
+        marker.pose.orientation.z = 0.0;
+        marker.pose.orientation.w = 1.0;
+
+        marker.scale.x = 0.228; // in meters
+        marker.scale.y = 0.228;
+        marker.scale.z = 0.325;
+
+        marker.color.r = 0.0f;
+        marker.color.g = 1.0f;
+        marker.color.b = 0.0f;
+        marker.color.a = 1.0;
+
+        marker.lifetime = ros::Duration(3.0); // in seconds
+
+        markers.markers.push_back(marker);
+    }
+
+    conePublisher_.publish(markers);
 }

@@ -3,6 +3,8 @@
 
 #include "sensor_msgs/PointCloud.h"
 #include "sensor_msgs/PointCloud2.h"
+#include "visualization_msgs/Marker.h"
+#include "visualization_msgs/MarkerArray.h"
 #include <pcl/common/common.h>
 #include <pcl/common/transforms.h>
 #include <pcl/search/kdtree.h>
@@ -25,7 +27,10 @@ public:
 private:
     ros::NodeHandle n_;
     ros::Subscriber rawLidarSubscriber_;
+    ros::Publisher preprocessedLidarPublisher_;
+    ros::Publisher groundRemovalLidarPublisher_;
     ros::Publisher clusteredLidarPublisher_;
+    ros::Publisher conePublisher_;
 
     int num_iter_;         // Number of iterations
     int num_lpr_;          // number of points used to estimate the LPR: Lowest Point Representative -> a point defined as the average of the num_lpr_ lowest points
@@ -46,6 +51,7 @@ private:
     void extractInitialSeeds(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr seed_points);
     sensor_msgs::PointCloud coneClustering(
         const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
+    void publishMarkers(const sensor_msgs::PointCloud cones);
 };
 
 #endif
