@@ -12,7 +12,7 @@ namespace ns_lidar
     ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n)
     {
         // Get parameters
-        n.param<double>("clustering_method", clustering_method_, "euclidian");
+        n.param<std::string>("clustering_method", clustering_method_, "euclidian");
         n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
         n.param<double>("point_count_theshold", point_count_theshold_, 0.5);
     }
@@ -82,7 +82,7 @@ namespace ns_lidar
 
             // Compute centroid of each cluster
             Eigen::Vector4f centroid;
-            pcl::compute3DCentroid(cone, centroid);
+            pcl::compute3DCentroid(*cone, centroid);
             pcl::PointXYZ centroid_pos;
             centroid_pos.x = centroid[0];
             centroid_pos.y = centroid[1];
@@ -113,7 +113,7 @@ namespace ns_lidar
             // If the closest cluster is close enough, add the point to the cluster
             if (closest_cluster_dist < 0.3)
             {
-                clusters[closest_cluster_id].push_back(point);
+                clusters[closest_cluster_id]->points.push_back(point);
             }
         }
 
