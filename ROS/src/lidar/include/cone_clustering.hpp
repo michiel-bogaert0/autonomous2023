@@ -1,6 +1,7 @@
 #ifndef CONECLUSTERING_HPP
 #define CONECLUSTERING_HPP
 
+#include "geometry_msgs/Point32.h"
 #include "sensor_msgs/PointCloud.h"
 #include <pcl/common/common.h>
 #include <pcl/common/transforms.h>
@@ -9,6 +10,12 @@
 
 namespace ns_lidar
 {
+    typedef struct
+    {
+        geometry_msgs::Point32 pos;
+        bool is_cone;
+    } ConeCheck;
+
     class ConeClustering
     {
 
@@ -24,7 +31,9 @@ namespace ns_lidar
         ros::NodeHandle &n_;
 
         double cluster_tolerance_; // The cone clustering tolerance (m)
+        double point_count_theshold_; // How much % can the cone point count prediction be off from the actual count 
 
+        ConeCheck isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone);
         float hypot3d(float a, float b, float c);
     };
 }

@@ -8,7 +8,8 @@ namespace ns_lidar
     ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n)
     {
         // Get parameters
-        n.param<double>("cluster_tolerance", cluster_tolerance_, 0.5);
+        n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
+        n.param<double>("point_count_theshold", point_count_theshold_, 0.5);
     }
 
     /**
@@ -51,24 +52,10 @@ namespace ns_lidar
             cone->height = 1;
             cone->is_dense = true;
 
-            Eigen::Vector4f centroid;
-            Eigen::Vector4f min;
-            Eigen::Vector4f max;
-            pcl::compute3DCentroid(*cone, centroid);
-            pcl::getMinMax3D(*cone, min, max);
-
-            float bound_x = std::fabs(max[0] - min[0]);
-            float bound_y = std::fabs(max[1] - min[1]);
-            float bound_z = std::fabs(max[2] - min[2]);
-
-            // filter based on the shape of cones
-            if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4 && centroid[2] < 0.4)
+            ConeCheck cone_check = ConeClustering::isCloudCone(*cone);
+            if (cone_check.is_cone)
             {
-                geometry_msgs::Point32 cone_pos;
-                cone_pos.x = centroid[0];
-                cone_pos.y = centroid[1];
-                cone_pos.z = centroid[2];
-                cluster.points.push_back(cone_pos);
+                cluster.points.push_back(cone_check.pos);
                 cone_channel.values.push_back(0); // TODO actually get the intensity
             }
         }
@@ -83,7 +70,7 @@ namespace ns_lidar
      *
      * This time using String Clustering.
      * @refer Broström, Carpenfelt
-     * 
+     *
      * @attention This code currently DOES NOT WORK
      *
      */
@@ -199,6 +186,55 @@ namespace ns_lidar
         return cluster_msg;
     }
 
+    /**
+     * @brief Checks whether a PC represents a cone
+     *
+     * @returns ConeCheck containing the cones coordinates and whether it is a cone
+     */
+    ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone)
+    {
+        ConeCheck cone_check;
+
+        Eigen::Vector4f centroid;
+        Eigen::Vector4f min;
+        Eigen::Vector4f max;
+        pcl::compute3DCentroid(cone, centroid);
+        pcl::getMinMax3D(cone, min, max);
+
+        float bound_x = std::fabs(max[0] - min[0]);
+        float bound_y = std::fabs(max[1] - min[1]);
+        float bound_z = std::fabs(max[2] - min[2]);
+
+        // filter based on the shape of cones
+        if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4 && centroid[2] < 0.4)
+        {
+
+            // Calculate the expected number of points that hit the cone
+            float dist = ConeClustering::hypot3d(centroid[0], centroid[1], centroid[2]);
+            // Using the AMZ formula with w_c = average of x and y widths and r_v=0.35° and r_h=2048 points per rotation
+            float num_points = (1 / 2.0f) * (bound_z / (2.0f * dist * std::tan(0.35 * M_PI / (2.0f * 180)))) * ((bound_x + bound_y) / (2.0f * 2 * dist * std::tan(2 * M_PI / (2.0f * 2048))));
+
+            // We allow for some play in the point count prediction
+            if (std::abs(num_points - cone.points.size()) / num_points < point_count_theshold_)
+            {
+
+                cone_check.pos.x = centroid[0];
+                cone_check.pos.y = centroid[1];
+                cone_check.pos.z = centroid[2];
+                cone_check.is_cone = true;
+
+                return cone_check;
+            }
+        }
+
+        cone_check.is_cone = false;
+        return cone_check;
+    }
+
+    /**
+     * @brief C++17 hypot extension for 3D coordinates
+     *
+     */
     float ConeClustering::hypot3d(float a, float b, float c)
     {
         return std::sqrt(a * a + b * b + c * c);
