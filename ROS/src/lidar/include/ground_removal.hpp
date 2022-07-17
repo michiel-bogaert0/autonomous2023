@@ -1,7 +1,6 @@
 #ifndef GROUNDREMOVAL_HPP
 #define GROUNDREMOVAL_HPP
 
-#include "sensor_msgs/PointCloud.h"
 #include <pcl/common/common.h>
 #include <pcl/common/transforms.h>
 #include <Eigen/Dense>

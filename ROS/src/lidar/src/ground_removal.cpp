@@ -15,19 +15,18 @@ namespace ns_lidar
         n.param<double>("sensor_height", sensor_height_, 0.5);
     }
 
+    /**
+     * @brief Removes ground points
+     *
+     * @refer: Based on the code https://github.com/chrise96/3D_Ground_Segmentation,
+     *   which in turn is based on a paper by Zermas et al.
+     *   "Fast segmentation of 3D point clouds: a paradigm on GroundRemoval data for Autonomous Vehicle Applications"
+     *
+     */
     void GroundRemoval::groundRemoval(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
                                       pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points,
                                       pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points)
     {
-        /**
-         * @brief Removes ground points
-         *
-         * @refer: Based on the code https://github.com/chrise96/3D_Ground_Segmentation,
-         *   which in turn is based on a paper by Zermas et al.
-         *   "Fast segmentation of 3D point clouds: a paradigm on GroundRemoval data for Autonomous Vehicle Applications"
-         *
-         */
-
         pcl::PointCloud<pcl::PointXYZI>::Ptr seed_points(new pcl::PointCloud<pcl::PointXYZI>());
 
         // 1. Extract initial ground seeds
@@ -85,13 +84,12 @@ namespace ns_lidar
         }
     }
 
+    /**
+     * @brief Use the set of seed points to estimate the initial plane model
+     * of the ground surface.
+     */
     model_t GroundRemoval::estimatePlane(const pcl::PointCloud<pcl::PointXYZI> &seed_points)
     {
-        /**
-         * @brief Use the set of seed points to estimate the initial plane model
-         * of the ground surface.
-         */
-
         Eigen::Matrix3f cov_matrix(3, 3);
         Eigen::Vector4f points_mean;
         model_t model;
@@ -114,13 +112,12 @@ namespace ns_lidar
         return model;
     }
 
+    /**
+     * @brief Extract a set of seed points with low height values.
+     */
     void GroundRemoval::extractInitialSeeds(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
                                             const pcl::PointCloud<pcl::PointXYZI>::Ptr seed_points)
     {
-        /**
-         * @brief Extract a set of seed points with low height values.
-         */
-
         // Sort on z-axis values (sortOnHeight)
         std::vector<pcl::PointXYZI> cloud_sorted((*cloud_in).points.begin(), (*cloud_in).points.end());
         sort(cloud_sorted.begin(), cloud_sorted.end(),
