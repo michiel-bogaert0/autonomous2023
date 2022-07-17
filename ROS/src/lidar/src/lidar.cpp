@@ -56,7 +56,7 @@ namespace ns_lidar
         sensor_msgs::PointCloud cluster;
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-        cluster = cone_clustering_.euclidianClustering(notground_points);
+        cluster = cone_clustering_.cluster(notground_points, ground_points);
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         double time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
         ROS_INFO("Clustering took: %lf", time_round);

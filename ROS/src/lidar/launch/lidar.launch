@@ -5,6 +5,8 @@
         <param name="th_seeds" value="0.05" />
         <param name="th_dist" value="0.05" />
         <param name="sensor_height" value="0.5" />
+
+        <param name="clustering_method" value="euclidian" />
         <param name="cluster_tolerance" value="0.4" />
         <param name="point_count_theshold" value="1" />
     </node>

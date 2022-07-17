@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <ros/ros.h>
 #include "cone_clustering.hpp"
 
@@ -8,8 +9,27 @@ namespace ns_lidar
     ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n)
     {
         // Get parameters
+        n.param<double>("clustering_method", clustering_method_, "euclidian");
         n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
         n.param<double>("point_count_theshold", point_count_theshold_, 0.5);
+    }
+
+    /**
+     * @brief Clusters the cones in the final filtered point cloud and generates a ROS message.
+     *
+     * The type of clustering that is applied is chosen by the clustering_method parameter.
+     */
+    sensor_msgs::PointCloud ConeClustering::cluster(
+        const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud, const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground)
+    {
+        sensor_msgs::PointCloud cluster_msg;
+
+        if (clustering_method_ == "string")
+            cluster_msg = ConeClustering::stringClustering(cloud);
+        else
+            cluster_msg = ConeClustering::euclidianClustering(cloud);
+
+        return cluster_msg;
     }
 
     /**
