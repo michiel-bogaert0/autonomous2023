@@ -1,3 +1,4 @@
+#include <chrono>
 #include <ros/ros.h>
 #include "lidar.hpp"
 
@@ -53,7 +54,14 @@ namespace ns_lidar
 
         // Cone clustering
         sensor_msgs::PointCloud cluster;
-        cluster = cone_clustering_.coneClustering(notground_points);
+
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+        cluster = cone_clustering_.stringClustering(notground_points);
+        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+        double time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
+        ROS_INFO("Clustering took: %lf", time_round);
+
+
         cluster.header.stamp = msg.header.stamp;
         ROS_INFO("Clustered points: %ld", cluster.points.size());
 
@@ -82,6 +90,7 @@ namespace ns_lidar
             // Remove points closer than 2m, higher than 0.5m or further than 20m
             if (std::hypot(iter.x, iter.y) < 2 || iter.z > 0.5 || std::hypot(iter.x, iter.y) > 20)
                 continue;
+
             preprocessed_pc->points.push_back(iter);
         }
     }

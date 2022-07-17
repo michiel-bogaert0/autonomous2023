@@ -15,13 +15,17 @@ namespace ns_lidar
     public:
         ConeClustering(ros::NodeHandle &n);
 
-        sensor_msgs::PointCloud coneClustering(
+        sensor_msgs::PointCloud euclidianClustering(
+            const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
+        sensor_msgs::PointCloud stringClustering(
             const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
 
     private:
         ros::NodeHandle &n_;
 
         double cluster_tolerance_; // The cone clustering tolerance (m)
+
+        float hypot3d(float a, float b, float c);
     };
 }
 
