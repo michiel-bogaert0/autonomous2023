@@ -8,7 +8,7 @@ int main(int argc, char **argv)
     ros::NodeHandle n("~");
 
     // Create a LIDAR class object
-    Lidar lidar(n);
+    ns_lidar::Lidar lidar(n);
 
     // Spin the node
     while (ros::ok())

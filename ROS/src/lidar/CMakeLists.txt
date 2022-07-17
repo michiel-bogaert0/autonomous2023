@@ -31,6 +31,7 @@ include_directories( /usr/include/eigen3 )
 
 add_executable(${PROJECT_NAME}
   src/lidar.cpp
+  src/ground_removal.cpp
   src/run.cpp
   )
 target_link_libraries(${PROJECT_NAME}
