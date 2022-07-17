@@ -87,8 +87,8 @@ namespace ns_lidar
         // Clean up the points belonging to the car and noise in the sky
         for (auto &iter : raw.points)
         {
-            // Remove points closer than 2m, higher than 0.5m or further than 20m
-            if (std::hypot(iter.x, iter.y) < 2 || iter.z > 0.5 || std::hypot(iter.x, iter.y) > 20)
+            // Remove points closer than 2m, higher than 0.6m or further than 20m
+            if (std::hypot(iter.x, iter.y) < 2 || iter.z > 0.6 || std::hypot(iter.x, iter.y) > 20)
                 continue;
 
             preprocessed_pc->points.push_back(iter);
