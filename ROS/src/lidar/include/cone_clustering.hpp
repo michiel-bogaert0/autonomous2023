@@ -34,7 +34,8 @@ namespace ns_lidar
         double point_count_theshold_; // How much % can the cone point count prediction be off from the actual count 
 
         sensor_msgs::PointCloud euclidianClustering(
-            const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
+            const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
+            const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground);
         sensor_msgs::PointCloud stringClustering(
             const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
         ConeCheck isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone);
