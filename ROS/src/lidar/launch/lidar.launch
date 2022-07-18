@@ -1,0 +1,13 @@
+<launch>
+    <node pkg="lidar" type="lidar" name="lidar" output="screen">
+        <param name="num_iter" value="3" />
+        <param name="num_lpr" value="250" />
+        <param name="th_seeds" value="0.05" />
+        <param name="th_dist" value="0.05" />
+        <param name="sensor_height" value="0.5" />
+
+        <param name="clustering_method" value="euclidian" />
+        <param name="cluster_tolerance" value="0.4" />
+        <param name="point_count_theshold" value="1" />
+    </node>
+</launch>
