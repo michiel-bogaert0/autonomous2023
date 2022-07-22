@@ -39,6 +39,7 @@ namespace ns_lidar
         sensor_msgs::PointCloud2 preprocessed_msg;
         pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
         preprocessed_msg.header.stamp = msg.header.stamp;
+        preprocessed_msg.header.frame_id = "os_lidar";
         preprocessedLidarPublisher_.publish(preprocessed_msg);
 
         // Ground plane removal
