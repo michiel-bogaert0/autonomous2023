@@ -39,7 +39,7 @@ namespace ns_lidar
         sensor_msgs::PointCloud2 preprocessed_msg;
         pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
         preprocessed_msg.header.stamp = msg.header.stamp;
-        preprocessed_msg.header.frame_id = "os_lidar";
+        preprocessed_msg.header.frame_id = msg.header.frame_id;
         preprocessedLidarPublisher_.publish(preprocessed_msg);
 
         // Ground plane removal
@@ -50,6 +50,7 @@ namespace ns_lidar
 
         sensor_msgs::PointCloud2 groundremoval_msg;
         pcl::toROSMsg(*notground_points, groundremoval_msg);
+        groundremoval_msg.header.frame_id = msg.header.frame_id;
         groundremoval_msg.header.stamp = msg.header.stamp;
         groundRemovalLidarPublisher_.publish(groundremoval_msg);
 
@@ -62,7 +63,7 @@ namespace ns_lidar
         double time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
         ROS_INFO("Clustering took: %lf", time_round);
 
-
+        cluster.header.frame_id = msg.header.frame_id;
         cluster.header.stamp = msg.header.stamp;
         ROS_INFO("Clustered points: %ld", cluster.points.size());
 
