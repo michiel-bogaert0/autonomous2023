@@ -16,5 +16,8 @@ core
 build/
 devel/
 
+# Python
+*.whl
+
 # FSDS
 AirSim/
