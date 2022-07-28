@@ -3,9 +3,6 @@
 #include <ros/ros.h>
 #include "cone_clustering.hpp"
 
-#include <iostream>
-#include <fstream>
-
 #define VERT_RES_TAN std::tan(0.35 * M_PI / (2.0f * 180))
 #define HOR_RES_TAN std::tan(2 * M_PI / (2.0f * 2048))
 
@@ -31,11 +28,11 @@ namespace ns_lidar
     {
         sensor_msgs::PointCloud cluster_msg;
 
-        // if (clustering_method_ == "string")
+        // if (clustering_method_ == "string"){
             cluster_msg = ConeClustering::stringClustering(cloud);
-        // else
-            // cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
-
+        // else{
+        //     cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
+        // }
 
         return cluster_msg;
     }
@@ -149,6 +146,8 @@ namespace ns_lidar
     sensor_msgs::PointCloud ConeClustering::stringClustering(
         const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud)
     {
+
+        ROS_INFO("string clustering");
         std::sort(cloud->begin(), cloud->end(), ConeClustering::anglesort);
         std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters;
         std::vector<pcl::PointXYZI> cluster_rightmost; // The rightmost point in each cluster
@@ -256,7 +255,7 @@ namespace ns_lidar
             pcl::compute3DCentroid(cluster, centroid);
 
             // Filter based on the shape of cones
-            if (centroid[2] < 0.4 && cluster.size() > 20)
+            if (ConeClustering::isCloudCone(cluster).is_cone && cluster.size() > 10)
             {
                 geometry_msgs::Point32 cone_pos;
                 cone_pos.x = centroid[0];
@@ -290,8 +289,20 @@ namespace ns_lidar
         float bound_y = std::fabs(max[1] - min[1]);
         float bound_z = std::fabs(max[2] - min[2]);
 
+
+        int lower_half = 0;
+        int upper_half = 0;
+        for(pcl::PointXYZI point : cone){
+            if(point.z < min[2] + 0.2){
+                lower_half += 1;
+            }
+            else{
+                upper_half +=1;
+            }
+        }
+
         // filter based on the shape of cones
-        if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4 && centroid[2] < 0.4)
+        if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4 && centroid[2] < 0.4 && lower_half > 2*upper_half)
         {
             // Calculate the expected number of points that hit the cone
             float dist = ConeClustering::hypot3d(centroid[0], centroid[1], centroid[2]);
