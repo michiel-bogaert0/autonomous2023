@@ -3,6 +3,9 @@
 #include <ros/ros.h>
 #include "cone_clustering.hpp"
 
+#include <iostream>
+#include <fstream>
+
 #define VERT_RES_TAN std::tan(0.35 * M_PI / (2.0f * 180))
 #define HOR_RES_TAN std::tan(2 * M_PI / (2.0f * 2048))
 
@@ -12,7 +15,7 @@ namespace ns_lidar
     ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n)
     {
         // Get parameters
-        n.param<std::string>("clustering_method", clustering_method_, "euclidian");
+        n.param<std::string>("clustering_method", clustering_method_, "string");
         n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
         n.param<double>("point_count_theshold", point_count_theshold_, 0.5);
     }
@@ -28,10 +31,11 @@ namespace ns_lidar
     {
         sensor_msgs::PointCloud cluster_msg;
 
-        if (clustering_method_ == "string")
+        // if (clustering_method_ == "string")
             cluster_msg = ConeClustering::stringClustering(cloud);
-        else
-            cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
+        // else
+            // cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
+
 
         return cluster_msg;
     }
@@ -145,8 +149,10 @@ namespace ns_lidar
     sensor_msgs::PointCloud ConeClustering::stringClustering(
         const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud)
     {
+        std::sort(cloud->begin(), cloud->end(), ConeClustering::anglesort);
         std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters;
         std::vector<pcl::PointXYZI> cluster_rightmost; // The rightmost point in each cluster
+        std::vector<pcl::PointCloud<pcl::PointXYZI>> finished_clusters;
 
         // Iterate over all points, up and down, left to right (elevation & azimuth)
         for (uint16_t i = 0; i < cloud->points.size(); i++)
@@ -154,7 +160,8 @@ namespace ns_lidar
             pcl::PointXYZI point = cloud->points[i];
 
             std::vector<uint16_t> clusters_to_keep; // These cluster ids will be kept at the end of this clustering because they can still contain a cone
-
+            
+            
             bool found_cluster = false;
 
             // Iterate over the rightmost point in each cluster
@@ -199,6 +206,13 @@ namespace ns_lidar
                         clusters_to_keep.push_back(cluster_id);
                     }
                 }
+                else{
+                    if(rightmost.y + 0.285 < point.y){
+                        finished_clusters.push_back(clusters[cluster_id]);
+                    }else{
+                         clusters_to_keep.push_back(cluster_id);
+                    }
+                }
             }
 
             // Remove clusters that cannot represent a cone
@@ -223,6 +237,9 @@ namespace ns_lidar
                 cluster_rightmost.push_back(point);
             }
         }
+        for(pcl::PointCloud<pcl::PointXYZI> cluster: finished_clusters){
+            clusters.push_back(cluster);
+        }
 
         // From the clusters we found, now generate their centroid and add it to the ROS message
 
@@ -239,7 +256,7 @@ namespace ns_lidar
             pcl::compute3DCentroid(cluster, centroid);
 
             // Filter based on the shape of cones
-            if (centroid[2] < 0.4)
+            if (centroid[2] < 0.4 && cluster.size() > 20)
             {
                 geometry_msgs::Point32 cone_pos;
                 cone_pos.x = centroid[0];

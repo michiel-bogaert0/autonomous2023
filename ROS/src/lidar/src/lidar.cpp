@@ -89,7 +89,7 @@ namespace ns_lidar
         for (auto &iter : raw.points)
         {
             // Remove points closer than 1m, higher than 0.6m or further than 20m
-            if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.6 || std::hypot(iter.x, iter.y) > 20)
+            if (std::hypot(iter.x, iter.y) < 1 || iter.z > 1 || std::hypot(iter.x, iter.y) > 20)
                 continue;
 
             preprocessed_pc->points.push_back(iter);

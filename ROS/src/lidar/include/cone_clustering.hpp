@@ -40,6 +40,15 @@ namespace ns_lidar
             const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
         ConeCheck isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone);
         float hypot3d(float a, float b, float c);
+        float arctan(float x, float y);
+        struct{
+            bool operator()(pcl::PointXYZI a , pcl::PointXYZI b) const {
+                // double a_val =  std::fmod(std::atan2(a.x, a.y) + (a.y<0)*M_PI,(2*M_PI));
+                // double b_val =  std::fmod(std::atan2(b.x, b.y) + (b.y<0)*M_PI,(2*M_PI));
+                // return a_val > b_val;
+                return a.y < b.y;
+            }
+        } anglesort;
     };
 }
 
