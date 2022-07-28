@@ -31,7 +31,7 @@ namespace ns_lidar
         // if (clustering_method_ == "string"){
             cluster_msg = ConeClustering::stringClustering(cloud);
         // else{
-        //     cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
+            // cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
         // }
 
         return cluster_msg;
@@ -147,8 +147,9 @@ namespace ns_lidar
         const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud)
     {
 
-        ROS_INFO("string clustering");
-        std::sort(cloud->begin(), cloud->end(), ConeClustering::anglesort);
+        //sort point from left to right (because they are orderen in concentric circles)
+        std::sort(cloud->begin(), cloud->end(), ConeClustering::leftrightsort);
+
         std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters;
         std::vector<pcl::PointXYZI> cluster_rightmost; // The rightmost point in each cluster
         std::vector<pcl::PointCloud<pcl::PointXYZI>> finished_clusters;
@@ -205,9 +206,13 @@ namespace ns_lidar
                         clusters_to_keep.push_back(cluster_id);
                     }
                 }
+                //filter other clusters
                 else{
+                    //cluster to far to the left to be considered when adding new points
                     if(rightmost.y + 0.285 < point.y){
                         finished_clusters.push_back(clusters[cluster_id]);
+
+                    //cluster still needs to be consideren
                     }else{
                          clusters_to_keep.push_back(cluster_id);
                     }
@@ -236,6 +241,8 @@ namespace ns_lidar
                 cluster_rightmost.push_back(point);
             }
         }
+
+        //add the cluster that where put aside because they were located to far to the left
         for(pcl::PointCloud<pcl::PointXYZI> cluster: finished_clusters){
             clusters.push_back(cluster);
         }
@@ -249,19 +256,10 @@ namespace ns_lidar
 
         for (pcl::PointCloud<pcl::PointXYZI> cluster : clusters)
         {
-            Eigen::Vector4f centroid;
-            Eigen::Vector4f min;
-            Eigen::Vector4f max;
-            pcl::compute3DCentroid(cluster, centroid);
-
-            // Filter based on the shape of cones
-            if (ConeClustering::isCloudCone(cluster).is_cone && cluster.size() > 10)
+            ConeCheck cone_check = ConeClustering::isCloudCone(cluster);
+            if (cone_check.is_cone && cluster.size() > 10)
             {
-                geometry_msgs::Point32 cone_pos;
-                cone_pos.x = centroid[0];
-                cone_pos.y = centroid[1];
-                cone_pos.z = centroid[2];
-                cluster_msg.points.push_back(cone_pos);
+                cluster_msg.points.push_back(cone_check.pos);
                 cone_channel.values.push_back(0); // TODO actually get the intensity
             }
         }
