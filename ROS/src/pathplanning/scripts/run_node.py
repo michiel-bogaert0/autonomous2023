@@ -25,7 +25,7 @@ logging_config = dict(
         },
         "warning_handler": {
             "class": "logging.FileHandler",
-            "filename": "pathfinding.log",
+            "filename": "pathplanner.log",
             "formatter": "with_time",
             "level": logging.WARNING,
         },
@@ -43,7 +43,8 @@ class PathPlanning(ROSNode):
     def __init__(self) -> None:
         super().__init__("exploration_mapping", False)
 
-        MAP_TOPIC = "/pathfinding/local/map"
+        MAP_TOPIC = "/pathplanning/local/map"
+        OUTPUT_TOPIC = "/pathplanning/path"
 
         self.params = {}
         self.params["algo"] = rospy.get_param("expand_dist", "tri")
@@ -108,7 +109,7 @@ class PathPlanning(ROSNode):
         except:
             pass
 
-        # TODO: publish to some topic
+        # TODO: publish to some topic in some format?
 
 
 node = PathPlanning()

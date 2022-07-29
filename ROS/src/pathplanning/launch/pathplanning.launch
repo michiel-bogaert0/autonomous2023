@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="pathplanning" type="run_node.py" name="pathplanning" respawn="true" />
+        <!-- TODO: Supply params -->
+        <remap from="localmap" to="/pathfinding/local/map"/>
+        <remap from="/pathplanning/path" to="output"/>
+    </node>
+</launch>
