@@ -14,6 +14,7 @@ namespace ns_lidar
     {
         geometry_msgs::Point32 pos;
         bool is_cone;
+        float color;
     } ConeCheck;
 
     class ConeClustering
@@ -31,12 +32,16 @@ namespace ns_lidar
 
         std::string clustering_method_; // Default: euclidian, others: string
         double cluster_tolerance_; // The cone clustering tolerance (m)
-        double point_count_theshold_; // How much % can the cone point count prediction be off from the actual count 
+        double point_count_theshold_;
+        double min_distance_factor_;
+        int min_number_points_threshold_;// How much % can the cone point count prediction be off from the actual count 
 
         sensor_msgs::PointCloud euclidianClustering(
             const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
             const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground);
         sensor_msgs::PointCloud stringClustering(
+            const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
+        sensor_msgs::PointCloud stringClustering2(
             const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
         ConeCheck isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone);
         float hypot3d(float a, float b, float c);

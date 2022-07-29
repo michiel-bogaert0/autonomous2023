@@ -15,6 +15,8 @@ namespace ns_lidar
         n.param<std::string>("clustering_method", clustering_method_, "string");
         n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
         n.param<double>("point_count_theshold", point_count_theshold_, 0.5);
+        n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
+        n.param<int> ("min_number_points_threshold",min_number_points_threshold_,10);
     }
 
     /**
@@ -27,12 +29,12 @@ namespace ns_lidar
         const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground)
     {
         sensor_msgs::PointCloud cluster_msg;
-
-        // if (clustering_method_ == "string"){
+        if (clustering_method_ == "string"){
             cluster_msg = ConeClustering::stringClustering(cloud);
-        // else{
-            // cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
-        // }
+        }
+        else{
+            cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
+        }
 
         return cluster_msg;
     }
@@ -140,14 +142,13 @@ namespace ns_lidar
      * This time using String Clustering.
      * @refer Broström, Carpenfelt
      *
-     * @attention This code currently DOES NOT WORK
      *
      */
     sensor_msgs::PointCloud ConeClustering::stringClustering(
         const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud)
     {
 
-        //sort point from left to right (because they are orderen in concentric circles)
+        //sort point from left to right (because they are ordered in concentric circles)
         std::sort(cloud->begin(), cloud->end(), ConeClustering::leftrightsort);
 
         std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters;
@@ -177,7 +178,7 @@ namespace ns_lidar
                 float dist = std::max(delta_r, delta_arc);
 
                 // A cone is max 285mm wide, check whether this point is within that distance from the rightmost point in each cluster
-                if (dist < 0.285)
+                if (dist < 0.285*min_distance_factor_)
                 {
                     found_cluster = true;
 
@@ -212,7 +213,7 @@ namespace ns_lidar
                     if(rightmost.y + 0.285 < point.y){
                         finished_clusters.push_back(clusters[cluster_id]);
 
-                    //cluster still needs to be consideren
+                    //cluster still needs to be considered
                     }else{
                          clusters_to_keep.push_back(cluster_id);
                     }
@@ -257,10 +258,10 @@ namespace ns_lidar
         for (pcl::PointCloud<pcl::PointXYZI> cluster : clusters)
         {
             ConeCheck cone_check = ConeClustering::isCloudCone(cluster);
-            if (cone_check.is_cone && cluster.size() > 10)
+            if (cone_check.is_cone && cluster.size() > min_number_points_threshold_)
             {
                 cluster_msg.points.push_back(cone_check.pos);
-                cone_channel.values.push_back(0); // TODO actually get the intensity
+                cone_channel.values.push_back(cone_check.color); // TODO actually get the intensity
             }
         }
         cluster_msg.channels.push_back(cone_channel);
@@ -288,19 +289,34 @@ namespace ns_lidar
         float bound_z = std::fabs(max[2] - min[2]);
 
 
-        int lower_half = 0;
-        int upper_half = 0;
+        float count_bottom = 0;
+        float count_middle = 0;
+        float count_top = 0;
+        double intensity_bottom = 0.0;
+        double intensity_middle = 0.0;
+        double intensity_top = 0.0;
         for(pcl::PointXYZI point : cone){
-            if(point.z < min[2] + 0.2){
-                lower_half += 1;
+            if(point.z < min[2] + 0.14){
+                intensity_bottom += point.intensity;
+                count_bottom++;
+            }
+            else if (point.z < min[2] + 0.28){
+                intensity_middle += point.intensity;
+                count_middle++;
             }
             else{
-                upper_half +=1;
+                intensity_top += point.intensity;
+                count_top++;
             }
+
         }
 
+        intensity_bottom /= count_bottom;
+        intensity_top /= count_top;
+        intensity_middle /= count_middle;
+
         // filter based on the shape of cones
-        if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4 && centroid[2] < 0.4 && lower_half > 2*upper_half)
+        if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4 && centroid[2] < 0.4)
         {
             // Calculate the expected number of points that hit the cone
             float dist = ConeClustering::hypot3d(centroid[0], centroid[1], centroid[2]);
@@ -314,6 +330,12 @@ namespace ns_lidar
                 cone_check.pos.y = centroid[1];
                 cone_check.pos.z = centroid[2];
                 cone_check.is_cone = true;
+                if(intensity_middle < intensity_top && intensity_middle < intensity_bottom)
+                    cone_check.color = 1.0;
+                else if(intensity_middle > intensity_top && intensity_middle > intensity_bottom)
+                    cone_check.color = 0.0;
+                else
+                    cone_check.color = 0.5;
 
                 return cone_check;
             }
