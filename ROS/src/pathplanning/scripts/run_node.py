@@ -109,7 +109,7 @@ class PathPlanning(ROSNode):
         except:
             pass
 
-        # TODO: publish to some topic in some format?
+        # TODO: publish to OUTPUT_TOPIC in some format?
 
 
 node = PathPlanning()
