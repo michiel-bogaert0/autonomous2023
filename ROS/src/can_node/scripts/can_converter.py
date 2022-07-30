@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 
-from math import pi
+import numpy as np
 import rospy
 import can
 import struct
 from std_msgs.msg import String
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import TwistWithCovarianceStamped, TwistWithCovariance, Twist
 
 WHEEL_DIAMETER = 8 * 2.54 / 100 # in m
 
-class CanPublisher:
-
+class CanConverter:
     def __init__(self):
         rospy.init_node("jetson_can")
         self.can_pub = rospy.Publisher("/can_messages", String, queue_size=10)
+        self.vel_left = rospy.Publisher("/mechatronics/wheel_encoder/left", TwistWithCovarianceStamped, queue_size=10)
+        self.vel_right = rospy.Publisher("/mechatronics/wheel_encoder/right", TwistWithCovarianceStamped, queue_size=10)
 
         # create a bus instance
         self.bus = can.interface.Bus(
@@ -42,14 +43,22 @@ class CanPublisher:
 
                 if cmd_id == 9:
                     # Encoder estimate
-                    twist_msg = TwistStamped()
+                    twist_msg = TwistWithCovarianceStamped()
+                    twist_msg.header.frame_id = 'lowiek_gaat_dit_weten'
+                    twist_msg.twist = TwistWithCovariance()
+                    twist_msg.twist.covariance = np.eye(6)
+                    twist_msg.twist.twist = Twist()
                     
                     speed = struct.unpack('f', msg.data[4:]) # in rev/s
-                    speed *= pi * WHEEL_DIAMETER
+                    speed *= np.pi * WHEEL_DIAMETER
+                    twist_msg.twist.twist.linear.x = speed
 
-                    twist_msg.twist.linear.x = speed
-
-                    # TODO: use both wheels data?
+                    if axis_id == 1:
+                        self.vel_right(twist_msg)
+                    elif axis_id == 2:
+                        self.vel_left(twist_msg)
+                    
+                    continue
             
 
             # If the message was not recognised, just post it to the general topic
@@ -74,6 +83,6 @@ class CanPublisher:
 
 if __name__ == "__main__":
     try:
-        cp = CanPublisher()
+        cp = CanConverter()
     except rospy.ROSInterruptException:
         pass
