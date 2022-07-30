@@ -3,11 +3,14 @@
 import numpy as np
 import rospy
 import can
+import cantools
 import struct
 from std_msgs.msg import String
 from geometry_msgs.msg import TwistWithCovarianceStamped, TwistWithCovariance, Twist
 
 WHEEL_DIAMETER = 8 * 2.54 / 100 # in m
+
+odrive_db = cantools.database.load_file('../odrive.dbc')
 
 class CanConverter:
     def __init__(self):
@@ -37,11 +40,14 @@ class CanConverter:
             # Publish message on ROS
 
             # Check if the message is a ODrive command
-            axis_id = (msg.arbitration_id >> 5) & 0b1
+            axis_id = msg.arbitration_id >> 5
             if axis_id == 1 or axis_id == 2:
                 cmd_id = msg.arbitration_id & 0b11111
 
                 if cmd_id == 9:
+
+                    can_msg = odrive_db.decode_message(cmd_id, msg.data)
+
                     # Encoder estimate
                     twist_msg = TwistWithCovarianceStamped()
                     twist_msg.header.frame_id = 'lowiek_gaat_dit_weten'
@@ -49,7 +55,7 @@ class CanConverter:
                     twist_msg.twist.covariance = np.eye(6)
                     twist_msg.twist.twist = Twist()
                     
-                    speed = struct.unpack('f', msg.data[4:]) # in rev/s
+                    speed = can_msg['Vel_Estimate'] # in rev/s
                     speed *= np.pi * WHEEL_DIAMETER
                     twist_msg.twist.twist.linear.x = speed
 
