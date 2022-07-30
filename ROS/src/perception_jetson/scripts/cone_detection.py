@@ -12,7 +12,7 @@ from yolov5.output import BoundingBox as YOLOVBoundingBox
 
 class ConeDetector:
     def __init__(self, device: str):
-        model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolo.pt"
+        model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolo.engine"
         data_path = (
             Path(os.getenv("BINARY_LOCATION")) / "perception_data" / "ugr_dataset.yaml"
         )
