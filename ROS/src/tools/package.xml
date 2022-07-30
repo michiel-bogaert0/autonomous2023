@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>tools</name>
+  <version>0.0.0</version>
+  <description>The tools package</description>
+
+  <maintainer email="tristan.dhoedt@ugentracing.be">Tristan</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+
+
+  </export>
+</package>
