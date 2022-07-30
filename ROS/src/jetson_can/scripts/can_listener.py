@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 
+from math import pi
 import rospy
 import can
-import time
+import struct
 from std_msgs.msg import String
+from geometry_msgs.msg import TwistStamped
+
+WHEEL_DIAMETER = 8 * 2.54 / 100 # in m
 
 class CanPublisher:
 
     def __init__(self):
         rospy.init_node("jetson_can")
-        pub = rospy.Publisher("/diagnostics", String, queue_size=10)
+        self.can_pub = rospy.Publisher("/can_messages", String, queue_size=10)
 
         # create a bus instance
         self.bus = can.interface.Bus(
@@ -17,17 +21,6 @@ class CanPublisher:
             channel=rospy.get_param("~interface", "can0"),
             bitrate=rospy.get_param("~baudrate", 1000000),
         )
-
-        while True:
-            
-            # Check for external shutdown
-            if rospy.is_shutdown():
-                return
-                
-            # Send back a test message
-            self.send_on_can(can.Message(arbitration_id=0x41, data=[0, 0, 0, 0, 63, 0, 0, 0]))
-
-            time.sleep(1)
 
         try:
             self.listen_on_can()
@@ -41,7 +34,26 @@ class CanPublisher:
         # this keeps looping forever
         for msg in self.bus:
             # Publish message on ROS
-            pub.publish(f"[{msg.arbitration_id}] {msg.data.hex()}")
+
+            # Check if the message is a ODrive command
+            axis_id = (msg.arbitration_id >> 5) & 0b1
+            if axis_id == 1 or axis_id == 2:
+                cmd_id = msg.arbitration_id & 0b11111
+
+                if cmd_id == 9:
+                    # Encoder estimate
+                    twist_msg = TwistStamped()
+                    
+                    speed = struct.unpack('f', msg.data[4:]) # in rev/s
+                    speed *= pi * WHEEL_DIAMETER
+
+                    twist_msg.twist.linear.x = speed
+
+                    # TODO: use both wheels data?
+            
+
+            # If the message was not recognised, just post it to the general topic
+            self.can_pub.publish(f"{msg.timestamp} - [{msg.arbitration_id}] {msg.data.hex()}")
 
             # Check for external shutdown
             if rospy.is_shutdown():
