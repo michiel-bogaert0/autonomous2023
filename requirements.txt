@@ -10,16 +10,12 @@ numpy
 pybind11[global]
 
 # Perception
-# YOLOv5
-# tools/yolov5
 torch
 torchvision
 seaborn
 pytorch-lighting
-
-
-# Keypoint detection
-tools/keypoint_detector
+tqdm
+cython
 
 # Jetson CAN
 python-can==4.0.0
