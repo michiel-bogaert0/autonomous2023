@@ -7,7 +7,7 @@ __pycache__/
 .vscode
 *venv/
 
-# ROS specific
+# ROS
 .catkin_tools/
 *.egg-info
 core
@@ -16,3 +16,9 @@ core
 *.bag
 build/
 devel/
+
+# Python
+*.whl
+
+# FSDS
+AirSim/
