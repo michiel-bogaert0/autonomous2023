@@ -30,8 +30,11 @@ sudo apt-get install -y ros-noetic-tf2-geometry-msgs \
     ros-noetic-tf2-geometry-msgs \
     ros-noetic-robot-localization \
     ros-noetic-laser-assembler \
+    ros-noetic-perception-pcl \
     libyaml-cpp-dev \
-    libcurl4-openssl-dev
+    libcurl4-openssl-dev \
+    python3-pcl \
+    pcl-tools
 
 # Install AirSim deps
 AirSim/setup.sh
