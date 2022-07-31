@@ -1,6 +1,7 @@
+from collections import deque
+
 import numpy as np
 import scipy.spatial
-from collections import deque
 
 
 class Map:
@@ -60,7 +61,9 @@ class Map:
 
         # Then landmark classes
         new_classes = np.zeros((self.amount, self.expected_nr_of_landmarks), dtype=int)
-        self.landmark_classes = np.concatenate((self.landmark_classes, new_classes), axis=1)
+        self.landmark_classes = np.concatenate(
+            (self.landmark_classes, new_classes), axis=1
+        )
 
         self.supported_nr_of_landmarks += self.expected_nr_of_landmarks
 
@@ -94,7 +97,7 @@ class Map:
         # Add it to the map
         offset = len(self)
         self.landmarks[map_id, :, 3 * offset : (offset + 1) * 3] = landmark
-        
+
         self.landmark_classes[map_id, offset] = landmark_class
         self.scores[map_id, offset] = score
 
@@ -102,10 +105,10 @@ class Map:
 
         # Reset kdtree
         self.kdtree[map_id] = None
-    
+
     def remove_landmark(self, offset: float):
-        """ 
-        Removes a landmark from the map. This is actually quite a costly operation 
+        """
+        Removes a landmark from the map. This is actually quite a costly operation
         because it has to make sure the landmark array does not contain gaps
 
         Args:
@@ -114,12 +117,17 @@ class Map:
 
         map_id = self.map_id
 
-        self.landmarks[map_id, :, 3 * offset : 3 * (len(self) - 1)] = self.landmarks[map_id, :, 3 * (offset + 1) : 3 * len(self)]
-        
-        self.scores[map_id, offset : len(self) - 1] = self.scores[map_id, offset + 1, len(self)]
-        self.landmark_classes[map_id, offset : len(self) - 1] = self.landmark_classes[map_id, offset + 1, len(self)]
+        self.landmarks[map_id, :, 3 * offset : 3 * (len(self) - 1)] = self.landmarks[
+            map_id, :, 3 * (offset + 1) : 3 * len(self)
+        ]
+
+        self.scores[map_id, offset : len(self) - 1] = self.scores[
+            map_id, offset + 1, len(self)
+        ]
+        self.landmark_classes[map_id, offset : len(self) - 1] = self.landmark_classes[
+            map_id, offset + 1, len(self)
+        ]
         self.sizes[map_id] -= 1
-        
 
     """
     Simple getters and setters

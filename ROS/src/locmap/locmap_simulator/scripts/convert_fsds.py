@@ -20,7 +20,9 @@ class Convert(ROSNode):
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/car_map")
         self.gt_world_frame = rospy.get_param("~gt_world_frame", "ugr/gt_car_map")
-        self.gt_base_link_frame = rospy.get_param("~gt_base_link_frame", "ugr/gt_car_base_link")
+        self.gt_base_link_frame = rospy.get_param(
+            "~gt_base_link_frame", "ugr/gt_car_base_link"
+        )
         self.max_mean = rospy.get_param("~max_mean", 1.0)
         self.min_mean = rospy.get_param("~min_mean", 0.0)
         self.mean_rate = rospy.get_param("~mean_rate", 0.1)

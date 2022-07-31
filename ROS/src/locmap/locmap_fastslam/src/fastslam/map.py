@@ -1,6 +1,7 @@
+from collections import deque
+
 import numpy as np
 import scipy.spatial
-from collections import deque
 
 
 class Map:

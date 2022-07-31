@@ -7,10 +7,9 @@ from fs_msgs.msg import Track
 from geometry_msgs.msg import Point, Quaternion
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, DataLatch, ROSNode
+from StageSimulator import StageSimulator
 from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import Observation, Observations
-
-from StageSimulator import StageSimulator
 
 
 class PerceptionSimulator(StageSimulator):

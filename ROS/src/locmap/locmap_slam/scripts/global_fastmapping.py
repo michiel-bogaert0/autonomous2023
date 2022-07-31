@@ -38,14 +38,14 @@ class GlobalFastMapping(SLAMNode):
 
     def get_predictions(self):
         """
-        Returns: 
+        Returns:
             A tuple of:
             - predicted state
             - predicted map
             - landmark classes
             - predicted path
             - particle states
-            - particle weights 
+            - particle weights
         """
         map = self.fastmapping.get_map()
         return (

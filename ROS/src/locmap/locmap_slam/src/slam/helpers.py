@@ -1,5 +1,5 @@
-from ugr_msgs.msg import Observations
 import numpy as np
+from ugr_msgs.msg import Observations
 
 
 def observations_to_range_bearings(observations: Observations):
@@ -14,7 +14,7 @@ def observations_to_range_bearings(observations: Observations):
     obs_bearings = np.zeros((len(observations.observations), 3))
     indices = np.zeros(len(observations.observations), dtype=bool)
     for i, obs in enumerate(observations.observations):
-        d = np.sqrt(obs.location.x**2 + obs.location.y**2)
+        d = np.sqrt(obs.location.x ** 2 + obs.location.y ** 2)
 
         indices[i] = True
 

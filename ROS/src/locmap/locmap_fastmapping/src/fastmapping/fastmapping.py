@@ -1,9 +1,9 @@
 import warnings
 
+import numpy as np
+
 from .helper import Helpers
 from .map import Map
-
-import numpy as np
 
 
 class FastMapping:

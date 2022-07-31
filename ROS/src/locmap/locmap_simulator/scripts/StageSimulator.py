@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from abc import ABC, abstractmethod
+
 import rospy
 from node_fixture.node_fixture import ROSNode
 

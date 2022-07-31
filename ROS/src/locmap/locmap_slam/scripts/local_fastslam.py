@@ -5,18 +5,19 @@ from collections import deque
 import numpy as np
 import rospy
 from fastslam.fastslam import FastSLAM
+from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from slam.helpers import observations_to_range_bearings
 from slam.slam import SLAMNode
-from ugr_msgs.msg import Observations
 from tf.transformations import euler_from_quaternion
-from geometry_msgs.msg import TransformStamped
+from ugr_msgs.msg import Observations
 
 
 class LocalFastSLAM(SLAMNode):
     """
     This is the SLAMNode implementation of FastSLAM 1.0
     """
+
     def __init__(self):
         super().__init__("local_fastslam")
 
@@ -56,14 +57,14 @@ class LocalFastSLAM(SLAMNode):
 
     def get_predictions(self):
         """
-        Returns: 
+        Returns:
             A tuple of:
             - predicted state
             - predicted map
             - landmark classes
             - predicted path
             - particle states
-            - particle weights 
+            - particle weights
         """
         (
             state_prediction,

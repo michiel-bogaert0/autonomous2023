@@ -3,8 +3,9 @@ import numpy as np
 """
 Class with general helper functions for FastSLAM
 """
+
+
 class Helpers:
-    
     @staticmethod
     def calculate_landmark_jacobian(landmark, pose):
         """
@@ -80,12 +81,12 @@ class Helpers:
         """
         H = np.zeros((2, 5))
         H_sub = Helpers.calculate_landmark_jacobian(landmark, pose)
-        
+
         H[:, :2] = H_sub
         H[:, 2:4] = -1 * H_sub
         H[1, 4] = -1
 
-        return H        
+        return H
 
     @staticmethod
     def calculate_observation_jacobians(observations, pose):
