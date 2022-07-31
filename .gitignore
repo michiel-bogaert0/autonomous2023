@@ -15,6 +15,10 @@ core
 *.bag
 build/
 devel/
+logs/
+
+# Python
+*.whl
 
 # FSDS
 AirSim/

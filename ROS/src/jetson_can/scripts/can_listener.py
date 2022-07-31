@@ -5,8 +5,8 @@ import can
 import time
 from std_msgs.msg import String
 
-class CanPublisher:
 
+class CanPublisher:
     def __init__(self):
         rospy.init_node("jetson_can")
         pub = rospy.Publisher("/diagnostics", String, queue_size=10)
@@ -19,13 +19,15 @@ class CanPublisher:
         )
 
         while True:
-            
+
             # Check for external shutdown
             if rospy.is_shutdown():
                 return
-                
+
             # Send back a test message
-            self.send_on_can(can.Message(arbitration_id=0x41, data=[0, 0, 0, 0, 63, 0, 0, 0]))
+            self.send_on_can(
+                can.Message(arbitration_id=0x41, data=[0, 0, 0, 0, 63, 0, 0, 0])
+            )
 
             time.sleep(1)
 
@@ -49,16 +51,17 @@ class CanPublisher:
 
     def send_on_can(self, msg: can.Message) -> None:
         """Sends a message msg over the can bus
-        
+
         Args:
             msg: the message to send
-            
+
         """
         try:
             self.bus.send(msg)
             rospy.loginfo(f"Message sent on {self.bus.channel_info}")
         except can.CanError:
             rospy.logerr("Message NOT sent")
+
 
 if __name__ == "__main__":
     try:

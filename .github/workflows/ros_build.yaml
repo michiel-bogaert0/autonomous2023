@@ -2,7 +2,6 @@ name: ros-build-modules
 
 on:
     push:
-    pull_request:
     workflow_dispatch:
 
 jobs:
@@ -20,10 +19,11 @@ jobs:
                   sudo sh -c "echo \"deb http://packages.ros.org/ros/ubuntu $ROS_CI_DESKTOP main\" > /etc/apt/sources.list.d/ros-latest.list"
                   sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
                   sudo apt-get update -qq
+                  sudo apt install ros-noetic-desktop
 
             - name: Install ROS base packages
               run: |
-                  sudo apt-get install -y python3-catkin-pkg python3-catkin-tools python3-rosdep python3-wstool python3-osrf-pycommon ros-cmake-modules ros-noetic-catkin ros-noetic-tf2-geometry-msgs ros-noetic-rqt-multiplot ros-noetic-joy ros-noetic-cv-bridge ros-noetic-image-transport libyaml-cpp-dev libcurl4-openssl-dev
+                  sudo apt-get install -y python3-catkin-pkg python3-catkin-tools ros-noetic-catkin python3-rosdep python3-wstool python3-osrf-pycommon ros-cmake-modules ros-noetic-tf2-geometry-msgs ros-noetic-rqt-multiplot ros-noetic-joy ros-noetic-image-transport libyaml-cpp-dev libcurl4-openssl-dev python3-pcl pcl-tools ros-noetic-perception-pcl
 
             - name: Install ROS packages with rosdep
               run: |

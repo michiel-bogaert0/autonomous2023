@@ -29,6 +29,7 @@ sudo apt-get install -y ros-noetic-tf2-geometry-msgs \
     ros-noetic-image-transport \
     ros-noetic-tf2-geometry-msgs \
     ros-noetic-robot-localization \
+    ros-noetic-laser-assembler \
     libyaml-cpp-dev \
     libcurl4-openssl-dev
 

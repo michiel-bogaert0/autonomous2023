@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>lidar</name>
+  <version>0.0.0</version>
+  <description>The lidar package</description>
+  <maintainer email="lucas.vandijck@ugentracing.be">Lucas Van Dijck</maintainer>
+  <license>TODO</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>pcl_conversions</depend>
+  <depend>pcl_msgs</depend>
+  <depend>pcl_ros</depend>
+
+  <export>
+  </export>
+</package>
