@@ -38,6 +38,7 @@ jobs:
                   cd ROS
                   rosdep install --from-paths src --ignore-src -r -s  # do a dry-run first
                   rosdep install --from-paths src --ignore-src -r -y
+                  pip install setuptools==45.2.0
 
             - name: Build Release
               run: |

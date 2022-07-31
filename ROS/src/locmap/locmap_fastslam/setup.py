@@ -13,7 +13,6 @@ d = generate_distutils_setup(
         ],
         annotate=True,
     ),
-    zip_safe=False,
 )
 
 setup(**d)
