@@ -43,6 +43,6 @@ jobs:
               run: |
                   source /opt/ros/$ROS_DISTRO/setup.bash
                   cd ROS
-                  catkin config --install --cmake-args -DCMAKE_BUILD_TYPE=Release
+                  catkin config --install --cmake-args -DCMAKE_BUILD_TYPE=Release -DSETUPTOOLS_DEB_LAYOUT=OFF
                   catkin build --no-status
                   source devel/setup.bash
