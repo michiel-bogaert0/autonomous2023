@@ -20,8 +20,7 @@ from rospy.rostime import Time
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from tf2_kdl import transform_to_kdl
-from ugr_msgs.msg import (BoundingBox, Map, Observation, Observations,
-                          PerceptionUpdate)
+from ugr_msgs.msg import BoundingBox, Map, Observation, Observations, PerceptionUpdate
 
 
 @dataclass
@@ -246,9 +245,11 @@ class ROSNode:
                 type_hints = get_type_hints(callback)
                 topic_msg_class = list(type_hints.values())[-1]
             except Exception as e:
-                topic_msg_type, _, fn = rostopic.get_topic_type(f"/{topic.strip('/')}", True) # 
+                topic_msg_type, _, fn = rostopic.get_topic_type(
+                    f"/{topic.strip('/')}", True
+                )  #
                 topic_msg_class = roslib.message.get_message_class(topic_msg_type)
-                
+
             rospy.Subscriber(
                 topic,
                 topic_msg_class,

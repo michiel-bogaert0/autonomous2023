@@ -47,7 +47,7 @@ class ConePnp:
             x, y, z = tuple(relative_position * self.scale)
             loc = Point(z[0], -1 * x[0], y[0])
 
-            distance = (x**2 + y**2 + z**2) ** (1 / 2)
+            distance = (x ** 2 + y ** 2 + z ** 2) ** (1 / 2)
             if distance >= self.max_distance:
                 continue
 

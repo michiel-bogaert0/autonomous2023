@@ -25,12 +25,14 @@ class PerceptionNode:
             "/perception/processed/cone_keypoints", ConeKeypoints, queue_size=10
         )
         self.pub_pnp = rospy.Publisher(
-            "/perception/processed/raw_perception_update", PerceptionUpdate, queue_size=10
+            "/perception/processed/raw_perception_update",
+            PerceptionUpdate,
+            queue_size=10,
         )
 
         self.rate = rospy.get_param("~rate", 10)
 
-        self.tensorrt = rospy.get_param("~tensorrt",True)
+        self.tensorrt = rospy.get_param("~tensorrt", True)
 
         # Cone detection
         self.device = (
@@ -38,7 +40,7 @@ class PerceptionNode:
             if torch.cuda.is_available() and rospy.get_param("~cuda", True)
             else "cpu"
         )
-        self.cone_detector = ConeDetector(self.device,self.tensorrt)
+        self.cone_detector = ConeDetector(self.device, self.tensorrt)
         # The minimum height of a cone detection in px for it to be run through the keypoint detector
         self.detection_height_threshold = rospy.get_param(
             "~detection_height_threshold", 30

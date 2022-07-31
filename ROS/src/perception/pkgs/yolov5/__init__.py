@@ -32,7 +32,7 @@ def preprocess_img(img: List, half: bool) -> Any:
     Args:
         img: Image that needs preprocessing before inference/training -> List
         half: Boolean, if true only half precision will be used (only available for CUDA) -> bool
-    
+
     Returns:
         preprocessed image, ready for further processing -> List
     """
@@ -95,11 +95,7 @@ def process_detections(
 
         for *xyxy, conf, cls in reversed(det):
             # Normalized xywh
-            xywh = (
-                (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn)
-                .view(-1)
-                .tolist()
-            )
+            xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()
             tlwh = xywh2tlwh(xywh)
 
             bounding_box = BoundingBox(
@@ -130,7 +126,7 @@ class YOLOv5:
         augment: bool = False,
         update: bool = False,
         half: bool = False,
-        dnn : bool = False,
+        dnn: bool = False,
     ) -> None:
         """
         Initialize YOLOv5 class
@@ -175,14 +171,16 @@ class YOLOv5:
 
         Args:
             weights: name of file of weights used for inference/training -> str
-         
+
         Returns:
             loaded model, all class names in list and stride -> Tuple[Any, List, int]
         """
         self.device = select_device(self.device)
 
         # Load model
-        model = DetectMultiBackend(weights, device=self.device, dnn=self.dnn, data=self.data, fp16=self.half)
+        model = DetectMultiBackend(
+            weights, device=self.device, dnn=self.dnn, data=self.data, fp16=self.half
+        )
         stride, names, pt = model.stride, model.names, model.pt
 
         self.image_size = check_img_size(self.image_size, s=stride)
@@ -193,7 +191,6 @@ class YOLOv5:
         self.names = names
         self.pt = pt
         self.stride = stride
-
 
     def infer(self, image: np.ndarray) -> YOLOv5Output:
         """
@@ -209,9 +206,7 @@ class YOLOv5:
         self.half &= self.device.type != "cpu"
 
         # Load dataset
-        dataset = LoadImage(
-            image=image, img_size=self.image_size, stride=self.stride
-        )
+        dataset = LoadImage(image=image, img_size=self.image_size, stride=self.stride)
 
         # Get image and preprocess
         img, original_image = dataset.get_image()

@@ -203,6 +203,75 @@ In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/o
   297 |                                const LidarScan::BlockHeader& b[01;35m[K)[m[K;
       |                                                               [01;35m[K^[m[K
 [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/lidar_scan.h:297:63:[m[K [01;35m[Kwarning: [m[K‘[01m[KBlockHeader[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:26[m[K:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/include/ouster_ros/ros.h:75:66:[m[K [01;35m[Kwarning: [m[K‘[01m[Kusing ts_t = std::chrono::nanoseconds[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+   75 |                    ouster_ros::Cloud& cloud, int return_index = 0[01;35m[K)[m[K;
+      |                                                                  [01;35m[K^[m[K
+In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/include/ouster_ros/ros.h:21[m[K,
+                 from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:26[m[K:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/lidar_scan.h:45:11:[m[K [01;36m[Knote: [m[Kdeclared here
+   45 |     using [01;36m[Kts_t[m[K [[deprecated]] = std::chrono::nanoseconds;  ///< @deprecated
+      |           [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:[m[K In function ‘[01m[Kvoid populate_metadata_defaults(ouster::sensor::sensor_info&, ouster::sensor::lidar_mode)[m[K’:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:15:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+   36 |     if (!info.[01;35m[Kname[m[K.size()) info.name = "UNKNOWN";
+      |               [01;35m[K^~~~[m[K
+In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:15:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+   36 |     if (!info.[01;35m[Kname[m[K.size()) info.name = "UNKNOWN";
+      |               [01;35m[K^~~~[m[K
+In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:15:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+   36 |     if (!info.[01;35m[Kname[m[K.size()) info.name = "UNKNOWN";
+      |               [01;35m[K^~~~[m[K
+In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:33:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+   36 |     if (!info.name.size()) info.[01;35m[Kname[m[K = "UNKNOWN";
+      |                                 [01;35m[K^~~~[m[K
+In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:33:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+   36 |     if (!info.name.size()) info.[01;35m[Kname[m[K = "UNKNOWN";
+      |                                 [01;35m[K^~~~[m[K
+In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:33:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+   36 |     if (!info.name.size()) info.[01;35m[Kname[m[K = "UNKNOWN";
+      |                                 [01;35m[K^~~~[m[K
+In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:[m[K In copy constructor ‘[01m[Kouster::sensor::packet_format::packet_format(const ouster::sensor::packet_format&)[m[K’:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:728:7:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::packet_format::encoder_ticks_per_rev[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+  728 | class [01;35m[Kpacket_format[m[K final {
+      |       [01;35m[K^~~~~~~~~~~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:752:30:[m[K [01;36m[Knote: [m[Kdeclared here
+  752 |     [[deprecated]] const int [01;36m[Kencoder_ticks_per_rev[m[K;  ///< @deprecated
+      |                              [01;36m[K^~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:728:7:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::packet_format::encoder_ticks_per_rev[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+  728 | class [01;35m[Kpacket_format[m[K final {
+      |       [01;35m[K^~~~~~~~~~~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:752:30:[m[K [01;36m[Knote: [m[Kdeclared here
+  752 |     [[deprecated]] const int [01;36m[Kencoder_ticks_per_rev[m[K;  ///< @deprecated
+      |                              [01;36m[K^~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:[m[K In function ‘[01m[Kint connection_loop(ros::NodeHandle&, ouster::sensor::client&, const ouster::sensor::sensor_info&)[m[K’:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:86:38:[m[K [01;36m[Knote: [m[Ksynthesized method ‘[01m[Kouster::sensor::packet_format::packet_format(const ouster::sensor::packet_format&)[m[K’ first required here
+   86 |     auto pf = sensor::get_format(info[01;36m[K)[m[K;
+      |                                      [01;36m[K^[m[K
 In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_cloud_node.cpp:24[m[K:
 [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/include/ouster_ros/ros.h:75:66:[m[K [01;35m[Kwarning: [m[K‘[01m[Kusing ts_t = std::chrono::nanoseconds[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
    75 |                    ouster_ros::Cloud& cloud, int return_index = 0[01;35m[K)[m[K;
@@ -280,6 +349,54 @@ In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/o
 [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_cloud_node.cpp:58:38:[m[K [01;36m[Knote: [m[Ksynthesized method ‘[01m[Kouster::sensor::packet_format::packet_format(const ouster::sensor::packet_format&)[m[K’ first required here
    58 |     auto pf = sensor::get_format(info[01;36m[K)[m[K;
       |                                      [01;36m[K^[m[K
+In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:[m[K In destructor ‘[01m[Kouster::sensor::sensor_info::~sensor_info()[m[K’:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+  340 | struct [01;35m[Ksensor_info[m[K {
+      |        [01;35m[K^~~~~~~~~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+  340 | struct [01;35m[Ksensor_info[m[K {
+      |        [01;35m[K^~~~~~~~~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:[m[K In function ‘[01m[Kint main(int, char**)[m[K’:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:203:61:[m[K [01;36m[Knote: [m[Ksynthesized method ‘[01m[Kouster::sensor::sensor_info::~sensor_info()[m[K’ first required here
+  203 |             auto info = sensor::metadata_from_json(meta_file[01;36m[K)[m[K;
+      |                                                             [01;36m[K^[m[K
+In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:[m[K In constructor ‘[01m[Kouster::sensor::sensor_info::sensor_info(ouster::sensor::sensor_info&&)[m[K’:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+  340 | struct [01;35m[Ksensor_info[m[K {
+      |        [01;35m[K^~~~~~~~~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+  340 | struct [01;35m[Ksensor_info[m[K {
+      |        [01;35m[K^~~~~~~~~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+  340 | struct [01;35m[Ksensor_info[m[K {
+      |        [01;35m[K^~~~~~~~~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
+  340 | struct [01;35m[Ksensor_info[m[K {
+      |        [01;35m[K^~~~~~~~~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
+  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
+      |         [01;36m[K^~~~[m[K
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:[m[K In function ‘[01m[Kint main(int, char**)[m[K’:
+[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:203:61:[m[K [01;36m[Knote: [m[Ksynthesized method ‘[01m[Kouster::sensor::sensor_info::sensor_info(ouster::sensor::sensor_info&&)[m[K’ first required here
+  203 |             auto info = sensor::metadata_from_json(meta_file[01;36m[K)[m[K;
+      |                                                             [01;36m[K^[m[K
 [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_cloud_node.cpp:[m[K In lambda function:
 [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_cloud_node.cpp:84:20:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::LidarScan::headers[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
    84 |                 ls.[01;35m[Kheaders[m[K.begin(), ls.headers.end(), [](const auto& h) {
@@ -344,123 +461,6 @@ In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/o
 [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/lidar_scan.h:112:45:[m[K [01;36m[Knote: [m[Kdeclared here
   112 |     [[deprecated]] std::vector<BlockHeader> [01;36m[Kheaders[m[K{};
       |                                             [01;36m[K^~~~~~~[m[K
-In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:26[m[K:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/include/ouster_ros/ros.h:75:66:[m[K [01;35m[Kwarning: [m[K‘[01m[Kusing ts_t = std::chrono::nanoseconds[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-   75 |                    ouster_ros::Cloud& cloud, int return_index = 0[01;35m[K)[m[K;
-      |                                                                  [01;35m[K^[m[K
-In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/include/ouster_ros/ros.h:21[m[K,
-                 from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:26[m[K:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/lidar_scan.h:45:11:[m[K [01;36m[Knote: [m[Kdeclared here
-   45 |     using [01;36m[Kts_t[m[K [[deprecated]] = std::chrono::nanoseconds;  ///< @deprecated
-      |           [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:[m[K In function ‘[01m[Kvoid populate_metadata_defaults(ouster::sensor::sensor_info&, ouster::sensor::lidar_mode)[m[K’:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:15:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-   36 |     if (!info.[01;35m[Kname[m[K.size()) info.name = "UNKNOWN";
-      |               [01;35m[K^~~~[m[K
-In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:15:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-   36 |     if (!info.[01;35m[Kname[m[K.size()) info.name = "UNKNOWN";
-      |               [01;35m[K^~~~[m[K
-In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:15:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-   36 |     if (!info.[01;35m[Kname[m[K.size()) info.name = "UNKNOWN";
-      |               [01;35m[K^~~~[m[K
-In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:33:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-   36 |     if (!info.name.size()) info.[01;35m[Kname[m[K = "UNKNOWN";
-      |                                 [01;35m[K^~~~[m[K
-In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:33:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-   36 |     if (!info.name.size()) info.[01;35m[Kname[m[K = "UNKNOWN";
-      |                                 [01;35m[K^~~~[m[K
-In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:36:33:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-   36 |     if (!info.name.size()) info.[01;35m[Kname[m[K = "UNKNOWN";
-      |                                 [01;35m[K^~~~[m[K
-In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:[m[K In copy constructor ‘[01m[Kouster::sensor::packet_format::packet_format(const ouster::sensor::packet_format&)[m[K’:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:728:7:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::packet_format::encoder_ticks_per_rev[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-  728 | class [01;35m[Kpacket_format[m[K final {
-      |       [01;35m[K^~~~~~~~~~~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:752:30:[m[K [01;36m[Knote: [m[Kdeclared here
-  752 |     [[deprecated]] const int [01;36m[Kencoder_ticks_per_rev[m[K;  ///< @deprecated
-      |                              [01;36m[K^~~~~~~~~~~~~~~~~~~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:728:7:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::packet_format::encoder_ticks_per_rev[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-  728 | class [01;35m[Kpacket_format[m[K final {
-      |       [01;35m[K^~~~~~~~~~~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:752:30:[m[K [01;36m[Knote: [m[Kdeclared here
-  752 |     [[deprecated]] const int [01;36m[Kencoder_ticks_per_rev[m[K;  ///< @deprecated
-      |                              [01;36m[K^~~~~~~~~~~~~~~~~~~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:[m[K In function ‘[01m[Kint connection_loop(ros::NodeHandle&, ouster::sensor::client&, const ouster::sensor::sensor_info&)[m[K’:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:86:38:[m[K [01;36m[Knote: [m[Ksynthesized method ‘[01m[Kouster::sensor::packet_format::packet_format(const ouster::sensor::packet_format&)[m[K’ first required here
-   86 |     auto pf = sensor::get_format(info[01;36m[K)[m[K;
-      |                                      [01;36m[K^[m[K
-In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:[m[K In destructor ‘[01m[Kouster::sensor::sensor_info::~sensor_info()[m[K’:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-  340 | struct [01;35m[Ksensor_info[m[K {
-      |        [01;35m[K^~~~~~~~~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-  340 | struct [01;35m[Ksensor_info[m[K {
-      |        [01;35m[K^~~~~~~~~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:[m[K In function ‘[01m[Kint main(int, char**)[m[K’:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:203:61:[m[K [01;36m[Knote: [m[Ksynthesized method ‘[01m[Kouster::sensor::sensor_info::~sensor_info()[m[K’ first required here
-  203 |             auto info = sensor::metadata_from_json(meta_file[01;36m[K)[m[K;
-      |                                                             [01;36m[K^[m[K
-In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:23[m[K:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:[m[K In constructor ‘[01m[Kouster::sensor::sensor_info::sensor_info(ouster::sensor::sensor_info&&)[m[K’:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-  340 | struct [01;35m[Ksensor_info[m[K {
-      |        [01;35m[K^~~~~~~~~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-  340 | struct [01;35m[Ksensor_info[m[K {
-      |        [01;35m[K^~~~~~~~~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-  340 | struct [01;35m[Ksensor_info[m[K {
-      |        [01;35m[K^~~~~~~~~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:340:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kouster::sensor::sensor_info::name[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]
-  340 | struct [01;35m[Ksensor_info[m[K {
-      |        [01;35m[K^~~~~~~~~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/types.h:342:9:[m[K [01;36m[Knote: [m[Kdeclared here
-  342 |         [01;36m[Kname[m[K;            ///< @deprecated: will be removed in the next version
-      |         [01;36m[K^~~~[m[K
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:[m[K In function ‘[01m[Kint main(int, char**)[m[K’:
-[01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/os_node.cpp:203:61:[m[K [01;36m[Knote: [m[Ksynthesized method ‘[01m[Kouster::sensor::sensor_info::sensor_info(ouster::sensor::sensor_info&&)[m[K’ first required here
-  203 |             auto info = sensor::metadata_from_json(meta_file[01;36m[K)[m[K;
-      |                                                             [01;36m[K^[m[K
 In file included from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/include/ouster_ros/ros.h:21[m[K,
                  from [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/src/img_node.cpp:33[m[K:
 [01m[K/home/tdhoedt/autonomous2023/ROS/src/ouster_node/ouster_ros/../ouster_client/include/ouster/lidar_scan.h:56:17:[m[K [01;35m[Kwarning: [m[K‘[01m[Kusing Field = enum ouster::sensor::ChanField[m[K’ is deprecated [[01;35m[K-Wdeprecated-declarations[m[K]

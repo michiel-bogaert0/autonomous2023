@@ -13,6 +13,7 @@ img_formats = [
     "mpo",
 ]
 
+
 def letterbox(
     img,
     new_shape=(640, 640),
@@ -61,14 +62,14 @@ def letterbox(
     )  # add border
     return img, ratio, (dw, dh)
 
+
 class LoadImage:  # for inference
     def __init__(self, image, img_size=640, stride=32):
         self.img_size = img_size
         self.stride = stride
         self.image = image
         assert self.image is not None, (
-            f"No image found in. "
-            f"Supported formats e:\nimages: {img_formats}\n"
+            f"No image found in. " f"Supported formats e:\nimages: {img_formats}\n"
         )
 
     def get_image(self):
@@ -77,7 +78,9 @@ class LoadImage:  # for inference
         assert original_image is not None, "Image Not Loaded Correctly"
 
         # Padded resize
-        img = letterbox(original_image, self.img_size, stride=self.stride, auto=False)[0]
+        img = letterbox(original_image, self.img_size, stride=self.stride, auto=False)[
+            0
+        ]
 
         # Convert image back
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB and HWC to CHW

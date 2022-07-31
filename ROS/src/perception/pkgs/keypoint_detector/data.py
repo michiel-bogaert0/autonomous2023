@@ -66,7 +66,9 @@ def flip_img(img, label):
 
 
 class ConeDataset(Dataset):
-    def __init__(self, location: Path, target_image_size, transform=None, apply_augmentation=True):
+    def __init__(
+        self, location: Path, target_image_size, transform=None, apply_augmentation=True
+    ):
         self.images, self.labels = retrieve_data(location, target_image_size)
         self.target_image_size = target_image_size
         self.transform = transform
@@ -77,10 +79,9 @@ class ConeDataset(Dataset):
             [
                 A.SafeRotate(limit=15, p=1),
                 A.RandomBrightnessContrast(p=1),
-                A.RGBShift(r_shift_limit=100,
-                           g_shift_limit=100,
-                           b_shift_limit=100,
-                           p=1),
+                A.RGBShift(
+                    r_shift_limit=100, g_shift_limit=100, b_shift_limit=100, p=1
+                ),
                 A.Blur(p=0.1, blur_limit=4),
             ],
             keypoint_params=A.KeypointParams(format="xy"),
@@ -126,13 +127,26 @@ class ConeDataset(Dataset):
 
 
 class KeyPointDataset(LightningDataModule):
-    def __init__(self, hyperparam, train_param: RektNetTrainParam, data_folder: Path = Path.cwd() / "dataset"):
+    def __init__(
+        self,
+        hyperparam,
+        train_param: RektNetTrainParam,
+        data_folder: Path = Path.cwd() / "dataset",
+    ):
         super().__init__()
         self.data_folder = data_folder
         self.label_file = self.data_folder / "labels.json"
         self.image_folder = self.data_folder / "images"
 
-        self.keypoint_keys = ["top", "mid_L_top", "mid_R_top", "mid_L_bot", "mid_R_bot", "bot_L", "bot_R"]
+        self.keypoint_keys = [
+            "top",
+            "mid_L_top",
+            "mid_R_top",
+            "mid_L_bot",
+            "mid_R_bot",
+            "bot_L",
+            "bot_R",
+        ]
 
         self.hyperparam = hyperparam
         self.train_param = train_param
@@ -151,7 +165,11 @@ class KeyPointDataset(LightningDataModule):
 
     def train_dataloader(self):
         return DataLoader(
-            ConeDataset(self.train_folder, self.img_size, apply_augmentation=self.hyperparam.apply_augmentation),
+            ConeDataset(
+                self.train_folder,
+                self.img_size,
+                apply_augmentation=self.hyperparam.apply_augmentation,
+            ),
             batch_size=self.hyperparam.batch_size,
             num_workers=self.num_workers,
         )

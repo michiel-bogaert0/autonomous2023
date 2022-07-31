@@ -18,7 +18,9 @@ class Sum(nn.Module):
         self.weight = weight  # apply weights boolean
         self.iter = range(n - 1)  # iter object
         if weight:
-            self.w = nn.Parameter(-torch.arange(1.0, n) / 2, requires_grad=True)  # layer weights
+            self.w = nn.Parameter(
+                -torch.arange(1.0, n) / 2, requires_grad=True
+            )  # layer weights
 
     def forward(self, x):
         y = x[0]  # no weight
@@ -34,11 +36,13 @@ class Sum(nn.Module):
 
 class MixConv2d(nn.Module):
     # Mixed Depth-wise Conv https://arxiv.org/abs/1907.09595
-    def __init__(self, c1, c2, k=(1, 3), s=1, equal_ch=True):  # ch_in, ch_out, kernel, stride, ch_strategy
+    def __init__(
+        self, c1, c2, k=(1, 3), s=1, equal_ch=True
+    ):  # ch_in, ch_out, kernel, stride, ch_strategy
         super().__init__()
         n = len(k)  # number of convolutions
         if equal_ch:  # equal c_ per group
-            i = torch.linspace(0, n - 1E-6, c2).floor()  # c2 indices
+            i = torch.linspace(0, n - 1e-6, c2).floor()  # c2 indices
             c_ = [(i == g).sum() for g in range(n)]  # intermediate channels
         else:  # equal weight.numel() per group
             b = [c2] + [0] * n
@@ -46,10 +50,18 @@ class MixConv2d(nn.Module):
             a -= np.roll(a, 1, axis=1)
             a *= np.array(k) ** 2
             a[0] = 1
-            c_ = np.linalg.lstsq(a, b, rcond=None)[0].round()  # solve for equal weight indices, ax = b
+            c_ = np.linalg.lstsq(a, b, rcond=None)[
+                0
+            ].round()  # solve for equal weight indices, ax = b
 
-        self.m = nn.ModuleList([
-            nn.Conv2d(c1, int(c_), k, s, k // 2, groups=math.gcd(c1, int(c_)), bias=False) for k, c_ in zip(k, c_)])
+        self.m = nn.ModuleList(
+            [
+                nn.Conv2d(
+                    c1, int(c_), k, s, k // 2, groups=math.gcd(c1, int(c_)), bias=False
+                )
+                for k, c_ in zip(k, c_)
+            ]
+        )
         self.bn = nn.BatchNorm2d(c2)
         self.act = nn.SiLU()
 
@@ -69,16 +81,15 @@ class Ensemble(nn.ModuleList):
         y = torch.cat(y, 1)  # nms ensemble
         return y, None  # inference, train output
 
+
 def attempt_load(weight_file: str, device=None, inplace=True):
     from yolov5.models.yolo import Detect, Model
 
-
-    ckpt = torch.load(
-        weight_file, map_location=device
-    )  # load
+    ckpt = torch.load(weight_file, map_location=device)  # load
     model = ckpt["ema" if ckpt.get("ema") else "model"].float().fuse().eval()
 
     return model
+
 
 # def attempt_load(weights, device=None, inplace=True, fuse=True):
 #     # Loads an ensemble of models weights=[a,b,c] or a single model weights=[a] or weights=a

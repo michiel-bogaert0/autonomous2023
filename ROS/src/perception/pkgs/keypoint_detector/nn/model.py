@@ -11,11 +11,15 @@ def print_tensor_stats(x, name):
 
 
 class RektNet(nn.Module):
-    def __init__(self, num_kpt=7, image_size=(60, 80), onnx_mode=False, init_weight=True):
+    def __init__(
+        self, num_kpt=7, image_size=(60, 80), onnx_mode=False, init_weight=True
+    ):
         super(RektNet, self).__init__()
         net_size = 16
 
-        self.conv = nn.Conv2d(in_channels=3, out_channels=net_size, kernel_size=7, stride=1, padding=3)
+        self.conv = nn.Conv2d(
+            in_channels=3, out_channels=net_size, kernel_size=7, stride=1, padding=3
+        )
         # torch.nn.init.xavier_uniform(self.conv.weight)
         self.bn = nn.BatchNorm2d(net_size)
         self.relu = nn.ReLU()
@@ -23,7 +27,13 @@ class RektNet(nn.Module):
         self.res2 = ResNet(net_size, net_size * 2)
         self.res3 = ResNet(net_size * 2, net_size * 4)
         self.res4 = ResNet(net_size * 4, net_size * 8)
-        self.out = nn.Conv2d(in_channels=net_size * 8, out_channels=num_kpt, kernel_size=1, stride=1, padding=0)
+        self.out = nn.Conv2d(
+            in_channels=net_size * 8,
+            out_channels=num_kpt,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
         # torch.nn.init.xavier_uniform(self.out.weight)
         if init_weight:
             self._initialize_weights()
@@ -52,10 +62,18 @@ class RektNet(nn.Module):
     def soft_argmax(self, inp):
         # start, end, steps
         values_y = torch.linspace(
-            0, (self.image_size[0] - 1.0) / self.image_size[0], self.image_size[0], dtype=inp.dtype, device=inp.device
+            0,
+            (self.image_size[0] - 1.0) / self.image_size[0],
+            self.image_size[0],
+            dtype=inp.dtype,
+            device=inp.device,
         )
         values_x = torch.linspace(
-            0, (self.image_size[1] - 1.0) / self.image_size[1], self.image_size[1], dtype=inp.dtype, device=inp.device
+            0,
+            (self.image_size[1] - 1.0) / self.image_size[1],
+            self.image_size[1],
+            dtype=inp.dtype,
+            device=inp.device,
         )
         sum_y = inp.sum(3)
         exp_y = sum_y * values_y

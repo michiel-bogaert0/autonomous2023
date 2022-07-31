@@ -32,7 +32,9 @@ class RektNetModule(LightningModule):
             self.hparams.geo_loss_gamma_vert,
         )
 
-        self.example_input_array = torch.randn((1, 3, self.hparams.img_height, self.hparams.img_width))
+        self.example_input_array = torch.randn(
+            (1, 3, self.hparams.img_height, self.hparams.img_width)
+        )
 
     def forward(self, x):
         return self.model(x)
@@ -42,7 +44,9 @@ class RektNetModule(LightningModule):
 
         # Compute output and loss.
         pred_heatmaps, pred_points = self.model(imgs)
-        loc_loss, geo_loss, loss = self.loss_function(pred_heatmaps, pred_points, true_heatmaps, true_points)
+        loc_loss, geo_loss, loss = self.loss_function(
+            pred_heatmaps, pred_points, true_heatmaps, true_points
+        )
 
         return loss, loc_loss, geo_loss
 
@@ -50,8 +54,22 @@ class RektNetModule(LightningModule):
         loss, loc_loss, geo_loss = self.step(batch, batch_idx)
 
         self.log("loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log("geo_loss", geo_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log("loc_loss", loc_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "geo_loss",
+            geo_loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
+        self.log(
+            "loc_loss",
+            loc_loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
 
         return loss
 
@@ -68,6 +86,8 @@ class RektNetModule(LightningModule):
             self.model.parameters(),
             lr=self.hparams.lr,
         )
-        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=self.hparams.lr_gamma)
+        scheduler = optim.lr_scheduler.ExponentialLR(
+            optimizer, gamma=self.hparams.lr_gamma
+        )
 
         return [optimizer], [scheduler]

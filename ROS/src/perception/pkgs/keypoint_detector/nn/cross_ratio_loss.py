@@ -4,7 +4,9 @@ from torch import nn
 
 
 class CrossRatioLoss(nn.Module):
-    def __init__(self, loss_type, include_geo, geo_loss_gamma_horz, geo_loss_gamma_vert):
+    def __init__(
+        self, loss_type, include_geo, geo_loss_gamma_horz, geo_loss_gamma_vert
+    ):
         super(CrossRatioLoss, self).__init__()
         self.loss_type = loss_type
         self.include_geo = include_geo
