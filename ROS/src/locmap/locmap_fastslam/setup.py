@@ -13,6 +13,7 @@ d = generate_distutils_setup(
         ],
         annotate=True,
     ),
+    compiler_directives={"language_level": "3"},
 )
 
 setup(**d)
