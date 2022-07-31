@@ -1,3 +1,4 @@
 #!/bin/sh
-cd ./../../../src/locmap/locmap_fastslam
+cd $(echo $PWD | sed 's/build/src/g')
 python3 ./setup.py build_ext --inplace  
+test=$PWD
