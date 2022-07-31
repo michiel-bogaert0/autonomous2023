@@ -6,9 +6,9 @@ import time
 from pathlib import Path
 from typing import Tuple
 
-import cone_detection
-import cone_pnp
-import keypoint_detection
+from cone_detection.cone_detection import ConeDetector
+from pnp.cone_pnp import ConePnp
+from keypoint_detection.keypoint_detection import ConeKeypointDetector
 import neoapi
 import numpy as np
 import rospy
@@ -22,13 +22,17 @@ class PerceptionNode:
         rospy.init_node("perception_jetson")
         self.pub_raw = rospy.Publisher("/perception/raw_image", Image, queue_size=10)
         self.pub_keypoints = rospy.Publisher(
-            "/processed/cone_keypoints", ConeKeypoints, queue_size=10
+            "/perception/cone_keypoints", ConeKeypoints, queue_size=10
         )
         self.pub_pnp = rospy.Publisher(
-            "/processed/raw_perception_update", PerceptionUpdate, queue_size=10
+            "/perception/raw_perception_update",
+            PerceptionUpdate,
+            queue_size=10,
         )
 
         self.rate = rospy.get_param("~rate", 10)
+
+        self.tensorrt = rospy.get_param("~tensorrt", True)
 
         # Cone detection
         self.device = (
@@ -36,14 +40,14 @@ class PerceptionNode:
             if torch.cuda.is_available() and rospy.get_param("~cuda", True)
             else "cpu"
         )
-        self.cone_detector = cone_detection.ConeDetector(self.device)
+        self.cone_detector = ConeDetector(self.device, self.tensorrt)
         # The minimum height of a cone detection in px for it to be run through the keypoint detector
         self.detection_height_threshold = rospy.get_param(
             "~detection_height_threshold", 30
         )
 
         # Keypoint detection
-        self.keypoint_detector = keypoint_detection.ConeKeypointDetector(self.device)
+        self.keypoint_detector = ConeKeypointDetector(self.device)
         self.publish_keypoints = rospy.get_param("~publish_keypoints", False)
 
         cone_dev = self.cone_detector.yolo_model.device
@@ -69,7 +73,7 @@ class PerceptionNode:
         camera_matrix = camera_cal_archive["camera_matrix"]
         distortion_matrix = camera_cal_archive["distortion_matrix"]
 
-        self.pnp = cone_pnp.ConePnp(
+        self.pnp = ConePnp(
             cone_models=cone_models,
             scale=scale,
             max_distance=max_distance,
@@ -83,7 +87,6 @@ class PerceptionNode:
 
     def setup_camera(self) -> None:
         """Sets up the Baumer camera with the right settings
-
         Returns:
             Sets the self.camera object
         """
@@ -120,10 +123,8 @@ class PerceptionNode:
 
     def np_to_ros_image(self, arr: np.ndarray) -> Image:
         """Creates a ROS image type based on a Numpy array
-
         Args:
             arr: numpy array in RGB format (H, W, 3), datatype uint8
-
         Returns:
             ROS Image with appropriate header and data
         """
@@ -163,7 +164,6 @@ class PerceptionNode:
     def run_perception_pipeline(self, image: np.ndarray, ros_image: Image) -> None:
         """
         Given an image, run through the entire perception pipeline and publish to ROS
-
         Args:
             image: The input image as numpy array
             ros_image: The input image as ROS message
@@ -215,7 +215,6 @@ class PerceptionNode:
     def run_pnp_pipeline(self, msg: ConeKeypoints, img_size: Tuple[int, int]) -> None:
         """
         Given a keypoints ROS message, run through the PNP pipeline and publish to ROS
-
         Args:
             msg: the input keypoints message
             img_size: the size of the original image (W, H)

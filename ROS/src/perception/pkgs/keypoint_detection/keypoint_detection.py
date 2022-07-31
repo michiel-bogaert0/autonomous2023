@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 import torch
 from geometry_msgs.msg import Point
-from IntBoundingBox import IntBoundingBox
+from .IntBoundingBox import IntBoundingBox
 from keypoint_detector.module import RektNetModule
 from ugr_msgs.msg import BoundingBox, ConeKeypoint
 

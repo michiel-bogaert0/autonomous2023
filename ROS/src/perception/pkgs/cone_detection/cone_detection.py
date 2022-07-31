@@ -6,13 +6,19 @@ import numpy as np
 from fs_msgs.msg import Cone
 from sensor_msgs.msg import Image
 from ugr_msgs.msg import BoundingBox
-from yolov5 import YOLOv5
+from yolov5.yolov5 import YOLOv5
 from yolov5.output import BoundingBox as YOLOVBoundingBox
 
 
 class ConeDetector:
-    def __init__(self, device: str):
-        model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolov5.engine"
+    def __init__(self, device: str, tensor: bool):
+        if tensor:
+
+            model_path = (
+                Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolo.engine"
+            )
+        else:
+            model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolo.pt"
         data_path = (
             Path(os.getenv("BINARY_LOCATION")) / "perception_data" / "ugr_dataset.yaml"
         )
@@ -21,10 +27,8 @@ class ConeDetector:
     def yolo_bb_to_ros_bb(self, input_bb: "YOLOVBoundingBox") -> "BoundingBox":
         """
         Converts yolo style bounding boxes to ROS bbs
-
         Args:
             input_bb: YOLO bounding box
-
         Returns:
             BoundingBox
         """
@@ -49,7 +53,6 @@ class ConeDetector:
         Run YOLOv5 inference on an image
         Args:
             image: The input image
-
         Returns:
         The bounding boxes of the detected cones as BoundingBox
         """
