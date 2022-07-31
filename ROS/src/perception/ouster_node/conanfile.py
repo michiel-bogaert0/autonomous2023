@@ -1,7 +1,7 @@
 import os
-from conans import ConanFile, CMake, tools
-
 from pprint import pformat
+
+from conans import CMake, ConanFile, tools
 
 
 class OusterSDKConan(ConanFile):

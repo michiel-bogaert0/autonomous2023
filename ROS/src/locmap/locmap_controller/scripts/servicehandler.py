@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-from locmap_controller.srv import *
-import rospy
-import roslaunch
-
 from collections import deque
+
+import roslaunch
+import rospy
+from locmap_controller.srv import *
 
 
 class ServiceHandler:

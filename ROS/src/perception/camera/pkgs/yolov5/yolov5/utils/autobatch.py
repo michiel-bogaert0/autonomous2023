@@ -7,7 +7,6 @@ from copy import deepcopy
 
 import numpy as np
 import torch
-
 from yolov5.utils.general import LOGGER, colorstr, emojis
 from yolov5.utils.torch_utils import profile
 

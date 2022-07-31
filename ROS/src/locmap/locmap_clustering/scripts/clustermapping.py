@@ -191,7 +191,7 @@ class ClusterMapping(ROSNode):
                     distance = (landmark[0] - self.particle_state[0]) ** 2 + (
                         landmark[1] - self.particle_state[1]
                     ) ** 2
-                    if distance < self.max_landmark_range**2:
+                    if distance < self.max_landmark_range ** 2:
                         observations.observations.append(new_obs)
                 else:
                     observations.observations.append(new_obs)

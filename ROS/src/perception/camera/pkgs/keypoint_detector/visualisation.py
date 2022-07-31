@@ -1,19 +1,11 @@
 from pathlib import Path
 
-from keypoint_detector.data import (
-    create_heatmaps,
-    retrieve_data,
-    read_img,
-    retrieve_label_file,
-    ConeDataset,
-    KeyPointDataset,
-)
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
-
-from pathlib import Path
-
+import numpy as np
+from keypoint_detector.data import (ConeDataset, KeyPointDataset,
+                                    create_heatmaps, read_img, retrieve_data,
+                                    retrieve_label_file)
 from keypoint_detector.module import RektNetModule
 from param import RektNetTrainParam
 

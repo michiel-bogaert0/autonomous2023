@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-import rospy
-import can
 import time
+
+import can
+import rospy
 from std_msgs.msg import String
 
 

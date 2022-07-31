@@ -200,7 +200,7 @@ class SLAMNode(ROSNode, ABC):
                 distance = (obs_location[0] - state_prediction[0]) ** 2 + (
                     obs_location[1] - state_prediction[1]
                 ) ** 2
-                if distance < self.max_landmark_range**2:
+                if distance < self.max_landmark_range ** 2:
                     observations.observations.append(new_obs)
             else:
                 observations.observations.append(new_obs)

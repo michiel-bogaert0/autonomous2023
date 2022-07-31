@@ -6,13 +6,13 @@ import time
 from pathlib import Path
 from typing import Tuple
 
-from cone_detection.cone_detection import ConeDetector
-from pnp.cone_pnp import ConePnp
-from keypoint_detection.keypoint_detection import ConeKeypointDetector
 import neoapi
 import numpy as np
 import rospy
 import torch
+from cone_detection.cone_detection import ConeDetector
+from keypoint_detection.keypoint_detection import ConeKeypointDetector
+from pnp.cone_pnp import ConePnp
 from sensor_msgs.msg import Image
 from ugr_msgs.msg import BoundingBox, ConeKeypoints, PerceptionUpdate
 

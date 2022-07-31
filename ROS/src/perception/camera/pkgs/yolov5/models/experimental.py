@@ -7,7 +7,6 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
-
 from yolov5.models.common import Conv
 
 

@@ -5,7 +5,6 @@ Loss functions
 
 import torch
 import torch.nn as nn
-
 from yolov5.utils.metrics import bbox_iou
 from yolov5.utils.torch_utils import de_parallel
 

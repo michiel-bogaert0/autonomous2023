@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-from tkinter.tix import Tree
-import rospy
-from geometry_msgs.msg import TwistWithCovarianceStamped, TwistStamped
-from sensor_msgs.msg import Imu
-from node_fixture.node_fixture import AddSubscriber, ROSNode
-import numpy as np
-import tf
 import math
-from nav_msgs.msg import Odometry
+from tkinter.tix import Tree
+
+import numpy as np
+import rospy
+import tf
 from fs_msgs.msg import Track
-from sensor_msgs.msg import NavSatFix
-from ugr_msgs.msg import PerceptionUpdate, Observations, Observation
+from geometry_msgs.msg import TwistStamped, TwistWithCovarianceStamped
+from nav_msgs.msg import Odometry
+from node_fixture.node_fixture import AddSubscriber, ROSNode
+from sensor_msgs.msg import Imu, NavSatFix
+from ugr_msgs.msg import Observation, Observations, PerceptionUpdate
 
 
 class Convert(ROSNode):
@@ -83,7 +83,7 @@ class Convert(ROSNode):
         new_msg.twist.twist = msg.twist
 
         new_msg.twist.twist.linear.x = (
-            msg.twist.linear.x**2 + msg.twist.linear.y**2
+            msg.twist.linear.x ** 2 + msg.twist.linear.y ** 2
         ) ** (1 / 2)
         new_msg.twist.twist.linear.y = 0
 

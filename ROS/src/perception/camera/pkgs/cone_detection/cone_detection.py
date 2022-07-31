@@ -6,8 +6,8 @@ import numpy as np
 from fs_msgs.msg import Cone
 from sensor_msgs.msg import Image
 from ugr_msgs.msg import BoundingBox
-from yolov5.yolov5 import YOLOv5
 from yolov5.output import BoundingBox as YOLOVBoundingBox
+from yolov5.yolov5 import YOLOv5
 
 
 class ConeDetector:

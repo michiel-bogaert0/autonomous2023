@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 from functools import partial
+from time import time_ns
 
 import rospy
 from locmap_simulator.srv import Dropout, DropoutRequest, DropoutResponse
 from node_fixture.node_fixture import AddSubscriber, ROSNode
-
-from time import time_ns
 
 
 class DropoutNode(ROSNode):
