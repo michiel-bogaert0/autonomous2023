@@ -13,7 +13,7 @@ pybind11[global]
 torch
 torchvision
 seaborn
-pytorch-lighting
+pytorch-lightning
 tqdm
 cython
 
