@@ -22,10 +22,10 @@ class PerceptionNode:
         rospy.init_node("perception_jetson")
         self.pub_raw = rospy.Publisher("/perception/raw_image", Image, queue_size=10)
         self.pub_keypoints = rospy.Publisher(
-            "/processed/cone_keypoints", ConeKeypoints, queue_size=10
+            "/perception/processed/cone_keypoints", ConeKeypoints, queue_size=10
         )
         self.pub_pnp = rospy.Publisher(
-            "/processed/raw_perception_update", PerceptionUpdate, queue_size=10
+            "/perception/processed/raw_perception_update", PerceptionUpdate, queue_size=10
         )
 
         self.rate = rospy.get_param("~rate", 10)
