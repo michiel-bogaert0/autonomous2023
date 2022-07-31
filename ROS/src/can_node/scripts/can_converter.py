@@ -70,7 +70,7 @@ class CanConverter:
                     twist_msg.twist = TwistWithCovariance()
 
                     # TODO Use actual covariance measurements (first we need data to estimate these)
-                    twist_msg.twist.covariance = np.diag([0.1, 0.1, 0, 0, 0, 0])
+                    twist_msg.twist.covariance = np.diag([0.1, 0.1, 0, 0, 0, 0]).reshape((1, 36)).tolist()[0]
                     twist_msg.twist.twist = Twist()
 
                     speed = can_msg["Vel_Estimate"]  # in rev/s
