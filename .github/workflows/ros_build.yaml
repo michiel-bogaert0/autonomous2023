@@ -25,6 +25,11 @@ jobs:
               run: |
                   sudo apt-get install -y python3-catkin-pkg python3-catkin-tools ros-noetic-catkin python3-rosdep python3-wstool python3-osrf-pycommon ros-cmake-modules ros-noetic-tf2-geometry-msgs ros-noetic-rqt-multiplot ros-noetic-joy ros-noetic-image-transport libyaml-cpp-dev libcurl4-openssl-dev python3-pcl pcl-tools ros-noetic-perception-pcl
 
+            - name: Python Pip Install
+              # You may pin to the exact commit or the version.
+              # uses: logikal-code/pip-install@51d215f7fc153e741488726defaa8cb84ea35300
+              uses: logikal-code/pip-install@v1.0.0
+
             - name: Install ROS packages with rosdep
               run: |
                   source /opt/ros/noetic/setup.bash
@@ -33,11 +38,13 @@ jobs:
                   cd ROS
                   rosdep install --from-paths src --ignore-src -r -s  # do a dry-run first
                   rosdep install --from-paths src --ignore-src -r -y
+                  pip install setuptools==45.2.0
 
             - name: Build Release
               run: |
                   source /opt/ros/$ROS_DISTRO/setup.bash
                   cd ROS
-                  catkin config --install --cmake-args -DCMAKE_BUILD_TYPE=Release
+                  sudo chmod 755 src/locmap/locmap_fastslam/cython_setup.sh
+                  catkin config --install --cmake-args -DCMAKE_BUILD_TYPE=Release -DSETUPTOOLS_DEB_LAYOUT=OFF
                   catkin build --no-status
                   source devel/setup.bash

@@ -1,0 +1,139 @@
+<!-- This launch file provides the ROS system with the required localization nodes in the context of sensor fusion, compliant with REP105. 
+     So this launch file provides estimates only based on "odometry-based" sensors, like IMU, wheel encoders, GPS, etc..
+     It is meant to work together with SLAM nodes
+
+     See our documentation for more (general) information about this, how to setup sensor header data, etc...
+-->
+
+<launch>
+
+  <!-- overridable arguments
+      - carname: the name of the car that needs to be localized
+      - use_sim_time: MUST be set to "true" when the wall time doesn't match the ROS time. So in the case of replaying rosbags, set this to "true"
+  -->
+  <arg name="carname" default="car" />
+
+
+  <!-- Put all static frame transformations in this namespace. 
+       Per car there must be a static transformation from earth to the cars map frame.
+       Other than that you can use static transformations to for example connect sensors to the cars base_link frame, or to make the bridge between simulation
+  -->
+  <group ns="ugr_static_frames">
+    <node pkg="tf2_ros" type="static_transform_publisher" name="$(arg carname)_map_to_earth" args="0 0 0 0 0 0 1 earth ugr/$(arg carname)_map" />
+  </group>
+
+  <!-- Odometry (local, continous) robot_localization node. This one handles continious data and publishes the tranformations between ODOM and BASE_LINK -->
+
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_node_odom_$(arg carname)" respawn="true">
+
+    <!-- Fusing continous (drifting) data, so world_frame must be odom -->
+    <param name="world_frame" value="ugr/$(arg carname)_odom" />
+    <param name="map_frame" value="ugr/$(arg carname)_map" />
+    <param name="odom_frame" value="ugr/$(arg carname)_odom" />
+    <param name="base_link_frame" value="ugr/$(arg carname)_base_link" />
+    <param name="frequency" value="60" />
+    <param name="sensor_timeout" value="0.02" />
+
+    <param name="two_d_mode" value="true" />
+
+    <!-- IMU sensor example -->
+
+    <param name="imu0" value="ugr/$(arg carname)/sensors/imu0" />
+    <rosparam param="imu0_config">[false, false, false,
+                                   false, false, true,
+                                   false, false, false,
+                                   false, false, true,
+                                   false, false, false]</rosparam>
+    <param name="imu0_differential" value="false" />
+    <param name="imu0_relative" value="false" />
+
+    <!-- twist -->
+
+    <param name="twist0" value="ugr/$(arg carname)/sensors/encoder0" />
+    <rosparam param="twist0_config">[false, false, false,
+      false, false, false,
+      true, false, false,
+      false, false, false,
+      false, false, false]</rosparam>
+
+
+    <!-- Remap the output -->
+
+    <remap from="odometry/filtered" to="ugr/$(arg carname)/odometry/filtered/odom" />
+
+  </node>
+
+  <!-- Map (global, absolute) robot_localization node. This one fuses absolute data, like GPS -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_node_map_$(arg carname)" respawn="true">
+
+    <!-- Fusing absolute data, so world_frame must be map -->
+    <param name="world_frame" value="ugr/$(arg carname)_map" />
+    <param name="map_frame" value="ugr/$(arg carname)_map" />
+    <param name="odom_frame" value="ugr/$(arg carname)_odom" />
+    <param name="base_link_frame" value="ugr/$(arg carname)_base_link" />
+    <param name="frequency" value="60" />
+    <param name="sensor_timeout" value="0.02" />
+
+    <param name="two_d_mode" value="true" />
+
+    <!-- GPS data from navsat node must be handled with an 'odom' sensor -->
+
+    <param name="odom0" value="ugr/$(arg carname)/odometry/filtered/gps" />
+    <rosparam param="odom0_config">[true, true, false,
+                                   false, false, false,
+                                   false, false, false,
+                                   false, false, false,
+                                   false, false, false]</rosparam>
+    <!-- These MUST be false because the GPS data comes from navsat node -->
+    <param name="odom0_differential" value="false" />
+    <param name="odom0_relative" value="false" />
+
+    <!-- IMU sensor for yaw heading. Required! -->
+
+    <param name="imu0" value="ugr/$(arg carname)/sensors/imu0" />
+    <rosparam param="imu0_config">[false, false, false,
+                                   false, false, true,
+                                   false, false, false,
+                                   false, false, true,
+                                   false, false, false]</rosparam>
+    <param name="imu0_differential" value="false" />
+    <param name="imu0_relative" value="false" />
+
+    <!-- twist -->
+
+    <param name="twist0" value="ugr/$(arg carname)/sensors/encoder0" />
+    <rosparam param="twist0_config">[false, false, false,
+      false, false, false,
+      true, false, false,
+      false, false, false,
+      false, false, false]</rosparam>
+
+    <!-- Also remap the output -->
+
+    <remap from="odometry/filtered" to="ugr/$(arg carname)/odometry/filtered/map" />
+
+  </node>
+
+
+  <!-- navsat node. This basically transforms NavSatFix messages (which are in GPS coordinate system) to an Odometry message, which
+    is fed back to the 'map' localization node
+  -->
+
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node_$(arg carname)" respawn="true">
+
+    <param name="magnetic_declination_radians" value="0" />
+    <param name="yaw_offset" value="0" />
+    <param name="zero_altitude" value="true" />
+    <param name="frequency" value="20" />
+
+    <!-- inputs. Only takes yaw from imu/data -->
+    <remap from="odometry/filtered" to="ugr/$(arg carname)/odometry/filtered/map" />
+    <remap from="imu/data" to="ugr/$(arg carname)/sensors/imu0" />
+    <remap from="gps/fix" to="ugr/$(arg carname)/sensors/gps" />
+
+    <!-- outputs -->
+    <remap from="odometry/gps" to="ugr/$(arg carname)/odometry/filtered/gps" />
+
+  </node>
+
+</launch>
