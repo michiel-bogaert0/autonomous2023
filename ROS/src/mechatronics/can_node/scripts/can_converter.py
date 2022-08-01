@@ -5,20 +5,20 @@ import rospy
 import can
 import cantools
 import struct
-from std_msgs.msg import String
+from can_msgs.msg import Frame
 from geometry_msgs.msg import TwistWithCovarianceStamped, TwistWithCovariance, Twist
 
 class CanConverter:
     def __init__(self):
         rospy.init_node("can_node")
-        self.can_pub = rospy.Publisher("/can_messages", String, queue_size=10)
+        self.can_pub = rospy.Publisher("/output/can", String, queue_size=10)
         self.vel_left = rospy.Publisher(
-            "/mechatronics/wheel_encoder/left",
+            "/output/left",
             TwistWithCovarianceStamped,
             queue_size=10,
         )
         self.vel_right = rospy.Publisher(
-            "/mechatronics/wheel_encoder/right",
+            "/output/right",
             TwistWithCovarianceStamped,
             queue_size=10,
         )
