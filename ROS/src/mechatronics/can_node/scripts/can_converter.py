@@ -11,7 +11,7 @@ from geometry_msgs.msg import TwistWithCovarianceStamped, TwistWithCovariance, T
 class CanConverter:
     def __init__(self):
         rospy.init_node("can_node")
-        self.can_pub = rospy.Publisher("/output/can", String, queue_size=10)
+        self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)
         self.vel_left = rospy.Publisher(
             "/output/left",
             TwistWithCovarianceStamped,
@@ -48,6 +48,11 @@ class CanConverter:
         # this keeps looping forever
         for msg in self.bus:
             # Publish message on ROS
+            can_msg = Frame()
+            can_msg.header.stamp = msg.timestamp
+            can_msg = msg.arbitration_id
+            can_msg.data = msg.data
+            self.can_pub.publish(can_msg)
 
             # Check if the message is a ODrive command
             axis_id = msg.arbitration_id >> 5
@@ -81,11 +86,6 @@ class CanConverter:
                         self.vel_left.publish(twist_msg)
 
                     continue
-
-            # If the message was not recognised, just post it to the general topic
-            self.can_pub.publish(
-                f"{msg.timestamp} - [{msg.arbitration_id}] {msg.data.hex()}"
-            )
 
             # Check for external shutdown
             if rospy.is_shutdown():
