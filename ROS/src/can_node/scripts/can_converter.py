@@ -8,13 +8,9 @@ import struct
 from std_msgs.msg import String
 from geometry_msgs.msg import TwistWithCovarianceStamped, TwistWithCovariance, Twist
 
-
-odrive_db = cantools.database.load_file("../odrive.dbc")
-
-
 class CanConverter:
     def __init__(self):
-        rospy.init_node("jetson_can")
+        rospy.init_node("can_node")
         self.can_pub = rospy.Publisher("/can_messages", String, queue_size=10)
         self.vel_left = rospy.Publisher(
             "/mechatronics/wheel_encoder/left",
@@ -38,6 +34,8 @@ class CanConverter:
             bitrate=rospy.get_param("~baudrate", 1000000),
         )
 
+        self.odrive_db = cantools.database.load_file(rospy.get_param("~odrive_dbc", "../odrive.dbc"))
+
         try:
             self.listen_on_can()
         except rospy.ROSInterruptException:
@@ -58,7 +56,7 @@ class CanConverter:
 
                 if cmd_id == 9:
 
-                    can_msg = odrive_db.decode_message(cmd_id, msg.data)
+                    can_msg = self.odrive_db.decode_message(cmd_id, msg.data)
 
                     # Encoder estimate
                     twist_msg = TwistWithCovarianceStamped()
@@ -75,12 +73,12 @@ class CanConverter:
 
                     speed = can_msg["Vel_Estimate"]  # in rev/s
                     speed *= np.pi * self.wheel_diameter
-                    twist_msg.twist.twist.linear.x = speed
+                    twist_msg.twist.twist.linear.x = speed if axis_id == 1 else -speed # The left wheel is inverted
 
                     if axis_id == 1:
-                        self.vel_right(twist_msg)
+                        self.vel_right.publish(twist_msg)
                     elif axis_id == 2:
-                        self.vel_left(twist_msg)
+                        self.vel_left.publish(twist_msg)
 
                     continue
 
