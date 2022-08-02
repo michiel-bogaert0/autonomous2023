@@ -5,7 +5,7 @@
         <param name="odrive_dbc" value="$(find can_node)/odrive.dbc" />
 
         <remap from="/output/can" to="/can_messages" />
-        <remap from="/output/left" to="/mechatronics/wheel_encoder/left" />
-        <remap from="/output/right" to="/mechatronics/wheel_encoder/right" />
+        <remap from="/output/vel/left" to="/mechatronics/wheel_encoder/left" />
+        <remap from="/output/vel/right" to="/mechatronics/wheel_encoder/right" />
     </node>
 </launch>

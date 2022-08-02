@@ -1,40 +1,33 @@
 #!/usr/bin/env python3
 
+from ROS.src.mechatronics.can_node.scripts.odrive import OdriveConverter
 import numpy as np
 import rospy
 import can
 import cantools
 import struct
 from can_msgs.msg import Frame
-from geometry_msgs.msg import TwistWithCovarianceStamped, TwistWithCovariance, Twist
+
+import imu, odrive
 
 class CanConverter:
     def __init__(self):
         rospy.init_node("can_node")
-        self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)
-        self.vel_left = rospy.Publisher(
-            "/output/left",
-            TwistWithCovarianceStamped,
-            queue_size=10,
-        )
-        self.vel_right = rospy.Publisher(
-            "/output/right",
-            TwistWithCovarianceStamped,
-            queue_size=10,
-        )
+        self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)        
 
-        self.wheel_diameter = rospy.get_param("~wheel_diameter", 8 * 2.54 / 100)  # in m
-        self.axis0_frame = rospy.get_param("~axis0/frame", "ugr/car_axis0")
-        self.axis1_frame = rospy.get_param("~axis1/frame", "ugr/car_axis1")
+        # The first element is the front IMU, the second is the rear IMU
+        self.IMU_IDS = [0xe1, 0xe2] # TODO gotta check of deze ok zijn
 
         # create a bus instance
         self.bus = can.interface.Bus(
             bustype="socketcan",
             channel=rospy.get_param("~interface", "can0"),
-            bitrate=rospy.get_param("~baudrate", 1000000),
+            bitrate=rospy.get_param("~baudrate", 250000),
         )
 
-        self.odrive_db = cantools.database.load_file(rospy.get_param("~odrive_dbc", "../odrive.dbc"))
+        # Create the right converters
+        self.odrive = OdriveConverter()
+        self.imu = ImuConverter()
 
         try:
             self.listen_on_can()
@@ -60,36 +53,17 @@ class CanConverter:
                 cmd_id = msg.arbitration_id & 0b11111
 
                 if cmd_id == 9:
-
-                    can_msg = self.odrive_db.decode_message(cmd_id, msg.data)
-
-                    # Encoder estimate
-                    twist_msg = TwistWithCovarianceStamped()
-                    twist_msg.header.frame_id = (
-                        self.axis0_frame if axis_id == 1 else self.axis1_frame
-                    )
-                    twist_msg.header.stamp = rospy.Time.from_sec(msg.timestamp)
-
-                    twist_msg.twist = TwistWithCovariance()
-
-                    # TODO Use actual covariance measurements (first we need data to estimate these)
-                    twist_msg.twist.covariance = np.diag([0.1, 0.1, 0, 0, 0, 0]).reshape((1, 36)).tolist()[0]
-                    twist_msg.twist.twist = Twist()
-
-                    speed = can_msg["Vel_Estimate"]  # in rev/s
-                    speed *= np.pi * self.wheel_diameter
-                    twist_msg.twist.twist.linear.x = speed if axis_id == 1 else -speed # The left wheel is inverted
-
-                    if axis_id == 1:
-                        self.vel_right.publish(twist_msg)
-                    elif axis_id == 2:
-                        self.vel_left.publish(twist_msg)
-
+                    self.odrive.handle_odrive_vel_msg(msg, axis_id, cmd_id)
                     continue
+            
+            imu_id = msg.id & 0xFF
+            if imu_id in self.IMU_IDS:
+                self.imu.handle_imu_msg(msg, imu_id == self.IMU_IDS[0])
 
             # Check for external shutdown
             if rospy.is_shutdown():
                 return
+
 
     def send_on_can(self, msg: can.Message) -> None:
         """Sends a message msg over the can bus
