@@ -7,13 +7,13 @@ import numpy as np
 
 class OdriveConverter:
     def __init__(self):
-        self.vel_left = rospy.Publisher(
-            "/output/vel/left",
+        self.vel_right = rospy.Publisher(
+            "/output/vel0",
             TwistWithCovarianceStamped,
             queue_size=10,
         )
-        self.vel_right = rospy.Publisher(
-            "/output/vel/right",
+        self.vel_left = rospy.Publisher(
+            "/output/vel1",
             TwistWithCovarianceStamped,
             queue_size=10,
         )

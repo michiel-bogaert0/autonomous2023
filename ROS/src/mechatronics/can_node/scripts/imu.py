@@ -8,32 +8,32 @@ import tf_conversions
 class ImuConverter:
     def __init__(self):
         self.imu_front_pitch_roll = rospy.Publisher(
-            "/output/imu/front/pitch_roll",
+            "/output/imu0/pitch_roll",
             Imu,
             queue_size=10,
         )
         self.imu_front_angular_rate = rospy.Publisher(
-            "/output/imu/front/angular_rate",
+            "/output/imu0/angular_rate",
             Imu,
             queue_size=10,
         )
         self.imu_front_acc = rospy.Publisher(
-            "/output/imu/front/acc",
+            "/output/imu0/acc",
             Imu,
             queue_size=10,
         )
         self.imu_back_pitch_roll = rospy.Publisher(
-            "/output/imu/back/pitch_roll",
+            "/output/imu1/pitch_roll",
             Imu,
             queue_size=10,
         )
         self.imu_back_angular_rate = rospy.Publisher(
-            "/output/imu/back/angular_rate",
+            "/output/imu1/angular_rate",
             Imu,
             queue_size=10,
         )
         self.imu_back_acc = rospy.Publisher(
-            "/output/imu/back/acc",
+            "/output/imu1/acc",
             Imu,
             queue_size=10,
         )
