@@ -12,9 +12,14 @@ __pycache__/
 *.egg-info
 core
 *.log
+*.stderr
 *.bag
 build/
 devel/
+logs/
+
+# Python
+*.whl
 
 # FSDS
 AirSim/
