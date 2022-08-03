@@ -1,3 +1,4 @@
 #!/bin/sh
-cd $(echo $PWD | sed 's/build/src\/locmap/g')
+echo $PWD
+cd $(echo $PWD | sed 's/build/src/')
 python3 ./setup.py build_ext --inplace  

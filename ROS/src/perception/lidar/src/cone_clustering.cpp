@@ -2,6 +2,9 @@
 #include <cmath>
 #include <ros/ros.h>
 #include "cone_clustering.hpp"
+#include <iostream>
+#include <fstream>
+#include <Eigen/Dense>
 
 #define VERT_RES_TAN std::tan(0.35 * M_PI / (2.0f * 180))
 #define HOR_RES_TAN std::tan(2 * M_PI / (2.0f * 2048))
@@ -147,8 +150,7 @@ namespace ns_lidar
     sensor_msgs::PointCloud ConeClustering::stringClustering(
         const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud)
     {
-
-        //sort point from left to right (because they are ordered in concentric circles)
+        //sort point from left to right (because they are ordered from left to right)
         std::sort(cloud->begin(), cloud->end(), ConeClustering::leftrightsort);
 
         std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters;
@@ -270,7 +272,7 @@ namespace ns_lidar
     }
 
     /**
-     * @brief Checks whether a PC represents a cone
+     * @brief Checks whether a PC represents a cone and which color it has.
      *
      * @returns ConeCheck containing the cones coordinates and whether it is a cone
      */
@@ -288,33 +290,6 @@ namespace ns_lidar
         float bound_y = std::fabs(max[1] - min[1]);
         float bound_z = std::fabs(max[2] - min[2]);
 
-
-        float count_bottom = 0;
-        float count_middle = 0;
-        float count_top = 0;
-        double intensity_bottom = 0.0;
-        double intensity_middle = 0.0;
-        double intensity_top = 0.0;
-        for(pcl::PointXYZI point : cone){
-            if(point.z < min[2] + 0.14){
-                intensity_bottom += point.intensity;
-                count_bottom++;
-            }
-            else if (point.z < min[2] + 0.28){
-                intensity_middle += point.intensity;
-                count_middle++;
-            }
-            else{
-                intensity_top += point.intensity;
-                count_top++;
-            }
-
-        }
-
-        intensity_bottom /= count_bottom;
-        intensity_top /= count_top;
-        intensity_middle /= count_middle;
-
         // filter based on the shape of cones
         if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4 && centroid[2] < 0.4)
         {
@@ -330,12 +305,27 @@ namespace ns_lidar
                 cone_check.pos.y = centroid[1];
                 cone_check.pos.z = centroid[2];
                 cone_check.is_cone = true;
-                if(intensity_middle < intensity_top && intensity_middle < intensity_bottom)
-                    cone_check.color = 1.0;
-                else if(intensity_middle > intensity_top && intensity_middle > intensity_bottom)
-                    cone_check.color = 0.0;
-                else
-                    cone_check.color = 0.5;
+
+
+                // calculate the convexity of the intensity to distinguish between blue and yellow;
+                Eigen::MatrixXd X_mat(cone.points.size(),3);
+                Eigen::VectorXd Y_mat(cone.points.size(),1);
+
+                // setup matrix
+                for(int i = 0; i < cone.points.size(); i++){
+                    float z_value = cone.points[i].z;
+                    X_mat(i,0) = z_value*z_value;
+                    X_mat(i,1) = z_value;
+                    X_mat(i,2) = 1;
+
+                    Y_mat(i) = cone.points[i].intensity;
+                }
+
+                // solve ordinary least squares minimisation
+                Eigen::VectorXd solution = X_mat.colPivHouseholderQr().solve(Y_mat);
+                 
+                if(solution(0) > 0) cone_check.color = 1;
+                else cone_check.color = 0;
 
                 return cone_check;
             }

@@ -9,7 +9,7 @@
         <param name="clustering_method" value="string" />
         <param name="cluster_tolerance" value="0.4" />
         <param name="point_count_theshold" value="1" />
-        <param name="min_distnace_factor" value="1.5"/>
-        <param name="min_number_points_threshold" value="10"/>
+        <param name="min_distance_factor" value="1.5"/>
+        <param name="min_number_points_threshold" value="5"/>
     </node>
 </launch>

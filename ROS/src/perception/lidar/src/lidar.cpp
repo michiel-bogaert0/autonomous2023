@@ -45,8 +45,12 @@ namespace ns_lidar
         // Ground plane removal
         pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points(new pcl::PointCloud<pcl::PointXYZI>());
         pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points(new pcl::PointCloud<pcl::PointXYZI>());
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
         ground_removal_.groundRemoval(preprocessed_pc, notground_points, ground_points);
+        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         ROS_INFO("Post ground removal points: %ld", notground_points->size());
+        double time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
+        ROS_INFO("ground-removel took: %lf", time_round);
 
         sensor_msgs::PointCloud2 groundremoval_msg;
         pcl::toROSMsg(*notground_points, groundremoval_msg);
@@ -57,10 +61,10 @@ namespace ns_lidar
         // Cone clustering
         sensor_msgs::PointCloud cluster;
 
-        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+        t2 = std::chrono::steady_clock::now();
         cluster = cone_clustering_.cluster(notground_points, ground_points);
-        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-        double time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
+        t1 = std::chrono::steady_clock::now();
+        time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
         ROS_INFO("Clustering took: %lf", time_round);
 
         cluster.header.frame_id = msg.header.frame_id;
@@ -115,7 +119,6 @@ namespace ns_lidar
             marker.type = visualization_msgs::Marker::CYLINDER;
             marker.action = visualization_msgs::Marker::ADD;
             float color = cones.channels[0].values[i];
-            ROS_INFO("%f",color);
             marker.id = i++;
 
             marker.pose.position.x = cone.x;
@@ -132,7 +135,7 @@ namespace ns_lidar
 
             marker.color.r = color;
             marker.color.g = 0.0f;
-            marker.color.b = 1.0f;
+            marker.color.b = 1 - color;
             marker.color.a = 1.0;
 
             marker.lifetime = ros::Duration(0); // in seconds (0 means stay forever, or at least until overwritten)
