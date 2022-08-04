@@ -27,7 +27,7 @@ class CanConverter:
 
         # Create the right converters
         self.odrive = OdriveConverter()
-        self.imu = ImuConverter()
+        # self.imu = ImuConverter() # TODO: finalise code
 
         try:
             self.listen_on_can()
