@@ -20,6 +20,7 @@ namespace ns_lidar
         n.param<double>("point_count_theshold", point_count_theshold_, 0.5);
         n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
         n.param<int> ("min_number_points_threshold",min_number_points_threshold_,10);
+        n.param<float>("minimal_curve_intensity", minimal_curve_intensity_,1);
     }
 
     /**
@@ -130,7 +131,7 @@ namespace ns_lidar
             if (cone_check.is_cone)
             {
                 cluster_msg.points.push_back(cone_check.pos);
-                cone_channel.values.push_back(0); // TODO actually get the intensity
+                cone_channel.values.push_back(cone_check.color); // TODO actually get the intensity
             }
         }
 
@@ -324,7 +325,8 @@ namespace ns_lidar
                 // solve ordinary least squares minimisation
                 Eigen::VectorXd solution = X_mat.colPivHouseholderQr().solve(Y_mat);
                  
-                if(solution(0) > 0) cone_check.color = 1;
+                if(abs(solution(0)) < minimal_curve_intensity_) cone_check.is_cone = false;
+                else if(solution(0) > 0) cone_check.color = 1;
                 else cone_check.color = 0;
 
                 return cone_check;

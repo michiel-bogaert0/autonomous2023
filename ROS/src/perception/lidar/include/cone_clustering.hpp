@@ -35,6 +35,7 @@ namespace ns_lidar
         double point_count_theshold_;
         double min_distance_factor_;
         int min_number_points_threshold_;// How much % can the cone point count prediction be off from the actual count 
+        float minimal_curve_intensity_;
 
         sensor_msgs::PointCloud euclidianClustering(
             const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,

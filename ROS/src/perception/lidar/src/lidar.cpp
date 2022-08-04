@@ -134,7 +134,7 @@ namespace ns_lidar
             marker.scale.z = 0.325;
 
             marker.color.r = color;
-            marker.color.g = 0.0f;
+            marker.color.g = color;
             marker.color.b = 1 - color;
             marker.color.a = 1.0;
 
