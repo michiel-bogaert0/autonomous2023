@@ -19,7 +19,6 @@ namespace ns_lidar
         n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
         n.param<double>("point_count_theshold", point_count_theshold_, 0.5);
         n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
-        n.param<int> ("min_number_points_threshold",min_number_points_threshold_,10);
         n.param<float>("minimal_curve_intensity", minimal_curve_intensity_,1);
     }
 
@@ -64,7 +63,7 @@ namespace ns_lidar
         // Define the parameters for Euclidian clustering
         std::vector<pcl::PointIndices> cluster_indices;
         std::vector<pcl::PointXYZ> cluster_centroids;
-        std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clusters;
+        std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters;
         pcl::EuclideanClusterExtraction<pcl::PointXYZI> ec;
         ec.setClusterTolerance(cluster_tolerance_);
         ec.setMinClusterSize(2);
@@ -77,19 +76,19 @@ namespace ns_lidar
         for (const auto &iter : cluster_indices)
         {
             // Create PC of the current cone cluster
-            pcl::PointCloud<pcl::PointXYZI>::Ptr cone(new pcl::PointCloud<pcl::PointXYZI>);
+            pcl::PointCloud<pcl::PointXYZI> cone;
             for (auto it : iter.indices)
             {
-                cone->points.push_back(cloud->points[it]);
+                cone.points.push_back(cloud->points[it]);
             }
-            cone->width = cone->points.size();
-            cone->height = 1;
-            cone->is_dense = true;
+            cone.width = cone.points.size();
+            cone.height = 1;
+            cone.is_dense = true;
             clusters.push_back(cone);
 
             // Compute centroid of each cluster
             Eigen::Vector4f centroid;
-            pcl::compute3DCentroid(*cone, centroid);
+            pcl::compute3DCentroid(cone, centroid);
             pcl::PointXYZ centroid_pos;
             centroid_pos.x = centroid[0];
             centroid_pos.y = centroid[1];
@@ -120,24 +119,11 @@ namespace ns_lidar
             // If the closest cluster is close enough, add the point to the cluster
             if (closest_cluster_dist < 0.3)
             {
-                clusters[closest_cluster_id]->points.push_back(point);
+                clusters[closest_cluster_id].points.push_back(point);
             }
         }
 
-        // Now check each cluster to verify it is actually a cone
-        for (const auto &cone : clusters)
-        {
-            ConeCheck cone_check = ConeClustering::isCloudCone(*cone);
-            if (cone_check.is_cone)
-            {
-                cluster_msg.points.push_back(cone_check.pos);
-                cone_channel.values.push_back(cone_check.color); // TODO actually get the intensity
-            }
-        }
-
-        cluster_msg.channels.push_back(cone_channel);
-
-        return cluster_msg;
+        return ConeClustering::construct_message(clusters);
     }
 
     /**
@@ -253,6 +239,17 @@ namespace ns_lidar
 
         // From the clusters we found, now generate their centroid and add it to the ROS message
 
+        
+
+        return ConeClustering::construct_message(clusters);
+    }
+
+    /**
+     * @brief Construct a ROS message from the clusters, containing the position of each cone, as wel as its dimensions.
+     *
+     * @returns a sensor_msgs::PointCloud containing the information about all the cones in the current frame.
+     */
+    sensor_msgs::PointCloud ConeClustering::construct_message(std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters){
         // Create a PC and channel for the cone colour
         sensor_msgs::PointCloud cluster_msg;
         sensor_msgs::ChannelFloat32 cone_channel;
@@ -266,7 +263,7 @@ namespace ns_lidar
         for (pcl::PointCloud<pcl::PointXYZI> cluster : clusters)
         {
             ConeCheck cone_check = ConeClustering::isCloudCone(cluster);
-            if (cone_check.is_cone && cluster.size() > min_number_points_threshold_)
+            if (cone_check.is_cone)
             {
                 cluster_msg.points.push_back(cone_check.pos);
                 cone_channel.values.push_back(cone_check.color);
@@ -279,7 +276,6 @@ namespace ns_lidar
         cluster_msg.channels.push_back(x_size_channel);
         cluster_msg.channels.push_back(y_size_channel);
         cluster_msg.channels.push_back(z_size_channel);
-
         return cluster_msg;
     }
 
@@ -303,7 +299,7 @@ namespace ns_lidar
         float bound_z = std::fabs(max[2] - min[2]);
 
         // filter based on the shape of cones
-        if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4 && centroid[2] < 0.4)
+        if (bound_x < 0.30 && bound_y < 0.30 && bound_z < 0.4 && centroid[2] < 0) // centroid[2] < 0 because lidar is positioned heigher than the cones
         {
             // Calculate the expected number of points that hit the cone
             float dist = ConeClustering::hypot3d(centroid[0], centroid[1], centroid[2]);
