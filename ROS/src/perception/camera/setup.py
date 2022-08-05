@@ -9,7 +9,7 @@ d = generate_distutils_setup(
         "cone_detection",
         "keypoint_detection",
         "pnp",
-        "publisher_abstract"
+        "publisher_abstract",
     ],
     package_dir={"": "pkgs"},
 )
