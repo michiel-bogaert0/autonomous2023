@@ -1,0 +1,17 @@
+<launch>
+
+    <env name="BINARY_LOCATION" value="$(env HOME)/autonomous_binaries"/>
+    <arg name="type" type='string' default="dummy"/>
+    <group ns="dummy1" if='$(eval arg("type") =="dummy")'>
+        <node pkg="perception" type="dummy.py" name="dummy_publisher" output="screen">
+            <param name="rate" value="10"/>
+        </node>
+
+    </group>
+
+    <group ns="cam" if='$(eval arg("type") =="camera")'>
+        <node pkg="perception" type="camera.py" name="camera_publisher">
+            <param name="rate" value="10"/>
+        </node>
+    </group>
+</launch>

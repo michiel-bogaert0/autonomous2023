@@ -1,0 +1,15 @@
+<launch>
+    <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries"/>
+
+    <node pkg="perception" type="run_pc.py" name="perception" output="screen">
+        <param name="cuda" value="True" />
+        <param name="tensorrt" value="False"/>
+        <param name="detection_height_threshold" value="30" />
+        <param name="rate" value="10" />
+    </node>
+
+    <include file="$(find perception)/launch/perception.publisher.launch" pass_al_args="true"/>
+
+    
+
+</launch>
