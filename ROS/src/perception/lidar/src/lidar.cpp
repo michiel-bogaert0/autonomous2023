@@ -116,9 +116,12 @@ namespace ns_lidar
             marker.header.frame_id = cones.header.frame_id;
             marker.header.stamp = cones.header.stamp;
             marker.ns = "cones";
-            marker.type = visualization_msgs::Marker::CYLINDER;
+            marker.type = visualization_msgs::Marker::CUBE;
             marker.action = visualization_msgs::Marker::ADD;
             float color = cones.channels[0].values[i];
+            float x_size = cones.channels[1].values[i];
+            float y_size = cones.channels[2].values[i];
+            float z_size = cones.channels[3].values[i];
             marker.id = i++;
 
             marker.pose.position.x = cone.x;
@@ -129,14 +132,14 @@ namespace ns_lidar
             marker.pose.orientation.z = 0.0;
             marker.pose.orientation.w = 1.0;
 
-            marker.scale.x = 0.228; // in meters
-            marker.scale.y = 0.228;
-            marker.scale.z = 0.325;
+            marker.scale.x = x_size;//0.228; // in meters
+            marker.scale.y = y_size;//0.228;
+            marker.scale.z = z_size;//0.325;
 
             marker.color.r = color;
             marker.color.g = color;
             marker.color.b = 1 - color;
-            marker.color.a = 1.0;
+            marker.color.a = 0.5;
 
             marker.lifetime = ros::Duration(0); // in seconds (0 means stay forever, or at least until overwritten)
 

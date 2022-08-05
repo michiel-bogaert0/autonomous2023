@@ -15,6 +15,7 @@ namespace ns_lidar
         geometry_msgs::Point32 pos;
         bool is_cone;
         float color;
+        double bounds[3];
     } ConeCheck;
 
     class ConeClustering

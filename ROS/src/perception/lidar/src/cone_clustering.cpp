@@ -256,6 +256,11 @@ namespace ns_lidar
         // Create a PC and channel for the cone colour
         sensor_msgs::PointCloud cluster_msg;
         sensor_msgs::ChannelFloat32 cone_channel;
+        sensor_msgs::ChannelFloat32 x_size_channel;
+        sensor_msgs::ChannelFloat32 y_size_channel;
+        sensor_msgs::ChannelFloat32 z_size_channel;
+        
+
         cone_channel.name = "cone_type";
 
         for (pcl::PointCloud<pcl::PointXYZI> cluster : clusters)
@@ -264,10 +269,16 @@ namespace ns_lidar
             if (cone_check.is_cone && cluster.size() > min_number_points_threshold_)
             {
                 cluster_msg.points.push_back(cone_check.pos);
-                cone_channel.values.push_back(cone_check.color); // TODO actually get the intensity
+                cone_channel.values.push_back(cone_check.color);
+                x_size_channel.values.push_back(cone_check.bounds[0]);
+                y_size_channel.values.push_back(cone_check.bounds[1]);
+                z_size_channel.values.push_back(cone_check.bounds[2]);
             }
         }
         cluster_msg.channels.push_back(cone_channel);
+        cluster_msg.channels.push_back(x_size_channel);
+        cluster_msg.channels.push_back(y_size_channel);
+        cluster_msg.channels.push_back(z_size_channel);
 
         return cluster_msg;
     }
@@ -305,6 +316,9 @@ namespace ns_lidar
                 cone_check.pos.x = centroid[0];
                 cone_check.pos.y = centroid[1];
                 cone_check.pos.z = centroid[2];
+                cone_check.bounds[0] = bound_x;
+                cone_check.bounds[1] = bound_y;
+                cone_check.bounds[2] = bound_z;
                 cone_check.is_cone = true;
 
 
