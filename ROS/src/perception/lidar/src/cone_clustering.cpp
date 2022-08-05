@@ -190,7 +190,7 @@ namespace ns_lidar
                     float bound_z = std::fabs(max[2] - min[2]);
 
                     // Filter based on the shape of cones
-                    if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4)
+                    if (bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.4)
                     {
                         // This cluster can still be a cone
                         clusters_to_keep.push_back(cluster_id);
@@ -237,10 +237,6 @@ namespace ns_lidar
             clusters.push_back(cluster);
         }
 
-        // From the clusters we found, now generate their centroid and add it to the ROS message
-
-        
-
         return ConeClustering::construct_message(clusters);
     }
 
@@ -250,19 +246,25 @@ namespace ns_lidar
      * @returns a sensor_msgs::PointCloud containing the information about all the cones in the current frame.
      */
     sensor_msgs::PointCloud ConeClustering::construct_message(std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters){
-        // Create a PC and channel for the cone colour
+        // Create a PC and channel for: the cone colour, the (x,y,z) dimensions of the cluster
         sensor_msgs::PointCloud cluster_msg;
         sensor_msgs::ChannelFloat32 cone_channel;
         sensor_msgs::ChannelFloat32 x_size_channel;
         sensor_msgs::ChannelFloat32 y_size_channel;
         sensor_msgs::ChannelFloat32 z_size_channel;
         
-
+        //name channels
         cone_channel.name = "cone_type";
+        x_size_channel.name = "x_width";
+        y_size_channel.name = "y_width";
+        z_size_channel.name = "z_width";
 
+        // iterate over each cluster
         for (pcl::PointCloud<pcl::PointXYZI> cluster : clusters)
         {
             ConeCheck cone_check = ConeClustering::isCloudCone(cluster);
+
+            //only add clusters that are likely to be cones
             if (cone_check.is_cone)
             {
                 cluster_msg.points.push_back(cone_check.pos);
@@ -272,6 +274,8 @@ namespace ns_lidar
                 z_size_channel.values.push_back(cone_check.bounds[2]);
             }
         }
+
+        //add the channels to the message
         cluster_msg.channels.push_back(cone_channel);
         cluster_msg.channels.push_back(x_size_channel);
         cluster_msg.channels.push_back(y_size_channel);
@@ -335,6 +339,7 @@ namespace ns_lidar
                 // solve ordinary least squares minimisation
                 Eigen::VectorXd solution = X_mat.colPivHouseholderQr().solve(Y_mat);
                  
+                //determine colour
                 if(abs(solution(0)) < minimal_curve_intensity_) cone_check.is_cone = false;
                 else if(solution(0) > 0) cone_check.color = 1;
                 else cone_check.color = 0;
