@@ -5,6 +5,7 @@ import rospy
 from node_fixture.node_fixture import ROSNode, AddSubscriber
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
+import numpy as np
 
 
 """
@@ -32,12 +33,36 @@ class PublishNode(ROSNode, ABC):
         """
         pass
 
+    def np_to_ros_image(self, arr: np.ndarray) -> Image:
+        """Creates a ROS image type based on a Numpy array
+        Args:
+            arr: numpy array in RGB format (H, W, 3), datatype uint8
+        Returns:
+            ROS Image with appropriate header and data
+        """
+
+        ros_img = Image(encoding="rgb8")
+        ros_img.height, ros_img.width, _ = arr.shape
+        contig = arr  # np.ascontiguousarray(arr)
+        ros_img.data = contig.tostring()
+        ros_img.step = contig.strides[0]
+        ros_img.is_bigendian = (
+            arr.dtype.byteorder == ">"
+            or arr.dtype.byteorder == "="
+            and sys.byteorder == "big"
+        )
+
+        ros_img.header.stamp = rospy.Time.now()
+        ros_img.header.frame_id = "ugr/car_base_link/sensors/cam0"
+
+        return ros_img
+
     @AddSubscriber("raw/input")
     def publish_sub_data(self, data: Any):
         """
         simple wrapper function for uniformity reasons, used to connect to fsds sim
         """
-        self.publish("/perception/input", data)
+        self.publish("/input/image", data)
 
     def publish_image_data(self):
         """
@@ -47,8 +72,12 @@ class PublishNode(ROSNode, ABC):
         if self.rate is not None:
             while not rospy.is_shutdown():
                 data = self.process_data()
-                data.header = self.create_header()
-                self.publish("/perception/input", data)
+
+                if data is not None:
+                    data.header = self.create_header()
+                    self.publish("/input/image", data)
+               
+                   
                 self.rate.sleep()
 
     def create_header(self):

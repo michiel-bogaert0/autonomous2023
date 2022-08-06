@@ -5,7 +5,7 @@ from pathlib import Path
 import cv2 as cv
 import os
 from sensor_msgs.msg import Image
-
+import numpy as np
 
 from publisher_abstract.publisher import PublishNode
 
@@ -27,26 +27,6 @@ class DummyCamNode(PublishNode):
         self.cap = cv.VideoCapture(str(self.path))
         
 
-
-    def np_to_ros_image(self, arr: np.ndarray) -> Image:
-        """Creates a ROS image type based on a Numpy array
-        Args:
-            arr: numpy array in RGB format (H, W, 3), datatype uint8
-        Returns:
-            ROS Image with appropriate header and data
-        """
-
-        ros_img = Image(encoding="rgb8")
-        ros_img.height, ros_img.width, _ = arr.shape
-        contig = arr  # np.ascontiguousarray(arr)
-        ros_img.data = contig.tobytes()
-        ros_img.step = contig.strides[0]
-        ros_img.is_bigendian = (
-            arr.dtype.byteorder == ">"
-            or arr.dtype.byteorder == "="
-            and sys.byteorder == "big"
-        )
-
     def process_data(self) -> Image:
         """
         reads the frames from the mp4 file
@@ -54,6 +34,7 @@ class DummyCamNode(PublishNode):
         returns:
             Ros Image to be published
         """
+        
         if not self.cap.isOpened():
             print(f"Error opening video stream or file: {path}")
 

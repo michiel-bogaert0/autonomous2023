@@ -45,29 +45,6 @@ class CameraNode(PublishNode):
 
         self.camera = camera
 
-    def np_to_ros_image(self, arr: np.ndarray) -> Image:
-        """Creates a ROS image type based on a Numpy array
-        Args:
-            arr: numpy array in RGB format (H, W, 3), datatype uint8
-        Returns:
-            ROS Image with appropriate header and data
-        """
-
-        ros_img = Image(encoding="rgb8")
-        ros_img.height, ros_img.width, _ = arr.shape
-        contig = arr  # np.ascontiguousarray(arr)
-        ros_img.data = contig.tostring()
-        ros_img.step = contig.strides[0]
-        ros_img.is_bigendian = (
-            arr.dtype.byteorder == ">"
-            or arr.dtype.byteorder == "="
-            and sys.byteorder == "big"
-        )
-
-        ros_img.header.stamp = rospy.Time.now()
-        ros_img.header.frame_id = "ugr/car_base_link/sensors/cam0"
-
-        return ros_img
 
     def process_data(self):
         """

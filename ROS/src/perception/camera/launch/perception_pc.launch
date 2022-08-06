@@ -6,6 +6,9 @@
         <param name="tensorrt" value="False"/>
         <param name="detection_height_threshold" value="30" />
         <param name="rate" value="10" />
+        <remap from="/output/cone_keypoints" to="/perception/camera/mono/keypoints" />
+        <remap from="/output/update" to="/perception/camera/mono/perception_update" />
+
     </node>
 
     <include file="$(find perception)/launch/perception.publisher.launch" pass_al_args="true"/>

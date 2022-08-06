@@ -15,18 +15,16 @@ import rospy
 import torch
 from sensor_msgs.msg import Image
 from ugr_msgs.msg import BoundingBox, ConeKeypoints, PerceptionUpdate
-from cv_bridge import CvBridge
 
 
 class PerceptionNode:
     def __init__(self):
         rospy.init_node("perception")
-        self.pub_raw = rospy.Publisher("/perception/raw_image", Image, queue_size=10)
         self.pub_keypoints = rospy.Publisher(
-            "/perception/cone_keypoints", ConeKeypoints, queue_size=10
+            "/output/cone_keypoints", ConeKeypoints, queue_size=10
         )
         self.pub_pnp = rospy.Publisher(
-            "/perception/raw_perception_update",
+            "/output/update",
             PerceptionUpdate,
             queue_size=10,
         )
@@ -35,7 +33,6 @@ class PerceptionNode:
 
         self.tensorrt = rospy.get_param("~tensorrt", True)
 
-        self.bridge = CvBridge()
 
         # Cone detection
         self.device = (
@@ -137,9 +134,7 @@ class PerceptionNode:
 
         timings = []
 
-        # image = self.bridge.imgmsg_to_cv2(ros_image, "rgb8")
         image = self.ros_img_to_np(ros_image)
-        self.pub_raw.publish(self.np_to_ros_image(image))
 
         start = time.perf_counter()
         bbs = self.cone_detector.detect_cones(image)
