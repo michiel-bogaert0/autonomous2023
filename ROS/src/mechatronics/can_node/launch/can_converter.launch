@@ -4,7 +4,7 @@
         <param name="baudrate" value="250000" />
         <param name="odrive_dbc" value="$(find can_node)/odrive.dbc" />
 
-        <remap from="/output/can" to="/can_messages" />
+        <remap from="/output/can" to="/mechatronics/can_messages" />
         <remap from="/output/vel0" to="/mechatronics/wheel_encoder/right" />
         <remap from="/output/vel1" to="/mechatronics/wheel_encoder/left" />
         <remap from="/output/imu0/pitch_roll" to="/mechatronics/imu/front/pitch_roll" />
