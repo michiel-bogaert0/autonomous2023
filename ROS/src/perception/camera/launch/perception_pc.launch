@@ -8,6 +8,8 @@
         <param name="rate" value="10" />
         <remap from="/output/cone_keypoints" to="/perception/camera/mono/keypoints" />
         <remap from="/output/update" to="/perception/camera/mono/perception_update" />
+        <remap from="/input/image" to="/perception/camera/image" />
+
 
     </node>
 

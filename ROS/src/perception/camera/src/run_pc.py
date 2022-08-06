@@ -81,7 +81,7 @@ class PerceptionNode:
             distortion_matrix=distortion_matrix,
         )
         self.pub = rospy.Subscriber(
-            "/perception/input", Image, self.run_perception_pipeline
+            "/input/image", Image, self.run_perception_pipeline
         )
         rospy.spin()
 

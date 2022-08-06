@@ -5,6 +5,7 @@
     <group ns="dummy1" if='$(eval arg("type") =="dummy")'>
         <node pkg="perception" type="dummy.py" name="dummy_publisher" output="screen">
             <param name="rate" value="10"/>
+            <remap from="/input/image" to="/perception/camera/image" />
         </node>
 
     </group>
@@ -12,8 +13,8 @@
     <group ns="cam" if='$(eval arg("type") =="camera")'>
         <node pkg="perception" type="camera.py" name="camera_publisher">
             <param name="rate" value="10"/>
+            <remap from="/input/image" to="/perception/camera/image" />
         </node>
     </group>
 
-    <remap from="/perception/input" to="/perception/camera" />
 </launch>
