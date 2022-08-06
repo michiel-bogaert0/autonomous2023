@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-import numpy as np
-import rospy
+import struct
+
 import can
 import cantools
-import struct
+import numpy as np
+import rospy
 from can_msgs.msg import Frame
-from odrive import OdriveConverter
 from imu import ImuConverter
+from odrive import OdriveConverter
+
 
 class CanConverter:
     def __init__(self):
         rospy.init_node("can_converter")
-        self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)        
+        self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)
 
         # The first element is the front IMU, the second is the rear IMU
-        self.IMU_IDS = [0xe1, 0xe2] # TODO gotta check of deze ok zijn
+        self.IMU_IDS = [0xE1, 0xE2]  # TODO gotta check of deze ok zijn
 
         # create a bus instance
         self.bus = can.interface.Bus(
@@ -40,8 +42,8 @@ class CanConverter:
         for msg in self.bus:
             # Publish message on ROS
             can_msg = Frame()
-            can_msg.header.stamp = msg.timestamp
-            can_msg = msg.arbitration_id
+            can_msg.header.stamp = rospy.Time.from_sec(msg.timestamp)
+            can_msg.id = msg.arbitration_id
             can_msg.data = msg.data
             self.can_pub.publish(can_msg)
 
@@ -53,7 +55,7 @@ class CanConverter:
                 if cmd_id == 9:
                     self.odrive.handle_odrive_vel_msg(msg, axis_id, cmd_id)
                     continue
-            
+
             imu_id = msg.id & 0xFF
             if imu_id in self.IMU_IDS:
                 self.imu.handle_imu_msg(msg, imu_id == self.IMU_IDS[0])
@@ -61,7 +63,6 @@ class CanConverter:
             # Check for external shutdown
             if rospy.is_shutdown():
                 return
-
 
     def send_on_can(self, msg: can.Message) -> None:
         """Sends a message msg over the can bus
