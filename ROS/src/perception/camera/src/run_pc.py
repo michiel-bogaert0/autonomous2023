@@ -88,41 +88,6 @@ class PerceptionNode:
         )
         rospy.spin()
 
-    def setup_camera(self) -> None:
-        """Sets up the Baumer camera with the right settings
-        Returns:
-            Sets the self.camera object
-        """
-
-        # Init camera
-        camera = neoapi.Cam()
-        camera.Connect("700006709126")
-
-        # Get the configuration saved on the camera itself
-        selector = camera.GetFeature("UserSetSelector")
-        selector.value = "UserSet1"
-
-        user = camera.GetFeature("UserSetLoad")
-        user.Execute()
-
-        # Use continuous mode
-        camera.f.TriggerMode.value = (
-            neoapi.TriggerMode_Off
-        )  # set camera to trigger mode, the camera starts streaming
-        camera.f.AcquisitionFrameRateEnable = (
-            True  # enable the frame rate control (optional)
-        )
-        camera.f.AcquisitionFrameRate = 24  # set the frame rate to 24 fps (optional)
-
-        if camera.f.PixelFormat.GetEnumValueList().IsReadable("BGR8"):
-            camera.f.PixelFormat.SetString("BGR8")
-
-        # Limit the height of the output image
-        height = 900
-        camera.f.Height = height
-        camera.f.OffsetY = 1200 - height
-
-        self.camera = camera
 
     def np_to_ros_image(self, arr: np.ndarray) -> Image:
         """Creates a ROS image type based on a Numpy array

@@ -3,6 +3,7 @@
 from publisher_abstract.publisher_abstract import PublishNode
 import cv2 as cv
 from cv_bridge import CvBridge
+import rospy
 
 
 class CameraNode(PublishNode):
@@ -39,7 +40,7 @@ class CameraNode(PublishNode):
             camera.f.PixelFormat.SetString("BGR8")
 
         # Limit the height of the output image
-        height = 900
+        height = rospy.get_param("~heigth",900)
         camera.f.Height = height
         camera.f.OffsetY = 1200 - height
 
