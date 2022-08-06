@@ -46,6 +46,8 @@ class Convert(ROSNode):
             The converted Observations message
         """
 
+        print("HAHA")
+
         # Here the header is just copied as it contains the frame of the camera. locmap_controller doesn't know what camera frame is used.
         observations = Observations()
         observations.header = perceptionUpdate.header

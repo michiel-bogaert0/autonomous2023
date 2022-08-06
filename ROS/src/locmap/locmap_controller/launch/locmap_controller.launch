@@ -61,7 +61,7 @@
     <group if="$(arg use_interface)">
         <node pkg="locmap_controller" type="interface.py" name="locmap_interface" output="screen">
 
-            <remap from="/input/perception_update" to="/processed/raw_perception_update" />
+            <remap from="/input/perception_update" to="/perception/raw_perception_update" />
             <remap from="/input/gss" to="/fsds/gss" />
             <remap from="/input/imu" to="/fsds/imu" />
             <remap from="/input/gt_odometry" to="/fsds/testing_only/odom" />
@@ -116,13 +116,13 @@
     </group>
     <group if="$(eval slam_type == 'perception_check' )">
 
-        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_map_car_sensors_cam1" args="0 0 0.8 0 0 0 1 ugr/gt_car_base_link fsds/camera/cam1" />
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_map_car_sensors_cam1" args="0 0 0.8 0 0 0 1 ugr/car_base_link ugr/car_base_link/sensors/cam0" />
         <!-- <include file="$(find locmap_controller)/launch/sensor_fusion/full.launch" pass_all_args="true" /> -->
 
         <node pkg="locmap_clustering" output="screen" type="clustermapping.py" name="local_clustering_gt_car" respawn="True">
             # Parameters
-            <param name="world_frame" value="ugr/gt_car_map" />
-            <param name="base_link_frame" value="ugr/gt_car_base_link" />
+            <param name="world_frame" value="ugr/car_map" />
+            <param name="base_link_frame" value="ugr/car_base_link" />
 
             <param name="clustering/eps" value="0.5" />
             <param name="clustering/min_samples" value="5" />

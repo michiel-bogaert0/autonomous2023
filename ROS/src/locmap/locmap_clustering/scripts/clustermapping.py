@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
+from yaml import Mark
 import rospy
 import tf2_ros as tf
 from clustering.clustering import Clustering
@@ -8,6 +9,7 @@ from geometry_msgs.msg import Point, TransformStamped
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import Observation, Observations
+from visualization_msgs.msg import MarkerArray, Marker
 
 
 class ClusterMapping(ROSNode):
@@ -25,6 +27,8 @@ class ClusterMapping(ROSNode):
         self.do_time_transform = rospy.get_param("~do_time_transform", True)
         self.observation_queue_size = rospy.get_param("~observation_queue_size", None)
         self.max_landmark_range = rospy.get_param("~max_landmark_range", 0)
+
+        self.vis = rospy.get_param("~vis", True)
 
         self.eps = rospy.get_param("~clustering/eps", 0.5)
         self.min_sampling = rospy.get_param("~clustering/min_samples", 5)
@@ -205,6 +209,76 @@ class ClusterMapping(ROSNode):
         self.publish("output/observations", observations)
         self.publish("output/map", new_map)
 
+        # Visualisation
+        #   Observations message are mapped to visualization_msgs/MarkerArray
+        if self.vis:
+            marker_array = MarkerArray()
+
+            for i, obs in enumerate(observations.observations):
+                marker = Marker()
+
+                marker.header = observations.header
+
+                marker.type = Marker.CYLINDER
+                marker.action = Marker.ADD;
+                marker.id = i;
+
+                marker.pose.orientation.x = 0.0;
+                marker.pose.orientation.y = 0.0;
+                marker.pose.orientation.z = 0.0;
+                marker.pose.orientation.w = 1.0;
+                marker.pose.position.x = obs.location.x
+                marker.pose.position.y = obs.location.y 
+
+                marker.scale.x = 0.228; 
+                marker.scale.y = 0.228;
+                marker.scale.z = 0.325;
+
+                marker.color.r = 0
+                marker.color.g = 1
+                marker.color.b = 0
+                marker.color.a = 1
+
+                marker.lifetime = rospy.Duration(0);
+
+                marker_array.markers.append(marker)
+            
+            self.publish("/output/vis/observations", marker_array)
+
+            marker_array = MarkerArray()
+
+            for i, obs in enumerate(new_map.observations):
+                marker = Marker()
+
+                marker.header = observations.header
+
+                marker.type = Marker.CYLINDER
+                marker.action = Marker.ADD;
+                marker.id = i;
+
+                marker.pose.orientation.x = 0.0;
+                marker.pose.orientation.y = 0.0;
+                marker.pose.orientation.z = 0.0;
+                marker.pose.orientation.w = 1.0;
+                marker.pose.position.x = obs.location.x
+                marker.pose.position.y = obs.location.y 
+
+                marker.scale.x = 0.228; 
+                marker.scale.y = 0.228;
+                marker.scale.z = 0.325;
+
+                marker.color.r = 0
+                marker.color.g = 1
+                marker.color.b = 0
+                marker.color.a = 1
+
+                marker.lifetime = rospy.Duration(0);
+
+                marker_array.markers.append(marker)
+            
+            self.publish("/output/vis/map", marker_array)
+
+
         # Publish delta samples as well. These are the points used to cluster
         # Could be useful to estimate statistical distributions from
         # It is an analysis thingy, so only makes sense if relative to the world frame
@@ -232,6 +306,41 @@ class ClusterMapping(ROSNode):
             self.previous_sample_point[clss] = self.clustering.sizes[clss]
 
         self.publish("output/samples", samples)
+
+        if self.vis:
+            marker_array = MarkerArray()
+
+            for i, obs in enumerate(samples.observations):
+                marker = Marker()
+
+                marker.header = observations.header
+
+                marker.type = Marker.CYLINDER
+                marker.action = Marker.ADD;
+                marker.id = i;
+
+                marker.pose.orientation.x = 0.0;
+                marker.pose.orientation.y = 0.0;
+                marker.pose.orientation.z = 0.0;
+                marker.pose.orientation.w = 1.0;
+                marker.pose.position.x = obs.location.x
+                marker.pose.position.y = obs.location.y 
+
+                marker.scale.x = 0.1; 
+                marker.scale.y = 0.1;
+                marker.scale.z = 0.02;
+
+                marker.color.r = 1
+                marker.color.g = 0
+                marker.color.b = 0
+                marker.color.a = 1
+
+                marker.lifetime = rospy.Duration(0);
+
+                marker_array.markers.append(marker)
+            
+            self.publish("/output/vis/samples", marker_array)
+
 
 
 node = ClusterMapping()
