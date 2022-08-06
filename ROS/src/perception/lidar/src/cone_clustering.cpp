@@ -127,7 +127,7 @@ sensor_msgs::PointCloud ConeClustering::euclidianClustering(
 sensor_msgs::PointCloud ConeClustering::stringClustering(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud) {
   // sort point from left to right (because they are ordered from left to right)
-  std::sort(cloud->begin(), cloud->end(), ConeClustering::leftrightsort);
+  std::sort(cloud->begin(), cloud->end(), leftrightsort);
 
   std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters;
   std::vector<pcl::PointXYZI>
@@ -182,7 +182,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
         float bound_z = std::fabs(max[2] - min[2]);
 
         // Filter based on the shape of cones
-        if (bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.4) {
+        if (bound_x < 0.33 && bound_y < 0.33 && bound_z < 0.4) {
           // This cluster can still be a cone
           clusters_to_keep.push_back(cluster_id);
         }
@@ -296,7 +296,7 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
   float bound_z = std::fabs(max[2] - min[2]);
 
   // filter based on the shape of cones
-  if (bound_x < 0.30 && bound_y < 0.30 && bound_z < 0.4 &&
+  if (bound_x < 0.33 && bound_y < 0.33 && bound_z < 0.4 &&
       centroid[2] < 0) // centroid[2] < 0 because lidar is positioned heigher
                        // than the cones
   {
