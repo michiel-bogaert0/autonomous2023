@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-
-from ROS.src.mechatronics.can_node.scripts.odrive import OdriveConverter
 import numpy as np
 import rospy
 import can
 import cantools
 import struct
 from can_msgs.msg import Frame
-
-import imu, odrive
+from odrive import OdriveConverter
+from imu import ImuConverter
 
 class CanConverter:
     def __init__(self):
-        rospy.init_node("can_node")
+        rospy.init_node("can_converter")
         self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)        
 
         # The first element is the front IMU, the second is the rear IMU
@@ -27,7 +25,7 @@ class CanConverter:
 
         # Create the right converters
         self.odrive = OdriveConverter()
-        # self.imu = ImuConverter() # TODO: finalise code
+        self.imu = ImuConverter()
 
         try:
             self.listen_on_can()

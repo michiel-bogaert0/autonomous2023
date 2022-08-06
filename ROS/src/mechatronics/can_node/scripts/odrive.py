@@ -58,26 +58,23 @@ class OdriveConverter:
             self.vel_left.publish(twist_msg)
 
 class OdriveController:
-    def __init__(self):
-        self.vel_right = rospy.Publisher(
-            "/output/vel0",
-            TwistWithCovarianceStamped,
-            queue_size=10,
-        )
+    def __init__(self, bus = None):
+        rospy.init_node("odrive_controller")
 
+        self.bus = bus
         self.odrive_db = cantools.database.load_file(rospy.get_param("~odrive_dbc", "../odrive.dbc"))
 
         # Test code
         for i in range(100):
-            self.publish_torque_command(i/100, 0)
             self.publish_torque_command(i/100, 1)
+            self.publish_torque_command(i/100, 2)
 
     def publish_torque_command(self, torque: float, axis: int) -> None:
         """Publishes a drive command with a given torque to the ODrive
         
         Args:
             torque: the requested torque
-            axis: 0 is right, 1 is left
+            axis: 1 is right, 2 is left
         """
         if self.bus is None:
             rospy.logerr("The ODrive package was not configured to send messages, please run it as a separate node.")
@@ -88,7 +85,7 @@ class OdriveController:
 
         can_id = axis << 5 | 0xE
 
-        self.bus.send(can.Message(arbitration_id=can_id, data=data))
+        self.bus.send(can.Message(arbitration_id=can_id, data=data, is_extended_id=False))
 
 
 
