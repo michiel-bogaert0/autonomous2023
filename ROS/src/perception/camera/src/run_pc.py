@@ -20,7 +20,7 @@ from cv_bridge import CvBridge
 
 class PerceptionNode:
     def __init__(self):
-        rospy.init_node("perception_pc")
+        rospy.init_node("perception")
         self.pub_raw = rospy.Publisher("/perception/raw_image", Image, queue_size=10)
         self.pub_keypoints = rospy.Publisher(
             "/perception/cone_keypoints", ConeKeypoints, queue_size=10
@@ -127,22 +127,6 @@ class PerceptionNode:
 
         return im
 
-    def generate_camera_data(self):
-        """This node publishes the frames from the camera at a fixed rate"""
-        rate = rospy.Rate(self.rate)
-
-        while not rospy.is_shutdown():
-            # Grab frame
-            image = self.camera.GetImage()
-
-            if not image.IsEmpty():
-                image = image.Convert("RGB8").GetNPArray()
-                ros_img = self.np_to_ros_image(image)
-                self.run_perception_pipeline(image, ros_img)
-                self.pub_raw.publish(ros_img)
-
-            rate.sleep()
-
     def run_perception_pipeline(self, ros_image: Image) -> None:
         """
         Given an image, run through the entire perception pipeline and publish to ROS
@@ -155,6 +139,7 @@ class PerceptionNode:
 
         # image = self.bridge.imgmsg_to_cv2(ros_image, "rgb8")
         image = self.ros_img_to_np(ros_image)
+        self.pub_raw.publish(self.np_to_ros_image(image))
 
         start = time.perf_counter()
         bbs = self.cone_detector.detect_cones(image)

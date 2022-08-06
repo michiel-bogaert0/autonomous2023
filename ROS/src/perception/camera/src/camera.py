@@ -2,7 +2,6 @@
 
 from publisher_abstract.publisher_abstract import PublishNode
 import cv2 as cv
-from cv_bridge import CvBridge
 import rospy
 
 

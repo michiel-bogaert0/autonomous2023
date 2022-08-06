@@ -3,7 +3,6 @@
 import rospy
 from pathlib import Path
 import cv2 as cv
-from cv_bridge import CvBridge
 import os
 from sensor_msgs.msg import Image
 
@@ -26,7 +25,27 @@ class DummyCamNode(PublishNode):
             / self.input
         )
         self.cap = cv.VideoCapture(str(self.path))
-        self.bridge = CvBridge()
+        
+
+
+    def np_to_ros_image(self, arr: np.ndarray) -> Image:
+        """Creates a ROS image type based on a Numpy array
+        Args:
+            arr: numpy array in RGB format (H, W, 3), datatype uint8
+        Returns:
+            ROS Image with appropriate header and data
+        """
+
+        ros_img = Image(encoding="rgb8")
+        ros_img.height, ros_img.width, _ = arr.shape
+        contig = arr  # np.ascontiguousarray(arr)
+        ros_img.data = contig.tobytes()
+        ros_img.step = contig.strides[0]
+        ros_img.is_bigendian = (
+            arr.dtype.byteorder == ">"
+            or arr.dtype.byteorder == "="
+            and sys.byteorder == "big"
+        )
 
     def process_data(self) -> Image:
         """
@@ -44,7 +63,7 @@ class DummyCamNode(PublishNode):
         if ret:
             # Publish the image as a ROS image
             frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-            ros_img = self.bridge.cv2_to_imgmsg(frame, "rgb8")
+            ros_img = self.np_to_ros_image(frame)
 
             return ros_img
 
