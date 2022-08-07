@@ -16,7 +16,7 @@ sudo apt install -y \
     lsb-release \
     mesa-utils \
     htop \
-    python3-opencv=4.2.0
+    python3-opencv
 
 # Install the python requirements
 pip install -r requirements.txt
