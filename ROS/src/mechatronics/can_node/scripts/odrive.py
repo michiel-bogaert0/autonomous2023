@@ -20,8 +20,8 @@ class OdriveConverter:
         )
 
         self.wheel_diameter = rospy.get_param("~wheel_diameter", 8 * 2.54 / 100)  # in m
-        self.axis0_frame = rospy.get_param("~axis0/frame", "ugr/car_axis0")
-        self.axis1_frame = rospy.get_param("~axis1/frame", "ugr/car_axis1")
+        self.axis0_frame = rospy.get_param("~axis0/frame", "ugr/car_base_link/axis0")
+        self.axis1_frame = rospy.get_param("~axis1/frame", "ugr/car_base_link/axis1")
 
         self.odrive_db = cantools.database.load_file(
             rospy.get_param("~odrive_dbc", "../odrive.dbc")
