@@ -39,9 +39,9 @@ class ImuConverter:
         )
 
         self.imu_front_frame = rospy.get_param(
-            "~imu/front/frame", ""
-        )  # TODO welke hier?
-        self.imu_back_frame = rospy.get_param("~imu/back/frame", "")  # TODO welke hier?
+            "~imu/front/frame", "ugr/car_base_link/imu1"
+        )
+        self.imu_back_frame = rospy.get_param("~imu/back/frame", "ugr/car_base_link/imu0")
 
     def handle_imu_msg(self, msg: can.Message, is_front: bool) -> None:
         """Publishes an IMU message to the correct ROS topic
