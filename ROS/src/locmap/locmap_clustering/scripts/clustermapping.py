@@ -8,7 +8,7 @@ from clustering.clustering import Clustering
 from geometry_msgs.msg import Point, TransformStamped
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import Observation, Observations
+from ugr_msgs.msg import Observation, Observations, Particles, Particle
 from visualization_msgs.msg import MarkerArray, Marker
 from locmap_vis.src.vis import LocMapVis
 
@@ -32,6 +32,7 @@ class ClusterMapping(ROSNode):
         self.vis = rospy.get_param("~vis", True)
         self.vis_namespace = rospy.get_param("~vis/namespace", "locmap_vis")
         self.vis_lifetime = rospy.get_param("~vis/lifetime", 3)
+        self.vis_sample_color = rospy.get_param("~vis/sample_color", 'g')
         self.vis_handler = LocMapVis()
 
         self.eps = rospy.get_param("~clustering/eps", 0.5)
@@ -66,6 +67,21 @@ class ClusterMapping(ROSNode):
         rospy.loginfo(f"Clustering mapping node initialized!")
 
         self.previous_clustering_time = rospy.Time.now().to_sec()
+
+        # Clear visualisation
+        if self.vis:
+            self.publish(
+                "/output/vis/observations",
+                self.vis_handler.delete_markerarray(self.vis_namespace + "/observations"),
+            )
+            self.publish(
+                "/output/vis/map",
+                self.vis_handler.delete_markerarray(self.vis_namespace + "/map"),
+            )
+            self.publish(
+                "/output/vis/samples",
+                self.vis_handler.delete_markerarray(self.vis_namespace + "/samples"),
+            )
 
     # See the constructor for the subscriber registration.
     # The '_' is just because it doesn't use a decorator, so it injects 'self' twice
@@ -223,6 +239,8 @@ class ClusterMapping(ROSNode):
         samples.header.stamp = rospy.Time().now()
         samples.observations = []
 
+        samples_as_particles = Particles()
+
         for clss, landmarks in enumerate(all_samples):
 
             for i in range(
@@ -236,6 +254,13 @@ class ClusterMapping(ROSNode):
                 samples_point.observation_class = clss
 
                 samples.observations.append(samples_point)
+
+                # Now as a particle
+                part = Particle()
+                part.weight = 1
+                part.position = Point(x=landmark[0], y=landmark[1], z=0)
+
+                samples_as_particles.particles.append(part)
 
             self.previous_sample_point[clss] = self.clustering.sizes[clss]
 
@@ -252,8 +277,8 @@ class ClusterMapping(ROSNode):
             )
             self.publish("/output/vis/map", marker_array)
 
-            marker_array = self.vis_handler.observations_to_markerarray(
-                samples, self.vis_namespace + "/samples", 0, True
+            marker_array = self.vis_handler.particles_to_markerarray(
+                samples, self.vis_namespace + "/samples", 0, self.vis_sample_color, True
             )
             self.publish("/output/vis/samples", marker_array)
 
