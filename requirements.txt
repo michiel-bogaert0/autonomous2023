@@ -1,5 +1,3 @@
-# ../autonomous_binaries/modules/neoapi-1.1.1-py38-none-any.whl
-
 # General
 empy
 catkin_pkg
@@ -10,16 +8,10 @@ numpy
 pybind11[global]
 
 # Perception
-# YOLOv5
-# tools/yolov5
-torch
-torchvision
 seaborn
-pytorch-lighting
-
-
-# Keypoint detection
-tools/keypoint_detector
+pytorch-lightning
+tqdm
+cython
 
 # Jetson CAN
 python-can==4.0.0
