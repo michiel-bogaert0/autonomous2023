@@ -7,8 +7,13 @@ import torch
 from yolov5.models.common import DetectMultiBackend
 from yolov5.output import BoundingBox, YOLOv5Output
 from yolov5.utils.datasets import LoadImage
-from yolov5.utils.general import (check_img_size, non_max_suppression,
-                                  scale_coords, strip_optimizer, xyxy2xywh)
+from yolov5.utils.general import (
+    check_img_size,
+    non_max_suppression,
+    scale_coords,
+    strip_optimizer,
+    xyxy2xywh,
+)
 from yolov5.utils.torch_utils import select_device
 
 FILE = Path(__file__).absolute()
