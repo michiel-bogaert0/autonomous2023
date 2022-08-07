@@ -7,40 +7,54 @@
 #include <pcl/common/transforms.h>
 #include <pcl/search/kdtree.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <ros/ros.h>
 
-namespace ns_lidar
-{
-    typedef struct
-    {
-        geometry_msgs::Point32 pos;
-        bool is_cone;
-    } ConeCheck;
+namespace ns_lidar {
+typedef struct {
+  geometry_msgs::Point32 pos;
+  bool is_cone;
+  float color;
+  double bounds[3];
+} ConeCheck;
 
-    class ConeClustering
-    {
+struct {
+  bool operator()(pcl::PointXYZI a, pcl::PointXYZI b) const {
+    return a.y < b.y;
+  }
+} leftrightsort;
 
-    public:
-        ConeClustering(ros::NodeHandle &n);
+class ConeClustering {
 
-        sensor_msgs::PointCloud cluster(
-            const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
-            const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground);
+public:
+  ConeClustering(ros::NodeHandle &n);
 
-    private:
-        ros::NodeHandle &n_;
+  sensor_msgs::PointCloud
+  cluster(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
+          const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground);
 
-        std::string clustering_method_; // Default: euclidian, others: string
-        double cluster_tolerance_; // The cone clustering tolerance (m)
-        double point_count_theshold_; // How much % can the cone point count prediction be off from the actual count 
+private:
+  ros::NodeHandle &n_;
 
-        sensor_msgs::PointCloud euclidianClustering(
-            const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
-            const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground);
-        sensor_msgs::PointCloud stringClustering(
-            const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
-        ConeCheck isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone);
-        float hypot3d(float a, float b, float c);
-    };
-}
+  std::string clustering_method_; // Default: euclidian, others: string
+  double cluster_tolerance_;      // The cone clustering tolerance (m)
+  double point_count_theshold_;   // How much % can the cone point count
+                                  // prediction be off from the actual count
+  double min_distance_factor_; // distance around the cone that contains no
+                            // other cones as a factor to the width of the cone
+  float minimal_curve_intensity_; // the miniminal curvature needed to be
+                                  // classified as a cone
+
+  sensor_msgs::PointCloud
+  euclidianClustering(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
+                      const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground);
+  sensor_msgs::PointCloud
+  stringClustering(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
+  sensor_msgs::PointCloud
+      construct_message(std::vector<pcl::PointCloud<pcl::PointXYZI>>);
+  ConeCheck isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone);
+  float hypot3d(float a, float b, float c);
+  float arctan(float x, float y);
+};
+} // namespace ns_lidar
 
 #endif
