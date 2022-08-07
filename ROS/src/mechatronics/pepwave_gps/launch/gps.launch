@@ -4,5 +4,7 @@
         <param name="port" value="60660" />
         <param name="gps_frame" value="ugr/car_base_link/gps" />
         <param name="use_gps_time" value="False" />
+        
+        <remap from="/output/gps" to="/mechatronics/pepwave/gps"/>
     </node>
 </launch>
