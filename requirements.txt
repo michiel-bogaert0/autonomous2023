@@ -8,8 +8,6 @@ numpy
 pybind11[global]
 
 # Perception
-torch==1.10.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
-torchvision
 seaborn
 pytorch-lightning
 tqdm
