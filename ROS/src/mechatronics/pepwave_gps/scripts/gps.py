@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-from time import time
-import rospy
-from sensor_msgs.msg import NavSatFix, NavSatStatus
-from node_fixture.node_fixture import ROSNode
-import math
 import datetime
-import time
-from dateutil import tz
-
+import math
 import socket
+import time
+from time import time
+
+import rospy
+from dateutil import tz
+from node_fixture.node_fixture import ROSNode
+from sensor_msgs.msg import NavSatFix, NavSatStatus
 
 
 class GPSPublisher(ROSNode):
