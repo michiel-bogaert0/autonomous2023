@@ -11,7 +11,7 @@ import PyKDL
 import roslib.message
 import rospy
 import rostopic
-import torch
+# import torch
 from cv_bridge import CvBridge
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import TransformStamped

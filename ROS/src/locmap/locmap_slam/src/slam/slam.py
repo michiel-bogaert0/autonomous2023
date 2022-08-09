@@ -6,7 +6,7 @@ import numpy as np
 import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import Point, Pose, PoseArray, TransformStamped
-from locmap_vis.src.vis import LocMapVis
+from locmap_vis import LocMapVis
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from ugr_msgs.msg import Observation, Observations, Particle, Particles
@@ -70,15 +70,15 @@ class SLAMNode(ROSNode, ABC):
         # Clear visualisation
         if self.vis:
             self.publish(
-                "/output/vis/observations",
+                "/output/vis",
                 self.vis_handler.delete_markerarray(self.vis_namespace + "/observations"),
             )
             self.publish(
-                "/output/vis/map",
+                "/output/vis",
                 self.vis_handler.delete_markerarray(self.vis_namespace + "/map"),
             )
             self.publish(
-                "/output/vis/particles",
+                "/output/vis",
                 self.vis_handler.delete_markerarray(self.vis_namespace + "/particles"),
             )
 
@@ -239,12 +239,12 @@ class SLAMNode(ROSNode, ABC):
             marker_array = self.vis_handler.observations_to_markerarray(
                 observations, self.vis_namespace + "/observations", 0, False
             )
-            self.publish("/output/vis/observations", marker_array)
+            self.publish("/output/vis", marker_array)
 
             marker_array = self.vis_handler.observations_to_markerarray(
                 new_map, self.vis_namespace + "/map", 0, False
             )
-            self.publish("/output/vis/map", marker_array)
+            self.publish("/output/vis", marker_array)
 
         # Publish slam state
         slam_prediction = Odometry()

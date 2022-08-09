@@ -11,7 +11,8 @@ from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from sensor_msgs.msg import Imu, NavSatFix
 from ugr_msgs.msg import Observation, Observations, PerceptionUpdate
-
+from visualization_msgs.msg import MarkerArray
+from fs_msgs.msg import Cone
 
 class Convert(ROSNode):
     """
@@ -32,6 +33,24 @@ class Convert(ROSNode):
 
         rospy.loginfo("LocMap Interface started!")
 
+    @AddSubscriber("/input/lidar/cones")
+    def handleLidarMarker(self, lidarmarkers: MarkerArray):
+        
+        if len(lidarmarkers.markers) > 0:
+            observations = Observations()
+            observations.header = lidarmarkers.markers[0].header
+
+            for marker in lidarmarkers.markers:
+                
+                obs = Observation()
+                obs.observation_class = Cone.BLUE if marker.color.b == 1 else Cone.YELLOW
+                obs.location.x = marker.pose.position.x    
+                obs.location.y = marker.pose.position.y           
+                
+                observations.observations.append(obs)
+
+            self.publish("/output/observations", observations)
+
     @AddSubscriber("/input/perception_update")
     def handlePerceptionUpdate(self, perceptionUpdate: PerceptionUpdate):
         """
@@ -45,8 +64,6 @@ class Convert(ROSNode):
         Returns:
             The converted Observations message
         """
-
-        print("HAHA")
 
         # Here the header is just copied as it contains the frame of the camera. locmap_controller doesn't know what camera frame is used.
         observations = Observations()

@@ -8,7 +8,7 @@
 
     <!-- !Arguments -->
     <arg name="enable_sim_bridge" default="false" />
-    <arg name="perception_mode" default="pipeline" />
+    <arg name="perception_mode" default="none" />
     <arg name="slam_type" default="local_fastslam" />
     <arg name="use_sim_time" default="true" />
     <arg name="use_interface" default="true" />
@@ -19,25 +19,6 @@
     <!-- ! Sim bridge -->
     <group if="$(arg enable_sim_bridge)">
         <include file="$(find fsds_ros_bridge)/launch/fsds_ros_bridge.launch" pass_all_args="true" />
-    </group>
-
-    <!-- !Perception -->
-    <group if="$(eval perception_mode == 'pipeline')">
-        <!-- The perception nodes -->
-        <env name="BINARY_LOCATION" value="$(env HOME)/UGentRacing/autonomous_binaries" />
-
-        <!-- Perception node -->
-        <node pkg="perception" type="run.py" name="perception" output="screen">
-            <param name="input" value="sensor" />
-            <remap from="/sensor/rgb/mono" to="/fsds/camera/cam1" />
-        </node>
-
-        <!-- PnP node -->
-        <node pkg="cone_pnp" type="run.py" name="cone_pnp" output="screen">
-            <param name="scale" value="0.001" />
-            <param name="max_distance" value="15" />
-            <param name="camcal_location" value="camera_calibration_sim_fov60.npz" />
-        </node>
     </group>
 
     <group if="$(eval perception_mode == 'simulated')">
@@ -56,6 +37,24 @@
         </node>
     </group>
 
+    <!-- ! Coordinate transformations -->
+
+    <group>
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_axis0" args="-0.36 0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis0" />
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_axis1" args="-0.36 -0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis1" />
+
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_lidar0" args="0.0 0 0.37 0 0 0 1 ugr/car_base_link ugr/car_base_link/lidar0" />
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_ouster_sensor" args="0 0 0 0 0 0 1 ugr/car_base_link/lidar0 os_sensor" />
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_ouster_imu" args="0 0 0 0 0 0 1 os_sensor os_imu" />
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_ouster_lidar" args="0 0 0 0 0 1 0 os_sensor os_lidar" />
+
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_cam0" args="0.06 0 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/cam0" />
+
+        <!-- TODO plaatsing IMU's en GPS bekijken -->
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_gps0" args="0 0 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps0" />
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_imu0" args="0 0 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/imu0" />
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_imu1" args="0 0 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/imu1" />
+    </group>
 
     <!-- ! LocMap interface. This script ensures that data (coming from fsds) uses the correct coordinate frames and headers -->
     <group if="$(arg use_interface)">
@@ -67,7 +66,10 @@
             <remap from="/input/gt_odometry" to="/fsds/testing_only/odom" />
             <remap from="/input/gt_track" to="/fsds/testing_only/track" />
             <remap from="/input/gps" to="/fsds/gps" />
+            <remap from="/input/lidar/cones" to="/lidar/perception/cones_lidar" />
+            <!-- <remap from="/input/lidar/points" to="/os_cloud_node/points" /> -->
 
+            <!-- <remap from="/output/lidar/points" to="/ugr/car/sensors/lidar"/> -->
             <remap from="/output/observations" to="/ugr/car/sensors/perception" />
             <remap from="/output/gss" to="ugr/car/sensors/encoder0" />
             <remap from="/output/imu" to="ugr/car/sensors/imu0" />
@@ -102,7 +104,6 @@
             <param name="fastslam/threshold_distance" value="2" />
             <param name="max_landmark_range" value="20" />
             <param name="observation_queue_size" value="1" />
-
             # Input/output remapping
             <remap from="/input/observations" to="ugr/car/sensors/perception" />
             <remap from="/input/odometry" to="ugr/car/odometry/filtered/odom" />
@@ -116,20 +117,19 @@
     </group>
     <group if="$(eval slam_type == 'perception_check' )">
 
-        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_map_car_sensors_cam1" args="0 0 0.8 0 0 0 1 ugr/car_base_link ugr/car_base_link/sensors/cam0" />
-        <!-- <include file="$(find locmap_controller)/launch/sensor_fusion/full.launch" pass_all_args="true" /> -->
+        <include file="$(find locmap_controller)/launch/sensor_fusion/full.launch" pass_all_args="true" />
 
         <node pkg="locmap_clustering" output="screen" type="clustermapping.py" name="local_clustering_gt_car" respawn="True">
             # Parameters
-            <param name="world_frame" value="ugr/car_map" />
+            <param name="world_frame" value="ugr/car_odom" />
             <param name="base_link_frame" value="ugr/car_base_link" />
 
-            <param name="clustering/eps" value="0.5" />
-            <param name="clustering/min_samples" value="5" />
+            <param name="clustering/eps" value="0.2" />
+            <param name="clustering/min_samples" value="20" />
             <param name="clustering/nr_of_classes" value="2" />
             <param name="clustering/expected_nr_of_landmarks" value="1000" />
 
-            <param name="max_landmark_range" value="0" />
+            <param name="max_landmark_range" value="5" />
             <param name="observation_queue_size" value="1" />
             # Input/output remapping
             <remap from="/input/observations" to="ugr/car/sensors/perception" />
