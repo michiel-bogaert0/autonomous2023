@@ -51,7 +51,7 @@ class ImuConverter:
             msg: the CAN message
             is_front: whether the message came from the front IMU or not
         """
-        status = msg.buf[6]
+        status = msg.data[6]
         # Check for errors
         if status != 0xFF:
             rospy.logerr(f"Message (id {msg.id}) contained errors, status: {status}")
@@ -59,7 +59,7 @@ class ImuConverter:
 
         imu_msg = Imu()
 
-        latency = msg.buf[7]
+        latency = msg.data[7]
         ts_corrected = (
             msg.timestamp - 0.0025 if latency == 5 else msg.timestamp
         )  # 2.5 ms latency according to the datasheet
@@ -73,10 +73,10 @@ class ImuConverter:
         cmd_id = (msg.id & 0x00FFFFFF) >> 2
         if cmd_id == 0xF029:
             # Pitch and roll
-            pitch_raw = (msg.buf[2] << 16) + (msg.buf[1] << 8) + msg.buf[0]
+            pitch_raw = (msg.data[2] << 16) + (msg.data[1] << 8) + msg.data[0]
             pitch = (pitch_raw - 8192000) / 32768
 
-            roll_raw = (msg.buf[5] << 16) + (msg.buf[4] << 8) + msg.buf[3]
+            roll_raw = (msg.data[5] << 16) + (msg.data[4] << 8) + msg.data[3]
             roll = (roll_raw - 8192000) / 32768
 
             imu_msg.orientation = tf_conversions.transformations.quaternion_from_euler(
@@ -93,13 +93,13 @@ class ImuConverter:
 
         elif 0xF02A:
             # Angular rate
-            pitch_raw = (msg.buf[1] << 8) + msg.buf[0]
+            pitch_raw = (msg.data[1] << 8) + msg.data[0]
             pitch = (pitch_raw - 32000) / 128
 
-            roll_raw = (msg.buf[3] << 8) + msg.buf[2]
+            roll_raw = (msg.data[3] << 8) + msg.data[2]
             roll = (roll_raw - 32000) / 128
 
-            yaw_raw = (msg.buf[5] << 8) + msg.buf[4]
+            yaw_raw = (msg.data[5] << 8) + msg.data[4]
             yaw = (yaw_raw - 32000) / 128
 
             rate = Vector3()
@@ -118,13 +118,13 @@ class ImuConverter:
 
         elif 0xF02DE2:
             # Acceleration
-            lat_raw = (msg.buf[1] << 8) + msg.buf[0]
+            lat_raw = (msg.data[1] << 8) + msg.data[0]
             lat = (lat_raw - 32000) / 100
 
-            lon_raw = (msg.buf[3] << 8) + msg.buf[2]
+            lon_raw = (msg.data[3] << 8) + msg.data[2]
             lon = (lon_raw - 32000) / 100
 
-            vert_raw = (msg.buf[5] << 8) + msg.buf[4]
+            vert_raw = (msg.data[5] << 8) + msg.data[4]
             vert = (vert_raw - 32000) / 100
 
             acc = Vector3()

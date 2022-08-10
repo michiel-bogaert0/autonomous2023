@@ -56,7 +56,7 @@ class CanConverter:
                     self.odrive.handle_odrive_vel_msg(msg, axis_id, cmd_id)
                     continue
 
-            imu_id = msg.id & 0xFF
+            imu_id = msg.arbitration_id & 0xFF
             if imu_id in self.IMU_IDS:
                 self.imu.handle_imu_msg(msg, imu_id == self.IMU_IDS[0])
 
