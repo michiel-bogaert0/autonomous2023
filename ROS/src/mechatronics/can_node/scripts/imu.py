@@ -2,7 +2,7 @@ import can
 import rospy
 import tf_conversions
 import numpy as np
-from geometry_msgs.msg import Vector3
+from geometry_msgs.msg import Vector3, Quaternion
 from sensor_msgs.msg import Imu
 
 
@@ -42,7 +42,9 @@ class ImuConverter:
         self.imu_front_frame = rospy.get_param(
             "~imu/front/frame", "ugr/car_base_link/imu1"
         )
-        self.imu_back_frame = rospy.get_param("~imu/back/frame", "ugr/car_base_link/imu0")
+        self.imu_back_frame = rospy.get_param(
+            "~imu/back/frame", "ugr/car_base_link/imu0"
+        )
 
     def handle_imu_msg(self, msg: can.Message, is_front: bool) -> None:
         """Publishes an IMU message to the correct ROS topic
@@ -53,14 +55,16 @@ class ImuConverter:
         """
         status = msg.data[6]
         # Check for errors
-        if status != 0xFF:
-            rospy.logerr(f"Message (id {msg.id}) contained errors, status: {status}")
+        if status != 0x00:
+            rospy.logerr(
+                f"Message (id {msg.arbitration_id}) contained errors, status: {status}"
+            )
             return
 
         imu_msg = Imu()
 
         latency = msg.data[7]
-        ts_corrected = (
+        ts_corrected = rospy.Time.from_sec(
             msg.timestamp - 0.0025 if latency == 5 else msg.timestamp
         )  # 2.5 ms latency according to the datasheet
         imu_msg.header.stamp = ts_corrected
@@ -69,8 +73,8 @@ class ImuConverter:
         )
 
         # Decode the ID to figure out the type of message
-        # We need the first 24 bits of the ID
-        cmd_id = (msg.id & 0x00FFFFFF) >> 2
+        # We need the middle 4*8 bits of the ID to determine the type of message
+        cmd_id = (msg.arbitration_id & 0x00FFFF00) >> 8
         if cmd_id == 0xF029:
             # Pitch and roll
             pitch_raw = (msg.data[2] << 16) + (msg.data[1] << 8) + msg.data[0]
@@ -79,8 +83,8 @@ class ImuConverter:
             roll_raw = (msg.data[5] << 16) + (msg.data[4] << 8) + msg.data[3]
             roll = (roll_raw - 8192000) / 32768
 
-            imu_msg.orientation = tf_conversions.transformations.quaternion_from_euler(
-                roll, pitch, 0
+            imu_msg.orientation = Quaternion(
+                *tf_conversions.transformations.quaternion_from_euler(roll, pitch, 0)
             )
             imu_msg.orientation_covariance = (
                 np.diag([1, 1, 1]).reshape((1, 9)).tolist()[0]
@@ -116,7 +120,8 @@ class ImuConverter:
                 return
             self.imu_back_angular_rate.publish(imu_msg)
 
-        elif 0xF02DE2:
+        if cmd_id == 0xF02D:
+            print("acc")
             # Acceleration
             lat_raw = (msg.data[1] << 8) + msg.data[0]
             lat = (lat_raw - 32000) / 100
