@@ -1,6 +1,7 @@
 import can
 import rospy
 import tf_conversions
+import numpy as np
 from geometry_msgs.msg import Vector3
 from sensor_msgs.msg import Imu
 
@@ -124,7 +125,7 @@ class ImuConverter:
             lon = (lon_raw - 32000) / 100
 
             vert_raw = (msg.buf[5] << 8) + msg.buf[4]
-            vert = (ert_raw - 32000) / 100
+            vert = (vert_raw - 32000) / 100
 
             acc = Vector3()
             acc.x = lon
