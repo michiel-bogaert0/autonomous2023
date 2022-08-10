@@ -16,7 +16,7 @@ class CanConverter:
         self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)
 
         # The first element is the front IMU, the second is the rear IMU
-        self.IMU_IDS = [0xE1, 0xE2]  # TODO gotta check of deze ok zijn
+        self.IMU_IDS = [0xE2, 0xE3]
 
         # create a bus instance
         self.bus = can.interface.Bus(
