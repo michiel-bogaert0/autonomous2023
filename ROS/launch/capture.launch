@@ -17,6 +17,9 @@
         <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_imu1" args="0 0 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/imu1" />
     </group>
 
+    <!--Rosbridge for Foxglove -->
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
+
     <!-- Sensor capture files -->
     <include file="$(find ouster_ros)/ouster.launch"/>
 
@@ -31,6 +34,7 @@
     </node>
 
     <include file="$(find pepwave_gps)/launch/gps.launch" />
+    
     <!-- 
     <node pkg="perception" type="run.py" name="perception" output="screen">
         <param name="cuda" value="True" />
@@ -38,7 +42,5 @@
         <param name="detection_height_threshold" value="30" />
         <param name="rate" value="5" />
     </node> -->
-
-
 
 </launch>
