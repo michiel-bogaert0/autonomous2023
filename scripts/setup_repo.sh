@@ -33,6 +33,7 @@ sudo apt-get install -y ros-noetic-tf2-geometry-msgs \
     ros-noetic-laser-assembler \
     ros-noetic-perception-pcl \
     ros-noetic-can-msgs \
+    ros-noetic-cv-bridge \
     python3-catkin-tools \
     libyaml-cpp-dev \
     libcurl4-openssl-dev \

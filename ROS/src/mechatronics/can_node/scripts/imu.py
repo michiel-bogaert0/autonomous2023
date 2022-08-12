@@ -121,7 +121,6 @@ class ImuConverter:
             self.imu_back_angular_rate.publish(imu_msg)
 
         if cmd_id == 0xF02D:
-            print("acc")
             # Acceleration
             lat_raw = (msg.data[1] << 8) + msg.data[0]
             lat = (lat_raw - 32000) / 100
