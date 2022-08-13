@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
                 for (int i = 0; i < n_returns; i++) {
                     scan_to_cloud(xyz_lut, h->timestamp, ls, cloud, i);
                     lidar_pubs[i].publish(ouster_ros::cloud_to_cloud_msg(
-                        cloud, h->timestamp, sensor_frame));
+                        cloud, sensor_frame));
                 }
             }
         }
@@ -106,11 +106,11 @@ int main(int argc, char** argv) {
     // publish transforms
     tf2_ros::StaticTransformBroadcaster tf_bcast{};
 
-    tf_bcast.sendTransform(ouster_ros::transform_to_tf_msg(
-        info.imu_to_sensor_transform, sensor_frame, imu_frame));
+    // tf_bcast.sendTransform(ouster_ros::transform_to_tf_msg(
+    //     info.imu_to_sensor_transform, sensor_frame, imu_frame));
 
-    tf_bcast.sendTransform(ouster_ros::transform_to_tf_msg(
-        info.lidar_to_sensor_transform, sensor_frame, lidar_frame));
+    // tf_bcast.sendTransform(ouster_ros::transform_to_tf_msg(
+    //     info.lidar_to_sensor_transform, sensor_frame, lidar_frame));
 
     ros::spin();
 

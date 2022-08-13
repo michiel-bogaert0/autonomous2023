@@ -15,6 +15,7 @@ cython
 
 # Jetson CAN
 python-can==4.0.0
+cantools==37.1.0
 
 # Dev tools
 black
