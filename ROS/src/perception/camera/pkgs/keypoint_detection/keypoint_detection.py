@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 import torch
 from geometry_msgs.msg import Point
-from keypoint_detector.module import RektNetModule
+from keypoint_detector.nn.model import RektNet
 from ugr_msgs.msg import BoundingBox, ConeKeypoint
 
 from .IntBoundingBox import IntBoundingBox
@@ -15,12 +15,13 @@ from .IntBoundingBox import IntBoundingBox
 
 class ConeKeypointDetector:
     def __init__(self, device: str):
-        model_file = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "keypoints.ckpt"
+        model_file = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "keypoints.pt"
         self.img_size = (60, 80)
 
         self.device = torch.device(device)
 
-        self.model = RektNetModule.load_from_checkpoint(str(model_file))
+        self.model = RektNet()
+        self.model.load_state_dict(torch.load(model_file))
         self.model.to(self.device)
         self.model.eval()
 

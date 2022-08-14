@@ -9,7 +9,6 @@ import numpy as np
 import torch
 from keypoint_detector.param import RektNetTrainParam
 from PIL import Image
-from pytorch_lightning import LightningDataModule
 from scipy.stats import multivariate_normal
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms.functional import to_tensor
@@ -126,14 +125,14 @@ class ConeDataset(Dataset):
         )
 
 
-class KeyPointDataset(LightningDataModule):
+class KeyPointDataset():
     def __init__(
         self,
         hyperparam,
         train_param: RektNetTrainParam,
         data_folder: Path = Path.cwd() / "dataset",
     ):
-        super().__init__()
+        
         self.data_folder = data_folder
         self.label_file = self.data_folder / "labels.json"
         self.image_folder = self.data_folder / "images"

@@ -3,6 +3,7 @@ from keypoint_detector.nn.cross_ratio_loss import CrossRatioLoss
 from keypoint_detector.nn.model import RektNet
 from pytorch_lightning.core.lightning import LightningModule
 from torch import optim
+from pathlib import Path
 
 
 class RektNetModule(LightningModule):
@@ -91,3 +92,10 @@ class RektNetModule(LightningModule):
         )
 
         return [optimizer], [scheduler]
+
+
+    def save_pt(self,path):
+        torch.save(
+            self.model.state_dict(),
+            str(path /"keypoints.pt")
+        )

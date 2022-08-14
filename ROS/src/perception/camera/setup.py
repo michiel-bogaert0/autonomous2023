@@ -10,6 +10,7 @@ d = generate_distutils_setup(
         "keypoint_detection",
         "pnp",
         "publisher_abstract",
+        "tools"
     ],
     package_dir={"": "pkgs"},
 )

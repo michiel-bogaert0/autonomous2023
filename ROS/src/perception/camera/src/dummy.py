@@ -28,6 +28,7 @@ class DummyCamNode(PublishNode):
         
 
     def process_data(self) -> Image:
+       
         """
         reads the frames from the mp4 file
 

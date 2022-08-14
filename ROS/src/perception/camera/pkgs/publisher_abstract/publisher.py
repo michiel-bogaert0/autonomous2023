@@ -22,6 +22,7 @@ class PublishNode(ROSNode, ABC):
         self.frame = (
             f"ugr/car_base_link/sensors/{rospy.get_param('~sensor_name','cam0')}"
         )
+        
 
     @abstractmethod
     def process_data(self) -> Image:

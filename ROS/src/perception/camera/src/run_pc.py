@@ -15,6 +15,7 @@ import rospy
 import torch
 from sensor_msgs.msg import Image
 from ugr_msgs.msg import BoundingBox, ConeKeypoints, PerceptionUpdate
+from tools.tools import np_to_ros_image, ros_img_to_np
 
 
 class PerceptionNode:
@@ -51,7 +52,7 @@ class PerceptionNode:
         self.publish_keypoints = rospy.get_param("~publish_keypoints", False)
 
         cone_dev = self.cone_detector.yolo_model.device
-        keyp_dev = self.keypoint_detector.model.device
+        keyp_dev = self.keypoint_detector.device
         rospy.logwarn(f"CUDA devices used: cone={cone_dev} - keypoint={keyp_dev}")
 
         # PNP
@@ -86,43 +87,6 @@ class PerceptionNode:
         rospy.spin()
 
 
-    def np_to_ros_image(self, arr: np.ndarray) -> Image:
-        """Creates a ROS image type based on a Numpy array
-        Args:
-            arr: numpy array in RGB format (H, W, 3), datatype uint8
-        Returns:
-            ROS Image with appropriate header and data
-        """
-
-        ros_img = Image(encoding="rgb8")
-        ros_img.height, ros_img.width, _ = arr.shape
-        contig = arr  # np.ascontiguousarray(arr)
-        ros_img.data = contig.tobytes()
-        ros_img.step = contig.strides[0]
-        ros_img.is_bigendian = (
-            arr.dtype.byteorder == ">"
-            or arr.dtype.byteorder == "="
-            and sys.byteorder == "big"
-        )
-
-        ros_img.header.stamp = rospy.Time.now()
-        ros_img.header.frame_id = "ugr/car_base_link/sensors/cam0"
-
-        return ros_img
-
-    def ros_img_to_np(self, image: Image) -> np.ndarray:
-        """Converts a ros image into an numpy array
-        Args:
-            image: ros image
-        returns:
-            numpy array containing the image data
-
-        """
-        im = np.frombuffer(image.data, dtype=np.uint8).reshape(
-            image.height, image.width, -1
-        )
-
-        return im
 
     def run_perception_pipeline(self, ros_image: Image) -> None:
         """
@@ -134,7 +98,7 @@ class PerceptionNode:
 
         timings = []
 
-        image = self.ros_img_to_np(ros_image)
+        image = ros_img_to_np(image=ros_image)
 
         start = time.perf_counter()
         bbs = self.cone_detector.detect_cones(image)
