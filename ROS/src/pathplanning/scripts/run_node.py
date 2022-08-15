@@ -6,10 +6,12 @@ from logging.config import dictConfig
 import numpy as np
 import rospy
 from fs_msgs.msg import Track as ROSTrack
+from geometry_msgs.msg import Point, PoseArray, Pose, Quaternion
 from node_fixture.node_fixture import AddSubscriber, ROSNode
-
 from pathplanning.rrt import Rrt
 from pathplanning.triangulator import Triangulator
+from std_msgs.msg import Header
+from ugr_msgs.msg import Observation, Observations
 
 logging_config = dict(
     version=1,
@@ -38,6 +40,13 @@ logging_config = dict(
 
 dictConfig(logging_config)
 
+def euler2quaternion(roll, pitch, yaw) -> np.ndarray:
+    qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+    qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+    qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+    qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+
+    return np.array([qx, qy, qz, qw])
 
 class PathPlanning(ROSNode):
     def __init__(self) -> None:
@@ -93,23 +102,55 @@ class PathPlanning(ROSNode):
         AddSubscriber(MAP_TOPIC, 1)(self.receive_new_map)
         self.add_subscribers()
 
-    def receive_new_map(self, _, track: ROSTrack):
+    def receive_new_map(self, _, track: Observations):
         self.cones = np.array(
-            [[cone.location.x, cone.location.y, cone.color] for cone in track.track]
+            [
+                [obs.location.x, obs.location.y, obs.observation_class]
+                for obs in track.observations
+            ]
         )
 
         # Compute
-        self.compute()
+        self.compute(track.header)
 
-    def compute(self):
-        try:
-            # t = time()
-            path, edge_centers, root = self.algorithm.get_path(self.cones)
-            # print('Algo: ', time()-t)
-        except:
-            pass
+    def compute(self, header: Header) -> PoseArray:
+        # t = time()
+        path, edge_centers, root = self.algorithm.get_path(self.cones)
+        # print('Algo: ', time()-t)
 
-        # TODO: publish to OUTPUT_TOPIC in some format?
+        # Calculate orientations
+        yaws = np.arctan2(path[:,1],path[:,0])
+        orientations = euler2quaternion(np.zeros_like(yaws), np.zeros_like(yaws), yaws)
+
+        poses: list(Pose) = []
+        for idx in range(len(path)):
+            pose: Pose = Pose()
+            position: Point = Point()
+            orientation: Quaternion = Quaternion()
+
+            # Fill position from path point
+            position.x = path[idx][0]
+            position.y = path[idx][1]
+            position.z = 0
+
+            # Fill orientation
+            orientation.x = orientations[0][idx]
+            orientation.y = orientations[1][idx]
+            orientation.z = orientations[2][idx]
+            orientation.w = orientations[3][idx]
+            
+            # Fill pose and add to array
+            pose.position = position
+            pose.orientation = orientation
+            poses += [pose]
+
+        output: PoseArray = PoseArray()
+        output.header.frame_id = header.frame_id
+        output.poses = poses
+        output.header.stamp = rospy.Time.now()
+
+        pub = rospy.Publisher(PathPlanning.OUTPUT_TOPIC, PoseArray)
+        pub.publish(output)
 
 
 node = PathPlanning()
