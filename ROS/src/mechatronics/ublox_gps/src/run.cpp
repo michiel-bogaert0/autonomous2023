@@ -37,12 +37,13 @@ int main(int argc, char **argv)
     std::string str_args[NR_OF_ARGS] = {
         "ntripclient",
         "-s" + server,
-        "-u " + user,
-        "-p " + password,
-        "-r " + port,
-        "-m " + mountpoint,
-        "-B " + baudrate,
-        "-D " + device};
+        "-u" + user,
+        "-p" + password,
+        "-r" + port,
+        "-m" + mountpoint,
+        "-B" + baudrate,
+        "-D" + device,
+        };
 
     char *args[NR_OF_ARGS + 1];
 
