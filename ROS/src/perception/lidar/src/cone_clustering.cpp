@@ -183,7 +183,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
         float bound_z = std::fabs(max[2] - min[2]);
 
         // Filter based on the shape of cones
-        if (bound_x < 0.33 && bound_y < 0.33 && bound_z < 0.4) {
+        if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4) {
           // This cluster can still be a cone
           clusters_to_keep.push_back(cluster_id);
         }
@@ -338,8 +338,8 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
       Eigen::VectorXd solution = X_mat.colPivHouseholderQr().solve(Y_mat);
 
       // determine colour
-      if (abs(solution(0)) < minimal_curve_intensity_)
-        cone_check.is_cone = false;
+      if (abs(solution(0)) < minimal_curve_intensity_);
+        //cone_check.is_cone = false;
       else if (solution(0) > 0)
         cone_check.color = 1;
       else
