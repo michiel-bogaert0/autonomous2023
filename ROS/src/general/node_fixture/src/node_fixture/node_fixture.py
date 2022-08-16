@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import queue
 from collections import deque
 from dataclasses import dataclass

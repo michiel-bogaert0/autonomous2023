@@ -15,7 +15,8 @@ sudo apt install -y \
     curl \
     lsb-release \
     mesa-utils \
-    htop
+    htop \
+    python3-opencv
 
 # Install the python requirements
 pip install -r requirements.txt
@@ -31,6 +32,9 @@ sudo apt-get install -y ros-noetic-tf2-geometry-msgs \
     ros-noetic-robot-localization \
     ros-noetic-laser-assembler \
     ros-noetic-perception-pcl \
+    ros-noetic-can-msgs \
+    ros-noetic-cv-bridge \
+    python3-catkin-tools \
     libyaml-cpp-dev \
     libcurl4-openssl-dev \
     python3-pcl \

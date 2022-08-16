@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>jetson_can</name>
+  <name>can_node</name>
   <version>0.0.0</version>
-  <description>The jetson_can package</description>
+  <description>The can_node package</description>
   <maintainer email="lucas.vandijck@ugentracing.be">Lucas Van Dijck</maintainer>
   <license>UGR</license>
   <buildtool_depend>catkin</buildtool_depend>

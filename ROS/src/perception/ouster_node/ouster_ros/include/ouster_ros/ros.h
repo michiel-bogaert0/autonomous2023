@@ -81,7 +81,7 @@ void scan_to_cloud(const ouster::XYZLut& xyz_lut,
  * @param frame the frame to set in the resulting ROS message
  * @return a ROS message containing the point cloud
  */
-sensor_msgs::PointCloud2 cloud_to_cloud_msg(const Cloud& cloud, ns timestamp,
+sensor_msgs::PointCloud2 cloud_to_cloud_msg(const Cloud& cloud,
                                             const std::string& frame);
 
 /**
