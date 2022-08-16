@@ -12,6 +12,7 @@
   <depend>geometry_msgs</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_msgs</depend>
+  <depend>ugr_msgs</depend>
   <depend>pcl_ros</depend>
 
   <export>
