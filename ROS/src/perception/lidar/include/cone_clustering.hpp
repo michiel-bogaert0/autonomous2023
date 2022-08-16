@@ -37,13 +37,13 @@ private:
 
   std::string clustering_method_; // Default: euclidian, others: string
   double cluster_tolerance_;      // The cone clustering tolerance (m)
-  double point_count_theshold_;   // How much % can the cone point count
+  double point_count_threshold_;   // How much % can the cone point count
                                   // prediction be off from the actual count
   double min_distance_factor_; // distance around the cone that contains no
                             // other cones as a factor to the width of the cone
   float minimal_curve_intensity_; // the miniminal curvature needed to be
                                   // classified as a cone
-  float minimal_heigh_cone_;
+  float minimal_height_cone_;
 
   sensor_msgs::PointCloud
   euclidianClustering(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,

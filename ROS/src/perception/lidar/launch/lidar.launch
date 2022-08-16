@@ -8,7 +8,6 @@
         <param name="th_dist" value="0.05" />
         <param name="sensor_height" value="0.3" />
 
-        <!-- Ground removal 1 -->
         <param name= "th_floor" value = "0.07"/>
         <param name= "angular_buckets" value = "15"/>
         <param name= "radial_buckets" value = "40"/>
@@ -16,7 +15,8 @@
         <!-- Clustering -->
         <param name="clustering_method" value="string" />
         <param name="cluster_tolerance" value="0.4" />
-        <param name="point_count_theshold" value="1" />
+        <param name="point_count_threshold" value="1" />
+        
         <param name="min_distance_factor" value="1.5"/>
         <param name="minimal_curve_intensity" value = "100"/>
         <param name= "minimal_height_cone" value = "0.15"/>
