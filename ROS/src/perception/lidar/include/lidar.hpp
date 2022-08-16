@@ -21,11 +21,13 @@ private:
   ros::Subscriber rawLidarSubscriber_;
   ros::Publisher preprocessedLidarPublisher_;
   ros::Publisher groundRemovalLidarPublisher_;
+  ros::Publisher groundRemoval2LidarPublisher_;
   ros::Publisher clusteredLidarPublisher_;
   ros::Publisher conePublisher_;
 
   ConeClustering cone_clustering_;
-  GroundRemoval2 ground_removal_;
+  GroundRemoval2 ground_removal2_;
+  GroundRemoval ground_removal_;
 
   void rawPcCallback(const sensor_msgs::PointCloud2 &msg);
   void preprocessing(const pcl::PointCloud<pcl::PointXYZI> &raw,

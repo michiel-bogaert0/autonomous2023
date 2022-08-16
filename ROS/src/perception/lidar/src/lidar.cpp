@@ -4,7 +4,7 @@
 // Constructor
 namespace ns_lidar {
 Lidar::Lidar(ros::NodeHandle &n)
-    : n_(n), cone_clustering_(n), ground_removal_(n) {
+    : n_(n), cone_clustering_(n), ground_removal_(n), ground_removal2_(n) {
   // Subscribe to the raw lidar topic
   // rawLidarSubscriber_ = n.subscribe("perception/raw_pc", 10,
   // &Lidar::rawPcCallback, this);
@@ -16,6 +16,8 @@ Lidar::Lidar(ros::NodeHandle &n)
       n.advertise<sensor_msgs::PointCloud2>("perception/preprocessed_pc", 5);
   groundRemovalLidarPublisher_ =
       n.advertise<sensor_msgs::PointCloud2>("perception/groundremoval_pc", 5);
+  groundRemoval2LidarPublisher_ =
+      n.advertise<sensor_msgs::PointCloud2>("perception/groundremoval2_pc", 5);
   clusteredLidarPublisher_ =
       n.advertise<sensor_msgs::PointCloud>("perception/clustered_pc", 5);
   conePublisher_ =
@@ -51,7 +53,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points(
       new pcl::PointCloud<pcl::PointXYZI>());
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-  ground_removal_.groundRemoval2(preprocessed_pc, notground_points,
+  ground_removal_.groundRemoval(preprocessed_pc, notground_points,
                                 ground_points);
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   ROS_INFO("Post ground removal points: %ld", notground_points->size());
@@ -66,11 +68,32 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   groundremoval_msg.header.stamp = msg.header.stamp;
   groundRemovalLidarPublisher_.publish(groundremoval_msg);
 
+   // Ground plane removal2
+  pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points2(
+      new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points2(
+      new pcl::PointCloud<pcl::PointXYZI>());
+  t2 = std::chrono::steady_clock::now();
+  ground_removal2_.groundRemoval2(preprocessed_pc, notground_points2,
+                                ground_points2);
+  t1 = std::chrono::steady_clock::now();
+  ROS_INFO("Post ground removal2 points: %ld", notground_points2->size());
+  time_round =
+      std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
+          .count();
+  ROS_INFO("ground-removal2 took: %lf", time_round);
+
+  sensor_msgs::PointCloud2 groundremoval2_msg;
+  pcl::toROSMsg(*notground_points2, groundremoval2_msg);
+  groundremoval2_msg.header.frame_id = msg.header.frame_id;
+  groundremoval2_msg.header.stamp = msg.header.stamp;
+  groundRemoval2LidarPublisher_.publish(groundremoval2_msg);
+
   // Cone clustering
   sensor_msgs::PointCloud cluster;
 
   t2 = std::chrono::steady_clock::now();
-  cluster = cone_clustering_.cluster(notground_points, ground_points);
+  cluster = cone_clustering_.cluster(notground_points2, ground_points2);
   t1 = std::chrono::steady_clock::now();
   time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
@@ -146,7 +169,7 @@ void Lidar::publishMarkers(const sensor_msgs::PointCloud cones) {
     marker.color.r = color;
     marker.color.g = color;
     marker.color.b = 1 - color;
-    marker.color.a = 0.5;
+    marker.color.a = 1;
 
     marker.lifetime = ros::Duration(
         0); // in seconds (0 means stay forever, or at least until overwritten)

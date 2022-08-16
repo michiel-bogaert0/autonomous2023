@@ -4,6 +4,8 @@ namespace ns_lidar {
 
     GroundRemoval2::GroundRemoval2(ros::NodeHandle &n): n_(n){
         n.param<double>("th_floor", th_floor_, 0.5);
+        n.param<int>("radial_buckets", radial_buckets_, 10);
+        n.param<int>("angular_buckets", angular_buckets_, 10);
     }
 
     void GroundRemoval2::groundRemoval2(
@@ -12,21 +14,21 @@ namespace ns_lidar {
     pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points){
 
         
-        int bucketsize = 100;
-
-        pcl::PointCloud<pcl::PointXYZI> buckets[bucketsize];
+        
+        int bucket_size = angular_buckets_*radial_buckets_;
+        pcl::PointCloud<pcl::PointXYZI> buckets[bucket_size];
 
         for(uint16_t i =0; i< cloud_in->points.size(); i++){
             pcl::PointXYZI point = cloud_in->points[i];
             double hypot = std::hypot(point.x, point.y) - 1;
             double angle = std::atan2(point.x, point.y) - 0.3;
-            int angle_bucket = std::floor(angle / 0.25);
-            int hypot_bucket = std::floor(hypot / 2.0);
+            int angle_bucket = std::floor(angle / (2.5/double(angular_buckets_)));
+            int hypot_bucket = std::floor(hypot / (20/double(radial_buckets_)));
 
-            buckets[10*hypot_bucket + angle_bucket].push_back(point);
+            buckets[angular_buckets_*hypot_bucket + angle_bucket].push_back(point);
         }
 
-        for(uint16_t i =0 ; i< bucketsize; i++){
+        for(uint16_t i =0 ; i< bucket_size; i++){
             pcl::PointCloud<pcl::PointXYZI> bucket = buckets[i];
             if(bucket.size() != 0){
                 std::sort(bucket.begin(), bucket.end(), GroundRemoval2::zsort);

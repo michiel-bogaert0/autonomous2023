@@ -26,6 +26,8 @@ private:
 } zsort;
   ros::NodeHandle &n_;
   double th_floor_;
+  int angular_buckets_;
+  int radial_buckets_ ;
 };
 } // namespace ns_lidar
 
