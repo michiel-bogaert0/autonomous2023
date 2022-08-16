@@ -15,6 +15,7 @@ ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n) {
   n.param<double>("point_count_theshold", point_count_theshold_, 0.5);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
   n.param<float>("minimal_curve_intensity", minimal_curve_intensity_, 1);
+  n.param<float>("minimal_height_cone", minimal_heigh_cone_, 0);
 }
 
 /**
@@ -296,7 +297,7 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
   float bound_z = std::fabs(max[2] - min[2]);
 
   // filter based on the shape of cones
-  if (bound_x < 0.33 && bound_y < 0.33 && bound_z < 0.4 &&
+  if (bound_x < 0.5 && bound_y < 0.5 && bound_z < 0.4 && bound_z >= minimal_heigh_cone_&&
       centroid[2] < 0) // centroid[2] < 0 because lidar is positioned heigher
                        // than the cones
   {

@@ -51,7 +51,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points(
       new pcl::PointCloud<pcl::PointXYZI>());
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-  ground_removal_.groundRemoval(preprocessed_pc, notground_points,
+  ground_removal_.groundRemoval2(preprocessed_pc, notground_points,
                                 ground_points);
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   ROS_INFO("Post ground removal points: %ld", notground_points->size());
@@ -103,7 +103,7 @@ void Lidar::preprocessing(
   for (auto &iter : raw.points) {
     // Remove points closer than 1m, higher than 0.6m or further than 20m
     if (std::hypot(iter.x, iter.y) < 1 || iter.z > 1 ||
-        std::hypot(iter.x, iter.y) > 20)
+        std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 || std::atan2(iter.x, iter.y) > 2.8)
       continue;
 
     preprocessed_pc->points.push_back(iter);

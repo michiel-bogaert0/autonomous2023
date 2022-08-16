@@ -9,7 +9,7 @@ GroundRemoval::GroundRemoval(ros::NodeHandle &n) : n_(n) {
   n.param<int>("num_lpr", num_lpr_, 250);
   n.param<double>("th_seeds", th_seeds_, 1.2);
   n.param<double>("th_dist", th_dist_, 0.1);
-  n.param<double>("sensor_height", sensor_height_, 0.5);
+  n.param<double>("sensor_height", sensor_height_, 0.4);
 }
 
 /**
@@ -25,6 +25,8 @@ void GroundRemoval::groundRemoval(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
     pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points,
     pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points) {
+
+      
   pcl::PointCloud<pcl::PointXYZI>::Ptr seed_points(
       new pcl::PointCloud<pcl::PointXYZI>());
 
