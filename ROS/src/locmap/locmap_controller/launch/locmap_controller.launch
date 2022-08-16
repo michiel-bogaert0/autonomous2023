@@ -66,10 +66,7 @@
             <remap from="/input/gt_odometry" to="/fsds/testing_only/odom" />
             <remap from="/input/gt_track" to="/fsds/testing_only/track" />
             <remap from="/input/gps" to="/fsds/gps" />
-            <remap from="/input/lidar/cones" to="/lidar/perception/cones_lidar" />
-            <!-- <remap from="/input/lidar/points" to="/os_cloud_node/points" /> -->
 
-            <!-- <remap from="/output/lidar/points" to="/ugr/car/sensors/lidar"/> -->
             <remap from="/output/observations" to="/ugr/car/sensors/perception" />
             <remap from="/output/gss" to="ugr/car/sensors/encoder0" />
             <remap from="/output/imu" to="ugr/car/sensors/imu0" />
@@ -132,7 +129,7 @@
             <param name="max_landmark_range" value="5" />
             <param name="observation_queue_size" value="1" />
             # Input/output remapping
-            <remap from="/input/observations" to="ugr/car/sensors/perception" />
+            <remap from="/input/observations" to="/lidar/perception/observations" />
 
             <remap from="/output/observations" to="ugr/car/observations/global" />
             <remap from="/output/map" to="ugr/car/map/global" />
