@@ -1,6 +1,7 @@
 <launch>
     <node pkg="lidar" type="lidar" name="lidar" output="screen">
         <!-- ground removal -->
+        <param name="ground_removal_method" value="zermas"/>
         <param name="num_iter" value="3" />
         <param name="num_lpr" value="250" />
         <param name="th_seeds" value="0.15" />

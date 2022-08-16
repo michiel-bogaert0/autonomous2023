@@ -3,7 +3,6 @@
 
 #include "cone_clustering.hpp"
 #include "ground_removal.hpp"
-#include "ground_removal2.hpp"
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -21,12 +20,10 @@ private:
   ros::Subscriber rawLidarSubscriber_;
   ros::Publisher preprocessedLidarPublisher_;
   ros::Publisher groundRemovalLidarPublisher_;
-  ros::Publisher groundRemoval2LidarPublisher_;
   ros::Publisher clusteredLidarPublisher_;
   ros::Publisher conePublisher_;
 
   ConeClustering cone_clustering_;
-  GroundRemoval2 ground_removal2_;
   GroundRemoval ground_removal_;
 
   void rawPcCallback(const sensor_msgs::PointCloud2 &msg);

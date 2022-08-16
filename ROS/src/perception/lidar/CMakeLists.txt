@@ -33,7 +33,6 @@ include_directories( /usr/include/eigen3 )
 add_executable(${PROJECT_NAME}
   src/lidar.cpp
   src/ground_removal.cpp
-  src/ground_removal2.cpp
   src/cone_clustering.cpp
   src/run.cpp
   )
