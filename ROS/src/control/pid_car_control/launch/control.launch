@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="pid_car_control" type="run.py" name="pid_car_control" output="screen">
+        <remap from="/input/path" to="/pathplanning/path" />
+        <remap from="/output/drive_command" to="/control/drive_command" />
+        <remap from="/output/target_point" to="/control/target_point" />
+    </node>
+</launch>
