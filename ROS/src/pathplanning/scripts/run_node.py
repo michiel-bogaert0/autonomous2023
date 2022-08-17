@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import logging
-from logging.config import dictConfig
-
 import numpy as np
 import rospy
 from fs_msgs.msg import Track as ROSTrack
@@ -12,58 +9,31 @@ from pathplanning.rrt import Rrt
 from pathplanning.triangulator import Triangulator
 from std_msgs.msg import Header
 from ugr_msgs.msg import Observation, Observations
+from tf_conversions import quaternion_from_euler
 
-logging_config = dict(
-    version=1,
-    formatters={
-        "with_time": {"format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"},
-        "without_time": {"format": "%(name)s - %(levelname)s - %(message)s"},
-    },
-    handlers={
-        "debug_handler": {
-            "class": "logging.StreamHandler",
-            "formatter": "without_time",
-            "level": logging.DEBUG,
-        },
-        "warning_handler": {
-            "class": "logging.FileHandler",
-            "filename": "pathplanner.log",
-            "formatter": "with_time",
-            "level": logging.WARNING,
-        },
-    },
-    root={
-        "handlers": ["debug_handler", "warning_handler"],
-        "level": logging.DEBUG,
-    },
-)
-
-dictConfig(logging_config)
-
-def euler2quaternion(roll, pitch, yaw) -> np.ndarray:
-    qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-    qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
-    qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
-    qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-
-    return np.array([qx, qy, qz, qw])
 
 class PathPlanning(ROSNode):
+    """Path planning node. Calculates and publishes path based on observations."""
+
     def __init__(self) -> None:
+        """Initialize node"""
         super().__init__("exploration_mapping", False)
 
         MAP_TOPIC = "/pathplanning/local/map"
         OUTPUT_TOPIC = "/pathplanning/path"
 
         self.params = {}
-        self.params["algo"] = rospy.get_param("expand_dist", "tri")
+        # Defines which algorithm to run triangulatie ("tri") or RRT ("RRT")
+        self.params["algo"] = rospy.get_param("algoritme", "tri")
         # Load at least all params from config file via ros parameters
         # The distance by which the car drives every update
         self.params["expand_dist"] = rospy.get_param("expand_dist", 0.5)
         # The distance the car can see in front
         self.params["plan_dist"] = rospy.get_param("plan_dist", 12.0)
         # The amount of branches generated
-        self.params["max_iter"] = rospy.get_param("max_iter", 100)
+        self.params["max_iter"] = rospy.get_param(
+            "max_iter", 100 if self.params["expand_dist"] == "tri" else 750
+        )
 
         # Early prune settings
         # The maximum angle (rad) for a branch to be valid (sharper turns will be pruned prematurely)
@@ -72,7 +42,21 @@ class PathPlanning(ROSNode):
         # Should be at least the half the width of the car
         self.params["safety_dist"] = rospy.get_param("safety_dist", 1)
 
-        # TODO: load more params
+        # Extra parameters for RRT
+        # Minimum or average width of the track
+        # Used to estimate middle one side of cones is missing.
+        self.params["track_width"] = rospy.get_param("track_width", 3)
+        # Maximum width of the track used to detect if RRT node is possibly out of the track
+        self.params["max_track_width"] = rospy.get_param("max_track_width", 4)
+        # Used for RRT* variant to define radius to optimize new RRT node
+        # When set to None, will be twice max_dist (expand_dist*3)
+        self.params["search_rad"] = rospy.get_param("search_rad", None)
+        # Iteration threshold which triggers parameter update. (3/4 of max_iter seems to be ok)
+        self.params["iter_threshold"] = rospy.get_param("iter_threshold", 560)
+        # Percentage to increase maximum angle when parameter update is triggered.
+        self.params["angle_inc"] = rospy.get_param("angle_inc", 0.2)
+        # Factor in to increase maximum angle to create more chance for edges.
+        self.params["angle_fac"] = rospy.get_param("angle_fac", 1.5)
 
         # Initialize cones, might not be needed
         track_layout = rospy.wait_for_message(MAP_TOPIC, ROSTrack)
@@ -90,6 +74,12 @@ class PathPlanning(ROSNode):
                 self.params["max_iter"],
                 self.params["max_angle_change"],
                 self.params["safety_dist"],
+                self.params["track_width"],
+                self.params["max_track_width"],
+                self.params["search_rad"],
+                self.params["iter_threshold"],
+                self.params["angle_inc"],
+                self.params["angle_fac"],
             )
         else:
             self.algorithm = Triangulator(
@@ -103,6 +93,12 @@ class PathPlanning(ROSNode):
         self.add_subscribers()
 
     def receive_new_map(self, _, track: Observations):
+        """Receives observations from input topic.
+
+        Args:
+            _: Not used
+            track: The observations/message on input topic.
+        """
         self.cones = np.array(
             [
                 [obs.location.x, obs.location.y, obs.observation_class]
@@ -113,14 +109,21 @@ class PathPlanning(ROSNode):
         # Compute
         self.compute(track.header)
 
-    def compute(self, header: Header) -> PoseArray:
+    def compute(self, header: Header) -> None:
+        """Calculate path and publish it.
+
+        Args:
+            header: Header of input message.
+        """
         # t = time()
-        path, edge_centers, root = self.algorithm.get_path(self.cones)
+        path = self.algorithm.get_path(self.cones)
         # print('Algo: ', time()-t)
 
         # Calculate orientations
-        yaws = np.arctan2(path[:,1],path[:,0])
-        orientations = euler2quaternion(np.zeros_like(yaws), np.zeros_like(yaws), yaws)
+        yaws = np.arctan2(path[:, 1], path[:, 0])
+        orientations = np.array(
+            quaternion_from_euler(np.zeros_like(yaws), np.zeros_like(yaws), yaws)
+        )
 
         poses: list(Pose) = []
         for idx in range(len(path)):
@@ -138,7 +141,7 @@ class PathPlanning(ROSNode):
             orientation.y = orientations[1][idx]
             orientation.z = orientations[2][idx]
             orientation.w = orientations[3][idx]
-            
+
             # Fill pose and add to array
             pose.position = position
             pose.orientation = orientation
