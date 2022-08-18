@@ -320,10 +320,10 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
       cone_check.bounds[2] = bound_z;
       cone_check.is_cone = true;
 
-      Eigen::Matrix<double, 3, 3> covariance_matrix;
-      pcl::computeCovarianceMatrix(cone, covariance_matrix);
+      // Eigen::Matrix<double, 3, 3> covariance_matrix;
+      // pcl::computeCovarianceMatrix(cone, covariance_matrix);
 
-      ROS_INFO("variance x: %lf", covariance_matrix(1,1));
+      // ROS_INFO("variance x: %lf", covariance_matrix(1,1));
       // calculate the convexity of the intensity to distinguish between blue
       // and yellow;
       Eigen::MatrixXd X_mat(cone.points.size(), 3);
