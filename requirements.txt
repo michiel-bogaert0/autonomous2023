@@ -9,7 +9,6 @@ pybind11[global]
 
 # Perception
 seaborn
-pytorch-lightning
 tqdm
 cython
 

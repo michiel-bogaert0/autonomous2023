@@ -76,8 +76,7 @@ class PublishNode(ROSNode, ABC):
                 if data is not None:
                     data.header = self.create_header()
                     self.publish("/input/image", data)
-               
-                   
+
                 self.rate.sleep()
 
     def create_header(self):
