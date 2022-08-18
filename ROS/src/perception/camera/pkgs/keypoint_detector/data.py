@@ -125,14 +125,14 @@ class ConeDataset(Dataset):
         )
 
 
-class KeyPointDataset():
+class KeyPointDataset:
     def __init__(
         self,
         hyperparam,
         train_param: RektNetTrainParam,
         data_folder: Path = Path.cwd() / "dataset",
     ):
-        
+
         self.data_folder = data_folder
         self.label_file = self.data_folder / "labels.json"
         self.image_folder = self.data_folder / "images"

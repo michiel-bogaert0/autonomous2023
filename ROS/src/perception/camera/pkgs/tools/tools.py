@@ -26,7 +26,8 @@ def np_to_ros_image(self, arr: np.ndarray) -> Image:
 
     return ros_img
 
-def ros_img_to_np( image: Image) -> np.ndarray:
+
+def ros_img_to_np(image: Image) -> np.ndarray:
     """Converts a ros image into an numpy array
     Args:
         image: ros image

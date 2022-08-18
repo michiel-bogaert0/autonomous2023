@@ -34,7 +34,6 @@ class PerceptionNode:
 
         self.tensorrt = rospy.get_param("~tensorrt", True)
 
-
         # Cone detection
         self.device = (
             "cuda:0"
@@ -81,12 +80,8 @@ class PerceptionNode:
             camera_matrix=camera_matrix,
             distortion_matrix=distortion_matrix,
         )
-        self.pub = rospy.Subscriber(
-            "/input/image", Image, self.run_perception_pipeline
-        )
+        self.pub = rospy.Subscriber("/input/image", Image, self.run_perception_pipeline)
         rospy.spin()
-
-
 
     def run_perception_pipeline(self, ros_image: Image) -> None:
         """

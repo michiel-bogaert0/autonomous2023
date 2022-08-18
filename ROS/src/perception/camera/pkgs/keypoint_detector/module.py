@@ -93,9 +93,5 @@ class RektNetModule(LightningModule):
 
         return [optimizer], [scheduler]
 
-
-    def save_pt(self,path):
-        torch.save(
-            self.model.state_dict(),
-            str(path /"keypoints.pt")
-        )
+    def save_pt(self, path):
+        torch.save(self.model.state_dict(), str(path / "keypoints.pt"))

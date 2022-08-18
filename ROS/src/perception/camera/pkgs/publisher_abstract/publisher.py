@@ -22,7 +22,6 @@ class PublishNode(ROSNode, ABC):
         self.frame = (
             f"ugr/car_base_link/sensors/{rospy.get_param('~sensor_name','cam0')}"
         )
-        
 
     @abstractmethod
     def process_data(self) -> Image:
@@ -77,8 +76,7 @@ class PublishNode(ROSNode, ABC):
                 if data is not None:
                     data.header = self.create_header()
                     self.publish("/input/image", data)
-               
-                   
+
                 self.rate.sleep()
 
     def create_header(self):
