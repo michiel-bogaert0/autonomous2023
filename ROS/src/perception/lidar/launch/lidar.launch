@@ -10,15 +10,15 @@
 
         <param name= "th_floor" value = "0.07"/>
         <param name= "angular_buckets" value = "15"/>
-        <param name= "radial_buckets" value = "40"/>
+        <param name= "radial_buckets" value = "30"/>
 
         <!-- Clustering -->
         <param name="clustering_method" value="string" />
-        <param name="cluster_tolerance" value="0.4" />
-        <param name="point_count_threshold" value="1" />
+        <param name="cluster_tolerance" value="1" />
+        <param name="point_count_threshold" value="2" />
         
         <param name="min_distance_factor" value="1.5"/>
         <param name="minimal_curve_intensity" value = "100"/>
-        <param name= "minimal_height_cone" value = "0.15"/>
+        <param name= "minimal_points_cone" value = "5"/>
     </node>
 </launch>

@@ -139,20 +139,26 @@ void Lidar::publishMarkers(const sensor_msgs::PointCloud cones) {
     marker.pose.orientation.z = 0.0;
     marker.pose.orientation.w = 1.0;
 
-    marker.scale.x = x_size; // 0.228; // in meters
-    marker.scale.y = y_size; // 0.228;
-    marker.scale.z = z_size; // 0.325;
+    marker.scale.x = 0.5; // 0.228; // in meters
+    marker.scale.y = 0.5; // 0.228;
+    marker.scale.z = 0.5; // 0.325;
 
     marker.color.r = color;
     marker.color.g = color;
     marker.color.b = 1 - color;
-    marker.color.a = 0.5;
-
-    marker.lifetime = ros::Duration(
-        0); // in seconds (0 means stay forever, or at least until overwritten)
+    marker.color.a = 1;
 
     markers.markers.push_back(marker);
   }
+
+  visualization_msgs::MarkerArray clear_cones;
+  visualization_msgs::Marker marker;
+  marker.header.frame_id = cones.header.frame_id;
+  marker.header.stamp = cones.header.stamp;
+  marker.ns = "cones";
+  marker.action = visualization_msgs::Marker::DELETEALL;
+  clear_cones.markers.push_back(marker);
+  conePublisher_.publish(clear_cones);
 
   conePublisher_.publish(markers);
 }

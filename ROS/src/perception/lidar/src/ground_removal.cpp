@@ -88,6 +88,7 @@ void GroundRemoval::groundRemoval_Bins(
                     ground_points->push_back(point);
                 }
                 else{
+                    point.z -= floor;
                     notground_points->push_back(point);
                 }
             }
