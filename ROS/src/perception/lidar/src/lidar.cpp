@@ -20,6 +20,8 @@ Lidar::Lidar(ros::NodeHandle &n)
       n.advertise<sensor_msgs::PointCloud>("perception/clustered_pc", 5);
   conePublisher_ =
       n.advertise<visualization_msgs::MarkerArray>("perception/cones_lidar", 5);
+
+  n.param<bool>("show_debug", show_debug_, false);
 }
 
 /**
@@ -33,11 +35,11 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   pcl::PointCloud<pcl::PointXYZI>::Ptr preprocessed_pc(
       new pcl::PointCloud<pcl::PointXYZI>);
   pcl::fromROSMsg(msg, raw_pc_);
-  ROS_INFO("Raw points: %ld", raw_pc_.size());
+  if(show_debug_) ROS_INFO("Raw points: %ld", raw_pc_.size());
 
   // Preprocessing
   preprocessing(raw_pc_, preprocessed_pc);
-  ROS_INFO("Preprocessed points: %ld", preprocessed_pc->size());
+  if(show_debug_) ROS_INFO("Preprocessed points: %ld", preprocessed_pc->size());
 
   sensor_msgs::PointCloud2 preprocessed_msg;
   pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
@@ -54,11 +56,11 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   ground_removal_.groundRemoval(preprocessed_pc, notground_points,
                                 ground_points);
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-  ROS_INFO("Post ground removal points: %ld", notground_points->size());
+  if(show_debug_) ROS_INFO("Post ground removal points: %ld", notground_points->size());
   double time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
           .count();
-  ROS_INFO("ground-removel took: %lf", time_round);
+  if(show_debug_) ROS_INFO("ground-removel took: %lf", time_round);
 
   sensor_msgs::PointCloud2 groundremoval_msg;
   pcl::toROSMsg(*notground_points, groundremoval_msg);
@@ -75,11 +77,11 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
           .count();
-  ROS_INFO("Clustering took: %lf", time_round);
+  if(show_debug_) ROS_INFO("Clustering took: %lf", time_round);
 
   cluster.header.frame_id = msg.header.frame_id;
   cluster.header.stamp = msg.header.stamp;
-  ROS_INFO("Clustered points: %ld", cluster.points.size());
+  if(show_debug_) ROS_INFO("Clustered points: %ld", cluster.points.size());
 
   clusteredLidarPublisher_.publish(cluster);
 

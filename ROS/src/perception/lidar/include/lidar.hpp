@@ -23,6 +23,8 @@ private:
   ros::Publisher clusteredLidarPublisher_;
   ros::Publisher conePublisher_;
 
+  bool show_debug_;
+
   ConeClustering cone_clustering_;
   GroundRemoval ground_removal_;
 

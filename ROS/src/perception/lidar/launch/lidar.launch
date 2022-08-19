@@ -20,5 +20,7 @@
         <param name="min_distance_factor" value="1.5"/>
         <param name="minimal_curve_intensity" value = "100"/>
         <param name= "minimal_points_cone" value = "5"/>
+
+        <param name="show_debug" value= "false"/>
     </node>
 </launch>
