@@ -43,11 +43,11 @@ class LocMapVis:
             Takes in an Particles message and produces the corresponding MarkerArary message
 
         Args:
-            - observations: the message to visualize
-            - namespace: the namespace of the MarkerArray
-            - lifetime: the lifetime of the markers
-            - color: can be 'r', 'g', 'b', 'y'. Determines the base color of the weight-based gradient
-            - persist: set to true if the markers need to persis (this is different than lifetime=0)
+            observations: the message to visualize
+            namespace: the namespace of the MarkerArray
+            lifetime: the lifetime of the markers
+            color: can be 'r', 'g', 'b', 'y'. Determines the base color of the weight-based gradient
+            persist: set to true if the markers need to persist (this is different than lifetime=0)
 
         Returns:
             MakerArray message
@@ -111,10 +111,10 @@ class LocMapVis:
         Takes in an Observations message and produces the corresponding MarkerArary message
 
         Args:
-            - observations: the message to visualize
-            - namespace: the namespace of the MarkerArray
-            - lifetime: the lifetime of the markers
-            - persist: set to true if the markers need to persis (this is different than lifetime=0)
+            observations: the message to visualize
+            namespace: the namespace of the MarkerArray
+            lifetime: the lifetime of the markers
+            persist: set to true if the markers need to persist (this is different than lifetime=0)
 
         Returns:
             MakerArray message
