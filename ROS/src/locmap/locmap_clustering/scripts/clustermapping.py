@@ -283,12 +283,6 @@ class ClusterMapping(ROSNode):
                         self.vis_namespace + "/samples"
                     ),
                 )
-                self.publish(
-                    "/output/vis",
-                    self.vis_handler.delete_markerarray(
-                        self.vis_namespace + "/samples"
-                    ),
-                )
 
                 self.cleared_vis += 1
 
