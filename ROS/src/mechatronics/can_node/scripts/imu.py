@@ -95,7 +95,7 @@ class ImuConverter:
                 return
             self.imu_back_pitch_roll.publish(imu_msg)
 
-        elif 0xF02A:
+        elif cmd_id == 0xF02A:
             # Angular rate
             pitch_raw = (msg.data[1] << 8) + msg.data[0]
             pitch = (pitch_raw - 32000) / 128
@@ -120,7 +120,7 @@ class ImuConverter:
                 return
             self.imu_back_angular_rate.publish(imu_msg)
 
-        if cmd_id == 0xF02D:
+        elif cmd_id == 0xF02D:
             # Acceleration
             lat_raw = (msg.data[1] << 8) + msg.data[0]
             lat = (lat_raw - 32000) / 100
@@ -135,8 +135,8 @@ class ImuConverter:
             acc.x = lon
             acc.y = lat
             acc.z = vert
-            imu_msg.angular_velocity = acc
-            imu_msg.angular_velocity_covariance = (
+            imu_msg.linear_acceleration = acc
+            imu_msg.linear_acceleration_covariance = (
                 np.diag([1, 1, 1]).reshape((1, 9)).tolist()[0]
             )  # TODO change
 
