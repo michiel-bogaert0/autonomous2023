@@ -3,9 +3,14 @@ import cantools
 import can
 from fs_msgs.msg import ControlCommand
 
-MAX_VELOCITY = 3 # in rev/s
+MAX_VELOCITY = 3  # in rev/s
+STEER_MAX_STEP = 1500  # This must correspond to the value on the RC Teensy
 
-class OdriveController:
+CAN_NODE_ID 0xE0
+CAN_REBOOT_ID 0x1
+CAN_STEER_ID 0x3
+
+class JetsonController:
     def __init__(self, bus=None):
         rospy.init_node("jetson_controller")
 
@@ -29,8 +34,26 @@ class OdriveController:
         self.set_odrive_velocity(msg.throttle * MAX_VELOCITY, 1)
         self.set_odrive_velocity(msg.throttle * MAX_VELOCITY, 2)
 
-        # TODO also actuate the steering
+        self.set_steering_setpoint(self, steering)
+        
+    def set_steering_setpoint(self, steering: float) -> None:
+        """Sends a CAN message to actuate the steering system
 
+        The input must be converted from [-1, 1] to a steering range [-STEER_MAX_STEP, STEER_MAX_STEP]
+        as defined in the RC Teensy code.
+
+        Args:
+            steering: a float between -1 and 1
+        """
+
+        steering = int(steering * STEER_MAX_STEP)
+        id = CAN_NODE_ID << 5 | CAN_STEER_ID
+
+        msg = can.Message(
+            arbitration_id=id, data=steering
+        )
+
+        self.bus.send(msg)
 
     def set_odrive_velocity(self, vel: float, axis: int) -> None:
         """Publishes a drive command with a given velocity to the ODrive
@@ -65,7 +88,7 @@ if __name__ == "__main__":
             bitrate=rospy.get_param("~baudrate", 250000),
         )
 
-        odc = OdriveController(bus)
+        odc = JetsonController(bus)
 
     except rospy.ROSInterruptException:
         pass
