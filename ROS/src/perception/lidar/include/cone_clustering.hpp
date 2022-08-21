@@ -43,7 +43,8 @@ private:
                             // other cones as a factor to the width of the cone
   float minimal_curve_intensity_; // the miniminal curvature needed to be
                                   // classified as a cone
-  float minimal_points_cone_;
+  int minimal_points_cone_;
+  float minimal_height_center_cone_;
 
   sensor_msgs::PointCloud
   euclidianClustering(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,

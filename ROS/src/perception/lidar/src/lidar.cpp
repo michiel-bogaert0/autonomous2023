@@ -103,7 +103,7 @@ void Lidar::preprocessing(
     pcl::PointCloud<pcl::PointXYZI>::Ptr &preprocessed_pc) {
   // Clean up the points belonging to the car and noise in the sky
   for (auto &iter : raw.points) {
-    // Remove points closer than 1m, higher than 0.6m or further than 20m
+    // Remove points closer than 1m, higher than 1m, further than 21m and ouside the posts.
     if (std::hypot(iter.x, iter.y) < 1 || iter.z > 1 ||
         std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 || std::atan2(iter.x, iter.y) > 2.8)
       continue;
@@ -153,6 +153,7 @@ void Lidar::publishMarkers(const sensor_msgs::PointCloud cones) {
     markers.markers.push_back(marker);
   }
 
+  //delete previous cones before plotting new ones.
   visualization_msgs::MarkerArray clear_cones;
   visualization_msgs::Marker marker;
   marker.header.frame_id = cones.header.frame_id;

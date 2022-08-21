@@ -58,23 +58,28 @@ void GroundRemoval::groundRemoval_Bins(
     pcl::PointCloud<pcl::PointXYZI> buckets[bucket_size];
 
     // add point to the correct bucket
-    for(uint16_t i =0; i< cloud_in->points.size(); i++){
+    for(uint16_t i =0; i < cloud_in->points.size(); i++){
         pcl::PointXYZI point = cloud_in->points[i];
+
+        // let hypot and angle start from 0 instead of 1 and 0.3 respectively
         double hypot = std::hypot(point.x, point.y) - 1;
         double angle = std::atan2(point.x, point.y) - 0.3;
+
+        // Calculate which bucket the points falls into
         int angle_bucket = std::floor(angle / (2.5/double(angular_buckets_)));
         int hypot_bucket = std::floor(hypot / (20/double(radial_buckets_)));
 
+        //add point to allocated bucket
         buckets[angular_buckets_*hypot_bucket + angle_bucket].push_back(point);
     }
 
     // iterate over each bucket
-    for(uint16_t i =0 ; i< bucket_size; i++){
+    for(uint16_t i =0 ; i < bucket_size; i++){
         pcl::PointCloud<pcl::PointXYZI> bucket = buckets[i];
 
         if(bucket.size() != 0){
 
-          //sort bucket from left to right
+          //sort bucket from bottom to top
             std::sort(bucket.begin(), bucket.end(), zsort);
 
             // decide floor level based on the lowest point in the bucket;
@@ -155,7 +160,7 @@ void GroundRemoval::groundRemoval_Zermas(
         pcl::PointXYZI point;
         point.x = cloud_in->points[k].x;
         point.y = cloud_in->points[k].y;
-        point.z = cloud_in->points[k].z;
+        point.z = result[k];
         point.intensity = cloud_in->points[k].intensity;
         notground_points->points.push_back(point);
       }
