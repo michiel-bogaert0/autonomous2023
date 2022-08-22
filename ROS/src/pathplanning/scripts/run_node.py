@@ -7,7 +7,7 @@ import tf2_ros
 from geometry_msgs.msg import Point, Pose, PoseArray, PoseStamped, Quaternion
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from std_msgs.msg import Header
-from tf_conversions import quaternion_from_euler
+from tf.transformations import quaternion_from_euler
 from ugr_msgs.msg import Observation, Observations
 
 from pathplanning.rrt import Rrt
@@ -47,7 +47,7 @@ class TransformFrames:
         Args:
             pose_array: will be transformed to target_frame
         """
-        target_frame = rospy.get_param("output_frame", "odom")
+        target_frame = rospy.get_param("~output_frame", "odom")
         trans = self.get_transform(pose_array.header.frame_id, target_frame)
         new_header = Header(frame_id=target_frame, stamp=pose_array.header.stamp)
         pose_array_transformed = PoseArray(header=new_header)
@@ -137,7 +137,7 @@ class PathPlanning(ROSNode):
                 self.params["safety_dist"],
             )
 
-        self.pub = rospy.Publisher("/output/path", PoseArray)
+        self.pub = rospy.Publisher("/output/path", PoseArray, queue_size=10)
 
         AddSubscriber("/input/local_map", 1)(self.receive_new_map)
         self.add_subscribers()
