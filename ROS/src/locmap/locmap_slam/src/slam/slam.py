@@ -5,11 +5,11 @@ from abc import ABC, abstractmethod
 import numpy as np
 import rospy
 import tf2_ros as tf
-from geometry_msgs.msg import Point, TransformStamped
+from geometry_msgs.msg import Point, Pose, PoseArray, TransformStamped
+from locmap_vis import LocMapVis
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
-from ugr_msgs.msg import (CarPath, Observation, Observations, Particle,
-                          Particles)
+from ugr_msgs.msg import Observation, Observations, Particle, Particles
 
 """
 Generic SLAM node should have the following behaviour
@@ -52,6 +52,11 @@ class SLAMNode(ROSNode, ABC):
         self.observation_queue_size = rospy.get_param("~observation_queue_size", None)
         self.max_landmark_range = rospy.get_param("~max_landmark_range", 0)
 
+        self.vis = rospy.get_param("~vis", True)
+        self.vis_namespace = rospy.get_param("~vis/namespace", "locmap_vis")
+        self.vis_lifetime = rospy.get_param("~vis/lifetime", 3)
+        self.vis_handler = LocMapVis()
+
         AddSubscriber("input/observations", self.observation_queue_size)(
             self.handle_observation_message
         )
@@ -61,6 +66,21 @@ class SLAMNode(ROSNode, ABC):
         # Helpers
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
+
+        # Clear visualisation
+        if self.vis:
+            self.publish(
+                "/output/vis",
+                self.vis_handler.delete_markerarray(self.vis_namespace + "/observations"),
+            )
+            self.publish(
+                "/output/vis",
+                self.vis_handler.delete_markerarray(self.vis_namespace + "/map"),
+            )
+            self.publish(
+                "/output/vis",
+                self.vis_handler.delete_markerarray(self.vis_namespace + "/particles"),
+            )
 
         rospy.loginfo(f"SLAM node ({name}) initialized!")
 
@@ -200,7 +220,7 @@ class SLAMNode(ROSNode, ABC):
                 distance = (obs_location[0] - state_prediction[0]) ** 2 + (
                     obs_location[1] - state_prediction[1]
                 ) ** 2
-                if distance < self.max_landmark_range ** 2:
+                if distance < self.max_landmark_range**2:
                     observations.observations.append(new_obs)
             else:
                 observations.observations.append(new_obs)
@@ -213,6 +233,18 @@ class SLAMNode(ROSNode, ABC):
 
         self.publish("output/observations", observations)
         self.publish("output/map", new_map)
+
+        # Visualisation
+        if self.vis:
+            marker_array = self.vis_handler.observations_to_markerarray(
+                observations, self.vis_namespace + "/observations", 0, False
+            )
+            self.publish("/output/vis", marker_array)
+
+            marker_array = self.vis_handler.observations_to_markerarray(
+                new_map, self.vis_namespace + "/map", 0, False
+            )
+            self.publish("/output/vis", marker_array)
 
         # Publish slam state
         slam_prediction = Odometry()
@@ -228,12 +260,14 @@ class SLAMNode(ROSNode, ABC):
         self.publish("output/odom", slam_prediction)
 
         # SLAM path prediction
-        path = CarPath()
+        path = PoseArray()
         path.header.stamp = timestamp
         path.header.frame_id = self.world_frame
 
         for pos in path_prediction:
-            path.path.append(Point(pos[0], pos[1], 0))
+            pose = Pose()
+            pose.position = Point(pos[0], pos[1], 0)
+            path.poses.append(pose)
 
         self.publish("output/path", path)
 
@@ -246,5 +280,10 @@ class SLAMNode(ROSNode, ABC):
             particle_set.particles.append(
                 Particle(position=Point(particle[0], particle[1], 0), weight=weight)
             )
+
+        marker_array = self.vis_handler.particles_to_markerarray(
+            particle_set, self.vis_namespace + "/particles", 0, "r", False
+        )
+        self.publish("output/vis/particles", marker_array)
 
         self.publish("output/particles", particle_set)

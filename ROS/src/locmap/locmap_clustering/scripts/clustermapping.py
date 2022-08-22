@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 
+from xml.etree.ElementTree import TreeBuilder
 import numpy as np
+from yaml import Mark
 import rospy
 import tf2_ros as tf
 from clustering.clustering import Clustering
 from geometry_msgs.msg import Point, TransformStamped
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import Observation, Observations
+from ugr_msgs.msg import Observation, Observations, Particles, Particle
+from visualization_msgs.msg import MarkerArray, Marker
+from locmap_vis import LocMapVis
+from fs_msgs.msg import Cone
 
 
 class ClusterMapping(ROSNode):
@@ -24,7 +29,23 @@ class ClusterMapping(ROSNode):
         self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
         self.do_time_transform = rospy.get_param("~do_time_transform", True)
         self.observation_queue_size = rospy.get_param("~observation_queue_size", None)
-        self.max_landmark_range = rospy.get_param("~max_landmark_range", 0)
+        self.max_landmark_range = rospy.get_param("~max_landmark_range", 0) ** 2
+
+        self.vis = rospy.get_param("~vis", True)
+        self.blue_cone_model_url = rospy.get_param(
+            "~vis/cone_models/blue",
+            "https://storage.googleapis.com/learnmakeshare_cdn_public/blue_cone_final.dae",
+        )
+        self.yellow_cone_model_url = rospy.get_param(
+            "~vis/cone_models/yellow",
+            "https://storage.googleapis.com/learnmakeshare_cdn_public/yellow_cone_final.dae",
+        )
+        self.vis_namespace = rospy.get_param("~vis/namespace", "locmap_vis")
+        self.vis_lifetime = rospy.get_param("~vis/lifetime", 3)
+        self.vis_sample_color = rospy.get_param("~vis/sample_color", "g")
+        self.vis_handler = LocMapVis(
+            [self.blue_cone_model_url, self.yellow_cone_model_url]
+        )
 
         self.eps = rospy.get_param("~clustering/eps", 0.5)
         self.min_sampling = rospy.get_param("~clustering/min_samples", 5)
@@ -58,6 +79,8 @@ class ClusterMapping(ROSNode):
         rospy.loginfo(f"Clustering mapping node initialized!")
 
         self.previous_clustering_time = rospy.Time.now().to_sec()
+
+        self.cleared_vis = 0
 
     # See the constructor for the subscriber registration.
     # The '_' is just because it doesn't use a decorator, so it injects 'self' twice
@@ -133,10 +156,17 @@ class ClusterMapping(ROSNode):
         )
 
         for observation in world_observations.observations:
-            self.clustering.add_sample(
-                np.array([observation.location.x, observation.location.y]),
-                int(observation.observation_class),
-            )
+
+            distance = (observation.location.x - self.particle_state[0]) ** 2 + (
+                observation.location.y - self.particle_state[1]
+            ) ** 2
+
+            if distance <= self.max_landmark_range:
+
+                self.clustering.add_sample(
+                    np.array([observation.location.x, observation.location.y]),
+                    int(observation.observation_class),
+                )
 
         # Clustering itself is rate limited to limit performance impact
         if (
@@ -186,16 +216,6 @@ class ClusterMapping(ROSNode):
 
                 new_obs.observation_class = clss
 
-                # The relative observations are range limited in both the distance (radius) and angle (relative to X-as)
-                if self.max_landmark_range > 0:
-                    distance = (landmark[0] - self.particle_state[0]) ** 2 + (
-                        landmark[1] - self.particle_state[1]
-                    ) ** 2
-                    if distance < self.max_landmark_range ** 2:
-                        observations.observations.append(new_obs)
-                else:
-                    observations.observations.append(new_obs)
-
                 new_map_point = Observation()
                 new_map_point.location = Point(x=landmark[0], y=landmark[1], z=0)
                 new_map_point.observation_class = clss
@@ -215,6 +235,9 @@ class ClusterMapping(ROSNode):
         samples.header.stamp = rospy.Time().now()
         samples.observations = []
 
+        samples_as_particles = Particles()
+        samples_as_particles.header = samples.header
+
         for clss, landmarks in enumerate(all_samples):
 
             for i in range(
@@ -229,9 +252,81 @@ class ClusterMapping(ROSNode):
 
                 samples.observations.append(samples_point)
 
+                # Now as a particle
+                part = Particle()
+                part.weight = 0
+                part.position = Point(x=landmark[0], y=landmark[1], z=0)
+
+                samples_as_particles.particles.append(part)
+
             self.previous_sample_point[clss] = self.clustering.sizes[clss]
 
         self.publish("output/samples", samples)
+
+        if self.vis:
+
+            if self.cleared_vis < 5:
+
+                self.publish(
+                    "/output/vis",
+                    self.vis_handler.delete_markerarray(
+                        self.vis_namespace + "/observations"
+                    ),
+                )
+                self.publish(
+                    "/output/vis",
+                    self.vis_handler.delete_markerarray(self.vis_namespace + "/map"),
+                )
+                self.publish(
+                    "/output/vis",
+                    self.vis_handler.delete_markerarray(
+                        self.vis_namespace + "/samples"
+                    ),
+                )
+
+                self.cleared_vis += 1
+
+            marker_array = self.vis_handler.observations_to_markerarray(
+                observations, self.vis_namespace + "/observations", 0, False
+            )
+            self.publish("/output/vis", marker_array)
+
+            marker_array = self.vis_handler.observations_to_markerarray(
+                new_map, self.vis_namespace + "/map", 0, False
+            )
+            self.publish("/output/vis", marker_array)
+
+            marker_array = self.vis_handler.particles_to_markerarray(
+                Particles(
+                    header=samples_as_particles.header,
+                    particles=[
+                        particle
+                        for i, particle in enumerate(samples_as_particles.particles)
+                        if samples.observations[i].observation_class == Cone.BLUE
+                    ],
+                ),
+                self.vis_namespace + "/samples",
+                self.vis_lifetime,
+                "b",
+                True,
+            )
+            self.publish("/output/vis", marker_array)
+
+            marker_array = self.vis_handler.particles_to_markerarray(
+                Particles(
+                    header=samples_as_particles.header,
+                    particles=[
+                        particle
+                        for i, particle in enumerate(samples_as_particles.particles)
+                        if samples.observations[i].observation_class == Cone.YELLOW
+                    ],
+                ),
+                self.vis_namespace + "/samples",
+                self.vis_lifetime,
+                "y",
+                True,
+            )
+            self.publish("/output/vis", marker_array)
 
 
 node = ClusterMapping()

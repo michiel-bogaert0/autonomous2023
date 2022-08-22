@@ -9,28 +9,36 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
-namespace ns_lidar {
-class Lidar {
+#include <ugr_msgs/Observations.h>
+#include <ugr_msgs/Observation.h>
 
-public:
-  Lidar(ros::NodeHandle &n);
+namespace ns_lidar
+{
+  class Lidar
+  {
 
-private:
-  ros::NodeHandle n_;
-  ros::Subscriber rawLidarSubscriber_;
-  ros::Publisher preprocessedLidarPublisher_;
-  ros::Publisher groundRemovalLidarPublisher_;
-  ros::Publisher clusteredLidarPublisher_;
-  ros::Publisher conePublisher_;
+  public:
+    Lidar(ros::NodeHandle &n);
 
-  ConeClustering cone_clustering_;
-  GroundRemoval ground_removal_;
+  private:
+    ros::NodeHandle n_;
+    ros::Subscriber rawLidarSubscriber_;
+    ros::Publisher preprocessedLidarPublisher_;
+    ros::Publisher groundRemovalLidarPublisher_;
+    ros::Publisher clusteredLidarPublisher_;
+    ros::Publisher visPublisher_;
+    ros::Publisher conePublisher_;
 
-  void rawPcCallback(const sensor_msgs::PointCloud2 &msg);
-  void preprocessing(const pcl::PointCloud<pcl::PointXYZI> &raw,
-                     pcl::PointCloud<pcl::PointXYZI>::Ptr &preprocessed_pc);
-  void publishMarkers(const sensor_msgs::PointCloud cones);
-};
+    ConeClustering cone_clustering_;
+    GroundRemoval ground_removal_;
+
+    void rawPcCallback(const sensor_msgs::PointCloud2 &msg);
+    void preprocessing(const pcl::PointCloud<pcl::PointXYZI> &raw,
+                       pcl::PointCloud<pcl::PointXYZI>::Ptr &preprocessed_pc);
+    void publishMarkers(const sensor_msgs::PointCloud cones);
+
+    void publishObservations(const sensor_msgs::PointCloud cones);
+  };
 } // namespace ns_lidar
 
 #endif
