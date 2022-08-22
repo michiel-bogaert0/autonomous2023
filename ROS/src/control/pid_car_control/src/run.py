@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 import numpy as np
 import rospy
-from geometry_msgs.msg import Pose, PoseArray, Point
+from geometry_msgs.msg import Pose, PoseArray, Point, PoseStamped
 from nav_msgs.msg import Odometry
 from node_fixture import AddSubscriber, ROSNode
 from pid import PID
 from tf.transformations import euler_from_quaternion
 from trajectory import Trajectory
+from std_msgs.msg import Header
+from tf2_geometry_msgs import do_transform_pose
+import tf2_ros as tf
 from fs_msgs.msg import ControlCommand
+
 
 class PIDControlNode(ROSNode):
     def __init__(self):
@@ -20,9 +24,14 @@ class PIDControlNode(ROSNode):
 
         self.steering_pid = PID(Kp, Ki, Kd, reset_rotation=True)
 
-        self.publish_rate = rospy.get_param("car_control/publish_rate", 1.0)
-        self.missed_updates_till_bad = int(self.publish_rate * rospy.get_param("car_control/stale_time", 0.2))
-        self.speed_target = rospy.get_param("car_control/speed/target", 3)
+        self.publish_rate = rospy.get_param("~car_control/publish_rate", 10.0)
+        self.missed_updates_till_bad = int(
+            self.publish_rate * rospy.get_param("~car_control/stale_time", 0.2)
+        )
+        self.speed_target = rospy.get_param("~car_control/speed/target", 3)
+
+        self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
+        self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
 
         self.stale = True
         self.cmd = ControlCommand(steering=0.0, throttle=0.0, brake=1.0)
@@ -46,6 +55,10 @@ class PIDControlNode(ROSNode):
         max_angle = rospy.get_param("car_control/trajectory/max_angle", 1)
         self.trajectory = Trajectory(minimal_distance, t_step, max_angle)
 
+        # Helpers
+        self.tf_buffer = tf.Buffer()
+        self.tf_listener = tf.TransformListener(self.tf_buffer)
+
     @AddSubscriber("/input/path")
     def getPathplanningUpdate(self, msg: PoseArray):
         """
@@ -56,9 +69,27 @@ class PIDControlNode(ROSNode):
             self.stale = False
             self.missed_updates = 0
 
-        self.current_path = np.zeros((0, 2))
+        # Transform received message
+        trans = self.tf_buffer.lookup_transform_full(
+            self.base_link_frame,
+            rospy.Time(),
+            msg.header.frame_id,
+            msg.header.stamp,
+            self.world_frame,
+        )
+        new_header = Header(frame_id=self.base_link_frame, stamp=rospy.Time.now())
+        pose_array_transformed = PoseArray(header=new_header)
         for pose in msg.poses:
-            self.current_path = np.vstack((self.current_path, [pose.position.x, pose.position.y]))
+            pose_s = PoseStamped(pose=pose, header=msg.header)
+            pose_t = do_transform_pose(pose_s, trans)
+            pose_array_transformed.poses.append(pose_t.pose)
+
+        # Create a new path
+        self.current_path = np.zeros((0, 2))
+        for pose in pose_array_transformed.poses:
+            self.current_path = np.vstack(
+                (self.current_path, [pose.position.x, pose.position.y])
+            )
 
         self.trajectory.set_path(self.current_path)
 
@@ -91,7 +122,9 @@ class PIDControlNode(ROSNode):
                     continue
 
             # First try to set the set angle
-            target_x, target_y, success = self.trajectory.calculate_target_point(self.current_pos, self.current_angle)
+            target_x, target_y, success = self.trajectory.calculate_target_point(
+                self.current_pos, self.current_angle
+            )
 
             if not success:
                 print("No target point found!")
@@ -99,7 +132,11 @@ class PIDControlNode(ROSNode):
             self.publish("/output/target_point", Point(target_x, target_y, 0))
 
             # Calculate angle
-            self.set_angle = PID.pi_to_pi(np.arctan2(target_y - self.current_pos[1], target_x - self.current_pos[0]))
+            self.set_angle = PID.pi_to_pi(
+                np.arctan2(
+                    target_y - self.current_pos[1], target_x - self.current_pos[0]
+                )
+            )
 
             # PID step
             error_pid = self.steering_pid(self.current_angle - self.set_angle)
