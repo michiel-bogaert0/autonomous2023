@@ -21,7 +21,15 @@ setuptools.setup(
         "matplotlib==3.4.2",
         "scipy==1.7.0",
         "pyyaml==5.4.1",
-        "click>=8.0.4"
+        "click>=8.0.4",
     ],
-    extras_require={"test": ["black==20.8b1", "isort==5.7.0", "mypy==0.800", "pytest==6.2.2", "autoflake==1.4"]},
+    extras_require={
+        "test": [
+            "black==20.8b1",
+            "isort==5.7.0",
+            "mypy==0.800",
+            "pytest==6.2.2",
+            "autoflake==1.4",
+        ]
+    },
 )

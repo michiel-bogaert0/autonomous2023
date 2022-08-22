@@ -2,14 +2,71 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import rospy
-from fs_msgs.msg import Track as ROSTrack
-from geometry_msgs.msg import Point, PoseArray, Pose, Quaternion
+import tf2_geometry_msgs
+import tf2_ros
+from geometry_msgs.msg import Point, Pose, PoseArray, PoseStamped, Quaternion
 from node_fixture.node_fixture import AddSubscriber, ROSNode
+from std_msgs.msg import Header
+from tf_conversions import quaternion_from_euler
+from ugr_msgs.msg import Observation, Observations
+
 from pathplanning.rrt import Rrt
 from pathplanning.triangulator import Triangulator
-from std_msgs.msg import Header
-from ugr_msgs.msg import Observation, Observations
-from tf_conversions import quaternion_from_euler
+
+# Source: https://gitlab.msu.edu/av/av_notes/-/blob/master/ROS/Coordinate_Transforms.md
+class TransformFrames:
+    def __init__(self):
+        """Create a buffer of transforms and update it with TransformListener."""
+        self.tfBuffer = tf2_ros.Buffer()  # Creates a frame buffer
+        tf2_ros.TransformListener(
+            self.tfBuffer
+        )  # TransformListener fills the buffer as background task
+
+    def get_transform(self, source_frame, target_frame):
+        """Lookup latest transform between source_frame and target_frame from the buffer."""
+        try:
+            trans = self.tfBuffer.lookup_transform(
+                target_frame, source_frame, rospy.Time(0), rospy.Duration(0.2)
+            )
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ) as e:
+            rospy.logerr(
+                f"Cannot find transformation from {source_frame} to {target_frame}"
+            )
+            raise Exception(
+                f"Cannot find transformation from {source_frame} to {target_frame}"
+            ) from e
+        return trans  # Type: TransformStamped
+
+    def pose_transform(self, pose_array: PoseArray, target_frame="odom") -> PoseArray:
+        """Transform PoseArray to other frame.
+
+        Args:
+            pose_array: will be transformed to target_frame
+        """
+        trans = self.get_transform(pose_array.header.frame_id, target_frame)
+        new_header = Header(frame_id=target_frame, stamp=pose_array.header.stamp)
+        pose_array_transformed = PoseArray(header=new_header)
+        for pose in pose_array.poses:
+            pose_s = PoseStamped(pose=pose, header=pose_array.header)
+            pose_t = tf2_geometry_msgs.do_transform_pose(pose_s, trans)
+            pose_array_transformed.poses.append(pose_t.pose)
+        return pose_array_transformed
+
+    def get_frame_A_origin_frame_B(self, frame_A, frame_B):
+        """Returns the pose of the origin of frame_A in frame_B as a PoseStamped."""
+        header = Header(frame_id=frame_A, stamp=rospy.Time(0))
+        origin_A = Pose(
+            position=Point(0.0, 0.0, 0.0), orientation=Quaternion(0.0, 0.0, 0.0, 1.0)
+        )
+        origin_A_stamped = PoseStamped(pose=origin_A, header=header)
+        pose_frame_B = tf2_geometry_msgs.do_transform_pose(
+            origin_A_stamped, self.get_transform(frame_A, frame_B)
+        )
+        return pose_frame_B
 
 
 class PathPlanning(ROSNode):
@@ -19,8 +76,7 @@ class PathPlanning(ROSNode):
         """Initialize node"""
         super().__init__("exploration_mapping", False)
 
-        MAP_TOPIC = "/pathplanning/local/map"
-        OUTPUT_TOPIC = "/pathplanning/path"
+        self.frametf = TransformFrames()
 
         self.params = {}
         # Defines which algorithm to run triangulatie ("tri") or RRT ("RRT")
@@ -58,15 +114,6 @@ class PathPlanning(ROSNode):
         # Factor in to increase maximum angle to create more chance for edges.
         self.params["angle_fac"] = rospy.get_param("angle_fac", 1.5)
 
-        # Initialize cones, might not be needed
-        track_layout = rospy.wait_for_message(MAP_TOPIC, ROSTrack)
-        self.cones = np.array(
-            [
-                [cone.location.x, cone.location.y, cone.color]
-                for cone in track_layout.track
-            ]
-        )
-
         if self.params["algo"] == "rrt":
             self.algorithm = Rrt(
                 self.params["expand_dist"] * 3,
@@ -89,7 +136,9 @@ class PathPlanning(ROSNode):
                 self.params["safety_dist"],
             )
 
-        AddSubscriber(MAP_TOPIC, 1)(self.receive_new_map)
+        self.pub = rospy.Publisher("/output/path", PoseArray)
+
+        AddSubscriber("/input/local_map", 1)(self.receive_new_map)
         self.add_subscribers()
 
     def receive_new_map(self, _, track: Observations):
@@ -115,9 +164,7 @@ class PathPlanning(ROSNode):
         Args:
             header: Header of input message.
         """
-        # t = time()
         path = self.algorithm.get_path(self.cones)
-        # print('Algo: ', time()-t)
 
         # Calculate orientations
         yaws = np.arctan2(path[:, 1], path[:, 0])
@@ -150,10 +197,11 @@ class PathPlanning(ROSNode):
         output: PoseArray = PoseArray()
         output.header.frame_id = header.frame_id
         output.poses = poses
-        output.header.stamp = rospy.Time.now()
+        output.header.stamp = header.stamp
 
-        pub = rospy.Publisher(PathPlanning.OUTPUT_TOPIC, PoseArray)
-        pub.publish(output)
+        output_transformed = self.frametf.pose_transform(output,target_frame="odom")
+
+        self.pub.publish(output_transformed)
 
 
 node = PathPlanning()

@@ -1,10 +1,11 @@
 import math
 import sys
-from typing import List, Tuple
+from typing import Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import Delaunay
-import matplotlib.pyplot as plt
+
 from pathplanning.dataclasses.node import Node
 
 
@@ -31,7 +32,7 @@ class Triangulator:
         self.safety_dist_squared = safety_dist**2
         self.prev = None
 
-    def get_path(self, cones: np.ndarray) -> Tuple(np.ndarray, np.ndarray, np.ndarray):
+    def get_path(self, cones: np.ndarray) -> np.ndarray:
         """Generate path based on the cones.
 
         Args:
@@ -43,26 +44,9 @@ class Triangulator:
         position_cones = cones[:, :-1]
         center_points, unique_center_points = self.get_center_points(position_cones)
 
-        """
-        Testing if the algorithm just does this:
-        
-        root = self.get_closest_center(unique_center_points)
-        angle_root = np.arctan2(root[1], root[0])
-        distance_root = np.sqrt(self.distance_squared(0, 0, root[0], root[1]))
-        root_node = Node(root[0], root[1], distance_root, None, [], angle_root, abs(angle_root))
-        return [root_node], [], root_node
-        """
-
         root_node, leaves = self.get_all_paths(
             center_points, unique_center_points, cones[:, :-1]
         )
-        """
-        print(root_node)
-        print("leaves:")
-        for leave in leaves:
-            print(leave)
-        print("---------")
-        """
 
         path = self.get_best_path(leaves, cones)
 
@@ -108,14 +92,10 @@ class Triangulator:
                 10 * length_cost,
             ]
             paths.append(path)
-        # input()
+
         np.set_printoptions(suppress=True)
 
-        # print(costs.T)
-
         total_cost = np.sum(costs, axis=1)
-        # print(total_cost)
-        # print("     color         angle        width        spacing        length")
 
         index = np.argmin(total_cost)
 
@@ -123,7 +103,7 @@ class Triangulator:
 
     def get_cost_branch(
         self, branch: np.ndarray, cones: np.ndarray
-    ) -> Tuple(float, float, float, float, float):
+    ) -> Tuple[float, float, float, float, float]:
         """Get cost of branch.
 
         Args:
@@ -168,7 +148,7 @@ class Triangulator:
             local_right_cones = relative_cones[relative_cones[:, 1] < 0]
 
             if len(local_left_cones) == 0 or len(local_right_cones) == 0:
-                # print(f'No cones on one side, so probably outside of track')
+                # No cones on one side, so probably outside of track
                 # Possible problem corner
                 return np.inf, np.inf, np.inf, np.inf, np.inf
 
@@ -284,14 +264,11 @@ class Triangulator:
         width_cost = np.var(track_widths) ** 2
         spacing_cost = np.var(cone_spacings) ** 2
 
-        # print(f'angle: {angle_cost:>3.5f} - colùsfjqslfour: {color_cost:3.5f} - width: {width_cost:3.5f} '
-        #      f'- spacing: {spacing_cost:3.5f}- length: {length_cost:3.5f}')
-
         return angle_cost, color_cost, width_cost, spacing_cost, length_cost
 
     def get_center_points(
         self, position_cones: np.ndarray
-    ) -> Tuple(np.ndarray, np.ndarray):
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Get center points between cones? (not sure, Sven or Zander?)
         Args:
             position_cones: (again not sure)
@@ -303,11 +280,6 @@ class Triangulator:
         indices = tri.simplices
         triangles = position_cones[indices]
 
-        # Plotting the triangles
-        # if self.prev is not None:
-        # plt.triplot(self.prev[0][:,0], self.prev[0][:,1], self.prev[1])
-        # plt.plot(self.prev[0][:,0], self.prev[0][:,1], 'o')
-        # plt.show()
         self.prev = [position_cones, indices]
 
         # Waiting if frame is okay
@@ -322,7 +294,7 @@ class Triangulator:
         center_points: np.ndarray,
         unique_center_points: np.ndarray,
         cones: np.ndarray,
-    ) -> Tuple(np.ndarray, np.ndarray):
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Get/generate all possible paths
 
         Args:
