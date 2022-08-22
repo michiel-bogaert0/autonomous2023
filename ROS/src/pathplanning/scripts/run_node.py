@@ -41,12 +41,13 @@ class TransformFrames:
             ) from e
         return trans  # Type: TransformStamped
 
-    def pose_transform(self, pose_array: PoseArray, target_frame="odom") -> PoseArray:
+    def pose_transform(self, pose_array: PoseArray) -> PoseArray:
         """Transform PoseArray to other frame.
 
         Args:
             pose_array: will be transformed to target_frame
         """
+        target_frame = rospy.get_param("output_frame", "odom")
         trans = self.get_transform(pose_array.header.frame_id, target_frame)
         new_header = Header(frame_id=target_frame, stamp=pose_array.header.stamp)
         pose_array_transformed = PoseArray(header=new_header)
@@ -199,7 +200,7 @@ class PathPlanning(ROSNode):
         output.poses = poses
         output.header.stamp = header.stamp
 
-        output_transformed = self.frametf.pose_transform(output,target_frame="odom")
+        output_transformed = self.frametf.pose_transform(output)
 
         self.pub.publish(output_transformed)
 
