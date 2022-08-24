@@ -6,6 +6,12 @@
             <param name="stale_time" value="0.2" />
             <param name="speec/target" value="3" />
 
+            <group ns="steering">
+                <param name="Kp" value="0.01" />
+                <param name="Ki" value="0.0" />
+                <param name="Kd" value="0.0" />
+            </group>
+
             <group ns="trajectory">
                 <param name="minimal_distance" value="4" />
                 <param name="t_step" value="0.05" />
