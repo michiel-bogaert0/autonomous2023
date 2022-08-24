@@ -4,7 +4,7 @@
         <param name="baudrate" value="250000" />
         <param name="odrive_dbc" value="$(find can_node)/odrive.dbc" />
 
-        <remap from="/input/drive_command" to="/control/drive_command" />
+        <remap from="/input/control_command" to="/control/control_command" />
         <remap from="/input/start" to="/control/start" />
         <remap from="/input/stop" to="/control/stop" />
 

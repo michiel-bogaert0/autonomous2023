@@ -1,4 +1,4 @@
-from node_fixture.node_fixture import ROSNode, AddSubscriber
+#!/usr/bin/env python3
 from fs_msgs.msg import ControlCommand
 from std_msgs.msg import Empty
 import cantools
@@ -7,9 +7,14 @@ import rospy
 
 MAX_VELOCITY = 3 #in revs/s
 
-class ResNode(ROSNode):
+class ResNode():
     def __init__(self, bus=None):
-        super.__init__("ResNode")
+        rospy.init_node("res_node")
+
+        self.control_cmd_sub = rospy.Subscriber("/input/control_command", ControlCommand, self.update_control_velocity)
+        self.start_sub = rospy.Subscriber("/input/start", Empty, self.send_start_signal)
+        self.stop_sub = rospy.Subscriber("/input/stop", Empty, self.send_stop_signal)
+
         self.is_running = False
         self.velocity = 0
 
@@ -18,19 +23,18 @@ class ResNode(ROSNode):
             rospy.get_param("~odrive_dbc", "../../../mechatronics/can_node/odrive.dbc")
         )
 
-    @AddSubscriber("/input/start")
+        rospy.spin()
+
     def send_start_signal(self, msg : Empty) -> None:
         """ sets the modus on the value received from res"""
         # send value to odrive to start
         self.is_running = True
 
-    @AddSubscriber("/input/stop")
     def send_stop_signal(self, msg : Empty) -> None:
         """ sets the modus on the value received from res"""
         # send value to odrive to start
         self.is_running = False
 
-    @AddSubscriber("/input/drive_command")
     def update_control_velocity(self, msg : ControlCommand) -> None:
         velocity_setpoint = msg.throttle * MAX_VELOCITY  # Set velocity based on controlcommand
         
@@ -60,7 +64,7 @@ class ResNode(ROSNode):
         can_id = axis << 5 | 0x00D
 
         self.bus.send(
-            can.Message(arbitration_id=can_id, data=data, is_extended_id=True)
+            can.Message(arbitration_id=can_id, data=data, is_extended_id=False)
         )
 
 if __name__ == "__main__":

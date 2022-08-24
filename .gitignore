@@ -17,6 +17,7 @@ core
 build/
 devel/
 logs/
+ROS/launch
 
 # Python
 *.whl
