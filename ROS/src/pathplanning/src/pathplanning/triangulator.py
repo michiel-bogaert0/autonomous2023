@@ -103,7 +103,7 @@ class Triangulator:
 
         index = np.argmin(total_cost)
 
-        return paths[index]
+        return np.ndarray(paths[index])
 
     def get_cost_branch(
         self, branch: np.ndarray, cones: np.ndarray
