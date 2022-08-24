@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 
-from xml.etree.ElementTree import TreeBuilder
 import numpy as np
-from yaml import Mark
 import rospy
 import tf2_ros as tf
 from clustering.clustering import Clustering
-from geometry_msgs.msg import Point, TransformStamped
-from node_fixture.node_fixture import AddSubscriber, ROSNode
-from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import Observation, Observations, Particles, Particle
-from visualization_msgs.msg import MarkerArray, Marker
-from locmap_vis import LocMapVis
 from fs_msgs.msg import Cone
+from geometry_msgs.msg import Point, TransformStamped
+from locmap_vis import LocMapVis
+from node_fixture.node_fixture import AddSubscriber, ROSNode
+from rosgraph_msgs.msg import Clock
+from tf.transformations import euler_from_quaternion
+from ugr_msgs.msg import Observation, Observations, Particle, Particles
 
 
 class ClusterMapping(ROSNode):
@@ -25,6 +23,8 @@ class ClusterMapping(ROSNode):
         super().__init__("clustermapping", False)
 
         # Parameters
+        self.use_sim_time = rospy.get_param("use_sim_time", False)
+
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
         self.do_time_transform = rospy.get_param("~do_time_transform", True)
@@ -49,19 +49,19 @@ class ClusterMapping(ROSNode):
 
         self.eps = rospy.get_param("~clustering/eps", 0.5)
         self.min_sampling = rospy.get_param("~clustering/min_samples", 5)
-        self.nr_of_classes = rospy.get_param("~clustering/nr_of_classes", 2)
+        self.mode = rospy.get_param("~clustering/mode", "local")
         self.expected_nr_of_landmarks = rospy.get_param(
             "~clustering/expected_nr_of_landmarks", 1000
         )
         self.clustering_rate = rospy.get_param("~clustering/rate", 10)
 
         # Used to handle the sample output of the clusterer
-        self.previous_sample_point = [0 for i in range(self.nr_of_classes)]
+        self.previous_sample_point = 0
 
         # The clustering implementation
         self.clustering = Clustering(
+            self.mode,
             self.expected_nr_of_landmarks,
-            self.nr_of_classes,
             self.eps,
             self.min_sampling,
         )
@@ -70,6 +70,14 @@ class ClusterMapping(ROSNode):
         AddSubscriber("input/observations", self.observation_queue_size)(
             self.handle_observation_message
         )
+
+        if self.use_sim_time:
+            AddSubscriber("/clock", self.observation_queue_size)(
+                self.detect_backwards_time_jump
+            )
+
+            self.current_clock = 0
+
         self.add_subscribers()
 
         # Helpers
@@ -81,6 +89,37 @@ class ClusterMapping(ROSNode):
         self.previous_clustering_time = rospy.Time.now().to_sec()
 
         self.cleared_vis = 0
+
+    def detect_backwards_time_jump(self, _, clock: Clock):
+        """
+        Handler that detects when the published clock time (on /clock) has jumped back in time
+        When a jump back has been detected, the state of the node gets reset.
+
+        Only works if the rosparam 'use_sim_time' is set to True and there is a (simulated) clock source, like a rosbag
+
+        Args:
+            clock: the Clock message, coming from Clock
+        """
+
+        if self.current_clock == 0:
+            self.current_clock = clock.clock.to_sec()
+            return
+
+        if self.current_clock > clock.clock.to_sec():
+            rospy.logwarn(
+                f"A backwards jump in time of {self.current_clock - clock.clock.to_sec()} has been detected. Resetting the clusterer..."
+            )
+
+            self.clustering.reset()
+
+            self.current_clock = 0
+            self.previous_sample_point = 0
+            self.cleared_vis = 0
+
+            self.tf_buffer = tf.Buffer()
+            self.tf_listener = tf.TransformListener(self.tf_buffer)
+
+            self.previous_clustering_time = rospy.Time.now().to_sec()
 
     # See the constructor for the subscriber registration.
     # The '_' is just because it doesn't use a decorator, so it injects 'self' twice
@@ -161,7 +200,7 @@ class ClusterMapping(ROSNode):
                 observation.location.y - self.particle_state[1]
             ) ** 2
 
-            if distance <= self.max_landmark_range:
+            if distance <= self.max_landmark_range and distance > 0.1:
 
                 self.clustering.add_sample(
                     np.array([observation.location.x, observation.location.y]),
@@ -176,7 +215,7 @@ class ClusterMapping(ROSNode):
             self.previous_clustering_time = rospy.Time.now().to_sec()
             self.clustering.cluster()
 
-        all_landmarks = self.clustering.all_landmarks
+        count, classes, landmarks = self.clustering.all_landmarks
 
         # Publish all the resulting points as "observations" relative to base_link
         # Note how the output is also an Observations message!
@@ -191,36 +230,39 @@ class ClusterMapping(ROSNode):
         new_map.header.stamp = rospy.Time().now()
         new_map.observations = []
 
-        for clss, landmarks in enumerate(all_landmarks):
+        for j in range(count):
+            clss = classes[j]
+            landmark = landmarks[j]
 
-            for i, landmark in enumerate(landmarks):
-                new_obs = Observation()
-                new_obs.location = Point(
-                    x=landmark[0] - self.particle_state[0],
-                    y=landmark[1] - self.particle_state[1],
-                    z=0,
-                )
+            new_obs = Observation()
+            new_obs.location = Point(
+                x=landmark[0] - self.particle_state[0],
+                y=landmark[1] - self.particle_state[1],
+                z=0,
+            )
 
-                # Apply rotation
-                x = (
-                    np.cos(-self.particle_state[2]) * new_obs.location.x
-                    - np.sin(-self.particle_state[2]) * new_obs.location.y
-                )
-                y = (
-                    np.sin(-self.particle_state[2]) * new_obs.location.x
-                    + np.cos(-self.particle_state[2]) * new_obs.location.y
-                )
+            # Apply rotation
+            x = (
+                np.cos(-self.particle_state[2]) * new_obs.location.x
+                - np.sin(-self.particle_state[2]) * new_obs.location.y
+            )
+            y = (
+                np.sin(-self.particle_state[2]) * new_obs.location.x
+                + np.cos(-self.particle_state[2]) * new_obs.location.y
+            )
 
-                new_obs.location.x = x
-                new_obs.location.y = y
+            new_obs.location.x = x
+            new_obs.location.y = y
 
-                new_obs.observation_class = clss
+            new_obs.observation_class = clss
 
-                new_map_point = Observation()
-                new_map_point.location = Point(x=landmark[0], y=landmark[1], z=0)
-                new_map_point.observation_class = clss
+            observations.observations.append(new_obs)
 
-                new_map.observations.append(new_map_point)
+            new_map_point = Observation()
+            new_map_point.location = Point(x=landmark[0], y=landmark[1], z=0)
+            new_map_point.observation_class = clss
+
+            new_map.observations.append(new_map_point)
 
         self.publish("output/observations", observations)
         self.publish("output/map", new_map)
@@ -229,7 +271,6 @@ class ClusterMapping(ROSNode):
         # Could be useful to estimate statistical distributions from
         # It is an analysis thingy, so only makes sense if relative to the world frame
 
-        all_samples = self.clustering.samples
         samples = Observations()
         samples.header.frame_id = self.world_frame
         samples.header.stamp = rospy.Time().now()
@@ -238,16 +279,14 @@ class ClusterMapping(ROSNode):
         samples_as_particles = Particles()
         samples_as_particles.header = samples.header
 
-        for clss, landmarks in enumerate(all_samples):
-
-            for i in range(
-                self.previous_sample_point[clss], self.clustering.sizes[clss]
+        # If applicable, first take the samples until the end of the array
+        if self.mode == "local" and self.clustering.size < self.previous_sample_point:
+            for clss, sample in zip(
+                self.clustering.sample_classes[self.previous_sample_point :],
+                self.clustering.samples[self.previous_sample_point :],
             ):
-
-                landmark = landmarks[i]
-
                 samples_point = Observation()
-                samples_point.location = Point(x=landmark[0], y=landmark[1], z=0)
+                samples_point.location = Point(x=sample[0], y=sample[1], z=0)
                 samples_point.observation_class = clss
 
                 samples.observations.append(samples_point)
@@ -255,11 +294,31 @@ class ClusterMapping(ROSNode):
                 # Now as a particle
                 part = Particle()
                 part.weight = 0
-                part.position = Point(x=landmark[0], y=landmark[1], z=0)
+                part.position = Point(x=sample[0], y=sample[1], z=0)
 
-                samples_as_particles.particles.append(part)
+            self.previous_sample_point = 0
 
-            self.previous_sample_point[clss] = self.clustering.sizes[clss]
+        # Now do the normal thing, up until size
+        for clss, sample in zip(
+            self.clustering.sample_classes[
+                self.previous_sample_point : self.clustering.size
+            ],
+            self.clustering.samples[self.previous_sample_point : self.clustering.size],
+        ):
+            samples_point = Observation()
+            samples_point.location = Point(x=sample[0], y=sample[1], z=0)
+            samples_point.observation_class = clss
+
+            samples.observations.append(samples_point)
+
+            # Now as a particle
+            part = Particle()
+            part.weight = 0
+            part.position = Point(x=sample[0], y=sample[1], z=0)
+
+            samples_as_particles.particles.append(part)
+
+        self.previous_sample_point = self.clustering.size
 
         self.publish("output/samples", samples)
 
