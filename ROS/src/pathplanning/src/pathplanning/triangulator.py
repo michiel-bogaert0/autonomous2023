@@ -42,6 +42,10 @@ class Triangulator:
             path
         """
         position_cones = cones[:, :-1]
+
+        if (len(position_cones) < 4):
+            return None
+            
         center_points, unique_center_points = self.get_center_points(position_cones)
 
         root_node, leaves = self.get_all_paths(
@@ -269,13 +273,14 @@ class Triangulator:
     def get_center_points(
         self, position_cones: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """Get center points between cones? (not sure, Sven or Zander?)
+        """Get center points of the edges of the triangles
         Args:
-            position_cones: (again not sure)
+            position_cones: position of the cones
 
         Returns:
         tuple of center_points, unique_center_points
         """
+
         tri = Delaunay(position_cones)
         indices = tri.simplices
         triangles = position_cones[indices]
@@ -298,8 +303,8 @@ class Triangulator:
         """Get/generate all possible paths
 
         Args:
-            center_points: center points between objects
-            unique_center_points: unique center points between objects? (again not sure)
+            center_points: center points of the edges of the triangles
+            unique_center_points: unique center points of the edges of the triangles
             cones: cones
 
         Returns:
@@ -424,19 +429,19 @@ class Triangulator:
         return np.all(dist_squared >= self.safety_dist_squared)
 
     def get_closest_center(
-        self, unique_center_points: np.ndarray, aantal: int
+        self, unique_center_points: np.ndarray, amount: int
     ) -> np.ndarray:
-        """Get closest center points to root?
+        """Get closest center points to root
 
         Args:
             unique_center_points: All unique center points
-            aantal: Amount of closest center points to extract
+            amount: Amount of closest center points to extract
 
         Returns:
-        array of closest center points with length "aantal"
+        array of closest center points with length "amount"
         """
         distances_squared = self.distance_squared(
             0, 0, unique_center_points[:, 0], unique_center_points[:, 1]
         )
-        ind = np.argpartition(distances_squared, aantal)
-        return unique_center_points[ind[:aantal]]
+        ind = np.argpartition(distances_squared, amount)
+        return unique_center_points[ind[:amount]]
