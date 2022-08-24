@@ -58,6 +58,8 @@ class PIDControlNode(ROSNode):
         # Helpers
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
+        
+        self.start_pid_sender()
 
     @AddSubscriber("/input/path")
     def getPathplanningUpdate(self, msg: PoseArray):
@@ -93,7 +95,7 @@ class PIDControlNode(ROSNode):
 
         self.trajectory.set_path(self.current_path)
 
-    def start_pid_sender(self, event):
+    def start_pid_sender(self):
         """
         Start sending updates. If the data is too old, brake.
         """
@@ -158,9 +160,4 @@ class PIDControlNode(ROSNode):
 
 
 node = PIDControlNode()
-timer = rospy.Timer(
-    rospy.Duration(1 / rospy.get_param("car_control/publish_rate", 100)),
-    node.start_pid_sender,
-)
 node.start()
-timer.shutdown()  # Normally never gets called, because node.start() blocks!
