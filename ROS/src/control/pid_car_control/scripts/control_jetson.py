@@ -5,7 +5,7 @@ import can
 from fs_msgs.msg import ControlCommand
 
 MAX_VELOCITY = 5  # in rev/s
-STEER_MAX_STEP = 1500  # This must correspond to the value on the RC Teensy
+STEER_MAX_STEP = 1000  # This must correspond to the value on the RC Teensy
 
 CAN_NODE_ID = 0xE0
 CAN_REBOOT_ID = 0x1
@@ -20,8 +20,8 @@ class JetsonController:
             rospy.get_param("~odrive_dbc", "../../../mechatronics/can_node/odrive.dbc")
         )
 
-        self.pub = rospy.Subscriber(
-            "/input/drive_command", ControlCommand, self.publish_drive_command
+        self.control_cmd_sub = rospy.Subscriber(
+            "/input/control_command", ControlCommand, self.publish_drive_command
         )
 
         rospy.spin()
@@ -34,8 +34,8 @@ class JetsonController:
             self.set_odrive_velocity(0, 2)
             return
 
-        self.set_odrive_velocity(msg.throttle * MAX_VELOCITY, 1)
-        self.set_odrive_velocity(-1 * msg.throttle * MAX_VELOCITY, 2)
+        # self.set_odrive_velocity(msg.throttle * MAX_VELOCITY, 1)
+        # self.set_odrive_velocity(-1 * msg.throttle * MAX_VELOCITY, 2)
 
         self.set_steering_setpoint(msg.steering)
         
