@@ -5,6 +5,7 @@
         <param name="odrive_dbc" value="$(find can_node)/odrive.dbc" />
 
         <remap from="/output/can" to="/mechatronics/can_messages" />
+
         <remap from="/output/vel0" to="/mechatronics/wheel_encoder/right" />
         <remap from="/output/vel1" to="/mechatronics/wheel_encoder/left" />
         <remap from="/output/imu0/pitch_roll" to="/mechatronics/imu/front/pitch_roll" />
@@ -13,5 +14,8 @@
         <remap from="/output/imu1/angular_rate" to="/mechatronics/imu/back/angular_rate" />
         <remap from="/output/imu0/acc" to="/mechatronics/imu/front/acc" />
         <remap from="/output/imu1/acc" to="/mechatronics/imu/back/acc" />
+
+        <remap from="/output/start" to="/control/start" />
+        <remap from="/output/stop" to="/control/stop" />
     </node>
 </launch>

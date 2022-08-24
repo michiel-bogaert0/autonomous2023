@@ -5,6 +5,7 @@ import can
 import cantools
 import numpy as np
 import rospy
+from std_msgs.msg import Empty
 from can_msgs.msg import Frame
 from imu import ImuConverter
 from odrive import OdriveConverter
@@ -14,6 +15,8 @@ class CanConverter:
     def __init__(self):
         rospy.init_node("can_converter")
         self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)
+        self.start_pub = rospy.Publisher("/output/start", Empty, queue_size=10)
+        self.stop_pub = rospy.Publisher("/output/stop", Empty, queue_size=10)
 
         # The first element is the front IMU, the second is the rear IMU
         self.IMU_IDS = [0xE2, 0xE3]
@@ -28,6 +31,14 @@ class CanConverter:
         # Create the right converters
         self.odrive = OdriveConverter()
         self.imu = ImuConverter()
+
+        # Activate the RES signals
+        self.bus.send(
+            can.Message(
+                arbitration_id=0x000,
+                data=[0x1, 0x11, 0, 0, 0, 0, 0, 0],
+            )
+        )
 
         try:
             self.listen_on_can()
@@ -59,6 +70,14 @@ class CanConverter:
             imu_id = msg.arbitration_id & 0xFF
             if imu_id in self.IMU_IDS:
                 self.imu.handle_imu_msg(msg, imu_id == self.IMU_IDS[0])
+
+            if msg.arbitration_id == 0x191:
+                switch = (msg.data[0] & 0b0000010) >> 1
+                # button = (msg.data[0] & 0b0000100) >> 2
+                if switch:
+                    self.start_pub.publish(Empty())
+                else:
+                    self.stop_pub.publish(Empty())
 
             # Check for external shutdown
             if rospy.is_shutdown():
