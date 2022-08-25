@@ -24,7 +24,7 @@ namespace ns_lidar
     clusteredLidarPublisher_ =
         n.advertise<sensor_msgs::PointCloud>("perception/clustered_pc", 5);
     visPublisher_ =
-        n.advertise<visualization_msgs::MarkerArray>("perception/vis/cones_lidar", 5);
+        n.advertise<visualization_msgs::MarkerArray>("perception/cones_lidar", 5);
     conePublisher_ =
         n.advertise<ugr_msgs::Observations>("perception/observations", 5);
   }
@@ -93,8 +93,6 @@ namespace ns_lidar
 
     // Create an array of markers to display in Foxglove
     publishMarkers(cluster);
-
-    // Also publish the observations
     publishObservations(cluster);
   }
 
@@ -116,7 +114,7 @@ namespace ns_lidar
     {
       // Remove points closer than 1m, higher than 0.6m or further than 20m
       if (std::hypot(iter.x, iter.y) < 1 || iter.z > 1 ||
-          std::hypot(iter.x, iter.y) > 20)
+          std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 || std::atan2(iter.x, iter.y) > 2.8)
         continue;
 
       preprocessed_pc->points.push_back(iter);
@@ -187,20 +185,26 @@ namespace ns_lidar
       marker.pose.orientation.z = 0.0;
       marker.pose.orientation.w = 1.0;
 
-      marker.scale.x = x_size; // 0.228; // in meters
-      marker.scale.y = y_size; // 0.228;
-      marker.scale.z = z_size; // 0.325;
+      marker.scale.x = 0.5; // 0.228; // in meters
+      marker.scale.y = 0.5; // 0.228;
+      marker.scale.z = 0.5; // 0.325;
 
       marker.color.r = color;
       marker.color.g = color;
       marker.color.b = 1 - color;
-      marker.color.a = 0.5;
-
-      marker.lifetime = ros::Duration(
-          0); // in seconds (0 means stay forever, or at least until overwritten)
+      marker.color.a = 1;
 
       markers.markers.push_back(marker);
     }
+
+    visualization_msgs::MarkerArray clear_cones;
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = cones.header.frame_id;
+    marker.header.stamp = cones.header.stamp;
+    marker.ns = "cones";
+    marker.action = visualization_msgs::Marker::DELETEALL;
+    clear_cones.markers.push_back(marker);
+    visPublisher_.publish(clear_cones);
 
     visPublisher_.publish(markers);
   }

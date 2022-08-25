@@ -13,6 +13,12 @@ typedef struct {
   double d = 0.;
 } model_t;
 
+struct{
+  bool operator()(pcl::PointXYZI a, pcl::PointXYZI b) const {
+    return a.z < b.z;
+  }
+} zsort;
+
 class GroundRemoval {
 
 public:
@@ -22,8 +28,11 @@ public:
                      pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points,
                      pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points);
 
+
 private:
   ros::NodeHandle &n_;
+
+  std::string ground_removal_method_; //Default: bins, others: zermas
 
   int num_iter_;    // Number of iterations
   int num_lpr_;     // number of points used to estimate the LPR: Lowest Point
@@ -33,9 +42,21 @@ private:
   double th_dist_;  // Threshold distance from the plane
   double sensor_height_; // GroundRemoval sensor height to ground (m)
 
+  double th_floor_; // Threshold distance from the floor level
+  int angular_buckets_; // number of angular levels for buckets
+  int radial_buckets_ ; // number of radial levels for buckets
+
+  void groundRemoval_Zermas(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
+                     pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points,
+                     pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points);
+
+  void groundRemoval_Bins(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
+                     pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points,
+                     pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points);
+
   model_t estimatePlane(const pcl::PointCloud<pcl::PointXYZI> &seed_points);
-  void
-  extractInitialSeeds(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
+  
+  void extractInitialSeeds(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
                       const pcl::PointCloud<pcl::PointXYZI>::Ptr seed_points);
 };
 } // namespace ns_lidar

@@ -12,9 +12,10 @@ ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n) {
   // Get parameters
   n.param<std::string>("clustering_method", clustering_method_, "string");
   n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
-  n.param<double>("point_count_theshold", point_count_theshold_, 0.5);
+  n.param<double>("point_count_threshold", point_count_threshold_, 0.5);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
-  n.param<float>("minimal_curve_intensity", minimal_curve_intensity_, 1);
+  n.param<int>("minimal_points_cone", minimal_points_cone_, 0);
+  n.param<float>("minimal_height_center_cone", minimal_height_center_cone_, 0.10);
 }
 
 /**
@@ -126,12 +127,12 @@ sensor_msgs::PointCloud ConeClustering::euclidianClustering(
  */
 sensor_msgs::PointCloud ConeClustering::stringClustering(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud) {
+
   // sort point from left to right (because they are ordered from left to right)
   std::sort(cloud->begin(), cloud->end(), leftrightsort);
 
   std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters;
-  std::vector<pcl::PointXYZI>
-      cluster_rightmost; // The rightmost point in each cluster
+  std::vector<pcl::PointXYZI> cluster_rightmost; // The rightmost point in each cluster
   std::vector<pcl::PointCloud<pcl::PointXYZI>> finished_clusters;
 
   // Iterate over all points, up and down, left to right (elevation & azimuth)
@@ -141,6 +142,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
     std::vector<uint16_t>
         clusters_to_keep; // These cluster ids will be kept at the end of this
                           // clustering because they can still contain a cone
+                          // or they can help exclude other points from being a cone
 
     bool found_cluster = false;
 
@@ -168,7 +170,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
         clusters[cluster_id].push_back(point);
 
         // Check whether this point is the rightmost point in the cluster
-        if (point.y < cluster_rightmost[cluster_id].y) {
+        if (point.y > cluster_rightmost[cluster_id].y) {
           cluster_rightmost[cluster_id] = point;
         }
 
@@ -182,9 +184,9 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
         float bound_z = std::fabs(max[2] - min[2]);
 
         // Filter based on the shape of cones
-        if (bound_x < 0.33 && bound_y < 0.33 && bound_z < 0.4) {
-          // This cluster can still be a cone
-          clusters_to_keep.push_back(cluster_id);
+        if (bound_x < 1 && bound_y < 1 && bound_z < 1) {
+          // This cluster can still be a cone 
+         clusters_to_keep.push_back(cluster_id);
         }
       }
       // filter other clusters
@@ -295,9 +297,10 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
   float bound_y = std::fabs(max[1] - min[1]);
   float bound_z = std::fabs(max[2] - min[2]);
 
+
   // filter based on the shape of cones
-  if (bound_x < 0.33 && bound_y < 0.33 && bound_z < 0.4 &&
-      centroid[2] < 0) // centroid[2] < 0 because lidar is positioned heigher
+  if (bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.4 && cone.points.size() >= minimal_points_cone_ 
+  && centroid[2] < 0.3 && centroid[2] > minimal_height_center_cone_) // centroid[2] < 0 because lidar is positioned heigher
                        // than the cones
   {
     // Calculate the expected number of points that hit the cone
@@ -309,7 +312,7 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
 
     // We allow for some play in the point count prediction
     if ((std::abs(num_points - cone.points.size()) / num_points) <
-        point_count_theshold_) {
+        point_count_threshold_) {
       cone_check.pos.x = centroid[0];
       cone_check.pos.y = centroid[1];
       cone_check.pos.z = centroid[2];
@@ -318,6 +321,10 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
       cone_check.bounds[2] = bound_z;
       cone_check.is_cone = true;
 
+      // Eigen::Matrix<double, 3, 3> covariance_matrix;
+      // pcl::computeCovarianceMatrix(cone, covariance_matrix);
+
+      // ROS_INFO("variance x: %lf", covariance_matrix(1,1));
       // calculate the convexity of the intensity to distinguish between blue
       // and yellow;
       Eigen::MatrixXd X_mat(cone.points.size(), 3);
@@ -337,9 +344,7 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
       Eigen::VectorXd solution = X_mat.colPivHouseholderQr().solve(Y_mat);
 
       // determine colour
-      if (abs(solution(0)) < minimal_curve_intensity_)
-        cone_check.is_cone = false;
-      else if (solution(0) > 0)
+      if (solution(0) > 0)
         cone_check.color = 1;
       else
         cone_check.color = 0;
