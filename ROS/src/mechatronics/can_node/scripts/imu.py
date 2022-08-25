@@ -95,10 +95,11 @@ class ImuConverter:
                 return
             self.imu_back_pitch_roll.publish(imu_msg)
 
-        elif 0xF02A:
+        elif cmd_id == 0xF02A:
             # Angular rate
+            # IMU reports in deg/s, while ROS expects rad/s (see REP103)
             pitch_raw = (msg.data[1] << 8) + msg.data[0]
-            pitch = (pitch_raw - 32000) / 128
+            pitch = (pitch_raw - 32000) / 128 # deg/s
 
             roll_raw = (msg.data[3] << 8) + msg.data[2]
             roll = (roll_raw - 32000) / 128
@@ -107,9 +108,9 @@ class ImuConverter:
             yaw = (yaw_raw - 32000) / 128
 
             rate = Vector3()
-            rate.x = roll
-            rate.y = pitch
-            rate.z = yaw
+            rate.x = roll * np.pi / 180 # rad/s
+            rate.y = pitch * np.pi / 180
+            rate.z = yaw * np.pi / 180
             imu_msg.angular_velocity = rate
             imu_msg.angular_velocity_covariance = (
                 np.diag([1, 1, 1]).reshape((1, 9)).tolist()[0]
@@ -120,7 +121,7 @@ class ImuConverter:
                 return
             self.imu_back_angular_rate.publish(imu_msg)
 
-        if cmd_id == 0xF02D:
+        elif cmd_id == 0xF02D:
             # Acceleration
             lat_raw = (msg.data[1] << 8) + msg.data[0]
             lat = (lat_raw - 32000) / 100
@@ -135,8 +136,8 @@ class ImuConverter:
             acc.x = lon
             acc.y = lat
             acc.z = vert
-            imu_msg.angular_velocity = acc
-            imu_msg.angular_velocity_covariance = (
+            imu_msg.linear_acceleration = acc
+            imu_msg.linear_acceleration_covariance = (
                 np.diag([1, 1, 1]).reshape((1, 9)).tolist()[0]
             )  # TODO change
 

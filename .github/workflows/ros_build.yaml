@@ -23,7 +23,7 @@ jobs:
 
             - name: Install ROS base packages
               run: |
-                  sudo apt-get install -y python3-catkin-pkg python3-catkin-tools ros-noetic-catkin python3-rosdep python3-wstool python3-osrf-pycommon ros-cmake-modules ros-noetic-tf2-geometry-msgs ros-noetic-rqt-multiplot ros-noetic-joy ros-noetic-image-transport libyaml-cpp-dev libcurl4-openssl-dev python3-pcl pcl-tools ros-noetic-perception-pcl
+                  sudo apt-get install -y python3-catkin-pkg python3-catkin-tools ros-noetic-catkin python3-rosdep python3-wstool python3-osrf-pycommon ros-cmake-modules ros-noetic-tf2-geometry-msgs ros-noetic-rqt-multiplot ros-noetic-joy ros-noetic-image-transport libyaml-cpp-dev libcurl4-openssl-dev python3-pcl pcl-tools ros-noetic-perception-pcl ros-noetic-nmea-navsat-driver
 
             - name: Python Pip Install
               # You may pin to the exact commit or the version.

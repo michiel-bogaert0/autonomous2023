@@ -1,0 +1,25 @@
+<launch>
+    <arg name="server" />
+    <arg name="mountpoint" />
+
+    <arg name="port" default="2101" />
+    <arg name="user" default="" />
+    <arg name="password" default="" />
+    <arg name="baudrate" default="460800" />
+    <arg name="device" default="/dev/ttyUSB0" />
+
+    <node pkg="ublox_gps" type="ntripclient" name="ntripclient" output="screen">
+        <param name="server" value="$(arg server)" />
+        <param name="mountpoint" value="$(arg mountpoint)" />
+        <param name="port" value="$(arg port)" />
+        <param name="user" value="$(arg user)" />
+        <param name="password" value="$(arg password)" />
+        <param name="baudrate" value="$(arg baudrate)" />
+        <param name="device" value="$(arg device)" />
+    </node>
+
+    <node pkg="nmea_navsat_driver" output="screen" type="nmea_serial_driver" name="nmea_publisher">
+        <param name="port" value="$(arg device)"></param>
+        <param name="baud" value="$(arg baudrate)"></param>
+    </node>
+</launch>
