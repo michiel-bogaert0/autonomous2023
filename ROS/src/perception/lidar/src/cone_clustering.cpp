@@ -14,7 +14,6 @@ ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n) {
   n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
   n.param<double>("point_count_threshold", point_count_threshold_, 0.5);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
-  n.param<float>("minimal_curve_intensity", minimal_curve_intensity_, 1);
   n.param<int>("minimal_points_cone", minimal_points_cone_, 0);
   n.param<float>("minimal_height_center_cone", minimal_height_center_cone_, 0.10);
 }
@@ -345,9 +344,7 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
       Eigen::VectorXd solution = X_mat.colPivHouseholderQr().solve(Y_mat);
 
       // determine colour
-      if (abs(solution(0)) < minimal_curve_intensity_);
-        //cone_check.is_cone = false;
-      else if (solution(0) > 0)
+      if (solution(0) > 0)
         cone_check.color = 1;
       else
         cone_check.color = 0;

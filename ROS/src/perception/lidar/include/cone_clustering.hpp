@@ -41,8 +41,6 @@ private:
                                   // prediction be off from the actual count
   double min_distance_factor_; // distance around the cone that contains no
                             // other cones as a factor to the width of the cone
-  float minimal_curve_intensity_; // the miniminal curvature needed to be
-                                  // classified as a cone
   int minimal_points_cone_;
   float minimal_height_center_cone_;
 

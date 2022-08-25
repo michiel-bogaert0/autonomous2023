@@ -18,7 +18,6 @@
         <param name="point_count_threshold" value="2" />
         
         <param name="min_distance_factor" value="1.5"/>
-        <param name="minimal_curve_intensity" value = "100"/>
         <param name= "minimal_points_cone" value = "3"/>
         <param name="minimal_height_center_cone" value= "0.145" />
 
