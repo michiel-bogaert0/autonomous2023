@@ -6,12 +6,12 @@ import tf2_ros as tf
 from clustering.clustering import Clustering
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point, TransformStamped
+from locmap_clustering.srv import Reset, ResetRequest, ResetResponse
 from locmap_vis import LocMapVis
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from rosgraph_msgs.msg import Clock
 from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import Observation, Observations, Particle, Particles
-from robot_localization.srv import SetPose, SetPoseRequest, SetPoseResponse
 
 
 class ClusterMapping(ROSNode):
@@ -71,8 +71,7 @@ class ClusterMapping(ROSNode):
         )
 
         # Add a service that allows us to reset the clustering when needed
-        # Uses a robot_localization/SetPose to maintain continuity with state estimation
-        rospy.Service("/set_pose", SetPose, self.handle_reset_srv_request)
+        rospy.Service("clustermapping/reset", Reset, self.handle_reset_srv_request)
 
         # It is done this way instead of using decorators because we need to dynamically inject the queue size
         AddSubscriber("input/observations", self.observation_queue_size)(
@@ -94,13 +93,23 @@ class ClusterMapping(ROSNode):
 
         self.initialized = True
         rospy.loginfo(f"Clustering mapping node initialized!")
-    
-    def handle_reset_srv_request(self, req: SetPoseRequest):
+
+    def handle_reset_srv_request(self, req: ResetRequest):
+        """
+        This is the service handler that handles a cluster reset.
+        Resets the cluster upon receiving this request
+
+        Args:
+            req: the ResetRequest object (empty)
+
+        Returns:
+            ResetResponse (empty)
+        """
         rospy.logwarn("Received reset request")
-        
+
         self.reset()
 
-        return SetPoseResponse()
+        return ResetResponse()
 
     def detect_backwards_time_jump(self, _, clock: Clock):
         """
@@ -124,13 +133,18 @@ class ClusterMapping(ROSNode):
 
             self.reset()
 
-
     def reset(self):
+        """
+        Resets this node to initial conditions.
+        Basically clears the cluster samples, clears the tf buffer and sets everything back to starting conditions
+        """
         self.clustering.reset()
 
         self.current_clock = 0
         self.previous_sample_point = 0
         self.cleared_vis = 0
+
+        self.tf_listener.unregister()
 
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
