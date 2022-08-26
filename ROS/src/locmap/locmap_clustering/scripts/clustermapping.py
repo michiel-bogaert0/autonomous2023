@@ -6,6 +6,7 @@ import tf2_ros as tf
 from clustering.clustering import Clustering
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point, TransformStamped
+from locmap_clustering.srv import Reset, ResetRequest, ResetResponse
 from locmap_vis import LocMapVis
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from rosgraph_msgs.msg import Clock
@@ -21,6 +22,9 @@ class ClusterMapping(ROSNode):
         """
 
         super().__init__("clustermapping", False)
+
+        self.tf_buffer = tf.Buffer()
+        self.tf_listener = tf.TransformListener(self.tf_buffer)
 
         # Parameters
         self.use_sim_time = rospy.get_param("use_sim_time", False)
@@ -66,6 +70,9 @@ class ClusterMapping(ROSNode):
             self.min_sampling,
         )
 
+        # Add a service that allows us to reset the clustering when needed
+        rospy.Service("clustermapping/reset", Reset, self.handle_reset_srv_request)
+
         # It is done this way instead of using decorators because we need to dynamically inject the queue size
         AddSubscriber("input/observations", self.observation_queue_size)(
             self.handle_observation_message
@@ -81,14 +88,28 @@ class ClusterMapping(ROSNode):
         self.add_subscribers()
 
         # Helpers
-        self.tf_buffer = tf.Buffer()
-        self.tf_listener = tf.TransformListener(self.tf_buffer)
+        self.previous_clustering_time = rospy.Time.now().to_sec()
+        self.cleared_vis = 0
 
+        self.initialized = True
         rospy.loginfo(f"Clustering mapping node initialized!")
 
-        self.previous_clustering_time = rospy.Time.now().to_sec()
+    def handle_reset_srv_request(self, req: ResetRequest):
+        """
+        This is the service handler that handles a cluster reset.
+        Resets the cluster upon receiving this request
 
-        self.cleared_vis = 0
+        Args:
+            req: the ResetRequest object (empty)
+
+        Returns:
+            ResetResponse (empty)
+        """
+        rospy.logwarn("Received reset request")
+
+        self.reset()
+
+        return ResetResponse()
 
     def detect_backwards_time_jump(self, _, clock: Clock):
         """
@@ -110,16 +131,25 @@ class ClusterMapping(ROSNode):
                 f"A backwards jump in time of {self.current_clock - clock.clock.to_sec()} has been detected. Resetting the clusterer..."
             )
 
-            self.clustering.reset()
+            self.reset()
 
-            self.current_clock = 0
-            self.previous_sample_point = 0
-            self.cleared_vis = 0
+    def reset(self):
+        """
+        Resets this node to initial conditions.
+        Basically clears the cluster samples, clears the tf buffer and sets everything back to starting conditions
+        """
+        self.clustering.reset()
 
-            self.tf_buffer = tf.Buffer()
-            self.tf_listener = tf.TransformListener(self.tf_buffer)
+        self.current_clock = 0
+        self.previous_sample_point = 0
+        self.cleared_vis = 0
 
-            self.previous_clustering_time = rospy.Time.now().to_sec()
+        self.tf_listener.unregister()
+
+        self.tf_buffer = tf.Buffer()
+        self.tf_listener = tf.TransformListener(self.tf_buffer)
+
+        self.previous_clustering_time = rospy.Time.now().to_sec()
 
     # See the constructor for the subscriber registration.
     # The '_' is just because it doesn't use a decorator, so it injects 'self' twice
@@ -132,34 +162,45 @@ class ClusterMapping(ROSNode):
             - observations: The observations to process
         """
 
-        # Transform the observations!
-        # This only transforms from sensor frame to base link frame, which should be a static transformation in normal conditions
-        transformed_observations: Observations = ROSNode.do_transform_observations(
-            observations,
-            self.tf_buffer.lookup_transform(
-                observations.header.frame_id.strip("/"),
-                self.base_link_frame,
-                rospy.Time(0),
-            ),
-        )
-
-        if self.do_time_transform:
-            # Now do a "time transformation" to keep delays in mind
-            transform: TransformStamped = self.tf_buffer.lookup_transform_full(
-                self.base_link_frame,
-                rospy.Time(),
-                self.base_link_frame,
-                observations.header.stamp,
-                self.world_frame,  # Needs a fixed frame to use as fixture for the transformation
-                rospy.Duration(1),
+        if not self.initialized:
+            rospy.logwarn(
+                "Node is still initializing. Dropping incoming Observations message..."
             )
-            time_transformed_observations = ROSNode.do_transform_observations(
-                transformed_observations, transform
+            return
+
+        try:
+            # Transform the observations!
+            # This only transforms from sensor frame to base link frame, which should be a static transformation in normal conditions
+            transformed_observations: Observations = ROSNode.do_transform_observations(
+                observations,
+                self.tf_buffer.lookup_transform(
+                    observations.header.frame_id.strip("/"),
+                    self.base_link_frame,
+                    rospy.Time(0),
+                ),
             )
 
-            self.process_observations(time_transformed_observations)
-        else:
-            self.process_observations(transformed_observations)
+            if self.do_time_transform:
+                # Now do a "time transformation" to keep delays in mind
+                transform: TransformStamped = self.tf_buffer.lookup_transform_full(
+                    self.base_link_frame,
+                    rospy.Time(),
+                    self.base_link_frame,
+                    observations.header.stamp,
+                    self.world_frame,  # Needs a fixed frame to use as fixture for the transformation
+                    rospy.Duration(1),
+                )
+                time_transformed_observations = ROSNode.do_transform_observations(
+                    transformed_observations, transform
+                )
+
+                self.process_observations(time_transformed_observations)
+            else:
+                self.process_observations(transformed_observations)
+        except Exception as e:
+            rospy.logerr(
+                f"ClusterMapping has caught an exception. Ignoring Observations message... Exception: {e}"
+            )
 
     def process_observations(self, observations: Observations):
         """
