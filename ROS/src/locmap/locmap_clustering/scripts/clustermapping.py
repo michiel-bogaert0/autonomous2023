@@ -11,6 +11,7 @@ from node_fixture.node_fixture import AddSubscriber, ROSNode
 from rosgraph_msgs.msg import Clock
 from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import Observation, Observations, Particle, Particles
+from robot_localization.srv import SetPose, SetPoseRequest, SetPoseResponse
 
 
 class ClusterMapping(ROSNode):
@@ -69,6 +70,10 @@ class ClusterMapping(ROSNode):
             self.min_sampling,
         )
 
+        # Add a service that allows us to reset the clustering when needed
+        # Uses a robot_localization/SetPose to maintain continuity with state estimation
+        rospy.Service("/set_pose", SetPose, self.handle_reset_srv_request)
+
         # It is done this way instead of using decorators because we need to dynamically inject the queue size
         AddSubscriber("input/observations", self.observation_queue_size)(
             self.handle_observation_message
@@ -89,6 +94,13 @@ class ClusterMapping(ROSNode):
 
         self.initialized = True
         rospy.loginfo(f"Clustering mapping node initialized!")
+    
+    def handle_reset_srv_request(self, req: SetPoseRequest):
+        rospy.logwarn("Received reset request")
+        
+        self.reset()
+
+        return SetPoseResponse()
 
     def detect_backwards_time_jump(self, _, clock: Clock):
         """
@@ -110,16 +122,20 @@ class ClusterMapping(ROSNode):
                 f"A backwards jump in time of {self.current_clock - clock.clock.to_sec()} has been detected. Resetting the clusterer..."
             )
 
-            self.clustering.reset()
+            self.reset()
 
-            self.current_clock = 0
-            self.previous_sample_point = 0
-            self.cleared_vis = 0
 
-            self.tf_buffer = tf.Buffer()
-            self.tf_listener = tf.TransformListener(self.tf_buffer)
+    def reset(self):
+        self.clustering.reset()
 
-            self.previous_clustering_time = rospy.Time.now().to_sec()
+        self.current_clock = 0
+        self.previous_sample_point = 0
+        self.cleared_vis = 0
+
+        self.tf_buffer = tf.Buffer()
+        self.tf_listener = tf.TransformListener(self.tf_buffer)
+
+        self.previous_clustering_time = rospy.Time.now().to_sec()
 
     # See the constructor for the subscriber registration.
     # The '_' is just because it doesn't use a decorator, so it injects 'self' twice
