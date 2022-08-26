@@ -22,6 +22,9 @@ class ClusterMapping(ROSNode):
 
         super().__init__("clustermapping", False)
 
+        self.tf_buffer = tf.Buffer()
+        self.tf_listener = tf.TransformListener(self.tf_buffer)
+
         # Parameters
         self.use_sim_time = rospy.get_param("use_sim_time", False)
 
@@ -81,14 +84,11 @@ class ClusterMapping(ROSNode):
         self.add_subscribers()
 
         # Helpers
-        self.tf_buffer = tf.Buffer()
-        self.tf_listener = tf.TransformListener(self.tf_buffer)
-
-        rospy.loginfo(f"Clustering mapping node initialized!")
-
         self.previous_clustering_time = rospy.Time.now().to_sec()
-
         self.cleared_vis = 0
+
+        self.initialized = True
+        rospy.loginfo(f"Clustering mapping node initialized!")
 
     def detect_backwards_time_jump(self, _, clock: Clock):
         """
@@ -132,34 +132,45 @@ class ClusterMapping(ROSNode):
             - observations: The observations to process
         """
 
-        # Transform the observations!
-        # This only transforms from sensor frame to base link frame, which should be a static transformation in normal conditions
-        transformed_observations: Observations = ROSNode.do_transform_observations(
-            observations,
-            self.tf_buffer.lookup_transform(
-                observations.header.frame_id.strip("/"),
-                self.base_link_frame,
-                rospy.Time(0),
-            ),
-        )
-
-        if self.do_time_transform:
-            # Now do a "time transformation" to keep delays in mind
-            transform: TransformStamped = self.tf_buffer.lookup_transform_full(
-                self.base_link_frame,
-                rospy.Time(),
-                self.base_link_frame,
-                observations.header.stamp,
-                self.world_frame,  # Needs a fixed frame to use as fixture for the transformation
-                rospy.Duration(1),
+        if not self.initialized:
+            rospy.logwarn(
+                "Node is still initializing. Dropping incoming Observations message..."
             )
-            time_transformed_observations = ROSNode.do_transform_observations(
-                transformed_observations, transform
+            return
+
+        try:
+            # Transform the observations!
+            # This only transforms from sensor frame to base link frame, which should be a static transformation in normal conditions
+            transformed_observations: Observations = ROSNode.do_transform_observations(
+                observations,
+                self.tf_buffer.lookup_transform(
+                    observations.header.frame_id.strip("/"),
+                    self.base_link_frame,
+                    rospy.Time(0),
+                ),
             )
 
-            self.process_observations(time_transformed_observations)
-        else:
-            self.process_observations(transformed_observations)
+            if self.do_time_transform:
+                # Now do a "time transformation" to keep delays in mind
+                transform: TransformStamped = self.tf_buffer.lookup_transform_full(
+                    self.base_link_frame,
+                    rospy.Time(),
+                    self.base_link_frame,
+                    observations.header.stamp,
+                    self.world_frame,  # Needs a fixed frame to use as fixture for the transformation
+                    rospy.Duration(1),
+                )
+                time_transformed_observations = ROSNode.do_transform_observations(
+                    transformed_observations, transform
+                )
+
+                self.process_observations(time_transformed_observations)
+            else:
+                self.process_observations(transformed_observations)
+        except Exception as e:
+            rospy.logerr(
+                f"ClusterMapping has caught an exception. Ignoring Observations message... Exception: {e}"
+            )
 
     def process_observations(self, observations: Observations):
         """
