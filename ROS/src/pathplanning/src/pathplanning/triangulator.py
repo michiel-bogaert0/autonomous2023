@@ -1,6 +1,6 @@
 import math
 import sys
-from dataclasses.node import Node
+from pathplanning.dataclasses.node import Node
 from typing import Tuple
 
 import matplotlib.pyplot as plt
