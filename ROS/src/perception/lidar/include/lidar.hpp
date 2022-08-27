@@ -32,6 +32,8 @@ namespace ns_lidar
     ConeClustering cone_clustering_;
     GroundRemoval ground_removal_;
 
+    bool show_debug_;
+
     void rawPcCallback(const sensor_msgs::PointCloud2 &msg);
     void preprocessing(const pcl::PointCloud<pcl::PointXYZI> &raw,
                        pcl::PointCloud<pcl::PointXYZI>::Ptr &preprocessed_pc);
