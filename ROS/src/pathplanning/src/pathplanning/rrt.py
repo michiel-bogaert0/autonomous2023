@@ -1,6 +1,7 @@
 import math
 import random
 from dataclasses import dataclass
+from dataclasses.node import Node
 from typing import List, Tuple
 
 import numpy as np

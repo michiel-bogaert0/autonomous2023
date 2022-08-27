@@ -1,12 +1,11 @@
 import math
 import sys
+from dataclasses.node import Node
 from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import Delaunay
-
-from pathplanning.dataclasses.node import Node
 
 
 class Triangulator:
@@ -32,7 +31,7 @@ class Triangulator:
         self.safety_dist_squared = safety_dist**2
         self.prev = None
 
-    def get_path(self, cones: np.ndarray) -> np.ndarray:
+    def get_path(self, cones: np.ndarray):
         """Generate path based on the cones.
 
         Args:
@@ -43,9 +42,9 @@ class Triangulator:
         """
         position_cones = cones[:, :-1]
 
-        if (len(position_cones) < 4):
+        if len(position_cones) < 4:
             return None
-            
+
         center_points, unique_center_points = self.get_center_points(position_cones)
 
         root_node, leaves = self.get_all_paths(
@@ -56,7 +55,7 @@ class Triangulator:
 
         return path
 
-    def get_best_path(self, leaves: list, cones: np.ndarray) -> np.ndarray:
+    def get_best_path(self, leaves: list, cones: np.ndarray):
         """Get best path based from all generated paths.
 
         Args:

@@ -13,6 +13,7 @@ from ugr_msgs.msg import Observation, Observations
 from pathplanning.rrt import Rrt
 from pathplanning.triangulator import Triangulator
 
+
 # Source: https://gitlab.msu.edu/av/av_notes/-/blob/master/ROS/Coordinate_Transforms.md
 class TransformFrames:
     def __init__(self):
@@ -170,7 +171,9 @@ class PathPlanning(ROSNode):
         if path is None:
             rospy.loginfo("No path found")
             return
-            
+
+        path = np.array([[e.x, e.y] for e in path])
+
         # Calculate orientations
         yaws = np.arctan2(path[:, 1], path[:, 0])
         orientations = np.array(
