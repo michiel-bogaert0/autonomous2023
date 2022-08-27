@@ -298,8 +298,7 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
 
 
   // filter based on the shape of cones
-  if (bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.4 && cone.points.size() >= minimal_points_cone_) // centroid[2] < 0 because lidar is positioned heigher
-                       // than the cones
+  if (bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.4 && cone.points.size() >= minimal_points_cone_)
   {
     // Calculate the expected number of points that hit the cone
     float dist = ConeClustering::hypot3d(centroid[0], centroid[1], centroid[2]);
