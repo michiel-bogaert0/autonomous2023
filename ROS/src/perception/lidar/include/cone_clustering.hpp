@@ -42,6 +42,7 @@ private:
   double min_distance_factor_; // distance around the cone that contains no
                             // other cones as a factor to the width of the cone
   int minimal_points_cone_;
+  float minimal_height_cone_; //minimal height of cone above the floor threshold
 
   sensor_msgs::PointCloud
   euclidianClustering(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
