@@ -176,9 +176,7 @@ class PathPlanning(ROSNode):
 
         # Calculate orientations
         yaws = np.arctan2(path[:, 1], path[:, 0])
-        orientations = np.array(
-            quaternion_from_euler(np.zeros_like(yaws), np.zeros_like(yaws), yaws)
-        )
+        orientations = np.array([quaternion_from_euler(0, 0, yaw) for yaw in yaws])
 
         poses: list(Pose) = []
         for idx in range(len(path)):
