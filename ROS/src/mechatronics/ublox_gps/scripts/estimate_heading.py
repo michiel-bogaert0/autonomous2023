@@ -13,6 +13,14 @@ from tf.transformations import quaternion_from_euler
 
 class HeadingEstimation(ROSNode):
     def __init__(self):
+        """
+        This node estimates the heading based on two GPS's, which must be fairly accurate
+
+        Args:
+            max_time_deviation: how much the two messages are allowed to deviate time-wise before calculating heading
+            base_link_frame: the base_link_frame of the car
+            rate: the maximal publishing rate of the heading. Can be much less than this value in practice
+        """
 
         super().__init__("gps_heading_estimation", False)
     
@@ -34,19 +42,26 @@ class HeadingEstimation(ROSNode):
             partial(self.handle_gps, gpsIndex=1),
         )
 
+        # Publish the heading periodically, limited by self.rate
         self.rosrate = rospy.Rate(self.rate, True)
         while not rospy.is_shutdown():
             self.publish_heading()
             self.rosrate.sleep()
 
     def publish_heading(self):
+        """
+        Actually publishes the heading (if heading can be calculated)
+        """
 
+        # No message? No heading!
         if not self.gps_msgs[0] or not self.gps_msgs[1]:
             return
 
+        # Time deviates to much? No heading!
         if self.gps_msgs[0].header.stamp.to_sec() - self.gps_msgs[1].header.stamp.to_sec() > self.max_time_deviation:
             return
 
+        # Actually calculate heading
         long0 = self.gps_msgs[0].longitude * 2 * pi / 360
         long1 = self.gps_msgs[1].longitude * 2 * pi / 360
         lat0 = self.gps_msgs[0].latitude * 2 * pi / 360
@@ -57,7 +72,8 @@ class HeadingEstimation(ROSNode):
 
         bearing = atan2(y, x) * (-1)
 
-        # Publish bearing
+        # Publish as Odometry message
+        # TODO estimate covariance based on GPS fixes
         msg = Odometry()
         msg.header.frame_id = self.base_link_frame
         msg.header.stamp = rospy.Time.from_sec((self.gps_msgs[0].header.stamp.to_sec() + self.gps_msgs[1].header.stamp.to_sec()) / 2)
@@ -73,6 +89,13 @@ class HeadingEstimation(ROSNode):
         self.gps_msgs = [None, None]
 
     def handle_gps(self, navsatfixMsg: NavSatFix, gpsIndex: int):
+        """
+        Handles an incoming NavSatFix message
+
+        Args:
+            navsatfixMsg: the incoming NavSatFix message
+            gpsIndex: the index of the gps (0 or 1)
+        """ 
         self.gps_msgs[gpsIndex] = navsatfixMsg
 
 if __name__ == "__main__":
