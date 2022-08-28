@@ -192,10 +192,10 @@ class PathPlanning(ROSNode):
             position.z = 0
 
             # Fill orientation
-            orientation.x = orientations[0][idx]
-            orientation.y = orientations[1][idx]
-            orientation.z = orientations[2][idx]
-            orientation.w = orientations[3][idx]
+            orientation.x = orientations[idx][0]
+            orientation.y = orientations[idx][1]
+            orientation.z = orientations[idx][2]
+            orientation.w = orientations[idx][3]
 
             # Fill pose and add to array
             pose.position = position
