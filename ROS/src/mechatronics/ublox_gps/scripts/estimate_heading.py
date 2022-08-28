@@ -6,8 +6,8 @@ from typing import List
 
 import rospy
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import AddSubscriber, ROSNode
-from sensor_msgs.msg import NavSatFix
+from node_fixture.node_fixture import ROSNode
+from sensor_msgs.msg import NavSatFix, Imu
 from tf.transformations import quaternion_from_euler
 
 
@@ -72,17 +72,17 @@ class HeadingEstimation(ROSNode):
 
         bearing = atan2(y, x) * (-1)
 
-        # Publish as Odometry message
+        # Publish as Imu message
         # TODO estimate covariance based on GPS fixes
-        msg = Odometry()
+        msg = Imu()
         msg.header.frame_id = self.base_link_frame
         msg.header.stamp = rospy.Time.from_sec((self.gps_msgs[0].header.stamp.to_sec() + self.gps_msgs[1].header.stamp.to_sec()) / 2)
 
         x, y, z, w = quaternion_from_euler(0, 0, bearing)
-        msg.pose.pose.orientation.x = x
-        msg.pose.pose.orientation.y = y
-        msg.pose.pose.orientation.z = z
-        msg.pose.pose.orientation.w = w
+        msg.orientation.x = x
+        msg.orientation.y = y
+        msg.orientation.z = z
+        msg.orientation.w = w
 
         self.publish("/output/heading", msg)
 
