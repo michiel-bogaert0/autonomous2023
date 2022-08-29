@@ -96,7 +96,7 @@ class Rrt:
         if search_rad is not None:
             self.search_rad = search_rad
         else:
-            self.search_rad = 2 * max_dist
+            self.search_rad = 2 * self.max_dist
 
         # For later use to accumulate times a node is rejected
         self.safety_dist_faults = 0
