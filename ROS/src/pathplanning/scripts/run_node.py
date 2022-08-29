@@ -168,7 +168,6 @@ class PathPlanning(ROSNode):
             header: Header of input message.
         """
         path = self.algorithm.get_path(self.cones)
-        rospy.loginfo(f"Cones: {self.cones}")
 
         if path is None:
             rospy.loginfo("No path found")
