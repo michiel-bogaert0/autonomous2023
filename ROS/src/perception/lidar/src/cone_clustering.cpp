@@ -15,7 +15,7 @@ ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n) {
   n.param<double>("point_count_threshold", point_count_threshold_, 0.5);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
   n.param<int>("minimal_points_cone", minimal_points_cone_, 0);
-  n.param<float>("minimal_height_center_cone", minimal_height_center_cone_, 0.10);
+  n.param<float>("minimal_height_cone", minimal_height_cone_, 0.05);
 }
 
 /**
@@ -299,9 +299,7 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
 
 
   // filter based on the shape of cones
-  if (bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.4 && cone.points.size() >= minimal_points_cone_ 
-  && centroid[2] < 0.3 && centroid[2] > minimal_height_center_cone_) // centroid[2] < 0 because lidar is positioned heigher
-                       // than the cones
+  if (bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.4 && cone.points.size() >= minimal_points_cone_ && centroid[2] - min[2] > minimal_height_cone_)
   {
     // Calculate the expected number of points that hit the cone
     float dist = ConeClustering::hypot3d(centroid[0], centroid[1], centroid[2]);

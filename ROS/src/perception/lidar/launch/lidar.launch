@@ -19,7 +19,7 @@
         
         <param name="min_distance_factor" value="1.5"/>
         <param name= "minimal_points_cone" value = "3"/>
-        <param name="minimal_height_center_cone" value= "0.145" />
+        <param name= "minimal_height_cone" value = "0.07"/>
 
         <param name="show_debug" value= "false"/>
     </node>
