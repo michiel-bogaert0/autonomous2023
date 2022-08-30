@@ -2,10 +2,9 @@
 import rospy
 import cantools
 import can
+from std_msgs.msg import Empty
 from fs_msgs.msg import ControlCommand
-
-MAX_VELOCITY = 5  # in rev/s
-STEER_MAX_STEP = 1000  # This must correspond to the value on the RC Teensy
+from math import pi
 
 CAN_NODE_ID = 0xE0
 CAN_REBOOT_ID = 0x1
@@ -15,41 +14,63 @@ class JetsonController:
     def __init__(self, bus=None):
         rospy.init_node("jetson_controller")
 
+        # Can stuff
         self.bus = bus
         self.odrive_db = cantools.database.load_file(
             rospy.get_param("~odrive_dbc", "../../../mechatronics/can_node/odrive.dbc")
         )
 
+        # Subscriptions
         self.control_cmd_sub = rospy.Subscriber(
             "/input/control_command", ControlCommand, self.publish_drive_command
         )
+        self.start_sub = rospy.Subscriber("/input/start", Empty, self.send_start_signal)
+        self.stop_sub = rospy.Subscriber("/input/stop", Empty, self.send_stop_signal)
+
+        # Parameters
+        self.max_velocity = rospy.get_param("~max_velocity", 3) / (pi * 8 * 2.54 / 100) # Default is in rev/s, but launch file param must be in m/s
+        self.steer_max_step = rospy.get_param("~steer_max_step", 1600);
+
+        # Local parameters
+        self.is_running = False
 
         rospy.spin()
+
+    def send_start_signal(self, msg : Empty) -> None:
+        """ sets the modus on the value received from res"""
+        self.is_running = True
+
+    def send_stop_signal(self, msg : Empty) -> None:
+        """ sets the modus on the value received from res, and actually stops Odrive"""
+        # send value to odrive to stop
+        self.is_running = False
+        self.set_odrive_velocity(0, 1)
+        self.set_odrive_velocity(0, 2)
 
     def publish_drive_command(self, msg: ControlCommand) -> None:
         """Gets called on each ControlCommand
         """
-        if msg.brake > 0:
+        if msg.brake > 0 or not self.is_running:
             self.set_odrive_velocity(0, 1)
             self.set_odrive_velocity(0, 2)
             return
 
-        # self.set_odrive_velocity(msg.throttle * MAX_VELOCITY, 1)
-        # self.set_odrive_velocity(-1 * msg.throttle * MAX_VELOCITY, 2)
+        self.set_odrive_velocity(msg.throttle * self.max_velocity, 1)
+        self.set_odrive_velocity(-1 * msg.throttle * self.max_velocity, 2)
 
         self.set_steering_setpoint(msg.steering)
         
     def set_steering_setpoint(self, steering: float) -> None:
         """Sends a CAN message to actuate the steering system
 
-        The input must be converted from [-1, 1] to a steering range [-STEER_MAX_STEP, STEER_MAX_STEP]
+        The input must be converted from [-1, 1] to a steering range [-self.steer_max_step, self.steer_max_step]
         as defined in the RC Teensy code.
 
         Args:
             steering: a float between -1 and 1
         """
 
-        steering = int(steering * STEER_MAX_STEP)
+        steering = int(steering * self.steer_max_step)
         id = CAN_NODE_ID << 5 | CAN_STEER_ID
 
         msg = can.Message(

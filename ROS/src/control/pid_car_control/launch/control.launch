@@ -1,29 +1,34 @@
 <launch>
-    <node pkg="pid_car_control" type="run.py" name="pid_car_control" output="screen">
+    <node pkg="pid_car_control" type="run.py" name="pid_car_control" output="screen" respawn="true">
 
-        <group ns="car_control">
-            <param name="publish_rate" value="10" />
-            <param name="stale_time" value="0.2" />
-            <param name="speec/target" value="3" />
+        <param name="publish_rate" value="10" />
+        <param name="stale_time" value="3" />
+        <param name="speed/target" value="3" />
 
-            <group ns="steering">
-                <param name="Kp" value="0.01" />
-                <param name="Ki" value="0.0" />
-                <param name="Kd" value="0.0" />
-            </group>
+        <param name="steering/Kp" value="2.0" />
+        <param name="steering/Ki" value="0.0" />
+        <param name="steering/Kd" value="0.0" />
 
-            <group ns="trajectory">
-                <param name="minimal_distance" value="4" />
-                <param name="t_step" value="0.05" />
-                <param name="max_angle" value="1" />
-            </group>
-        </group>
+        <param name="trajectory/minimal_distance" value="4" />
+        <param name="trajectory/t_step" value="0.05" />
+        <param name="trajectory/max_angle" value="1" />
+
 
         <param name="base_link_frame" value="ugr/car_base_link" />
-        <param name="world_frame" value="ugr/car_odom" />
+        <param name="world_frame" value="ugr/car_map" />
 
         <remap from="/input/path" to="/pathplanning/path" />
-        <remap from="/output/drive_command" to="/control/drive_command" />
+        <remap from="/output/drive_command" to="/control/control_command" />
         <remap from="/output/target_point" to="/control/target_point" />
+    </node>
+
+    <node pkg="pid_car_control" type="control_jetson.py" name="jetson_controller" output="screen">
+        <param name="interface" value="can0" />
+        <param name="baudrate" value="250000" />
+        <param name="odrive_dbc" value="$(find can_node)/odrive.dbc" />
+
+        <remap from="/input/control_command" to="/control/control_command" />
+        <remap from="/input/start" to="/control/start" />
+        <remap from="/input/stop" to="/control/stop" />
     </node>
 </launch>
