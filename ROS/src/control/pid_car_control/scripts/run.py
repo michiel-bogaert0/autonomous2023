@@ -3,7 +3,7 @@ import numpy as np
 import rospy
 from geometry_msgs.msg import Pose, PoseArray, Point, PoseStamped
 from nav_msgs.msg import Odometry
-from node_fixture import AddSubscriber, ROSNode
+from node_fixture.node_fixture import AddSubscriber, ROSNode
 from pid import PID
 from tf.transformations import euler_from_quaternion
 from trajectory import Trajectory
@@ -11,6 +11,7 @@ from std_msgs.msg import Header
 from tf2_geometry_msgs import do_transform_pose
 import tf2_ros as tf
 from fs_msgs.msg import ControlCommand
+import time
 
 
 class PIDControlNode(ROSNode):
@@ -18,17 +19,20 @@ class PIDControlNode(ROSNode):
         super().__init__("pid_car_control")
 
         # PID settings
-        Kp = rospy.get_param("car_control/steering/Kp", 0.01)
-        Ki = rospy.get_param("car_control/steering/Ki", 0.0)
-        Kd = rospy.get_param("car_control/steering/Kd", 0.0)
+        Kp = rospy.get_param("~steering/Kp", 0.01)
+        Ki = rospy.get_param("~steering/Ki", 0.0)
+        Kd = rospy.get_param("~steering/Kd", 0.0)
+
+        print(Kp, Ki, Kd)
 
         self.steering_pid = PID(Kp, Ki, Kd, reset_rotation=True)
 
-        self.publish_rate = rospy.get_param("~car_control/publish_rate", 10.0)
+        self.publish_rate = rospy.get_param("~publish_rate", 10.0)
         self.missed_updates_till_bad = int(
-            self.publish_rate * rospy.get_param("~car_control/stale_time", 0.2)
+            self.publish_rate * rospy.get_param("~stale_time", 1)
         )
-        self.speed_target = rospy.get_param("~car_control/speed/target", 3)
+        print(self.missed_updates_till_bad)
+        self.speed_target = rospy.get_param("~speed/target", 3)
 
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
@@ -50,9 +54,9 @@ class PIDControlNode(ROSNode):
             - t_step: the t step the alg takes when progressing through the underlying parametric equations 
                       Indirectly determines how many points are checked per segment. 
         """
-        minimal_distance = rospy.get_param("car_control/trajectory/minimal_distance", 4)
-        t_step = rospy.get_param("car_control/trajectory/t_step", 0.05)
-        max_angle = rospy.get_param("car_control/trajectory/max_angle", 1)
+        minimal_distance = rospy.get_param("trajectory/minimal_distance", 4)
+        t_step = rospy.get_param("trajectory/t_step", 0.05)
+        max_angle = rospy.get_param("trajectory/max_angle", 1)
         self.trajectory = Trajectory(minimal_distance, t_step, max_angle)
 
         # Helpers
@@ -101,14 +105,12 @@ class PIDControlNode(ROSNode):
         """
         rate = rospy.Rate(self.publish_rate)
         while not rospy.is_shutdown():
-
             # Shortcut for when system is stale
             if self.stale:
                 self.publish(
                     "/output/drive_command",
                     ControlCommand(steering=0.0, throttle=0.0, brake=1.0),
                 )
-                rate.sleep()
                 continue
             else:
                 self.missed_updates += 1
@@ -120,8 +122,11 @@ class PIDControlNode(ROSNode):
                         ControlCommand(steering=0.0, throttle=0.0, brake=1.0),
                     )
                     self.stale = True
-                    print("System became stale")
+                    rospy.loginfo("System became stale")
                     continue
+                else:
+                    self.cmd.brake = 0
+                    self.cmd.throttle = 1.0
 
             # First try to set the set angle
             target_x, target_y, success = self.trajectory.calculate_target_point(
@@ -130,32 +135,33 @@ class PIDControlNode(ROSNode):
 
             if not success:
                 print("No target point found!")
+            else:
 
-            self.publish("/output/target_point", Point(target_x, target_y, 0))
+                self.publish("/output/target_point", Point(target_x, target_y, 0))
 
-            # Calculate angle
-            self.set_angle = PID.pi_to_pi(
-                np.arctan2(
-                    target_y - self.current_pos[1], target_x - self.current_pos[0]
+                # Calculate angle
+                self.set_angle = PID.pi_to_pi(
+                    np.arctan2(
+                        target_y - self.current_pos[1], target_x - self.current_pos[0]
+                    )
                 )
-            )
 
-            # PID step
-            error_pid = self.steering_pid(self.current_angle - self.set_angle)
-            print(f"target: {target_x} - {target_y} from {self.current_pos}")
-            print(
-                f"Steering: {error_pid:.3f} from {PID.pi_to_pi(self.current_angle - self.set_angle):.3f} - c:{self.current_angle:.3f} - s:{self.set_angle:.3f}"
-            )
+                # PID step
+                error_pid = self.steering_pid(self.current_angle - self.set_angle)
+                rospy.loginfo(f"target: {target_x} - {target_y} from {self.current_pos}")
+                rospy.loginfo(
+                    f"Steering: {error_pid:.3f} from {PID.pi_to_pi(self.current_angle - self.set_angle):.3f} - c:{self.current_angle:.3f} - s:{self.set_angle:.3f}"
+                )
 
-            # Remap PID to [-1, 1]
-            error_pid = min(np.deg2rad(45), max(-np.deg2rad(45), error_pid))
-            old_range = np.deg2rad(45) * 2
-            new_range = 2
-            error_pid = ((error_pid + np.deg2rad(45)) * new_range / old_range) - 1
+                # Remap PID to [-1, 1]
+                error_pid = min(np.deg2rad(45), max(-np.deg2rad(45), error_pid))
+                old_range = np.deg2rad(45) * 2
+                new_range = 2
+                error_pid = ((error_pid + np.deg2rad(45)) * new_range / old_range) - 1
 
-            self.cmd.steering = error_pid
+                self.cmd.steering = error_pid
 
-            self.publish("/output/drive_command", self.cmd)
+            self.publish("/output/control_command", self.cmd)
             rate.sleep()
 
 
