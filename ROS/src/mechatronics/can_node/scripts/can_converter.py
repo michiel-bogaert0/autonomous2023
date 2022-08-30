@@ -14,7 +14,7 @@ from odrive import OdriveConverter
 class CanConverter:
     def __init__(self):
         rospy.init_node("can_converter")
-        
+
         self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)
         self.start_pub = rospy.Publisher("/output/start", Empty, queue_size=10)
         self.stop_pub = rospy.Publisher("/output/stop", Empty, queue_size=10)
@@ -38,6 +38,7 @@ class CanConverter:
             can.Message(
                 arbitration_id=0x000,
                 data=[0x1, 0x11, 0, 0, 0, 0, 0, 0],
+                is_extended_id=False,
             )
         )
 
