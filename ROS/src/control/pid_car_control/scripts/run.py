@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 import numpy as np
 import rospy
-from geometry_msgs.msg import PoseArray, Point, PoseStamped
+from geometry_msgs.msg import PoseArray, Point, PoseStamped, TransformStamped
+from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from pid import PID
 from trajectory import Trajectory
 from std_msgs.msg import Header
 from tf2_geometry_msgs import do_transform_pose
 import tf2_ros as tf
+from tf.transformations import euler_from_quaternion
 from fs_msgs.msg import ControlCommand
 
 
@@ -62,23 +64,28 @@ class PIDControlNode(ROSNode):
     @AddSubscriber("/input/path")
     def getPathplanningUpdate(self, msg: PoseArray):
         """
-        Takes in a new exploration path coming from the mapping algorithm
+        Takes in a new exploration path coming from the mapping algorithm.
+        The path should be relative to self.world_frame. Otherwise it will transform to it
         """
 
-        # Transform received message
-        trans = self.tf_buffer.lookup_transform_full(
-            self.base_link_frame,
-            rospy.Time(),
-            msg.header.frame_id,
-            msg.header.stamp,
-            self.world_frame,
-        )
-        new_header = Header(frame_id=self.base_link_frame, stamp=rospy.Time.now())
-        pose_array_transformed = PoseArray(header=new_header)
-        for pose in msg.poses:
-            pose_s = PoseStamped(pose=pose, header=msg.header)
-            pose_t = do_transform_pose(pose_s, trans)
-            pose_array_transformed.poses.append(pose_t.pose)
+        pose_array_transformed = msg
+
+        if msg.header.frame_id != self.world_frame:
+
+            # Transform received message
+            trans = self.tf_buffer.lookup_transform_full(
+                self.world_frame,
+                rospy.Time(),
+                msg.header.frame_id,
+                msg.header.stamp,
+                self.world_frame,
+            )
+            new_header = Header(frame_id=self.world_frame, stamp=rospy.Time.now())
+            pose_array_transformed = PoseArray(header=new_header)
+            for pose in msg.poses:
+                pose_s = PoseStamped(pose=pose, header=msg.header)
+                pose_t = do_transform_pose(pose_s, trans)
+                pose_array_transformed.poses.append(pose_t.pose)
 
         # Create a new path
         self.current_path = np.zeros((0, 2))
@@ -95,6 +102,27 @@ class PIDControlNode(ROSNode):
         """
         rate = rospy.Rate(self.publish_rate)
         while not rospy.is_shutdown():
+
+            # Look up the base_link frame relative to the world at this point in time.
+            # This is needed to set the current position of the car
+            transform: TransformStamped = self.tf_buffer.lookup_transform(
+                self.world_frame, self.base_link_frame, 0
+            )
+
+            _, _, yaw = euler_from_quaternion(
+                [
+                    transform.transform.rotation.x,
+                    transform.transform.rotation.y,
+                    transform.transform.rotation.z,
+                    transform.transform.rotation.w,
+                ]
+            )
+
+            self.current_pos = [
+                transform.transform.translation.x,
+                transform.transform.translation.y,
+            ]
+            self.current_angle = yaw
 
             # First try to get a target point
             target_x, target_y, success = self.trajectory.calculate_target_point(
