@@ -144,8 +144,6 @@ class ClusterMapping(ROSNode):
         self.previous_sample_point = 0
         self.cleared_vis = 0
 
-        self.tf_listener.unregister()
-
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
 
@@ -292,18 +290,22 @@ class ClusterMapping(ROSNode):
                 + np.cos(-self.particle_state[2]) * new_obs.location.y
             )
 
-            new_obs.location.x = x
-            new_obs.location.y = y
+            distance = (landmark[0] ** 2 + landmark[1] ** 2) ** (1/2)
 
-            new_obs.observation_class = clss
+            if distance > 0.1:
 
-            observations.observations.append(new_obs)
+                new_obs.location.x = x
+                new_obs.location.y = y
 
-            new_map_point = Observation()
-            new_map_point.location = Point(x=landmark[0], y=landmark[1], z=0)
-            new_map_point.observation_class = clss
+                new_obs.observation_class = clss
 
-            new_map.observations.append(new_map_point)
+                observations.observations.append(new_obs)
+
+                new_map_point = Observation()
+                new_map_point.location = Point(x=landmark[0], y=landmark[1], z=0)
+                new_map_point.observation_class = clss
+
+                new_map.observations.append(new_map_point)
 
         self.publish("output/observations", observations)
         self.publish("output/map", new_map)
