@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 import numpy as np
 import rospy
-from geometry_msgs.msg import PoseArray, Point, PoseStamped, TransformStamped
+from geometry_msgs.msg import (
+    PoseArray,
+    Point,
+    PoseStamped,
+    TransformStamped,
+    Quaternion,
+)
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from pid import PID
@@ -9,13 +15,16 @@ from trajectory import Trajectory
 from std_msgs.msg import Header
 from tf2_geometry_msgs import do_transform_pose
 import tf2_ros as tf
-from tf.transformations import euler_from_quaternion
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from fs_msgs.msg import ControlCommand
 
 
 class PIDControlNode(ROSNode):
     def __init__(self):
         super().__init__("pid_car_control")
+
+        self.tf_buffer = tf.Buffer()
+        self.tf_listener = tf.TransformListener(self.tf_buffer)
 
         # PID settings
         Kp = rospy.get_param("~steering/Kp", 1.0)
@@ -56,9 +65,6 @@ class PIDControlNode(ROSNode):
         self.trajectory = Trajectory(minimal_distance, t_step, max_angle)
 
         # Helpers
-        self.tf_buffer = tf.Buffer()
-        self.tf_listener = tf.TransformListener(self.tf_buffer)
-
         self.start_pid_sender()
 
     @AddSubscriber("/input/path")
@@ -103,82 +109,91 @@ class PIDControlNode(ROSNode):
         rate = rospy.Rate(self.publish_rate)
         while not rospy.is_shutdown():
 
-            # Look up the base_link frame relative to the world at this point in time.
-            # This is needed to set the current position of the car
-            transform: TransformStamped = self.tf_buffer.lookup_transform(
-                self.world_frame, self.base_link_frame, 0
-            )
+            try:
+                # Look up the base_link frame relative to the world at this point in time.
+                # This is needed to set the current position of the car
+                transform: TransformStamped = self.tf_buffer.lookup_transform(
+                    self.world_frame, self.base_link_frame, rospy.Time()
+                )
 
-            _, _, yaw = euler_from_quaternion(
-                [
-                    transform.transform.rotation.x,
-                    transform.transform.rotation.y,
-                    transform.transform.rotation.z,
-                    transform.transform.rotation.w,
+                _, _, yaw = euler_from_quaternion(
+                    [
+                        transform.transform.rotation.x,
+                        transform.transform.rotation.y,
+                        transform.transform.rotation.z,
+                        transform.transform.rotation.w,
+                    ]
+                )
+
+                self.current_pos = [
+                    transform.transform.translation.x,
+                    transform.transform.translation.y,
                 ]
-            )
+                self.current_angle = yaw
 
-            self.current_pos = [
-                transform.transform.translation.x,
-                transform.transform.translation.y,
-            ]
-            self.current_angle = yaw
+                # First try to get a target point
+                target_x, target_y, success = self.trajectory.calculate_target_point(
+                    self.current_pos, self.current_angle
+                )
 
-            # First try to get a target point
-            target_x, target_y, success = self.trajectory.calculate_target_point(
-                self.current_pos, self.current_angle
-            )
+                if not success:
+                    # BRAKE! We don't know where to drive to!
+                    rospy.loginfo("No target point found!")
+                    self.cmd.brake = 1.0
+                    self.cmd.throttle = 0.0
+                else:
+                    # Go ahead and drive
+                    self.cmd.brake = 0.0
+                    self.cmd.throttle = 1.0
 
-            if not success:
-                # BRAKE! We don't know where to drive to!
-                rospy.loginfo("No target point found!")
-                self.cmd.brake = 1.0
-                self.cmd.throttle = 0.0
-            else:
-                # Go ahead and drive
-                self.cmd.brake = 0.0
-                self.cmd.throttle = 1.0
-
-                msg = PoseStamped()
-                msg.header.frame_id = self.base_link_frame
-                msg.header.stamp = rospy.Time.now()
-
-                msg.pose.position = Point(target_x, target_y, 0)
-
-                self.publish("/output/target_point", msg)
-
-                # Calculate angle
-                self.set_angle = PID.pi_to_pi(
-                    np.arctan2(
-                        target_y - self.current_pos[1], target_x - self.current_pos[0]
+                    # Calculate angle
+                    self.set_angle = PID.pi_to_pi(
+                        np.arctan2(
+                            target_y - self.current_pos[1],
+                            target_x - self.current_pos[0],
+                        )
                     )
-                )
 
-                # PID step
-                error_pid = self.steering_pid(self.current_angle - self.set_angle)
-                rospy.loginfo(
-                    f"target: {target_x} - {target_y} from {self.current_pos}"
-                )
-                rospy.loginfo(
-                    f"Steering: {error_pid:.3f} from {PID.pi_to_pi(self.current_angle - self.set_angle):.3f} - c:{self.current_angle:.3f} - s:{self.set_angle:.3f}"
-                )
+                    # PID step
+                    error_pid = self.steering_pid(self.current_angle - self.set_angle)
+                    rospy.loginfo(
+                        f"target: {target_x} - {target_y} from {self.current_pos}"
+                    )
+                    rospy.loginfo(
+                        f"Steering: {error_pid:.3f} from {PID.pi_to_pi(self.current_angle - self.set_angle):.3f} - c:{self.current_angle:.3f} - s:{self.set_angle:.3f}"
+                    )
 
-                # Remap PID to [-1, 1]
-                error_pid = min(
-                    np.deg2rad(self.max_steering_angle),
-                    max(-np.deg2rad(self.max_steering_angle), error_pid),
-                )
-                old_range = np.deg2rad(self.max_steering_angle) * 2
-                new_range = 2
-                error_pid = (
-                    (error_pid + np.deg2rad(self.max_steering_angle))
-                    * new_range
-                    / old_range
-                ) - 1
+                    msg = PoseStamped()
+                    msg.header.frame_id = self.world_frame
+                    msg.header.stamp = rospy.Time.now()
 
-                self.cmd.steering = error_pid
+                    msg.pose.position = Point(target_x, target_y, 0)
+                    quat = quaternion_from_euler(0, 0, self.current_angle - error_pid)
+                    msg.pose.orientation = Quaternion(
+                        quat[0], quat[1], quat[2], quat[3]
+                    )
 
-            self.publish("/output/control_command", self.cmd)
+                    self.publish("/output/target_point", msg)
+
+                    # Remap PID to [-1, 1]
+                    error_pid = min(
+                        np.deg2rad(self.max_steering_angle),
+                        max(-np.deg2rad(self.max_steering_angle), error_pid),
+                    )
+                    old_range = np.deg2rad(self.max_steering_angle) * 2
+                    new_range = 2
+                    error_pid = (
+                        (error_pid + np.deg2rad(self.max_steering_angle))
+                        * new_range
+                        / old_range
+                    ) - 1
+
+                    self.cmd.steering = error_pid
+
+                self.publish("/output/control_command", self.cmd)
+            except Exception as e:
+                rospy.logwarn(f"Control has caught an exception: {e}")
+
             rate.sleep()
 
 

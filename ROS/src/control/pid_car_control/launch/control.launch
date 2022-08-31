@@ -2,10 +2,9 @@
     <node pkg="pid_car_control" type="run.py" name="pid_car_control" output="screen" respawn="true">
 
         <param name="publish_rate" value="10" />
-        <param name="stale_time" value="3" />
         <param name="speed/target" value="3" />
 
-        <param name="steering/Kp" value="2.0" />
+        <param name="steering/Kp" value="1.0" />
         <param name="steering/Ki" value="0.0" />
         <param name="steering/Kd" value="0.0" />
 
