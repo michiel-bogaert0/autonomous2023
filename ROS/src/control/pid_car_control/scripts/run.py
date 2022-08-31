@@ -38,7 +38,6 @@ class PIDControlNode(ROSNode):
         self.steering_pid = PID(Kp, Ki, Kd, reset_rotation=True)
 
         self.publish_rate = rospy.get_param("~publish_rate", 10.0)
-
         self.speed_target = rospy.get_param("~speed/target", 3)
 
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
@@ -59,10 +58,12 @@ class PIDControlNode(ROSNode):
             - t_step: the t step the alg takes when progressing through the underlying parametric equations 
                       Indirectly determines how many points are checked per segment. 
         """
-        minimal_distance = rospy.get_param("trajectory/minimal_distance", 4)
+        minimal_distance = rospy.get_param("trajectory/minimal_distance", 1)
         t_step = rospy.get_param("trajectory/t_step", 0.05)
         max_angle = rospy.get_param("trajectory/max_angle", 1)
         self.trajectory = Trajectory(minimal_distance, t_step, max_angle)
+
+        self.path = None
 
         # Helpers
         self.start_pid_sender()
@@ -74,33 +75,7 @@ class PIDControlNode(ROSNode):
         The path should be relative to self.world_frame. Otherwise it will transform to it
         """
 
-        pose_array_transformed = msg
-
-        if msg.header.frame_id != self.world_frame:
-
-            # Transform received message
-            trans = self.tf_buffer.lookup_transform_full(
-                self.world_frame,
-                rospy.Time(),
-                msg.header.frame_id,
-                msg.header.stamp,
-                self.world_frame,
-            )
-            new_header = Header(frame_id=self.world_frame, stamp=rospy.Time.now())
-            pose_array_transformed = PoseArray(header=new_header)
-            for pose in msg.poses:
-                pose_s = PoseStamped(pose=pose, header=msg.header)
-                pose_t = do_transform_pose(pose_s, trans)
-                pose_array_transformed.poses.append(pose_t.pose)
-
-        # Create a new path
-        self.current_path = np.zeros((0, 2))
-        for pose in pose_array_transformed.poses:
-            self.current_path = np.vstack(
-                (self.current_path, [pose.position.x, pose.position.y])
-            )
-
-        self.trajectory.set_path(self.current_path)
+        self.path = msg
 
     def start_pid_sender(self):
         """
@@ -110,26 +85,31 @@ class PIDControlNode(ROSNode):
         while not rospy.is_shutdown():
 
             try:
-                # Look up the base_link frame relative to the world at this point in time.
-                # This is needed to set the current position of the car
-                transform: TransformStamped = self.tf_buffer.lookup_transform(
-                    self.world_frame, self.base_link_frame, rospy.Time()
-                )
 
-                _, _, yaw = euler_from_quaternion(
-                    [
-                        transform.transform.rotation.x,
-                        transform.transform.rotation.y,
-                        transform.transform.rotation.z,
-                        transform.transform.rotation.w,
-                    ]
-                )
+                self.current_angle = [0, 0]
+                self.current_angle = 0
 
-                self.current_pos = [
-                    transform.transform.translation.x,
-                    transform.transform.translation.y,
-                ]
-                self.current_angle = yaw
+                 # Transform received message
+                trans = self.tf_buffer.lookup_transform(
+                    self.base_link_frame,
+                    self.path.header.frame_id,
+                    rospy.Time(),
+                )
+                new_header = Header(frame_id=self.world_frame, stamp=rospy.Time.now())
+                pose_array_transformed = PoseArray(header=new_header)
+                for pose in self.path.poses:
+                    pose_s = PoseStamped(pose=pose, header=self.path.header)
+                    pose_t = do_transform_pose(pose_s, trans)
+                    pose_array_transformed.poses.append(pose_t.pose)
+
+                # Create a new path
+                self.current_path = np.zeros((0, 2))
+                for pose in pose_array_transformed.poses:
+                    self.current_path = np.vstack(
+                        (self.current_path, [pose.position.x, pose.position.y])
+                    )
+
+                self.trajectory.set_path(self.current_path)
 
                 # First try to get a target point
                 target_x, target_y, success = self.trajectory.calculate_target_point(
@@ -139,12 +119,13 @@ class PIDControlNode(ROSNode):
                 if not success:
                     # BRAKE! We don't know where to drive to!
                     rospy.loginfo("No target point found!")
-                    self.cmd.brake = 1.0
-                    self.cmd.throttle = 0.0
+                    self.cmd.brake = 0.0
+                    self.cmd.throttle = 0.3
+                    self.cmd.steering = 0.0
                 else:
                     # Go ahead and drive
                     self.cmd.brake = 0.0
-                    self.cmd.throttle = 1.0
+                    self.cmd.throttle = max(1 - abs(self.cmd.steering), 0.5)
 
                     # Calculate angle
                     self.set_angle = PID.pi_to_pi(
@@ -164,11 +145,11 @@ class PIDControlNode(ROSNode):
                     )
 
                     msg = PoseStamped()
-                    msg.header.frame_id = self.world_frame
+                    msg.header.frame_id = self.base_link_frame
                     msg.header.stamp = rospy.Time.now()
 
                     msg.pose.position = Point(target_x, target_y, 0)
-                    quat = quaternion_from_euler(0, 0, self.current_angle - error_pid)
+                    quat = quaternion_from_euler(0, 0, self.current_angle + self.set_angle)
                     msg.pose.orientation = Quaternion(
                         quat[0], quat[1], quat[2], quat[3]
                     )
