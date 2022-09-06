@@ -1,13 +1,15 @@
 #! /usr/bin/python3.8
 
-from publisher_abstract.publisher_abstract import PublishNode
+from publisher_abstract.publisher import PublishNode
 import cv2 as cv
 import rospy
+import neoapi
 
 
 class CameraNode(PublishNode):
-    def __init__():
+    def __init__(self):
         super().__init__("camera")
+        self.setup_camera()
 
     def setup_camera(self) -> None:
         """Sets up the Baumer camera with the right settings
@@ -53,7 +55,7 @@ class CameraNode(PublishNode):
             Ros Image to be published
         """
 
-        image = camera.GetImage()
+        image = self.camera.GetImage()
 
         if not image.IsEmpty():
             img = image.GetNPArray()
