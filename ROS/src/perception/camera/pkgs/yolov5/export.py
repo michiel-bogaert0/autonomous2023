@@ -67,17 +67,9 @@ if platform.system() != "Windows":
 from yolov5.models.experimental import attempt_load
 from yolov5.models.yolo import Detect
 from yolov5.utils.dataloaders import LoadImages
-from yolov5.utils.general import (
-    LOGGER,
-    check_dataset,
-    check_img_size,
-    check_requirements,
-    check_version,
-    colorstr,
-    file_size,
-    print_args,
-    url2file,
-)
+from yolov5.utils.general import (LOGGER, check_dataset, check_img_size,
+                                  check_requirements, check_version, colorstr,
+                                  file_size, print_args, url2file)
 from yolov5.utils.torch_utils import select_device
 
 
@@ -353,9 +345,8 @@ def export_saved_model(
     try:
         import tensorflow as tf
         from models.tf import TFDetect, TFModel
-        from tensorflow.python.framework.convert_to_constants import (
-            convert_variables_to_constants_v2,
-        )
+        from tensorflow.python.framework.convert_to_constants import \
+            convert_variables_to_constants_v2
 
         LOGGER.info(f"\n{prefix} starting export with tensorflow {tf.__version__}...")
         f = str(file).replace(".pt", "_saved_model")
@@ -413,9 +404,8 @@ def export_pb(keras_model, file, prefix=colorstr("TensorFlow GraphDef:")):
     # YOLOv5 TensorFlow GraphDef *.pb export https://github.com/leimao/Frozen_Graph_TensorFlow
     try:
         import tensorflow as tf
-        from tensorflow.python.framework.convert_to_constants import (
-            convert_variables_to_constants_v2,
-        )
+        from tensorflow.python.framework.convert_to_constants import \
+            convert_variables_to_constants_v2
 
         LOGGER.info(f"\n{prefix} starting export with tensorflow {tf.__version__}...")
         f = file.with_suffix(".pb")

@@ -1,9 +1,10 @@
+from pathlib import Path
+
 import torch
 from keypoint_detector.nn.cross_ratio_loss import CrossRatioLoss
 from keypoint_detector.nn.model import RektNet
 from pytorch_lightning.core.lightning import LightningModule
 from torch import optim
-from pathlib import Path
 
 
 class RektNetModule(LightningModule):

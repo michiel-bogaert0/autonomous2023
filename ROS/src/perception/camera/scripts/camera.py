@@ -1,9 +1,9 @@
 #! /usr/bin/python3.8
 
-from publisher_abstract.publisher import PublishNode
 import cv2 as cv
-import rospy
 import neoapi
+import rospy
+from publisher_abstract.publisher import PublishNode
 
 
 class CameraNode(PublishNode):
