@@ -17,7 +17,7 @@ class JetsonController:
         # Can stuff
         self.bus = bus
         self.odrive_db = cantools.database.load_file(
-            rospy.get_param("~odrive_dbc", "../../../mechatronics/can_node/odrive.dbc")
+            rospy.get_param("~odrive_dbc", "../odrive.dbc")
         )
 
         # Subscriptions
