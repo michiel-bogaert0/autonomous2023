@@ -6,14 +6,17 @@ import cantools
 import numpy as np
 import rospy
 from can_msgs.msg import Frame
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from imu import ImuConverter
 from odrive import OdriveConverter
+from node_fixture.node_fixture import create_diagnostic_message
 
 
 class CanConverter:
     def __init__(self):
         rospy.init_node("can_converter")
-        self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)
+        self.can_pub = rospy.Publisher("/output/can", Frame)
+        self.diagnostics = rospy.Publisher("/diagnostics", DiagnosticArray)
 
         # The first element is the front IMU, the second is the rear IMU
         self.IMU_IDS = [0xE2, 0xE3]
@@ -53,11 +56,33 @@ class CanConverter:
                 cmd_id = msg.arbitration_id & 0b11111
 
                 if cmd_id == 9:
+                    self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="CAN converter",
+                            message="ODrive message received.",
+                        )
+                    )
                     self.odrive.handle_odrive_vel_msg(msg, axis_id, cmd_id)
                     continue
 
             imu_id = msg.arbitration_id & 0xFF
             if imu_id in self.IMU_IDS:
+                status = msg.data[6]
+                # Check for errors
+                if status != 0x00:
+                    rospy.logerr(
+                        f"Message (id {msg.arbitration_id}) contained errors, status: {status}"
+                    )
+                    continue
+
+                self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="CAN converter",
+                            message=f"IMU [{imu_id}] message received.",
+                        )
+                    )
                 self.imu.handle_imu_msg(msg, imu_id == self.IMU_IDS[0])
 
             # Check for external shutdown
