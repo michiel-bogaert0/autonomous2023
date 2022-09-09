@@ -10,6 +10,7 @@ CAN_NODE_ID = 0xE0
 CAN_REBOOT_ID = 0x1
 CAN_STEER_ID = 0x3
 
+
 class JetsonController:
     def __init__(self, bus=None):
         rospy.init_node("jetson_controller")
@@ -28,28 +29,29 @@ class JetsonController:
         self.stop_sub = rospy.Subscriber("/input/stop", Empty, self.send_stop_signal)
 
         # Parameters
-        self.max_velocity = rospy.get_param("~max_velocity", 3) / (pi * 8 * 2.54 / 100) # Default is in rev/s, but launch file param must be in m/s
-        self.steer_max_step = rospy.get_param("~steer_max_step", 1600);
+        self.max_velocity = rospy.get_param("~max_velocity", 3) / (
+            pi * 8 * 2.54 / 100
+        )  # Default is in rev/s, but launch file param must be in m/s
+        self.steer_max_step = rospy.get_param("~steer_max_step", 1600)
 
         # Local parameters
         self.is_running = False
 
         rospy.spin()
 
-    def send_start_signal(self, msg : Empty) -> None:
-        """ sets the modus on the value received from res"""
+    def send_start_signal(self, msg: Empty) -> None:
+        """sets the modus on the value received from res"""
         self.is_running = True
 
-    def send_stop_signal(self, msg : Empty) -> None:
-        """ sets the modus on the value received from res, and actually stops Odrive"""
+    def send_stop_signal(self, msg: Empty) -> None:
+        """sets the modus on the value received from res, and actually stops Odrive"""
         # send value to odrive to stop
         self.is_running = False
         self.set_odrive_velocity(0, 1)
         self.set_odrive_velocity(0, 2)
 
     def publish_drive_command(self, msg: ControlCommand) -> None:
-        """Gets called on each ControlCommand
-        """
+        """Gets called on each ControlCommand"""
         if msg.brake > 0 or not self.is_running:
             self.set_odrive_velocity(0, 1)
             self.set_odrive_velocity(0, 2)
@@ -59,7 +61,7 @@ class JetsonController:
         self.set_odrive_velocity(-1 * msg.throttle * self.max_velocity, 2)
 
         self.set_steering_setpoint(msg.steering)
-        
+
     def set_steering_setpoint(self, steering: float) -> None:
         """Sends a CAN message to actuate the steering system
 

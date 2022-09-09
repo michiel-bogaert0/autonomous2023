@@ -72,7 +72,9 @@ class Trajectory:
             if distance < self.minimal_distance:
                 continue
 
-            angle = (np.arctan2(y - current_pos[1], x - current_pos[0]) + np.pi / 2) % (2 * np.pi) - np.pi / 2
+            angle = (np.arctan2(y - current_pos[1], x - current_pos[0]) + np.pi / 2) % (
+                2 * np.pi
+            ) - np.pi / 2
 
             if np.abs(angle - current_angle) > self.max_angle:
                 continue

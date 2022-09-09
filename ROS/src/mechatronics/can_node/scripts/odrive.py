@@ -2,8 +2,7 @@ import can
 import cantools
 import numpy as np
 import rospy
-from geometry_msgs.msg import (Twist, TwistWithCovariance,
-                               TwistWithCovarianceStamped)
+from geometry_msgs.msg import Twist, TwistWithCovariance, TwistWithCovarianceStamped
 
 
 class OdriveConverter:

@@ -17,6 +17,7 @@ RES_ACTIVATION_MSG = can.Message(
 )
 RES_SEND_INTERVAL = 0.1  # ms
 
+
 class CanConverter:
     def __init__(self):
         rospy.init_node("can_converter")
@@ -85,11 +86,14 @@ class CanConverter:
                     self.start_pub.publish(Empty())
                 else:
                     self.stop_pub.publish(Empty())
-                
+
                 if button:
                     self.reset_pub.publish(Empty())
 
-            elif not self.res_activated and rospy.get_time() - self.last_send_time > RES_SEND_INTERVAL:
+            elif (
+                not self.res_activated
+                and rospy.get_time() - self.last_send_time > RES_SEND_INTERVAL
+            ):
                 self.last_send_time = rospy.get_time()
                 self.bus.send(RES_ACTIVATION_MSG)
 

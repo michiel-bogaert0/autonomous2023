@@ -89,7 +89,7 @@ class PIDControlNode(ROSNode):
                 self.current_angle = [0, 0]
                 self.current_angle = 0
 
-                 # Transform received message
+                # Transform received message
                 trans = self.tf_buffer.lookup_transform(
                     self.base_link_frame,
                     self.path.header.frame_id,
@@ -149,7 +149,9 @@ class PIDControlNode(ROSNode):
                     msg.header.stamp = rospy.Time.now()
 
                     msg.pose.position = Point(target_x, target_y, 0)
-                    quat = quaternion_from_euler(0, 0, self.current_angle + self.set_angle)
+                    quat = quaternion_from_euler(
+                        0, 0, self.current_angle + self.set_angle
+                    )
                     msg.pose.orientation = Quaternion(
                         quat[0], quat[1], quat[2], quat[3]
                     )

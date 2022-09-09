@@ -25,10 +25,18 @@ class PID:
             error = PID.pi_to_pi(error)
 
             self.integral = self.integral + error
-            pid = PID.pi_to_pi(self.Kp * error + self.Kd * (error - self.pre_error) + self.Ki * self.integral)
+            pid = PID.pi_to_pi(
+                self.Kp * error
+                + self.Kd * (error - self.pre_error)
+                + self.Ki * self.integral
+            )
         else:
             self.integral = self.integral + error
-            pid = self.Kp * error + self.Kd * (error - self.pre_error) + self.Ki * self.integral
+            pid = (
+                self.Kp * error
+                + self.Kd * (error - self.pre_error)
+                + self.Ki * self.integral
+            )
 
         self.pre_error = error
 
