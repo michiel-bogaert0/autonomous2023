@@ -40,10 +40,10 @@ class ImuConverter:
         )
 
         self.imu_front_frame = rospy.get_param(
-            "~imu/front/frame", "ugr/car_base_link/imu1"
+            "~imu/front/frame", "ugr/car_base_link/imu0"
         )
         self.imu_back_frame = rospy.get_param(
-            "~imu/back/frame", "ugr/car_base_link/imu0"
+            "~imu/back/frame", "ugr/car_base_link/imu1"
         )
 
     def handle_imu_msg(self, msg: can.Message, is_front: bool) -> None:
@@ -74,14 +74,15 @@ class ImuConverter:
 
         # Decode the ID to figure out the type of message
         # We need the middle 4*8 bits of the ID to determine the type of message
+        # IMU reports deg, while ROS expects rad
         cmd_id = (msg.arbitration_id & 0x00FFFF00) >> 8
         if cmd_id == 0xF029:
             # Pitch and roll
             pitch_raw = (msg.data[2] << 16) + (msg.data[1] << 8) + msg.data[0]
-            pitch = (pitch_raw - 8192000) / 32768
+            pitch = (pitch_raw - 8192000) / 32768 * np.pi / 180
 
             roll_raw = (msg.data[5] << 16) + (msg.data[4] << 8) + msg.data[3]
-            roll = (roll_raw - 8192000) / 32768
+            roll = (roll_raw - 8192000) / 32768 * np.pi / 180
 
             imu_msg.orientation = Quaternion(
                 *tf_conversions.transformations.quaternion_from_euler(roll, pitch, 0)
