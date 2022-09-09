@@ -47,15 +47,14 @@ class HeadingEstimation(ROSNode):
         This node estimates the heading based on two GPS's, which must be fairly accurate
 
         Args:
-            max_time_deviation: how much the two messages are allowed to deviate time-wise before calculating heading
             base_link_frame: the base_link_frame of the car
-            rate: the maximal publishing rate of the heading. Can be much less than this value in practice
+            time_offset: the time offset to use when publishing
+            max_distance: the maximal distance between two consecutive points to make it "valid"
+            min_distance: the minimal distance between two consecutive points to make it "valid"
         """
 
         super().__init__("gps_heading_estimation", False)
 
-        self.max_time_deviation = rospy.get_param("~max_time_deviation", 0.05)
-        self.rate = rospy.get_param("~rate", 10)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.averaging_window = rospy.get_param("~averaging_window", 4)
         self.time_offset = rospy.get_param("~time_offset", 0.1)
