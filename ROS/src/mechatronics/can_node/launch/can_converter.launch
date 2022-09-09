@@ -17,5 +17,6 @@
 
         <remap from="/output/start" to="/control/start" />
         <remap from="/output/stop" to="/control/stop" />
+        <remap from="/output/reset" to="/control/reset" />
     </node>
 </launch>
