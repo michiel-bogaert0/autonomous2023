@@ -58,9 +58,9 @@ class PIDControlNode(ROSNode):
             - t_step: the t step the alg takes when progressing through the underlying parametric equations 
                       Indirectly determines how many points are checked per segment. 
         """
-        minimal_distance = rospy.get_param("trajectory/minimal_distance", 1)
-        t_step = rospy.get_param("trajectory/t_step", 0.05)
-        max_angle = rospy.get_param("trajectory/max_angle", 1)
+        minimal_distance = rospy.get_param("~trajectory/minimal_distance", 1)
+        t_step = rospy.get_param("~trajectory/t_step", 0.05)
+        max_angle = rospy.get_param("~trajectory/max_angle", 1)
         self.trajectory = Trajectory(minimal_distance, t_step, max_angle)
 
         self.path = None

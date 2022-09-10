@@ -15,7 +15,6 @@ RES_ACTIVATION_MSG = can.Message(
     data=[0x1, 0x11, 0, 0, 0, 0, 0, 0],
     is_extended_id=False,
 )
-RES_SEND_INTERVAL = 0.1  # ms
 
 
 class CanConverter:
@@ -26,6 +25,8 @@ class CanConverter:
         self.start_pub = rospy.Publisher("/output/start", Empty, queue_size=10)
         self.stop_pub = rospy.Publisher("/output/stop", Empty, queue_size=10)
         self.reset_pub = rospy.Publisher("/output/reset", Empty, queue_size=10)
+
+        self.res_send_interval = rospy.get_param("~res_send_interval", 0.1)  # ms
 
         # The first element is the front IMU, the second is the rear IMU
         self.IMU_IDS = [0xE2, 0xE3]
