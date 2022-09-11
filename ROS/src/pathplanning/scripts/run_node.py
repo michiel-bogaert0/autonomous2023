@@ -4,6 +4,7 @@ import numpy as np
 import rospy
 import tf2_geometry_msgs
 import tf2_ros
+from nav_msgs.msg import Path
 from geometry_msgs.msg import Point, Pose, PoseArray, PoseStamped, Quaternion
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from std_msgs.msg import Header
@@ -140,6 +141,7 @@ class PathPlanning(ROSNode):
             )
 
         self.pub = rospy.Publisher("/output/path", PoseArray, queue_size=10)
+        self.pubStamped = rospy.Publisher("/output/path_stamped", Path, queue_size=10)
 
         AddSubscriber("/input/local_map", 1)(self.receive_new_map)
         self.add_subscribers()
@@ -209,6 +211,16 @@ class PathPlanning(ROSNode):
         output_transformed = self.frametf.pose_transform(output)
 
         self.pub.publish(output_transformed)
+
+        poses_stamped: list(PoseStamped) = []
+        for pose in output_transformed.poses:
+            posestamped: PoseStamped = PoseStamped(pose=pose)
+            posestamped.header.frame_id = header.frame_id
+            posestamped.header.stamp = header.stamp
+
+        stamped_output: Path = Path(header=output_transformed.header, poses=poses_stamped)
+
+        self.pubStamped.publish(stamped_output)
 
 
 node = PathPlanning()
