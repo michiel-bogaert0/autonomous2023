@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-import rospy
-from node_fixture.node_fixture import ROSNode, AddSubscriber
-from std_msgs.msg import Header
-from sensor_msgs.msg import Image
 import numpy as np
-
+import rospy
+from node_fixture.node_fixture import AddSubscriber, ROSNode
+from sensor_msgs.msg import Image
+from std_msgs.msg import Header
 
 """
 A perception publisher should have the following structure:
