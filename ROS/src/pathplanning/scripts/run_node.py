@@ -215,8 +215,8 @@ class PathPlanning(ROSNode):
         poses_stamped: list(PoseStamped) = []
         for pose in output_transformed.poses:
             posestamped: PoseStamped = PoseStamped(pose=pose)
-            posestamped.header.frame_id = header.frame_id
-            posestamped.header.stamp = header.stamp
+            posestamped.header.frame_id = output_transformed.header.frame_id
+            posestamped.header.stamp = output_transformed.header.stamp
 
             poses_stamped += [posestamped]
 
