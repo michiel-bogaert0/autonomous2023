@@ -218,6 +218,8 @@ class PathPlanning(ROSNode):
             posestamped.header.frame_id = header.frame_id
             posestamped.header.stamp = header.stamp
 
+            poses_stamped += [poses_stamped]
+
         stamped_output: Path = Path(header=output_transformed.header, poses=poses_stamped)
 
         self.pubStamped.publish(stamped_output)
