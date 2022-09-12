@@ -1,15 +1,41 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.0.0)
 project(locmap_fastslam)
 
-find_package(catkin REQUIRED rospy)
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  std_msgs
+  visualization_msgs
+  geometry_msgs
+  nav_msgs
+  ugr_msgs
+  tf2
+  tf2_geometry_msgs
+  tf2_ros
+)
+find_package(Boost REQUIRED)
 
-# The standard catkin way of building python modules is used
-catkin_python_setup()
+catkin_package(
+  CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf2 tf2_ros
+)
 
-catkin_package()
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  ${roscpp_INCLUDE_DIRS}
+)
 
-# This custom target is used to invoke the Cython build.
-# When importing the catkin python module it will fallback to the compiled .so files
-ADD_CUSTOM_TARGET(do_always ALL COMMAND ${PROJECT_SOURCE_DIR}/cython_setup.sh)
+include_directories( /usr/include/eigen3 )
 
-include_directories()
+if (CMAKE_COMPILER_IS_GNUCXX)
+	set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -O3")
+endif (CMAKE_COMPILER_IS_GNUCXX)
+
+file(GLOB srcs src/*.cpp include/*.h*)
+
+add_executable(fastslam1 ${srcs})
+
+target_link_libraries(fastslam1
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  )
