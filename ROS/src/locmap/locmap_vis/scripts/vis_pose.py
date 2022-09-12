@@ -3,7 +3,7 @@ import rospy
 from locmap_vis import LocMapVis
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from ugr_msgs.msg import Observations
-
+import time
 
 class VisPose(ROSNode):
     """
@@ -12,7 +12,7 @@ class VisPose(ROSNode):
 
     def __init__(self):
 
-        super().__init__(f"locmap_vis_car_{rospy.Time.now().to_sec()}")
+        super().__init__(f"locmap_vis_car_{time.time()}")
         
         self.blue_cone_model_url = rospy.get_param(
             "~cone_models/blue",

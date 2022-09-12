@@ -3,7 +3,7 @@ import rospy
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from visualization_msgs.msg import Marker, MarkerArray
-
+import time
 
 class VisCar(ROSNode):
     """
@@ -12,7 +12,7 @@ class VisCar(ROSNode):
 
     def __init__(self):
 
-        super().__init__(f"locmap_vis_obs_{rospy.Time.now().to_sec()}")
+        super().__init__(f"locmap_vis_obs_{time.time()}")
         
         self.car_model = rospy.get_param(
             "~car_model",
