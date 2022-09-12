@@ -39,6 +39,8 @@ class PIDControlNode(ROSNode):
 
         self.publish_rate = rospy.get_param("~publish_rate", 10.0)
         self.speed_target = rospy.get_param("~speed/target", 3)
+        self.min_speed = rospy.get_param("~speed/min", 0.3)
+        self.min_corner_speed = rospy.get_param("~speed/min_corner_speed", 0.7)
 
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
@@ -120,12 +122,12 @@ class PIDControlNode(ROSNode):
                     # BRAKE! We don't know where to drive to!
                     rospy.loginfo("No target point found!")
                     self.cmd.brake = 0.0
-                    self.cmd.throttle = 0.3
+                    self.cmd.throttle = self.min_speed
                     self.cmd.steering = 0.0
                 else:
                     # Go ahead and drive
                     self.cmd.brake = 0.0
-                    self.cmd.throttle = max(1 - abs(self.cmd.steering), 0.5)
+                    self.cmd.throttle = max(1 - abs(self.cmd.steering), self.min_corner_speed)
 
                     # Calculate angle
                     self.set_angle = PID.pi_to_pi(
