@@ -9,8 +9,6 @@
 
 #include <Eigen/Dense>
 
-#include "utils.h"
-
 using namespace std;
 using namespace Eigen;
 
