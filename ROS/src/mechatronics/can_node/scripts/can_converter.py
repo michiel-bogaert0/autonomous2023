@@ -93,7 +93,7 @@ class CanConverter:
 
             elif (
                 not self.res_activated
-                and rospy.get_time() - self.last_send_time > RES_SEND_INTERVAL
+                and rospy.get_time() - self.last_send_time > self.res_send_interval
             ):
                 self.last_send_time = rospy.get_time()
                 self.bus.send(RES_ACTIVATION_MSG)

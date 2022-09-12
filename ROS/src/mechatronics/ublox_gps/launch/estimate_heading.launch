@@ -14,7 +14,7 @@
         <remap from="/input/gps1/vel" to="/ugr/car/sensors/gps/ublox/left/vel"/>
         <remap from="/input/gps0/vel" to="/ugr/car/sensors/gps/ublox/right/vel"/>
 
-        <remap from="/output/heading" to="/ugr/car/sensors/heading2"/>
-        <remap from="/output/yaw" to="/ugr/car/sensors/heading2/yaw"/>
+        <remap from="/output/heading" to="/ugr/car/sensors/heading"/>
+        <remap from="/output/yaw" to="/ugr/car/sensors/heading/yaw"/>
     </node>
 </launch>
