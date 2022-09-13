@@ -30,6 +30,8 @@
 #include <ugr_msgs/Observations.h>
 #include <ugr_msgs/Observation.h>
 
+#include <cmath>
+
 using namespace std;
 using namespace Eigen;
 
@@ -532,7 +534,10 @@ namespace slam
       ugr_msgs::Observation global_ob;
       ugr_msgs::Observation local_ob;
 
-      global_ob.observation_class = round((float)filteredMeta[i].classSummation / (float)filteredMeta[i].classSummationCount);
+      float rounded_float = round((float)filteredMeta[i].classSummation / (float)filteredMeta[i].classSummationCount);
+      global_ob.observation_class = uint8_t(rounded_float);
+      local_ob.observation_class = int8_t(rounded_float);
+
       global_ob.location.x = filteredLandmarks[i](0);
       global_ob.location.y = filteredLandmarks[i](1);
       global.observations.push_back(global_ob);
