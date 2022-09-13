@@ -91,7 +91,7 @@ class PathPlanning(ROSNode):
         self.params["plan_dist"] = rospy.get_param("~plan_dist", 12.0)
         # The amount of branches generated
         self.params["max_iter"] = rospy.get_param(
-            "max_iter", 100 if self.params["expand_dist"] == "tri" else 750
+            "~max_iter", 100 if self.params["expand_dist"] == "tri" else 750
         )
 
         # Early prune settings
