@@ -4,7 +4,7 @@ from collections import deque
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Any, Tuple, Type, Union, get_type_hints
+from typing import Any, Tuple, Type, get_type_hints
 
 import enum
 
