@@ -329,6 +329,7 @@
 
         <remap from="/input/local_map" to="/ugr/car/observations/$(arg slamtype)" />
         <remap from="/output/path" to="/pathplanning/path" />
+        <remap from="/output/path_stamped" to="/pathplanning/path_stamped"/>
     </node>
 
 
