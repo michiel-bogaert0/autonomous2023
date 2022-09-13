@@ -6,6 +6,8 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Tuple, Type, Union, get_type_hints
 
+import enum
+
 import cv2
 import numpy as np
 import PyKDL
@@ -322,14 +324,14 @@ class ROSNode:
         """
         return int(rosstamp.__str__()) / 10**9
 
+class DiagnosticStatusEnum(enum.Enum):
+    OK = 0
+    WARN = 1
+    ERROR = 2
+    STALE = 3
 
 def create_diagnostic_message(
-    level: Union[
-        DiagnosticStatus.OK,
-        DiagnosticStatus.WARN,
-        DiagnosticStatus.ERROR,
-        DiagnosticStatus.STALE,
-    ],
+    level: DiagnosticStatusEnum,
     name: String,
     message: String,
 ) -> DiagnosticArray:
@@ -342,7 +344,7 @@ def create_diagnostic_message(
         A DiagnosticArray message
     """
     diag_status = DiagnosticStatus()
-    diag_status.level = DiagnosticStatus.OK
+    diag_status.level = level
     diag_status.name = name
     diag_status.message = message
     diag_array = DiagnosticArray()
