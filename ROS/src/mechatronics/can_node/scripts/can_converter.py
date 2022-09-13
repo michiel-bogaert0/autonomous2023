@@ -77,7 +77,7 @@ class CanConverter:
                     self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
-                            name="CAN converter",
+                            name="CAN converter (ODrive)",
                             message="ODrive message received.",
                         )
                     )
@@ -97,13 +97,20 @@ class CanConverter:
                 self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
-                            name="CAN converter",
+                            name="CAN converter (IMU)",
                             message=f"IMU [{imu_id}] message received.",
                         )
                     )
                 self.imu.handle_imu_msg(msg, imu_id == self.IMU_IDS[0])
 
             if msg.arbitration_id == 0x191:
+                self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="CAN converter (RES)",
+                            message="RES activated.",
+                        )
+                    )
                 self.res_activated = True
 
                 switch = (msg.data[0] & 0b0000010) >> 1
