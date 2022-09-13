@@ -30,6 +30,8 @@
 #include <ugr_msgs/Observations.h>
 #include <ugr_msgs/Observation.h>
 
+#include <cmath>
+
 using namespace std;
 using namespace Eigen;
 
@@ -47,6 +49,7 @@ namespace slam
                                              expected_half_fov(n.param<double>("expected_half_angle", 60 * 0.0174533)),
                                              max_range(n.param<double>("max_range", 15)),
                                              max_half_fov(n.param<double>("max_half_angle", 60 * 0.0174533)),
+                                             observe_dt(n.param<double>("observe_dt", 0.2)),
                                              acceptance_score(n.param<double>("acceptance_score", 3.0)),
                                              penalty_score(n.param<double>("penalty_score", -1)),
                                              minThreshold(n.param<double>("discard_score", -2.0)),
@@ -168,10 +171,6 @@ namespace slam
 
     kdt::KDTree<KDTreePoint> tree(kdtreePoints);
 
-    // Get observation associations (per particle!)
-    // vector<VectorXf> knownLandmarks, newLandmarks;
-    vector<int> knownLandmarksIndices;
-
     for (auto observation : observations.observations)
     {
 
@@ -185,7 +184,8 @@ namespace slam
 
       if (result.index != -1)
       {
-        result.index = tree.nnSearch(query, &(result.distance));
+        int kdpointIndex = tree.nnSearch(query, &(result.distance));
+        result.index = kdtreePoints[kdpointIndex].getId();
       }
 
       if (result.index == -1 || result.distance > this->eps)
@@ -238,6 +238,13 @@ namespace slam
   void FastSLAM1::handleObservations(const ugr_msgs::ObservationsConstPtr &obs)
   {
 
+    // Sometimes let the particle filter spread out
+    chrono::steady_clock::time_point time = chrono::steady_clock::now();
+    bool doObserve = abs(std::chrono::duration_cast<std::chrono::duration<double>>(time - this->prev_time).count()) > this->observe_dt;
+
+    if (doObserve)
+      this->prev_time = time;
+
     // Transform the observations to the base_link frame
 
     std::chrono::steady_clock::time_point t1;
@@ -288,7 +295,7 @@ namespace slam
     geometry_msgs::TransformStamped car_pose;
     try
     {
-      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, obs->header.stamp, ros::Duration(1));
+      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, transformed_obs.header.stamp, ros::Duration(0.1));
     }
     catch (const exception e)
     {
@@ -317,90 +324,104 @@ namespace slam
     time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
     ROS_INFO("Observations preparation took: %f s", time_round);
 
-    t1 = std::chrono::steady_clock::now();
-
-    for (int j = 0; j < particles.size(); j++)
+    if (doObserve)
     {
 
-      Particle &particle = particles[j];
+      t1 = std::chrono::steady_clock::now();
 
-      //---- Predict step -----//
-      this->predict(particle, dDist, dYaw);
-
-      //---- Observe step ----//
-
-      // Get landmark associations (per particle!)
-      vector<VectorXf> knownLms, newLms;
-      vector<int> knownClasses;
-      vector<int> newClasses;
-
-      vector<int> knownObsIndices;
-
-      this->build_associations(particle, transformed_obs, knownLms, newLms, knownObsIndices, knownClasses, newClasses);
-
-      //----- Update step -----//
-
-      newLmsCounts.push_back(newLms.size());
-      if (!newLms.empty())
+      for (int j = 0; j < particles.size(); j++)
       {
 
-        vector<VectorXf> z;
-        this->landmarks_to_observations(newLms, z, particle.xv());
+        Particle &particle = particles[j];
 
-        add_feature(particle, z, this->R, newClasses);
+        //---- Predict step -----//
+        this->predict(particle, dDist, dYaw);
+
+        //---- Observe step ----//
+
+        // Get landmark associations (per particle!)
+        vector<VectorXf> knownLms, newLms;
+        vector<int> knownClasses;
+        vector<int> newClasses;
+
+        vector<int> knownObsIndices;
+
+        this->build_associations(particle, transformed_obs, knownLms, newLms, knownObsIndices, knownClasses, newClasses);
+
+        //----- Update step -----//
+
+        newLmsCounts.push_back(newLms.size());
+        if (!newLms.empty())
+        {
+
+          vector<VectorXf> z;
+          this->landmarks_to_observations(newLms, z, particle.xv());
+
+          add_feature(particle, z, this->R, newClasses);
+        }
+
+        if (!knownLms.empty())
+        {
+
+          vector<VectorXf> z;
+          this->landmarks_to_observations(knownLms, z, particle.xv());
+
+          double w = this->compute_particle_weight(particle, z, knownObsIndices, this->R);
+          particle.setW(particle.w() * w);
+
+          feature_update(particle, z, knownObsIndices, this->R, knownClasses);
+        }
+
+        knownObsIndicesVector.push_back(knownObsIndices);
       }
 
-      if (!knownLms.empty())
+      //---- Resample step ----//
+      resample_particles(this->particles, this->effective_particle_count, 1);
+
+      t2 = std::chrono::steady_clock::now();
+
+      time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
+      ROS_INFO("FastSLAM1.0 took: %f s. That is %f s per particle", time_round, time_round / this->particles.size());
+
+      t1 = std::chrono::steady_clock::now();
+      // Check which cones should have been seen but were not and lower their score
+      for (int k = 0; k < particles.size(); k++)
       {
 
-        vector<VectorXf> z;
-        this->landmarks_to_observations(knownLms, z, particle.xv());
+        Particle &particle = particles[k];
+        vector<int> &indices = knownObsIndicesVector[k];
 
-        double w = this->compute_particle_weight(particle, z, knownObsIndices, this->R);
-        particle.setW(particle.w() * w);
+        vector<VectorXf> zs;
+        this->landmarks_to_observations(particle.xf(), zs, particle.xv());
 
-        feature_update(particle, z, knownObsIndices, this->R, knownClasses);
+        for (int i = 0; i < zs.size() - newLmsCounts[k]; i++)
+        {
+          if (zs[i](0) < this->expected_range && abs(zs[i](1)) < this->expected_half_fov && count(indices.begin(), indices.end(), i) == 0)
+          {
+            LandmarkMetadata meta = particle.metadata()[i];
+            meta.score += penalty_score;
+            particle.setMetadatai(i, meta);
+          }
+        }
       }
+      t2 = std::chrono::steady_clock::now();
 
-      knownObsIndicesVector.push_back(knownObsIndices);
+      time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
+      ROS_INFO("FP Filter took %f s. That is %f s per particle", time_round, time_round / this->particles.size());
     }
+    else
+    {
+      for (int j = 0; j < particles.size(); j++)
+      {
+        Particle &particle = particles[j];
 
-    //---- Resample step ----//
-    resample_particles(this->particles, this->effective_particle_count, 1);
+        //---- Predict step -----//
+        this->predict(particle, dDist, dYaw);
+      }
+    }
 
     // Finalizing
     this->prev_state = {x, y, yaw};
-
-    t2 = std::chrono::steady_clock::now();
-
-    time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-    ROS_INFO("FastSLAM1.0 took: %f s. That is %f s per particle", time_round, time_round / this->particles.size());
-
-    t1 = std::chrono::steady_clock::now();
-    // Check which cones should have been seen but were not and lower their score
-    for (int k = 0; k < particles.size(); k++)
-    {
-
-      Particle &particle = particles[k];
-      vector<int> &indices = knownObsIndicesVector[k];
-
-      vector<VectorXf> zs;
-      this->landmarks_to_observations(particle.xf(), zs, particle.xv());
-
-      for (int i = 0; i < zs.size() - newLmsCounts[k]; i++)
-      {
-        if (zs[i](0) < this->expected_range && abs(zs[i](1)) < this->expected_half_fov && count(indices.begin(), indices.end(), i) == 0)
-        {
-          LandmarkMetadata meta = particle.metadata()[i];
-          meta.score += penalty_score;
-          particle.setMetadatai(i, meta);
-        }
-      }
-    }
-    t2 = std::chrono::steady_clock::now();
-
-    time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-    ROS_INFO("FP Filter took %f s. That is %f s per particle", time_round, time_round / this->particles.size());
 
     // Done ! Now produce the output
     this->publishOutput();
@@ -426,57 +447,35 @@ namespace slam
     float y = 0.0;
     float yaw = 0.0;
     float totalW = 0.0;
-    for (auto particle : this->particles)
+    float maxW = -10000.0;
+    Particle &bestParticle = this->particles[0];
+    for (int i = 0; i < this->particles.size(); i++)
     {
 
+      Particle &particle = this->particles[i];
+
       float w = particle.w();
+
+      if (isnan(w) || w < 0.001)
+      {
+        w = 0.001;
+      }
+
       totalW += w;
 
       x += particle.xv()(0) * w;
       y += particle.xv()(1) * w;
       yaw += particle.xv()(2) * w;
 
-      if (particle.xf().size() >= lmMeans.size())
+      if (w > maxW)
       {
-
-        int oldSize = lmMeans.size();
-
-        for (int i = oldSize; i < particle.xf().size(); i++)
-        {
-
-          VectorXf initial(2);
-          initial << 0.0, 0.0;
-          lmMeans.push_back(initial);
-        }
-
-        lmTotalWeight.resize(particle.xf().size() + 1);
-        lmMetadatas.resize(particle.xf().size() + 1);
-        contributions.resize(particle.xf().size() + 1);
-      }
-
-      for (int i = 0; i < particle.xf().size(); i++)
-      {
-        lmMeans[i](0) += particle.xf()[i](0); // * w;
-        lmMeans[i](1) += particle.xf()[i](1); // * w;
-        lmTotalWeight[i] += w;
-
-        LandmarkMetadata meta = particle.metadata()[i];
-
-        lmMetadatas[i].score += meta.score;
-        lmMetadatas[i].classSummation += meta.classSummation;
-        lmMetadatas[i].classSummationCount += meta.classSummationCount;
-
-        contributions[i] += 1;
+        maxW = w;
+        bestParticle = particle;
       }
     }
 
-    for (int i = 0; i < lmMeans.size(); i++)
-    {
-      lmMeans[i](0) /= contributions[i];
-      lmMeans[i](1) /= contributions[i];
-
-      lmMetadatas[i].score /= contributions[i];
-    }
+    lmMeans = bestParticle.xf();
+    lmMetadatas = bestParticle.metadata();
 
     VectorXf pose(3);
     pose << x / totalW, y / totalW, yaw / totalW;
@@ -521,7 +520,10 @@ namespace slam
       ugr_msgs::Observation global_ob;
       ugr_msgs::Observation local_ob;
 
-      global_ob.observation_class = round((float)filteredMeta[i].classSummation / (float)filteredMeta[i].classSummationCount);
+      float rounded_float = round((float)filteredMeta[i].classSummation / (float)filteredMeta[i].classSummationCount);
+      global_ob.observation_class = uint8_t(rounded_float);
+      local_ob.observation_class = int8_t(rounded_float);
+
       global_ob.location.x = filteredLandmarks[i](0);
       global_ob.location.y = filteredLandmarks[i](1);
       global.observations.push_back(global_ob);

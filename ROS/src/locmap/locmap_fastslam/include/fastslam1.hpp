@@ -40,6 +40,7 @@ namespace slam
       int particle_count;
       double penalty_score;
       int effective_particle_count;
+      double observe_dt;
       double eps;
 
       double minThreshold;
@@ -85,6 +86,8 @@ namespace slam
 
       // Other stuff
       array<double, 3> prev_state; // x, y, yaw
+
+      chrono::steady_clock::time_point  prev_time;
 
       vector<Particle> particles; 
 
