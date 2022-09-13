@@ -24,7 +24,7 @@ class CanConverter:
         rospy.init_node("can_converter")
 
         self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)
-        self.diagnostics = rospy.Publisher("/diagnostics", DiagnosticArray)
+        self.diagnostics = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
         self.start_pub = rospy.Publisher("/output/start", Empty, queue_size=10)
         self.stop_pub = rospy.Publisher("/output/stop", Empty, queue_size=10)
         self.reset_pub = rospy.Publisher("/output/reset", Empty, queue_size=10)
