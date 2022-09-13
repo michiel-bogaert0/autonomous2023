@@ -105,7 +105,8 @@ class LocMapVis:
         observations: Observations,
         namespace,
         lifetime,
-        persist=False
+        persist=False,
+        use_cones=True
     ):
         """
         Takes in an Observations message and produces the corresponding MarkerArary message
@@ -115,6 +116,7 @@ class LocMapVis:
             namespace: the namespace of the MarkerArray
             lifetime: the lifetime of the markers
             persist: set to true if the markers need to persist (this is different than lifetime=0)
+            use_cones: if True, uses cone models, otherwise cyllinders
 
         Returns:
             MakerArray message
@@ -128,10 +130,20 @@ class LocMapVis:
             marker.header = observations.header
             marker.ns = namespace
 
-            marker.type = Marker.MESH_RESOURCE
+            if use_cones:
+                marker.type = Marker.MESH_RESOURCE
+                marker.scale.x = 1
+                marker.scale.y = 1
+                marker.scale.z = 1
 
-            marker.mesh_resource = self.cones[obs.observation_class]
-            marker.mesh_use_embedded_materials = True
+                marker.mesh_resource = self.cones[obs.observation_class]
+                marker.mesh_use_embedded_materials = True
+            else:
+                marker.type = Marker.CYLINDER
+                marker.scale.x = 0.3
+                marker.scale.y = 0.3
+                marker.scale.z = 0.02
+            
             
             marker.color.a = 1
 
@@ -149,10 +161,6 @@ class LocMapVis:
             marker.pose.orientation.w = 1.0
             marker.pose.position.x = obs.location.x 
             marker.pose.position.y = obs.location.y
-
-            marker.scale.x = 1
-            marker.scale.y = 1
-            marker.scale.z = 1
 
             marker.lifetime = rospy.Duration(lifetime)
 
