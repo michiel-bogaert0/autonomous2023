@@ -1,4 +1,4 @@
-./requirements.txt
+-r ./requirements.txt
 
 ../autonomous2023_binaries/modules/neoapi-1.1.1-py38-none-any.whl
 
