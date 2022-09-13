@@ -540,7 +540,7 @@ namespace slam
     nav_msgs::Odometry odom;
 
     odom.header.stamp = ros::Time::now();
-    odom.header.frame_id = this->world_frame;
+    odom.header.frame_id = this->slam_world_frame;
     odom.child_frame_id = this->base_link_frame;
 
     odom.pose.pose.position.x = pose(0);
