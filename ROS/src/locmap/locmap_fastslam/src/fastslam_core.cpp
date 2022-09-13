@@ -681,7 +681,7 @@ void resample_particles(vector<Particle> &particles, int Nmin, int doresample)
         particles[i].setW(w(i) / ws);
     }
 
-    float Neff = 0;
+    float Neff = 0.0;
     vector<int> keep;
 
     stratified_resample(w, keep, Neff);
@@ -747,7 +747,7 @@ void stratified_resample(VectorXf w, vector<int> &keep, float &Neff)
         w(i) = w(i) / w_sum;
         wsqrd(i) = pow(w(i), 2);
     }
-    Neff = 1 / wsqrd.sum();
+    Neff = 1.0 / (float) wsqrd.sum();
 
     int len = w.size();
     keep.resize(len);

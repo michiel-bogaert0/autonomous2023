@@ -430,6 +430,12 @@ namespace slam
     {
 
       float w = particle.w();
+
+      if (isnan(w) || w < 0.001)
+      {
+        w = 0.001;
+      }
+
       totalW += w;
 
       x += particle.xv()(0) * w;
@@ -456,8 +462,13 @@ namespace slam
 
       for (int i = 0; i < particle.xf().size(); i++)
       {
-        lmMeans[i](0) += particle.xf()[i](0); // * w;
-        lmMeans[i](1) += particle.xf()[i](1); // * w;
+        if (isnan(w) || w < 0.001)
+        {
+          w = 0.001;
+        }
+
+        lmMeans[i](0) += particle.xf()[i](0) * w;
+        lmMeans[i](1) += particle.xf()[i](1) * w;
         lmTotalWeight[i] += w;
 
         LandmarkMetadata meta = particle.metadata()[i];
@@ -472,8 +483,8 @@ namespace slam
 
     for (int i = 0; i < lmMeans.size(); i++)
     {
-      lmMeans[i](0) /= contributions[i];
-      lmMeans[i](1) /= contributions[i];
+      lmMeans[i](0) /= lmTotalWeight[i];
+      lmMeans[i](1) /= lmTotalWeight[i];
 
       lmMetadatas[i].score /= contributions[i];
     }
