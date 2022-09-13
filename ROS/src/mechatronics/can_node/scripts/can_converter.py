@@ -7,8 +7,10 @@ import numpy as np
 import rospy
 from std_msgs.msg import Empty
 from can_msgs.msg import Frame
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from imu import ImuConverter
 from odrive import OdriveConverter
+from node_fixture.node_fixture import create_diagnostic_message
 
 RES_ACTIVATION_MSG = can.Message(
     arbitration_id=0x000,
@@ -22,6 +24,7 @@ class CanConverter:
         rospy.init_node("can_converter")
 
         self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)
+        self.diagnostics = rospy.Publisher("/diagnostics", DiagnosticArray)
         self.start_pub = rospy.Publisher("/output/start", Empty, queue_size=10)
         self.stop_pub = rospy.Publisher("/output/stop", Empty, queue_size=10)
         self.reset_pub = rospy.Publisher("/output/reset", Empty, queue_size=10)
@@ -71,11 +74,33 @@ class CanConverter:
                 cmd_id = msg.arbitration_id & 0b11111
 
                 if cmd_id == 9:
+                    self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="CAN converter",
+                            message="ODrive message received.",
+                        )
+                    )
                     self.odrive.handle_odrive_vel_msg(msg, axis_id, cmd_id)
                     continue
 
             imu_id = msg.arbitration_id & 0xFF
             if imu_id in self.IMU_IDS:
+                status = msg.data[6]
+                # Check for errors
+                if status != 0x00:
+                    rospy.logerr(
+                        f"Message (id {msg.arbitration_id}) contained errors, status: {status}"
+                    )
+                    continue
+
+                self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="CAN converter",
+                            message=f"IMU [{imu_id}] message received.",
+                        )
+                    )
                 self.imu.handle_imu_msg(msg, imu_id == self.IMU_IDS[0])
 
             if msg.arbitration_id == 0x191:

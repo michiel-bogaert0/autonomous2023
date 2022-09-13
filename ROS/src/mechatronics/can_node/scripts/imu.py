@@ -53,14 +53,6 @@ class ImuConverter:
             msg: the CAN message
             is_front: whether the message came from the front IMU or not
         """
-        status = msg.data[6]
-        # Check for errors
-        if status != 0x00:
-            rospy.logerr(
-                f"Message (id {msg.arbitration_id}) contained errors, status: {status}"
-            )
-            return
-
         imu_msg = Imu()
 
         latency = msg.data[7]

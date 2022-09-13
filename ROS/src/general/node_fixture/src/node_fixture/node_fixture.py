@@ -4,7 +4,7 @@ from collections import deque
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Any, Tuple, Type, get_type_hints
+from typing import Any, Tuple, Type, Union, get_type_hints
 
 import cv2
 import numpy as np
@@ -18,11 +18,11 @@ from fs_msgs.msg import Cone
 from geometry_msgs.msg import TransformStamped
 from rospy.impl.tcpros import DEFAULT_BUFF_SIZE, get_tcpros_handler
 from rospy.rostime import Time
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from tf2_kdl import transform_to_kdl
-from ugr_msgs.msg import (BoundingBox, Map, Observation, Observations,
-                          PerceptionUpdate)
+from ugr_msgs.msg import BoundingBox, Map, Observation, Observations, PerceptionUpdate
 
 
 @dataclass
@@ -320,4 +320,32 @@ class ROSNode:
         Converts a ROS stamp object to a float number
         Basically combines secs and nsecs properties together
         """
-        return int(rosstamp.__str__()) / 10 ** 9
+        return int(rosstamp.__str__()) / 10**9
+
+
+def create_diagnostic_message(
+    level: Union[
+        DiagnosticStatus.OK,
+        DiagnosticStatus.WARN,
+        DiagnosticStatus.ERROR,
+        DiagnosticStatus.STALE,
+    ],
+    name: String,
+    message: String,
+) -> DiagnosticArray:
+    """Creates a DiagnosticArray message with a level, name and message
+
+    Args:
+        As defined in the DiagnosticArray
+
+    Returns:
+        A DiagnosticArray message
+    """
+    diag_status = DiagnosticStatus()
+    diag_status.level = DiagnosticStatus.OK
+    diag_status.name = name
+    diag_status.message = message
+    diag_array = DiagnosticArray()
+    diag_array.status.append(diag_status)
+
+    return diag_array
