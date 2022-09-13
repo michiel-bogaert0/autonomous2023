@@ -1,5 +1,5 @@
-from sensor_msgs.msg import Image
 import numpy as np
+from sensor_msgs.msg import Image
 
 
 def np_to_ros_image(self, arr: np.ndarray) -> Image:

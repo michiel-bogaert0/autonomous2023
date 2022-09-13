@@ -5,18 +5,31 @@ import can
 import cantools
 import numpy as np
 import rospy
+from std_msgs.msg import Empty
 from can_msgs.msg import Frame
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from imu import ImuConverter
 from odrive import OdriveConverter
 from node_fixture.node_fixture import create_diagnostic_message
 
+RES_ACTIVATION_MSG = can.Message(
+    arbitration_id=0x000,
+    data=[0x1, 0x11, 0, 0, 0, 0, 0, 0],
+    is_extended_id=False,
+)
+
 
 class CanConverter:
     def __init__(self):
         rospy.init_node("can_converter")
-        self.can_pub = rospy.Publisher("/output/can", Frame)
+
+        self.can_pub = rospy.Publisher("/output/can", Frame, queue_size=10)
         self.diagnostics = rospy.Publisher("/diagnostics", DiagnosticArray)
+        self.start_pub = rospy.Publisher("/output/start", Empty, queue_size=10)
+        self.stop_pub = rospy.Publisher("/output/stop", Empty, queue_size=10)
+        self.reset_pub = rospy.Publisher("/output/reset", Empty, queue_size=10)
+
+        self.res_send_interval = rospy.get_param("~res_send_interval", 0.1)  # ms
 
         # The first element is the front IMU, the second is the rear IMU
         self.IMU_IDS = [0xE2, 0xE3]
@@ -31,6 +44,11 @@ class CanConverter:
         # Create the right converters
         self.odrive = OdriveConverter()
         self.imu = ImuConverter()
+
+        # Activate the RES signals
+        self.res_activated = False
+        self.last_send_time = rospy.get_time()
+        self.bus.send(RES_ACTIVATION_MSG)
 
         try:
             self.listen_on_can()
@@ -84,6 +102,26 @@ class CanConverter:
                         )
                     )
                 self.imu.handle_imu_msg(msg, imu_id == self.IMU_IDS[0])
+
+            if msg.arbitration_id == 0x191:
+                self.res_activated = True
+
+                switch = (msg.data[0] & 0b0000010) >> 1
+                button = (msg.data[0] & 0b0000100) >> 2
+                if switch:
+                    self.start_pub.publish(Empty())
+                else:
+                    self.stop_pub.publish(Empty())
+
+                if button:
+                    self.reset_pub.publish(Empty())
+
+            elif (
+                not self.res_activated
+                and rospy.get_time() - self.last_send_time > self.res_send_interval
+            ):
+                self.last_send_time = rospy.get_time()
+                self.bus.send(RES_ACTIVATION_MSG)
 
             # Check for external shutdown
             if rospy.is_shutdown():

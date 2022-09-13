@@ -2,8 +2,7 @@ import can
 import cantools
 import numpy as np
 import rospy
-from geometry_msgs.msg import (Twist, TwistWithCovariance,
-                               TwistWithCovarianceStamped)
+from geometry_msgs.msg import Twist, TwistWithCovariance, TwistWithCovarianceStamped
 
 
 class OdriveConverter:
@@ -65,54 +64,3 @@ class OdriveConverter:
             self.vel_right.publish(twist_msg)
         elif axis_id == 2:
             self.vel_left.publish(twist_msg)
-
-
-class OdriveController:
-    def __init__(self, bus=None):
-        rospy.init_node("odrive_controller")
-
-        self.bus = bus
-        self.odrive_db = cantools.database.load_file(
-            rospy.get_param("~odrive_dbc", "../odrive.dbc")
-        )
-
-        # Test code
-        for i in range(100):
-            self.publish_torque_command(i / 100, 1)
-            self.publish_torque_command(i / 100, 2)
-
-    def publish_torque_command(self, torque: float, axis: int) -> None:
-        """Publishes a drive command with a given torque to the ODrive
-
-        Args:
-            torque: the requested torque
-            axis: 1 is right, 2 is left
-        """
-        if self.bus is None:
-            rospy.logerr(
-                "The ODrive package was not configured to send messages, please run it as a separate node."
-            )
-            return
-
-        torque_msg = self.odrive_db.get_message_by_name("Set_Input_Torque")
-        data = torque_msg.encode({"Input_Torque": torque})
-
-        can_id = axis << 5 | 0xE
-
-        self.bus.send(
-            can.Message(arbitration_id=can_id, data=data, is_extended_id=False)
-        )
-
-
-if __name__ == "__main__":
-    try:
-        # create a bus instance
-        bus = can.interface.Bus(
-            bustype="socketcan",
-            channel=rospy.get_param("~interface", "can0"),
-            bitrate=rospy.get_param("~baudrate", 250000),
-        )
-
-        odc = OdriveController(bus)
-    except rospy.ROSInterruptException:
-        pass
