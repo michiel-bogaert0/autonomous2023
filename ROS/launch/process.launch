@@ -247,48 +247,45 @@
         </node>
 
         <node pkg="locmap_vis" output="screen" type="vis_car.py" name="fdlksjafldskjflakdjfklsja">
-            <param name="namespace" value="$(arg slamtype)/car"/>
+            <param name="namespace" value="$(arg slamtype)/car" />
 
             <remap from="/input/vis" to="/ugr/car/odometry/filtered/odom" />
-            <remap from="/output/vis" to="/vis/car" />
+            <remap from="/output/vis" to="/vis/locmap" />
         </node>
     </group>
 
     <group if="$(eval arg('slamtype') == 'fastslam')">
 
-        <launch>
-            <node pkg="locmap_fastslam" output="screen" type="fastslam1" name="local_fastslam_car" respawn="False">
-                # Parameters
-                <param name="world_frame" value="ugr/car_odom" />
-                <param name="base_link_frame" value="ugr/car_base_link" />
-                <param name="slam_world_frame" value="ugr/slam_odom" />
-            
-                <param name="particle_count" value="100" />
-                <param name="effective_particle_count" value="100" />
-                <param name="eps" value="1.5" />
-                <param name="max_range" value="15" />
-                <param name="max_half_angle" value="1.5" />
-                <param name="expected_range" value="15" />
-                <param name="expected_half_angle" value="1.5" />
-                <param name="observe_dt" value="0.2"/>
-            
-                <rosparam param="measurement_covariance">[0.4, 0.0, 0.0, 0.1]</rosparam>
-                <rosparam param="input_noise">[0.1, 0.0, 0.0, 0.02]</rosparam>
-                <param name="acceptance_score" value="5.0" />
-                <param name="penalty_score" value="-0.2" />
-                <param name="discard_score" value="-2.0" />
-                # Input/output remapping
-                <remap from="/input/observations" to="/lidar/perception/observations" />
-            
-                <remap from="/output/observations" to="/ugr/car/observations/fastslam" />
-                <remap from="/output/map" to="/ugr/car/map/fastslam" />
-                <remap from="/output/odom" to="/ugr/car/odometry/filtered/fastslam" />
-            </node>
-        </launch>
+        <node pkg="locmap_fastslam" output="screen" type="fastslam1" name="local_fastslam_car" respawn="False">
+            # Parameters
+            <param name="world_frame" value="ugr/car_odom" />
+            <param name="base_link_frame" value="ugr/car_base_link" />
+            <param name="slam_world_frame" value="ugr/slam_odom" />
 
+            <param name="particle_count" value="100" />
+            <param name="effective_particle_count" value="100" />
+            <param name="eps" value="1.5" />
+            <param name="max_range" value="15" />
+            <param name="max_half_angle" value="1.5" />
+            <param name="expected_range" value="15" />
+            <param name="expected_half_angle" value="1.5" />
+            <param name="observe_dt" value="0.2" />
+
+            <rosparam param="measurement_covariance">[0.4, 0.0, 0.0, 0.1]</rosparam>
+            <rosparam param="input_noise">[0.1, 0.0, 0.0, 0.02]</rosparam>
+            <param name="acceptance_score" value="5.0" />
+            <param name="penalty_score" value="-0.2" />
+            <param name="discard_score" value="-2.0" />
+            # Input/output remapping
+            <remap from="/input/observations" to="/lidar/perception/observations" />
+
+            <remap from="/output/observations" to="/ugr/car/observations/fastslam" />
+            <remap from="/output/map" to="/ugr/car/map/fastslam" />
+            <remap from="/output/odom" to="/ugr/car/odometry/filtered/fastslam" />
+        </node>
         <node pkg="locmap_vis" output="screen" type="vis_car.py" name="fdlksjafldskjflakdjfklsja">
-            <param name="namespace" value="$(arg slamtype)/car"/>
-            
+            <param name="namespace" value="$(arg slamtype)/car" />
+
             <remap from="/input/vis" to="/ugr/car/odometry/filtered/fastslam" />
             <remap from="/output/vis" to="/vis/locmap" />
         </node>
@@ -300,7 +297,7 @@
     <node pkg="locmap_vis" output="screen" name="vis_obs" type="vis_obs.py">
 
         <param name="use_cones" value="true" />
-        <param name="namespace" value="$(arg slamtype)/observations"/>
+        <param name="namespace" value="$(arg slamtype)/observations" />
 
         <remap from="/input/vis" to="/ugr/car/observations/$(arg slamtype)" />
         <remap from="/output/vis" to="/vis/locmap" />
@@ -308,7 +305,7 @@
     <node pkg="locmap_vis" output="screen" name="vis_map" type="vis_obs.py">
 
         <param name="use_cones" value="true" />
-        <param name="namespace" value="$(arg slamtype)/map"/>
+        <param name="namespace" value="$(arg slamtype)/map" />
 
         <remap from="/input/vis" to="/ugr/car/map/$(arg slamtype)" />
         <remap from="/output/vis" to="/vis/locmap" />
