@@ -4,7 +4,7 @@ from collections import deque
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Any, Literal, Tuple, Type, get_type_hints
+from typing import Any, Tuple, Type, Union, get_type_hints
 
 import cv2
 import numpy as np
@@ -324,7 +324,12 @@ class ROSNode:
 
 
 def create_diagnostic_message(
-    level: Literal[0],
+    level: Union[
+        DiagnosticStatus.OK,
+        DiagnosticStatus.WARN,
+        DiagnosticStatus.ERROR,
+        DiagnosticStatus.STALE,
+    ],
     name: String,
     message: String,
 ) -> DiagnosticArray:
