@@ -343,8 +343,8 @@ def create_diagnostic_message(
     """
     diag_status = DiagnosticStatus()
     diag_status.level = DiagnosticStatus.OK
-    diag_status.name = "CAN converter"
-    diag_status.message = "ODrive message received"
+    diag_status.name = name
+    diag_status.message = message
     diag_array = DiagnosticArray()
     diag_array.status.append(diag_status)
 
