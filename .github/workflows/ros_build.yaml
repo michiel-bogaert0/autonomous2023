@@ -47,7 +47,6 @@ jobs:
               run: |
                   source /opt/ros/$ROS_DISTRO/setup.bash
                   cd ROS
-                  sudo chmod 755 src/locmap/locmap_fastslam/cython_setup.sh
                   catkin config --install --cmake-args -DCMAKE_BUILD_TYPE=Release -DSETUPTOOLS_DEB_LAYOUT=OFF
                   catkin build --no-status
                   source devel/setup.bash
