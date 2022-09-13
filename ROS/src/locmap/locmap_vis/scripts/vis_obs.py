@@ -16,6 +16,8 @@ class VisObs(ROSNode):
             blue_cone_model_url: url to blue cone model
             yellow_cone_model_url: url to yellow cone model
             use_cones: if True, uses cone models, otherwise uses cyllinders
+            vis_namespace: the namespace to use 
+            vis_lifetime: how long a marker should stay alive
         """
         super().__init__(f"locmap_vis_obs_{time.time()}")
         
@@ -33,7 +35,6 @@ class VisObs(ROSNode):
         self.vis_namespace = rospy.get_param("~namespace", "locmap_vis")
         self.vis_lifetime = rospy.get_param("~lifetime", 3)
         
-        self.vis_sample_color = rospy.get_param("~sample_color", "g")
         self.vis_handler = LocMapVis(
             [self.blue_cone_model_url, self.yellow_cone_model_url]
         )
