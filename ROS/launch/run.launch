@@ -1,0 +1,5 @@
+<launch>
+    <include file="/home/ugentracing/autonomous2023/ROS/launch/capture.launch" pass_all_args="true"/>
+    <include file="/home/ugentracing/autonomous2023/ROS/launch/process.launch" pass_all_args="true"/>
+    <include file="/home/ugentracing/autonomous2023/ROS/launch/control.launch" pass_all_args="true"/>
+</launch>
