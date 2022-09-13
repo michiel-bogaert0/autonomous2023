@@ -3,16 +3,22 @@ import rospy
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from visualization_msgs.msg import Marker, MarkerArray
-
+import time
 
 class VisCar(ROSNode):
     """
-    This node connects locmap to other nodes when a simple remap is not enough.
+    This node visualises a pose (nav_msgs/Odometry) with a car model
     """
 
     def __init__(self):
+        """
+        Args:
+            car_model: url to car model
+            vis_namespace: the namespace to use 
+            vis_lifetime: how long a marker should stay alive
+        """
 
-        super().__init__(f"locmap_vis_obs_{rospy.Time.now().to_sec()}")
+        super().__init__(f"locmap_vis_obs_{time.time()}")
         
         self.car_model = rospy.get_param(
             "~car_model",
@@ -24,6 +30,11 @@ class VisCar(ROSNode):
 
     @AddSubscriber("/input/vis")
     def handleOdom(self, msg: Odometry):
+        """Handles nav_msgs/Odometry message
+
+        Args:
+            msg (Odometry): the message to visualise
+        """
     
         marker_array = MarkerArray()
 

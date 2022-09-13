@@ -116,6 +116,7 @@ class LocMapVis:
             namespace: the namespace of the MarkerArray
             lifetime: the lifetime of the markers
             persist: set to true if the markers need to persist (this is different than lifetime=0)
+            use_cones: if True, uses cone models, otherwise cyllinders
 
         Returns:
             MakerArray message

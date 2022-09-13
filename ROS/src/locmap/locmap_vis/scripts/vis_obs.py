@@ -3,16 +3,23 @@ import rospy
 from locmap_vis import LocMapVis
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from ugr_msgs.msg import Observations
+import time
 
-
-class VisPose(ROSNode):
+class VisObs(ROSNode):
     """
-    This node connects locmap to other nodes when a simple remap is not enough.
+    This node visualises ugr_msgs/Observations (both local and global, doesn't matter)
     """
 
     def __init__(self):
-
-        super().__init__(f"locmap_vis_car_{rospy.Time.now().to_sec()}")
+        """
+        Args:
+            blue_cone_model_url: url to blue cone model
+            yellow_cone_model_url: url to yellow cone model
+            use_cones: if True, uses cone models, otherwise uses cyllinders
+            vis_namespace: the namespace to use 
+            vis_lifetime: how long a marker should stay alive
+        """
+        super().__init__(f"locmap_vis_obs_{time.time()}")
         
         self.blue_cone_model_url = rospy.get_param(
             "~cone_models/blue",
@@ -28,19 +35,23 @@ class VisPose(ROSNode):
         self.vis_namespace = rospy.get_param("~namespace", "locmap_vis")
         self.vis_lifetime = rospy.get_param("~lifetime", 3)
         
-        self.vis_sample_color = rospy.get_param("~sample_color", "g")
         self.vis_handler = LocMapVis(
             [self.blue_cone_model_url, self.yellow_cone_model_url]
         )
 
     @AddSubscriber("/input/vis")
-    def handleOdom(self, msg: Observations):
+    def handleObs(self, msg: Observations):
+        """Handles ugr_mgs/Observations message
+
+        Args:
+            msg (Observations): the message to visualise
+        """
     
         marker_array = self.vis_handler.observations_to_markerarray(
-            msg, self.vis_namespace + "/observations", 0, False, self.use_cones
+            msg, self.vis_namespace, 0, False, self.use_cones
         )
         
         self.publish("/output/vis", marker_array)
 
-node = VisPose()
+node = VisObs()
 node.start()
