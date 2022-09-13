@@ -1,4 +1,7 @@
 <launch>
+    <!-- ! Pure mapping: ugr/car_odom 
+         ! SLAM: ugr/slam_odom
+    -->
     <arg name="reference_frame" default="ugr/car_odom"/>
     
     <node pkg="pid_car_control" type="run.py" name="pid_car_control" output="screen" respawn="true">
