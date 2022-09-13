@@ -1003,7 +1003,7 @@ LandmarkSearchResult Particle::searchClosestLandmark(VectorXf &lm, double minThr
     const int index = tree.nnSearch(query, &distance);
 
     return {
-        index : index,
+        index : kdtreePoints[index].getId(),
         distance : distance
     };
 }

@@ -170,9 +170,6 @@ namespace slam
 
     kdt::KDTree<KDTreePoint> tree(kdtreePoints);
 
-    // Get observation associations (per particle!)
-    // vector<VectorXf> knownLandmarks, newLandmarks;
-    vector<int> knownLandmarksIndices;
 
     for (auto observation : observations.observations)
     {
@@ -187,7 +184,8 @@ namespace slam
 
       if (result.index != -1)
       {
-        result.index = tree.nnSearch(query, &(result.distance));
+        int kdpointIndex = tree.nnSearch(query, &(result.distance));
+        result.index = kdtreePoints[kdpointIndex].getId();
       }
 
       if (result.index == -1 || result.distance > this->eps)
@@ -290,7 +288,7 @@ namespace slam
     geometry_msgs::TransformStamped car_pose;
     try
     {
-      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, obs->header.stamp, ros::Duration(1));
+      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, transformed_obs.header.stamp, ros::Duration(0.1));
     }
     catch (const exception e)
     {
@@ -428,8 +426,12 @@ namespace slam
     float y = 0.0;
     float yaw = 0.0;
     float totalW = 0.0;
-    for (auto particle : this->particles)
+    float maxW = -10000.0;
+    Particle& bestParticle = this->particles[0];
+    for (int i = 0; i < this->particles.size(); i++)
     {
+
+      Particle& particle = this->particles[i];
 
       float w = particle.w();
 
@@ -444,52 +446,14 @@ namespace slam
       y += particle.xv()(1) * w;
       yaw += particle.xv()(2) * w;
 
-      if (particle.xf().size() >= lmMeans.size())
-      {
-
-        int oldSize = lmMeans.size();
-
-        for (int i = oldSize; i < particle.xf().size(); i++)
-        {
-
-          VectorXf initial(2);
-          initial << 0.0, 0.0;
-          lmMeans.push_back(initial);
-        }
-
-        lmTotalWeight.resize(particle.xf().size() + 1);
-        lmMetadatas.resize(particle.xf().size() + 1);
-        contributions.resize(particle.xf().size() + 1);
-      }
-
-      for (int i = 0; i < particle.xf().size(); i++)
-      {
-        if (isnan(w) || w < 0.001)
-        {
-          w = 0.001;
-        }
-
-        lmMeans[i](0) += particle.xf()[i](0) * w;
-        lmMeans[i](1) += particle.xf()[i](1) * w;
-        lmTotalWeight[i] += w;
-
-        LandmarkMetadata meta = particle.metadata()[i];
-
-        lmMetadatas[i].score += meta.score;
-        lmMetadatas[i].classSummation += meta.classSummation;
-        lmMetadatas[i].classSummationCount += meta.classSummationCount;
-
-        contributions[i] += 1;
+      if (w > maxW) {
+        maxW = w;
+        bestParticle = particle;
       }
     }
 
-    for (int i = 0; i < lmMeans.size(); i++)
-    {
-      lmMeans[i](0) /= lmTotalWeight[i];
-      lmMeans[i](1) /= lmTotalWeight[i];
-
-      lmMetadatas[i].score /= contributions[i];
-    }
+    lmMeans = bestParticle.xf();
+    lmMetadatas = bestParticle.metadata();
 
     VectorXf pose(3);
     pose << x / totalW, y / totalW, yaw / totalW;
