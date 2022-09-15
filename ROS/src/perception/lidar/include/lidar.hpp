@@ -11,6 +11,8 @@
 
 #include <ugr_msgs/Observations.h>
 #include <ugr_msgs/Observation.h>
+#include <ugr_msgs/ObservationWithCovarianceStamped.h>
+
 
 namespace ns_lidar
 {

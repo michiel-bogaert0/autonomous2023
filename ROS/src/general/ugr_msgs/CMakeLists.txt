@@ -29,6 +29,9 @@ add_message_files(
   StateUpdate.msg
   Edge.msg
   VisExploration.msg
+  ObservationWithCovariance.msg
+  ObservationStamped.msg
+  ObservationWithCovarianceStamped.msg
 )
 
 generate_messages(
