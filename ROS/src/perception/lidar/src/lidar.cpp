@@ -3,7 +3,6 @@
 
 #include <ugr_msgs/Observations.h>
 #include <ugr_msgs/Observation.h>
-#include <ugr_msgs/ObservationWithCovarianceStamped.h>
 
 
 // Constructor
@@ -139,7 +138,7 @@ namespace ns_lidar
     int i = 0;
     for (auto cone : cones.points)
     {
-      ugr_msgs::ObservationWithCovarianceStamped observation;
+      ugr_msgs::Observation observation;
 
       // If color == 0, then it is a BLUE cone, and Cones.BLUE in fs_msgs/Cone is 0
       // color == 1 is yellow

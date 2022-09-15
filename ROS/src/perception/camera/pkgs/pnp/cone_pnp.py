@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point
-from ugr_msgs.msg import ConeKeypoint, ConeKeypoints, Observations,ObservationWithCovarianceStamped
+from ugr_msgs.msg import ConeKeypoint, ConeKeypoints, Observations,Observation
 
 
 class ConePnp:
@@ -52,7 +52,7 @@ class ConePnp:
                 continue
 
             cone_relative_positions.append(
-                ObservationWithCovarianceStamped(observation_class=cone_keypoint.bb_info.cone_type, location=loc)
+                Observation(observation_class=cone_keypoint.bb_info.cone_type, location=loc)
             )
 
         perception_observation = Observations()
