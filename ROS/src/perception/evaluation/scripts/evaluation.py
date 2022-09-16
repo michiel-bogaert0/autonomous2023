@@ -62,7 +62,7 @@ class ConeLogger:
                 + gps_msg.position_covariance[8]
             )
 
-    def record_blue_cone(self, gps_msg) -> None:
+    def record_blue_cone(self, gps_msg: NavSatFix) -> None:
         """
         Fills the list with gps messages coming from the right gps
         args:
