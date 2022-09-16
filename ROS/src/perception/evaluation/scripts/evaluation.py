@@ -1,6 +1,5 @@
 #! /usr/bin/python3
 
-
 import rospy
 from sensor_msgs.msg import NavSatFix
 from ugr_msgs.msg import ConeLocation
