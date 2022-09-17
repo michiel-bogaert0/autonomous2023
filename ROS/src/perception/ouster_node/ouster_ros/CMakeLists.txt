@@ -20,10 +20,12 @@ find_package(
              pcl_conversions
              roscpp
              tf2
-             tf2_ros)
+             tf2_ros
+             tf2_eigen
+)
 
 # ==== Options ====
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-Wall -Wextra -Werror -Wno-error=deprecated-declarations)
 option(CMAKE_POSITION_INDEPENDENT_CODE "Build position independent code." ON)
 
