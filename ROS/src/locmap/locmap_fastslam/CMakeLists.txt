@@ -28,7 +28,7 @@ include_directories(
 include_directories( /usr/include/eigen3 )
 
 if (CMAKE_COMPILER_IS_GNUCXX)
-	set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -O3")
+	set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -O3")
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
 file(GLOB srcs src/*.cpp include/*.h*)
