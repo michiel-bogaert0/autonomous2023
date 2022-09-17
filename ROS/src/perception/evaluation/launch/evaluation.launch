@@ -2,5 +2,6 @@
     <node pkg="evaluation" type="evaluation.py" name="cone_logger" output="screen">
         <remap from="input/gps/left" to="/ugr/car/sensors/gps/ublox/left"/>
         <remap from="input/gps/right" to="/ugr/car/sensors/gps/ublox/right"/>
+        <remap from="output/cones" to="ugr/track/cones"/>
     </node>
 </launch>

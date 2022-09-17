@@ -17,6 +17,8 @@
   <build_depend>rospy</build_depend>
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>rospy</exec_depend>
+  <exec_depend>ugr_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
 
 
   

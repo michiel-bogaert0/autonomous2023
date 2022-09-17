@@ -3,7 +3,7 @@
 import rospy
 from sensor_msgs.msg import NavSatFix
 from ugr_msgs.msg import ConeLocation
-
+from collections import deque
 
 class ConeLogger:
     """
@@ -15,10 +15,10 @@ class ConeLogger:
         self.type = "n"
 
         # keep track of a sequence of gps messages
-        self.cone_position = []
+        self.cone_position = deque([],maxlen=30)
 
         # only the message with the least covariance will be published
-        self.covariances = []
+        self.covariances = deque([],maxlen=30)
 
         # use different gps's for blue and yellow cones
         self.subscriber_left = rospy.Subscriber(
@@ -37,6 +37,9 @@ class ConeLogger:
         while not rospy.is_shutdown():
             # take input from user (y = yellow cone, b = blue cone, ol = orange cone left, or = orange cone right )
             cone_type = input("insert type: ")
+            if cone_type not in ["y","b","or","ol"]:
+                rospy.loginfo("bad input type")
+                continue
             self.type = cone_type
             # sleep for three seconds -> the node will fill the cone_position and covariances list during that period
             rospy.sleep(3)
@@ -50,31 +53,24 @@ class ConeLogger:
 
     def record_yellow_cone(self, gps_msg: NavSatFix) -> None:
         """
-        Fills the list with gps messages coming from the left gps
-        args:
-            gps_msg: message comming from the left ublox gps
-        """
-        if self.type == "y" or self.type == "ol":
-            self.cone_position.append(gps_msg)
-            self.covariances.append(
-                gps_msg.position_covariance[0]
-                + gps_msg.position_covariance[4]
-                + gps_msg.position_covariance[8]
-            )
-
-    def record_blue_cone(self, gps_msg: NavSatFix) -> None:
-        """
         Fills the list with gps messages coming from the right gps
         args:
             gps_msg: message comming from the right ublox gps
         """
+        if self.type == "y" or self.type == "ol":
+            self.cone_position.append(gps_msg)
+            self.covariances.append(sum(gps_msg.position_covariance))
+
+
+    def record_blue_cone(self, gps_msg: NavSatFix) -> None:
+        """
+        Fills the list with gps messages coming from the left gps
+        args:
+            gps_msg: message comming from the left ublox gps
+        """
         if self.type == "b" or self.type == "or":
             self.cone_position.append(gps_msg)
-            self.covariances.append(
-                gps_msg.position_covariance[0]
-                + gps_msg.position_covariance[4]
-                + gps_msg.position_covariance[8]
-            )
+            self.covariances.append(sum(gps_msg.position_covariance))
 
     def push_cone_location(self, cone_type: str) -> None:
         """
