@@ -974,6 +974,9 @@ Particle::Particle(float &w, VectorXf &xv, MatrixXf &Pv,
 
 Particle::~Particle()
 {
+    this->_xf.clear();
+    this->_Pf.clear();
+    this->_metadata.clear();
 }
 
 LandmarkSearchResult Particle::searchClosestLandmark(VectorXf &lm, double minThreshold)
