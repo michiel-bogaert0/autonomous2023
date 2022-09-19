@@ -40,7 +40,7 @@ class ConeLogger:
         while not rospy.is_shutdown():
             # take input from user (y = yellow cone, b = blue cone, ol = orange cone left, or = orange cone right )
             cone_type = input("insert type: ")
-            if cone_type not in self.cone_colors.keys():
+            if cone_type not in self.cone_colors:
                 rospy.logwarn("bad input type")
                 continue
             self.type = cone_type
@@ -83,13 +83,16 @@ class ConeLogger:
         # get the cone location with the least covariance
         cone_type_int = self.cone_colors[cone_type]
 
-        rospy.loginfo(len(self.cone_position))
-        most_accurate = self.covariances.index(min(self.covariances))
-        self.cone_pusher.publish(
-            ConeLocation(
-                location=self.cone_position[most_accurate], cone_type=cone_type_int
+        try:
+
+            most_accurate = self.covariances.index(min(self.covariances))
+            self.cone_pusher.publish(
+                ConeLocation(
+                    location=self.cone_position[most_accurate], cone_type=cone_type_int
+                )
             )
-        )
+        except:
+            rospy.logerr("exception while trying to publish a cone location!")
 
 
 if __name__ == "__main__":
