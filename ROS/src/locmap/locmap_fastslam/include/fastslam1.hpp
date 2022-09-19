@@ -43,8 +43,9 @@ namespace slam
       double observe_dt;
       double eps;
 
+      double latestTime;
+      
       double minThreshold;
-
       double acceptance_score;
 
       double max_range;

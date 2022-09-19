@@ -30,6 +30,9 @@ add_message_files(
   Edge.msg
   VisExploration.msg
   ConeLocation.msg
+  ObservationWithCovariance.msg
+  ObservationStamped.msg
+  ObservationWithCovarianceStamped.msg
 )
 
 generate_messages(

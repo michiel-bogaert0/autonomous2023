@@ -4,6 +4,7 @@
 #include <ugr_msgs/Observations.h>
 #include <ugr_msgs/Observation.h>
 
+
 // Constructor
 namespace ns_lidar
 {

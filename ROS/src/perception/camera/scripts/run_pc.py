@@ -15,7 +15,7 @@ from keypoint_detection.keypoint_detection import ConeKeypointDetector
 from pnp.cone_pnp import ConePnp
 from sensor_msgs.msg import Image
 from tools.tools import np_to_ros_image, ros_img_to_np
-from ugr_msgs.msg import BoundingBox, ConeKeypoints, PerceptionUpdate
+from ugr_msgs.msg import BoundingBox, ConeKeypoints, Observations
 
 
 class PerceptionNode:
@@ -26,7 +26,7 @@ class PerceptionNode:
         )
         self.pub_pnp = rospy.Publisher(
             "/output/update",
-            PerceptionUpdate,
+            Observations,
             queue_size=10,
         )
 
@@ -146,7 +146,6 @@ class PerceptionNode:
         """
 
         update_msg = self.pnp.generate_perception_update(msg, img_size=img_size)
-        print("update", update_msg.header.stamp)
         self.pub_pnp.publish(update_msg)
 
 

@@ -8,12 +8,14 @@
         <param name="rate" value="10" />
         <remap from="/output/cone_keypoints" to="/perception/camera/mono/keypoints" />
         <remap from="/output/update" to="/ugr/car/observations/camera" />
-        <remap from="/input/image" to="/perception/camera/image" />
+        <remap from="/input/image" to="/ugr/car/sensors/camera" />
 
 
     </node>
 
-    <include file="$(find perception)/launch/perception.publisher.launch" pass_all_args="true"/>
+    <include file="$(find lidar)/launch/lidar.launch" pass_all_args="true"/>
+
+   
 
     
 

@@ -221,6 +221,8 @@
         <param name="show_debug" value="true" />
 
         <remap from="/os_cloud_node/points" to="/ugr/car/sensors/lidar" />
+        <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
+
     </node>
 
     <!-- ? Clustermapping (if applicable)-->
@@ -240,7 +242,7 @@
             <param name="max_landmark_range" value="20" />
             <param name="observation_queue_size" value="1" />
 
-            <remap from="/input/observations" to="/lidar/perception/observations" />
+            <remap from="/input/observations" to="ugr/car/observations/lidar" />
             <remap from="/output/observations" to="ugr/car/observations/clustering" />
             <remap from="/output/map" to="ugr/car/map/clustering" />
             <remap from="/output/samples" to="ugr/car/samples/clustering" />
@@ -277,7 +279,7 @@
             <param name="penalty_score" value="-0.2" />
             <param name="discard_score" value="-1.0" />
             # Input/output remapping
-            <remap from="/input/observations" to="/lidar/perception/observations" />
+            <remap from="/input/observations" to="ugr/car/observations/lidar" />
 
             <remap from="/output/observations" to="/ugr/car/observations/fastslam" />
             <remap from="/output/map" to="/ugr/car/map/fastslam" />

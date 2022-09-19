@@ -238,6 +238,23 @@ namespace slam
   void FastSLAM1::handleObservations(const ugr_msgs::ObservationsConstPtr &obs)
   {
 
+    if (this->latestTime - obs->header.stamp.toSec() > 0.5 && this->latestTime > 0.0) {
+      // Reset 
+      ROS_WARN("Time went backwards! Resetting fastslam...");
+
+      this->particles.clear();
+      for (int i = 0; i < this->particle_count; i++) {
+        this->particles.push_back(Particle());
+      }
+
+      this->prev_state = {0.0, 0.0, 0.0};
+      this->latestTime = 0.0;
+
+      return;
+    } else {
+      this->latestTime = obs->header.stamp.toSec();
+    }
+
     // Sometimes let the particle filter spread out
     chrono::steady_clock::time_point time = chrono::steady_clock::now();
     bool doObserve = abs(std::chrono::duration_cast<std::chrono::duration<double>>(time - this->prev_time).count()) > this->observe_dt;
