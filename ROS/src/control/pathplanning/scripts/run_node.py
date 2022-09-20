@@ -12,7 +12,7 @@ from tf.transformations import quaternion_from_euler
 from ugr_msgs.msg import Observation, Observations
 
 from pathplanning.rrt import Rrt
-from pathplanning.triangulator import Triangulator
+from pathplanning.triangulator_new import Triangulator
 
 
 # Source: https://gitlab.msu.edu/av/av_notes/-/blob/master/ROS/Coordinate_Transforms.md
@@ -94,6 +94,11 @@ class PathPlanning(ROSNode):
             "~max_iter", 100 if self.params["expand_dist"] == "tri" else 750
         )
 
+        # Factor multiplied to the median of the variance of triangle lengths in order to filter bad triangles
+        self.params["triangulation_var_threshold"] = rospy.get_param(
+            "~triangulation_var_threshold", 1.2
+        )
+
         # Early prune settings
         # The maximum angle (rad) for a branch to be valid (sharper turns will be pruned prematurely)
         self.params["max_angle_change"] = rospy.get_param("~max_angle_change", 0.5)
@@ -134,6 +139,7 @@ class PathPlanning(ROSNode):
             )
         else:
             self.algorithm = Triangulator(
+                self.params["triangulation_var_threshold"],
                 self.params["max_iter"],
                 self.params["plan_dist"],
                 self.params["max_angle_change"],
