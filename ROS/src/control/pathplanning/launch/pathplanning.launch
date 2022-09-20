@@ -5,6 +5,7 @@
         <param name="expand_dist" value="0.5" />
         <param name="plan_dist" value="12.0" />
         <param name="max_iter" value="100" />
+        <param name="triangulation_var_threshold" value="1.2" />
         <param name="max_angle_change" value="0.5" />
         <param name="safety_dist" value="1" />
         <param name="track_width" value="3" />
