@@ -29,6 +29,7 @@ add_message_files(
   StateUpdate.msg
   Edge.msg
   VisExploration.msg
+  ConeLocation.msg
   ObservationWithCovariance.msg
   ObservationStamped.msg
   ObservationWithCovarianceStamped.msg
