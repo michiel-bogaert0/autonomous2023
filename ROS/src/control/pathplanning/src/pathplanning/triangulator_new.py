@@ -4,7 +4,6 @@ from pathplanning.dataclasses.node import Node
 from typing import Tuple
 
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import Delaunay
 
@@ -105,8 +104,9 @@ class Triangulator:
         total_cost = np.sum(costs, axis=1)
 
         index = np.argmin(total_cost)
+        paths = np.array(paths)
 
-        return np.ndarray(paths[index])
+        return paths[index]
 
     def get_cost_branch(
         self, branch: np.ndarray, cones: np.ndarray
