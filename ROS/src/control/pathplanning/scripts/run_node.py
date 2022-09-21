@@ -11,8 +11,8 @@ from std_msgs.msg import Header
 from tf.transformations import quaternion_from_euler
 from ugr_msgs.msg import Observation, Observations
 
-from pathplanning.rrt import Rrt
-from pathplanning.triangulator import Triangulator
+from pathplanning.rrt.rtt import Rrt
+from pathplanning.triangulation.triangulator import Triangulator
 
 class PathPlanning(ROSNode):
     """Path planning node. Calculates and publishes path based on observations.
