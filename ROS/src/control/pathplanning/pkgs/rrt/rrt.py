@@ -1,6 +1,6 @@
 import math
 import random
-from pathplanning.dataclasses.node import Node, dataclass
+from pathplanning_dc.node import Node, dataclass
 from typing import List, Tuple
 
 import numpy as np

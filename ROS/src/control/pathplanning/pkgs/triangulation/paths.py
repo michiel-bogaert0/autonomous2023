@@ -1,7 +1,9 @@
 import numpy as np
-from pathplanning.dataclasses.node import Node
+from pathplanning_dc.node import Node
+import triangulation.utils as utils
 from typing import Tuple
 import math
+
 
 class TriangulationPaths:
     def __init__(
@@ -25,13 +27,12 @@ class TriangulationPaths:
         self.safety_dist = safety_dist
         self.safety_dist_squared = safety_dist**2
 
-
     def get_all_paths(
-            self,
-            center_points: np.ndarray,
-            unique_center_points: np.ndarray,
-            cones: np.ndarray,
-        ) -> Tuple[np.ndarray, np.ndarray]:
+        self,
+        center_points: np.ndarray,
+        unique_center_points: np.ndarray,
+        cones: np.ndarray,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Get/generate all possible paths
 
         Args:
@@ -45,11 +46,11 @@ class TriangulationPaths:
         root_node = Node(0, 0, 0, None, [], 0, 0)
         queue = []
 
-        next_nodes = self.get_closest_center(unique_center_points, 3)
+        next_nodes = utils.get_closest_center(unique_center_points, 3)
         for next_pos in next_nodes:
             angle_next = np.arctan2(next_pos[1], next_pos[0])
             distance_next = np.sqrt(
-                self.distance_squared(0, 0, next_pos[0], next_pos[1])
+                utils.distance_squared(0, 0, next_pos[0], next_pos[1])
             )
             angle_change_next = min(abs(angle_next), 2 * np.pi - abs(angle_next))
             next_node = Node(
@@ -85,14 +86,14 @@ class TriangulationPaths:
                             abs(angle_change), 2 * np.pi - abs(angle_change)
                         )
                         distance_node = np.sqrt(
-                            self.distance_squared(
+                            utils.distance_squared(
                                 parent.x, parent.y, point[0], point[1]
                             )
                         )
 
                         if (
                             abs_angle_change <= self.max_angle_change
-                            and self.no_collision(parent, point, cones)
+                            and utils.no_collision(parent, point, cones, self.safety_dist_squared)
                         ):
                             node = Node(
                                 point[0],
@@ -111,10 +112,9 @@ class TriangulationPaths:
 
         return root_node, leaves + queue
 
-
     def get_cost_branch(
-            self, branch: np.ndarray, cones: np.ndarray
-        ) -> Tuple[float, float, float, float, float]:
+        self, branch: np.ndarray, cones: np.ndarray
+    ) -> Tuple[float, float, float, float, float]:
         """Get cost of branch.
 
         Args:
@@ -165,14 +165,14 @@ class TriangulationPaths:
 
             # Get the closest left and right cone (in global space) at this point in the branch
             # and add them to the global cone lists
-            distances_squared_left = self.distance_squared(
+            distances_squared_left = utils.distance_squared(
                 0, 0, local_left_cones[:, 0], local_left_cones[:, 1]
             )
             closest_left = cones[relative_cones[:, 1] > 0][
                 np.argmin(distances_squared_left)
             ]
 
-            distances_squared_right = self.distance_squared(
+            distances_squared_right = utils.distance_squared(
                 0, 0, local_right_cones[:, 0], local_right_cones[:, 1]
             )
             closest_right = cones[relative_cones[:, 1] < 0][
@@ -211,7 +211,7 @@ class TriangulationPaths:
             cone_pos_stacked = np.tile(
                 cone_pos_left[:-1], (global_right_cones_array.shape[0], 1)
             )
-            distances_squared = self.distance_squared(
+            distances_squared = utils.distance_squared(
                 cone_pos_stacked[:, 0],
                 cone_pos_stacked[:, 1],
                 global_right_cones_array[:, 0],
@@ -227,7 +227,7 @@ class TriangulationPaths:
                 cone_pos_stacked = np.tile(
                     cone_pos_left[:-1], (global_left_cones_array.shape[0], 1)
                 )
-                distances_squared = self.distance_squared(
+                distances_squared = utils.distance_squared(
                     cone_pos_stacked[:, 0],
                     cone_pos_stacked[:, 1],
                     global_left_cones_array[:, 0],
@@ -244,7 +244,7 @@ class TriangulationPaths:
             cone_pos_stacked = np.tile(
                 cone_pos_right[:-1], (global_left_cones_array.shape[0], 1)
             )
-            distances_squared = self.distance_squared(
+            distances_squared = utils.distance_squared(
                 cone_pos_stacked[:, 0],
                 cone_pos_stacked[:, 1],
                 global_left_cones_array[:, 0],
@@ -260,7 +260,7 @@ class TriangulationPaths:
                 cone_pos_stacked = np.tile(
                     cone_pos_right[:-1], (global_right_cones_array.shape[0], 1)
                 )
-                distances_squared = self.distance_squared(
+                distances_squared = utils.distance_squared(
                     cone_pos_stacked[:, 0],
                     cone_pos_stacked[:, 1],
                     global_right_cones_array[:, 0],
