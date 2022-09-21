@@ -1,7 +1,7 @@
 <launch>
     <node pkg="pathplanning" type="run_node.py" name="pathplanning_new" respawn="true">
         <param name="output_frame" value="ugr/car_odom" />
-        <param name="algoritme" value="tri" />
+        <param name="algorithm" value="tri" />
         <param name="expand_dist" value="0.5" />
         <param name="plan_dist" value="12.0" />
         <param name="max_iter" value="100" />
