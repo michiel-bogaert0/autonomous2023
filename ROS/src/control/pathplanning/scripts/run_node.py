@@ -14,66 +14,9 @@ from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 from pathplanning.rrt import Rrt
 from pathplanning.triangulator_new import Triangulator
 
-
-# Source: https://gitlab.msu.edu/av/av_notes/-/blob/master/ROS/Coordinate_Transforms.md
-class TransformFrames:
-    def __init__(self):
-        """Create a buffer of transforms and update it with TransformListener."""
-        self.tfBuffer = tf2_ros.Buffer()  # Creates a frame buffer
-        tf2_ros.TransformListener(
-            self.tfBuffer
-        )  # TransformListener fills the buffer as background task
-
-    def get_transform(self, source_frame, target_frame):
-        """Lookup latest transform between source_frame and target_frame from the buffer."""
-        try:
-            trans = self.tfBuffer.lookup_transform(
-                target_frame, source_frame, rospy.Time(0), rospy.Duration(0.2)
-            )
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ) as e:
-            rospy.logerr(
-                f"Cannot find transformation from {source_frame} to {target_frame}"
-            )
-            raise Exception(
-                f"Cannot find transformation from {source_frame} to {target_frame}"
-            ) from e
-        return trans  # Type: TransformStamped
-
-    def pose_transform(self, pose_array: PoseArray) -> PoseArray:
-        """Transform PoseArray to other frame.
-
-        Args:
-            pose_array: will be transformed to target_frame
-        """
-        target_frame = rospy.get_param("~output_frame", "odom")
-        trans = self.get_transform(pose_array.header.frame_id, target_frame)
-        new_header = Header(frame_id=target_frame, stamp=pose_array.header.stamp)
-        pose_array_transformed = PoseArray(header=new_header)
-        for pose in pose_array.poses:
-            pose_s = PoseStamped(pose=pose, header=pose_array.header)
-            pose_t = tf2_geometry_msgs.do_transform_pose(pose_s, trans)
-            pose_array_transformed.poses.append(pose_t.pose)
-        return pose_array_transformed
-
-    def get_frame_A_origin_frame_B(self, frame_A, frame_B):
-        """Returns the pose of the origin of frame_A in frame_B as a PoseStamped."""
-        header = Header(frame_id=frame_A, stamp=rospy.Time(0))
-        origin_A = Pose(
-            position=Point(0.0, 0.0, 0.0), orientation=Quaternion(0.0, 0.0, 0.0, 1.0)
-        )
-        origin_A_stamped = PoseStamped(pose=origin_A, header=header)
-        pose_frame_B = tf2_geometry_msgs.do_transform_pose(
-            origin_A_stamped, self.get_transform(frame_A, frame_B)
-        )
-        return pose_frame_B
-
-
 class PathPlanning(ROSNode):
-    """Path planning node. Calculates and publishes path based on observations."""
+    """Path planning node. Calculates and publishes path based on observations.
+    """
 
     def __init__(self) -> None:
         """Initialize node"""
@@ -83,7 +26,7 @@ class PathPlanning(ROSNode):
 
         self.params = {}
         # Defines which algorithm to run triangulatie ("tri") or RRT ("RRT")
-        self.params["algo"] = rospy.get_param("~algoritme", "tri")
+        self.params["algo"] = rospy.get_param("~algorithm", "tri")
         # Load at least all params from config file via ros parameters
         # The distance by which the car drives every update
         self.params["expand_dist"] = rospy.get_param("~expand_dist", 0.5)
@@ -188,14 +131,14 @@ class PathPlanning(ROSNode):
         orientations = np.array([quaternion_from_euler(0, 0, yaw) for yaw in yaws])
 
         poses: list(Pose) = []
-        for idx in range(len(path)):
+        for idx, point in enumerate(path):
             pose: Pose = Pose()
             position: Point = Point()
             orientation: Quaternion = Quaternion()
 
             # Fill position from path point
-            position.x = path[idx][0]
-            position.y = path[idx][1]
+            position.x = point[0]
+            position.y = point[1]
             position.z = 0
 
             # Fill orientation, to invalidate
@@ -230,6 +173,61 @@ class PathPlanning(ROSNode):
 
         self.pubStamped.publish(stamped_output)
 
+# Source: https://gitlab.msu.edu/av/av_notes/-/blob/master/ROS/Coordinate_Transforms.md
+class TransformFrames:
+    def __init__(self):
+        """Create a buffer of transforms and update it with TransformListener."""
+        self.tfBuffer = tf2_ros.Buffer()  # Creates a frame buffer
+        tf2_ros.TransformListener(
+            self.tfBuffer
+        )  # TransformListener fills the buffer as background task
+
+    def get_transform(self, source_frame, target_frame):
+        """Lookup latest transform between source_frame and target_frame from the buffer."""
+        try:
+            trans = self.tfBuffer.lookup_transform(
+                target_frame, source_frame, rospy.Time(0), rospy.Duration(0.2)
+            )
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ) as exc:
+            rospy.logerr(
+                f"Cannot find transformation from {source_frame} to {target_frame}"
+            )
+            raise Exception(
+                f"Cannot find transformation from {source_frame} to {target_frame}"
+            ) from exc
+        return trans  # Type: TransformStamped
+
+    def pose_transform(self, pose_array: PoseArray) -> PoseArray:
+        """Transform PoseArray to other frame.
+
+        Args:
+            pose_array: will be transformed to target_frame
+        """
+        target_frame = rospy.get_param("~output_frame", "odom")
+        trans = self.get_transform(pose_array.header.frame_id, target_frame)
+        new_header = Header(frame_id=target_frame, stamp=pose_array.header.stamp)
+        pose_array_transformed = PoseArray(header=new_header)
+        for pose in pose_array.poses:
+            pose_s = PoseStamped(pose=pose, header=pose_array.header)
+            pose_t = tf2_geometry_msgs.do_transform_pose(pose_s, trans)
+            pose_array_transformed.poses.append(pose_t.pose)
+        return pose_array_transformed
+
+    def get_frame_A_origin_frame_B(self, frame_A, frame_B):
+        """Returns the pose of the origin of frame_A in frame_B as a PoseStamped."""
+        header = Header(frame_id=frame_A, stamp=rospy.Time(0))
+        origin_A = Pose(
+            position=Point(0.0, 0.0, 0.0), orientation=Quaternion(0.0, 0.0, 0.0, 1.0)
+        )
+        origin_A_stamped = PoseStamped(pose=origin_A, header=header)
+        pose_frame_B = tf2_geometry_msgs.do_transform_pose(
+            origin_A_stamped, self.get_transform(frame_A, frame_B)
+        )
+        return pose_frame_B
 
 node = PathPlanning()
 node.start()
