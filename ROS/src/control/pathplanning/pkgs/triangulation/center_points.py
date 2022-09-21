@@ -5,7 +5,7 @@ from typing import Tuple
 def get_center_points(
         position_cones: np.ndarray,
         triangulation_var_threshold: float,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get center points of the edges of the triangles
 
         Also perform a preliminary filtering on these points to remove useless points.
@@ -15,7 +15,7 @@ def get_center_points(
             triangulation_var_threshold: Factor multiplied to the median of the variance of triangle lengths in order to filter bad triangles
 
         Returns:
-            Tuple of center_points, unique_center_points
+            Tuple of center_points, duplicated_centers, triangles
         """
         tri = Delaunay(position_cones)
         indices = tri.simplices
@@ -41,4 +41,4 @@ def get_center_points(
         unique, counts = np.unique(flattened_center_points, axis=0, return_counts=True)
         duplicated_centers = unique[counts > 1]
 
-        return center_points, duplicated_centers
+        return center_points, duplicated_centers, triangles

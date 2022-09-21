@@ -6,6 +6,7 @@ from triangulation.center_points import get_center_points
 from triangulation.paths import TriangulationPaths
 import triangulation.utils
 from visualization_msgs.msg import Marker, MarkerArray
+from geometry_msgs.msg import Point, Pose, PoseArray, Quaternion
 from std_msgs.msg import Header
 
 
@@ -43,17 +44,18 @@ class Triangulator:
         self.vis_points = vis_points
         self.vis_lines = vis_lines
         self.vis_namespace = "pathplanning_vis"  # TODO add parameter
-        self.vis_lifetime = 3  # TODO add parameter
+        self.vis_lifetime = 1  # TODO add parameter
 
         self.triangulation_paths = TriangulationPaths(
             max_iter, plan_dist, max_angle_change, safety_dist
         )
 
-    def get_path(self, cones: np.ndarray, frame_id: str):
+    def get_path(self, cones: np.ndarray, header: Header):
         """Generate path based on the cones.
 
         Args:
             cones: Cones between which to generate path (array of [x, y, class])
+            header: the message header of the original observations
 
         Returns:
             path
@@ -65,25 +67,26 @@ class Triangulator:
             return None
 
         # Perform triangulation and get the (useful) center points
-        triangulation_centers, center_points = get_center_points(
+        triangulation_centers, center_points, triangles = get_center_points(
             position_cones, self.triangulation_var_threshold
         )
 
         # Publish visualisation topics if needed
         if self.vis:
             self.publish_points(
-                position_cones, frame_id, self.vis_namespace + "/position_cones", (1, 0.5, 0, 1)
-            )
-            self.publish_points(
-                triangulation_centers, frame_id, self.vis_namespace + "/triangulation_centers", (1, 0, 0, 1)
+                triangulation_centers,
+                header,
+                self.vis_namespace + "/triangulation_centers",
+                (1, 0, 0, 1),
             )
             self.publish_points(
                 center_points,
-                frame_id,
+                header,
                 self.vis_namespace + "/center_points",
                 (0, 1, 0, 1),
-                0.2
+                0.2,
             )
+            self.visualise_triangles(triangles, header)
 
         _, leaves = self.triangulation_paths.get_all_paths(
             triangulation_centers, center_points, cones[:, :-1]
@@ -148,7 +151,14 @@ class Triangulator:
 
         return paths[index]
 
-    def publish_points(self, points: np.ndarray, header: Header, namespace: str, color: Tuple, scale : float = 0.1) -> None:
+    def publish_points(
+        self,
+        points: np.ndarray,
+        header: Header,
+        namespace: str,
+        color: Tuple,
+        scale: float = 0.1,
+    ) -> None:
         """Publishes points to the already set vis_points topic
 
         Args:
@@ -156,6 +166,7 @@ class Triangulator:
             header: the message header of the original observations
             namespace: the namespace to publish the markers to
             color: a tuple of RGBA values (between 0 and 1)
+            scale: (optional) the scale of the visualised markers
         """
         marker_array = MarkerArray()
 
@@ -191,3 +202,55 @@ class Triangulator:
             marker_array.markers.append(marker)
 
         self.vis_points.publish(marker_array)
+
+    def publish_line(
+        self,
+        line: np.ndarray,
+        header: Header,
+    ) -> None:
+        """Publishes a line to the already set vis_lines topic
+
+        Args:
+            line: Nx2 array of point locations (x and y)
+            header: the message header of the original observations
+        """
+
+        poses: list(Pose) = []
+        for _, point in enumerate(line):
+            pose: Pose = Pose()
+            position: Point = Point()
+            orientation: Quaternion = Quaternion()
+
+            # Fill position from path point
+            position.x = point[0]
+            position.y = point[1]
+            position.z = 0
+
+            # Fill orientation, to invalidate
+            orientation.x = 0
+            orientation.y = 0
+            orientation.z = 0
+            orientation.w = 0
+
+            # Fill pose and add to array
+            pose.position = position
+            pose.orientation = orientation
+            poses += [pose]
+
+        output: PoseArray = PoseArray()
+        output.header.frame_id = header.frame_id
+        output.header.stamp = header.stamp
+        output.poses = poses
+        
+        self.vis_lines.publish(output)
+
+    def visualise_triangles(self, triangles: np.ndarray, header: Header) -> None:
+        """Visualises triangles using the line visualiser
+        
+        Args:
+            triangles: array of Nx3x2 containing all Delaunay triangles
+            header: the message header of the original observations
+        """
+
+        # TODO This creates false lines
+        self.publish_line(triangles.reshape(-1, 2), header)
