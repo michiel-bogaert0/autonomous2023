@@ -1,5 +1,5 @@
 <launch>
-    <node pkg="pathplanning" type="run_node.py" name="pathplanning_new" respawn="true">
+    <node pkg="pathplanning" type="run_node.py" name="pathplanning_new" respawn="true" output="screen">
         <param name="output_frame" value="ugr/car_odom" />
         <param name="algorithm" value="tri" />
         <param name="expand_dist" value="0.5" />
@@ -18,5 +18,9 @@
         <remap from="/input/local_map" to="/ugr/car/observations/global"/>
         <remap from="/output/path" to="/pathplanning/path_new"/>
         <remap from="/output/path_stamped" to="/pathplanning/path_stamped_new"/>
+
+        <param name="debug_visualisation" value="True" />
+        <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
+        <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
     </node>
 </launch>

@@ -6,6 +6,7 @@ import tf2_geometry_msgs
 import tf2_ros
 from nav_msgs.msg import Path
 from geometry_msgs.msg import Point, Pose, PoseArray, PoseStamped, Quaternion
+from visualization_msgs.msg import MarkerArray
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from std_msgs.msg import Header
 from tf.transformations import quaternion_from_euler
@@ -14,9 +15,9 @@ from ugr_msgs.msg import Observation, Observations
 from rrt.rrt import Rrt
 from triangulation.triangulator import Triangulator
 
+
 class PathPlanning(ROSNode):
-    """Path planning node. Calculates and publishes path based on observations.
-    """
+    """Path planning node. Calculates and publishes path based on observations."""
 
     def __init__(self) -> None:
         """Initialize node"""
@@ -25,6 +26,10 @@ class PathPlanning(ROSNode):
         self.frametf = TransformFrames()
 
         self.params = {}
+        # Do we want to output visualisations for diagnostics?
+        self.params["debug_visualisation"] = rospy.get_param(
+            "~debug_visualisation", False
+        )
         # Defines which algorithm to run triangulatie ("tri") or RRT ("RRT")
         self.params["algo"] = rospy.get_param("~algorithm", "tri")
         # Load at least all params from config file via ros parameters
@@ -57,7 +62,12 @@ class PathPlanning(ROSNode):
         self.params["max_track_width"] = rospy.get_param("~max_track_width", 4)
         # Used for RRT* variant to define radius to optimize new RRT node
         # When set to None, will be twice max_dist (expand_dist*3)
-        self.params["search_rad"] = None if rospy.get_param("~search_rad", None) is None or rospy.get_param("~search_rad", None) == "None" else rospy.get_param("~search_rad", None)
+        self.params["search_rad"] = (
+            None
+            if rospy.get_param("~search_rad", None) is None
+            or rospy.get_param("~search_rad", None) == "None"
+            else rospy.get_param("~search_rad", None)
+        )
 
         # Iteration threshold which triggers parameter update. (3/4 of max_iter seems to be ok)
         self.params["iter_threshold"] = rospy.get_param("~iter_threshold", 560)
@@ -65,6 +75,17 @@ class PathPlanning(ROSNode):
         self.params["angle_inc"] = rospy.get_param("~angle_inc", 0.2)
         # Factor in to increase maximum angle to create more chance for edges.
         self.params["angle_fac"] = rospy.get_param("~angle_fac", 1.5)
+
+        # Create debug topics if needed
+        self.vis_points = None
+        self.vis_lines = None
+        if self.params["debug_visualisation"]:
+            self.vis_points = rospy.Publisher(
+                "/output/debug/markers", MarkerArray, queue_size=10
+            )
+            self.vis_lines = rospy.Publisher(
+                "/output/debug/poses", PoseArray, queue_size=10
+            )
 
         if self.params["algo"] == "rrt":
             self.algorithm = Rrt(
@@ -87,10 +108,12 @@ class PathPlanning(ROSNode):
                 self.params["plan_dist"],
                 self.params["max_angle_change"],
                 self.params["safety_dist"],
+                vis_points=self.vis_points,
+                vis_lines=self.vis_lines
             )
 
         self.pub = rospy.Publisher("/output/path", PoseArray, queue_size=10)
-        self.pubStamped = rospy.Publisher("/output/path_stamped", Path, queue_size=10)
+        self.pub_stamped = rospy.Publisher("/output/path_stamped", Path, queue_size=10)
 
         AddSubscriber("/input/local_map", 1)(self.receive_new_map)
         self.add_subscribers()
@@ -118,7 +141,7 @@ class PathPlanning(ROSNode):
         Args:
             header: Header of input message.
         """
-        path = self.algorithm.get_path(self.cones)
+        path = self.algorithm.get_path(self.cones, header)
 
         if path is None:
             rospy.loginfo("No path found")
@@ -169,9 +192,12 @@ class PathPlanning(ROSNode):
 
             poses_stamped += [posestamped]
 
-        stamped_output: Path = Path(header=output_transformed.header, poses=poses_stamped)
+        stamped_output: Path = Path(
+            header=output_transformed.header, poses=poses_stamped
+        )
 
-        self.pubStamped.publish(stamped_output)
+        self.pub_stamped.publish(stamped_output)
+
 
 # Source: https://gitlab.msu.edu/av/av_notes/-/blob/master/ROS/Coordinate_Transforms.md
 class TransformFrames:
@@ -228,6 +254,7 @@ class TransformFrames:
             origin_A_stamped, self.get_transform(frame_A, frame_B)
         )
         return pose_frame_B
+
 
 node = PathPlanning()
 node.start()
