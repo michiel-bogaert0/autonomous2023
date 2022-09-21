@@ -1,5 +1,5 @@
 import numpy as np
-from pathplanning.dataclasses.node import Node
+from pathplanning_dc.node import Node
 
 
 def distance_squared(x1, y1, x2, y2):

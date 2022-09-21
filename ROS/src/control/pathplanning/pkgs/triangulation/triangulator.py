@@ -1,8 +1,8 @@
 import sys
 import numpy as np
-from pathplanning.triangulation.center_points import get_center_points
-from pathplanning.triangulation.paths import TriangulationPaths
-import pathplanning.triangulation.utils
+from triangulation.center_points import get_center_points
+from triangulation.paths import TriangulationPaths
+import triangulation.utils
 
 
 class Triangulator:
