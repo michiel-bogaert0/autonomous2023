@@ -301,79 +301,69 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
   // filter based on the shape of cones
   if (cone.points.size() >= minimal_points_cone_ && centroid[2] - min[2] > minimal_height_cone_)
   {
+    float dist = ConeClustering::hypot3d(centroid[0], centroid[1], centroid[2]);;
+    float num_points = 0.0;
+    bool is_orange = false;
     if(bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.4)
     {
       // Calculate the expected number of points that hit the cone
-      float dist = ConeClustering::hypot3d(centroid[0], centroid[1], centroid[2]);
       // Using the AMZ formula with w_c = average of x and y widths and r_v=0.35°
       // and r_h=2048 points per rotation
-      float num_points = (1 / 2.0f) * (0.325 / (2.0f * dist * VERT_RES_TAN)) *
+      num_points = (1 / 2.0f) * (0.325 / (2.0f * dist * VERT_RES_TAN)) *
                         (0.228 / (2.0f * dist * HOR_RES_TAN));
-
-      // We allow for some play in the point count prediction
-      if ((std::abs(num_points - cone.points.size()) / num_points) <
-          point_count_threshold_) {
-        cone_check.pos.x = centroid[0];
-        cone_check.pos.y = centroid[1];
-        cone_check.pos.z = centroid[2];
-        cone_check.bounds[0] = bound_x;
-        cone_check.bounds[1] = bound_y;
-        cone_check.bounds[2] = bound_z;
-        cone_check.is_cone = true;
-
-        // Eigen::Matrix<double, 3, 3> covariance_matrix;
-        // pcl::computeCovarianceMatrix(cone, covariance_matrix);
-
-        // ROS_INFO("variance x: %lf", covariance_matrix(1,1));
-        // calculate the convexity of the intensity to distinguish between blue
-        // and yellow;
-        Eigen::MatrixXd X_mat(cone.points.size(), 3);
-        Eigen::VectorXd Y_mat(cone.points.size(), 1);
-
-        // setup matrix
-        for (int i = 0; i < cone.points.size(); i++) {
-          float z_value = cone.points[i].z;
-          X_mat(i, 0) = z_value * z_value;
-          X_mat(i, 1) = z_value;
-          X_mat(i, 2) = 1;
-
-          Y_mat(i) = cone.points[i].intensity;
-        }
-
-        // solve ordinary least squares minimisation
-        Eigen::VectorXd solution = X_mat.colPivHouseholderQr().solve(Y_mat);
-
-        // determine colour
-        if (solution(0) > 0)
-          cone_check.color = 1;
-        else
-          cone_check.color = 0;
-
-        return cone_check;
-      }
     }
-    else if(bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.55)
-    {
+    else if(bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.55){
       // Calculate the expected number of points that hit the cone
-      float dist = ConeClustering::hypot3d(centroid[0], centroid[1], centroid[2]);
       // Using the AMZ formula with w_c = average of x and y widths and r_v=0.35°
       // and r_h=2048 points per rotation
-      float num_points = (1 / 2.0f) * (0.505 / (2.0f * dist * VERT_RES_TAN)) *
+      num_points = (1 / 2.0f) * (0.505 / (2.0f * dist * VERT_RES_TAN)) *
                         (0.285 / (2.0f * dist * HOR_RES_TAN));
+      is_orange = true;
+    }
 
-      // We allow for some play in the point count prediction
-      if ((std::abs(num_points - cone.points.size()) / num_points) <
-          point_count_threshold_) {
-        cone_check.pos.x = centroid[0];
-        cone_check.pos.y = centroid[1];
-        cone_check.pos.z = centroid[2];
-        cone_check.bounds[0] = bound_x;
-        cone_check.bounds[1] = bound_y;
-        cone_check.bounds[2] = bound_z;
-        cone_check.is_cone = true;
+    // We allow for some play in the point count prediction
+    if (dist != 0.0 && (std::abs(num_points - cone.points.size()) / num_points) <
+        point_count_threshold_) {
+      cone_check.pos.x = centroid[0];
+      cone_check.pos.y = centroid[1];
+      cone_check.pos.z = centroid[2];
+      cone_check.bounds[0] = bound_x;
+      cone_check.bounds[1] = bound_y;
+      cone_check.bounds[2] = bound_z;
+      cone_check.is_cone = true;
+
+      // Eigen::Matrix<double, 3, 3> covariance_matrix;
+      // pcl::computeCovarianceMatrix(cone, covariance_matrix);
+
+      if(is_orange){
         cone_check.color = 0.5;
         return cone_check;
       }
+      // ROS_INFO("variance x: %lf", covariance_matrix(1,1));
+      // calculate the convexity of the intensity to distinguish between blue
+      // and yellow;
+      Eigen::MatrixXd X_mat(cone.points.size(), 3);
+      Eigen::VectorXd Y_mat(cone.points.size(), 1);
+
+      // setup matrix
+      for (int i = 0; i < cone.points.size(); i++) {
+        float z_value = cone.points[i].z;
+        X_mat(i, 0) = z_value * z_value;
+        X_mat(i, 1) = z_value;
+        X_mat(i, 2) = 1;
+
+        Y_mat(i) = cone.points[i].intensity;
+      }
+
+      // solve ordinary least squares minimisation
+      Eigen::VectorXd solution = X_mat.colPivHouseholderQr().solve(Y_mat);
+
+      // determine colour
+      if (solution(0) > 0)
+        cone_check.color = 1;
+      else
+        cone_check.color = 0;
+      return cone_check;
     }
   }
 
