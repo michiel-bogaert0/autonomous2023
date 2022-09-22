@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial import Delaunay
 from typing import Tuple
+import triangulation.utils as utils
 
 
 def get_center_points(
@@ -45,3 +46,32 @@ def get_center_points(
     duplicated_centers = unique[counts > 1]
 
     return center_points, duplicated_centers, triangles
+
+def filter_center_points(center_points: np.ndarray, cones: np.ndarray) -> np.ndarray:
+    """The center_points will now probably form the center of the racetrack
+    Let's try to improve the false positives and false negatives first though
+
+    Args:
+        center_points: the probably track center points (Nx2 array)
+        cones: array of cones (x, y, colour)
+    """
+
+    filtered_points = None
+
+    # False positive removal
+    # Remove points who's closest cones have the same colour
+    for point in center_points:
+        distances_squared = utils.distance_squared(
+            point[0], point[1], cones[:, 0], cones[:, 1]
+        )
+        ind = np.argsort(distances_squared)
+
+        if cones[ind[0], 2] != cones[ind[1], 2]:
+            if filtered_points is None:
+                filtered_points = np.array(point)
+            else:
+                filtered_points = np.vstack([filtered_points, point])
+    
+    # TODO: False negatives
+
+    return filtered_points
