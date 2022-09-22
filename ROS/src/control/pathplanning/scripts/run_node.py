@@ -148,11 +148,11 @@ class PathPlanning(ROSNode):
         """
         path = self.algorithm.get_path(cones, header)
 
-        if path is None:
+        if path is None or len(path) == 0:
             rospy.loginfo("No path found")
             return
 
-        path = np.array([[e.x, e.y] for e in path])
+        path = np.array([[0, 0]] + [[e.x, e.y] for e in path])
 
         # Calculate orientations
         yaws = np.arctan2(path[:, 1], path[:, 0])

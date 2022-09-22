@@ -48,42 +48,7 @@ class TriangulationPaths:
         tuple of root node and leaves of paths
         """
         root_node = Node(0, 0, 0, None, [], 0, 0)
-        queue = []
-
-        # Get the three points closest to the center
-        next_nodes = utils.get_closest_center(center_points, 3)
-        for next_pos in next_nodes:
-            # Calculate some metrics of the path from root to next_pos
-            angle_next = np.arctan2(next_pos[1], next_pos[0])
-
-            # Check whether we can physically turn to the next_pos
-            if abs(angle_next) > self.max_angle_change:
-                continue
-
-            distance_next = np.sqrt(
-                utils.distance_squared(0, 0, next_pos[0], next_pos[1])
-            )
-            # Check the distance between subsequent ndoes in the planned path
-            if distance_next > self.max_path_distance:
-                continue
-
-            angle_change_next = min(abs(angle_next), 2 * np.pi - abs(angle_next))
-            next_node = Node(
-                next_pos[0],
-                next_pos[1],
-                distance_next,
-                root_node,
-                [],
-                angle_next,
-                angle_change_next,
-            )
-            root_node.children.append(next_node)
-            queue.append(next_node)
-
-        # If there is no next move
-        if len(queue) == 0:
-            return None, None
-
+        queue = [root_node]
         leaves = []
         iteration = 0
         while queue and iteration < self.max_iter:
@@ -134,7 +99,7 @@ class TriangulationPaths:
                     utils.distance_squared(parent.x, parent.y, next_pos[0], next_pos[1])
                 )
                 # Check the distance between subsequent ndoes in the planned path
-                if distance_next > self.max_path_distance:
+                if distance_node > self.max_path_distance:
                     continue
 
                 # Check we're not colliding with a cone
@@ -241,14 +206,17 @@ class TriangulationPaths:
         global_right_cones_array = np.array(global_right_cones)
         global_left_cones_array = np.array(global_left_cones)
 
-        # Count the cones on each side of the car that have the wrong colour
-        color_cost = (
-            (
-                np.count_nonzero(global_right_cones_array[:, -1] == 0)
-                + np.count_nonzero(global_left_cones_array[:, -1] == 1)
-            )
-            / len(cones)
-        ) ** 2
+        if len(global_right_cones) > 0 and len(global_left_cones) > 0:
+            # Count the cones on each side of the car that have the wrong colour
+            color_cost = (
+                (
+                    np.count_nonzero(global_right_cones_array[:, -1] == 0)
+                    + np.count_nonzero(global_left_cones_array[:, -1] == 1)
+                )
+                / len(cones)
+            ) ** 2
+        else:
+            color_cost = 50
 
         track_widths = (
             []
