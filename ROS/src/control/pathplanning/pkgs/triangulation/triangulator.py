@@ -99,6 +99,8 @@ class Triangulator:
         _, leaves = self.triangulation_paths.get_all_paths(
             triangulation_centers, center_points, cones[:, :-1]
         )
+        if leaves is None:
+            return None
 
         path = self.get_best_path(leaves, cones)
 
