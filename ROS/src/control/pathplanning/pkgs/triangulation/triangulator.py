@@ -2,9 +2,8 @@ import sys
 from typing import Tuple
 import rospy
 import numpy as np
-from triangulation.center_points import get_center_points
+from triangulation.center_points import get_center_points, filter_center_points
 from triangulation.paths import TriangulationPaths
-import triangulation.utils
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point, Pose, PoseArray, Quaternion
 from std_msgs.msg import Header
@@ -74,6 +73,8 @@ class Triangulator:
         triangulation_centers, center_points, triangles = get_center_points(
             position_cones, self.triangulation_var_threshold
         )
+
+        center_points = filter_center_points(center_points, cones)
 
         # Publish visualisation topics if needed
         if self.vis:
@@ -150,12 +151,15 @@ class Triangulator:
                 angle_cost,
                 width_cost,
                 spacing_cost,
-                10 * length_cost,
+                1e2 * length_cost,
             ]
             paths.append(path)
+            print(len(path))
 
         np.set_printoptions(suppress=True)
 
+        print("---")
+        print(costs)
         total_cost = np.sum(costs, axis=1)
 
         # Get the least-cost path
