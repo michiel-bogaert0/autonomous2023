@@ -57,10 +57,10 @@ namespace ns_lidar
     preprocessedLidarPublisher_.publish(preprocessed_msg);
 
     // Ground plane removal
-    pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points(
-        new pcl::PointCloud<pcl::PointXYZI>());
-    pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points(
-        new pcl::PointCloud<pcl::PointXYZI>());
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points(
+        new pcl::PointCloud<pcl::PointXYZINormal>());
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points(
+        new pcl::PointCloud<pcl::PointXYZINormal>());
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     ground_removal_.groundRemoval(preprocessed_pc, notground_points,
                                   ground_points);

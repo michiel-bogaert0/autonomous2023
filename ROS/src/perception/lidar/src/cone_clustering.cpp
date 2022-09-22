@@ -16,6 +16,7 @@ ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n) {
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
   n.param<int>("minimal_points_cone", minimal_points_cone_, 0);
   n.param<float>("minimal_height_cone", minimal_height_cone_, 0.05);
+  n.param<double>("cone_shape_factor", cone_shape_factor_, 0.3);
 }
 
 /**
@@ -26,8 +27,8 @@ ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n) {
  * parameter.
  */
 sensor_msgs::PointCloud
-ConeClustering::cluster(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
-                        const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground) {
+ConeClustering::cluster(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
+                        const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
   sensor_msgs::PointCloud cluster_msg;
   if (clustering_method_ == "string") {
     cluster_msg = ConeClustering::stringClustering(cloud);
@@ -44,23 +45,23 @@ ConeClustering::cluster(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
  *
  */
 sensor_msgs::PointCloud ConeClustering::euclidianClustering(
-    const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
-    const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground) {
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
   // Create a PC and channel for the cone colour
   sensor_msgs::PointCloud cluster_msg;
   sensor_msgs::ChannelFloat32 cone_channel;
   cone_channel.name = "cone_type";
 
   // Creating the KdTree object for the search method of the extraction
-  pcl::search::KdTree<pcl::PointXYZI>::Ptr tree(
-      new pcl::search::KdTree<pcl::PointXYZI>);
+  pcl::search::KdTree<pcl::PointXYZINormal>::Ptr tree(
+      new pcl::search::KdTree<pcl::PointXYZINormal>);
   tree->setInputCloud(cloud);
 
   // Define the parameters for Euclidian clustering
   std::vector<pcl::PointIndices> cluster_indices;
   std::vector<pcl::PointXYZ> cluster_centroids;
-  std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters;
-  pcl::EuclideanClusterExtraction<pcl::PointXYZI> ec;
+  std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
+  pcl::EuclideanClusterExtraction<pcl::PointXYZINormal> ec;
   ec.setClusterTolerance(cluster_tolerance_);
   ec.setMinClusterSize(2);
   ec.setMaxClusterSize(200);
@@ -71,7 +72,7 @@ sensor_msgs::PointCloud ConeClustering::euclidianClustering(
   // Iterate over all cluster indices
   for (const auto &iter : cluster_indices) {
     // Create PC of the current cone cluster
-    pcl::PointCloud<pcl::PointXYZI> cone;
+    pcl::PointCloud<pcl::PointXYZINormal> cone;
     for (auto it : iter.indices) {
       cone.points.push_back(cloud->points[it]);
     }
@@ -92,7 +93,7 @@ sensor_msgs::PointCloud ConeClustering::euclidianClustering(
 
   // For each ground point find the closest centroid
   // if it is within a certain threshold, add the point to that cluster
-  for (pcl::PointXYZI point : ground->points) {
+  for (pcl::PointXYZINormal point : ground->points) {
     float closest_cluster_dist = INFINITY;
     uint16_t closest_cluster_id = 0;
 
@@ -126,18 +127,18 @@ sensor_msgs::PointCloud ConeClustering::euclidianClustering(
  *
  */
 sensor_msgs::PointCloud ConeClustering::stringClustering(
-    const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud) {
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud) {
 
   // sort point from left to right (because they are ordered from left to right)
   std::sort(cloud->begin(), cloud->end(), leftrightsort);
 
-  std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters;
-  std::vector<pcl::PointXYZI> cluster_rightmost; // The rightmost point in each cluster
-  std::vector<pcl::PointCloud<pcl::PointXYZI>> finished_clusters;
+  std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
+  std::vector<pcl::PointXYZINormal> cluster_rightmost; // The rightmost point in each cluster
+  std::vector<pcl::PointCloud<pcl::PointXYZINormal>> finished_clusters;
 
   // Iterate over all points, up and down, left to right (elevation & azimuth)
   for (uint16_t i = 0; i < cloud->points.size(); i++) {
-    pcl::PointXYZI point = cloud->points[i];
+    pcl::PointXYZINormal point = cloud->points[i];
 
     std::vector<uint16_t>
         clusters_to_keep; // These cluster ids will be kept at the end of this
@@ -149,7 +150,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
     // Iterate over the rightmost point in each cluster
     for (uint16_t cluster_id = 0; cluster_id < cluster_rightmost.size();
          cluster_id++) {
-      pcl::PointXYZI rightmost = cluster_rightmost[cluster_id];
+      pcl::PointXYZINormal rightmost = cluster_rightmost[cluster_id];
 
       // This distance should be calculated using max(delta_azi, delta_r)
       float r_point = ConeClustering::hypot3d(point.x, point.y, point.z);
@@ -203,8 +204,8 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
     }
 
     // Remove clusters that cannot represent a cone
-    std::vector<pcl::PointCloud<pcl::PointXYZI>> new_clusters;
-    std::vector<pcl::PointXYZI> new_cluster_rightmost;
+    std::vector<pcl::PointCloud<pcl::PointXYZINormal>> new_clusters;
+    std::vector<pcl::PointXYZINormal> new_cluster_rightmost;
     std::sort(clusters_to_keep.begin(),
               clusters_to_keep.end()); // Sort the index array
     for (uint16_t id : clusters_to_keep) {
@@ -218,7 +219,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
     // We could not find a cluster where we can add the point to, so create a
     // new one
     if (!found_cluster) {
-      pcl::PointCloud<pcl::PointXYZI> pc;
+      pcl::PointCloud<pcl::PointXYZINormal> pc;
       pc.points.push_back(point);
       clusters.push_back(pc);
       cluster_rightmost.push_back(point);
@@ -227,7 +228,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
 
   // add the cluster that where put aside because they were located to far to
   // the left
-  for (pcl::PointCloud<pcl::PointXYZI> cluster : finished_clusters) {
+  for (pcl::PointCloud<pcl::PointXYZINormal> cluster : finished_clusters) {
     clusters.push_back(cluster);
   }
 
@@ -242,7 +243,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
  * cones in the current frame.
  */
 sensor_msgs::PointCloud ConeClustering::construct_message(
-    std::vector<pcl::PointCloud<pcl::PointXYZI>> clusters) {
+    std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters) {
   // Create a PC and channel for: the cone colour, the (x,y,z) dimensions of the
   // cluster
   sensor_msgs::PointCloud cluster_msg;
@@ -258,7 +259,7 @@ sensor_msgs::PointCloud ConeClustering::construct_message(
   z_size_channel.name = "z_width";
 
   // iterate over each cluster
-  for (pcl::PointCloud<pcl::PointXYZI> cluster : clusters) {
+  for (pcl::PointCloud<pcl::PointXYZINormal> cluster : clusters) {
     ConeCheck cone_check = ConeClustering::isCloudCone(cluster);
 
     // only add clusters that are likely to be cones
@@ -284,7 +285,7 @@ sensor_msgs::PointCloud ConeClustering::construct_message(
  *
  * @returns ConeCheck containing the cones coordinates and whether it is a cone
  */
-ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
+ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZINormal> cone) {
   ConeCheck cone_check;
 
   Eigen::Vector4f centroid;
@@ -322,8 +323,8 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
     }
 
     // We allow for some play in the point count prediction
-    if (dist != 0.0 && (std::abs(num_points - cone.points.size()) / num_points) <
-        point_count_threshold_) {
+    if (dist != 0.0 && (std::abs(num_points - cone.points.size()) / num_points)  <
+        point_count_threshold_ && ConeClustering::checkShape(cone, centroid, is_orange)) {
       cone_check.pos.x = centroid[0];
       cone_check.pos.y = centroid[1];
       cone_check.pos.z = centroid[2];
@@ -377,5 +378,36 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone) {
  */
 float ConeClustering::hypot3d(float a, float b, float c) {
   return std::sqrt(a * a + b * b + c * c);
+}
+
+
+bool ConeClustering::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone, Eigen::Vector4f centroid, bool orange){
+  //compute cone model(center + startinglocation)
+  ConeModel cone_model;
+  cone_model.floor = cone.points[0].curvature;
+
+  if(orange){
+    cone_model.height_cone = 0.505;
+    cone_model.half_width_cone = 0.142;
+  }
+
+  double angle = std::atan2(centroid[1], centroid[0]);
+  double translation = cone_model.half_width_cone/3;
+  int sign = (centroid[1] > 0) ? 1 : ((centroid[1] <= 0) ? -1 : 0);
+  cone_model.x = centroid[0] + std::cos(angle)*translation;
+  cone_model.y = centroid[1] + std::sin(angle)*translation*sign;
+
+  double sum = 0;
+  for (pcl::PointXYZINormal point : cone.points){
+    double distance = std::sqrt(std::pow(point.x - cone_model.x,2) + std::pow(point.y - cone_model.y,2));
+    double expected_height = cone_model.height_cone*(1 - distance/cone_model.half_width_cone);
+    double error = std::min(std::abs(1 - ((point.z - point.curvature)/expected_height)), 1.0);
+    sum += 1 - error;
+  }
+
+  double cone_metric = sum/cone.points.size();
+
+  return cone_metric > cone_shape_factor_;
+
 }
 } // namespace ns_lidar

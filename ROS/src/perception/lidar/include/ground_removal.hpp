@@ -25,8 +25,8 @@ public:
   GroundRemoval(ros::NodeHandle &n);
 
   void groundRemoval(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
-                     pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points,
-                     pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points);
+                     pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
+                     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
 
 
 private:
@@ -47,12 +47,12 @@ private:
   int radial_buckets_ ; // number of radial levels for buckets
 
   void groundRemoval_Zermas(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
-                     pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points,
-                     pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points);
+                     pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
+                     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
 
   void groundRemoval_Bins(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
-                     pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points,
-                     pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points);
+                     pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
+                     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
 
   model_t estimatePlane(const pcl::PointCloud<pcl::PointXYZI> &seed_points);
   

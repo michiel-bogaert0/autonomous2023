@@ -17,8 +17,16 @@ typedef struct {
   double bounds[3];
 } ConeCheck;
 
+typedef struct{
+  double x;
+  double y;
+  double floor;
+  double height_cone = 0.325;
+  double half_width_cone = 0.114;
+} ConeModel;
+
 struct {
-  bool operator()(pcl::PointXYZI a, pcl::PointXYZI b) const {
+  bool operator()(pcl::PointXYZINormal a, pcl::PointXYZINormal b) const {
     return a.y < b.y;
   }
 } leftrightsort;
@@ -29,8 +37,8 @@ public:
   ConeClustering(ros::NodeHandle &n);
 
   sensor_msgs::PointCloud
-  cluster(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
-          const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground);
+  cluster(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
+          const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground);
 
 private:
   ros::NodeHandle &n_;
@@ -43,15 +51,17 @@ private:
                             // other cones as a factor to the width of the cone
   int minimal_points_cone_;
   float minimal_height_cone_; //minimal height of cone above the floor threshold
+  double cone_shape_factor_; //how similar should a pointcloud be to the cone model
 
   sensor_msgs::PointCloud
-  euclidianClustering(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
-                      const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground);
+  euclidianClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
+                      const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground);
   sensor_msgs::PointCloud
-  stringClustering(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
+  stringClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud);
   sensor_msgs::PointCloud
-      construct_message(std::vector<pcl::PointCloud<pcl::PointXYZI>>);
-  ConeCheck isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone);
+      construct_message(std::vector<pcl::PointCloud<pcl::PointXYZINormal>>);
+  ConeCheck isCloudCone(pcl::PointCloud<pcl::PointXYZINormal> cone);
+  bool checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone, Eigen::Vector4f centroid, bool orange);
   float hypot3d(float a, float b, float c);
   float arctan(float x, float y);
 };
