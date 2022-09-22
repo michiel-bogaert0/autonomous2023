@@ -11,6 +11,7 @@ class TriangulationPaths:
         max_iter: int,
         plan_dist: float,
         max_angle_change: float,
+        max_path_distance: float,
         safety_dist: float,
     ) -> None:
         """Initialize triangulator
@@ -19,11 +20,13 @@ class TriangulationPaths:
             max_iter: Amount of iterations
             plan_dist: Maximum distance to plan path
             max_angle_change: Maximum angle change in path
+            max_path_distance: Maximum distance between nodes in the planned path
             safety_dist: Safety distance from objects
         """
         self.max_iter = max_iter
         self.plan_dist = plan_dist
         self.max_angle_change = max_angle_change
+        self.max_path_distance = max_path_distance
         self.safety_dist = safety_dist
         self.safety_dist_squared = safety_dist**2
 
@@ -60,6 +63,10 @@ class TriangulationPaths:
             distance_next = np.sqrt(
                 utils.distance_squared(0, 0, next_pos[0], next_pos[1])
             )
+            # Check the distance between subsequent ndoes in the planned path
+            if distance_next > self.max_path_distance:
+                continue
+
             angle_change_next = min(abs(angle_next), 2 * np.pi - abs(angle_next))
             next_node = Node(
                 next_pos[0],
@@ -72,7 +79,7 @@ class TriangulationPaths:
             )
             root_node.children.append(next_node)
             queue.append(next_node)
-        
+
         # If there is no next move
         if len(queue) == 0:
             return None, None
@@ -81,53 +88,74 @@ class TriangulationPaths:
         iteration = 0
         while queue and iteration < self.max_iter:
             iteration += 1
+            found_child = False
 
             # Get the next element from the queue
             parent = queue.pop(0)
 
-            # Get the triangles this center belongs to (can be one or two)
-            triangles = np.where(
-                np.all(triangulation_centers == np.array([parent.x, parent.y]), axis=2)
-            )[0]
-            found_child = False
+            # Get the closest center points to this element that are within 6m
+            next_nodes = utils.sort_closest_to(center_points, (parent.x, parent.y), 6)
 
-            # Go over each triangle of this point
-            for triangle in triangles:
-                # Iterate over each center point in the triangle's edges
-                for i in range(3):
-                    point = triangulation_centers[triangle][i]
-                    if point[0] != parent.x or point[1] != parent.y:
-                        angle_node = np.arctan2(
-                            point[1] - parent.y, point[0] - parent.x
-                        )
-                        angle_change = angle_node - parent.angle
-                        abs_angle_change = min(
-                            abs(angle_change), 2 * np.pi - abs(angle_change)
-                        )
-                        distance_node = np.sqrt(
-                            utils.distance_squared(
-                                parent.x, parent.y, point[0], point[1]
-                            )
-                        )
+            # A list of all the angle_changes seen thus far
+            angle_changes = None
 
-                        if (
-                            abs_angle_change <= self.max_angle_change
-                            and utils.no_collision(
-                                parent, point, cones, self.safety_dist_squared
-                            )
-                        ):
-                            node = Node(
-                                point[0],
-                                point[1],
-                                distance_node,
-                                parent,
-                                [],
-                                angle_node,
-                                angle_change,
-                            )
-                            queue.append(node)
-                            parent.children.append(node)
-                            found_child = True
+            # Iterate over each next_node, calculate the metrics and add the node to the tree
+            # we also perform some early pruning based on the angle between nodes
+            for next_pos in next_nodes:
+
+                # Make sure we're not looping from the parent to itself
+                if np.isclose(next_pos[0], parent.x) and np.isclose(
+                    next_pos[1], parent.y
+                ):
+                    continue
+
+                angle_node = np.arctan2(next_pos[1] - parent.y, next_pos[0] - parent.x)
+                angle_change = angle_node - parent.angle
+
+                # For each angle change, we allow two nodes max (we check using a 5degree tolerance)
+                if angle_changes is None:
+                    angle_changes = np.array([angle_change])
+                else:
+                    within_range = np.isclose(
+                        angle_changes,
+                        np.repeat(angle_change, len(angle_changes)),
+                        atol=np.pi / 36,
+                    )
+                    if np.count_nonzero(within_range) == 2:
+                        continue
+
+                abs_angle_change = min(abs(angle_change), 2 * np.pi - abs(angle_change))
+
+                # Check that the angle change is within bounds
+                if abs_angle_change > self.max_angle_change:
+                    continue
+
+                distance_node = np.sqrt(
+                    utils.distance_squared(parent.x, parent.y, next_pos[0], next_pos[1])
+                )
+                # Check the distance between subsequent ndoes in the planned path
+                if distance_next > self.max_path_distance:
+                    continue
+
+                # Check we're not colliding with a cone
+                if utils.no_collision(
+                    parent, next_pos, cones, self.safety_dist_squared
+                ):
+                    node = Node(
+                        next_pos[0],
+                        next_pos[1],
+                        distance_node,
+                        parent,
+                        [],
+                        angle_node,
+                        angle_change,
+                    )
+                    np.append(angle_changes, angle_change)
+                    queue.append(node)
+                    parent.children.append(node)
+                    found_child = True
+
+            # Check whether this node is a child node
             if not found_child:
                 leaves.append(parent)
 

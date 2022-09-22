@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 from pathplanning_dc.node import Node
 
@@ -56,22 +57,64 @@ def no_collision(
     return np.all(dist_squared >= safety_dist_squared)
 
 
-def get_closest_center(center_points: np.ndarray, amount: int) -> np.ndarray:
-    """Get closest center points to root
+def get_closest_center(
+    center_points: np.ndarray,
+    amount: int,
+    origin: Tuple[float, float] = (0, 0),
+    max_distance: float = -1,
+) -> np.ndarray:
+    """Get closest center points to origin
 
     Args:
-        center_points: All unique center points
+        center_points: All center points
         amount: Amount of closest center points to extract
+        origin: (optional) (x, y) position of the origin point to measure from,
+            root by default
+        max_distance: (optional) only return cones closer than this distance (-1 to disable)
 
     Returns:
     array of closest center points with length "amount"
     """
+    distances_squared = distance_squared(
+        origin[0], origin[1], center_points[:, 0], center_points[:, 1]
+    )
+
+    if max_distance == -1:
+        points_within_distance = center_points
+    else:
+        points_within_distance = center_points[distances_squared < max_distance**2]
 
     # If there are not enough points
-    if center_points.shape[0] <= amount:
-        return center_points
-
-    distances_squared = distance_squared(0, 0, center_points[:, 0], center_points[:, 1])
+    if points_within_distance.shape[0] <= amount:
+        return points_within_distance
 
     ind = np.argpartition(distances_squared, amount)
-    return center_points[ind[:amount]]
+    return points_within_distance[ind[:amount]]
+
+
+def sort_closest_to(
+    center_points: np.ndarray,
+    origin: Tuple[float, float] = (0, 0),
+    max_distance: float = -1,
+) -> np.ndarray:
+    """Sorts the array of center points according to their distance to the origin (ascending)
+
+    Args:
+        center_points: All center points
+        origin: (optional) (x, y) position of the origin point to measure from,
+            root by default
+        max_distance: (optional) only return cones closer than this distance (-1 to disable)
+
+    Returns: array of center points ordered by increasing distance to the origin
+    """
+    distances_squared = distance_squared(
+        origin[0], origin[1], center_points[:, 0], center_points[:, 1]
+    )
+
+    points_within_distance = center_points[distances_squared < max_distance**2]
+    distances_squared = distances_squared[distances_squared < max_distance**2]
+    if points_within_distance.shape[0] == 0:
+        return np.empty()
+
+    ind = np.argsort(distances_squared)
+    return points_within_distance[ind, :]

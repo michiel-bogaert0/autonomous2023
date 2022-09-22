@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import time
 import numpy as np
 import rospy
 import tf2_geometry_msgs
@@ -50,6 +51,8 @@ class PathPlanning(ROSNode):
         # Early prune settings
         # The maximum angle (rad) for a branch to be valid (sharper turns will be pruned prematurely)
         self.params["max_angle_change"] = rospy.get_param("~max_angle_change", 0.5)
+        # Maximum distance between nodes in the planned path (paths with nodes further than this will be pruned prematurely)
+        self.params["max_path_distance"] = rospy.get_param("~max_path_distance", 6)
         # The radius around a obstacle (cone) where no path can be planned
         # Should be at least the half the width of the car
         self.params["safety_dist"] = rospy.get_param("~safety_dist", 1)
@@ -107,6 +110,7 @@ class PathPlanning(ROSNode):
                 self.params["max_iter"],
                 self.params["plan_dist"],
                 self.params["max_angle_change"],
+                self.params["max_path_distance"],
                 self.params["safety_dist"],
                 vis_points=self.vis_points,
                 vis_lines=self.vis_lines,
@@ -125,7 +129,7 @@ class PathPlanning(ROSNode):
             _: Not used
             track: The observations/message on input topic.
         """
-        self.cones = np.array(
+        cones = np.array(
             [
                 [obs.location.x, obs.location.y, obs.observation_class]
                 for obs in track.observations
@@ -133,15 +137,16 @@ class PathPlanning(ROSNode):
         )
 
         # Compute
-        self.compute(track.header)
+        self.compute(cones, track.header)
 
-    def compute(self, header: Header) -> None:
+    def compute(self, cones: np.ndarray, header: Header) -> None:
         """Calculate path and publish it.
 
         Args:
+            cones: array of cones (x, y, colour)
             header: Header of input message.
         """
-        path = self.algorithm.get_path(self.cones, header)
+        path = self.algorithm.get_path(cones, header)
 
         if path is None:
             rospy.loginfo("No path found")
@@ -154,7 +159,7 @@ class PathPlanning(ROSNode):
         orientations = np.array([quaternion_from_euler(0, 0, yaw) for yaw in yaws])
 
         poses: list(Pose) = []
-        for idx, point in enumerate(path):
+        for point in path:
             pose: Pose = Pose()
             position: Point = Point()
             orientation: Quaternion = Quaternion()
