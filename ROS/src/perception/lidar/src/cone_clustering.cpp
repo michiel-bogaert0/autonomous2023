@@ -337,7 +337,7 @@ ConeCheck ConeClustering::isCloudCone(pcl::PointCloud<pcl::PointXYZINormal> cone
       // pcl::computeCovarianceMatrix(cone, covariance_matrix);
 
       if(is_orange){
-        cone_check.color = 0.5;
+        cone_check.color = 2;
         return cone_check;
       }
       // ROS_INFO("variance x: %lf", covariance_matrix(1,1));
