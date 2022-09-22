@@ -37,7 +37,8 @@ class TriangulationPaths:
 
         Args:
             triangulation_centers: center points of the edges of the triangles
-            center_points: center points of the edges of the triangles that were duplicated, probably forming the center line
+            center_points: center points of the edges of the triangles that were duplicated,
+                probably forming the center line
             cones: cones
 
         Returns:
@@ -46,9 +47,16 @@ class TriangulationPaths:
         root_node = Node(0, 0, 0, None, [], 0, 0)
         queue = []
 
+        # Get the three points closest to the center
         next_nodes = utils.get_closest_center(center_points, 3)
         for next_pos in next_nodes:
+            # Calculate some metrics of the path from root to next_pos
             angle_next = np.arctan2(next_pos[1], next_pos[0])
+
+            # Check whether we can physically turn to the next_pos
+            if abs(angle_next) > self.max_angle_change:
+                continue
+
             distance_next = np.sqrt(
                 utils.distance_squared(0, 0, next_pos[0], next_pos[1])
             )
@@ -64,17 +72,28 @@ class TriangulationPaths:
             )
             root_node.children.append(next_node)
             queue.append(next_node)
+        
+        # If there is no next move
+        if len(queue) == 0:
+            return None, None
 
         leaves = []
         iteration = 0
         while queue and iteration < self.max_iter:
             iteration += 1
+
+            # Get the next element from the queue
             parent = queue.pop(0)
+
+            # Get the triangles this center belongs to (can be one or two)
             triangles = np.where(
                 np.all(triangulation_centers == np.array([parent.x, parent.y]), axis=2)
             )[0]
             found_child = False
+
+            # Go over each triangle of this point
             for triangle in triangles:
+                # Iterate over each center point in the triangle's edges
                 for i in range(3):
                     point = triangulation_centers[triangle][i]
                     if point[0] != parent.x or point[1] != parent.y:
