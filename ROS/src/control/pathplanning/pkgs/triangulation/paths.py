@@ -29,15 +29,15 @@ class TriangulationPaths:
 
     def get_all_paths(
         self,
+        triangulation_centers: np.ndarray,
         center_points: np.ndarray,
-        unique_center_points: np.ndarray,
         cones: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Get/generate all possible paths
 
         Args:
-            center_points: center points of the edges of the triangles
-            unique_center_points: unique center points of the edges of the triangles
+            triangulation_centers: center points of the edges of the triangles
+            center_points: center points of the edges of the triangles that were duplicated, probably forming the center line
             cones: cones
 
         Returns:
@@ -46,7 +46,7 @@ class TriangulationPaths:
         root_node = Node(0, 0, 0, None, [], 0, 0)
         queue = []
 
-        next_nodes = utils.get_closest_center(unique_center_points, 3)
+        next_nodes = utils.get_closest_center(center_points, 3)
         for next_pos in next_nodes:
             angle_next = np.arctan2(next_pos[1], next_pos[0])
             distance_next = np.sqrt(
@@ -71,12 +71,12 @@ class TriangulationPaths:
             iteration += 1
             parent = queue.pop(0)
             triangles = np.where(
-                np.all(center_points == np.array([parent.x, parent.y]), axis=2)
+                np.all(triangulation_centers == np.array([parent.x, parent.y]), axis=2)
             )[0]
             found_child = False
             for triangle in triangles:
                 for i in range(3):
-                    point = center_points[triangle][i]
+                    point = triangulation_centers[triangle][i]
                     if point[0] != parent.x or point[1] != parent.y:
                         angle_node = np.arctan2(
                             point[1] - parent.y, point[0] - parent.x
@@ -93,7 +93,9 @@ class TriangulationPaths:
 
                         if (
                             abs_angle_change <= self.max_angle_change
-                            and utils.no_collision(parent, point, cones, self.safety_dist_squared)
+                            and utils.no_collision(
+                                parent, point, cones, self.safety_dist_squared
+                            )
                         ):
                             node = Node(
                                 point[0],

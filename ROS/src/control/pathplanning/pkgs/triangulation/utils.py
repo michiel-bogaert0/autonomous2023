@@ -56,18 +56,22 @@ def no_collision(
     return np.all(dist_squared >= safety_dist_squared)
 
 
-def get_closest_center(unique_center_points: np.ndarray, amount: int) -> np.ndarray:
+def get_closest_center(center_points: np.ndarray, amount: int) -> np.ndarray:
     """Get closest center points to root
 
     Args:
-        unique_center_points: All unique center points
+        center_points: All unique center points
         amount: Amount of closest center points to extract
 
     Returns:
     array of closest center points with length "amount"
     """
-    distances_squared = distance_squared(
-        0, 0, unique_center_points[:, 0], unique_center_points[:, 1]
-    )
+
+    # If there are not enough points
+    if center_points.shape[0] <= amount:
+        return center_points
+
+    distances_squared = distance_squared(0, 0, center_points[:, 0], center_points[:, 1])
+
     ind = np.argpartition(distances_squared, amount)
-    return unique_center_points[ind[:amount]]
+    return center_points[ind[:amount]]

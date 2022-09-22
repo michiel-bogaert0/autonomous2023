@@ -24,7 +24,8 @@ class Triangulator:
         """Initialize triangulator
 
         Args:
-            triangulation_var_threshold: Factor multiplied to the median of the variance of triangle lengths in order to filter bad triangles
+            triangulation_var_threshold: Factor multiplied to the median of the variance of triangle lengths
+                in order to filter bad triangles
             max_iter: Amount of iterations
             plan_dist: Maximum distance to plan path
             max_angle_change: Maximum angle change in path
@@ -73,6 +74,13 @@ class Triangulator:
 
         # Publish visualisation topics if needed
         if self.vis:
+            self.publish_points(
+                triangulation_centers,
+                header,
+                self.vis_namespace + "/cones",
+                (1, 1, 0, 1),
+                0.3,
+            )
             self.publish_points(
                 triangulation_centers,
                 header,
@@ -241,12 +249,12 @@ class Triangulator:
         output.header.frame_id = header.frame_id
         output.header.stamp = header.stamp
         output.poses = poses
-        
+
         self.vis_lines.publish(output)
 
     def visualise_triangles(self, triangles: np.ndarray, header: Header) -> None:
         """Visualises triangles using the line visualiser
-        
+
         Args:
             triangles: array of Nx3x2 containing all Delaunay triangles
             header: the message header of the original observations

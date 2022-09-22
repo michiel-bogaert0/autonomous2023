@@ -109,7 +109,7 @@ class PathPlanning(ROSNode):
                 self.params["max_angle_change"],
                 self.params["safety_dist"],
                 vis_points=self.vis_points,
-                vis_lines=self.vis_lines
+                vis_lines=self.vis_lines,
             )
 
         self.pub = rospy.Publisher("/output/path", PoseArray, queue_size=10)
