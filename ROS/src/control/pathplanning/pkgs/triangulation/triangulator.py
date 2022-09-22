@@ -17,6 +17,7 @@ class Triangulator:
         max_iter: int,
         plan_dist: float,
         max_angle_change: float,
+        max_path_distance: float,
         safety_dist: float,
         vis_points=None,
         vis_lines=None,
@@ -29,6 +30,7 @@ class Triangulator:
             max_iter: Amount of iterations
             plan_dist: Maximum distance to plan path
             max_angle_change: Maximum angle change in path
+            max_path_distance: Maximum distance between nodes in the planned path
             safety_dist: Safety distance from objects
             vis_points: (optional) rostopic for publishing MarkerArrays
             vis_lines: (optional) rostopic for publishing PoseArrays
@@ -37,6 +39,7 @@ class Triangulator:
         self.max_iter = max_iter
         self.plan_dist = plan_dist
         self.max_angle_change = max_angle_change
+        self.max_path_distance = max_path_distance
         self.safety_dist = safety_dist
         self.safety_dist_squared = safety_dist**2
 
@@ -45,10 +48,10 @@ class Triangulator:
         self.vis_points = vis_points
         self.vis_lines = vis_lines
         self.vis_namespace = "pathplanning_vis"  # TODO add parameter
-        self.vis_lifetime = 1  # TODO add parameter
+        self.vis_lifetime = 0.5  # TODO add parameter
 
         self.triangulation_paths = TriangulationPaths(
-            max_iter, plan_dist, max_angle_change, safety_dist
+            max_iter, plan_dist, max_angle_change, max_path_distance, safety_dist
         )
 
     def get_path(self, cones: np.ndarray, header: Header):
@@ -75,7 +78,7 @@ class Triangulator:
         # Publish visualisation topics if needed
         if self.vis:
             self.publish_points(
-                triangulation_centers,
+                position_cones,
                 header,
                 self.vis_namespace + "/cones",
                 (1, 1, 0, 1),
