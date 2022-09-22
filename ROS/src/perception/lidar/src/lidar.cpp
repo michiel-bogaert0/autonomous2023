@@ -192,10 +192,19 @@ namespace ns_lidar
       marker.scale.y = 0.5; // 0.228;
       marker.scale.z = 0.5; // 0.325;
 
-      marker.color.r = color;
-      marker.color.g = color;
-      marker.color.b = 1 - color;
-      marker.color.a = 1;
+      if(color == 0.5){
+        marker.color.r = 1;
+        marker.color.g = 0.5;
+        marker.color.b = 0;
+        marker.color.a = 1;
+      }
+      else{
+        marker.color.r = color;
+        marker.color.g = color;
+        marker.color.b = 1 - color;
+        marker.color.a = 1;
+      }
+      
 
       markers.markers.push_back(marker);
     }
