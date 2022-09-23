@@ -3,20 +3,13 @@
 #include <algorithm>
 #include <cmath>
 
-#define VERT_RES_TAN std::tan(0.35 * M_PI / (2.0f * 180))
-#define HOR_RES_TAN std::tan(2 * M_PI / (2.0f * 2048))
-
 namespace ns_lidar {
 // Constructor
 ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n), coneClassification_(n) {
   // Get parameters
   n.param<std::string>("clustering_method", clustering_method_, "string");
   n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
-  // n.param<double>("point_count_threshold", point_count_threshold_, 0.5);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
-  // n.param<int>("minimal_points_cone", minimal_points_cone_, 0);
-  // n.param<float>("minimal_height_cone", minimal_height_cone_, 0.05);
-  // n.param<double>("cone_shape_factor", cone_shape_factor_, 0.3);
 }
 
 /**
