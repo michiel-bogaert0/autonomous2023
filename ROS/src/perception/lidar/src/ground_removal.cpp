@@ -88,7 +88,7 @@ void GroundRemoval::groundRemoval_Bins(
             // iterate over each point in bucket in decided whether it is part of the ground
             // based on its distance from the floor level
             for(uint16_t p =0; p< bucket.points.size(); p++){
-                pcl::PointXYZINormal point; //= bucket.points[p];
+                pcl::PointXYZINormal point;
                 point.x = bucket.points[p].x;
                 point.y = bucket.points[p].y;
                 point.z = bucket.points[p].z;
