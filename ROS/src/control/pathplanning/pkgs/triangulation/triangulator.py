@@ -159,7 +159,7 @@ class Triangulator:
                 angle_cost,
                 width_cost,
                 spacing_cost,
-                1e2 * length_cost,
+                1e3 * length_cost,
             ]
             paths.append(path)
             print(len(path))

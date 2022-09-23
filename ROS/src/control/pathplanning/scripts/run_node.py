@@ -152,7 +152,10 @@ class PathPlanning(ROSNode):
         )
 
         # Compute
+        start = time.perf_counter()
         self.compute(cones, track.header)
+        stop = time.perf_counter()
+        rospy.loginfo(f"{(stop - start)*1000:.1f} ms")
 
     def compute(self, cones: np.ndarray, header: Header) -> None:
         """Calculate path and publish it.
