@@ -27,10 +27,18 @@ class PathPlanning(ROSNode):
         self.frametf = TransformFrames()
 
         self.params = {}
+
         # Do we want to output visualisations for diagnostics?
         self.params["debug_visualisation"] = rospy.get_param(
             "~debug_visualisation", False
         )
+        self.params["vis_namespace"] = rospy.get_param(
+            "~vis_namespace", "pathplanning_vis"
+        )
+        self.params["vis_lifetime"] = rospy.get_param(
+            "~vis_lifetime", 0.2
+        )
+
         # Defines which algorithm to run triangulatie ("tri") or RRT ("RRT")
         self.params["algo"] = rospy.get_param("~algorithm", "tri")
         # Load at least all params from config file via ros parameters
@@ -43,6 +51,11 @@ class PathPlanning(ROSNode):
             "~max_iter", 100 if self.params["expand_dist"] == "tri" else 750
         )
 
+        # The maximum variance each allowed set of triangle edge lengths can always have.
+        #   So it's the minimal maximum variance
+        self.params["triangulation_max_var"] = rospy.get_param(
+            "~triangulation_max_var", 100
+        )
         # Factor multiplied to the median of the variance of triangle lengths in order to filter bad triangles
         self.params["triangulation_var_threshold"] = rospy.get_param(
             "~triangulation_var_threshold", 1.2
@@ -106,14 +119,16 @@ class PathPlanning(ROSNode):
             )
         else:
             self.algorithm = Triangulator(
+                self.params["triangulation_max_var"],
                 self.params["triangulation_var_threshold"],
                 self.params["max_iter"],
-                self.params["plan_dist"],
                 self.params["max_angle_change"],
                 self.params["max_path_distance"],
                 self.params["safety_dist"],
                 vis_points=self.vis_points,
                 vis_lines=self.vis_lines,
+                vis_namespace=self.params["vis_namespace"],
+                vis_lifetime=self.params["vis_lifetime"],
             )
 
         self.pub = rospy.Publisher("/output/path", PoseArray, queue_size=10)

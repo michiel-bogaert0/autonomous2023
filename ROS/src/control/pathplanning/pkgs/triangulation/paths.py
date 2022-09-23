@@ -9,7 +9,6 @@ class TriangulationPaths:
     def __init__(
         self,
         max_iter: int,
-        plan_dist: float,
         max_angle_change: float,
         max_path_distance: float,
         safety_dist: float,
@@ -18,13 +17,11 @@ class TriangulationPaths:
 
         Args:
             max_iter: Amount of iterations
-            plan_dist: Maximum distance to plan path
             max_angle_change: Maximum angle change in path
             max_path_distance: Maximum distance between nodes in the planned path
             safety_dist: Safety distance from objects
         """
         self.max_iter = max_iter
-        self.plan_dist = plan_dist
         self.max_angle_change = max_angle_change
         self.max_path_distance = max_path_distance
         self.safety_dist = safety_dist
@@ -61,7 +58,7 @@ class TriangulationPaths:
             # Get the closest center points to this element that are within 6m
             next_nodes = utils.sort_closest_to(center_points, (parent.x, parent.y), 6)
 
-            # A list of all the angles to nodes seen thus far
+            # A list of all the abs_angle_change to nodes seen thus far
             angles_added = None
 
             # Iterate over each next_node, calculate the metrics and add the node to the tree
@@ -77,27 +74,26 @@ class TriangulationPaths:
                 angle_node = np.arctan2(next_pos[1] - parent.y, next_pos[0] - parent.x)
                 angle_change = angle_node - parent.angle
 
-                # For each angle, we allow one nodes max (we check using a 5 degree tolerance)
+                abs_angle_change = min(abs(angle_change), 2 * np.pi - abs(angle_change))
+
+                # We want to actually physically branch out, so only add one branch for each direction
+                # By starting with the closest points, we hope this is a good point for a given direction
                 if angles_added is not None:
                     within_range = np.isclose(
                         angles_added,
-                        np.repeat(angle_node, len(angles_added)),
-                        atol=np.pi / 36,
+                        np.repeat(abs_angle_change, len(angles_added)),
+                        atol=np.pi / 36,  # 5 degree sensitivity
                     )
                     if np.count_nonzero(within_range) > 0:
                         continue
-
-                abs_angle_change = min(abs(angle_change), 2 * np.pi - abs(angle_change))
 
                 # Check that the angle change is within bounds
                 if abs_angle_change > self.max_angle_change:
                     continue
 
-                distance_node = np.sqrt(
-                    utils.distance_squared(parent.x, parent.y, next_pos[0], next_pos[1])
-                )
+                distance_node = (parent.x - next_pos[0]) ** 2 + (parent.y - next_pos[1]) ** 2
                 # Check the distance between subsequent nodes in the planned path
-                if distance_node > self.max_path_distance:
+                if distance_node > self.max_path_distance ** 2:
                     continue
 
                 # Check we're not colliding with a cone
@@ -115,9 +111,10 @@ class TriangulationPaths:
                     )
                     
                     if angles_added is None:
-                        angles_added = np.array([angle_node])
+                        angles_added = np.array([abs_angle_change])
                     else:
-                        angles_added = np.append(angles_added, angle_node)
+                        angles_added = np.append(angles_added, abs_angle_change)
+
                     queue.append(node)
                     parent.children.append(node)
                     found_child = True

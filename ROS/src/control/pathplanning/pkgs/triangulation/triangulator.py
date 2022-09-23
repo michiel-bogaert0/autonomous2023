@@ -12,31 +12,36 @@ from std_msgs.msg import Header
 class Triangulator:
     def __init__(
         self,
+        triangulation_max_var: float,
         triangulation_var_threshold: float,
         max_iter: int,
-        plan_dist: float,
         max_angle_change: float,
         max_path_distance: float,
         safety_dist: float,
-        vis_points=None,
-        vis_lines=None,
+        vis_points: rospy.Publisher=None,
+        vis_lines: rospy.Publisher=None,
+        vis_namespace: str="pathplanning_vis",
+        vis_lifetime: float=0.2,
     ) -> None:
         """Initialize triangulator
 
         Args:
+            triangulation_max_var: the maximum variance each allowed set of triangle edge lengths can always have.
+                So it's the minimal maximum variance
             triangulation_var_threshold: Factor multiplied to the median of the variance of triangle lengths
                 in order to filter bad triangles
             max_iter: Amount of iterations
-            plan_dist: Maximum distance to plan path
             max_angle_change: Maximum angle change in path
             max_path_distance: Maximum distance between nodes in the planned path
             safety_dist: Safety distance from objects
             vis_points: (optional) rostopic for publishing MarkerArrays
             vis_lines: (optional) rostopic for publishing PoseArrays
+            vis_namespace: (optional) namespace for publishing markers
+            vis_lifetime: (optional) visualisation marker lifetime
         """
+        self.triangulation_max_var = triangulation_max_var
         self.triangulation_var_threshold = triangulation_var_threshold
         self.max_iter = max_iter
-        self.plan_dist = plan_dist
         self.max_angle_change = max_angle_change
         self.max_path_distance = max_path_distance
         self.safety_dist = safety_dist
@@ -46,11 +51,11 @@ class Triangulator:
         self.vis = vis_points is not None and vis_lines is not None
         self.vis_points = vis_points
         self.vis_lines = vis_lines
-        self.vis_namespace = "pathplanning_vis"  # TODO add parameter
-        self.vis_lifetime = 0.5  # TODO add parameter
+        self.vis_namespace = vis_namespace
+        self.vis_lifetime = vis_lifetime
 
         self.triangulation_paths = TriangulationPaths(
-            max_iter, plan_dist, max_angle_change, max_path_distance, safety_dist
+            max_iter, max_angle_change, max_path_distance, safety_dist
         )
 
     def get_path(self, cones: np.ndarray, header: Header):
@@ -67,14 +72,17 @@ class Triangulator:
 
         # We need at least 4 cones for Delaunay triangulation
         if len(position_cones) < 4:
+            print("Not enough cones for triangulation.")
             return None
 
         # Perform triangulation and get the (useful) center points
         triangulation_centers, center_points, triangles = get_center_points(
-            position_cones, self.triangulation_var_threshold
+            position_cones, self.triangulation_max_var, self.triangulation_var_threshold
         )
 
-        center_points = filter_center_points(center_points, cones)
+        center_points = filter_center_points(
+            center_points, triangulation_centers, cones
+        )
 
         # Publish visualisation topics if needed
         if self.vis:
@@ -159,7 +167,7 @@ class Triangulator:
         np.set_printoptions(suppress=True)
 
         print("---")
-        print(costs)
+        # print(costs)
         total_cost = np.sum(costs, axis=1)
 
         # Get the least-cost path
