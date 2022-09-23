@@ -93,7 +93,7 @@ void GroundRemoval::groundRemoval_Bins(
                 point.y = bucket.points[p].y;
                 point.z = bucket.points[p].z;
                 point.intensity = bucket.points[p].intensity;
-                point.curvature  = floor;
+                point.normal_z  = floor;
                 if(point.z - floor < th_floor_){
                     ground_points->push_back(point);
                 }

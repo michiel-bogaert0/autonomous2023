@@ -39,7 +39,7 @@ ConeCheck ConeClassification::classify_cone(const pcl::PointCloud<pcl::PointXYZI
 
 
   // filter based on number of points and height centroid.
-  if (cone.points.size() >= minimal_points_cone_ && centroid[2] - cone.points[0].curvature > minimal_height_cone_)
+  if (cone.points.size() >= minimal_points_cone_ && centroid[2] - cone.points[0].normal_z > minimal_height_cone_)
   {
     float dist = hypot3d(centroid[0], centroid[1], centroid[2]);;
     float num_points = 0.0;
@@ -120,7 +120,7 @@ ConeCheck ConeClassification::classify_cone(const pcl::PointCloud<pcl::PointXYZI
 bool ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone, Eigen::Vector4f centroid, bool orange){
   //compute cone model(center + startinglocation)
   ConeModel cone_model;
-  cone_model.floor = cone.points[0].curvature;
+  cone_model.floor = cone.points[0].normal_z;
 
   //adapt the cone model for orange cone
   if(orange){
@@ -142,7 +142,7 @@ bool ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone, 
   for (pcl::PointXYZINormal point : cone.points){
     double distance = std::sqrt(std::pow(point.x - cone_model.x,2) + std::pow(point.y - cone_model.y,2));
     double expected_height = cone_model.height_cone*(1 - distance/cone_model.half_width_cone);
-    double error = std::min(std::abs(1 - ((point.z - point.curvature)/expected_height)), 1.0);
+    double error = std::min(std::abs(1 - ((point.z - point.normal_z)/expected_height)), 1.0);
     sum += 1 - error;
   }
   double cone_metric = sum/cone.points.size();
