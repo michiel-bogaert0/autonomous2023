@@ -1,6 +1,5 @@
 #include "cone_classification.hpp"
 #include <algorithm>
-#include <cmath>
 
 #define VERT_RES_TAN std::tan(0.35 * M_PI / (2.0f * 180))
 #define HOR_RES_TAN std::tan(2 * M_PI / (2.0f * 2048))
@@ -51,6 +50,7 @@ ConeCheck ConeClassification::classify_cone(const pcl::PointCloud<pcl::PointXYZI
       // Calculate the expected number of points that hit the cone
       // Using the AMZ formula with w_c = average of x and y widths and r_v=0.35°
       // and r_h=2048 points per rotation
+      // @ref https://arxiv.org/pdf/1809.10099.pdf
       num_points = (1 / 2.0f) * (0.325 / (2.0f * dist * VERT_RES_TAN)) *
                         (0.228 / (2.0f * dist * HOR_RES_TAN));
     }
@@ -116,6 +116,9 @@ ConeCheck ConeClassification::classify_cone(const pcl::PointCloud<pcl::PointXYZI
  *
  * @returns a bool that is true if the shape of the given pointcloud is 
  * similar enough to a cone (according to a threshold determined by a rosparam).
+ * 
+ * The main idea behind this function is based on:
+ * @ref https://lup.lub.lu.se/luur/download?func=downloadFile&recordOId=9069372&fileOId=9069373
  */
 bool ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone, Eigen::Vector4f centroid, bool orange){
   //compute cone model(center + startinglocation)
@@ -136,16 +139,25 @@ bool ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone, 
   int sign = (centroid[1] > 0) ? 1 : ((centroid[1] <= 0) ? -1 : 0);
   cone_model.x = centroid[0] + std::cos(angle)*translation;
   cone_model.y = centroid[1] + std::sin(angle)*translation*sign;
+   
+  Eigen::MatrixXf cone_matrix = cone.getMatrixXfMap();
 
-  //compute metric that shows how similar the pointcloud is to the cone model
-  double sum = 0;
-  for (pcl::PointXYZINormal point : cone.points){
-    double distance = std::sqrt(std::pow(point.x - cone_model.x,2) + std::pow(point.y - cone_model.y,2));
-    double expected_height = cone_model.height_cone*(1 - distance/cone_model.half_width_cone);
-    double error = std::min(std::abs(1 - ((point.z - point.normal_z)/expected_height)), 1.0);
-    sum += 1 - error;
-  }
-  double cone_metric = sum/cone.points.size();
+  //calculate distance
+  cone_matrix.row(0) = Eigen::square((cone_matrix.row(0).array() - cone_model.x));
+  cone_matrix.row(1) = Eigen::square((cone_matrix.row(1).array() - cone_model.y));
+  cone_matrix.row(0) = (cone_matrix.row(0) + cone_matrix.row(1)).cwiseSqrt();
+
+  //calculate expected height of point
+  cone_matrix.row(0) = (1- (cone_matrix.row(0)/cone_model.half_width_cone).array())*cone_model.height_cone;
+
+  //compute error term
+  cone_matrix.row(3) = (cone_matrix.row(2) - cone_matrix.row(6)).cwiseQuotient(cone_matrix.row(0));
+  cone_matrix.row(3) = (1 - cone_matrix.row(3).array()).cwiseAbs();
+  cone_matrix.row(3) = cone_matrix.row(3).cwiseMin(1);
+  cone_matrix.row(3) = 1 - cone_matrix.row(3).array();
+
+  //compute the average
+  double cone_metric = cone_matrix.row(3).sum() / cone_matrix.cols();
 
   return cone_metric > cone_shape_factor_;
 
