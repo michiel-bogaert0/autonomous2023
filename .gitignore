@@ -5,10 +5,21 @@
 __pycache__/
 .idea
 .vscode
+*venv/
 
-# ROS specific
+# ROS
 .catkin_tools/
 *.egg-info
 core
 *.log
+*.stderr
 *.bag
+build/
+devel/
+logs/
+
+# Python
+*.whl
+
+# FSDS
+AirSim/

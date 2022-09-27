@@ -1,0 +1,28 @@
+<launch>
+    <node pkg="lidar" type="lidar" name="lidar" output="screen">
+        <!-- ground removal -->
+        <param name="ground_removal_method" value="bins"/>
+        <param name="num_iter" value="3" />
+        <param name="num_lpr" value="250" />
+        <param name="th_seeds" value="0.15" />
+        <param name="th_dist" value="0.05" />
+        <param name="sensor_height" value="0.3" />
+
+        <param name= "th_floor" value = "0.07"/>
+        <param name= "angular_buckets" value = "15"/>
+        <param name= "radial_buckets" value = "40"/>
+
+        <!-- Clustering -->
+        <param name="clustering_method" value="string" />
+        <param name="cluster_tolerance" value="1" />
+        <param name="point_count_threshold" value="2" />
+        
+        <param name="min_distance_factor" value="1.5"/>
+        <param name= "minimal_points_cone" value = "3"/>
+        <param name= "minimal_height_cone" value = "0.07"/>
+
+        <param name="show_debug" value= "false"/>
+        <remap from="/os_cloud_node/points" to="/ugr/car/sensors/lidar"/>
+        <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
+    </node>
+</launch>

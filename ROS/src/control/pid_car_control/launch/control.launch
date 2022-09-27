@@ -1,0 +1,41 @@
+<launch>
+    <!-- ! Pure mapping: ugr/car_odom 
+         ! SLAM: ugr/slam_odom
+    -->
+    <arg name="reference_frame" default="ugr/car_odom"/>
+    
+    <node pkg="pid_car_control" type="run.py" name="pid_car_control" output="screen" respawn="true">
+
+        <param name="publish_rate" value="10" />
+        <param name="speed/target" value="3" />
+
+        <param name="steering/Kp" value="1.0" />
+        <param name="steering/Ki" value="0.0" />
+        <param name="steering/Kd" value="0.0" />
+        <param name="steering/max_steering_angle" value="45" />
+
+        <param name="trajectory/minimal_distance" value="4" />
+        <param name="trajectory/t_step" value="0.05" />
+        <param name="trajectory/max_angle" value="1" />
+
+
+        <param name="base_link_frame" value="ugr/car_base_link" />
+        <param name="world_frame" value="$(arg reference_frame)" />
+
+        <remap from="/input/path" to="/pathplanning/path" />
+        <remap from="/output/drive_command" to="/control/control_command" />
+        <remap from="/output/target_point" to="/control/target_point" />
+    </node>
+
+    <node pkg="pid_car_control" type="control_jetson.py" name="jetson_controller" output="screen">
+        <param name="interface" value="can0" />
+        <param name="baudrate" value="250000" />
+        <param name="odrive_dbc" value="$(find can_node)/odrive.dbc" />
+        <param name="max_velocity" value="1"/>
+        <param name="steer_max_step" value="1600"/>
+
+        <remap from="/input/control_command" to="/control/control_command" />
+        <remap from="/input/start" to="/control/start" />
+        <remap from="/input/stop" to="/control/stop" />
+    </node>
+</launch>

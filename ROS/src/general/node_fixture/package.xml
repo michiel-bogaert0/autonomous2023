@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>node_fixture</name>
+  <version>0.0.0</version>
+  <description>The node_fixture package</description>
+
+  <maintainer email="gilles@todo.todo">gilles</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+
+
+  </export>
+</package>
