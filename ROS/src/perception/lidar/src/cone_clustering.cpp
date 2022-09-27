@@ -108,7 +108,7 @@ sensor_msgs::PointCloud ConeClustering::euclidianClustering(
     }
   }
 
-  return ConeClustering::construct_message(clusters);
+  return ConeClustering::constructMessage(clusters);
 }
 
 /**
@@ -227,7 +227,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
     clusters.push_back(cluster);
   }
 
-  return ConeClustering::construct_message(clusters);
+  return ConeClustering::constructMessage(clusters);
 }
 
 /**
@@ -255,7 +255,7 @@ sensor_msgs::PointCloud ConeClustering::constructMessage(
 
   // iterate over each cluster
   for (pcl::PointCloud<pcl::PointXYZINormal> cluster : clusters) {
-    ConeCheck cone_check = coneClassification_.classify_cone(cluster);
+    ConeCheck cone_check = coneClassification_.classifyCone(cluster);
 
     // only add clusters that are likely to be cones
     if (cone_check.is_cone) {
