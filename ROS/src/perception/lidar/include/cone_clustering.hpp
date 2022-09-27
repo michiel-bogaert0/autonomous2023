@@ -33,7 +33,8 @@ private:
 
   std::string clustering_method_; // Default: euclidian, others: string
   double cluster_tolerance_;      // The cone clustering tolerance (m)
-  double min_distance_factor_; // distance around the cone that contains no
+  double
+      min_distance_factor_; // distance around the cone that contains no
                             // other cones as a factor to the width of the cone
 
   sensor_msgs::PointCloud
@@ -42,7 +43,7 @@ private:
   sensor_msgs::PointCloud
   stringClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud);
   sensor_msgs::PointCloud
-      construct_message(std::vector<pcl::PointCloud<pcl::PointXYZINormal>>);
+      constructMessage(std::vector<pcl::PointCloud<pcl::PointXYZINormal>>);
   float arctan(float x, float y);
 };
 } // namespace ns_lidar
