@@ -57,10 +57,10 @@ namespace ns_lidar
     preprocessedLidarPublisher_.publish(preprocessed_msg);
 
     // Ground plane removal
-    pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points(
-        new pcl::PointCloud<pcl::PointXYZI>());
-    pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points(
-        new pcl::PointCloud<pcl::PointXYZI>());
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points(
+        new pcl::PointCloud<pcl::PointXYZINormal>());
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points(
+        new pcl::PointCloud<pcl::PointXYZINormal>());
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     ground_removal_.groundRemoval(preprocessed_pc, notground_points,
                                   ground_points);
@@ -192,10 +192,19 @@ namespace ns_lidar
       marker.scale.y = 0.5; // 0.228;
       marker.scale.z = 0.5; // 0.325;
 
-      marker.color.r = color;
-      marker.color.g = color;
-      marker.color.b = 1 - color;
-      marker.color.a = 1;
+      if(color == 2){
+        marker.color.r = 1;
+        marker.color.g = 0.5;
+        marker.color.b = 0;
+        marker.color.a = 1;
+      }
+      else{
+        marker.color.r = color;
+        marker.color.g = color;
+        marker.color.b = 1 - color;
+        marker.color.a = 1;
+      }
+      
 
       markers.markers.push_back(marker);
     }

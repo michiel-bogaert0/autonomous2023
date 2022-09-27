@@ -19,8 +19,9 @@
         
         <param name="min_distance_factor" value="1.5"/>
         <param name= "minimal_points_cone" value = "3"/>
-        <param name= "minimal_height_cone" value = "0.07"/>
-
+        <param name= "minimal_height_cone" value = "0.15"/>
+        <param name= "cone_shape_factor" value = "0.4"/>
+ 
         <param name="show_debug" value= "false"/>
         <remap from="/os_cloud_node/points" to="/ugr/car/sensors/lidar"/>
         <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>

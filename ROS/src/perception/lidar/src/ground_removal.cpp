@@ -28,8 +28,8 @@ GroundRemoval::GroundRemoval(ros::NodeHandle &n) : n_(n) {
  */
 void GroundRemoval::groundRemoval(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points){
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points){
 
       if(ground_removal_method_ == "zermas"){
         return GroundRemoval::groundRemoval_Zermas(cloud_in, notground_points, ground_points);
@@ -50,8 +50,8 @@ void GroundRemoval::groundRemoval(
  */
 void GroundRemoval::groundRemoval_Bins(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points){
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points){
 
     // compute the number of buckets that will be necesarry
     int bucket_size = angular_buckets_*radial_buckets_;
@@ -88,7 +88,12 @@ void GroundRemoval::groundRemoval_Bins(
             // iterate over each point in bucket in decided whether it is part of the ground
             // based on its distance from the floor level
             for(uint16_t p =0; p< bucket.points.size(); p++){
-                pcl::PointXYZI point = bucket.points[p];
+                pcl::PointXYZINormal point;
+                point.x = bucket.points[p].x;
+                point.y = bucket.points[p].y;
+                point.z = bucket.points[p].z;
+                point.intensity = bucket.points[p].intensity;
+                point.normal_z  = floor;
                 if(point.z - floor < th_floor_){
                     ground_points->push_back(point);
                 }
@@ -111,8 +116,8 @@ void GroundRemoval::groundRemoval_Bins(
  */
 void GroundRemoval::groundRemoval_Zermas(
     const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr notground_points,
-    pcl::PointCloud<pcl::PointXYZI>::Ptr ground_points) {
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points) {
 
       
   pcl::PointCloud<pcl::PointXYZI>::Ptr seed_points(
@@ -149,14 +154,14 @@ void GroundRemoval::groundRemoval_Zermas(
     for (int k = 0; k < result.rows(); ++k) {
       if (result[k] < th_dist_d_) {
         // TODO think about a more optimized code for this part
-        pcl::PointXYZI point;
+        pcl::PointXYZINormal point;
         point.x = cloud_in->points[k].x;
         point.y = cloud_in->points[k].y;
         point.z = cloud_in->points[k].z;
         point.intensity = cloud_in->points[k].intensity;
         ground_points->points.push_back(point);
       } else {
-        pcl::PointXYZI point;
+        pcl::PointXYZINormal point;
         point.x = cloud_in->points[k].x;
         point.y = cloud_in->points[k].y;
         point.z = result[k];
