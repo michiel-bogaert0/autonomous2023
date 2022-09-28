@@ -15,7 +15,8 @@ class VisObs(ROSNode):
         Args:
             blue_cone_model_url: url to blue cone model
             yellow_cone_model_url: url to yellow cone model
-            use_cones: if True, uses cone models, otherwise uses cyllinders
+            use_cones: if True, uses cone models, otherwise uses cylinders
+            use_covariance: if True, uses observation covariances to adjust the scale of the cylinders
             vis_namespace: the namespace to use 
             vis_lifetime: how long a marker should stay alive
         """
@@ -30,7 +31,8 @@ class VisObs(ROSNode):
             "https://storage.googleapis.com/learnmakeshare_cdn_public/yellow_cone_final.dae",
         )
 
-        self.use_cones = rospy.get_param("~use_cones", True)        
+        self.use_cones = rospy.get_param("~use_cones", True)
+        self.use_covariance = rospy.get_param("~use_covariance",False)
 
         self.vis_namespace = rospy.get_param("~namespace", "locmap_vis")
         self.vis_lifetime = rospy.get_param("~lifetime", 3)
@@ -48,7 +50,7 @@ class VisObs(ROSNode):
         """
     
         marker_array = self.vis_handler.observations_to_markerarray(
-            msg, self.vis_namespace, 0, False, self.use_cones
+            msg, self.vis_namespace, 0, False, self.use_cones,self.use_covariance
         )
         
         self.publish("/output/vis", marker_array)
