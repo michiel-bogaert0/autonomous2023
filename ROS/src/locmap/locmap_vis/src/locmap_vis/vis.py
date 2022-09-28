@@ -17,7 +17,7 @@ class LocMapVis:
 
     def delete_markerarray(self, namespace):
         """
-        Deletes all markes of a given namespace.
+        Deletes all markers of a given namespace.
 
         Args:
             namespace: the namespace to remove the markers from
@@ -99,6 +99,8 @@ class LocMapVis:
             marker_array.markers.append(marker)
 
         return marker_array
+    
+    
 
     def observations_to_markerarray(
         self,
@@ -106,7 +108,8 @@ class LocMapVis:
         namespace,
         lifetime,
         persist=False,
-        use_cones=True
+        use_cones=True,
+        use_covariance=False
     ):
         """
         Takes in an Observations message and produces the corresponding MarkerArary message
@@ -117,6 +120,7 @@ class LocMapVis:
             lifetime: the lifetime of the markers
             persist: set to true if the markers need to persist (this is different than lifetime=0)
             use_cones: if True, uses cone models, otherwise cyllinders
+            use_covariance: use the covariance of the observations to adjust the marker scale (for sensor fusion purposes)
 
         Returns:
             MakerArray message
@@ -140,9 +144,14 @@ class LocMapVis:
                 marker.mesh_use_embedded_materials = True
             else:
                 marker.type = Marker.CYLINDER
-                marker.scale.x = 0.3
-                marker.scale.y = 0.3
-                marker.scale.z = 0.02
+                if use_covariance:
+                    marker.scale.x = 0.3
+                    marker.scale.y = 0.3
+                    marker.scale.z = 0.02
+                else:
+                    marker.scale.x = obs.covariance[0][0]
+                    marker.scale.y = obs.covariance[1][1]
+                    marker.scale.z = obs.covariance[2][2]/100
                 
                 marker.color.r = 0 if obs.observation_class == 0 else 1
                 marker.color.g = 0 if obs.observation_class == 0 else 1
