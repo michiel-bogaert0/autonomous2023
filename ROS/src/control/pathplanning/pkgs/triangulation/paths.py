@@ -27,6 +27,8 @@ class TriangulationPaths:
         self.safety_dist = safety_dist
         self.safety_dist_squared = safety_dist**2
 
+        self.angle_sensitivity = np.deg2rad(20)
+
     def get_all_paths(
         self,
         triangulation_centers: np.ndarray,
@@ -82,7 +84,7 @@ class TriangulationPaths:
                     within_range = np.isclose(
                         angles_added,
                         np.repeat(abs_angle_change, len(angles_added)),
-                        atol=np.pi / 36,  # 5 degree sensitivity
+                        atol=self.angle_sensitivity,
                     )
                     if np.count_nonzero(within_range) > 0:
                         continue

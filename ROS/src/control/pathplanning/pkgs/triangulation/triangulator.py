@@ -134,6 +134,7 @@ class Triangulator:
 
         costs = np.zeros((len(leaves), 5))
         paths = []
+        path_lengths = np.zeros(1)
 
         # Iterate each leaf
         for i, leave in enumerate(leaves):
@@ -159,14 +160,14 @@ class Triangulator:
                 angle_cost,
                 width_cost,
                 spacing_cost,
-                1e3 * length_cost,
+                1e5 * length_cost,
             ]
             paths.append(path)
-            print(len(path))
+            path_lengths = np.append(path_lengths, len(path))
 
         np.set_printoptions(suppress=True)
 
-        print("---")
+        print(f"{len(paths)} path(s) - {np.max(path_lengths)} max")
         # print(costs)
         total_cost = np.sum(costs, axis=1)
 
