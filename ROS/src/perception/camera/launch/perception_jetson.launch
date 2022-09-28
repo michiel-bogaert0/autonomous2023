@@ -1,6 +1,6 @@
 <launch>
     <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries"/>
-    <node pkg="perception" type="run.py" name="perception" output="screen">
+    <node pkg="camera" type="run.py" name="perception_camera" output="screen">
         <param name="cuda" value="True" />
         <param name="tensorrt" value="False"/>
         <param name="detection_height_threshold" value="30" />
