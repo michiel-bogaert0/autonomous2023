@@ -6,7 +6,6 @@
 
 namespace ns_lidar {
 
-
 // Constructor
 ConeClassification::ConeClassification(ros::NodeHandle &n) : n_(n) {
   // Get parameters
@@ -21,9 +20,10 @@ ConeClassification::ConeClassification(ros::NodeHandle &n) : n_(n) {
  *
  * @returns ConeCheck containing the cones coordinates and whether it is a cone
  */
-ConeCheck ConeClassification::classify_cone(const pcl::PointCloud<pcl::PointXYZINormal> cone) {
-  
-  //compute centroid and bounds of the given pointcloud.
+ConeCheck ConeClassification::classifyCone(
+    const pcl::PointCloud<pcl::PointXYZINormal> cone) {
+
+  // compute centroid and bounds of the given pointcloud.
   Eigen::Vector4f centroid;
   Eigen::Vector4f min;
   Eigen::Vector4f max;
@@ -36,36 +36,37 @@ ConeCheck ConeClassification::classify_cone(const pcl::PointCloud<pcl::PointXYZI
 
   ConeCheck cone_check;
 
-
   // filter based on number of points and height centroid.
-  if (cone.points.size() >= minimal_points_cone_ && centroid[2] - cone.points[0].normal_z > minimal_height_cone_)
-  {
-    float dist = hypot3d(centroid[0], centroid[1], centroid[2]);;
+  if (cone.points.size() >= minimal_points_cone_ &&
+      centroid[2] - cone.points[0].normal_z > minimal_height_cone_) {
+    float dist = hypot3d(centroid[0], centroid[1], centroid[2]);
+    ;
     float num_points = 0.0;
     bool is_orange = false;
 
-    //check size cloud for yellow/blue cone
-    if(bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.4)
-    {
+    // check size cloud for yellow/blue cone
+    if (bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.4) {
       // Calculate the expected number of points that hit the cone
-      // Using the AMZ formula with w_c = average of x and y widths and r_v=0.35°
-      // and r_h=2048 points per rotation
+      // Using the AMZ formula with w_c = average of x and y widths and
+      // r_v=0.35° and r_h=2048 points per rotation
       // @ref https://arxiv.org/pdf/1809.10099.pdf
       num_points = (1 / 2.0f) * (0.325 / (2.0f * dist * VERT_RES_TAN)) *
-                        (0.228 / (2.0f * dist * HOR_RES_TAN));
+                   (0.228 / (2.0f * dist * HOR_RES_TAN));
     }
 
-    //check size cloud for orange cone
-    else if(bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.55){
+    // check size cloud for orange cone
+    else if (bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.55) {
       num_points = (1 / 2.0f) * (0.505 / (2.0f * dist * VERT_RES_TAN)) *
-                        (0.285 / (2.0f * dist * HOR_RES_TAN));
+                   (0.285 / (2.0f * dist * HOR_RES_TAN));
       is_orange = true;
     }
 
     // We allow for some play in the point count prediction
     // and check whether the pointcloud has a shape similar to a cone
-    if (dist != 0.0 && (std::abs(num_points - cone.points.size()) / num_points)  <
-        point_count_threshold_ && ConeClassification::checkShape(cone, centroid, is_orange)) {
+    if (dist != 0.0 &&
+        (std::abs(num_points - cone.points.size()) / num_points) <
+            point_count_threshold_ &&
+        ConeClassification::checkShape(cone, centroid, is_orange)) {
       cone_check.pos.x = centroid[0];
       cone_check.pos.y = centroid[1];
       cone_check.pos.z = centroid[2];
@@ -74,12 +75,13 @@ ConeCheck ConeClassification::classify_cone(const pcl::PointCloud<pcl::PointXYZI
       cone_check.bounds[2] = bound_z;
       cone_check.is_cone = true;
 
-      //if the cone is orange based on its height there is no need to compute the color by the intensity
-      if(is_orange){
+      // if the cone is orange based on its height there is no need to compute
+      // the color by the intensity
+      if (is_orange) {
         cone_check.color = 2;
         return cone_check;
       }
-      
+
       // calculate the convexity of the intensity to distinguish between blue
       // and yellow;
       Eigen::MatrixXd X_mat(cone.points.size(), 3);
@@ -114,53 +116,59 @@ ConeCheck ConeClassification::classify_cone(const pcl::PointCloud<pcl::PointXYZI
 /**
  * @brief determines whether the given pointcloud resembles a cone.
  *
- * @returns a bool that is true if the shape of the given pointcloud is 
+ * @returns a bool that is true if the shape of the given pointcloud is
  * similar enough to a cone (according to a threshold determined by a rosparam).
- * 
+ *
  * The main idea behind this function is based on:
- * @ref https://lup.lub.lu.se/luur/download?func=downloadFile&recordOId=9069372&fileOId=9069373
+ * @ref
+ * https://lup.lub.lu.se/luur/download?func=downloadFile&recordOId=9069372&fileOId=9069373
  */
-bool ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone, Eigen::Vector4f centroid, bool orange){
-  //compute cone model(center + startinglocation)
+bool ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
+                                    Eigen::Vector4f centroid, bool orange) {
+  // compute cone model(center + startinglocation)
   ConeModel cone_model;
   cone_model.floor = cone.points[0].normal_z;
 
-  //adapt the cone model for orange cone
-  if(orange){
+  // adapt the cone model for orange cone
+  if (orange) {
     cone_model.height_cone = 0.505;
     cone_model.half_width_cone = 0.142;
   }
 
-  //compute the center of the cone
-  //this center lies further away from the lidar than the centroid of the pointcloud
-  //because the pointcloud only sees one half of the cone
+  // compute the center of the cone
+  // this center lies further away from the lidar than the centroid of the
+  // pointcloud because the pointcloud only sees one half of the cone
   double angle = std::atan2(centroid[1], centroid[0]);
-  double translation = cone_model.half_width_cone/3;
+  double translation = cone_model.half_width_cone / 3;
   int sign = (centroid[1] > 0) ? 1 : ((centroid[1] <= 0) ? -1 : 0);
-  cone_model.x = centroid[0] + std::cos(angle)*translation;
-  cone_model.y = centroid[1] + std::sin(angle)*translation*sign;
-   
+  cone_model.x = centroid[0] + std::cos(angle) * translation;
+  cone_model.y = centroid[1] + std::sin(angle) * translation * sign;
+
   Eigen::MatrixXf cone_matrix = cone.getMatrixXfMap();
 
-  //calculate distance
-  cone_matrix.row(0) = Eigen::square((cone_matrix.row(0).array() - cone_model.x));
-  cone_matrix.row(1) = Eigen::square((cone_matrix.row(1).array() - cone_model.y));
+  // calculate distance
+  cone_matrix.row(0) =
+      Eigen::square((cone_matrix.row(0).array() - cone_model.x));
+  cone_matrix.row(1) =
+      Eigen::square((cone_matrix.row(1).array() - cone_model.y));
   cone_matrix.row(0) = (cone_matrix.row(0) + cone_matrix.row(1)).cwiseSqrt();
 
-  //calculate expected height of point
-  cone_matrix.row(0) = (1- (cone_matrix.row(0)/cone_model.half_width_cone).array())*cone_model.height_cone;
+  // calculate expected height of point
+  cone_matrix.row(0) =
+      (1 - (cone_matrix.row(0) / cone_model.half_width_cone).array()) *
+      cone_model.height_cone;
 
-  //compute error term
-  cone_matrix.row(3) = (cone_matrix.row(2) - cone_matrix.row(6)).cwiseQuotient(cone_matrix.row(0));
+  // compute error term
+  cone_matrix.row(3) = (cone_matrix.row(2) - cone_matrix.row(6))
+                           .cwiseQuotient(cone_matrix.row(0));
   cone_matrix.row(3) = (1 - cone_matrix.row(3).array()).cwiseAbs();
   cone_matrix.row(3) = cone_matrix.row(3).cwiseMin(1);
   cone_matrix.row(3) = 1 - cone_matrix.row(3).array();
 
-  //compute the average
+  // compute the average
   double cone_metric = cone_matrix.row(3).sum() / cone_matrix.cols();
 
   return cone_metric > cone_shape_factor_;
-
 }
 
 /**
@@ -171,4 +179,4 @@ float hypot3d(float a, float b, float c) {
   return std::sqrt(a * a + b * b + c * c);
 }
 
-}
+} // namespace ns_lidar

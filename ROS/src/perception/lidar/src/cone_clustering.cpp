@@ -5,7 +5,8 @@
 
 namespace ns_lidar {
 // Constructor
-ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n), coneClassification_(n) {
+ConeClustering::ConeClustering(ros::NodeHandle &n)
+    : n_(n), coneClassification_(n) {
   // Get parameters
   n.param<std::string>("clustering_method", clustering_method_, "string");
   n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
@@ -19,9 +20,9 @@ ConeClustering::ConeClustering(ros::NodeHandle &n) : n_(n), coneClassification_(
  * The type of clustering that is applied is chosen by the clustering_method
  * parameter.
  */
-sensor_msgs::PointCloud
-ConeClustering::cluster(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
-                        const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
+sensor_msgs::PointCloud ConeClustering::cluster(
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
   sensor_msgs::PointCloud cluster_msg;
   if (clustering_method_ == "string") {
     cluster_msg = ConeClustering::stringClustering(cloud);
@@ -107,7 +108,7 @@ sensor_msgs::PointCloud ConeClustering::euclidianClustering(
     }
   }
 
-  return ConeClustering::construct_message(clusters);
+  return ConeClustering::constructMessage(clusters);
 }
 
 /**
@@ -126,7 +127,8 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
   std::sort(cloud->begin(), cloud->end(), leftrightsort);
 
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
-  std::vector<pcl::PointXYZINormal> cluster_rightmost; // The rightmost point in each cluster
+  std::vector<pcl::PointXYZINormal>
+      cluster_rightmost; // The rightmost point in each cluster
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> finished_clusters;
 
   // Iterate over all points, up and down, left to right (elevation & azimuth)
@@ -136,7 +138,8 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
     std::vector<uint16_t>
         clusters_to_keep; // These cluster ids will be kept at the end of this
                           // clustering because they can still contain a cone
-                          // or they can help exclude other points from being a cone
+                          // or they can help exclude other points from being a
+                          // cone
 
     bool found_cluster = false;
 
@@ -147,8 +150,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
 
       // This distance should be calculated using max(delta_azi, delta_r)
       float r_point = hypot3d(point.x, point.y, point.z);
-      float r_rightmost =
-          hypot3d(rightmost.x, rightmost.y, rightmost.z);
+      float r_rightmost = hypot3d(rightmost.x, rightmost.y, rightmost.z);
       float delta_r = std::abs(r_point - r_rightmost);
       float delta_arc = std::abs(std::atan2(point.x, point.y) -
                                  atan2(rightmost.x, rightmost.y)) *
@@ -179,8 +181,8 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
 
         // Filter based on the shape of cones
         if (bound_x < 1 && bound_y < 1 && bound_z < 1) {
-          // This cluster can still be a cone 
-         clusters_to_keep.push_back(cluster_id);
+          // This cluster can still be a cone
+          clusters_to_keep.push_back(cluster_id);
         }
       }
       // filter other clusters
@@ -225,7 +227,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
     clusters.push_back(cluster);
   }
 
-  return ConeClustering::construct_message(clusters);
+  return ConeClustering::constructMessage(clusters);
 }
 
 /**
@@ -235,7 +237,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
  * @returns a sensor_msgs::PointCloud containing the information about all the
  * cones in the current frame.
  */
-sensor_msgs::PointCloud ConeClustering::construct_message(
+sensor_msgs::PointCloud ConeClustering::constructMessage(
     std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters) {
   // Create a PC and channel for: the cone colour, the (x,y,z) dimensions of the
   // cluster
@@ -253,7 +255,7 @@ sensor_msgs::PointCloud ConeClustering::construct_message(
 
   // iterate over each cluster
   for (pcl::PointCloud<pcl::PointXYZINormal> cluster : clusters) {
-    ConeCheck cone_check = coneClassification_.classify_cone(cluster);
+    ConeCheck cone_check = coneClassification_.classifyCone(cluster);
 
     // only add clusters that are likely to be cones
     if (cone_check.is_cone) {
