@@ -13,7 +13,7 @@
 
     </node>
 
-    <include file="$(find perception)/launch/perception.publisher.launch" pass_all_args="true"/>
+    <include file="$(find camera)/launch/perception.camera.publisher.launch" pass_all_args="true"/>
 
     
 
