@@ -1,8 +1,8 @@
 #include "lidar.hpp"
 #include <chrono>
 
-#include <ugr_msgs/Observation.h>
-#include <ugr_msgs/Observations.h>
+#include <ugr_msgs/ObservationWithCovariance.h>
+#include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
 
 // Constructor
 namespace ns_lidar {
@@ -24,7 +24,7 @@ Lidar::Lidar(ros::NodeHandle &n)
   visPublisher_ =
       n.advertise<visualization_msgs::MarkerArray>("perception/cones_lidar", 5);
   conePublisher_ =
-      n.advertise<ugr_msgs::Observations>("perception/observations", 5);
+      n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("perception/observations", 5);
 
   n.param<bool>("show_debug", show_debug_, false);
 }
@@ -131,13 +131,13 @@ void Lidar::preprocessing(
  * @param cones
  */
 void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
-  ugr_msgs::Observations observations;
-  // observations.header.frame_id = cones.header.frame_id;
-  // observations.header.stamp = cones.header.stamp;
+  ugr_msgs::ObservationWithCovarianceArrayStamped observations;
+  observations.header.frame_id = cones.header.frame_id;
+  observations.header.stamp = cones.header.stamp;
 
   int i = 0;
   for (auto cone : cones.points) {
-    ugr_msgs::Observation observation;
+    ugr_msgs::ObservationWithCovariance observation;
 
     // If color == 0, then it is a BLUE cone, and Cones.BLUE in fs_msgs/Cone is
     // 0 color == 1 is yellow
