@@ -19,7 +19,7 @@ add_message_files(
   Particles.msg
   ConeKeypoints.msg
   Observation.msg
-  ObservationArray.msg
+  Observations.msg
   ConeDetections.msg
   BoundingBox.msg
   Map.msg
