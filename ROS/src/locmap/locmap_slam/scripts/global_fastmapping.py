@@ -10,7 +10,7 @@ from nav_msgs.msg import Odometry
 from slam.helpers import observations_to_range_bearings
 from slam.slam import SLAMNode
 from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import Observation, Observations
+from ugr_msgs.msg import ObservationWithCovariance, ObservationWithCovarianceArrayStamped
 
 
 class GlobalFastMapping(SLAMNode):
@@ -60,7 +60,7 @@ class GlobalFastMapping(SLAMNode):
     def process_odometry(self, odometry: Odometry):
         pass
 
-    def process_observations(self, observations: Observations):
+    def process_observations(self, observations: ObservationWithCovarianceArrayStamped):
 
         # Get the pose to feed to FastMapping (of course using the correct time)
         transform: TransformStamped = self.tf_buffer.lookup_transform(

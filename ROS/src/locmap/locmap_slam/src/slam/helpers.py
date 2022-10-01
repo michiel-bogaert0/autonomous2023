@@ -1,12 +1,12 @@
 import numpy as np
-from ugr_msgs.msg import Observations
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
 
-def observations_to_range_bearings(observations: Observations):
+def observations_to_range_bearings(observations: ObservationWithCovarianceArrayStamped):
     """
-    Transforms Observations message to range_bearing messages
+    Transforms ObservationWithCovarianceArrayStamped message to range_bearing messages
     Args:
-        - observations: Observations, the message to transform
+        - observations: ObservationWithCovarianceArrayStamped, the message to transform
 
     Returns:
         A range-bearing representation of the message in the form of an (x, 3) numpy array ([range, bearing, class])

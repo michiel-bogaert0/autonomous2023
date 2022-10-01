@@ -10,7 +10,7 @@ from nav_msgs.msg import Odometry
 from slam.helpers import observations_to_range_bearings
 from slam.slam import SLAMNode
 from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import Observations
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
 
 class LocalFastSLAM(SLAMNode):
@@ -86,9 +86,9 @@ class LocalFastSLAM(SLAMNode):
     def process_odometry(self, odometry: Odometry):
         pass
 
-    def process_observations(self, observations: Observations):
+    def process_observations(self, observations: ObservationWithCovarianceArrayStamped):
         """
-        Processes an Observations message
+        Processes an ObservationWithCovarianceArrayStamped message
         """
 
         self.observations = observations

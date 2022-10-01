@@ -9,7 +9,7 @@ from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, DataLatch, ROSNode
 from StageSimulator import StageSimulator
 from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import Observation, Observations
+from ugr_msgs.msg import ObservationWithCovariance, ObservationWithCovarianceArrayStamped
 
 
 class PerceptionSimulator(StageSimulator):
@@ -109,13 +109,13 @@ class PerceptionSimulator(StageSimulator):
                 continue
 
             filtered_cones.append(
-                Observation(
+                ObservationWithCovariance(
                     location=Point(x=cone[0], y=cone[1], z=cone[2]),
                     observation_class=int(cone[3]),
                 )
             )
 
-        observations = Observations()
+        observations = ObservationWithCovarianceArrayStamped()
         observations.header.stamp = odom.header.stamp
         observations.header.frame_id = self.base_link_frame
         observations.observations = filtered_cones
