@@ -51,10 +51,13 @@ class HeadingEstimation(ROSNode):
             time_offset: the time offset to use when publishing
             max_distance: the maximal distance between two consecutive points to make it "valid"
             min_distance: the minimal distance between two consecutive points to make it "valid"
+            max_time_deviation: the maximal time deviation between two NavSatFix msgs for dual GPS estimation
         """
 
         super().__init__("gps_heading_estimation", False)
 
+        self.rate = rospy.get_param("~rate", 20)
+        self.max_time_deviation = rospy.get_param("~max_time_deviation", 0.1)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.averaging_window = rospy.get_param("~averaging_window", 4)
         self.time_offset = rospy.get_param("~time_offset", 0.1)
@@ -64,8 +67,8 @@ class HeadingEstimation(ROSNode):
         self.gps_msgs = [deque([], 2) for i in range(2)]
         self.gps_vel = [None, None]
 
-        self.offset = [0, 0]
-        self.heading_yaw = [0, 0]
+        self.offset = [0, 0, 0]
+        self.heading_yaw = [0, 0, 0]
 
         self.yaw_averager = StreamingMovingAverage(self.averaging_window)
 
@@ -81,11 +84,55 @@ class HeadingEstimation(ROSNode):
             partial(self.handle_gps, gpsIndex=1),
         )
 
-        rospy.spin()
+        # Check for the dual gps source, limited by self.rate
+        self.rosrate = rospy.Rate(self.rate, True)
+        while not rospy.is_shutdown():
+            self.estimate_dual_heading()
+            self.rosrate.sleep()
 
-    def publish_heading(self, gpsIndex):
+    def estimate_dual_heading(self):
         """
-        Actually publishes the heading (if heading can be calculated)
+        Tries to calculate the heading based on both GPS's (dual GPS heading)
+        """
+
+        msg0 = self.gps_msgs[0][1]
+        msg1 = self.gps_msgs[1][1]
+
+        # No message? No heading!
+        if not msg0 or not msg1:
+            return
+
+        # Time deviates to much? No heading!
+        if msg0.header.stamp.to_sec() - msg1.header.stamp.to_sec() > self.max_time_deviation:
+            return
+
+        # Actually calculate heading
+        long0 = msg0.longitude * 2 * pi / 360
+        long1 = msg1.longitude * 2 * pi / 360
+        lat0 = msg0.latitude * 2 * pi / 360
+        lat1 = msg1.latitude * 2 * pi / 360
+
+        y = sin(long1 - long0) * cos(lat1)
+        x = cos(lat0) * sin(lat1) - sin(lat0) * cos(lat1) * cos(long1 - long0)
+
+        bearing = atan2(y, x) * (-1)
+
+        # Correct bearing
+        if abs(bearing - self.offset[2] - self.heading_yaw[2]) > pi and self.heading_yaw[2] != 0:
+            self.offset[2] += 2 * pi * (1 if bearing - self.heading_yaw[2] - self.offset[2] > 0 else -1 )
+
+        bearing -= self.offset[2]
+
+        self.heading_yaw[2] = bearing
+
+        self.publish_heading(bearing)
+
+    def estimate_single_heading(self, gpsIndex):
+        """
+        Tries to calculate the heading based on a single GPS source
+        
+        Args:
+            gpsIndex: the index of the GPS to use (0 or 1)
         """
 
         if len(self.gps_msgs[gpsIndex]) < 2:
@@ -94,8 +141,6 @@ class HeadingEstimation(ROSNode):
         # Take one
         msg0 = self.gps_msgs[gpsIndex][1]       
         msg1 = self.gps_msgs[gpsIndex].popleft()
-
-        current_time_sec = rospy.Time.now().to_sec()
 
         # Actually calculate heading and distance
         long0 = msg0.longitude * 2 * pi / 360
@@ -130,19 +175,26 @@ class HeadingEstimation(ROSNode):
 
         self.heading_yaw[gpsIndex] = bearing
 
-        bearing = self.yaw_averager.process(bearing)
+        self.publish_heading(bearing)
+
+    def publish_heading(self, bearing_input):
+        """
+        Actually publishes a heading as both a geometry_msgs/Point and a sensor_msgs/Imuself.yaw_averager.process(bearing)
+
+        Args:
+            bearing_input: the bearing (heading, yaw, whatever) to publish
+        """
+        bearing = self.yaw_averager.process(bearing_input)
 
         bm = Point(z=bearing)
 
         self.publish("/output/yaw", bm)
 
         # Publish as Imu message
-        # TODO estimate covariance based on GPS fixes
-
         msg = Imu()
         msg.header.frame_id = self.base_link_frame
         msg.header.stamp = rospy.Time.from_sec(      
-            current_time_sec - self.time_offset
+            rospy.Time.now().to_sec() - self.time_offset
         )
 
         x, y, z, w = quaternion_from_euler(0, 0, bearing)
@@ -162,7 +214,7 @@ class HeadingEstimation(ROSNode):
             gpsIndex: the index of the gps (0 or 1)
         """
         self.gps_msgs[gpsIndex].append(navsatfixMsg)
-        self.publish_heading(gpsIndex)
+        self.estimate_single_heading(gpsIndex)
 
 if __name__ == "__main__":
     try:
