@@ -6,7 +6,7 @@ import triangulation.utils as utils
 
 def get_center_points(
     position_cones: np.ndarray,
-    triangulation_max_var: float,
+    triangulation_min_var: float,
     triangulation_var_threshold: float,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Get center points of the edges of the triangles
@@ -15,7 +15,7 @@ def get_center_points(
 
     Args:
         position_cones: position of the cones
-        triangulation_max_var: the maximum variance each allowed set of triangle edge lengths can always have.
+        triangulation_min_var: the minimum variance each allowed set of triangle edge lengths can always have.
             So it's the minimal maximum variance
         triangulation_var_threshold: Factor multiplied to the median of the variance of triangle lengths in order to filter bad triangles
 
@@ -36,7 +36,7 @@ def get_center_points(
     # We assume the triangles between the cones on the racing path to be much more equilateral than the useless triangles
     # We use the median variance to have a dynamic threshold
     var_filter = max(
-        triangulation_max_var, np.median(variances) * triangulation_var_threshold
+        triangulation_min_var, np.median(variances) * triangulation_var_threshold
     )
     triangles = triangles[variances < var_filter, :]
 

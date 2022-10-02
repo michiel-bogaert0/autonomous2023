@@ -92,7 +92,8 @@ class TriangulationPaths:
                 # Check that the angle change is within bounds
                 if abs_angle_change > self.max_angle_change:
                     continue
-
+                
+                # TODO is this needed??
                 distance_node = (parent.x - next_pos[0]) ** 2 + (parent.y - next_pos[1]) ** 2
                 # Check the distance between subsequent nodes in the planned path
                 if distance_node > self.max_path_distance ** 2:
@@ -147,6 +148,7 @@ class TriangulationPaths:
         node_distances = np.array([point.distance for point in branch])
         distance = np.sum(node_distances)
         # length_cost = ((self.plan_dist - distance) / self.plan_dist) ** 2
+        # TODO is VAR needed?
         length_cost = 1 / distance + np.var(node_distances) / 20
 
         global_left_cones = []
