@@ -2,12 +2,12 @@
 import rospy
 from locmap_vis import LocMapVis
 from node_fixture.node_fixture import AddSubscriber, ROSNode
-from ugr_msgs.msg import Observations
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 import time
 
 class VisObs(ROSNode):
     """
-    This node visualises ugr_msgs/Observations (both local and global, doesn't matter)
+    This node visualises ugr_msgs/ObservationWithCovarianceArrayStamped (both local and global, doesn't matter)
     """
 
     def __init__(self):
@@ -40,7 +40,7 @@ class VisObs(ROSNode):
         )
 
     @AddSubscriber("/input/vis")
-    def handleObs(self, msg: Observations):
+    def handleObs(self, msg: ObservationWithCovarianceArrayStamped):
         """Handles ugr_mgs/Observations message
 
         Args:

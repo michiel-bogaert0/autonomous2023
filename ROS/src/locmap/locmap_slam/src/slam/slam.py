@@ -9,17 +9,17 @@ from geometry_msgs.msg import Point, Pose, PoseArray, TransformStamped
 from locmap_vis import LocMapVis
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
-from ugr_msgs.msg import Observation, Observations, Particle, Particles
+from ugr_msgs.msg import ObservationWithCovariance, ObservationWithCovarianceArrayStamped, Particle, Particles
 
 """
 Generic SLAM node should have the following behaviour
 
 Input:
-    - Observations (with a header that should correspond to the frame in which the observations where taken). Must be transformable to base_link
+    - ObservationWithCovarianceArrayStamped (with a header that should correspond to the frame in which the observations where taken). Must be transformable to base_link
     - Odometry used as input for the SLAM input. Gets transformed to the world_frame
 
 Outputs:
-    - Observations (relative to base_link frame)
+    - ObservationWithCovarianceArrayStamped (relative to base_link frame)
     - Map estimate (relative to the world frame)
 """
 
@@ -28,7 +28,7 @@ class SLAMNode(ROSNode, ABC):
     """
     This node is the generic interface for a SLAM module/node.
     It takes in odometry and observations and spits out a map estimate
-    (which is modelled as an Observations message to support daisy chaining of SLAM nodes),
+    (which is modelled as an ObservationWithCovarianceArrayStamped message to support daisy chaining of SLAM nodes),
     + some localization feedback in the future
     """
 
@@ -86,7 +86,7 @@ class SLAMNode(ROSNode, ABC):
 
     # See the constructor for the subscriber registration.
     # The '_' is just because it doesn't use a decorator, so it injects 'self' twice
-    def handle_observation_message(self, _, observations: Observations):
+    def handle_observation_message(self, _, observations: ObservationWithCovarianceArrayStamped):
         """
         Handles the incoming observations.
         These observations must be (time) transformable to the base_link frame provided
@@ -97,7 +97,7 @@ class SLAMNode(ROSNode, ABC):
 
         # Transform the observations!
         # This only transforms from sensor frame to base link frame, which should be a static transformation in normal conditions
-        transformed_observations: Observations = ROSNode.do_transform_observations(
+        transformed_observations: ObservationWithCovarianceArrayStamped = ROSNode.do_transform_observations(
             observations,
             self.tf_buffer.lookup_transform(
                 observations.header.frame_id.strip("/"),
@@ -155,7 +155,7 @@ class SLAMNode(ROSNode, ABC):
         pass
 
     @abstractmethod
-    def process_observations(self, observations: Observations):
+    def process_observations(self, observations: ObservationWithCovarianceArrayStamped):
         pass
 
     @abstractmethod
@@ -183,18 +183,18 @@ class SLAMNode(ROSNode, ABC):
         ) = self.get_predictions()
 
         # Publish the "observations" relative to base_link
-        observations = Observations()
+        observations = ObservationWithCovarianceArrayStamped()
         observations.header.frame_id = self.base_link_frame
         observations.header.stamp = timestamp
         observations.observations = []
 
         # Also publish the same observations but now relative to world_frame (so the "map" estimate)
-        new_map = Observations()
+        new_map = ObservationWithCovarianceArrayStamped()
         new_map.header.frame_id = self.world_frame
         new_map.header.stamp = timestamp
         new_map.observations = []
         for i, obs_location in enumerate(map_prediction[:, 0::3].T):
-            new_obs = Observation()
+            new_obs = ObservationWithCovariance()
             new_obs.location = Point(
                 x=obs_location[0] - state_prediction[0],
                 y=obs_location[1] - state_prediction[1],
@@ -225,7 +225,7 @@ class SLAMNode(ROSNode, ABC):
             else:
                 observations.observations.append(new_obs)
 
-            new_map_point = Observation()
+            new_map_point = ObservationWithCovariance()
             new_map_point.location = Point(x=obs_location[0], y=obs_location[1], z=0)
             new_map_point.observation_class = landmark_classes[i]
 

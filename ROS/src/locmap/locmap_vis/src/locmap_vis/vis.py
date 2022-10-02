@@ -1,5 +1,5 @@
 import rospy
-from ugr_msgs.msg import Observations, Particles
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, Particles
 from visualization_msgs.msg import Marker, MarkerArray
 
 
@@ -102,14 +102,14 @@ class LocMapVis:
 
     def observations_to_markerarray(
         self,
-        observations: Observations,
+        observations: ObservationWithCovarianceArrayStamped,
         namespace,
         lifetime,
         persist=False,
         use_cones=True
     ):
         """
-        Takes in an Observations message and produces the corresponding MarkerArary message
+        Takes in an ObservationWithCovarianceArrayStamped message and produces the corresponding MarkerArary message
 
         Args:
             observations: the message to visualize

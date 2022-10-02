@@ -24,7 +24,7 @@ from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from tf2_kdl import transform_to_kdl
-from ugr_msgs.msg import BoundingBox, Map, Observation, Observations, PerceptionUpdate
+from ugr_msgs.msg import BoundingBox, Map, ObservationWithCovariance, ObservationWithCovarianceArrayStamped, PerceptionUpdate
 
 
 @dataclass
@@ -184,25 +184,25 @@ class ROSNode:
 
     @staticmethod
     def do_transform_observations(
-        observations: Observations, transform: TransformStamped
-    ) -> Observations:
+        observations: ObservationWithCovarianceArrayStamped, transform: TransformStamped
+    ) -> ObservationWithCovarianceArrayStamped:
         """
-        Custom transformation method to apply a transformation to a the Observations message
+        Custom transformation method to apply a transformation to a the ObservationWithCovarianceArrayStamped message
         Args:
-          - observations: Observations = the message to transform
+          - observations: ObservationWithCovarianceArrayStamped = the message to transform
           - transform: TransformStamped = the transformation to apply
 
         Returns:
-          A transformed Observations message
+          A transformed ObservationWithCovarianceArrayStamped message
         """
         kdl_transform = transform_to_kdl(transform)
-        res = Observations()
+        res = ObservationWithCovarianceArrayStamped()
         for obs in observations.observations:
             p = kdl_transform * PyKDL.Vector(
                 obs.location.x, obs.location.y, obs.location.z
             )
 
-            new_observation = Observation()
+            new_observation = ObservationWithCovariance()
             new_observation.location.x = p[0]
             new_observation.location.y = p[1]
             new_observation.location.z = p[2]
