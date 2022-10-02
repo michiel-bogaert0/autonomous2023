@@ -12,7 +12,7 @@ from std_msgs.msg import Header
 class Triangulator:
     def __init__(
         self,
-        triangulation_max_var: float,
+        triangulation_min_var: float,
         triangulation_var_threshold: float,
         max_iter: int,
         max_angle_change: float,
@@ -26,7 +26,7 @@ class Triangulator:
         """Initialize triangulator
 
         Args:
-            triangulation_max_var: the maximum variance each allowed set of triangle edge lengths can always have.
+            triangulation_min_var: the maximum variance each allowed set of triangle edge lengths can always have.
                 So it's the minimal maximum variance
             triangulation_var_threshold: Factor multiplied to the median of the variance of triangle lengths
                 in order to filter bad triangles
@@ -39,7 +39,7 @@ class Triangulator:
             vis_namespace: (optional) namespace for publishing markers
             vis_lifetime: (optional) visualisation marker lifetime
         """
-        self.triangulation_max_var = triangulation_max_var
+        self.triangulation_min_var = triangulation_min_var
         self.triangulation_var_threshold = triangulation_var_threshold
         self.max_iter = max_iter
         self.max_angle_change = max_angle_change
@@ -77,7 +77,7 @@ class Triangulator:
 
         # Perform triangulation and get the (useful) center points
         triangulation_centers, center_points, triangles = get_center_points(
-            position_cones, self.triangulation_max_var, self.triangulation_var_threshold
+            position_cones, self.triangulation_min_var, self.triangulation_var_threshold
         )
 
         center_points = filter_center_points(
