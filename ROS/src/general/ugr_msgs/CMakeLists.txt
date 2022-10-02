@@ -33,6 +33,9 @@ add_message_files(
   ObservationWithCovariance.msg
   ObservationStamped.msg
   ObservationWithCovarianceStamped.msg
+  ObservationWithCovarianceArray.msg
+  ObservationWithCovarianceArrayStamped.msg
+  ObservationArrayWithCovarianceStamped.msg
 )
 
 generate_messages(

@@ -10,8 +10,8 @@
 #include <visualization_msgs/MarkerArray.h>
 
 #include <ugr_msgs/Observation.h>
-#include <ugr_msgs/ObservationWithCovarianceStamped.h>
-#include <ugr_msgs/Observations.h>
+#include <ugr_msgs/ObservationWithCovariance.h>
+#include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
 
 namespace ns_lidar {
 class Lidar {
