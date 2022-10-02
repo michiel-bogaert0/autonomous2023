@@ -1,8 +1,7 @@
 #include "lidar.hpp"
 #include <chrono>
 
-#include <ugr_msgs/ObservationWithCovariance.h>
-#include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
+
 
 // Constructor
 namespace ns_lidar {
