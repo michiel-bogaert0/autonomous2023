@@ -71,32 +71,8 @@
     </include>
 
     <!-- ? CAN -->
-
-    <node pkg="can_node" type="can_converter.py" name="can_converter" output="screen">
-        <param name="interface" value="can0" />
-        <param name="baudrate" value="250000" />
-        <param name="odrive_dbc" value="$(find can_node)/odrive.dbc" />
-        <param name="imu/front/frame" value="ugr/car_base_link/imu0" />
-        <param name="imu/front/back" value="ugr/car_base_link/imu1" />
-
-        <remap from="/output/can" to="/can_messages" />
-        <remap from="/output/vel0" to="/ugr/car/sensors/encoder0" />
-        <remap from="/output/vel1" to="/ugr/car/sensors/encoder1" />
-        <remap from="/output/start" to="/control/start" />
-        <remap from="/output/stop" to="/control/stop" />
-
-
-        <!-- IMU0 : front -->
-        <remap from="/output/imu0/pitch_roll" to="/ugr/car/sensors/imu0/pitch_roll" />
-        <remap from="/output/imu0/angular_rate" to="/ugr/car/sensors/imu0/angular_rate" />
-        <remap from="/output/imu0/acc" to="/ugr/car/sensors/imu0/acc" />
-
-        <!-- IMU1 : back -->
-        <remap from="/output/imu1/pitch_roll" to="/ugr/car/sensors/imu1/yaw_roll" />
-        <remap from="/output/imu1/angular_rate" to="/ugr/car/sensors/imu1/angular_rate" />
-        <remap from="/output/imu1/acc" to="/ugr/car/sensors/imu1/acc" />
-
-    </node>
+    <include file="$(find can_node)/launch/perception.can_converter.launch">
+    </include>
 
     <!-- Camera -->
     <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries" />

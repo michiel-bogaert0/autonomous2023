@@ -8,42 +8,45 @@ from sensor_msgs.msg import Imu
 
 class ImuConverter:
     def __init__(self):
-        self.imu_front_pitch_roll = rospy.Publisher(
+        # IMU 0 is the FRONT
+        self.imu0_pitch_roll = rospy.Publisher(
             "/output/imu0/pitch_roll",
             Imu,
             queue_size=10,
         )
-        self.imu_front_angular_rate = rospy.Publisher(
+        self.imu0_angular_rate = rospy.Publisher(
             "/output/imu0/angular_rate",
             Imu,
             queue_size=10,
         )
-        self.imu_front_acc = rospy.Publisher(
+        self.imu0_acc = rospy.Publisher(
             "/output/imu0/acc",
             Imu,
             queue_size=10,
         )
-        self.imu_back_pitch_roll = rospy.Publisher(
+
+        # IMU 1 is the BACK
+        self.imu1_pitch_roll = rospy.Publisher(
             "/output/imu1/pitch_roll",
             Imu,
             queue_size=10,
         )
-        self.imu_back_angular_rate = rospy.Publisher(
+        self.imu1_angular_rate = rospy.Publisher(
             "/output/imu1/angular_rate",
             Imu,
             queue_size=10,
         )
-        self.imu_back_acc = rospy.Publisher(
+        self.imu1_acc = rospy.Publisher(
             "/output/imu1/acc",
             Imu,
             queue_size=10,
         )
 
-        self.imu_front_frame = rospy.get_param(
-            "~imu/front/frame", "ugr/car_base_link/imu0"
+        self.imu0_frame = rospy.get_param(
+            "~imu0/frame", "ugr/car_base_link/imu0"
         )
-        self.imu_back_frame = rospy.get_param(
-            "~imu/back/frame", "ugr/car_base_link/imu1"
+        self.imu1_frame = rospy.get_param(
+            "~imu1/frame", "ugr/car_base_link/imu1"
         )
 
     def handle_imu_msg(self, msg: can.Message, is_front: bool) -> None:
@@ -61,7 +64,7 @@ class ImuConverter:
         )  # 2.5 ms latency according to the datasheet
         imu_msg.header.stamp = ts_corrected
         imu_msg.header.frame_id = (
-            self.imu_front_frame if is_front else self.imu_back_frame
+            self.imu0_frame if is_front else self.imu1_frame
         )
 
         # Decode the ID to figure out the type of message
@@ -84,9 +87,9 @@ class ImuConverter:
             )  # TODO change
 
             if is_front:
-                self.imu_front_pitch_roll.publish(imu_msg)
+                self.imu0_pitch_roll.publish(imu_msg)
                 return
-            self.imu_back_pitch_roll.publish(imu_msg)
+            self.imu1_pitch_roll.publish(imu_msg)
 
         elif cmd_id == 0xF02A:
             # Angular rate
@@ -110,9 +113,9 @@ class ImuConverter:
             )  # TODO change
 
             if is_front:
-                self.imu_front_angular_rate.publish(imu_msg)
+                self.imu0_angular_rate.publish(imu_msg)
                 return
-            self.imu_back_angular_rate.publish(imu_msg)
+            self.imu1_angular_rate.publish(imu_msg)
 
         elif cmd_id == 0xF02D:
             # Acceleration
@@ -135,6 +138,6 @@ class ImuConverter:
             )  # TODO change
 
             if is_front:
-                self.imu_front_acc.publish(imu_msg)
+                self.imu0_acc.publish(imu_msg)
                 return
-            self.imu_back_acc.publish(imu_msg)
+            self.imu1_acc.publish(imu_msg)
