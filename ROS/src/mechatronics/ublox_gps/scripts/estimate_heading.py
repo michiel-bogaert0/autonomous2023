@@ -179,7 +179,7 @@ class HeadingEstimation(ROSNode):
 
     def publish_heading(self, bearing_input):
         """
-        Actually publishes a heading as both a geometry_msgs/Point and a sensor_msgs/Imuself.yaw_averager.process(bearing)
+        Actually publishes a heading as both a geometry_msgs/Point and a sensor_msgs/Imu
 
         Args:
             bearing_input: the bearing (heading, yaw, whatever) to publish
