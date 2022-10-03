@@ -62,7 +62,14 @@ class PerceptionNode:
 
         cone_dev = self.cone_detector.yolo_model.device
         keyp_dev = self.keypoint_detector.device
-        rospy.logwarn(f"CUDA devices used: cone={cone_dev} - keypoint={keyp_dev}")
+
+        self.diagnostics.publish(
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="perception camera node",
+                message=f"CUDA devices used: cone={cone_dev} - keypoint={keyp_dev}",
+            )
+        )
 
         # PNP
         # See documentation for more information about these settings!
