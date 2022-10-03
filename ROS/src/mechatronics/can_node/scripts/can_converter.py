@@ -77,7 +77,7 @@ class CanConverter:
                     self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
-                            name="CAN converter (ODrive)",
+                            name="[Mechatronics] CAN converter (ODrive)",
                             message="ODrive message received.",
                         )
                     )
@@ -97,7 +97,7 @@ class CanConverter:
                 self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
-                            name="CAN converter (IMU)",
+                            name="[Mechatronics] CAN converter (IMU)",
                             message=f"IMU [{imu_id}] message received.",
                         )
                     )
@@ -107,7 +107,7 @@ class CanConverter:
                 self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
-                            name="CAN converter (RES)",
+                            name="[Mechatronics] CAN converter (RES)",
                             message="RES activated.",
                         )
                     )
