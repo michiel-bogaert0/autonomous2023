@@ -1,5 +1,4 @@
 <launch>
-
     <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries"/>
     <arg name="type" default="dummy"/>
     <group ns="dummy1" if="$(eval arg('type') =='dummy')">
@@ -16,5 +15,4 @@
             <remap from="/input/image" to="/perception/camera/image" />
         </node>
     </group>
-
 </launch>
