@@ -24,7 +24,7 @@ class ConePnp:
 
     def generate_perception_update(
         self, cone_keypoints_msg: ConeKeypoints, img_size: Tuple[int, int]
-    ) -> Observations:
+    ) -> ObservationWithCovarianceArrayStamped:
         """
         Receives a keypoint update message and applies a PnP algorithm to it.
         It returns a PerceptionUpdate.
