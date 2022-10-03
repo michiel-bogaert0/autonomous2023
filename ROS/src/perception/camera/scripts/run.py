@@ -11,11 +11,17 @@ import numpy as np
 import rospy
 import torch
 from cone_detection.cone_detection import ConeDetector
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from keypoint_detection.keypoint_detection import ConeKeypointDetector
+from node_fixture.node_fixture import create_diagnostic_message
 from pnp.cone_pnp import ConePnp
 from sensor_msgs.msg import Image
 from tools.tools import np_to_ros_image, ros_img_to_np
-from ugr_msgs.msg import BoundingBox, ConeKeypoints, ObservationWithCovarianceArrayStamped
+from ugr_msgs.msg import (
+    BoundingBox,
+    ConeKeypoints,
+    ObservationWithCovarianceArrayStamped,
+)
 
 
 class PerceptionNode:
@@ -28,6 +34,10 @@ class PerceptionNode:
             "/output/update",
             ObservationWithCovarianceArrayStamped,
             queue_size=10,
+        )
+
+        self.diagnostics = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
         )
 
         self.rate = rospy.get_param("~rate", 10)
@@ -135,7 +145,13 @@ class PerceptionNode:
             end = time.perf_counter()
             timings.append(end - start)
 
-        rospy.loginfo(f"Timings {' - '.join([str(x) for x in timings])} s")
+        self.diagnostics.publish(
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="perception camera node",
+                message=f"Timings {' - '.join([str(x) for x in timings])} s",
+            )
+        )
 
     def run_pnp_pipeline(self, msg: ConeKeypoints, img_size: Tuple[int, int]) -> None:
         """
