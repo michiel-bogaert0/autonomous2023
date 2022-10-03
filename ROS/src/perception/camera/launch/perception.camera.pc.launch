@@ -9,12 +9,7 @@
         <remap from="/output/cone_keypoints" to="/perception/camera/mono/keypoints" />
         <remap from="/output/update" to="/ugr/car/observations/camera" />
         <remap from="/input/image" to="/perception/camera/image" />
-
-
     </node>
 
     <include file="$(find camera)/launch/perception.camera.publisher.launch" pass_all_args="true"/>
-
-    
-
 </launch>
