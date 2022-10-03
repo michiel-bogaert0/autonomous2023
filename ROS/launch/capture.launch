@@ -71,7 +71,7 @@
     </include>
 
     <!-- ? CAN -->
-    <include file="$(find can_node)/launch/perception.can_converter.launch">
+    <include file="$(find can_node)/launch/can_converter.launch">
     </include>
 
     <!-- Camera -->
