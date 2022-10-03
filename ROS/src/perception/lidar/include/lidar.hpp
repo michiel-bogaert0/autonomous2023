@@ -15,7 +15,7 @@
 
 namespace ns_lidar {
 
-enum DiagnosticStatusEnum{ OK, WARN, ERROR, STALE};
+enum DiagnosticStatusEnum { OK, WARN, ERROR, STALE };
 
 class Lidar {
 
@@ -41,7 +41,8 @@ private:
   void publishMarkers(const sensor_msgs::PointCloud cones);
 
   void publishObservations(const sensor_msgs::PointCloud cones);
-  void publishDiagnostic(DiagnosticStatusEnum status, std::string name, std::string message);
+  void publishDiagnostic(DiagnosticStatusEnum status, std::string name,
+                         std::string message);
 };
 } // namespace ns_lidar
 

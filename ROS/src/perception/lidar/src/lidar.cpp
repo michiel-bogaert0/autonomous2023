@@ -1,8 +1,6 @@
 #include "lidar.hpp"
-#include <chrono>
 #include "diagnostic_msgs/DiagnosticArray.h"
-
-
+#include <chrono>
 
 // Constructor
 namespace ns_lidar {
@@ -23,9 +21,10 @@ Lidar::Lidar(ros::NodeHandle &n)
       n.advertise<sensor_msgs::PointCloud>("perception/clustered_pc", 5);
   visPublisher_ =
       n.advertise<visualization_msgs::MarkerArray>("perception/cones_lidar", 5);
-  conePublisher_ =
-      n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("perception/observations", 5);
-  diagnosticPublisher_ = n.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics",5);
+  conePublisher_ = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>(
+      "perception/observations", 5);
+  diagnosticPublisher_ =
+      n.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 5);
 }
 
 /**
@@ -39,11 +38,13 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   pcl::PointCloud<pcl::PointXYZI>::Ptr preprocessed_pc(
       new pcl::PointCloud<pcl::PointXYZI>);
   pcl::fromROSMsg(msg, raw_pc_);
-  publishDiagnostic(OK, "[perception] raw points","#points: "+ std::to_string(raw_pc_.size()));
+  publishDiagnostic(OK, "[perception] raw points",
+                    "#points: " + std::to_string(raw_pc_.size()));
 
   // Preprocessing
   preprocessing(raw_pc_, preprocessed_pc);
-  publishDiagnostic(OK, "[perception] preprocessed points","#points: "+ std::to_string(preprocessed_pc->size()));
+  publishDiagnostic(OK, "[perception] preprocessed points",
+                    "#points: " + std::to_string(preprocessed_pc->size()));
 
   sensor_msgs::PointCloud2 preprocessed_msg;
   pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
@@ -60,12 +61,15 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   ground_removal_.groundRemoval(preprocessed_pc, notground_points,
                                 ground_points);
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-  publishDiagnostic(OK, "[perception] ground removal points","#points: "+ std::to_string(notground_points->size()));
+  publishDiagnostic(OK, "[perception] ground removal points",
+                    "#points: " + std::to_string(notground_points->size()));
 
   double time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
           .count();
-  publishDiagnostic(time_round < 1 ? OK: WARN, "[perception] ground removal time","time needed: "+ std::to_string(time_round));
+  publishDiagnostic(time_round < 1 ? OK : WARN,
+                    "[perception] ground removal time",
+                    "time needed: " + std::to_string(time_round));
 
   sensor_msgs::PointCloud2 groundremoval_msg;
   pcl::toROSMsg(*notground_points, groundremoval_msg);
@@ -82,13 +86,14 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
           .count();
-  publishDiagnostic(time_round < 1 ? OK: WARN, "[perception] clustering time","time needed: "+ std::to_string(time_round));
+  publishDiagnostic(time_round < 1 ? OK : WARN, "[perception] clustering time",
+                    "time needed: " + std::to_string(time_round));
 
   cluster.header.frame_id = msg.header.frame_id;
   cluster.header.stamp = msg.header.stamp;
   clusteredLidarPublisher_.publish(cluster);
-  publishDiagnostic(OK, "[perception] clustering points","#points: "+ std::to_string(cluster.points.size()));
-
+  publishDiagnostic(OK, "[perception] clustering points",
+                    "#points: " + std::to_string(cluster.points.size()));
 
   // Create an array of markers to display in Foxglove
   publishMarkers(cluster);
@@ -211,7 +216,8 @@ void Lidar::publishMarkers(const sensor_msgs::PointCloud cones) {
   visPublisher_.publish(markers);
 }
 
-void Lidar::publishDiagnostic(DiagnosticStatusEnum status, std::string name, std::string message){
+void Lidar::publishDiagnostic(DiagnosticStatusEnum status, std::string name,
+                              std::string message) {
   diagnostic_msgs::DiagnosticArray diag_array;
   diagnostic_msgs::DiagnosticStatus diag_status;
   diag_status.level = status;
@@ -220,6 +226,5 @@ void Lidar::publishDiagnostic(DiagnosticStatusEnum status, std::string name, std
   diag_array.status.push_back(diag_status);
 
   diagnosticPublisher_.publish(diag_array);
-
 }
 } // namespace ns_lidar
