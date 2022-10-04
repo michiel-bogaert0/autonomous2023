@@ -14,6 +14,9 @@
 #include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
 
 namespace ns_lidar {
+
+enum DiagnosticStatusEnum { OK, WARN, ERROR, STALE };
+
 class Lidar {
 
 public:
@@ -27,11 +30,10 @@ private:
   ros::Publisher clusteredLidarPublisher_;
   ros::Publisher visPublisher_;
   ros::Publisher conePublisher_;
+  ros::Publisher diagnosticPublisher_;
 
   ConeClustering cone_clustering_;
   GroundRemoval ground_removal_;
-
-  bool show_debug_;
 
   void rawPcCallback(const sensor_msgs::PointCloud2 &msg);
   void preprocessing(const pcl::PointCloud<pcl::PointXYZI> &raw,
@@ -39,6 +41,8 @@ private:
   void publishMarkers(const sensor_msgs::PointCloud cones);
 
   void publishObservations(const sensor_msgs::PointCloud cones);
+  void publishDiagnostic(DiagnosticStatusEnum status, std::string name,
+                         std::string message);
 };
 } // namespace ns_lidar
 
