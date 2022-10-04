@@ -9,10 +9,10 @@
         <param name="base_link_frame" value="$(arg base_link_frame)" />
 
         # gps0 should be right, gps1 should be left
-        <remap from="/input/gps1" to="/ugr/car/sensors/gps/ublox/left"/>
-        <remap from="/input/gps0" to="/ugr/car/sensors/gps/ublox/right"/>
-        <remap from="/input/gps1/vel" to="/ugr/car/sensors/gps/ublox/left/vel"/>
-        <remap from="/input/gps0/vel" to="/ugr/car/sensors/gps/ublox/right/vel"/>
+        <remap from="/input/gps1" to="/ugr/car/sensors/gps1"/>
+        <remap from="/input/gps0" to="/ugr/car/sensors/gps0"/>
+        <remap from="/input/gps1/vel" to="/ugr/car/sensors/gps1/vel"/>
+        <remap from="/input/gps0/vel" to="/ugr/car/sensors/gps0/vel"/>
 
         <remap from="/output/heading" to="/ugr/car/sensors/heading"/>
         <remap from="/output/yaw" to="/ugr/car/sensors/heading/yaw"/>

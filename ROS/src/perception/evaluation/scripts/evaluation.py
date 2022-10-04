@@ -4,6 +4,7 @@ import rospy
 from sensor_msgs.msg import NavSatFix
 from ugr_msgs.msg import ConeLocation
 from collections import deque
+import traceback
 
 
 class ConeLogger:
@@ -91,7 +92,8 @@ class ConeLogger:
                     location=self.cone_position[most_accurate], cone_type=cone_type_int
                 )
             )
-        except:
+        except Exception as e:
+            rospy.logerr(traceback.format_exc())
             rospy.logerr("exception while trying to publish a cone location!")
 
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from cmath import isnan
 from collections import deque
 from functools import partial
 from math import atan2, cos, pi, sin, sqrt
@@ -95,8 +96,13 @@ class HeadingEstimation(ROSNode):
         Tries to calculate the heading based on both GPS's (dual GPS heading)
         """
 
-        msg0 = self.gps_msgs[0][1]
-        msg1 = self.gps_msgs[1][1]
+        if len(self.gps_msgs[0]) < 1:
+            return
+        if len(self.gps_msgs[1]) < 1:
+            return
+
+        msg0 = self.gps_msgs[0][0]
+        msg1 = self.gps_msgs[1][0]
 
         # No message? No heading!
         if not msg0 or not msg1:
@@ -184,6 +190,10 @@ class HeadingEstimation(ROSNode):
         Args:
             bearing_input: the bearing (heading, yaw, whatever) to publish
         """
+
+        if isnan(bearing_input):
+            return
+
         bearing = self.yaw_averager.process(bearing_input)
 
         bm = Point(z=bearing)
