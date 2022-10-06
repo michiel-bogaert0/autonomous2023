@@ -156,7 +156,7 @@ class PerceptionNode:
             create_diagnostic_message(
                 level=DiagnosticStatus.OK,
                 name="[Perception] Camera node",
-                message=f"Timings {' - '.join([str(x) for x in timings])} s",
+                message=f"Timings {' - '.join([str(int(x*1000)) for x in timings])} ms",
             )
         )
 
