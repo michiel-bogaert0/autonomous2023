@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   ugr_msgs
   pcl_conversions
+  diagnostic_msgs
   pcl_msgs
   pcl_ros
 )
