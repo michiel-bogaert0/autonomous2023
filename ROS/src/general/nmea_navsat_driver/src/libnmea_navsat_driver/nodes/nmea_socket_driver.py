@@ -58,18 +58,9 @@ class NMEAMessageHandler(socketserver.DatagramRequestHandler):
                 nmea_str = line.decode('ascii')
                 self.server.driver.add_sentence(nmea_str, self.server.frame_id)
             except UnicodeError as e:
-                rospy.logwarn("Skipped reading a line from the UDP socket because it could not be "
-                              "decoded as an ASCII string. The bytes were {0}".format(line))
+                pass
             except ValueError:
-                rospy.logwarn(
-                    "ValueError, likely due to missing fields in the NMEA "
-                    "message. Please report this issue at "
-                    "https://github.com/ros-drivers/nmea_navsat_driver"
-                    ", including the following:\n\n"
-                    "```\n" +
-                    repr(line) + "\n\n" +
-                    traceback.format_exc() +
-                    "```")
+                pass
 
 
 def main():

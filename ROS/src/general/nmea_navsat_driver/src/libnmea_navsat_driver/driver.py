@@ -161,16 +161,11 @@ class RosNMEADriver(object):
             bool: True if the NMEA string is successfully processed, False if there is an error.
         """
         if not check_nmea_checksum(nmea_string):
-            rospy.logwarn("Received a sentence with an invalid checksum. " +
-                          "Sentence was: %s" % repr(nmea_string))
             return False
 
         parsed_sentence = libnmea_navsat_driver.parser.parse_nmea_sentence(
             nmea_string)
         if not parsed_sentence:
-            rospy.logdebug(
-                "Failed to parse NMEA sentence. Sentence was: %s" %
-                nmea_string)
             return False
 
         if timestamp:
@@ -197,7 +192,6 @@ class RosNMEADriver(object):
 
             if self.use_GNSS_time:
                 if math.isnan(data['utc_time'][0]):
-                    rospy.logwarn("Time in the NMEA sentence is NOT valid")
                     return False
                 current_fix.header.stamp = rospy.Time(data['utc_time'][0], data['utc_time'][1])
 
@@ -268,7 +262,6 @@ class RosNMEADriver(object):
 
             if self.use_GNSS_time:
                 if math.isnan(data['utc_time'][0]):
-                    rospy.logwarn("Time in the NMEA sentence is NOT valid")
                     return False
                 current_fix.header.stamp = rospy.Time(data['utc_time'][0], data['utc_time'][1])
 

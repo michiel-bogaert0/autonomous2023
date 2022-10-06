@@ -52,12 +52,7 @@ def nmea_sentence_callback(nmea_sentence, driver):
             frame_id=nmea_sentence.header.frame_id,
             timestamp=nmea_sentence.header.stamp)
     except ValueError as e:
-        rospy.logwarn(
-            "Value error, likely due to missing fields in the NMEA message. "
-            "Error was: %s. Please report this issue at github.com/ros-drivers/nmea_navsat_driver, "
-            "including a bag file with the NMEA sentences that caused it." %
-            e)
-
+        return
 
 def main():
     """Create and run the nmea_topic_driver ROS node.

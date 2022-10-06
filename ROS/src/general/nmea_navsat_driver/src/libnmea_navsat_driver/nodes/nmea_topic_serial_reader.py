@@ -78,8 +78,7 @@ def main():
             try:
                 sentence.sentence = data.decode('ascii')
             except UnicodeError as e:
-                rospy.logwarn("Skipped reading a line from the serial device because it could not be "
-                              "decoded as an ASCII string. The bytes were {0}".format(data))
+                pass
             else:
                 nmea_pub.publish(sentence)
 

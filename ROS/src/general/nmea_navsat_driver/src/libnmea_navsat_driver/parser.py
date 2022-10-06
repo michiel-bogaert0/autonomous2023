@@ -286,9 +286,6 @@ def parse_nmea_sentence(nmea_sentence):
     nmea_sentence = nmea_sentence.strip()  # Cut possible carriage return or new line of NMEA Sentence
     if not re.match(
             r'(^\$GP|^\$GN|^\$GL|^\$IN).*\*[0-9A-Fa-f]{2}$', nmea_sentence):
-        logger.debug(
-            "Regex didn't match, sentence not valid NMEA? Sentence was: %s" %
-            repr(nmea_sentence))
         return False
     fields = [field for field in field_delimiter_regex.split(nmea_sentence)]
 
@@ -296,8 +293,6 @@ def parse_nmea_sentence(nmea_sentence):
     sentence_type = fields[0][3:]
 
     if sentence_type not in parse_maps:
-        logger.debug("Sentence type %s not in parse map, ignoring."
-                     % repr(sentence_type))
         return False
 
     parse_map = parse_maps[sentence_type]

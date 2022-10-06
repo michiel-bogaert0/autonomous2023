@@ -68,15 +68,9 @@ def main():
                     nmea_str = data.decode('ascii')
                     driver.add_sentence(nmea_str, frame_id)
                 except UnicodeError as e:
-                    rospy.logwarn("Skipped reading a line from the serial device because it could not be "
-                                  "decoded as an ASCII string. The bytes were {0}".format(data))
+                    pass
                 except ValueError as e:
-                    rospy.logwarn(
-                        "Value error, likely due to missing fields in the NMEA message. "
-                        "Error was: %s. Please report this issue at "
-                        "github.com/ros-drivers/nmea_navsat_driver, including a bag file with the NMEA "
-                        "sentences that caused it." %
-                        e)
+                    pass
 
         except (rospy.ROSInterruptException, serial.serialutil.SerialException):
             GPS.close()  # Close GPS serial port
