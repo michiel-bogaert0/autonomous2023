@@ -22,6 +22,7 @@
 #include <geometry_msgs/PointStamped.h>
 
 #include "kdtree.h"
+#include "dbscan.hpp"
 
 #include <nav_msgs/Odometry.h>
 
@@ -456,9 +457,9 @@ namespace slam
 
     // Average (weighted) all the poses and cone positions to get the final estimate
 
-    vector<VectorXf> lmMeans;
-    vector<LandmarkMetadata> lmMetadatas;
-    vector<float> lmTotalWeight;
+    vector<VectorXf> lmSamples;
+    vector<LandmarkMetadata> lmMetadata;
+
     vector<int> contributions;
 
     float x = 0.0;
@@ -490,13 +491,20 @@ namespace slam
         maxW = w;
         bestParticle = particle;
       }
-    }
 
-    lmMeans = bestParticle.xf();
-    lmMetadatas = bestParticle.metadata();
+      for (auto xf : particle.xf()) {
+        lmSamples.push_back(xf);
+      }
+      for (auto metadata : particle.metadata()) {
+        lmMetadata.push_back(metadata);
+      }
+    }
 
     VectorXf pose(3);
     pose << x / totalW, y / totalW, yaw / totalW;
+
+    // Now apply DBSCAN to the samples
+    vector<vector<size_t>> clusters = dbscan();
 
     t2 = std::chrono::steady_clock::now();
 

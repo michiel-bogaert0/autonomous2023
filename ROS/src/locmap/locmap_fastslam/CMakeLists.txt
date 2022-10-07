@@ -23,6 +23,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${roscpp_INCLUDE_DIRS}
+  ${nanoflann_INCLUDE_DIRS}
 )
 
 include_directories( /usr/include/eigen3 )
