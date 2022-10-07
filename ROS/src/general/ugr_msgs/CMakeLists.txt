@@ -12,7 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(
   FILES
-  PerceptionUpdate.msg
   ConeKeypoint.msg
   CarPath.msg
   Particle.msg
