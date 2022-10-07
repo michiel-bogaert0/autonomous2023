@@ -89,8 +89,12 @@ class LocMapVis:
             marker.scale.y = 0.1
             marker.scale.z = 0.02
 
-            marker.color.r = 1 if (color == "r" or color == 'y') else part.weight / max_weight
-            marker.color.g = 1 if (color == "g" or color == 'y') else part.weight / max_weight
+            marker.color.r = (
+                1 if (color == "r" or color == "y") else part.weight / max_weight
+            )
+            marker.color.g = (
+                1 if (color == "g" or color == "y") else part.weight / max_weight
+            )
             marker.color.b = 1 if (color == "b") else part.weight / max_weight
             marker.color.a = 1
 
@@ -99,8 +103,6 @@ class LocMapVis:
             marker_array.markers.append(marker)
 
         return marker_array
-    
-    
 
     def observations_to_markerarray(
         self,
@@ -109,7 +111,7 @@ class LocMapVis:
         lifetime,
         persist=False,
         use_cones=True,
-        use_covariance=False
+        use_covariance=False,
     ):
         """
         Takes in an ObservationWithCovarianceArrayStamped message and produces the corresponding MarkerArary message
@@ -148,17 +150,17 @@ class LocMapVis:
                     marker.scale.x = 0.3
                     marker.scale.y = 0.3
                     marker.scale.z = 0.02
+                    marker.color.a = 1
                 else:
-                    marker.scale.x = obs.covariance[0]
-                    marker.scale.y = obs.covariance[3]
-                    marker.scale.z = obs.covariance[6]
-                
+                    marker.scale.x = 0.3 + obs.covariance[0]
+                    marker.scale.y = 0.3 + obs.covariance[3]
+                    marker.scale.z = 0.02
+
                 marker.color.r = 0 if obs.observation_class == 0 else 1
                 marker.color.g = 0 if obs.observation_class == 0 else 1
                 marker.color.b = 1 if obs.observation_class == 0 else 0
-                marker.color.a = 1
-            
-            
+                marker.color.a = 1 - obs.covariance[8]
+
             marker.color.a = 1
 
             marker.action = Marker.ADD
@@ -173,7 +175,7 @@ class LocMapVis:
             marker.pose.orientation.y = 0.0
             marker.pose.orientation.z = 0.0
             marker.pose.orientation.w = 1.0
-            marker.pose.position.x = obs.location.x 
+            marker.pose.position.x = obs.location.x
             marker.pose.position.y = obs.location.y
 
             marker.lifetime = rospy.Duration(lifetime)

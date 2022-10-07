@@ -6,12 +6,18 @@ import tf2_ros as tf
 from clustering.clustering import Clustering
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point, TransformStamped
-from locmap_clustering.srv import Reset, ResetRequest, ResetResponse
-from locmap_vis import LocMapVis
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from rosgraph_msgs.msg import Clock
 from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import ObservationWithCovariance, ObservationWithCovarianceArrayStamped, Particle, Particles
+from ugr_msgs.msg import (
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+    Particle,
+    Particles,
+)
+
+from locmap_clustering.srv import Reset, ResetRequest, ResetResponse
+from locmap_vis import LocMapVis
 
 
 class ClusterMapping(ROSNode):
@@ -151,7 +157,9 @@ class ClusterMapping(ROSNode):
 
     # See the constructor for the subscriber registration.
     # The '_' is just because it doesn't use a decorator, so it injects 'self' twice
-    def handle_observation_message(self, _, observations: ObservationWithCovarianceArrayStamped):
+    def handle_observation_message(
+        self, _, observations: ObservationWithCovarianceArrayStamped
+    ):
         """
         Handles the incoming observations.
         These observations must be (time) transformable to the base_link frame provided
@@ -169,13 +177,15 @@ class ClusterMapping(ROSNode):
         try:
             # Transform the observations!
             # This only transforms from sensor frame to base link frame, which should be a static transformation in normal conditions
-            transformed_observations: ObservationWithCovarianceArrayStamped = ROSNode.do_transform_observations(
-                observations,
-                self.tf_buffer.lookup_transform(
-                    observations.header.frame_id.strip("/"),
-                    self.base_link_frame,
-                    rospy.Time(0),
-                ),
+            transformed_observations: ObservationWithCovarianceArrayStamped = (
+                ROSNode.do_transform_observations(
+                    observations,
+                    self.tf_buffer.lookup_transform(
+                        observations.header.frame_id.strip("/"),
+                        self.base_link_frame,
+                        rospy.Time(0),
+                    ),
+                )
             )
 
             if self.do_time_transform:
@@ -229,8 +239,8 @@ class ClusterMapping(ROSNode):
             yaw,
         ]
 
-        world_observations: ObservationWithCovarianceArrayStamped = ROSNode.do_transform_observations(
-            observations, transform
+        world_observations: ObservationWithCovarianceArrayStamped = (
+            ROSNode.do_transform_observations(observations, transform)
         )
 
         for observation in world_observations.observations:
@@ -290,7 +300,7 @@ class ClusterMapping(ROSNode):
                 + np.cos(-self.particle_state[2]) * new_obs.location.y
             )
 
-            distance = (landmark[0] ** 2 + landmark[1] ** 2) ** (1/2)
+            distance = (landmark[0] ** 2 + landmark[1] ** 2) ** (1 / 2)
 
             if distance > 0.1:
 

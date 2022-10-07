@@ -10,7 +10,10 @@ from nav_msgs.msg import Odometry
 from slam.helpers import observations_to_range_bearings
 from slam.slam import SLAMNode
 from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import ObservationWithCovariance, ObservationWithCovarianceArrayStamped
+from ugr_msgs.msg import (
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+)
 
 
 class GlobalFastMapping(SLAMNode):

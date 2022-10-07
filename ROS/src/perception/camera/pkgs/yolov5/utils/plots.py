@@ -17,10 +17,21 @@ import pandas as pd
 import seaborn as sn
 import torch
 from PIL import Image, ImageDraw, ImageFont
-from yolov5.utils.general import (CONFIG_DIR, FONT, LOGGER, Timeout,
-                                  check_font, check_requirements, clip_coords,
-                                  increment_path, is_ascii, threaded,
-                                  try_except, xywh2xyxy, xyxy2xywh)
+from yolov5.utils.general import (
+    CONFIG_DIR,
+    FONT,
+    LOGGER,
+    Timeout,
+    check_font,
+    check_requirements,
+    clip_coords,
+    increment_path,
+    is_ascii,
+    threaded,
+    try_except,
+    xywh2xyxy,
+    xyxy2xywh,
+)
 from yolov5.utils.metrics import fitness
 
 # Settings
@@ -266,7 +277,7 @@ def plot_images(
         images *= 255  # de-normalise (optional)
     bs, _, h, w = images.shape  # batch size, _, height, width
     bs = min(bs, max_subplots)  # limit plot images
-    ns = np.ceil(bs ** 0.5)  # number of subplots (square)
+    ns = np.ceil(bs**0.5)  # number of subplots (square)
 
     # Build Image
     mosaic = np.full((int(ns * h), int(ns * w), 3), 255, dtype=np.uint8)  # init

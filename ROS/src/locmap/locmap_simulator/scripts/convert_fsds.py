@@ -44,7 +44,7 @@ class Convert(ROSNode):
         new_msg.twist.twist = msg.twist
 
         new_msg.twist.twist.linear.x = (
-            msg.twist.linear.x ** 2 + msg.twist.linear.y ** 2
+            msg.twist.linear.x**2 + msg.twist.linear.y**2
         ) ** (1 / 2)
         if self.add_noise:
             new_msg.twist.twist.linear.x += np.random.normal(

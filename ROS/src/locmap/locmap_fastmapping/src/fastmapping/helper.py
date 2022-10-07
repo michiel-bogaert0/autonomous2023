@@ -50,7 +50,7 @@ class Helpers:
         ranges = np.array([observations[:, 0], observations[:, 0]]).T.copy()
 
         H[0::2] = diff / ranges
-        H[1::2] = diff[:, [1, 0]] / ranges ** 2
+        H[1::2] = diff[:, [1, 0]] / ranges**2
         H[1::2, 0] *= -1
 
         return H
@@ -102,7 +102,7 @@ class Helpers:
         dx, dy = landmark_pos - pose[:2]
 
         return np.array(
-            [np.sqrt(dx ** 2 + dy ** 2), Helpers.pi_2_pi(np.arctan2(dy, dx) - theta)]
+            [np.sqrt(dx**2 + dy**2), Helpers.pi_2_pi(np.arctan2(dy, dx) - theta)]
         )
 
     @staticmethod
@@ -116,7 +116,7 @@ class Helpers:
         """
 
         diff = landmark_poses - pose[:2]
-        ranges = np.sqrt(np.sum(diff ** 2, axis=1))
+        ranges = np.sqrt(np.sum(diff**2, axis=1))
 
         bearings = Helpers.pi_2_pi(np.arctan2(diff[:, 1], diff[:, 0]) - pose[2])
 

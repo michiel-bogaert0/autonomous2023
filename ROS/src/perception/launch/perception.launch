@@ -8,12 +8,32 @@
         <param name="rate" value="10" />
         <remap from="/output/cone_keypoints" to="/perception/camera/mono/keypoints" />
         <remap from="/output/update" to="/ugr/car/observations/camera" />
-        <remap from="/input/image" to="/ugr/car/sensors/camera" />
+        <remap from="/input/image" to="/perception/camera/image" />
 
 
     </node>
 
     <include file="$(find lidar)/launch/lidar.launch" pass_all_args="true"/>
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_lidar0" args="0.0 0 0.37 0 0 0 1 ugr/car_base_link/sensors/cam0 os_sensor" />
+
+    <node pkg="locmap_vis" output="screen" type="vis_obs.py" name="fdlksjafldskjflakdjfklsja">
+            <param name="namespace" value="perception/car/cam" />
+            <param name="use_covariance" value="true" />
+            <param name="use_cones" value="false" />
+
+            <remap from="/input/vis" to="/ugr/car/observations/camera" />
+            <remap from="/output/vis" to="/vis/perception" />
+    </node>
+
+    <node pkg="locmap_vis" output="screen" type="vis_obs.py" name="fdlkddfd">
+            <param name="namespace" value="perception/car/lidar" />
+            <param name="use_covariance" value="true" />
+            <param name="use_cones" value="false" />
+
+            <remap from="/input/vis" to="/ugr/car/observations/lidar" />
+            <remap from="/output/vis" to="/vis/perception" />
+    </node>
 
    
 

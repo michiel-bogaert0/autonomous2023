@@ -5,14 +5,18 @@ from tkinter.tix import Tree
 import numpy as np
 import rospy
 import tf
-from fs_msgs.msg import Track
+from fs_msgs.msg import Cone, Track
 from geometry_msgs.msg import TwistStamped, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from sensor_msgs.msg import Imu, NavSatFix
-from ugr_msgs.msg import ObservationWithCovariance, ObservationWithCovarianceArrayStamped, PerceptionUpdate
+from ugr_msgs.msg import (
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+    PerceptionUpdate,
+)
 from visualization_msgs.msg import MarkerArray
-from fs_msgs.msg import Cone
+
 
 class Convert(ROSNode):
     """
@@ -35,18 +39,20 @@ class Convert(ROSNode):
 
     @AddSubscriber("/input/lidar/cones")
     def handleLidarMarker(self, lidarmarkers: MarkerArray):
-        
+
         if len(lidarmarkers.markers) > 0:
             observations = ObservationWithCovarianceArrayStamped()
             observations.header = lidarmarkers.markers[0].header
 
             for marker in lidarmarkers.markers:
-                
+
                 obs = ObservationWithCovariance()
-                obs.observation_class = Cone.BLUE if marker.color.b == 1 else Cone.YELLOW
-                obs.location.x = marker.pose.position.x    
-                obs.location.y = marker.pose.position.y           
-                
+                obs.observation_class = (
+                    Cone.BLUE if marker.color.b == 1 else Cone.YELLOW
+                )
+                obs.location.x = marker.pose.position.x
+                obs.location.y = marker.pose.position.y
+
                 observations.observations.append(obs)
 
             self.publish("/output/observations", observations)
@@ -102,7 +108,7 @@ class Convert(ROSNode):
         new_msg.twist.twist = msg.twist
 
         new_msg.twist.twist.linear.x = (
-            msg.twist.linear.x ** 2 + msg.twist.linear.y ** 2
+            msg.twist.linear.x**2 + msg.twist.linear.y**2
         ) ** (1 / 2)
         new_msg.twist.twist.linear.y = 0
 
