@@ -22,9 +22,9 @@
         <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_cam0" args="0.06 0 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/cam0" />
 
         <!-- imu0: front, imu1: back -->
-        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_gps_ublox_right" args="0.06 -0.36 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps/ublox/right" />
-        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_gps_ublox_left" args="0.06 0.36 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps/ublox/left" />
-        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_gps_pepwave" args="0.06 -0.25 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps/pepwave" />
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_gps_ublox_right" args="0.06 -0.36 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps0" />
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_gps_ublox_left" args="0.06 0.36 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps1" />
+        <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_gps_pepwave" args="0.06 -0.25 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps2" />
         <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_imu0" args="0.34 0 0 1 0 0 0 ugr/car_base_link ugr/car_base_link/imu0" />
         <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_imu1" args="-0.26 0 0.37 0 0 0 1 ugr/car_base_link ugr/car_base_link/imu1" />
     </group>
@@ -64,7 +64,7 @@
         <param name="imu1_differential" value="false" />
         <param name="imu1_relative" value="true" />
 
-        <param name="imu2" value="/ugr/car/sensors/imu/ouster" />
+        <param name="imu2" value="/ugr/car/sensors/imu2" />
         <rosparam param="imu2_config">[false, false, false,
                                        false, false, false,
                                        false, false, false,
@@ -145,7 +145,7 @@
         <param name="imu1_differential" value="false" />
         <param name="imu1_relative" value="true" />
 
-        <param name="imu2" value="/ugr/car/sensors/imu/ouster" />
+        <param name="imu2" value="/ugr/car/sensors/imu2" />
         <rosparam param="imu2_config">[false, false, false,
                                        false, false, false,
                                        false, false, false,
@@ -191,39 +191,13 @@
 
         <remap from="odometry/filtered" to="ugr/car/odometry/filtered/map" />
         <remap from="imu/data" to="/ugr/car/sensors/heading" />
-        <remap from="gps/fix" to="/ugr/car/sensors/gps/ublox/left" />
+        <remap from="gps/fix" to="/ugr/car/sensors/gps1" />
 
         <remap from="odometry/gps" to="ugr/car/odometry/filtered/gps" />
     </node>
 
     <!-- ? Lidar -->
-    <node pkg="lidar" type="lidar" name="lidar" output="screen">
-
-        <param name="ground_removal_method" value="bins" />
-        <param name="num_iter" value="3" />
-        <param name="num_lpr" value="250" />
-        <param name="th_seeds" value="0.15" />
-        <param name="th_dist" value="0.05" />
-        <param name="sensor_height" value="0.3" />
-
-        <param name="th_floor" value="0.07" />
-        <param name="angular_buckets" value="15" />
-        <param name="radial_buckets" value="40" />
-
-        <param name="clustering_method" value="string" />
-        <param name="cluster_tolerance" value="1" />
-        <param name="point_count_threshold" value="2" />
-
-        <param name="min_distance_factor" value="1.5" />
-        <param name="minimal_points_cone" value="3" />
-        <param name="minimal_height_center_cone" value="0.145" />
-
-        <param name="show_debug" value="true" />
-
-        <remap from="/os_cloud_node/points" to="/ugr/car/sensors/lidar" />
-        <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
-
-    </node>
+    <include file="$(find lidar)/launch/lidar.launch" pass_all_args="true"></include>
 
     <!-- ? Clustermapping (if applicable)-->
     <group if="$(eval arg('slamtype') == 'clustering')">

@@ -4,7 +4,7 @@
 #include <ros/ros.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
-#include <ugr_msgs/Observations.h>
+#include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
 
 #include "fastslam_core.hpp"
 
@@ -64,18 +64,18 @@ namespace slam
       // TF2
       tf2_ros::Buffer tfBuffer;
       tf2_ros::TransformListener tfListener;
-      message_filters::Subscriber<ugr_msgs::Observations> obs_sub;
-      tf2_ros::MessageFilter<ugr_msgs::Observations> tf2_filter;
+      message_filters::Subscriber<ugr_msgs::ObservationWithCovarianceArrayStamped> obs_sub;
+      tf2_ros::MessageFilter<ugr_msgs::ObservationWithCovarianceArrayStamped> tf2_filter;
 
       // Handlers
 
-      void handleObservations(const ugr_msgs::ObservationsConstPtr &obs);
+      void handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs);
 
       void publishOutput();
 
       void predict(Particle &particle, double dDist, double dYaw);
 
-      void build_associations(Particle &, ugr_msgs::Observations &, vector<VectorXf> &, vector<VectorXf> &, vector<int> &, vector<int>&, vector<int>&);
+      void build_associations(Particle &, ugr_msgs::ObservationWithCovarianceArrayStamped &, vector<VectorXf> &, vector<VectorXf> &, vector<int> &, vector<int>&, vector<int>&);
 
       double compute_particle_weight(Particle &particle, vector<VectorXf> &z, vector<int> &idf, MatrixXf &R);
 

@@ -27,8 +27,8 @@
 
 #include <string>
 
-#include <ugr_msgs/Observations.h>
-#include <ugr_msgs/Observation.h>
+#include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
+#include <ugr_msgs/ObservationWithCovariance.h>
 
 #include <cmath>
 
@@ -60,8 +60,8 @@ namespace slam
                                              tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0)
   {
 
-    this->globalPublisher = n.advertise<ugr_msgs::Observations>("/output/map", 5);
-    this->localPublisher = n.advertise<ugr_msgs::Observations>("/output/observations", 5);
+    this->globalPublisher = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("/output/map", 5);
+    this->localPublisher = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("/output/observations", 5);
     this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
 
     obs_sub.subscribe(n, "/input/observations", 1);
@@ -149,7 +149,7 @@ namespace slam
     lm(1) = pose(1) + obs(0) * sin(pose(2) + obs(1));
   }
 
-  void FastSLAM1::build_associations(Particle &particle, ugr_msgs::Observations &observations, vector<VectorXf> &knownLandmarks, vector<VectorXf> &newLandmarks, vector<int> &knownIndices, vector<int> &knownClasses, vector<int> &newClasses)
+  void FastSLAM1::build_associations(Particle &particle, ugr_msgs::ObservationWithCovarianceArrayStamped &observations, vector<VectorXf> &knownLandmarks, vector<VectorXf> &newLandmarks, vector<int> &knownIndices, vector<int> &knownClasses, vector<int> &newClasses)
   {
 
     // Make a kdtree of the current particle
@@ -235,7 +235,7 @@ namespace slam
     return w;
   }
 
-  void FastSLAM1::handleObservations(const ugr_msgs::ObservationsConstPtr &obs)
+  void FastSLAM1::handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs)
   {
 
     if (this->latestTime - obs->header.stamp.toSec() > 0.5 && this->latestTime > 0.0) {
@@ -269,13 +269,13 @@ namespace slam
     double time_round;
 
     t1 = std::chrono::steady_clock::now();
-    ugr_msgs::Observations transformed_obs;
+    ugr_msgs::ObservationWithCovarianceArrayStamped transformed_obs;
     transformed_obs.header = obs->header;
 
     for (auto observation : obs->observations)
     {
 
-      ugr_msgs::Observation transformed_ob;
+      ugr_msgs::ObservationWithCovariance transformed_ob;
 
       geometry_msgs::PointStamped locStamped;
       locStamped.point = observation.location;
@@ -302,6 +302,7 @@ namespace slam
         continue;
       }
 
+      transformed_ob.covariance = observation.covariance;      
       transformed_ob.observation_class = observation.observation_class;
       transformed_obs.observations.push_back(transformed_ob);
     }
@@ -524,8 +525,8 @@ namespace slam
     ROS_INFO("Number of actual landmarks: %d", filteredLandmarks.size());
 
     // Create the observation_msgs things
-    ugr_msgs::Observations global;
-    ugr_msgs::Observations local;
+    ugr_msgs::ObservationWithCovarianceArrayStamped global;
+    ugr_msgs::ObservationWithCovarianceArrayStamped local;
     global.header.frame_id = this->slam_world_frame;
     global.header.stamp = ros::Time::now();
     local.header.frame_id = this->base_link_frame;
@@ -534,8 +535,8 @@ namespace slam
     for (int i = 0; i < filteredLandmarks.size(); i++)
     {
 
-      ugr_msgs::Observation global_ob;
-      ugr_msgs::Observation local_ob;
+      ugr_msgs::ObservationWithCovariance global_ob;
+      ugr_msgs::ObservationWithCovariance local_ob;
 
       float rounded_float = round((float)filteredMeta[i].classSummation / (float)filteredMeta[i].classSummationCount);
       global_ob.observation_class = uint8_t(rounded_float);

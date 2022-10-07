@@ -6,17 +6,17 @@
     <node pkg="pepwave_gps" type="gps.py" name="publish_gps" output="screen">
         <param name="ip_address" value="192.168.50.1" />
         <param name="port" value="60660" />
-        <param name="gps_frame" value="ugr/car_base_link/gps/pepwave" />
+        <param name="gps_frame" value="ugr/car_base_link/gps2" />
         <param name="use_gps_time" value="False" />
 
-        <remap from="/output/gps" to="/ugr/car/sensors/gps/pepwave" />
+        <remap from="/output/gps" to="/ugr/car/sensors/gps2" />
     </node>
 
 
     <!-- USB-C (gsp vanboven) is links -->
     <!-- USB A (gps vanonder) is rechts -->
 
-    <!-- ! RIGHT -->
+    <!-- ! RIGHT: 0 -->
     <node pkg="ublox_gps" type="ntripclient" name="ntripclient_right" output="screen">
         <param name="server" value="euref-ip.be" />
         <param name="mountpoint" value="BRUX00BEL0" />
@@ -30,9 +30,9 @@
         <param name="port" value="/dev/ttyUSB1"></param>
         <param name="baud" value="921600"></param>
 
-        <param name="frame_id" value="ugr/car_base_link/gps/ublox/right" />
-        <remap from="/fix" to="/ugr/car/sensors/gps/ublox/right" />
-        <remap from="/vel" to="/ugr/car/sensors/gps/ublox/right/vel" />
+        <param name="frame_id" value="ugr/car_base_link/gps0" />
+        <remap from="/fix" to="/ugr/car/sensors/gps0" />
+        <remap from="/vel" to="/ugr/car/sensors/gps0/vel" />
     </node>
 
     <!-- ! LEFT -->
@@ -50,60 +50,34 @@
         <param name="port" value="/dev/ttyUSB0"></param>
         <param name="baud" value="921600"></param>
 
-        <param name="frame_id" value="ugr/car_base_link/gps/ublox/left" />
-        <remap from="/fix" to="/ugr/car/sensors/gps/ublox/left" />
-        <remap from="/vel" to="/ugr/car/sensors/gps/ublox/left/vel" />
+        <param name="frame_id" value="ugr/car_base_link/gps1" />
+        <remap from="/fix" to="/ugr/car/sensors/gps1" />
+        <remap from="/vel" to="/ugr/car/sensors/gps1/vel" />
     </node>
 
     <!-- ? Heading estimation -->
 
-    <include file="$(find ublox_gps)/launch/estimate_heading.launch">
+    <!-- <include file="$(find ublox_gps)/launch/estimate_heading.launch">
         <arg name="rate" default="20" />
         <arg name="max_time_deviation" default="0.01" />
         <arg name="base_link_frame" default="ugr/car_base_link" />
-    </include>
+    </include> -->
 
     <!-- ? Lidar -->
 
     <include file="$(find ouster_ros)/ouster.launch">
-        <arg name="imu_topic" value="/ugr/car/sensors/imu/ouster" />
+        <arg name="imu_topic" value="/ugr/car/sensors/imu2" />
         <arg name="lidar_topic" value="/ugr/car/sensors/lidar" />
     </include>
 
     <!-- ? CAN -->
-
-    <node pkg="can_node" type="can_converter.py" name="can_converter" output="screen">
-        <param name="interface" value="can0" />
-        <param name="baudrate" value="250000" />
-        <param name="odrive_dbc" value="$(find can_node)/odrive.dbc" />
-        <param name="imu/front/frame" value="ugr/car_base_link/imu0" />
-        <param name="imu/front/back" value="ugr/car_base_link/imu1" />
-
-        <remap from="/output/can" to="/can_messages" />
-        <remap from="/output/vel0" to="/ugr/car/sensors/encoder0" />
-        <remap from="/output/vel1" to="/ugr/car/sensors/encoder1" />
-        <remap from="/output/start" to="/control/start" />
-        <remap from="/output/stop" to="/control/stop" />
-
-
-        <!-- IMU0 : front -->
-        <remap from="/output/imu0/pitch_roll" to="/ugr/car/sensors/imu0/pitch_roll" />
-        <remap from="/output/imu0/angular_rate" to="/ugr/car/sensors/imu0/angular_rate" />
-        <remap from="/output/imu0/acc" to="/ugr/car/sensors/imu0/acc" />
-
-        <!-- IMU1 : back -->
-        <remap from="/output/imu1/pitch_roll" to="/ugr/car/sensors/imu1/yaw_roll" />
-        <remap from="/output/imu1/angular_rate" to="/ugr/car/sensors/imu1/angular_rate" />
-        <remap from="/output/imu1/acc" to="/ugr/car/sensors/imu1/acc" />
-
-    </node>
+    <include file="$(find can_node)/launch/can_converter.launch">
+    </include>
 
     <!-- Camera -->
     <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries" />
 
-    <node pkg="perception" type="camera.py" name="camera_publisher">
-        <param name="rate" value="10" />
-        <remap from="/input/image" to="/ugr/car/sensors/camera" />
-    </node>
-
+    <include file="$(find camera)/launch/perception.camera.publisher.launch">
+        <arg name="type" value="camera"/>
+    </include>
 </launch>

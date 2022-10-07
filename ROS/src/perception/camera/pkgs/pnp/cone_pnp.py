@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point
-from ugr_msgs.msg import ConeKeypoint, ConeKeypoints, Observations,Observation
+from ugr_msgs.msg import ConeKeypoint, ConeKeypoints, ObservationWithCovarianceArrayStamped,ObservationWithCovariance
 
 
 class ConePnp:
@@ -24,7 +24,7 @@ class ConePnp:
 
     def generate_perception_update(
         self, cone_keypoints_msg: ConeKeypoints, img_size: Tuple[int, int]
-    ) -> Observations:
+    ) -> ObservationWithCovarianceArrayStamped:
         """
         Receives a keypoint update message and applies a PnP algorithm to it.
         It returns a PerceptionUpdate.
@@ -52,10 +52,10 @@ class ConePnp:
                 continue
 
             cone_relative_positions.append(
-                Observation(observation_class=cone_keypoint.bb_info.cone_type, location=loc)
+                ObservationWithCovariance(observation_class=cone_keypoint.bb_info.cone_type, location=loc)
             )
 
-        perception_observation = Observations()
+        perception_observation = ObservationWithCovarianceArrayStamped()
         perception_observation.observations = cone_relative_positions
         perception_observation.header.stamp = cone_keypoints_msg.header.stamp
         perception_observation.header.frame_id = cone_keypoints_msg.header.frame_id

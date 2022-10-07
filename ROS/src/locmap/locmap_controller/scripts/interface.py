@@ -10,7 +10,7 @@ from geometry_msgs.msg import TwistStamped, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from sensor_msgs.msg import Imu, NavSatFix
-from ugr_msgs.msg import Observation, Observations, PerceptionUpdate
+from ugr_msgs.msg import ObservationWithCovariance, ObservationWithCovarianceArrayStamped, PerceptionUpdate
 from visualization_msgs.msg import MarkerArray
 from fs_msgs.msg import Cone
 
@@ -37,12 +37,12 @@ class Convert(ROSNode):
     def handleLidarMarker(self, lidarmarkers: MarkerArray):
         
         if len(lidarmarkers.markers) > 0:
-            observations = Observations()
+            observations = ObservationWithCovarianceArrayStamped()
             observations.header = lidarmarkers.markers[0].header
 
             for marker in lidarmarkers.markers:
                 
-                obs = Observation()
+                obs = ObservationWithCovariance()
                 obs.observation_class = Cone.BLUE if marker.color.b == 1 else Cone.YELLOW
                 obs.location.x = marker.pose.position.x    
                 obs.location.y = marker.pose.position.y           
@@ -54,7 +54,7 @@ class Convert(ROSNode):
     @AddSubscriber("/input/perception_update")
     def handlePerceptionUpdate(self, perceptionUpdate: PerceptionUpdate):
         """
-        Converts a PerceptionUpdate message from perception to an Observations message from LocMap
+        Converts a PerceptionUpdate message from perception to an ObservationWithCovarianceArrayStamped message from LocMap
         The ROS header gets copied, including timestamp and frame.
         So note that it is the responsibility of upstream nodes to provide the system with a correct frame
 
@@ -62,15 +62,15 @@ class Convert(ROSNode):
             - perceptionUpdate: the perception update message
 
         Returns:
-            The converted Observations message
+            The converted ObservationWithCovarianceArrayStamped message
         """
 
         # Here the header is just copied as it contains the frame of the camera. locmap_controller doesn't know what camera frame is used.
-        observations = Observations()
+        observations = ObservationWithCovarianceArrayStamped()
         observations.header = perceptionUpdate.header
 
         for cone in perceptionUpdate.cone_relative_positions:
-            observation = Observation()
+            observation = ObservationWithCovariance()
             observation.observation_class = cone.color
             observation.location = cone.location
 

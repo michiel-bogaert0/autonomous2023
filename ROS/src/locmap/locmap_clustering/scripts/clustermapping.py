@@ -11,7 +11,7 @@ from locmap_vis import LocMapVis
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from rosgraph_msgs.msg import Clock
 from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import Observation, Observations, Particle, Particles
+from ugr_msgs.msg import ObservationWithCovariance, ObservationWithCovarianceArrayStamped, Particle, Particles
 
 
 class ClusterMapping(ROSNode):
@@ -151,7 +151,7 @@ class ClusterMapping(ROSNode):
 
     # See the constructor for the subscriber registration.
     # The '_' is just because it doesn't use a decorator, so it injects 'self' twice
-    def handle_observation_message(self, _, observations: Observations):
+    def handle_observation_message(self, _, observations: ObservationWithCovarianceArrayStamped):
         """
         Handles the incoming observations.
         These observations must be (time) transformable to the base_link frame provided
@@ -162,14 +162,14 @@ class ClusterMapping(ROSNode):
 
         if not self.initialized:
             rospy.logwarn(
-                "Node is still initializing. Dropping incoming Observations message..."
+                "Node is still initializing. Dropping incoming ObservationWithCovarianceArrayStamped message..."
             )
             return
 
         try:
             # Transform the observations!
             # This only transforms from sensor frame to base link frame, which should be a static transformation in normal conditions
-            transformed_observations: Observations = ROSNode.do_transform_observations(
+            transformed_observations: ObservationWithCovarianceArrayStamped = ROSNode.do_transform_observations(
                 observations,
                 self.tf_buffer.lookup_transform(
                     observations.header.frame_id.strip("/"),
@@ -197,15 +197,15 @@ class ClusterMapping(ROSNode):
                 self.process_observations(transformed_observations)
         except Exception as e:
             rospy.logerr(
-                f"ClusterMapping has caught an exception. Ignoring Observations message... Exception: {e}"
+                f"ClusterMapping has caught an exception. Ignoring ObservationWithCovarianceArrayStamped message... Exception: {e}"
             )
 
-    def process_observations(self, observations: Observations):
+    def process_observations(self, observations: ObservationWithCovarianceArrayStamped):
         """
-        This function gets called when an Observations message needs to be processed into the clustering
+        This function gets called when an ObservationWithCovarianceArrayStamped message needs to be processed into the clustering
 
         Args:
-            - observations: The Observations message that needs to be processed
+            - observations: The ObservationWithCovarianceArrayStamped message that needs to be processed
         """
 
         # Look up the base_link frame relative to the world at the time of the observations.
@@ -229,7 +229,7 @@ class ClusterMapping(ROSNode):
             yaw,
         ]
 
-        world_observations: Observations = ROSNode.do_transform_observations(
+        world_observations: ObservationWithCovarianceArrayStamped = ROSNode.do_transform_observations(
             observations, transform
         )
 
@@ -257,14 +257,14 @@ class ClusterMapping(ROSNode):
         count, classes, landmarks = self.clustering.all_landmarks
 
         # Publish all the resulting points as "observations" relative to base_link
-        # Note how the output is also an Observations message!
-        observations = Observations()
+        # Note how the output is also an ObservationWithCovarianceArrayStamped message!
+        observations = ObservationWithCovarianceArrayStamped()
         observations.header.frame_id = self.base_link_frame
         observations.header.stamp = rospy.Time().now()
         observations.observations = []
 
         # Also publish the same result but now relative to world_frame (so the "map" estimate)
-        new_map = Observations()
+        new_map = ObservationWithCovarianceArrayStamped()
         new_map.header.frame_id = self.world_frame
         new_map.header.stamp = rospy.Time().now()
         new_map.observations = []
@@ -273,7 +273,7 @@ class ClusterMapping(ROSNode):
             clss = classes[j]
             landmark = landmarks[j]
 
-            new_obs = Observation()
+            new_obs = ObservationWithCovariance()
             new_obs.location = Point(
                 x=landmark[0] - self.particle_state[0],
                 y=landmark[1] - self.particle_state[1],
@@ -301,7 +301,7 @@ class ClusterMapping(ROSNode):
 
                 observations.observations.append(new_obs)
 
-                new_map_point = Observation()
+                new_map_point = ObservationWithCovariance()
                 new_map_point.location = Point(x=landmark[0], y=landmark[1], z=0)
                 new_map_point.observation_class = clss
 
@@ -314,7 +314,7 @@ class ClusterMapping(ROSNode):
         # Could be useful to estimate statistical distributions from
         # It is an analysis thingy, so only makes sense if relative to the world frame
 
-        samples = Observations()
+        samples = ObservationWithCovarianceArrayStamped()
         samples.header.frame_id = self.world_frame
         samples.header.stamp = rospy.Time().now()
         samples.observations = []
@@ -328,7 +328,7 @@ class ClusterMapping(ROSNode):
                 self.clustering.sample_classes[self.previous_sample_point :],
                 self.clustering.samples[self.previous_sample_point :],
             ):
-                samples_point = Observation()
+                samples_point = ObservationWithCovariance()
                 samples_point.location = Point(x=sample[0], y=sample[1], z=0)
                 samples_point.observation_class = clss
 
@@ -348,7 +348,7 @@ class ClusterMapping(ROSNode):
             ],
             self.clustering.samples[self.previous_sample_point : self.clustering.size],
         ):
-            samples_point = Observation()
+            samples_point = ObservationWithCovariance()
             samples_point.location = Point(x=sample[0], y=sample[1], z=0)
             samples_point.observation_class = clss
 
