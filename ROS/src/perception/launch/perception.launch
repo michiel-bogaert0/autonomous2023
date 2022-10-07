@@ -15,8 +15,11 @@
 
     <include file="$(find lidar)/launch/lidar.launch" pass_all_args="true"/>
 
+    <!-- static transform for visualisation and fusion purposes -->
     <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_lidar0" args="0.0 0 0.37 0 0 0 1 ugr/car_base_link/sensors/cam0 os_sensor" />
 
+
+    <!-- visualisation for camera observations -->
     <node pkg="locmap_vis" output="screen" type="vis_obs.py" name="fdlksjafldskjflakdjfklsja">
             <param name="namespace" value="perception/car/cam" />
             <param name="use_covariance" value="true" />
@@ -26,6 +29,7 @@
             <remap from="/output/vis" to="/vis/perception" />
     </node>
 
+    <!-- visualisation for lidar observations -->
     <node pkg="locmap_vis" output="screen" type="vis_obs.py" name="fdlkddfd">
             <param name="namespace" value="perception/car/lidar" />
             <param name="use_covariance" value="true" />

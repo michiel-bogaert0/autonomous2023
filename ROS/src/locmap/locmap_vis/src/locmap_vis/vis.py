@@ -152,6 +152,7 @@ class LocMapVis:
                     marker.scale.z = 0.02
                     marker.color.a = 1
                 else:
+                    # if covariances are used, add the covariance to the scale of the cilinder
                     marker.scale.x = 0.3 + obs.covariance[0]
                     marker.scale.y = 0.3 + obs.covariance[3]
                     marker.scale.z = 0.02
@@ -161,7 +162,7 @@ class LocMapVis:
                 marker.color.b = 1 if obs.observation_class == 0 else 0
                 marker.color.a = 1 - obs.covariance[8]
 
-            marker.color.a = 1
+            
 
             marker.action = Marker.ADD
 
