@@ -48,12 +48,16 @@ class VisObs(ROSNode):
         Args:
             msg (Observations): the message to visualise
         """
+        empty_array = self.vis_handler.delete_markerarray(self.vis_namespace)
+        self.publish("/output/vis", empty_array)
     
         marker_array = self.vis_handler.observations_to_markerarray(
             msg, self.vis_namespace, 0, False, self.use_cones,self.use_covariance
         )
         
         self.publish("/output/vis", marker_array)
+
+    
 
 node = VisObs()
 node.start()

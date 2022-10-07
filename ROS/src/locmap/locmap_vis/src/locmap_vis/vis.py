@@ -144,14 +144,14 @@ class LocMapVis:
                 marker.mesh_use_embedded_materials = True
             else:
                 marker.type = Marker.CYLINDER
-                if use_covariance:
+                if not use_covariance:
                     marker.scale.x = 0.3
                     marker.scale.y = 0.3
                     marker.scale.z = 0.02
                 else:
-                    marker.scale.x = obs.covariance[0][0]
-                    marker.scale.y = obs.covariance[1][1]
-                    marker.scale.z = obs.covariance[2][2]/100
+                    marker.scale.x = obs.covariance[0]
+                    marker.scale.y = obs.covariance[3]
+                    marker.scale.z = obs.covariance[6]
                 
                 marker.color.r = 0 if obs.observation_class == 0 else 1
                 marker.color.g = 0 if obs.observation_class == 0 else 1

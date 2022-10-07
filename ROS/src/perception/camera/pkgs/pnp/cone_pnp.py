@@ -52,7 +52,7 @@ class ConePnp:
                 continue
 
             cone_relative_positions.append(
-                ObservationWithCovariance(observation_class=cone_keypoint.bb_info.cone_type, location=loc)
+                ObservationWithCovariance(observation_class=cone_keypoint.bb_info.cone_type, location=loc,covariance=[0.7,0,0,0,0.1,0,0,0,0.1])
             )
 
         perception_observation = ObservationWithCovarianceArrayStamped()
