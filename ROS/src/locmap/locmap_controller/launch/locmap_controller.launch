@@ -60,7 +60,7 @@
     <group if="$(arg use_interface)">
         <node pkg="locmap_controller" type="interface.py" name="locmap_interface" output="screen">
 
-            <remap from="/input/perception_update" to="/perception/raw_perception_update" />
+            <remap from="/input/perception_update" to="ugr/car/observations/cam0" />
             <remap from="/input/gss" to="/fsds/gss" />
             <remap from="/input/imu" to="/fsds/imu" />
             <remap from="/input/gt_odometry" to="/fsds/testing_only/odom" />
@@ -129,7 +129,7 @@
             <param name="max_landmark_range" value="5" />
             <param name="observation_queue_size" value="1" />
             # Input/output remapping
-            <remap from="/input/observations" to="/lidar/perception/observations" />
+            <remap from="/input/observations" to="/ugr/car/observations/lidar" />
 
             <remap from="/output/observations" to="ugr/car/observations/global" />
             <remap from="/output/map" to="ugr/car/map/global" />
