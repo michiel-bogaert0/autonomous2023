@@ -10,7 +10,7 @@ from geometry_msgs.msg import TwistStamped, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from sensor_msgs.msg import Imu, NavSatFix
-from ugr_msgs.msg import ObservationWithCovariance, ObservationWithCovarianceArrayStamped, PerceptionUpdate
+from ugr_msgs.msg import ObservationWithCovariance, ObservationWithCovarianceArrayStamped
 from visualization_msgs.msg import MarkerArray
 from fs_msgs.msg import Cone
 
@@ -50,33 +50,6 @@ class Convert(ROSNode):
                 observations.observations.append(obs)
 
             self.publish("/output/observations", observations)
-
-    @AddSubscriber("/input/perception_update")
-    def handlePerceptionUpdate(self, perceptionUpdate: PerceptionUpdate):
-        """
-        Converts a PerceptionUpdate message from perception to an ObservationWithCovarianceArrayStamped message from LocMap
-        The ROS header gets copied, including timestamp and frame.
-        So note that it is the responsibility of upstream nodes to provide the system with a correct frame
-
-        Args:
-            - perceptionUpdate: the perception update message
-
-        Returns:
-            The converted ObservationWithCovarianceArrayStamped message
-        """
-
-        # Here the header is just copied as it contains the frame of the camera. locmap_controller doesn't know what camera frame is used.
-        observations = ObservationWithCovarianceArrayStamped()
-        observations.header = perceptionUpdate.header
-
-        for cone in perceptionUpdate.cone_relative_positions:
-            observation = ObservationWithCovariance()
-            observation.observation_class = cone.color
-            observation.location = cone.location
-
-            observations.observations.append(observation)
-
-        self.publish("/output/observations", observations)
 
     @AddSubscriber("/input/gss")
     def convertGSS(self, msg: TwistStamped):
