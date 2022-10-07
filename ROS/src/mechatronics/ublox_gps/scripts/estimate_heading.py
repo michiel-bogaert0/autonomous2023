@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from cmath import isnan
 from collections import deque
 from functools import partial
 from math import atan2, cos, pi, sin, sqrt
@@ -95,15 +96,21 @@ class HeadingEstimation(ROSNode):
         Tries to calculate the heading based on both GPS's (dual GPS heading)
         """
 
-        msg0 = self.gps_msgs[0][1]
-        msg1 = self.gps_msgs[1][1]
+        if len(self.gps_msgs[0]) < 1:
+            return
+        if len(self.gps_msgs[1]) < 1:
+            return
+
+        msg0 = self.gps_msgs[0][0]
+        msg1 = self.gps_msgs[1][0]
 
         # No message? No heading!
         if not msg0 or not msg1:
             return
 
         # Time deviates to much? No heading!
-        if msg0.header.stamp.to_sec() - msg1.header.stamp.to_sec() > self.max_time_deviation:
+        if abs(msg0.header.stamp.to_sec() - msg1.header.stamp.to_sec()) > self.max_time_deviation:
+            print("[Dual GPS]> time deviation too big")
             return
 
         # Actually calculate heading
@@ -115,7 +122,7 @@ class HeadingEstimation(ROSNode):
         y = sin(long1 - long0) * cos(lat1)
         x = cos(lat0) * sin(lat1) - sin(lat0) * cos(lat1) * cos(long1 - long0)
 
-        bearing = atan2(y, x) * (-1)
+        bearing = (pi / 2 - atan2(y, x)) * (-1)
 
         # Correct bearing
         if abs(bearing - self.offset[2] - self.heading_yaw[2]) > pi and self.heading_yaw[2] != 0:
@@ -184,6 +191,10 @@ class HeadingEstimation(ROSNode):
         Args:
             bearing_input: the bearing (heading, yaw, whatever) to publish
         """
+
+        if isnan(bearing_input):
+            return
+
         bearing = self.yaw_averager.process(bearing_input)
 
         bm = Point(z=bearing)
