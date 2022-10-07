@@ -32,7 +32,7 @@ class ConePnp:
     ) -> ObservationWithCovarianceArrayStamped:
         """
         Receives a keypoint update message and applies a PnP algorithm to it.
-        It returns a PerceptionUpdate.
+        It returns a ObservationWithCovarianceArrayStamped.
 
         Args:
             cone_keypoints_msg: the message that contains the cone keypoints

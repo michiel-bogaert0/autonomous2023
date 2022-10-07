@@ -24,7 +24,7 @@ from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from tf2_kdl import transform_to_kdl
-from ugr_msgs.msg import BoundingBox, Map, ObservationWithCovariance, ObservationWithCovarianceArrayStamped, PerceptionUpdate
+from ugr_msgs.msg import BoundingBox, Map, ObservationWithCovariance, ObservationWithCovarianceArrayStamped
 
 
 @dataclass
@@ -152,35 +152,6 @@ class ROSNode:
             self.add_subscribers()
 
         self.publishers = {}
-
-    @staticmethod
-    def do_transform_perception_update(
-        perception_update: PerceptionUpdate, transform: TransformStamped
-    ) -> PerceptionUpdate:
-        """
-        Custom transformation method to apply a transformation to a perception update
-        Args:
-          - perception_update: PerceptionUpdate = the message to transform
-          - transform: TransformStamped = the transformation to apply
-
-        Returns:
-          A transformed PerceptionUpdate
-        """
-        kdl_transform = transform_to_kdl(transform)
-        res = PerceptionUpdate()
-        for cone in perception_update.cone_relative_positions:
-            p = kdl_transform * PyKDL.Vector(
-                cone.location.x, cone.location.y, cone.location.z
-            )
-            new_cone = Cone()
-            new_cone.color = cone.color
-            new_cone.location.x = p[0]
-            new_cone.location.y = p[1]
-            new_cone.location.z = p[2]
-            res.cone_relative_positions.append(new_cone)
-
-        res.header = transform.header
-        return res
 
     @staticmethod
     def do_transform_observations(
