@@ -109,7 +109,8 @@ class HeadingEstimation(ROSNode):
             return
 
         # Time deviates to much? No heading!
-        if msg0.header.stamp.to_sec() - msg1.header.stamp.to_sec() > self.max_time_deviation:
+        if abs(msg0.header.stamp.to_sec() - msg1.header.stamp.to_sec()) > self.max_time_deviation:
+            print("[Dual GPS]> time deviation too big")
             return
 
         # Actually calculate heading
@@ -121,7 +122,7 @@ class HeadingEstimation(ROSNode):
         y = sin(long1 - long0) * cos(lat1)
         x = cos(lat0) * sin(lat1) - sin(lat0) * cos(lat1) * cos(long1 - long0)
 
-        bearing = atan2(y, x) * (-1)
+        bearing = (pi / 2 - atan2(y, x)) * (-1)
 
         # Correct bearing
         if abs(bearing - self.offset[2] - self.heading_yaw[2]) > pi and self.heading_yaw[2] != 0:
