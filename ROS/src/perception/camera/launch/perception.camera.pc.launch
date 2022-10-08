@@ -14,7 +14,7 @@
     <include file="$(find camera)/launch/perception.camera.publisher.launch" pass_all_args="true"/>
 
 
-    <node pkg="locmap_vis" output="screen" type="vis_obs.py" name="fdlksjafldskjflakdjfklsja">
+    <node pkg="locmap_vis" output="screen" type="vis_obs.py" name="camera_visualiser">
             <param name="namespace" value="perception/car" />
             <param name="use_covariance" value="true" />
             <param name="use_cones" value="false" />

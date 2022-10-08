@@ -8,7 +8,7 @@
         <param name="rate" value="10" />
         <remap from="/output/cone_keypoints" to="/ugr/car/perception/camera/keypoints" />
         <remap from="/output/update" to="/ugr/car/observations/camera" />
-        <remap from="/input/image" to="/perception/camera/image" />
+        <remap from="/input/image" to="/ugr/car/sensors/cam0" />
 
 
     </node>
@@ -20,7 +20,7 @@
 
 
     <!-- visualisation for camera observations -->
-    <node pkg="locmap_vis" output="screen" type="vis_obs.py" name="fdlksjafldskjflakdjfklsja">
+    <node pkg="locmap_vis" output="screen" type="vis_obs.py" name="camera_visualiser">
             <param name="namespace" value="perception/car/cam" />
             <param name="use_covariance" value="true" />
             <param name="use_cones" value="false" />
@@ -30,7 +30,7 @@
     </node>
 
     <!-- visualisation for lidar observations -->
-    <node pkg="locmap_vis" output="screen" type="vis_obs.py" name="fdlkddfd">
+    <node pkg="locmap_vis" output="screen" type="vis_obs.py" name="lidar_visualiser">
             <param name="namespace" value="perception/car/lidar" />
             <param name="use_covariance" value="true" />
             <param name="use_cones" value="false" />
