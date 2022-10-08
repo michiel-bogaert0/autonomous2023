@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+import time
+from math import pi
+
 import rospy
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
-from visualization_msgs.msg import Marker, MarkerArray
-import time
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
-from math import pi
+from visualization_msgs.msg import Marker, MarkerArray
 
 
 class VisCar(ROSNode):

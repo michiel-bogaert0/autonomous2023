@@ -6,10 +6,16 @@ import numpy as np
 import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import Point, Pose, PoseArray, TransformStamped
-from locmap_vis import LocMapVis
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, ROSNode
-from ugr_msgs.msg import ObservationWithCovariance, ObservationWithCovarianceArrayStamped, Particle, Particles
+from ugr_msgs.msg import (
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+    Particle,
+    Particles,
+)
+
+from locmap_vis import LocMapVis
 
 """
 Generic SLAM node should have the following behaviour
@@ -71,7 +77,9 @@ class SLAMNode(ROSNode, ABC):
         if self.vis:
             self.publish(
                 "/output/vis",
-                self.vis_handler.delete_markerarray(self.vis_namespace + "/observations"),
+                self.vis_handler.delete_markerarray(
+                    self.vis_namespace + "/observations"
+                ),
             )
             self.publish(
                 "/output/vis",
@@ -86,7 +94,9 @@ class SLAMNode(ROSNode, ABC):
 
     # See the constructor for the subscriber registration.
     # The '_' is just because it doesn't use a decorator, so it injects 'self' twice
-    def handle_observation_message(self, _, observations: ObservationWithCovarianceArrayStamped):
+    def handle_observation_message(
+        self, _, observations: ObservationWithCovarianceArrayStamped
+    ):
         """
         Handles the incoming observations.
         These observations must be (time) transformable to the base_link frame provided
@@ -97,14 +107,16 @@ class SLAMNode(ROSNode, ABC):
 
         # Transform the observations!
         # This only transforms from sensor frame to base link frame, which should be a static transformation in normal conditions
-        transformed_observations: ObservationWithCovarianceArrayStamped = ROSNode.do_transform_observations(
-            observations,
-            self.tf_buffer.lookup_transform(
-                observations.header.frame_id.strip("/"),
-                self.base_link_frame,
-                rospy.Time(0),
-                rospy.Duration(0.1),
-            ),
+        transformed_observations: ObservationWithCovarianceArrayStamped = (
+            ROSNode.do_transform_observations(
+                observations,
+                self.tf_buffer.lookup_transform(
+                    observations.header.frame_id.strip("/"),
+                    self.base_link_frame,
+                    rospy.Time(0),
+                    rospy.Duration(0.1),
+                ),
+            )
         )
 
         # Now do a "time transformation" to keep delays in mind

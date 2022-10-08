@@ -9,7 +9,12 @@ import cv2
 import numpy as np
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point
-from ugr_msgs.msg import ConeKeypoint, ConeKeypoints, ObservationWithCovarianceArrayStamped,ObservationWithCovariance
+from ugr_msgs.msg import (
+    ConeKeypoint,
+    ConeKeypoints,
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+)
 
 
 class ConePnp:
@@ -47,12 +52,16 @@ class ConePnp:
             x, y, z = tuple(relative_position * self.scale)
             loc = Point(z[0], -1 * x[0], y[0])
 
-            distance = (x ** 2 + y ** 2 + z ** 2) ** (1 / 2)
+            distance = (x**2 + y**2 + z**2) ** (1 / 2)
             if distance >= self.max_distance:
                 continue
 
             cone_relative_positions.append(
-                ObservationWithCovariance(observation_class=cone_keypoint.bb_info.cone_type, location=loc)
+                ObservationWithCovariance(
+                    observation_class=cone_keypoint.bb_info.cone_type,
+                    location=loc,
+                    covariance=[0.7, 0, 0, 0, 0.3, 0, 0, 0, 0.1],
+                )
             )
 
         perception_observation = ObservationWithCovarianceArrayStamped()

@@ -147,6 +147,8 @@ void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
     observation.location.x = cone.x;
     observation.location.y = cone.y;
     observation.location.z = cone.z;
+    observation.covariance =
+        boost::array<double, 9>({0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.8});
 
     observations.observations.push_back(observation);
 

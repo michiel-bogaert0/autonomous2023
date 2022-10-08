@@ -1,10 +1,11 @@
 #! /usr/bin/python3
 
+import traceback
+from collections import deque
+
 import rospy
 from sensor_msgs.msg import NavSatFix
 from ugr_msgs.msg import ConeLocation
-from collections import deque
-import traceback
 
 
 class ConeLogger:

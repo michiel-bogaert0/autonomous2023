@@ -39,8 +39,7 @@ def _create(
     from models.common import AutoShape, DetectMultiBackend
     from models.yolo import Model
     from utils.downloads import attempt_download
-    from utils.general import (LOGGER, check_requirements, intersect_dicts,
-                               logging)
+    from utils.general import LOGGER, check_requirements, intersect_dicts, logging
     from utils.torch_utils import select_device
 
     if not verbose:

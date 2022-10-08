@@ -14,7 +14,7 @@ def observations_to_range_bearings(observations: ObservationWithCovarianceArrayS
     obs_bearings = np.zeros((len(observations.observations), 3))
     indices = np.zeros(len(observations.observations), dtype=bool)
     for i, obs in enumerate(observations.observations):
-        d = np.sqrt(obs.location.x ** 2 + obs.location.y ** 2)
+        d = np.sqrt(obs.location.x**2 + obs.location.y**2)
 
         indices[i] = True
 

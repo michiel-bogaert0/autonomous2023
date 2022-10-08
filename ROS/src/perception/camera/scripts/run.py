@@ -97,7 +97,9 @@ class PerceptionNode:
             camera_matrix=camera_matrix,
             distortion_matrix=distortion_matrix,
         )
-        self.sub_images = rospy.Subscriber("/input/image", Image, self.run_perception_pipeline)
+        self.sub_images = rospy.Subscriber(
+            "/input/image", Image, self.run_perception_pipeline
+        )
         rospy.spin()
 
     def run_perception_pipeline(self, ros_image: Image) -> None:
