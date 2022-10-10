@@ -57,11 +57,11 @@
 
     <!-- ? Heading estimation -->
 
-    <!-- <include file="$(find ublox_gps)/launch/estimate_heading.launch">
+    <include file="$(find ublox_gps)/launch/estimate_heading.launch">
         <arg name="rate" default="20" />
         <arg name="max_time_deviation" default="0.01" />
         <arg name="base_link_frame" default="ugr/car_base_link" />
-    </include> -->
+    </include> 
 
     <!-- ? Lidar -->
 
