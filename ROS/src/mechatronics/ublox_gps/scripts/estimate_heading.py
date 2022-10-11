@@ -114,7 +114,7 @@ class HeadingEstimation(ROSNode):
         dlong = long1 - long0
         dlat = lat1 - lat0
 
-        R = 6371000
+        R = 6365244  # Taking into account our general latitude
         a = sin(dlat / 2) ** 2 + cos(lat0) * cos(lat1) * sin(dlong/2) ** 2
         c = 2 * atan2(sqrt(a), sqrt(1-a))
 
