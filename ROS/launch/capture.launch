@@ -23,12 +23,12 @@
         <param name="port" value="2101" />
         <param name="user" value="UGentRacing" />
         <param name="password" value="UGentRacing" />
-        <param name="baudrate" value="921600" />
-        <param name="device" value="/dev/ttyUSB1" />
+        <param name="baudrate" value="460800" />
+        <param name="device" value="/dev/ttyUSB0" />
     </node>
     <node pkg="nmea_navsat_driver" output="log" type="nmea_serial_driver" name="nmea_publisher_right">
-        <param name="port" value="/dev/ttyUSB1"></param>
-        <param name="baud" value="921600"></param>
+        <param name="port" value="/dev/ttyUSB0"></param>
+        <param name="baud" value="460800"></param>
 
         <param name="frame_id" value="ugr/car_base_link/gps0" />
         <remap from="/fix" to="/ugr/car/sensors/gps0" />
@@ -43,12 +43,12 @@
         <param name="port" value="2101" />
         <param name="user" value="UGentRacing" />
         <param name="password" value="UGentRacing" />
-        <param name="baudrate" value="921600" />
-        <param name="device" value="/dev/ttyUSB0" />
+        <param name="baudrate" value="460800" />
+        <param name="device" value="/dev/ttyUSB1" />
     </node>
     <node pkg="nmea_navsat_driver" output="log" type="nmea_serial_driver" name="nmea_publisher_left">
-        <param name="port" value="/dev/ttyUSB0"></param>
-        <param name="baud" value="921600"></param>
+        <param name="port" value="/dev/ttyUSB1"></param>
+        <param name="baud" value="460800"></param>
 
         <param name="frame_id" value="ugr/car_base_link/gps1" />
         <remap from="/fix" to="/ugr/car/sensors/gps1" />
