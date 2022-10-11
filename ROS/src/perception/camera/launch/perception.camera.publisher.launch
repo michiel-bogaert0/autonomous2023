@@ -10,7 +10,7 @@
     </group>
 
     <group ns="cam" if='$(eval arg("type") =="camera")'>
-        <node pkg="camera" type="camera.py" name="camera_publisher">
+        <node pkg="camera" type="camera.py" name="camera_publisher" output="screen">
             <param name="rate" value="10"/>
             <remap from="/input/image" to="/ugr/car/sensors/cam0" />
         </node>
