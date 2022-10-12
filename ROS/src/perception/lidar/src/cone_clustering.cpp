@@ -240,18 +240,20 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
 sensor_msgs::PointCloud ConeClustering::constructMessage(
     std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters) {
   // Create a PC and channel for: the cone colour, the (x,y,z) dimensions of the
-  // cluster
+  // cluster and the cone metric
   sensor_msgs::PointCloud cluster_msg;
   sensor_msgs::ChannelFloat32 cone_channel;
   sensor_msgs::ChannelFloat32 x_size_channel;
   sensor_msgs::ChannelFloat32 y_size_channel;
   sensor_msgs::ChannelFloat32 z_size_channel;
+  sensor_msgs::ChannelFloat32 cone_metric_channel;
 
   // name channels
   cone_channel.name = "cone_type";
   x_size_channel.name = "x_width";
   y_size_channel.name = "y_width";
   z_size_channel.name = "z_width";
+  cone_metric_channel.name = "cone_metric";
 
   // iterate over each cluster
   for (pcl::PointCloud<pcl::PointXYZINormal> cluster : clusters) {
@@ -264,6 +266,7 @@ sensor_msgs::PointCloud ConeClustering::constructMessage(
       x_size_channel.values.push_back(cone_check.bounds[0]);
       y_size_channel.values.push_back(cone_check.bounds[1]);
       z_size_channel.values.push_back(cone_check.bounds[2]);
+      cone_metric_channel.values.push_back(cone_check.cone_metric);
     }
   }
 
@@ -272,6 +275,7 @@ sensor_msgs::PointCloud ConeClustering::constructMessage(
   cluster_msg.channels.push_back(x_size_channel);
   cluster_msg.channels.push_back(y_size_channel);
   cluster_msg.channels.push_back(z_size_channel);
+  cluster_msg.channels.push_back(cone_metric_channel);
   return cluster_msg;
 }
 
