@@ -64,11 +64,12 @@ ConeCheck ConeClassification::classifyCone(
     // We allow for some play in the point count prediction
     // and check whether the pointcloud has a shape similar to a cone
     // add the "coneness" metric to the cone_check struct
-    double cone_metric = ConeClassification::checkShape(cone, centroid, is_orange);
+    double cone_metric =
+        ConeClassification::checkShape(cone, centroid, is_orange);
     if (dist != 0.0 &&
         (std::abs(num_points - cone.points.size()) / num_points) <
             point_count_threshold_ &&
-        ( cone_metric > cone_shape_factor_)) {
+        (cone_metric > cone_shape_factor_)) {
       cone_check.pos.x = centroid[0];
       cone_check.pos.y = centroid[1];
       cone_check.pos.z = centroid[2];
@@ -125,8 +126,9 @@ ConeCheck ConeClassification::classifyCone(
  * @ref
  * https://lup.lub.lu.se/luur/download?func=downloadFile&recordOId=9069372&fileOId=9069373
  */
-double ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
-                                    Eigen::Vector4f centroid, bool orange) {
+double
+ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
+                               Eigen::Vector4f centroid, bool orange) {
   // compute cone model(center + startinglocation)
   ConeModel cone_model;
   cone_model.floor = cone.points[0].normal_z;

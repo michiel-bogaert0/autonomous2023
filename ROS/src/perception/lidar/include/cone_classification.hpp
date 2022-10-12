@@ -47,7 +47,7 @@ private:
                               // of a cone
 
   double checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
-                  Eigen::Vector4f centroid, bool orange);
+                    Eigen::Vector4f centroid, bool orange);
 };
 } // namespace ns_lidar
 

@@ -248,14 +248,12 @@ sensor_msgs::PointCloud ConeClustering::constructMessage(
   sensor_msgs::ChannelFloat32 z_size_channel;
   sensor_msgs::ChannelFloat32 cone_metric_channel;
 
-
-
   // name channels
   cone_channel.name = "cone_type";
   x_size_channel.name = "x_width";
   y_size_channel.name = "y_width";
   z_size_channel.name = "z_width";
-  cone_metric_channel.name ="cone_metric";
+  cone_metric_channel.name = "cone_metric";
 
   // iterate over each cluster
   for (pcl::PointCloud<pcl::PointXYZINormal> cluster : clusters) {
