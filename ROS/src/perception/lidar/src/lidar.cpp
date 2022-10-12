@@ -150,6 +150,10 @@ void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
     observation.covariance =
         boost::array<double, 9>({0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.8});
 
+    double cone_metric = cones.channels[4].values[i];
+    observation.belief = cone_metric;
+
+
     observations.observations.push_back(observation);
 
     i++;

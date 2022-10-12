@@ -63,10 +63,12 @@ ConeCheck ConeClassification::classifyCone(
 
     // We allow for some play in the point count prediction
     // and check whether the pointcloud has a shape similar to a cone
+    // add the "coneness" metric to the cone_check struct
+    double cone_metric = ConeClassification::checkShape(cone, centroid, is_orange);
     if (dist != 0.0 &&
         (std::abs(num_points - cone.points.size()) / num_points) <
             point_count_threshold_ &&
-        ConeClassification::checkShape(cone, centroid, is_orange)) {
+        ( cone_metric > cone_shape_factor_)) {
       cone_check.pos.x = centroid[0];
       cone_check.pos.y = centroid[1];
       cone_check.pos.z = centroid[2];
@@ -74,6 +76,7 @@ ConeCheck ConeClassification::classifyCone(
       cone_check.bounds[1] = bound_y;
       cone_check.bounds[2] = bound_z;
       cone_check.is_cone = true;
+      cone_check.cone_metric = cone_metric;
 
       // if the cone is orange based on its height there is no need to compute
       // the color by the intensity
@@ -116,14 +119,13 @@ ConeCheck ConeClassification::classifyCone(
 /**
  * @brief determines whether the given pointcloud resembles a cone.
  *
- * @returns a bool that is true if the shape of the given pointcloud is
- * similar enough to a cone (according to a threshold determined by a rosparam).
+ * @returns a double representing the "coneness metric"
  *
  * The main idea behind this function is based on:
  * @ref
  * https://lup.lub.lu.se/luur/download?func=downloadFile&recordOId=9069372&fileOId=9069373
  */
-bool ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
+double ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
                                     Eigen::Vector4f centroid, bool orange) {
   // compute cone model(center + startinglocation)
   ConeModel cone_model;
@@ -168,7 +170,7 @@ bool ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
   // compute the average
   double cone_metric = cone_matrix.row(3).sum() / cone_matrix.cols();
 
-  return cone_metric > cone_shape_factor_;
+  return cone_metric;
 }
 
 /**

@@ -12,6 +12,7 @@ typedef struct {
   bool is_cone;
   float color;
   double bounds[3];
+  double cone_metric;
 } ConeCheck;
 
 typedef struct {
@@ -45,7 +46,7 @@ private:
                               // 1 -> the pointcloud must have the precise shape
                               // of a cone
 
-  bool checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
+  double checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
                   Eigen::Vector4f centroid, bool orange);
 };
 } // namespace ns_lidar
