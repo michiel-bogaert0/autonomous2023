@@ -240,7 +240,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
 sensor_msgs::PointCloud ConeClustering::constructMessage(
     std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters) {
   // Create a PC and channel for: the cone colour, the (x,y,z) dimensions of the
-  // cluster and the cone matric
+  // cluster and the cone metric
   sensor_msgs::PointCloud cluster_msg;
   sensor_msgs::ChannelFloat32 cone_channel;
   sensor_msgs::ChannelFloat32 x_size_channel;
