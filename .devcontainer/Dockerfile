@@ -41,5 +41,6 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
     -p https://github.com/zsh-users/zsh-completions
 
 EXPOSE 11311
+EXPOSE 9090
 
 CMD /bin/zsh
