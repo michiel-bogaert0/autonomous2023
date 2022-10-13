@@ -53,4 +53,5 @@ echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.zshrc
 echo "source /opt/ros/noetic/setup.zsh" >> ~/.zshrc
 echo "source ~/autonomous2023/ROS/devel/setup.zsh" >> ~/.zshrc
 echo "alias sdev=\"source ~/autonomous2023/ROS/devel/setup.zsh\"" >> ~/.zshrc
+echo "alias ugr=\"cd ~/autonomous2023/ROS/\"" >> ~/.zshrc
 echo "alias cbuild='catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release'" >> ~/.zshrc
