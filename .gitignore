@@ -7,6 +7,9 @@ __pycache__/
 .vscode
 *venv/
 
+# MacOS
+.DS_Store
+
 # ROS
 .catkin_tools/
 *.egg-info
@@ -23,3 +26,6 @@ logs/
 
 # FSDS
 AirSim/
+
+# Calibration
+tools/camera_calibration/**/*.jpg
