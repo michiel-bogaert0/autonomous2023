@@ -42,6 +42,7 @@ namespace slam
       int effective_particle_count;
       double observe_dt;
       double eps;
+      double clustering_eps;
 
       double latestTime;
       

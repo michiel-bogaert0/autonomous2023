@@ -190,9 +190,8 @@ void feature_update(Particle &particle, vector<VectorXf> &z,
 
         LandmarkMetadata old_meta = particle.metadata()[idf[i]];
 
-        old_meta.score += 1;
-        old_meta.classSummationCount += 1;
-        old_meta.classSummation += observationClass[i];
+        old_meta.score++;
+        old_meta.classDetectionCount[observationClass[i]]++;
 
         particle.setMetadatai(idf[i], old_meta);
     }
@@ -600,8 +599,6 @@ void add_feature(Particle &particle, vector<VectorXf> &z, MatrixXf &R, vector<in
 
         LandmarkMetadata meta;
 
-        meta.classSummation = observationClass[i - lenx];
-        meta.classSummationCount = 1;
         meta.score = 0;
 
         particle.setMetadatai(i, meta);
@@ -1088,15 +1085,11 @@ void Particle::setMetadatai(unsigned long i, LandmarkMetadata &meta)
     {
         int oldSize = _metadata.size();
         _metadata.resize(i + 1);
-
-        for (int j = oldSize; j < i + 1; j++)
-        {
-            _metadata[j].classSummationCount = 1;
-        }
     }
 
-    _metadata[i].classSummation = meta.classSummation;
-    _metadata[i].classSummationCount = meta.classSummationCount;
+    for (int i = 0; i < LANDMARK_CLASS_COUNT; i++) {
+        _metadata[i].classDetectionCount[i] = meta.classDetectionCount[i];
+    }
     _metadata[i].score = meta.score;
 }
 

@@ -46,6 +46,7 @@ namespace slam
                                              particle_count(n.param<int>("particle_count", 100)),
                                              effective_particle_count(n.param<int>("effective_particle_count", 75)),
                                              eps(n.param<double>("eps", 2.0)),
+                                             clustering_eps(n.param<double>("clustering_eps", 0.5)),
                                              expected_range(n.param<double>("expected_range", 15)),
                                              expected_half_fov(n.param<double>("expected_half_angle", 60 * 0.0174533)),
                                              max_range(n.param<double>("max_range", 15)),
@@ -239,12 +240,14 @@ namespace slam
   void FastSLAM1::handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs)
   {
 
-    if (this->latestTime - obs->header.stamp.toSec() > 0.5 && this->latestTime > 0.0) {
-      // Reset 
+    if (this->latestTime - obs->header.stamp.toSec() > 0.5 && this->latestTime > 0.0)
+    {
+      // Reset
       ROS_WARN("Time went backwards! Resetting fastslam...");
 
       this->particles.clear();
-      for (int i = 0; i < this->particle_count; i++) {
+      for (int i = 0; i < this->particle_count; i++)
+      {
         this->particles.push_back(Particle());
       }
 
@@ -252,7 +255,9 @@ namespace slam
       this->latestTime = 0.0;
 
       return;
-    } else {
+    }
+    else
+    {
       this->latestTime = obs->header.stamp.toSec();
     }
 
@@ -303,7 +308,7 @@ namespace slam
         continue;
       }
 
-      transformed_ob.covariance = observation.covariance;      
+      transformed_ob.covariance = observation.covariance;
       transformed_ob.observation_class = observation.observation_class;
       transformed_obs.observations.push_back(transformed_ob);
     }
@@ -457,8 +462,8 @@ namespace slam
 
     // Average (weighted) all the poses and cone positions to get the final estimate
 
-    vector<VectorXf> lmSamples;
-    vector<LandmarkMetadata> lmMetadata;
+    vector<VectorXf> samples;
+    vector<LandmarkMetadata> sampleMetadata;
 
     vector<int> contributions;
 
@@ -492,11 +497,13 @@ namespace slam
         bestParticle = particle;
       }
 
-      for (auto xf : particle.xf()) {
-        lmSamples.push_back(xf);
+      for (auto xf : particle.xf())
+      {
+        samples.push_back(xf);
       }
-      for (auto metadata : particle.metadata()) {
-        lmMetadata.push_back(metadata);
+      for (auto metadata : particle.metadata())
+      {
+        sampleMetadata.push_back(metadata);
       }
     }
 
@@ -504,7 +511,30 @@ namespace slam
     pose << x / totalW, y / totalW, yaw / totalW;
 
     // Now apply DBSCAN to the samples
-    vector<vector<size_t>> clusters = dbscan();
+    // A cluster is a vector of indices
+    vector<vector<size_t>> clusters = dbscanVectorXf(samples, this->clustering_eps, 0);
+
+    // Convert the clusters back to landmarks
+    vector<VectorXf> lmMeans;
+    vector<LandmarkMetadata> lmMetadatas;
+    for (vector<size_t> cluster : clusters)
+    {
+
+      VectorXf lmMean(2);
+      LandmarkMetadata lmMetadata;
+
+      for (size_t index : cluster)
+      {
+        lmMean[0] += samples[index][0];
+        lmMean[1] += samples[index][1];
+
+        for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
+        {
+          lmMetadata.classDetectionCount[i] += sampleMetadata[index].classDetectionCount[i];
+        }
+        lmMetadata.score += sampleMetadata[index].score;
+      }
+    }
 
     t2 = std::chrono::steady_clock::now();
 
@@ -546,9 +576,19 @@ namespace slam
       ugr_msgs::ObservationWithCovariance global_ob;
       ugr_msgs::ObservationWithCovariance local_ob;
 
-      float rounded_float = round((float)filteredMeta[i].classSummation / (float)filteredMeta[i].classSummationCount);
-      global_ob.observation_class = uint8_t(rounded_float);
-      local_ob.observation_class = int8_t(rounded_float);
+      int observation_class = 0;
+      int max_count = 0;
+      for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
+      {
+        if (filteredMeta[i].classDetectionCount[i] > max_count)
+        {
+          observation_class = i;
+          max_count = filteredMeta[i].classDetectionCount[i];
+        }
+      }
+
+      global_ob.observation_class = observation_class;
+      local_ob.observation_class = observation_class;
 
       global_ob.location.x = filteredLandmarks[i](0);
       global_ob.location.y = filteredLandmarks[i](1);

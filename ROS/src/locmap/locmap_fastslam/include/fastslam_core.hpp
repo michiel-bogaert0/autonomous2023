@@ -12,6 +12,8 @@
 using namespace std;
 using namespace Eigen;
 
+#define LANDMARK_CLASS_COUNT 4
+
 /**
  * KDtree point class
  */
@@ -61,8 +63,7 @@ struct LandmarkSearchResult {
 
 struct LandmarkMetadata {
     float score;
-    int classSummation;
-    int classSummationCount;
+    int classDetectionCount[LANDMARK_CLASS_COUNT];
 };
 
 class Particle
