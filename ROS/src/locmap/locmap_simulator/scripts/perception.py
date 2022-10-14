@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import copy
+from statistics import covariance
 
 import numpy as np
 import rospy
@@ -12,6 +13,7 @@ from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import (
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
+    Observation,
 )
 
 
@@ -113,8 +115,10 @@ class PerceptionSimulator(StageSimulator):
 
             filtered_cones.append(
                 ObservationWithCovariance(
-                    location=Point(x=cone[0], y=cone[1], z=cone[2]),
-                    observation_class=int(cone[3]),
+                    observation=Observation(
+                        location=Point(x=cone[0], y=cone[1], z=cone[2]),
+                        observation_class=int(cone[3]),
+                    )
                 )
             )
 

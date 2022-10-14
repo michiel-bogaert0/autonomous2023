@@ -207,7 +207,7 @@ class SLAMNode(ROSNode, ABC):
         new_map.observations = []
         for i, obs_location in enumerate(map_prediction[:, 0::3].T):
             new_obs = ObservationWithCovariance()
-            new_obs.location = Point(
+            new_obs.observation.location = Point(
                 x=obs_location[0] - state_prediction[0],
                 y=obs_location[1] - state_prediction[1],
                 z=0,
@@ -215,18 +215,18 @@ class SLAMNode(ROSNode, ABC):
 
             # Apply rotation
             x = (
-                np.cos(-state_prediction[2]) * new_obs.location.x
-                - np.sin(-state_prediction[2]) * new_obs.location.y
+                np.cos(-state_prediction[2]) * new_obs.observation.location.x
+                - np.sin(-state_prediction[2]) * new_obs.observation.location.y
             )
             y = (
-                np.sin(-state_prediction[2]) * new_obs.location.x
-                + np.cos(-state_prediction[2]) * new_obs.location.y
+                np.sin(-state_prediction[2]) * new_obs.observation.location.x
+                + np.cos(-state_prediction[2]) * new_obs.observation.location.y
             )
 
-            new_obs.location.x = x
-            new_obs.location.y = y
+            new_obs.observation.location.x = x
+            new_obs.observation.location.y = y
 
-            new_obs.observation_class = landmark_classes[i]
+            new_obs.observation.observation_class = landmark_classes[i]
 
             if self.max_landmark_range > 0:
                 distance = (obs_location[0] - state_prediction[0]) ** 2 + (
@@ -238,8 +238,8 @@ class SLAMNode(ROSNode, ABC):
                 observations.observations.append(new_obs)
 
             new_map_point = ObservationWithCovariance()
-            new_map_point.location = Point(x=obs_location[0], y=obs_location[1], z=0)
-            new_map_point.observation_class = landmark_classes[i]
+            new_map_point.observation.location = Point(x=obs_location[0], y=obs_location[1], z=0)
+            new_map_point.observation.observation_class = landmark_classes[i]
 
             new_map.observations.append(new_map_point)
 

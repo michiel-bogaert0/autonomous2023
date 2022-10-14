@@ -174,10 +174,11 @@ class ROSNode:
             )
 
             new_observation = ObservationWithCovariance()
-            new_observation.location.x = p[0]
-            new_observation.location.y = p[1]
-            new_observation.location.z = p[2]
-            new_observation.observation_class = obs.observation_class
+            new_observation.observation.location.x = p[0]
+            new_observation.observation.location.y = p[1]
+            new_observation.observation.location.z = p[2]
+            new_observation.observation.observation_class = obs.observation.observation_class
+            new_observation.observation.belief = obs.observation.belief
 
             res.observations.append(new_observation)
 
