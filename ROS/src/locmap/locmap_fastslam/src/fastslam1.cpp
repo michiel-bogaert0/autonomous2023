@@ -175,7 +175,7 @@ namespace slam
     {
 
       VectorXf obsAsVector(2);
-      obsAsVector << pow(pow(observation.location.x, 2) + pow(observation.location.y, 2), 0.5), atan2(observation.location.y, observation.location.x);
+      obsAsVector << pow(pow(observation.observation.location.x, 2) + pow(observation.observation.location.y, 2), 0.5), atan2(observation.observation.location.y, observation.observation.location.x);
 
       VectorXf landmark(2);
       this->observation_to_landmark(obsAsVector, landmark, particle.xv());
@@ -191,13 +191,13 @@ namespace slam
       if (result.index == -1 || result.distance > this->eps)
       {
         newLandmarks.push_back(landmark);
-        newClasses.push_back(observation.observation_class);
+        newClasses.push_back(observation.observation.observation_class);
       }
       else
       {
         knownLandmarks.push_back(particle.xf()[result.index]);
         knownIndices.push_back(result.index);
-        knownClasses.push_back(observation.observation_class);
+        knownClasses.push_back(observation.observation.observation_class);
       }
     }
   }
