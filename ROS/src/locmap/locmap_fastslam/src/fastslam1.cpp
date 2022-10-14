@@ -308,7 +308,7 @@ namespace slam
         continue;
       }
 
-      transformed_ob.covariance = observation.covariance;      
+      transformed_ob.covariance = observation.covariance;
       transformed_ob.observation.observation_class = observation.observation.observation_class;
       transformed_obs.observations.push_back(transformed_ob);
     }
@@ -517,13 +517,13 @@ namespace slam
     // Convert the clusters back to landmarks
     vector<VectorXf> lmMeans;
     vector<LandmarkMetadata> lmMetadatas;
-    for (vector<size_t> cluster : clusters)
+    for (vector<unsigned int> cluster : clusters)
     {
 
       VectorXf lmMean(2);
       LandmarkMetadata lmMetadata;
 
-      for (size_t index : cluster)
+      for (unsigned int index : cluster)
       {
         lmMean[0] += samples[index][0];
         lmMean[1] += samples[index][1];
@@ -534,6 +534,37 @@ namespace slam
         }
         lmMetadata.score += sampleMetadata[index].score;
       }
+      lmMetadata.score /= static_cast<float>(cluster.size());
+
+      lmMeans.push_back(lmMean);
+      lmMetadatas.push_back(lmMetadata);
+    }
+
+    // Calculate 2x2 position covariance matrix. We assume that there is no significan relation between class and position
+    // Thus allowing us to easily extend this to 3x3, which includes class variance
+
+    vector<Matrix2f> positionCovariances;
+
+    for (unsigned int i = 0; i < clusters.size(); i++)
+    {
+      vector<unsigned int> cluster = clusters[i];
+
+      Matrix2f cov;
+
+      vector<float> X;
+      vector<float> Y;
+      for (auto index : cluster)
+      {
+        X.push_back(samples[index][0]);
+        Y.push_back(samples[index][1]);
+      }
+
+      cov[0][0] = calculate_covariance(X, X);
+      cov[0][1] = calculate_covariance(X, Y);
+      cov[1][0] = cov[0][1];
+      cov[1][1] = calculate_covariance(Y, Y);
+
+      positionCovariances.push_back(cov);
     }
 
     t2 = std::chrono::steady_clock::now();
@@ -549,11 +580,13 @@ namespace slam
     vector<VectorXf> filteredLandmarks;
     vector<LandmarkMetadata> filteredMeta;
     vector<int> filteredLandmarkIndices;
+    vector<Matrix2f> filteredCovariances;
 
     for (int i = 0; i < lmMeans.size(); i++)
     {
       if (lmMetadatas[i].score >= this->acceptance_score)
       {
+        filteredCovariances.push_back(positionCovariances[i]);
         filteredMeta.push_back(lmMetadatas[i]);
         filteredLandmarks.push_back(lmMeans[i]);
         filteredLandmarkIndices.push_back(i);
@@ -578,17 +611,42 @@ namespace slam
 
       int observation_class = 0;
       int max_count = 0;
-      for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
+      int total_count = 0;
+      for (int j = 0; j < LANDMARK_CLASS_COUNT; j++)
       {
-        if (filteredMeta[i].classDetectionCount[i] > max_count)
+        total_count += filteredMeta[i].classDetectionCount[j]
+        if (filteredMeta[i].classDetectionCount[j] > max_count)
         {
-          observation_class = i;
-          max_count = filteredMeta[i].classDetectionCount[i];
+          observation_class = j;
+          max_count = filteredMeta[i].classDetectionCount[j];
         }
       }
 
+      // Calculate the observation class (co)variance
+      // First get the odds of a specific class p
+      float p[LANDMARK_CLASS_COUNT];
+      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++) {
+        p[j] = filteredMeta[i].classDetectionCount[j] / total_count;
+      }
+
+      float obsClassMean = 0.0;
+      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++) {
+        obsClassMean += p[j] * j;
+      }
+
+      float obsCovariance = 0.0;
+      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++) {
+        obsCovariance[j] = pow(j - obsClassMean, 2) * p[j];
+      }
+
+      auto covarianceMatrix = boost::array<double, 9>({filteredCovariances[i][0][0], filteredCovariances[i][0][1], 0.0, filteredCovariances[i][1][0], filteredCovariances[i][1][1], 0.0, 0, 0, obsCovariance});
+
       global_ob.observation.observation_class = observation_class;
       local_ob.observation.observation_class = observation_class;
+
+      // IDK what to do with belief
+      global_ob.observation.belief = 1.0;
+      local_ob.observation.belief = 1.0; 
 
       global_ob.observation.location.x = filteredLandmarks[i](0);
       global_ob.observation.location.y = filteredLandmarks[i](1);

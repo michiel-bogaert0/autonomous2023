@@ -18,6 +18,26 @@
 using namespace std;
 using namespace Eigen;
 
+float calculate_covariance(vector<float> &X, vector<float> &Y) {
+    
+    if (X.size() != Y.size()) {
+        throw invalid_argument("Size of X must equal size of Y");
+    }
+    
+    unsigned int N = X.size();
+
+    float meanX = reduce(X.begin(), X.end()) / static_cast<float>(N);
+    float meanY = reduce(Y.begin(), Y.end()) / static_cast<float>(N);
+
+    float covariance = 0.0;
+
+    for (unsigned int i = 0; i < N; i++) {
+        covariance += (X[i] - meanX) * (Y[i] - meanY);
+    }
+
+    return covariance / static_cast<float>(N);
+}
+
 inline float sqr(float x)
 {
     return x * x;
