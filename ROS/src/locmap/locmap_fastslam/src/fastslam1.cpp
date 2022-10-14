@@ -177,7 +177,7 @@ namespace slam
     {
 
       VectorXf obsAsVector(2);
-      obsAsVector << pow(pow(observation.location.x, 2) + pow(observation.location.y, 2), 0.5), atan2(observation.location.y, observation.location.x);
+      obsAsVector << pow(pow(observation.observation.location.x, 2) + pow(observation.observation.location.y, 2), 0.5), atan2(observation.observation.location.y, observation.observation.location.x);
 
       VectorXf landmark(2);
       this->observation_to_landmark(obsAsVector, landmark, particle.xv());
@@ -193,13 +193,13 @@ namespace slam
       if (result.index == -1 || result.distance > this->eps)
       {
         newLandmarks.push_back(landmark);
-        newClasses.push_back(observation.observation_class);
+        newClasses.push_back(observation.observation.observation_class);
       }
       else
       {
         knownLandmarks.push_back(particle.xf()[result.index]);
         knownIndices.push_back(result.index);
-        knownClasses.push_back(observation.observation_class);
+        knownClasses.push_back(observation.observation.observation_class);
       }
     }
   }
@@ -284,12 +284,12 @@ namespace slam
       ugr_msgs::ObservationWithCovariance transformed_ob;
 
       geometry_msgs::PointStamped locStamped;
-      locStamped.point = observation.location;
+      locStamped.point = observation.observation.location;
       locStamped.header = obs->header;
 
       try
       {
-        transformed_ob.location = this->tfBuffer.transform<geometry_msgs::PointStamped>(locStamped, this->base_link_frame, ros::Duration(0)).point;
+        transformed_ob.observation.location = this->tfBuffer.transform<geometry_msgs::PointStamped>(locStamped, this->base_link_frame, ros::Duration(0)).point;
       }
       catch (const exception e)
 
@@ -300,16 +300,16 @@ namespace slam
 
       // Filter out the observation if it is not "in range"
       VectorXf z(2);
-      z(0) = pow(pow(transformed_ob.location.x, 2) + pow(transformed_ob.location.y, 2), 0.5);
-      z(1) = atan2(transformed_ob.location.y, transformed_ob.location.x);
+      z(0) = pow(pow(transformed_ob.observation.location.x, 2) + pow(transformed_ob.observation.location.y, 2), 0.5);
+      z(1) = atan2(transformed_ob.observation.location.y, transformed_ob.observation.location.x);
 
       if (z(0) > this->max_range || abs(z(1)) > this->max_half_fov)
       {
         continue;
       }
 
-      transformed_ob.covariance = observation.covariance;
-      transformed_ob.observation_class = observation.observation_class;
+      transformed_ob.covariance = observation.covariance;      
+      transformed_ob.observation.observation_class = observation.observation.observation_class;
       transformed_obs.observations.push_back(transformed_ob);
     }
 
@@ -587,17 +587,17 @@ namespace slam
         }
       }
 
-      global_ob.observation_class = observation_class;
-      local_ob.observation_class = observation_class;
+      global_ob.observation.observation_class = observation_class;
+      local_ob.observation.observation_class = observation_class;
 
-      global_ob.location.x = filteredLandmarks[i](0);
-      global_ob.location.y = filteredLandmarks[i](1);
+      global_ob.observation.location.x = filteredLandmarks[i](0);
+      global_ob.observation.location.y = filteredLandmarks[i](1);
       global.observations.push_back(global_ob);
       VectorXf z(2);
       this->landmark_to_observation(filteredLandmarks[i], z, pose);
 
-      local_ob.location.x = z(0) * cos(z(1));
-      local_ob.location.y = z(0) * sin(z(1));
+      local_ob.observation.location.x = z(0) * cos(z(1));
+      local_ob.observation.location.y = z(0) * sin(z(1));
       local.observations.push_back(local_ob);
     }
 

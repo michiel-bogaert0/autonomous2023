@@ -131,7 +131,7 @@ class PerceptionNode:
             for bb in bbs
             if bb.height > bb.width and bb.height > detection_height_threshold
         ]
-
+        
         if len(bbs) != 0:
             # There were bounding boxes detected
             start = time.perf_counter()
@@ -148,11 +148,22 @@ class PerceptionNode:
             if self.publish_keypoints:
                 self.pub_keypoints.publish(cone_keypoints_msg)
 
+            # extract beliefs
+            beliefs = [bb.score for bb in bbs]
+
             # Run PNP
             start = time.perf_counter()
-            self.run_pnp_pipeline(cone_keypoints_msg, (w, h))
+            update_msg = self.pnp.generate_perception_update(cone_keypoints_msg, img_size=(w, h))
             end = time.perf_counter()
             timings.append(end - start)
+
+            # assign the belief scores to the individual observations
+            for i,obs in enumerate(update_msg.observations):
+                obs.belief = beliefs[i]
+            
+            # publish the observation message
+            self.pub_pnp.publish(update_msg)
+
 
         self.diagnostics.publish(
             create_diagnostic_message(
@@ -162,17 +173,8 @@ class PerceptionNode:
             )
         )
 
-    def run_pnp_pipeline(self, msg: ConeKeypoints, img_size: Tuple[int, int]) -> None:
-        """
-        Given a keypoints ROS message, run through the PNP pipeline and publish to ROS
-        Args:
-            msg: the input keypoints message
-            img_size: the size of the original image (W, H)
-        """
 
-        update_msg = self.pnp.generate_perception_update(msg, img_size=img_size)
-        self.pub_pnp.publish(update_msg)
-
+        
 
 if __name__ == "__main__":
     try:
