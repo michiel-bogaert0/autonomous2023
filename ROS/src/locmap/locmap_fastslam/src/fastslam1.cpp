@@ -512,7 +512,7 @@ namespace slam
 
     // Now apply DBSCAN to the samples
     // A cluster is a vector of indices
-    vector<vector<size_t>> clusters = dbscanVectorXf(samples, this->clustering_eps, 0);
+    vector<vector<unsigned int>> clusters = dbscanVectorXf(samples, this->clustering_eps, 0);
 
     // Convert the clusters back to landmarks
     vector<VectorXf> lmMeans;
@@ -535,6 +535,8 @@ namespace slam
         lmMetadata.score += sampleMetadata[index].score;
       }
       lmMetadata.score /= static_cast<float>(cluster.size());
+      lmMean[0] /= cluster.size();
+      lmMean[1] /= cluster.size();
 
       lmMeans.push_back(lmMean);
       lmMetadatas.push_back(lmMetadata);
@@ -559,10 +561,10 @@ namespace slam
         Y.push_back(samples[index][1]);
       }
 
-      cov[0][0] = calculate_covariance(X, X);
-      cov[0][1] = calculate_covariance(X, Y);
-      cov[1][0] = cov[0][1];
-      cov[1][1] = calculate_covariance(Y, Y);
+      cov(0, 0) = calculate_covariance(X, X);
+      cov(0, 1) = calculate_covariance(X, Y);
+      cov(1, 0) = cov(0, 1);
+      cov(1, 1) = calculate_covariance(Y, Y);
 
       positionCovariances.push_back(cov);
     }
@@ -614,7 +616,7 @@ namespace slam
       int total_count = 0;
       for (int j = 0; j < LANDMARK_CLASS_COUNT; j++)
       {
-        total_count += filteredMeta[i].classDetectionCount[j]
+        total_count += filteredMeta[i].classDetectionCount[j];
         if (filteredMeta[i].classDetectionCount[j] > max_count)
         {
           observation_class = j;
@@ -636,10 +638,13 @@ namespace slam
 
       float obsCovariance = 0.0;
       for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++) {
-        obsCovariance[j] = pow(j - obsClassMean, 2) * p[j];
+        obsCovariance += pow(j - obsClassMean, 2) * p[j];
       }
 
-      auto covarianceMatrix = boost::array<double, 9>({filteredCovariances[i][0][0], filteredCovariances[i][0][1], 0.0, filteredCovariances[i][1][0], filteredCovariances[i][1][1], 0.0, 0, 0, obsCovariance});
+      auto covarianceMatrix = boost::array<double, 9>({filteredCovariances[i](0, 0), filteredCovariances[i](0, 1), 0.0, filteredCovariances[i](1, 0), filteredCovariances[i](1, 1), 0.0, 0, 0, obsCovariance});
+
+      global_ob.covariance = covarianceMatrix;
+      local_ob.covariance = covarianceMatrix;
 
       global_ob.observation.observation_class = observation_class;
       local_ob.observation.observation_class = observation_class;

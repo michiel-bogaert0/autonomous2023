@@ -62,8 +62,8 @@ struct LandmarkSearchResult {
 };
 
 struct LandmarkMetadata {
-    float score;
-    int classDetectionCount[LANDMARK_CLASS_COUNT];
+    float score = 0.0;
+    vector<int> classDetectionCount = vector<int>(LANDMARK_CLASS_COUNT, 0);
 };
 
 class Particle
