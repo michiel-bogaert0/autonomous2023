@@ -40,7 +40,6 @@ sudo apt-get install -y ros-noetic-tf2-geometry-msgs \
     libcurl4-openssl-dev \
     python3-pcl \
     pcl-tools \
-    libnanoflann-dev
 
 # Install AirSim deps
 AirSim/setup.sh

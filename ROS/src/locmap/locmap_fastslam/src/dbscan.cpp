@@ -1,6 +1,6 @@
 // Credits https://github.com/Eleobert/dbscan
 
-#include <nanoflann.hpp>
+#include "nanoflann.hpp"
 
 #include <vector>
 #include <Eigen/Dense>
