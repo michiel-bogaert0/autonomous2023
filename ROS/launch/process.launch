@@ -236,22 +236,23 @@
             # Parameters
             <param name="world_frame" value="ugr/car_odom" />
             <param name="base_link_frame" value="ugr/car_base_link" />
-            <param name="slam_world_frame" value="ugr/slam_odom" />
+            <param name="slam_world_frame" value="ugr/slam_map" />
 
             <param name="particle_count" value="70" />
             <param name="effective_particle_count" value="50" />
             <param name="eps" value="0.5" />
+            <param name="clustering_eps" value="0.25"/>
             <param name="max_range" value="15" />
             <param name="max_half_angle" value="1.5" />
             <param name="expected_range" value="15" />
             <param name="expected_half_angle" value="1.5" />
             <param name="observe_dt" value="0.0" />
 
-            <rosparam param="measurement_covariance">[0.3, 0.0, 0.0, 0.05]</rosparam>
+            <rosparam param="measurement_covariance">[0.4, 0.0, 0.0, 0.1]</rosparam>
             <rosparam param="input_noise">[0.1, 0.0, 0.0, 0.02]</rosparam>
-            <param name="acceptance_score" value="4.0" />
-            <param name="penalty_score" value="-0.2" />
-            <param name="discard_score" value="-1.0" />
+            <param name="acceptance_score" value="2.0" />
+            <param name="penalty_score" value="-0.5" />
+            <param name="discard_score" value="-100.0" />
             # Input/output remapping
             <remap from="/input/observations" to="ugr/car/observations/lidar" />
 

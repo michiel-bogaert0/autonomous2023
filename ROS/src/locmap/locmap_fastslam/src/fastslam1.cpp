@@ -45,8 +45,10 @@ namespace slam
                                              world_frame(n.param<string>("world_frame", "ugr/car_odom")),
                                              particle_count(n.param<int>("particle_count", 100)),
                                              effective_particle_count(n.param<int>("effective_particle_count", 75)),
+                                             min_clustering_point_count(n.param<int>("min_clustering_point_count", 30)),
                                              eps(n.param<double>("eps", 2.0)),
                                              clustering_eps(n.param<double>("clustering_eps", 0.5)),
+                                             belief_factor(n.param<double>("belief_factor", 2.0)),
                                              expected_range(n.param<double>("expected_range", 15)),
                                              expected_half_fov(n.param<double>("expected_half_angle", 60 * 0.0174533)),
                                              max_range(n.param<double>("max_range", 15)),
@@ -512,7 +514,7 @@ namespace slam
 
     // Now apply DBSCAN to the samples
     // A cluster is a vector of indices
-    vector<vector<unsigned int>> clusters = dbscanVectorXf(samples, this->clustering_eps, 0);
+    vector<vector<unsigned int>> clusters = dbscanVectorXf(samples, this->clustering_eps, this->min_clustering_point_count);
 
     // Convert the clusters back to landmarks
     vector<VectorXf> lmMeans;
@@ -535,8 +537,8 @@ namespace slam
         lmMetadata.score += sampleMetadata[index].score;
       }
       lmMetadata.score /= static_cast<float>(cluster.size());
-      lmMean[0] /= cluster.size();
-      lmMean[1] /= cluster.size();
+      lmMean[0] /= static_cast<float>(cluster.size());
+      lmMean[1] /= static_cast<float>(cluster.size());
 
       lmMeans.push_back(lmMean);
       lmMetadatas.push_back(lmMetadata);
@@ -649,9 +651,9 @@ namespace slam
       global_ob.observation.observation_class = observation_class;
       local_ob.observation.observation_class = observation_class;
 
-      // IDK what to do with belief
-      global_ob.observation.belief = 1.0;
-      local_ob.observation.belief = 1.0; 
+      float belief = max(min((1 - exp(-1 * belief_factor * filteredMeta[i].score)), 1.0), 0.0);
+      global_ob.observation.belief = belief;
+      local_ob.observation.belief = belief; 
 
       global_ob.observation.location.x = filteredLandmarks[i](0);
       global_ob.observation.location.y = filteredLandmarks[i](1);

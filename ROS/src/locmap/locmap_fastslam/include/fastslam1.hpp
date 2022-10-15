@@ -40,9 +40,11 @@ namespace slam
       int particle_count;
       double penalty_score;
       int effective_particle_count;
+      int min_clustering_point_count;
       double observe_dt;
       double eps;
       double clustering_eps;
+      double belief_factor;
 
       double latestTime;
       
