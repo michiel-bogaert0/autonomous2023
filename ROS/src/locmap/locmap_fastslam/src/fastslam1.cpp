@@ -545,10 +545,13 @@ namespace slam
       VectorXf lmMean(2);
       LandmarkMetadata lmMetadata;
 
+      float totalP = 0.0;
+
       for (unsigned int index : cluster)
       {
         lmMean[0] += samples[index][0] * sampleP[i];
         lmMean[1] += samples[index][1] * sampleP[i];
+        totalP += sampleP[i];
 
         for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
         {
@@ -557,8 +560,8 @@ namespace slam
         lmMetadata.score += sampleMetadata[index].score;
       }
       lmMetadata.score /= static_cast<float>(cluster.size());
-      lmMean[0] /= static_cast<float>(cluster.size());
-      lmMean[1] /= static_cast<float>(cluster.size());
+      lmMean[0] /= totalP;
+      lmMean[1] /= totalP;
 
       lmMeans.push_back(lmMean);
       lmMetadatas.push_back(lmMetadata);
@@ -577,16 +580,18 @@ namespace slam
 
       vector<float> X;
       vector<float> Y;
+      vector<float> P;
       for (auto index : cluster)
       {
         X.push_back(samples[index][0]);
         Y.push_back(samples[index][1]);
+        P.push_back(sampleP[index]);
       }
 
-      cov(0, 0) = calculate_covariance(X, X);
-      cov(0, 1) = calculate_covariance(X, Y);
+      cov(0, 0) = calculate_covariance(X, X, P);
+      cov(0, 1) = calculate_covariance(X, Y, P);
       cov(1, 0) = cov(0, 1);
-      cov(1, 1) = calculate_covariance(Y, Y);
+      cov(1, 1) = calculate_covariance(Y, Y, P);
 
       positionCovariances.push_back(cov);
     }
