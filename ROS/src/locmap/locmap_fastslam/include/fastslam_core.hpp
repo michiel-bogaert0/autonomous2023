@@ -114,6 +114,8 @@ private:
 // Common functions
 ////////////////////////////////////////////////////////////////////////////////
 float calculate_covariance(vector<float> &X, vector<float> &Y);
+float calculate_covariance(vector<float> &X, vector<float> &Y, vector<float> &P);
+
 void compute_steering(VectorXf &x, MatrixXf &wp, int &iwp, float minD,
                       float &G, float rateG, float maxG, float dt);
 void predict_true(VectorXf &xv, float V, float G, float WB, float dt);

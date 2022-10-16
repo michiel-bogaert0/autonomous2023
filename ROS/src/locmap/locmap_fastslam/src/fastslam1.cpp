@@ -462,9 +462,15 @@ namespace slam
 
     t1 = std::chrono::steady_clock::now();
 
-    // Average (weighted) all the poses and cone positions to get the final estimate
+    // Calculate statistical mean and covariance of the particle filter (pose)
+    // Also gather some other information while we are looping
 
     vector<VectorXf> samples;
+    vector<VectorXf> sampleP;
+    vector<float> poseX;
+    vector<float> poseY;
+    vector<float> poseP;
+    vector<float> poseYaw;
     vector<LandmarkMetadata> sampleMetadata;
 
     vector<int> contributions;
@@ -472,9 +478,7 @@ namespace slam
     float x = 0.0;
     float y = 0.0;
     float yaw = 0.0;
-    float totalW = 0.0;
     float maxW = -10000.0;
-    Particle &bestParticle = this->particles[0];
     for (int i = 0; i < this->particles.size(); i++)
     {
 
@@ -487,7 +491,10 @@ namespace slam
         w = 0.001;
       }
 
-      totalW += w;
+      poseX.push_back(particle.xv()(0));
+      poseY.push_back(particle.xv()(1));
+      poseYaw.push_back(particle.xv()(2));
+      poseP.push_back(w);
 
       x += particle.xv()(0) * w;
       y += particle.xv()(1) * w;
@@ -496,12 +503,12 @@ namespace slam
       if (w > maxW)
       {
         maxW = w;
-        bestParticle = particle;
       }
 
       for (auto xf : particle.xf())
       {
         samples.push_back(xf);
+        sampleP.push_back(w);
       }
       for (auto metadata : particle.metadata())
       {
@@ -510,7 +517,20 @@ namespace slam
     }
 
     VectorXf pose(3);
-    pose << x / totalW, y / totalW, yaw / totalW;
+    pose << x, y, yaw;
+    
+    boost::array<double, 36> poseCovariance();
+
+    poseCovariance[0] = calculate_covariance(poseX, poseX, poseP);
+    poseCovariance[1] = calculate_covariance(poseX, poseY, poseP);
+    poseCovariance[5] = calculate_covariance(poseYaw, poseX, poseP);
+    poseCovariance[7] = calculate_covariance(poseY, poseY, poseP);
+    poseCovariance[11] = calculate_covariance(poseYaw, poseY, poseP);
+    poseCovariance[35] = calculate_covariance(poseYaw, poseYaw, poseP);
+
+    poseCovariance[6] = poseCovariance[1];
+    poseCovariance[30] = poseCovariance[5];
+    poseCovariance[31] = poseCovariance[11];
 
     // Now apply DBSCAN to the samples
     // A cluster is a vector of indices
@@ -527,8 +547,8 @@ namespace slam
 
       for (unsigned int index : cluster)
       {
-        lmMean[0] += samples[index][0];
-        lmMean[1] += samples[index][1];
+        lmMean[0] += samples[index][0] * sampleP[i];
+        lmMean[1] += samples[index][1] * sampleP[i];
 
         for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
         {
@@ -684,6 +704,9 @@ namespace slam
     odom.pose.pose.orientation.y = quat.getY();
     odom.pose.pose.orientation.z = quat.getZ();
     odom.pose.pose.orientation.w = quat.getW();
+
+    odom.pose.pose.covariance = poseCovariance;
+
 
     // TF Transformation
     // This uses the 'inversed frame' principle

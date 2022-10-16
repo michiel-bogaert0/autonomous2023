@@ -38,6 +38,34 @@ float calculate_covariance(vector<float> &X, vector<float> &Y) {
     return covariance / static_cast<float>(N);
 }
 
+float calculate_covariance(vector<float> &X, vector<float> &Y, vector<float> &P) {
+    
+    if (X.size() != Y.size() || X.size() != P.size()) {
+        throw invalid_argument("Size of X must equal size of Y and P");
+    }
+    
+    unsigned int N = X.size();
+
+    float meanX = 0.0;
+    float meanY = 0.0;
+
+    for (unsigned int i = 0; i < N; i++) {
+        meanX += X[i] * P[i];
+        meanY += Y[i] * P[i];
+    }
+    
+    meanX /= static_cast<float>(N);
+    meanY /= static_cast<float>(N);
+
+    float covariance = 0.0;
+
+    for (unsigned int i = 0; i < N; i++) {
+        covariance += (X[i] - meanX) * (Y[i] - meanY) * P[i];
+    }
+
+    return covariance / static_cast<float>(N);
+}
+
 inline float sqr(float x)
 {
     return x * x;
