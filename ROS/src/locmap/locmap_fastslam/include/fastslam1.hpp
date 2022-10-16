@@ -37,6 +37,7 @@ namespace slam
       string base_link_frame;
       string world_frame;
       string slam_world_frame;
+      bool post_clustering;
       int particle_count;
       double penalty_score;
       int effective_particle_count;

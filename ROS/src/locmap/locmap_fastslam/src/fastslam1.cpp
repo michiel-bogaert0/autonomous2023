@@ -44,6 +44,7 @@ namespace slam
                                              slam_world_frame(n.param<string>("slam_world_frame", "ugr/slam_odom")),
                                              world_frame(n.param<string>("world_frame", "ugr/car_odom")),
                                              particle_count(n.param<int>("particle_count", 100)),
+                                             post_clustering(n.param<bool>("post_clustering", true)),
                                              effective_particle_count(n.param<int>("effective_particle_count", 75)),
                                              min_clustering_point_count(n.param<int>("min_clustering_point_count", 30)),
                                              eps(n.param<double>("eps", 2.0)),
@@ -471,6 +472,8 @@ namespace slam
     vector<float> poseYaw;
     vector<LandmarkMetadata> sampleMetadata;
 
+    Particle &bestParticle = this->particles[0];
+
     vector<int> contributions;
 
     float x = 0.0;
@@ -500,6 +503,7 @@ namespace slam
       if (w > maxW)
       {
         maxW = w;
+        bestParticle = this->particles[i];
       }
 
       for (auto xf : particle.xf())
@@ -514,7 +518,7 @@ namespace slam
 
     VectorXf pose(3);
     pose << x, y, yaw;
-    
+
     boost::array<double, 36> poseCovariance;
 
     poseCovariance[0] = calculate_covariance(poseX, poseX);
@@ -528,65 +532,73 @@ namespace slam
     poseCovariance[30] = poseCovariance[5];
     poseCovariance[31] = poseCovariance[11];
 
-    // Now apply DBSCAN to the samples
-    // A cluster is a vector of indices
-    vector<vector<unsigned int>> clusters = dbscanVectorXf(samples, this->clustering_eps, this->min_clustering_point_count);
-
-    // Convert the clusters back to landmarks
+    vector<MatrixXf> positionCovariances;
     vector<VectorXf> lmMeans;
     vector<LandmarkMetadata> lmMetadatas;
-    for (vector<unsigned int> cluster : clusters)
+
+    if (this->post_clustering)
     {
+      // Now apply DBSCAN to the samples
+      // A cluster is a vector of indices
+      vector<vector<unsigned int>> clusters = dbscanVectorXf(samples, this->clustering_eps, this->min_clustering_point_count);
 
-      VectorXf lmMean(2);
-      LandmarkMetadata lmMetadata;
-
-      float totalP = 0.0;
-
-      for (unsigned int index : cluster)
+      // Convert the clusters back to landmarks
+      for (vector<unsigned int> cluster : clusters)
       {
-        lmMean[0] += samples[index][0];
-        lmMean[1] += samples[index][1];
 
-        for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
+        VectorXf lmMean(2);
+        LandmarkMetadata lmMetadata;
+
+        float totalP = 0.0;
+
+        for (unsigned int index : cluster)
         {
-          lmMetadata.classDetectionCount[i] += sampleMetadata[index].classDetectionCount[i];
+          lmMean[0] += samples[index][0];
+          lmMean[1] += samples[index][1];
+
+          for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
+          {
+            lmMetadata.classDetectionCount[i] += sampleMetadata[index].classDetectionCount[i];
+          }
+          lmMetadata.score += sampleMetadata[index].score;
         }
-        lmMetadata.score += sampleMetadata[index].score;
+        lmMetadata.score /= static_cast<float>(cluster.size());
+        lmMean[0] /= static_cast<float>(cluster.size());
+        lmMean[1] /= static_cast<float>(cluster.size());
+
+        lmMeans.push_back(lmMean);
+        lmMetadatas.push_back(lmMetadata);
       }
-      lmMetadata.score /= static_cast<float>(cluster.size());
-      lmMean[0] /= static_cast<float>(cluster.size());
-      lmMean[1] /= static_cast<float>(cluster.size());
 
-      lmMeans.push_back(lmMean);
-      lmMetadatas.push_back(lmMetadata);
-    }
+      // Calculate 2x2 position covariance matrix. We assume that there is no significan relation between class and position
+      // Thus allowing us to easily extend this to 3x3, which includes class variance
 
-    // Calculate 2x2 position covariance matrix. We assume that there is no significan relation between class and position
-    // Thus allowing us to easily extend this to 3x3, which includes class variance
-
-    vector<Matrix2f> positionCovariances;
-
-    for (unsigned int i = 0; i < clusters.size(); i++)
-    {
-      vector<unsigned int> cluster = clusters[i];
-
-      Matrix2f cov;
-
-      vector<float> X;
-      vector<float> Y;
-      for (auto index : cluster)
+      for (unsigned int i = 0; i < clusters.size(); i++)
       {
-        X.push_back(samples[index][0]);
-        Y.push_back(samples[index][1]);
+        vector<unsigned int> cluster = clusters[i];
+
+        MatrixXf cov(2,2);
+
+        vector<float> X;
+        vector<float> Y;
+        for (auto index : cluster)
+        {
+          X.push_back(samples[index][0]);
+          Y.push_back(samples[index][1]);
+        }
+
+        cov(0, 0) = calculate_covariance(X, X);
+        cov(0, 1) = calculate_covariance(X, Y);
+        cov(1, 0) = cov(0, 1);
+        cov(1, 1) = calculate_covariance(Y, Y);
+
+        positionCovariances.push_back(cov);
       }
-
-      cov(0, 0) = calculate_covariance(X, X);
-      cov(0, 1) = calculate_covariance(X, Y);
-      cov(1, 0) = cov(0, 1);
-      cov(1, 1) = calculate_covariance(Y, Y);
-
-      positionCovariances.push_back(cov);
+    } else {
+      // Just take all the particles from the best particle
+      lmMeans = bestParticle.xf();
+      lmMetadatas = bestParticle.metadata();
+      positionCovariances = bestParticle.Pf();
     }
 
     t2 = std::chrono::steady_clock::now();
@@ -647,17 +659,20 @@ namespace slam
       // Calculate the observation class (co)variance
       // First get the odds of a specific class p
       float p[LANDMARK_CLASS_COUNT];
-      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++) {
+      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++)
+      {
         p[j] = filteredMeta[i].classDetectionCount[j] / total_count;
       }
 
       float obsClassMean = 0.0;
-      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++) {
+      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++)
+      {
         obsClassMean += p[j] * j;
       }
 
       float obsCovariance = 0.0;
-      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++) {
+      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++)
+      {
         obsCovariance += pow(j - obsClassMean, 2) * p[j];
       }
 
@@ -671,7 +686,7 @@ namespace slam
 
       float belief = max(min((1 - exp(-1 * belief_factor * filteredMeta[i].score)), 1.0), 0.0);
       global_ob.observation.belief = belief;
-      local_ob.observation.belief = belief; 
+      local_ob.observation.belief = belief;
 
       global_ob.observation.location.x = filteredLandmarks[i](0);
       global_ob.observation.location.y = filteredLandmarks[i](1);
@@ -704,7 +719,6 @@ namespace slam
     odom.pose.pose.orientation.w = quat.getW();
 
     odom.pose.covariance = poseCovariance;
-
 
     // TF Transformation
     // This uses the 'inversed frame' principle
