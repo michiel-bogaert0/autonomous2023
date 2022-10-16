@@ -39,7 +39,7 @@ sudo apt-get install -y ros-noetic-tf2-geometry-msgs \
     libyaml-cpp-dev \
     libcurl4-openssl-dev \
     python3-pcl \
-    pcl-tools 
+    pcl-tools
 
 # Install AirSim deps
 AirSim/setup.sh
