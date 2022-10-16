@@ -466,10 +466,8 @@ namespace slam
     // Also gather some other information while we are looping
 
     vector<VectorXf> samples;
-    vector<VectorXf> sampleP;
     vector<float> poseX;
     vector<float> poseY;
-    vector<float> poseP;
     vector<float> poseYaw;
     vector<LandmarkMetadata> sampleMetadata;
 
@@ -494,7 +492,6 @@ namespace slam
       poseX.push_back(particle.xv()(0));
       poseY.push_back(particle.xv()(1));
       poseYaw.push_back(particle.xv()(2));
-      poseP.push_back(w);
 
       x += particle.xv()(0) * w;
       y += particle.xv()(1) * w;
@@ -508,7 +505,6 @@ namespace slam
       for (auto xf : particle.xf())
       {
         samples.push_back(xf);
-        sampleP.push_back(w);
       }
       for (auto metadata : particle.metadata())
       {
@@ -519,14 +515,14 @@ namespace slam
     VectorXf pose(3);
     pose << x, y, yaw;
     
-    boost::array<double, 36> poseCovariance();
+    boost::array<double, 36> poseCovariance;
 
-    poseCovariance[0] = calculate_covariance(poseX, poseX, poseP);
-    poseCovariance[1] = calculate_covariance(poseX, poseY, poseP);
-    poseCovariance[5] = calculate_covariance(poseYaw, poseX, poseP);
-    poseCovariance[7] = calculate_covariance(poseY, poseY, poseP);
-    poseCovariance[11] = calculate_covariance(poseYaw, poseY, poseP);
-    poseCovariance[35] = calculate_covariance(poseYaw, poseYaw, poseP);
+    poseCovariance[0] = calculate_covariance(poseX, poseX);
+    poseCovariance[1] = calculate_covariance(poseX, poseY);
+    poseCovariance[5] = calculate_covariance(poseYaw, poseX);
+    poseCovariance[7] = calculate_covariance(poseY, poseY);
+    poseCovariance[11] = calculate_covariance(poseYaw, poseY);
+    poseCovariance[35] = calculate_covariance(poseYaw, poseYaw);
 
     poseCovariance[6] = poseCovariance[1];
     poseCovariance[30] = poseCovariance[5];
@@ -549,9 +545,8 @@ namespace slam
 
       for (unsigned int index : cluster)
       {
-        lmMean[0] += samples[index][0] * sampleP[i];
-        lmMean[1] += samples[index][1] * sampleP[i];
-        totalP += sampleP[i];
+        lmMean[0] += samples[index][0];
+        lmMean[1] += samples[index][1];
 
         for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
         {
@@ -560,8 +555,8 @@ namespace slam
         lmMetadata.score += sampleMetadata[index].score;
       }
       lmMetadata.score /= static_cast<float>(cluster.size());
-      lmMean[0] /= totalP;
-      lmMean[1] /= totalP;
+      lmMean[0] /= static_cast<float>(cluster.size());
+      lmMean[1] /= static_cast<float>(cluster.size());
 
       lmMeans.push_back(lmMean);
       lmMetadatas.push_back(lmMetadata);
@@ -580,18 +575,16 @@ namespace slam
 
       vector<float> X;
       vector<float> Y;
-      vector<float> P;
       for (auto index : cluster)
       {
         X.push_back(samples[index][0]);
         Y.push_back(samples[index][1]);
-        P.push_back(sampleP[index]);
       }
 
-      cov(0, 0) = calculate_covariance(X, X, P);
-      cov(0, 1) = calculate_covariance(X, Y, P);
+      cov(0, 0) = calculate_covariance(X, X);
+      cov(0, 1) = calculate_covariance(X, Y);
       cov(1, 0) = cov(0, 1);
-      cov(1, 1) = calculate_covariance(Y, Y, P);
+      cov(1, 1) = calculate_covariance(Y, Y);
 
       positionCovariances.push_back(cov);
     }
@@ -710,7 +703,7 @@ namespace slam
     odom.pose.pose.orientation.z = quat.getZ();
     odom.pose.pose.orientation.w = quat.getW();
 
-    odom.pose.pose.covariance = poseCovariance;
+    odom.pose.covariance = poseCovariance;
 
 
     // TF Transformation
