@@ -137,23 +137,23 @@ void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
 
   int i = 0;
   for (auto cone : cones.points) {
-    ugr_msgs::ObservationWithCovariance observation;
+    ugr_msgs::ObservationWithCovariance observationWithCovariance;
 
     // If color == 0, then it is a BLUE cone, and Cones.BLUE in fs_msgs/Cone is
     // 0 color == 1 is yellow
     float color = cones.channels[0].values[i];
-    observation.observation_class = color;
+    observationWithCovariance.observation.observation_class = color;
 
-    observation.location.x = cone.x;
-    observation.location.y = cone.y;
-    observation.location.z = cone.z;
-    observation.covariance =
+    observationWithCovariance.observation.location.x = cone.x;
+    observationWithCovariance.observation.location.y = cone.y;
+    observationWithCovariance.observation.location.z = cone.z;
+    observationWithCovariance.covariance =
         boost::array<double, 9>({0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.8});
 
     double cone_metric = cones.channels[4].values[i];
-    observation.belief = cone_metric;
+    observationWithCovariance.observation.belief = cone_metric;
 
-    observations.observations.push_back(observation);
+    observations.observations.push_back(observationWithCovariance);
 
     i++;
   }

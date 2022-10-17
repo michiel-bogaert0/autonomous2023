@@ -12,6 +12,8 @@
 using namespace std;
 using namespace Eigen;
 
+#define LANDMARK_CLASS_COUNT 4
+
 /**
  * KDtree point class
  */
@@ -60,9 +62,8 @@ struct LandmarkSearchResult {
 };
 
 struct LandmarkMetadata {
-    float score;
-    int classSummation;
-    int classSummationCount;
+    float score = 0.0;
+    vector<int> classDetectionCount = vector<int>(LANDMARK_CLASS_COUNT, 0);
 };
 
 class Particle
@@ -112,6 +113,9 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 // Common functions
 ////////////////////////////////////////////////////////////////////////////////
+float calculate_covariance(vector<float> &X, vector<float> &Y);
+float calculate_covariance(vector<float> &X, vector<float> &Y, vector<float> &P);
+
 void compute_steering(VectorXf &x, MatrixXf &wp, int &iwp, float minD,
                       float &G, float rateG, float maxG, float dt);
 void predict_true(VectorXf &xv, float V, float G, float WB, float dt);

@@ -130,7 +130,10 @@ class LocMapVis:
 
         marker_array = MarkerArray()
 
-        for i, obs in enumerate(observations.observations):
+        for i, obs_with_cov in enumerate(observations.observations):
+
+            obs = obs_with_cov.observation
+            
             marker = Marker()
 
             marker.header = observations.header
@@ -153,14 +156,14 @@ class LocMapVis:
                     marker.color.a = 1
                 else:
                     # if covariances are used, add the covariance to the scale of the cilinder
-                    marker.scale.x = 0.3 + obs.covariance[0]
-                    marker.scale.y = 0.3 + obs.covariance[3]
+                    marker.scale.x = 0.3 + obs_with_cov.covariance[0]
+                    marker.scale.y = 0.3 + obs_with_cov.covariance[3]
                     marker.scale.z = 0.02
 
                 marker.color.r = 0 if obs.observation_class == 0 else 1
                 marker.color.g = 0 if obs.observation_class == 0 else 1
                 marker.color.b = 1 if obs.observation_class == 0 else 0
-                marker.color.a = 1 - obs.covariance[8]
+                marker.color.a = 1 - obs_with_cov.covariance[8]
 
             
 

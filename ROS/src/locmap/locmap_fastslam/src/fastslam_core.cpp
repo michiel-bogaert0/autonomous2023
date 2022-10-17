@@ -18,6 +18,54 @@
 using namespace std;
 using namespace Eigen;
 
+float calculate_covariance(vector<float> &X, vector<float> &Y) {
+    
+    if (X.size() != Y.size()) {
+        throw invalid_argument("Size of X must equal size of Y");
+    }
+    
+    unsigned int N = X.size();
+
+    float meanX = reduce(X.begin(), X.end()) / static_cast<float>(N);
+    float meanY = reduce(Y.begin(), Y.end()) / static_cast<float>(N);
+
+    float covariance = 0.0;
+
+    for (unsigned int i = 0; i < N; i++) {
+        covariance += (X[i] - meanX) * (Y[i] - meanY);
+    }
+
+    return covariance / static_cast<float>(N);
+}
+
+float calculate_covariance(vector<float> &X, vector<float> &Y, vector<float> &P) {
+    
+    if (X.size() != Y.size() || X.size() != P.size()) {
+        throw invalid_argument("Size of X must equal size of Y and P");
+    }
+    
+    unsigned int N = X.size();
+
+    float meanX = 0.0;
+    float meanY = 0.0;
+
+    for (unsigned int i = 0; i < N; i++) {
+        meanX += X[i] * P[i];
+        meanY += Y[i] * P[i];
+    }
+    
+    meanX /= static_cast<float>(N);
+    meanY /= static_cast<float>(N);
+
+    float covariance = 0.0;
+
+    for (unsigned int i = 0; i < N; i++) {
+        covariance += (X[i] - meanX) * (Y[i] - meanY) * P[i];
+    }
+
+    return covariance / static_cast<float>(N);
+}
+
 inline float sqr(float x)
 {
     return x * x;
@@ -190,9 +238,8 @@ void feature_update(Particle &particle, vector<VectorXf> &z,
 
         LandmarkMetadata old_meta = particle.metadata()[idf[i]];
 
-        old_meta.score += 1;
-        old_meta.classSummationCount += 1;
-        old_meta.classSummation += observationClass[i];
+        old_meta.score++;
+        old_meta.classDetectionCount[observationClass[i]]++;
 
         particle.setMetadatai(idf[i], old_meta);
     }
@@ -597,13 +644,7 @@ void add_feature(Particle &particle, vector<VectorXf> &z, MatrixXf &R, vector<in
     {
         particle.setXfi(i, xf[(i - lenx)]);
         particle.setPfi(i, Pf[(i - lenx)]);
-
         LandmarkMetadata meta;
-
-        meta.classSummation = observationClass[i - lenx];
-        meta.classSummationCount = 1;
-        meta.score = 0;
-
         particle.setMetadatai(i, meta);
     }
 }
@@ -1088,15 +1129,11 @@ void Particle::setMetadatai(unsigned long i, LandmarkMetadata &meta)
     {
         int oldSize = _metadata.size();
         _metadata.resize(i + 1);
-
-        for (int j = oldSize; j < i + 1; j++)
-        {
-            _metadata[j].classSummationCount = 1;
-        }
     }
 
-    _metadata[i].classSummation = meta.classSummation;
-    _metadata[i].classSummationCount = meta.classSummationCount;
+    for (int j = 0; j < LANDMARK_CLASS_COUNT; j++) {
+        _metadata[i].classDetectionCount[j] = meta.classDetectionCount[j];
+    }
     _metadata[i].score = meta.score;
 }
 

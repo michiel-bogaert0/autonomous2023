@@ -49,7 +49,7 @@ class VisObs(ROSNode):
         """Handles ugr_mgs/Observations message
 
         Args:
-            msg (Observations): the message to visualise
+            msg (ObservationWithCovarianceArrayStamped): the message to visualise
         """
         empty_array = self.vis_handler.delete_markerarray(self.vis_namespace)
         self.publish("/output/vis", empty_array)
