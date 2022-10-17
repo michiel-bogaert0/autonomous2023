@@ -159,7 +159,7 @@ class PerceptionNode:
 
             # assign the belief scores to the individual observations
             for i,obs in enumerate(update_msg.observations):
-                obs.belief = beliefs[i]
+                obs.observation.belief = beliefs[i]
             
             # publish the observation message
             self.pub_pnp.publish(update_msg)
