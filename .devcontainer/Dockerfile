@@ -18,7 +18,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 RUN export TZ=Europe/Brussels
 
 # Add ugr user
-RUN useradd ugr && echo "ugr:ugr" | chpasswd && adduser ugr sudo
+RUN useradd ugr --gid 1000 -s /bin/zsh && echo "ugr:ugr" | chpasswd && adduser ugr sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 USER ugr
 
