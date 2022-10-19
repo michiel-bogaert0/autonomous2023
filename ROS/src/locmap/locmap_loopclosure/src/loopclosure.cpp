@@ -17,9 +17,8 @@ namespace slam
         Point distanceVector = Point{(float)msg->pose.pose.position.x - startPosition.x, (float)msg->pose.pose.position.y - startPosition.y};
         if(checkDistanceGoingUpWhenInRange)
         {
-            if(dotProduct(directionWhenGoingInRange, distanceVector) < 0)
+            if(DotProduct(directionWhenGoingInRange, distanceVector) < 0)
             {
-                ROS_INFO("send message");
                 observeEndPoint.shutdown();
                 std_msgs::Bool msg1;
                 msg1.data = true;
