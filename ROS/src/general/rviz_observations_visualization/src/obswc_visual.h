@@ -64,6 +64,13 @@ namespace rviz_observations_visualization
     // Destructor.  Removes the visual stuff from the scene.
     virtual ~ObservationWithCovarianceVisual();
 
+    void setVisualClass(unsigned int cls) {
+      visual_class_ = cls;
+    };
+    unsigned int getVisualClass() {
+      return visual_class_;
+    }
+    void setOrientation(Ogre::Quaternion orientation);
     void setPosition(float x, float y); 
     void setCovariance(boost::array<double, 9> &covariance);
 
@@ -72,6 +79,8 @@ namespace rviz_observations_visualization
     void setColor(float r, float g, float b, float a);
 
   private:
+    unsigned int visual_class_;
+
     rviz::Arrow* cone_shape_;
     rviz::Shape* position_shape_;
 

@@ -49,19 +49,29 @@ namespace rviz_observations_visualization
   // constructor the parameters it needs to fully initialize.
   ObservationWithCovarianceArrayStampedDisplay::ObservationWithCovarianceArrayStampedDisplay()
   {
-    color_property_ = new rviz::ColorProperty("Color", QColor(204, 51, 204),
-                                              "Color to draw the acceleration arrows.",
-                                              this, SLOT(updateColorAndAlpha()));
+    color_property_[0] = new rviz::ColorProperty("Class 0 color", QColor(0, 0, 255),
+                                                 "The color of observation class 0: 'blue'",
+                                                 this, SLOT(updateColorAndAlpha()));
+
+    color_property_[1] = new rviz::ColorProperty("Class 1 color", QColor(255, 214, 0),
+                                                 "The color of observation class 1: 'yellow'",
+                                                 this, SLOT(updateColorAndAlpha()));
+
+    color_property_[2] = new rviz::ColorProperty("Class 2 color", QColor(255, 140, 0),
+                                                 "The color of observation class 2: 'big orange'",
+                                                 this, SLOT(updateColorAndAlpha()));
+
+    color_property_[3] = new rviz::ColorProperty("Class 3 color", QColor(255, 69, 0),
+                                                 "The color of observation class 3: 'small orange'",
+                                                 this, SLOT(updateColorAndAlpha()));
+
+    color_property_[4] = new rviz::ColorProperty("Class 4 color", QColor(0, 0, 0),
+                                                 "The color of observation class 4: 'unkown'",
+                                                 this, SLOT(updateColorAndAlpha()));
 
     alpha_property_ = new rviz::FloatProperty("Alpha", 1.0,
                                               "0 is fully transparent, 1.0 is fully opaque.",
                                               this, SLOT(updateColorAndAlpha()));
-
-    history_length_property_ = new rviz::IntProperty("History Length", 1,
-                                                     "Number of prior measurements to display.",
-                                                     this, SLOT(updateHistoryLength()));
-    history_length_property_->setMin(1);
-    history_length_property_->setMax(100000);
   }
 
   void ObservationWithCovarianceArrayStampedDisplay::onInitialize()
@@ -77,6 +87,10 @@ namespace rviz_observations_visualization
   void ObservationWithCovarianceArrayStampedDisplay::reset()
   {
     MFDClass::reset();
+    for (auto visual : visuals_)
+    {
+      delete visual;
+    }
     visuals_.clear();
   }
 
@@ -84,11 +98,11 @@ namespace rviz_observations_visualization
   void ObservationWithCovarianceArrayStampedDisplay::updateColorAndAlpha()
   {
     float alpha = alpha_property_->getFloat();
-    Ogre::ColourValue color = color_property_->getOgreColor();
 
     for (size_t i = 0; i < visuals_.size(); i++)
     {
-      visuals_[i].setColor(color.r, color.g, color.b, alpha);
+      Ogre::ColourValue color = color_property_[visuals_[i]->getVisualClass()]->getOgreColor();
+      visuals_[i]->setColor(color.r, color.g, color.b, alpha);
     }
   }
 
@@ -107,23 +121,29 @@ namespace rviz_observations_visualization
       return;
     }
 
+    for (auto visual : visuals_)
+    {
+      delete visual;
+    }
     visuals_.clear();
 
     for (ugr_msgs::ObservationWithCovariance observation : msg->observations)
     {
-      ObservationWithCovarianceVisual visual(context_->getSceneManager(), scene_node_ );
 
-      visual.setPosition(position.x + observation.observation.location.x, position.y + observation.observation.location.y);
-      visual.setCovariance(observation.covariance);
+      ObservationWithCovarianceVisual *visual = new ObservationWithCovarianceVisual(scene_manager_, scene_node_);
+
+      visual->setVisualClass(observation.observation.observation_class);
+      visual->setPosition(position.x + observation.observation.location.x, position.y + observation.observation.location.y);
+      visual->setOrientation(orientation);
+      visual->setCovariance(observation.covariance);
 
       // TODO alpha color
-      Ogre::ColourValue color = color_property_->getOgreColor();
-      visual.setColor(color.r, color.g, color.b, 1.0);
+      Ogre::ColourValue color = color_property_[observation.observation.observation_class]->getOgreColor();
+      visual->setColor(color.r, color.g, color.b, observation.observation.belief);
 
       visuals_.push_back(visual);
     }
   }
-
 }
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(rviz_observations_visualization::ObservationWithCovarianceArrayStampedDisplay, rviz::Display)

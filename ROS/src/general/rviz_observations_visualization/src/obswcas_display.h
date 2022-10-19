@@ -73,9 +73,9 @@ private Q_SLOTS:
 private:
   void processMessage( const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr& msg );
 
-  std::vector<ObservationWithCovarianceVisual> visuals_;
+  std::vector<ObservationWithCovarianceVisual*> visuals_;
 
-  rviz::ColorProperty* color_property_;
+  rviz::ColorProperty* color_property_[5];
   rviz::FloatProperty* alpha_property_;
   rviz::IntProperty* history_length_property_;
 };

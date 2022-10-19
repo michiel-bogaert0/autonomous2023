@@ -129,6 +129,10 @@ namespace rviz_observations_visualization
     frame_node_->setPosition(x, y, 0.0);
   }
 
+  void ObservationWithCovarianceVisual::setOrientation(Ogre::Quaternion orientation) {
+    frame_node_->setOrientation(orientation);
+  }
+
   void ObservationWithCovarianceVisual::setCovariance(boost::array<double, 9> &covariance)
   {
     Ogre::Vector3 shape_scale;
@@ -151,7 +155,7 @@ namespace rviz_observations_visualization
 
   void ObservationWithCovarianceVisual::setColor(float r, float g, float b, float a)
   {
-    cone_shape_->setColor(r, g, b, a);
+    cone_shape_->setColor(r, g, b, 0.0);
     position_shape_->setColor(r, g, b, a);
   }
 }
