@@ -82,8 +82,14 @@ void GroundRemoval::groundRemovalBins(
       // sort bucket from bottom to top
       std::sort(bucket.begin(), bucket.end(), zsort);
 
+      int number_of_points = std::max(int(std::ceil(bucket.size()/10)),1);
+
       // decide floor level based on the lowest point in the bucket;
-      double floor = bucket.points[0].z;
+      double sum = 0;
+      for(int i = 0; i < number_of_points; i++){
+        sum += bucket.points[i].z;
+      }
+      double floor = sum/double(number_of_points);
 
       // iterate over each point in bucket in decided whether it is part of the
       // ground based on its distance from the floor level
