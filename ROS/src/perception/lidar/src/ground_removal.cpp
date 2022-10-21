@@ -70,7 +70,7 @@ void GroundRemoval::groundRemovalBins(
     int hypot_bucket = std::floor(hypot / (20 / double(radial_buckets_)));
 
     // add point to allocated bucket
-    buckets[angular_buckets_ * hypot_bucket + angle_bucket].push_back(point);
+    buckets[radial_buckets_ * angle_bucket + hypot_bucket].push_back(point);
   }
 
   // iterate over each bucket
