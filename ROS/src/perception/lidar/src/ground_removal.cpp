@@ -84,12 +84,19 @@ void GroundRemoval::groundRemovalBins(
 
       int number_of_points = std::max(int(std::ceil(bucket.size()/10)),1);
 
+      pcl::PointCloud<pcl::PointXYZI> expected_ground_points;
       // decide floor level based on the lowest point in the bucket;
-      double sum = 0;
       for(int i = 0; i < number_of_points; i++){
-        sum += bucket.points[i].z;
+        expected_ground_points.push_back(bucket.points[i]);
       }
-      double floor = sum/double(number_of_points);
+
+      Eigen::Vector4f centroid;
+      pcl::compute3DCentroid(expected_ground_points, centroid);
+      pcl::PointXYZ centroid_pos;
+      centroid_pos.x = centroid[0];
+      centroid_pos.y = centroid[1];
+      centroid_pos.z = centroid[2];
+
 
       // iterate over each point in bucket in decided whether it is part of the
       // ground based on its distance from the floor level
@@ -99,8 +106,8 @@ void GroundRemoval::groundRemovalBins(
         point.y = bucket.points[p].y;
         point.z = bucket.points[p].z;
         point.intensity = bucket.points[p].intensity;
-        point.normal_z = floor;
-        if (point.z - floor < th_floor_) {
+        point.normal_z = centroid_pos.z;
+        if (point.z - centroid_pos.z < th_floor_) {
           ground_points->push_back(point);
         } else {
           notground_points->push_back(point);
