@@ -40,7 +40,7 @@ class PerceptionNode():
         self.bb_vis = rospy.get_param("~vis", False)
 
         self.pub_image_annotated = rospy.Publisher(
-            "/perception/camera/image_annotated", 
+            "/output/image_annotated", 
             Image, 
             queue_size=10,
         )
