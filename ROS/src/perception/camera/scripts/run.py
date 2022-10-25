@@ -25,7 +25,7 @@ from ugr_msgs.msg import (
 )
 
 
-class PerceptionNode():
+class PerceptionNode:
     def __init__(self):
         rospy.init_node("perception")
         self.pub_keypoints = rospy.Publisher(
@@ -75,7 +75,7 @@ class PerceptionNode():
         self.diagnostics.publish(
             create_diagnostic_message(
                 level=DiagnosticStatus.OK,
-               name="perception camera node",
+                name="perception camera node",
                 message=f"CUDA devices used: cone={cone_dev} - keypoint={keyp_dev}",
             )
         )
@@ -140,7 +140,6 @@ class PerceptionNode():
             for bb in bbs
             if bb.height > bb.width and bb.height > detection_height_threshold
         ]
-<<<<<<< HEAD
 
         if self.bb_vis:
             # Cone type: Blue, Yellow, Orange_Big, Orange_Small, Unknown (Red)
@@ -158,9 +157,6 @@ class PerceptionNode():
             image_annotated.header = ros_image.header
             self.pub_image_annotated.publish(image_annotated)
 
-=======
-        
->>>>>>> development
         if len(bbs) != 0:
             # There were bounding boxes detected
             start = time.perf_counter()
