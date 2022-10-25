@@ -22,6 +22,7 @@
 #include <geometry_msgs/PointStamped.h>
 
 #include "kdtree.h"
+#include "dbscan.hpp"
 
 #include <nav_msgs/Odometry.h>
 
@@ -43,8 +44,12 @@ namespace slam
                                              slam_world_frame(n.param<string>("slam_world_frame", "ugr/slam_odom")),
                                              world_frame(n.param<string>("world_frame", "ugr/car_odom")),
                                              particle_count(n.param<int>("particle_count", 100)),
+                                             post_clustering(n.param<bool>("post_clustering", true)),
                                              effective_particle_count(n.param<int>("effective_particle_count", 75)),
+                                             min_clustering_point_count(n.param<int>("min_clustering_point_count", 30)),
                                              eps(n.param<double>("eps", 2.0)),
+                                             clustering_eps(n.param<double>("clustering_eps", 0.5)),
+                                             belief_factor(n.param<double>("belief_factor", 2.0)),
                                              expected_range(n.param<double>("expected_range", 15)),
                                              expected_half_fov(n.param<double>("expected_half_angle", 60 * 0.0174533)),
                                              max_range(n.param<double>("max_range", 15)),
@@ -175,7 +180,7 @@ namespace slam
     {
 
       VectorXf obsAsVector(2);
-      obsAsVector << pow(pow(observation.location.x, 2) + pow(observation.location.y, 2), 0.5), atan2(observation.location.y, observation.location.x);
+      obsAsVector << pow(pow(observation.observation.location.x, 2) + pow(observation.observation.location.y, 2), 0.5), atan2(observation.observation.location.y, observation.observation.location.x);
 
       VectorXf landmark(2);
       this->observation_to_landmark(obsAsVector, landmark, particle.xv());
@@ -191,13 +196,13 @@ namespace slam
       if (result.index == -1 || result.distance > this->eps)
       {
         newLandmarks.push_back(landmark);
-        newClasses.push_back(observation.observation_class);
+        newClasses.push_back(observation.observation.observation_class);
       }
       else
       {
         knownLandmarks.push_back(particle.xf()[result.index]);
         knownIndices.push_back(result.index);
-        knownClasses.push_back(observation.observation_class);
+        knownClasses.push_back(observation.observation.observation_class);
       }
     }
   }
@@ -238,12 +243,14 @@ namespace slam
   void FastSLAM1::handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs)
   {
 
-    if (this->latestTime - obs->header.stamp.toSec() > 0.5 && this->latestTime > 0.0) {
-      // Reset 
+    if (this->latestTime - obs->header.stamp.toSec() > 0.5 && this->latestTime > 0.0)
+    {
+      // Reset
       ROS_WARN("Time went backwards! Resetting fastslam...");
 
       this->particles.clear();
-      for (int i = 0; i < this->particle_count; i++) {
+      for (int i = 0; i < this->particle_count; i++)
+      {
         this->particles.push_back(Particle());
       }
 
@@ -251,7 +258,9 @@ namespace slam
       this->latestTime = 0.0;
 
       return;
-    } else {
+    }
+    else
+    {
       this->latestTime = obs->header.stamp.toSec();
     }
 
@@ -278,12 +287,12 @@ namespace slam
       ugr_msgs::ObservationWithCovariance transformed_ob;
 
       geometry_msgs::PointStamped locStamped;
-      locStamped.point = observation.location;
+      locStamped.point = observation.observation.location;
       locStamped.header = obs->header;
 
       try
       {
-        transformed_ob.location = this->tfBuffer.transform<geometry_msgs::PointStamped>(locStamped, this->base_link_frame, ros::Duration(0)).point;
+        transformed_ob.observation.location = this->tfBuffer.transform<geometry_msgs::PointStamped>(locStamped, this->base_link_frame, ros::Duration(0)).point;
       }
       catch (const exception e)
 
@@ -294,16 +303,16 @@ namespace slam
 
       // Filter out the observation if it is not "in range"
       VectorXf z(2);
-      z(0) = pow(pow(transformed_ob.location.x, 2) + pow(transformed_ob.location.y, 2), 0.5);
-      z(1) = atan2(transformed_ob.location.y, transformed_ob.location.x);
+      z(0) = pow(pow(transformed_ob.observation.location.x, 2) + pow(transformed_ob.observation.location.y, 2), 0.5);
+      z(1) = atan2(transformed_ob.observation.location.y, transformed_ob.observation.location.x);
 
       if (z(0) > this->max_range || abs(z(1)) > this->max_half_fov)
       {
         continue;
       }
 
-      transformed_ob.covariance = observation.covariance;      
-      transformed_ob.observation_class = observation.observation_class;
+      transformed_ob.covariance = observation.covariance;
+      transformed_ob.observation.observation_class = observation.observation.observation_class;
       transformed_obs.observations.push_back(transformed_ob);
     }
 
@@ -454,19 +463,23 @@ namespace slam
 
     t1 = std::chrono::steady_clock::now();
 
-    // Average (weighted) all the poses and cone positions to get the final estimate
+    // Calculate statistical mean and covariance of the particle filter (pose)
+    // Also gather some other information while we are looping
 
-    vector<VectorXf> lmMeans;
-    vector<LandmarkMetadata> lmMetadatas;
-    vector<float> lmTotalWeight;
+    vector<VectorXf> samples;
+    vector<float> poseX;
+    vector<float> poseY;
+    vector<float> poseYaw;
+    vector<LandmarkMetadata> sampleMetadata;
+
+    Particle &bestParticle = this->particles[0];
+
     vector<int> contributions;
 
     float x = 0.0;
     float y = 0.0;
     float yaw = 0.0;
-    float totalW = 0.0;
     float maxW = -10000.0;
-    Particle &bestParticle = this->particles[0];
     for (int i = 0; i < this->particles.size(); i++)
     {
 
@@ -479,7 +492,9 @@ namespace slam
         w = 0.001;
       }
 
-      totalW += w;
+      poseX.push_back(particle.xv()(0));
+      poseY.push_back(particle.xv()(1));
+      poseYaw.push_back(particle.xv()(2));
 
       x += particle.xv()(0) * w;
       y += particle.xv()(1) * w;
@@ -488,15 +503,103 @@ namespace slam
       if (w > maxW)
       {
         maxW = w;
-        bestParticle = particle;
+        bestParticle = this->particles[i];
+      }
+
+      for (auto xf : particle.xf())
+      {
+        samples.push_back(xf);
+      }
+      for (auto metadata : particle.metadata())
+      {
+        sampleMetadata.push_back(metadata);
       }
     }
 
-    lmMeans = bestParticle.xf();
-    lmMetadatas = bestParticle.metadata();
-
     VectorXf pose(3);
-    pose << x / totalW, y / totalW, yaw / totalW;
+    pose << x, y, yaw;
+
+    boost::array<double, 36> poseCovariance;
+
+    poseCovariance[0] = calculate_covariance(poseX, poseX);
+    poseCovariance[1] = calculate_covariance(poseX, poseY);
+    poseCovariance[5] = calculate_covariance(poseYaw, poseX);
+    poseCovariance[7] = calculate_covariance(poseY, poseY);
+    poseCovariance[11] = calculate_covariance(poseYaw, poseY);
+    poseCovariance[35] = calculate_covariance(poseYaw, poseYaw);
+
+    poseCovariance[6] = poseCovariance[1];
+    poseCovariance[30] = poseCovariance[5];
+    poseCovariance[31] = poseCovariance[11];
+
+    vector<MatrixXf> positionCovariances;
+    vector<VectorXf> lmMeans;
+    vector<LandmarkMetadata> lmMetadatas;
+
+    if (this->post_clustering)
+    {
+      // Now apply DBSCAN to the samples
+      // A cluster is a vector of indices
+      vector<vector<unsigned int>> clusters = dbscanVectorXf(samples, this->clustering_eps, this->min_clustering_point_count);
+
+      // Convert the clusters back to landmarks
+      for (vector<unsigned int> cluster : clusters)
+      {
+
+        VectorXf lmMean(2);
+        LandmarkMetadata lmMetadata;
+
+        float totalP = 0.0;
+
+        for (unsigned int index : cluster)
+        {
+          lmMean[0] += samples[index][0];
+          lmMean[1] += samples[index][1];
+
+          for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
+          {
+            lmMetadata.classDetectionCount[i] += sampleMetadata[index].classDetectionCount[i];
+          }
+          lmMetadata.score += sampleMetadata[index].score;
+        }
+        lmMetadata.score /= static_cast<float>(cluster.size());
+        lmMean[0] /= static_cast<float>(cluster.size());
+        lmMean[1] /= static_cast<float>(cluster.size());
+
+        lmMeans.push_back(lmMean);
+        lmMetadatas.push_back(lmMetadata);
+      }
+
+      // Calculate 2x2 position covariance matrix. We assume that there is no significan relation between class and position
+      // Thus allowing us to easily extend this to 3x3, which includes class variance
+
+      for (unsigned int i = 0; i < clusters.size(); i++)
+      {
+        vector<unsigned int> cluster = clusters[i];
+
+        MatrixXf cov(2,2);
+
+        vector<float> X;
+        vector<float> Y;
+        for (auto index : cluster)
+        {
+          X.push_back(samples[index][0]);
+          Y.push_back(samples[index][1]);
+        }
+
+        cov(0, 0) = calculate_covariance(X, X);
+        cov(0, 1) = calculate_covariance(X, Y);
+        cov(1, 0) = cov(0, 1);
+        cov(1, 1) = calculate_covariance(Y, Y);
+
+        positionCovariances.push_back(cov);
+      }
+    } else {
+      // Just take all the particles from the best particle
+      lmMeans = bestParticle.xf();
+      lmMetadatas = bestParticle.metadata();
+      positionCovariances = bestParticle.Pf();
+    }
 
     t2 = std::chrono::steady_clock::now();
 
@@ -511,11 +614,13 @@ namespace slam
     vector<VectorXf> filteredLandmarks;
     vector<LandmarkMetadata> filteredMeta;
     vector<int> filteredLandmarkIndices;
+    vector<Matrix2f> filteredCovariances;
 
     for (int i = 0; i < lmMeans.size(); i++)
     {
       if (lmMetadatas[i].score >= this->acceptance_score)
       {
+        filteredCovariances.push_back(positionCovariances[i]);
         filteredMeta.push_back(lmMetadatas[i]);
         filteredLandmarks.push_back(lmMeans[i]);
         filteredLandmarkIndices.push_back(i);
@@ -538,18 +643,59 @@ namespace slam
       ugr_msgs::ObservationWithCovariance global_ob;
       ugr_msgs::ObservationWithCovariance local_ob;
 
-      float rounded_float = round((float)filteredMeta[i].classSummation / (float)filteredMeta[i].classSummationCount);
-      global_ob.observation_class = uint8_t(rounded_float);
-      local_ob.observation_class = int8_t(rounded_float);
+      int observation_class = 0;
+      int max_count = 0;
+      int total_count = 0;
+      for (int j = 0; j < LANDMARK_CLASS_COUNT; j++)
+      {
+        total_count += filteredMeta[i].classDetectionCount[j];
+        if (filteredMeta[i].classDetectionCount[j] > max_count)
+        {
+          observation_class = j;
+          max_count = filteredMeta[i].classDetectionCount[j];
+        }
+      }
 
-      global_ob.location.x = filteredLandmarks[i](0);
-      global_ob.location.y = filteredLandmarks[i](1);
+      // Calculate the observation class (co)variance
+      // First get the odds of a specific class p
+      float p[LANDMARK_CLASS_COUNT];
+      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++)
+      {
+        p[j] = filteredMeta[i].classDetectionCount[j] / total_count;
+      }
+
+      float obsClassMean = 0.0;
+      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++)
+      {
+        obsClassMean += p[j] * j;
+      }
+
+      float obsCovariance = 0.0;
+      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++)
+      {
+        obsCovariance += pow(j - obsClassMean, 2) * p[j];
+      }
+
+      auto covarianceMatrix = boost::array<double, 9>({filteredCovariances[i](0, 0), filteredCovariances[i](0, 1), 0.0, filteredCovariances[i](1, 0), filteredCovariances[i](1, 1), 0.0, 0, 0, obsCovariance});
+
+      global_ob.covariance = covarianceMatrix;
+      local_ob.covariance = covarianceMatrix;
+
+      global_ob.observation.observation_class = observation_class;
+      local_ob.observation.observation_class = observation_class;
+
+      float belief = max(min((1 - exp(-1 * belief_factor * filteredMeta[i].score)), 1.0), 0.0);
+      global_ob.observation.belief = belief;
+      local_ob.observation.belief = belief;
+
+      global_ob.observation.location.x = filteredLandmarks[i](0);
+      global_ob.observation.location.y = filteredLandmarks[i](1);
       global.observations.push_back(global_ob);
       VectorXf z(2);
       this->landmark_to_observation(filteredLandmarks[i], z, pose);
 
-      local_ob.location.x = z(0) * cos(z(1));
-      local_ob.location.y = z(0) * sin(z(1));
+      local_ob.observation.location.x = z(0) * cos(z(1));
+      local_ob.observation.location.y = z(0) * sin(z(1));
       local.observations.push_back(local_ob);
     }
 
@@ -571,6 +717,8 @@ namespace slam
     odom.pose.pose.orientation.y = quat.getY();
     odom.pose.pose.orientation.z = quat.getZ();
     odom.pose.pose.orientation.w = quat.getW();
+
+    odom.pose.covariance = poseCovariance;
 
     // TF Transformation
     // This uses the 'inversed frame' principle

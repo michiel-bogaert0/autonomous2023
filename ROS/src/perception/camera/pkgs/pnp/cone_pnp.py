@@ -14,6 +14,7 @@ from ugr_msgs.msg import (
     ConeKeypoints,
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
+    Observation,
 )
 
 
@@ -38,7 +39,7 @@ class ConePnp:
             cone_keypoints_msg: the message that contains the cone keypoints
             img_size: a tuple (W, H) of the original image size
         """
-        cone_relative_positions: List[Cone] = []
+        cone_relative_positions: List[ObservationWithCovariance] = []
 
         for cone_keypoint in cone_keypoints_msg.cone_keypoints:
 
@@ -58,8 +59,10 @@ class ConePnp:
 
             cone_relative_positions.append(
                 ObservationWithCovariance(
-                    observation_class=cone_keypoint.bb_info.cone_type,
-                    location=loc,
+                    observation=Observation(
+                        observation_class=cone_keypoint.bb_info.cone_type,
+                        location=loc,
+                    ),
                     covariance=[0.7, 0, 0, 0, 0.3, 0, 0, 0, 0.1],
                 )
             )

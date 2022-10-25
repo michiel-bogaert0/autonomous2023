@@ -33,26 +33,6 @@ class Convert(ROSNode):
 
         rospy.loginfo("LocMap Interface started!")
 
-    @AddSubscriber("/input/lidar/cones")
-    def handleLidarMarker(self, lidarmarkers: MarkerArray):
-
-        if len(lidarmarkers.markers) > 0:
-            observations = ObservationWithCovarianceArrayStamped()
-            observations.header = lidarmarkers.markers[0].header
-
-            for marker in lidarmarkers.markers:
-
-                obs = ObservationWithCovariance()
-                obs.observation_class = (
-                    Cone.BLUE if marker.color.b == 1 else Cone.YELLOW
-                )
-                obs.location.x = marker.pose.position.x
-                obs.location.y = marker.pose.position.y
-
-                observations.observations.append(obs)
-
-            self.publish("/output/observations", observations)
-
     @AddSubscriber("/input/gss")
     def convertGSS(self, msg: TwistStamped):
         """
