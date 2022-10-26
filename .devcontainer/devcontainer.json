@@ -22,5 +22,9 @@
 	"remoteUser": "ugr",
 
 	"workspaceMount": "source=${localWorkspaceFolder},target=/home/ugr/autonomous2023,type=bind",
-	"workspaceFolder": "/home/ugr/autonomous2023"
+	"workspaceFolder": "/home/ugr/autonomous2023",
+
+	"mounts": [
+		"source=${localWorkspaceFolder}/../autonomous2023_binaries,target=/home/ugr/autonomous2023_binaries,type=bind"
+	  ]
 }
