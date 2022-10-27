@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 from typing import Tuple
 
+import cv2
 import neoapi
 import numpy as np
 import rospy
@@ -33,6 +34,14 @@ class PerceptionNode:
         self.pub_pnp = rospy.Publisher(
             "/output/update",
             ObservationWithCovarianceArrayStamped,
+            queue_size=10,
+        )
+
+        self.bb_vis = rospy.get_param("~vis", False)
+
+        self.pub_image_annotated = rospy.Publisher(
+            "/output/image_annotated", 
+            Image, 
             queue_size=10,
         )
 
@@ -131,7 +140,23 @@ class PerceptionNode:
             for bb in bbs
             if bb.height > bb.width and bb.height > detection_height_threshold
         ]
-        
+
+        if self.bb_vis:
+            # Cone type: Blue, Yellow, Orange_Big, Orange_Small, Unknown (Red)
+            # Image is in RGB, but OpenCV works in BGR
+            # so we have to swap colors as input for OpenCV
+            colors = [(0, 0, 255), (255, 255, 0), (255, 140, 0), (255, 140, 0), (255, 0, 0)]
+            image_annotated = image
+
+            for bb in bbs:
+                x_left, x_right = int(bb.left*ros_image.width), int((bb.left+bb.width)*ros_image.width)
+                y_top, y_bottom = int(bb.top*ros_image.height), int((bb.top+bb.height)*ros_image.height)
+                img_annotated = cv2.rectangle(image_annotated, tuple([x_left, y_top]), tuple([x_right, y_bottom]), colors[bb.cone_type], 6)
+
+            image_annotated = np_to_ros_image(img_annotated)
+            image_annotated.header = ros_image.header
+            self.pub_image_annotated.publish(image_annotated)
+
         if len(bbs) != 0:
             # There were bounding boxes detected
             start = time.perf_counter()

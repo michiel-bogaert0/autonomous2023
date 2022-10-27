@@ -7,7 +7,9 @@
         <param name="tensorrt" value="True"/>
         <param name="detection_height_threshold" value="30" />
         <param name="rate" value="10" />
+        <param name="vis" value="False" />
         <remap from="/output/cone_keypoints" to="/ugr/car/perception/camera/keypoints" />
+        <remap from="/output/image_annotated" to="/ugr/car/perception/camera/image_annotated" />
         <remap from="/output/update" to="/ugr/car/observations/camera" />
         <remap from="/input/image" to="/ugr/car/sensors/cam0" />
     </node>
