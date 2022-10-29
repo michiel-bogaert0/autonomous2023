@@ -1,16 +1,15 @@
 #include "loopclosure.hpp"
-#include <iostream>
-#include <ros/ros.h>
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-#include "std_msgs/Bool.h"
+#include "std_msgs/UInt16.h"
+
 
 namespace slam
 {
     LoopClosure::LoopClosure(ros::NodeHandle &n)
     {
         observeEndPoint = n.subscribe("/input/odometry",0, &LoopClosure::CheckWhenLoopIsClosed, this);
-        this->loopClosedPublisher = n.advertise<std_msgs::Bool>("/output/loopClosure",5);
-     }
+        this->loopClosedPublisher = n.advertise<std_msgs::UInt16>("/output/loopClosure",5);
+        reset_service = n.advertiseService("/reset_closure", &slam::LoopClosure::ResetClosure, this);
+    }
     
     void LoopClosure::CheckWhenLoopIsClosed(const nav_msgs::Odometry::ConstPtr& msg)
     {
@@ -19,10 +18,11 @@ namespace slam
         {
             if(DotProduct(directionWhenGoingInRange, distanceVector) < 0)
             {
-                observeEndPoint.shutdown();
-                std_msgs::Bool msg1;
-                msg1.data = true;
+                amountOfLaps++;
+                std_msgs::UInt16 msg1;
+                msg1.data = amountOfLaps;
                 this->loopClosedPublisher.publish(msg1);
+                ResetLoop();
                 return;
             }
             return;
@@ -56,5 +56,20 @@ namespace slam
     {
         return a.x * b.x + a.y * b.y;
     }
-
+    void LoopClosure::ResetLoop()
+    {
+        doNotCheckDistance=false;
+        checkDistanceGoingUpWhenInRange = false;
+    }
+    
+    bool LoopClosure::ResetClosure(std_srvs::Empty::Request& request,std_srvs::Empty::Response& response)
+    {
+        ROS_INFO("reset closure");
+        startPosition = slam::Point();
+        doNotCheckDistance = false;
+        checkDistanceGoingUpWhenInRange = false;
+        directionWhenGoingInRange = slam::Point();
+        amountOfLaps = 0;
+        return true;
+    }
 }
