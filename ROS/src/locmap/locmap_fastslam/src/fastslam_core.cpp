@@ -997,7 +997,7 @@ Particle::Particle()
     _w = 1.0;
     _xv = VectorXf(3);
     _xv.setZero(3);
-    _prev_yaw = 0;
+    _prev_yaw = 0.0;
     _rev = 0;
     _Pv = MatrixXf(3, 3);
     _Pv.setZero(3, 3);
@@ -1009,7 +1009,7 @@ Particle::Particle(float &w, VectorXf &xv, MatrixXf &Pv,
 {
     _w = w;
     _xv = xv;
-    _prev_yaw = 0;
+    _prev_yaw = 0.0;
     _rev = 0;
     _Pv = Pv;
     _xf = xf;

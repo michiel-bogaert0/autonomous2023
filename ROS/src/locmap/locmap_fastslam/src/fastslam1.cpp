@@ -522,7 +522,6 @@ namespace slam
 
       x += particle.xv()(0) * w;
       y += particle.xv()(1) * w;
-      // yaw += particle.xv()(2) * w;
       yaw += curYaw * w;
 
       particle.setPrevyaw(particle.xv()(2));
