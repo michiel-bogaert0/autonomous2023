@@ -297,6 +297,9 @@ void GroundRemoval::process_bucket(
 
 /**
  * @brief calculate the ground level for a specific point
+ *  position: -1 --> first radial bucket
+ *  position: 0 --> not first or last radial bucket
+ *  position: +1 --> last radial bucket
  */
 double GroundRemoval::calculate_ground(pcl::PointXYZ prev_centroid,
                                        pcl::PointXYZ current_centroid,
