@@ -57,10 +57,20 @@ private:
                     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
 
   model_t estimatePlane(const pcl::PointCloud<pcl::PointXYZI> &seed_points);
-  double calculate_ground(pcl::PointXYZ prev_centroid, pcl::PointXYZ current_centroid, pcl::PointXYZ next_centroid, pcl::PointXYZI point, int position);
+  double calculate_ground(pcl::PointXYZ prev_centroid,
+                          pcl::PointXYZ current_centroid,
+                          pcl::PointXYZ next_centroid, pcl::PointXYZI point,
+                          int position);
   void
   extractInitialSeeds(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
                       const pcl::PointCloud<pcl::PointXYZI>::Ptr seed_points);
+
+  void
+  process_bucket(pcl::PointCloud<pcl::PointXYZI> bucket,
+                 pcl::PointXYZ prev_centroid, pcl::PointXYZ current_centroid,
+                 pcl::PointXYZ next_centroid, int position,
+                 pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
+                 pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
 };
 } // namespace ns_lidar
 
