@@ -307,20 +307,17 @@ double GroundRemoval::calculate_ground(pcl::PointXYZ prev_centroid,
                                        pcl::PointXYZI point, int position) {
   double r_current = std::hypot(prev_centroid.x, prev_centroid.y);
   double r_point = std::hypot(point.x, point.y);
-  double r_prev =
-      position == -1 ? 0 : std::hypot(prev_centroid.x, prev_centroid.y);
-  double r_next =
-      position == 1 ? 100 : std::hypot(next_centroid.x, next_centroid.y);
+  double r_prev = position == -1 ? 0 : std::hypot(prev_centroid.x, prev_centroid.y);
+  double r_next = position == 1 ? 100 : std::hypot(next_centroid.x, next_centroid.y);
+
   double z_prev = position == -1 ? current_centroid.z : prev_centroid.z;
   double z_next = position == 1 ? current_centroid.z : next_centroid.z;
 
   double floor = 0.0;
   if (r_point <= r_current) {
-    floor = z_prev + (r_point - r_prev) / (r_current - r_prev) *
-                         (current_centroid.z - z_prev);
+    floor = z_prev + (r_point - r_prev) / (r_current - r_prev) *(current_centroid.z - z_prev);
   } else {
-    floor = current_centroid.z + (r_point - r_current) / (r_next - r_current) *
-                                     (z_next - current_centroid.z);
+    floor = current_centroid.z + (r_point - r_current) / (r_next - r_current) *(z_next - current_centroid.z);
   }
   return floor;
 }
