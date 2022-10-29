@@ -63,6 +63,7 @@ namespace slam
                                              Q(2, 2),
                                              R(2, 2),
                                              particles(vector<Particle>(particle_count)),
+                                             yaw_unwrap_threshold(n.param<float>("yaw_unwrap_threshold", M_PI * 1.3)),
                                              tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0)
   {
 
@@ -500,12 +501,12 @@ namespace slam
       float curYaw = particle.xv()(2);
 
       // Detect code unwrapping and add offset
-      if(particle.prevyaw() - curYaw > M_PI) {
+      if(particle.prevyaw() - curYaw > yaw_unwrap_threshold) {
         // Increment revolutions of cone
         particle.incRev();
         // Print debug info
         ROS_DEBUG_STREAM("+Previous yaw: " << particle.prevyaw() << " Current yaw: " << curYaw << " Diff: " << abs(particle.prevyaw()-curYaw) << " Rev:" << particle.rev());
-      } else if (curYaw - particle.prevyaw() > M_PI) {
+      } else if (curYaw - particle.prevyaw() > yaw_unwrap_threshold) {
         // Increment revolutions of cone
         particle.decRev();
         // Print debug info
@@ -515,7 +516,7 @@ namespace slam
       // Correct yaw by offsetting
       curYaw += particle.rev() * 2 * M_PI;
 
-      if(abs(particle.xv()(2) - particle.prevyaw()) > M_PI)
+      if(abs(particle.xv()(2) - particle.prevyaw()) > yaw_unwrap_threshold)
         // Print corrected yaw
         ROS_DEBUG_STREAM("Corrected yaw: " << curYaw);
 
