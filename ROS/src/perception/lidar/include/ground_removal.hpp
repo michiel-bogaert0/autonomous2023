@@ -8,6 +8,8 @@
 
 namespace ns_lidar {
 
+enum PositionEnum { BEGIN, MID, END};
+
 typedef struct {
   Eigen::MatrixXf normal_n;
   double d = 0.;
@@ -60,7 +62,7 @@ private:
   double calculate_ground(pcl::PointXYZ prev_centroid,
                           pcl::PointXYZ current_centroid,
                           pcl::PointXYZ next_centroid, pcl::PointXYZI point,
-                          int position);
+                          PositionEnum position);
   void
   extractInitialSeeds(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
                       const pcl::PointCloud<pcl::PointXYZI>::Ptr seed_points);
@@ -68,7 +70,7 @@ private:
   void
   process_bucket(pcl::PointCloud<pcl::PointXYZI> bucket,
                  pcl::PointXYZ prev_centroid, pcl::PointXYZ current_centroid,
-                 pcl::PointXYZ next_centroid, int position,
+                 pcl::PointXYZ next_centroid, PositionEnum position,
                  pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
                  pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
 };

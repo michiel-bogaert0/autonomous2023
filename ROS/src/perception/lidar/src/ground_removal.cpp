@@ -103,20 +103,20 @@ void GroundRemoval::groundRemovalBins(
       // classify ground points for previous bucket if it exists
       if (i % radial_buckets_ != 0) {
         process_bucket(buckets[i - 1], prev2_centroid, prev_centroid,
-                       centroid_pos, -1 * (i - 1 % radial_buckets_ != 0),
+                       centroid_pos, (i - 1 % radial_buckets_ == 0)? PositionEnum::BEGIN: PositionEnum::MID,
                        notground_points, ground_points);
       }
 
       // calculate ground for current bucket if it is the last radial bucket in
       // an angular segment
       if ((i + 1) % radial_buckets_ == 0) {
-        process_bucket(bucket, prev_centroid, centroid_pos, centroid_pos, 1,
+        process_bucket(bucket, prev_centroid, centroid_pos, centroid_pos, PositionEnum::END,
                        notground_points, ground_points);
       }
 
       // edge case for when there is only one radial bucket
       if (radial_buckets_ == 1) {
-        process_bucket(bucket, prev_centroid, centroid_pos, centroid_pos, 1,
+        process_bucket(bucket, prev_centroid, centroid_pos, centroid_pos, PositionEnum::END,
                        notground_points, ground_points);
       }
 
@@ -275,7 +275,7 @@ void GroundRemoval::extractInitialSeeds(
  */
 void GroundRemoval::process_bucket(
     pcl::PointCloud<pcl::PointXYZI> bucket, pcl::PointXYZ prev_centroid,
-    pcl::PointXYZ current_centroid, pcl::PointXYZ next_centroid, int position,
+    pcl::PointXYZ current_centroid, pcl::PointXYZ next_centroid, PositionEnum position,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points) {
   for (uint16_t p = 0; p < bucket.points.size(); p++) {
@@ -304,14 +304,15 @@ void GroundRemoval::process_bucket(
 double GroundRemoval::calculate_ground(pcl::PointXYZ prev_centroid,
                                        pcl::PointXYZ current_centroid,
                                        pcl::PointXYZ next_centroid,
-                                       pcl::PointXYZI point, int position) {
+                                       pcl::PointXYZI point,
+                                       PositionEnum position) {
   double r_current = std::hypot(prev_centroid.x, prev_centroid.y);
   double r_point = std::hypot(point.x, point.y);
-  double r_prev = position == -1 ? 0 : std::hypot(prev_centroid.x, prev_centroid.y);
-  double r_next = position == 1 ? 100 : std::hypot(next_centroid.x, next_centroid.y);
+  double r_prev = position == PositionEnum::BEGIN ? 0 : std::hypot(prev_centroid.x, prev_centroid.y);
+  double r_next = position == PositionEnum::END ? 100 : std::hypot(next_centroid.x, next_centroid.y);
 
-  double z_prev = position == -1 ? current_centroid.z : prev_centroid.z;
-  double z_next = position == 1 ? current_centroid.z : next_centroid.z;
+  double z_prev = position == PositionEnum::BEGIN ? current_centroid.z : prev_centroid.z;
+  double z_next = position == PositionEnum::END ? current_centroid.z : next_centroid.z;
 
   double floor = 0.0;
   if (r_point <= r_current) {
