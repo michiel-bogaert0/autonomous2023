@@ -76,6 +76,8 @@ public:
     // getters
     float &w();
     VectorXf &xv();         // robot pose: x,y,theta (heading dir)
+    float &prevyaw();       // Previous yaw
+    int &rev();             // Revolutions
     MatrixXf &Pv();         // controls: velocities
     vector<VectorXf> &xf(); // 2d means of EKF
     vector<MatrixXf> &Pf(); // covariance matrices for EKF
@@ -85,6 +87,10 @@ public:
     // setters
     void setW(float w);
     void setXv(VectorXf &xv);
+    void setPrevyaw(float yaw);
+    void setRev(int rev);
+    void incRev();
+    void decRev();
     void setPv(MatrixXf &Pv);
     void setXf(vector<VectorXf> &xf);
     void setXfi(unsigned long i, VectorXf &vec);
@@ -102,6 +108,8 @@ private:
     kdt::KDTree<KDTreePoint> kdtree;
     float _w;
     VectorXf _xv;
+    float _prev_yaw;
+    int _rev;
     MatrixXf _Pv;
     vector<VectorXf> _xf;
     vector<MatrixXf> _Pf;

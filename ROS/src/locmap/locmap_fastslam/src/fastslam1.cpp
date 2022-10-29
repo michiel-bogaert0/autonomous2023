@@ -11,6 +11,7 @@
 #include <Eigen/Dense>
 
 #include "ros/ros.h"
+#include "ros/console.h"
 
 #include "tf2_ros/buffer.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
@@ -496,9 +497,34 @@ namespace slam
       poseY.push_back(particle.xv()(1));
       poseYaw.push_back(particle.xv()(2));
 
+      float curYaw = particle.xv()(2);
+
+      // Detect code unwrapping and add offset
+      if(particle.prevyaw() - curYaw > M_PI) {
+        // Increment revolutions of cone
+        particle.incRev();
+        // Print debug info
+        ROS_DEBUG_STREAM("+Previous yaw: " << particle.prevyaw() << " Current yaw: " << curYaw << " Diff: " << abs(particle.prevyaw()-curYaw) << " Rev:" << particle.rev());
+      } else if (curYaw - particle.prevyaw() > M_PI) {
+        // Increment revolutions of cone
+        particle.decRev();
+        // Print debug info
+        ROS_DEBUG_STREAM("-Previous yaw: " << particle.prevyaw() << " Current yaw: " << curYaw << " Diff: " << abs(particle.prevyaw()-curYaw) << " Rev:" << particle.rev());
+      }
+
+      // Correct yaw by offsetting
+      curYaw += particle.rev() * 2 * M_PI;
+
+      if(abs(particle.xv()(2) - particle.prevyaw()) > M_PI)
+        // Print corrected yaw
+        ROS_DEBUG_STREAM("Corrected yaw: " << curYaw);
+
       x += particle.xv()(0) * w;
       y += particle.xv()(1) * w;
-      yaw += particle.xv()(2) * w;
+      // yaw += particle.xv()(2) * w;
+      yaw += curYaw * w;
+
+      particle.setPrevyaw(particle.xv()(2));
 
       if (w > maxW)
       {

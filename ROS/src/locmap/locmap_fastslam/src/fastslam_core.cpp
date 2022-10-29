@@ -997,6 +997,8 @@ Particle::Particle()
     _w = 1.0;
     _xv = VectorXf(3);
     _xv.setZero(3);
+    _prev_yaw = 0;
+    _rev = 0;
     _Pv = MatrixXf(3, 3);
     _Pv.setZero(3, 3);
     _da = NULL;
@@ -1007,6 +1009,8 @@ Particle::Particle(float &w, VectorXf &xv, MatrixXf &Pv,
 {
     _w = w;
     _xv = xv;
+    _prev_yaw = 0;
+    _rev = 0;
     _Pv = Pv;
     _xf = xf;
     _Pf = Pf;
@@ -1063,6 +1067,16 @@ VectorXf &Particle::xv()
     return _xv;
 }
 
+float &Particle::prevyaw()
+{
+    return _prev_yaw;
+}
+
+int &Particle::rev()
+{
+    return _rev;
+}
+
 MatrixXf &Particle::Pv()
 {
     return _Pv;
@@ -1097,6 +1111,24 @@ void Particle::setW(float w)
 void Particle::setXv(VectorXf &xv)
 {
     _xv = xv;
+}
+
+void Particle::setPrevyaw(float yaw)
+{
+    _prev_yaw = yaw;
+}
+
+void Particle::setRev(int rev)
+{
+    _rev = rev;
+}
+
+void Particle::incRev() {
+    _rev++;
+}
+
+void Particle::decRev() {
+    _rev--;
 }
 
 void Particle::setPv(MatrixXf &Pv)
