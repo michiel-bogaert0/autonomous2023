@@ -57,7 +57,7 @@ private:
                     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
 
   model_t estimatePlane(const pcl::PointCloud<pcl::PointXYZI> &seed_points);
-
+  double calculate_ground(pcl::PointXYZ prev_centroid, pcl::PointXYZ current_centroid, pcl::PointXYZ next_centroid, pcl::PointXYZI point, int position);
   void
   extractInitialSeeds(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
                       const pcl::PointCloud<pcl::PointXYZI>::Ptr seed_points);

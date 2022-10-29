@@ -73,6 +73,9 @@ void GroundRemoval::groundRemovalBins(
     buckets[radial_buckets_ * angle_bucket + hypot_bucket].push_back(point);
   }
 
+  pcl::PointXYZ  prev_centroid;
+  pcl::PointXYZ  prev2_centroid;
+
   // iterate over each bucket
   for (uint16_t i = 0; i < bucket_size; i++) {
     pcl::PointCloud<pcl::PointXYZI> bucket = buckets[i];
@@ -97,22 +100,46 @@ void GroundRemoval::groundRemovalBins(
       centroid_pos.y = centroid[1];
       centroid_pos.z = centroid[2];
 
-
-      // iterate over each point in bucket in decided whether it is part of the
-      // ground based on its distance from the floor level
-      for (uint16_t p = 0; p < bucket.points.size(); p++) {
-        pcl::PointXYZINormal point;
-        point.x = bucket.points[p].x;
-        point.y = bucket.points[p].y;
-        point.z = bucket.points[p].z;
-        point.intensity = bucket.points[p].intensity;
-        point.normal_z = centroid_pos.z;
-        if (point.z - centroid_pos.z < th_floor_) {
-          ground_points->push_back(point);
-        } else {
-          notground_points->push_back(point);
+      //calculate ground for previous bucket if it exists
+      if(i % radial_buckets_ != 0){
+        pcl::PointCloud<pcl::PointXYZI> prev_bucket = buckets[i-1];
+        // iterate over each point in bucket in decided whether it is part of the
+        // ground based on its distance from the floor level
+        for (uint16_t p = 0; p < prev_bucket.points.size(); p++) {
+          double floor = calculate_ground(prev2_centroid, prev_centroid, centroid_pos, prev_bucket.points[p], (int)((i - 1) % radial_buckets_== 0)*-1);
+          pcl::PointXYZINormal point;
+          point.x = prev_bucket.points[p].x;
+          point.y = prev_bucket.points[p].y;
+          point.z = prev_bucket.points[p].z;
+          point.intensity = prev_bucket.points[p].intensity;
+          point.normal_z = floor;
+          if (point.z - floor < th_floor_) {
+            ground_points->push_back(point);
+          } else {
+            notground_points->push_back(point);
+          }
         }
       }
+
+      //calculate ground for current bucket since no further buckets will follow
+      if((i+1) % radial_buckets_ == 0){
+        for (uint16_t p = 0; p < bucket.points.size(); p++) {
+          double floor = calculate_ground(prev_centroid, centroid_pos, centroid_pos, bucket.points[p], 1);
+          pcl::PointXYZINormal point;
+          point.x = bucket.points[p].x;
+          point.y = bucket.points[p].y;
+          point.z = bucket.points[p].z;
+          point.intensity = bucket.points[p].intensity;
+          point.normal_z = floor;
+          if (point.z - floor < th_floor_) {
+            ground_points->push_back(point);
+          } else {
+            notground_points->push_back(point);
+          }
+        }
+      }
+      prev2_centroid = prev_centroid;
+      prev_centroid = centroid_pos;
     }
   }
 }
@@ -257,5 +284,23 @@ void GroundRemoval::extractInitialSeeds(
       (*seed_points).points.push_back(cloud_sorted[i]);
     }
   }
+}
+
+double GroundRemoval::calculate_ground(pcl::PointXYZ prev_centroid, pcl::PointXYZ current_centroid, pcl::PointXYZ next_centroid, pcl::PointXYZI point, int position){
+  double r_current = std::hypot(prev_centroid.x, prev_centroid.y);
+  double r_point = std::hypot(point.x, point.y);
+  double r_prev = position == -1 ? 0 : std::hypot(prev_centroid.x, prev_centroid.y);
+  double r_next = position == 1 ? 100 : std::hypot(next_centroid.x, next_centroid.y);
+  double z_prev = position == -1 ? current_centroid.z : prev_centroid.z;
+  double z_next = position == 1 ? current_centroid.z : next_centroid.z;
+
+  double floor = 0.0;
+  if(r_point <= r_current){
+    floor = z_prev + (r_point - r_prev)/(r_current - r_prev)*(current_centroid.z - z_prev);
+  }
+  else{
+    floor = current_centroid.z + (r_point - r_current)/(r_next - r_current)*(z_next - current_centroid.z);
+  }
+  return floor;
 }
 } // namespace ns_lidar
