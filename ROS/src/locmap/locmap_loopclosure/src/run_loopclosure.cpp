@@ -1,7 +1,5 @@
 #include <ros/ros.h>
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "loopclosure.hpp"
-#include <std_srvs/SetBool.h>
 #include <std_srvs/Empty.h>
 
 int main(int argc, char ** argv)
