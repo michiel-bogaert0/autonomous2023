@@ -96,6 +96,9 @@ namespace slam
 
       vector<Particle> particles; 
 
+      // Yaw unwrapping threshold
+      float yaw_unwrap_threshold;
+
       Eigen::MatrixXf Q;
       Eigen::MatrixXf R;
   };
