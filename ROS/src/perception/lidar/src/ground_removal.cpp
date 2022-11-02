@@ -15,8 +15,11 @@ GroundRemoval::GroundRemoval(ros::NodeHandle &n) : n_(n) {
   n.param<double>("sensor_height", sensor_height_, 0.4);
 
   n.param<double>("th_floor", th_floor_, 0.5);
-  n.param<int>("radial_buckets", radial_buckets_, 10);
+  n.param<double>("small_radial_bucket_length", small_radial_bucket_length_,0.3);
+  n.param<double>("big_radial_bucket_length", big_radial_bucket_length_, 4);
   n.param<int>("angular_buckets", angular_buckets_, 10);
+  n.param<double>("radial_bucket_tipping_point", radial_bucket_tipping_point_, 10);
+  n.param<bool>("use_slope", use_slope_, true);
 }
 
 /**
@@ -53,6 +56,7 @@ void GroundRemoval::groundRemovalBins(
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points) {
 
+  int radial_buckets_ = std::ceil((radial_bucket_tipping_point_ - 1.0) / small_radial_bucket_length_) + std::ceil((21 - radial_bucket_tipping_point_) / big_radial_bucket_length_);
   // compute the number of buckets that will be necesarry
   int bucket_size = angular_buckets_ * radial_buckets_;
   pcl::PointCloud<pcl::PointXYZI> buckets[bucket_size];
@@ -67,7 +71,14 @@ void GroundRemoval::groundRemovalBins(
 
     // Calculate which bucket the points falls into
     int angle_bucket = std::floor(angle / (2.5 / double(angular_buckets_)));
-    int hypot_bucket = std::floor(hypot / (20 / double(radial_buckets_)));
+    
+    int hypot_bucket = 0;
+    if(hypot < radial_bucket_tipping_point_ - 1){
+      hypot_bucket = std::floor(hypot / small_radial_bucket_length_);
+    }
+    else{
+      hypot_bucket = std::floor((hypot - (radial_bucket_tipping_point_ - 1)) / big_radial_bucket_length_) + std::ceil((radial_bucket_tipping_point_ - 1.0) / small_radial_bucket_length_);
+    }
 
     // add point to allocated bucket
     buckets[radial_buckets_ * angle_bucket + hypot_bucket].push_back(point);
@@ -279,8 +290,8 @@ void GroundRemoval::process_bucket(
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points) {
   for (uint16_t p = 0; p < bucket.points.size(); p++) {
-    double floor = calculate_ground(prev_centroid, current_centroid,
-                                    next_centroid, bucket.points[p], position);
+    double floor = use_slope_ ? calculate_ground(prev_centroid, current_centroid,
+                                    next_centroid, bucket.points[p], position): current_centroid.z;
     pcl::PointXYZINormal point;
     point.x = bucket.points[p].x;
     point.y = bucket.points[p].y;

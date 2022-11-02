@@ -46,7 +46,10 @@ private:
 
   double th_floor_;     // Threshold distance from the floor level
   int angular_buckets_; // number of angular levels for buckets
-  int radial_buckets_;  // number of radial levels for buckets
+  double radial_bucket_tipping_point_;  // length of the small buckets
+  double small_radial_bucket_length_;
+  double big_radial_bucket_length_;
+  bool use_slope_;
 
   void groundRemovalZermas(
       const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
