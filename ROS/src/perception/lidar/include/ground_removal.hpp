@@ -8,7 +8,7 @@
 
 namespace ns_lidar {
 
-enum PositionEnum { BEGIN, MID, END};
+enum PositionEnum { BEGIN, MID, END };
 
 typedef struct {
   Eigen::MatrixXf normal_n;
@@ -46,7 +46,11 @@ private:
 
   double th_floor_;     // Threshold distance from the floor level
   int angular_buckets_; // number of angular levels for buckets
-  int radial_buckets_;  // number of radial levels for buckets
+  double radial_bucket_tipping_point_; // edge between small buckets and big
+                                       // buckets
+  double small_radial_bucket_length_;  // length of small buckets
+  double big_radial_bucket_length_;    // length of big buckets
+  bool use_slope_;                     // Is the slope used for GR or not
 
   void groundRemovalZermas(
       const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
