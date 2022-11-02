@@ -334,7 +334,7 @@ double GroundRemoval::calculate_ground(pcl::PointXYZ prev_centroid,
                                        pcl::PointXYZ next_centroid,
                                        pcl::PointXYZI point,
                                        PositionEnum position) {
-  double r_current = std::hypot(prev_centroid.x, prev_centroid.y);
+  double r_current = std::hypot(current_centroid.x, current_centroid.y);
   double r_point = std::hypot(point.x, point.y);
   double r_prev = position == PositionEnum::BEGIN
                       ? 0
