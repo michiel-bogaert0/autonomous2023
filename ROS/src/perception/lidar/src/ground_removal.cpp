@@ -58,10 +58,15 @@ void GroundRemoval::groundRemovalBins(
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points) {
 
-  int radial_buckets_ = std::ceil((radial_bucket_tipping_point_ - 1.0) /
-                                  small_radial_bucket_length_) +
-                        std::ceil((21 - radial_bucket_tipping_point_) /
+  // Calculate the number of buckets between 1 meter and the tipping point
+  int number_of_small_buckets = std::ceil((radial_bucket_tipping_point_ - 1.0) /
+                                  small_radial_bucket_length_);
+  // Calculate the number of big buckets between the tipping point and the max distance point at 21m.
+  int number_of_big_buckets = std::ceil((21 - radial_bucket_tipping_point_) /
                                   big_radial_bucket_length_);
+
+  int radial_buckets_ =  number_of_small_buckets + number_of_big_buckets;
+                        ;
   // compute the number of buckets that will be necesarry
   int bucket_size = angular_buckets_ * radial_buckets_;
   pcl::PointCloud<pcl::PointXYZI> buckets[bucket_size];
@@ -77,14 +82,14 @@ void GroundRemoval::groundRemovalBins(
     // Calculate which bucket the points falls into
     int angle_bucket = std::floor(angle / (2.5 / double(angular_buckets_)));
 
+    // calculate which bucket a specific points belongs to
     int hypot_bucket = 0;
     if (hypot < radial_bucket_tipping_point_ - 1) {
       hypot_bucket = std::floor(hypot / small_radial_bucket_length_);
     } else {
       hypot_bucket = std::floor((hypot - (radial_bucket_tipping_point_ - 1)) /
                                 big_radial_bucket_length_) +
-                     std::ceil((radial_bucket_tipping_point_ - 1.0) /
-                               small_radial_bucket_length_);
+                     number_of_small_buckets;
     }
 
     // add point to allocated bucket
