@@ -295,6 +295,10 @@ namespace kdt
 				radiusSearchRecursive(query, node->next[!dir], indices, radius);
 		}
 
+		std::vector<PointT> getPoints() {
+			return points_;
+		};
+
 		Node* root_;                 //!< root node
 		std::vector<PointT> points_; //!< points
 	};

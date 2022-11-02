@@ -17,8 +17,30 @@
 
 using namespace std;
 
+#define LANDMARK_CLASS_COUNT 4
+
 namespace slam
 {
+
+  struct LandmarkSearchResult
+  {
+    int index;
+    double distance;
+  };
+
+  struct LandmarkSearchResult
+  {
+    int index;
+    double distance;
+  };
+
+  struct Landmark
+  {
+    int landmarkClass;
+    MatrixXf variance;
+    VectorXf pose;
+  };
+
   class MCL
   {
   public:
@@ -50,6 +72,9 @@ namespace slam
 
     double max_range;
     double max_half_fov;
+
+    vector<Landmark> _map;
+    kdt::KDTree<KDTreePoint> _trees[LANDMARK_CLASS_COUNT];
 
     array<double, 3> prev_state; // x, y, yaw
 
@@ -85,10 +110,9 @@ namespace slam
     void publishOutput();
 
     void predict(Particle &particle, double dDist, double dYaw);
+    double sensor_update(Particle &particle, vector<VectorXf> &z, vector<int> &associations);
 
     void build_associations(Particle &, ugr_msgs::ObservationWithCovarianceArrayStamped &, vector<VectorXf> &, vector<VectorXf> &, vector<int> &, vector<int> &, vector<int> &);
-
-    double compute_particle_weight(Particle &particle, vector<VectorXf> &z, vector<int> &idf, MatrixXf &R);
 
     void landmarks_to_observations(vector<VectorXf> &lm, vector<VectorXf> &obs, VectorXf &pose);
     void landmark_to_observation(VectorXf &lm, VectorXf &obs, VectorXf &pose);
