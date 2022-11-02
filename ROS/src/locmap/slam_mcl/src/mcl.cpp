@@ -388,20 +388,15 @@ namespace slam
     // Calculate statistical mean and covariance of the particle filter (pose)
     // Also gather some other information while we are looping
 
-    vector<VectorXf> samples;
     vector<float> poseX;
     vector<float> poseY;
     vector<float> poseYaw;
-    vector<LandmarkMetadata> sampleMetadata;
-
-    Particle &bestParticle = this->particles[0];
-
-    vector<int> contributions;
 
     float x = 0.0;
     float y = 0.0;
     float yaw = 0.0;
     float maxW = -10000.0;
+    float totalW = 0.0;
     for (int i = 0; i < this->particles.size(); i++)
     {
 
@@ -446,22 +441,13 @@ namespace slam
       x += particle.xv()(0) * w;
       y += particle.xv()(1) * w;
       yaw += curYaw * w;
+      totalW += w;
 
       particle.setPrevyaw(particle.xv()(2));
 
       if (w > maxW)
       {
         maxW = w;
-        bestParticle = this->particles[i];
-      }
-
-      for (auto xf : particle.xf())
-      {
-        samples.push_back(xf);
-      }
-      for (auto metadata : particle.metadata())
-      {
-        sampleMetadata.push_back(metadata);
       }
     }
 
@@ -481,77 +467,6 @@ namespace slam
     poseCovariance[30] = poseCovariance[5];
     poseCovariance[31] = poseCovariance[11];
 
-    vector<MatrixXf> positionCovariances;
-    vector<VectorXf> lmMeans;
-    vector<LandmarkMetadata> lmMetadatas;
-
-    if (this->post_clustering)
-    {
-      // Now apply DBSCAN to the samples
-      // A cluster is a vector of indices
-      vector<vector<unsigned int>> clusters = dbscanVectorXf(samples, this->clustering_eps, this->min_clustering_point_count);
-
-      // Convert the clusters back to landmarks
-      for (vector<unsigned int> cluster : clusters)
-      {
-
-        VectorXf lmMean(2);
-        LandmarkMetadata lmMetadata;
-
-        float totalP = 0.0;
-
-        for (unsigned int index : cluster)
-        {
-          lmMean[0] += samples[index][0];
-          lmMean[1] += samples[index][1];
-
-          for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
-          {
-            lmMetadata.classDetectionCount[i] += sampleMetadata[index].classDetectionCount[i];
-          }
-          lmMetadata.score += sampleMetadata[index].score;
-        }
-        lmMetadata.score /= static_cast<float>(cluster.size());
-        lmMean[0] /= static_cast<float>(cluster.size());
-        lmMean[1] /= static_cast<float>(cluster.size());
-
-        lmMeans.push_back(lmMean);
-        lmMetadatas.push_back(lmMetadata);
-      }
-
-      // Calculate 2x2 position covariance matrix. We assume that there is no significan relation between class and position
-      // Thus allowing us to easily extend this to 3x3, which includes class variance
-
-      for (unsigned int i = 0; i < clusters.size(); i++)
-      {
-        vector<unsigned int> cluster = clusters[i];
-
-        MatrixXf cov(2, 2);
-
-        vector<float> X;
-        vector<float> Y;
-        for (auto index : cluster)
-        {
-          X.push_back(samples[index][0]);
-          Y.push_back(samples[index][1]);
-        }
-
-        cov(0, 0) = calculate_covariance(X, X);
-        cov(0, 1) = calculate_covariance(X, Y);
-        cov(1, 0) = cov(0, 1);
-        cov(1, 1) = calculate_covariance(Y, Y);
-
-        positionCovariances.push_back(cov);
-      }
-    }
-    else
-    {
-      // Just take all the particles from the best particle
-      lmMeans = bestParticle.xf();
-      lmMetadatas = bestParticle.metadata();
-      positionCovariances = bestParticle.Pf();
-    }
-
     t2 = std::chrono::steady_clock::now();
 
     time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
@@ -559,99 +474,7 @@ namespace slam
 
     t1 = std::chrono::steady_clock::now();
 
-    ROS_INFO("Number of landmarks (total): %d", lmMeans.size());
-
-    // Get the landmarks that have a high enough score
-    vector<VectorXf> filteredLandmarks;
-    vector<LandmarkMetadata> filteredMeta;
-    vector<int> filteredLandmarkIndices;
-    vector<Matrix2f> filteredCovariances;
-
-    for (int i = 0; i < lmMeans.size(); i++)
-    {
-      if (lmMetadatas[i].score >= this->acceptance_score)
-      {
-        filteredCovariances.push_back(positionCovariances[i]);
-        filteredMeta.push_back(lmMetadatas[i]);
-        filteredLandmarks.push_back(lmMeans[i]);
-        filteredLandmarkIndices.push_back(i);
-      }
-    }
-
-    ROS_INFO("Number of actual landmarks: %d", filteredLandmarks.size());
-
-    // Create the observation_msgs things
-    ugr_msgs::ObservationWithCovarianceArrayStamped global;
-    ugr_msgs::ObservationWithCovarianceArrayStamped local;
-    global.header.frame_id = this->slam_world_frame;
-    global.header.stamp = ros::Time::now();
-    local.header.frame_id = this->base_link_frame;
-    local.header.stamp = ros::Time::now();
-
-    for (int i = 0; i < filteredLandmarks.size(); i++)
-    {
-
-      ugr_msgs::ObservationWithCovariance global_ob;
-      ugr_msgs::ObservationWithCovariance local_ob;
-
-      int observation_class = 0;
-      int max_count = 0;
-      int total_count = 0;
-      for (int j = 0; j < LANDMARK_CLASS_COUNT; j++)
-      {
-        total_count += filteredMeta[i].classDetectionCount[j];
-        if (filteredMeta[i].classDetectionCount[j] > max_count)
-        {
-          observation_class = j;
-          max_count = filteredMeta[i].classDetectionCount[j];
-        }
-      }
-
-      // Calculate the observation class (co)variance
-      // First get the odds of a specific class p
-      float p[LANDMARK_CLASS_COUNT];
-      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++)
-      {
-        p[j] = filteredMeta[i].classDetectionCount[j] / total_count;
-      }
-
-      float obsClassMean = 0.0;
-      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++)
-      {
-        obsClassMean += p[j] * j;
-      }
-
-      float obsCovariance = 0.0;
-      for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++)
-      {
-        obsCovariance += pow(j - obsClassMean, 2) * p[j];
-      }
-
-      auto covarianceMatrix = boost::array<double, 9>({filteredCovariances[i](0, 0), filteredCovariances[i](0, 1), 0.0, filteredCovariances[i](1, 0), filteredCovariances[i](1, 1), 0.0, 0, 0, obsCovariance});
-
-      global_ob.covariance = covarianceMatrix;
-      local_ob.covariance = covarianceMatrix;
-
-      global_ob.observation.observation_class = observation_class;
-      local_ob.observation.observation_class = observation_class;
-
-      float belief = max(min((1 - exp(-1 * belief_factor * filteredMeta[i].score)), 1.0), 0.0);
-      global_ob.observation.belief = belief;
-      local_ob.observation.belief = belief;
-
-      global_ob.observation.location.x = filteredLandmarks[i](0);
-      global_ob.observation.location.y = filteredLandmarks[i](1);
-      global.observations.push_back(global_ob);
-      VectorXf z(2);
-      this->landmark_to_observation(filteredLandmarks[i], z, pose);
-
-      local_ob.observation.location.x = z(0) * cos(z(1));
-      local_ob.observation.location.y = z(0) * sin(z(1));
-      local.observations.push_back(local_ob);
-    }
-
-    // Odometry message (for correction of state estimation)
-    // So from world_frame to base_link_frame
+    // Odometry message
     nav_msgs::Odometry odom;
 
     odom.header.stamp = ros::Time::now();
@@ -697,8 +520,6 @@ namespace slam
     br.sendTransform(transformMsg);
 
     // Publish everything!
-    this->globalPublisher.publish(global);
-    this->localPublisher.publish(local);
     this->odomPublisher.publish(odom);
 
     t2 = std::chrono::steady_clock::now();
