@@ -25,6 +25,7 @@
 #include "kdtree.h"
 #include "kdtreepoint.h"
 #include "dbscan.hpp"
+#include "helpers.hpp"
 
 #include <nav_msgs/Odometry.h>
 
@@ -40,6 +41,9 @@ using namespace Eigen;
 
 namespace slam
 {
+
+
+
   MCL::MCL(ros::NodeHandle &n) : tfListener(tfBuffer),
                                  n(n),
                                  base_link_frame(n.param<string>("base_link_frame", "ugr/car_base_link")),
@@ -156,6 +160,15 @@ namespace slam
     lm(1) = pose(1) + obs(0) * sin(pose(2) + obs(1));
   }
 
+  /**
+   * Build associations between observation messages and the currently set map.
+   *
+   * Args:
+   *  particle[in]: the particle to build associations for
+   *  observations[in]: the raw messages (so relative to base link) that need to be associated
+   *  landmarks[out]: the landmark means (coming from observations) that were actually 'associated'
+   *  indices[out]: the indices of landmarks on the current map that were 'associated'
+   */
   void MCL::build_associations(Particle &particle, ugr_msgs::ObservationWithCovarianceArrayStamped &observations, vector<VectorXf> landmarks, vector<int> &indices)
   {
     knownLandmarks.clear();
@@ -193,6 +206,57 @@ namespace slam
     }
   }
 
+  void resample_particles()
+  {
+    unsigned long i;
+    unsigned long N = particles.size();
+    VectorXf w(N);
+
+    for (i = 0; i < N; i++)
+    {
+      w(i) = particles[i].w();
+    }
+
+    float ws = w.sum();
+    for (i = 0; i < N; i++)
+    {
+      particles[i].setW(w(i) / ws);
+    }
+
+    float Neff = 0.0;
+    vector<int> keep;
+
+    stratified_resample(w, keep, Neff);
+
+    vector<Particle> old_particles = vector<Particle>(particles);
+    particles.resize(keep.size());
+
+    if ((Neff < Nmin) && (doresample == 1))
+    {
+      for (i = 0; i < keep.size(); i++)
+      {
+        particles[i] = old_particles[keep[i]];
+      }
+
+      for (i = 0; i < N; i++)
+      {
+        float new_w = 1.0f / (float)N;
+        particles[i].setW(new_w);
+      }
+    }
+  }
+
+  /**
+   * Applies the sensor measurement model to the particle
+   *
+   * Args:
+   *  particle: the paricle to use
+   *  z: the (range, bearing) measurements
+   *  associations: the association data (with which map landmarks does z correspond?)
+   *
+   * Returns:
+   *  the likelihood of these measurements, given the current state of the particle
+   */
   double MCL::sensor_update(Particle &particle, vector<VectorXf> &z, vector<int> &associations)
   {
 

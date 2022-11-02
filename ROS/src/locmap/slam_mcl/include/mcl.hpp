@@ -109,6 +109,8 @@ namespace slam
 
     void publishOutput();
 
+    void resample_particles();
+
     void predict(Particle &particle, double dDist, double dYaw);
     double sensor_update(Particle &particle, vector<VectorXf> &z, vector<int> &associations);
 
