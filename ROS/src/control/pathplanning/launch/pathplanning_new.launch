@@ -2,9 +2,9 @@
     <node pkg="pathplanning" type="run_node.py" name="pathplanning_new" respawn="true" output="screen">
         <param name="output_frame" value="ugr/car_odom" />
         <param name="algorithm" value="tri" />
-        <param name="expand_dist" value="0.5" />
+        <param name="expand_dist" value="1" />
         <param name="plan_dist" value="12.0" />
-        <param name="max_iter" value="1000" />
+        <param name="max_iter" value="100" />
         <param name="triangulation_var_threshold" value="2" />
         <param name="max_angle_change" value="1" />
         <param name="safety_dist" value="0.5" />
