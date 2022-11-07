@@ -114,7 +114,7 @@ def sort_closest_to(
     points_within_distance = center_points[distances_squared < max_distance**2]
     distances_squared = distances_squared[distances_squared < max_distance**2]
     if points_within_distance.shape[0] == 0:
-        return np.empty()
+        return np.empty(0)
 
     ind = np.argsort(distances_squared)
     return points_within_distance[ind, :]
