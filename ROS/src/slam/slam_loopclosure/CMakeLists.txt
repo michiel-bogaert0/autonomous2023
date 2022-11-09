@@ -4,11 +4,13 @@ project(slam_loopclosure)
 find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   tf2_ros
+  std_srvs
 )
 find_package(Boost REQUIRED)
 
 include_directories(
   include
+  ${catkin_INCLUDE_DIRS}
   ${roscpp_INCLUDE_DIRS}
 )
 
