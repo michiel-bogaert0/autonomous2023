@@ -39,6 +39,8 @@
 using namespace std;
 using namespace Eigen;
 
+//TODO initial position (on first iteration)
+
 namespace slam
 {
 
@@ -66,6 +68,8 @@ namespace slam
     obs_sub.subscribe(n, "/input/observations", 1);
     tf2_filter.registerCallback(boost::bind(&MCL::handleObservations, this, _1));
 
+    mapSubscriber = n.subscribe("/input/map", 1, &MCL::handleMap, this);
+
     vector<double> QAsVector;
     vector<double> RAsVector;
 
@@ -87,6 +91,34 @@ namespace slam
     this->R(0, 1) = pow(RAsVector[1], 2);
     this->R(1, 0) = pow(RAsVector[2], 2);
     this->R(1, 1) = pow(RAsVector[3], 2);
+  }
+
+  void MCL::handleMap(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs) {
+    
+    // Convert the message to the vector<Landmark> thing
+    _map.clear();
+
+    for (auto observation : obs->observations) {
+      Landmark landmark;
+      VectorXf pose(3);
+      MatrixXf variance(3, 3);
+
+      landmark.landmarkClass = observation.observation.observation_class;
+      pose(0) = observation.observation.location.x;
+      pose(1) = observation.observation.location.y;
+      pose(2) = observation.observation.location.z;
+
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+          variance(i, j) = observation.covariance[i * 3 + j];
+        }
+      }
+
+      landmark.pose = pose;
+      landmark.variance = variance;
+
+      _map.push_back(landmark);
+    }
   }
 
   /**
