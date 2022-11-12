@@ -14,6 +14,7 @@
 #include "message_filters/subscriber.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include <nav_msgs/Odometry.h>
+#include "kdtreepoint.h"
 
 using namespace std;
 
@@ -21,12 +22,6 @@ using namespace std;
 
 namespace slam
 {
-
-  struct LandmarkSearchResult
-  {
-    int index;
-    double distance;
-  };
 
   struct LandmarkSearchResult
   {
@@ -107,6 +102,8 @@ namespace slam
     void handleInitialPosition(const nav_msgs::Odometry &obs);
     void handleMap(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs);
 
+    void motion_update(Particle &particle, double dDist, double dYaw);
+
     void publishOutput();
 
     void resample_particles();
@@ -114,7 +111,7 @@ namespace slam
     void predict(Particle &particle, double dDist, double dYaw);
     double sensor_update(Particle &particle, vector<VectorXf> &z, vector<int> &associations);
 
-    void build_associations(Particle &, ugr_msgs::ObservationWithCovarianceArrayStamped &, vector<VectorXf> &, vector<VectorXf> &, vector<int> &, vector<int> &, vector<int> &);
+    void build_associations(Particle &, ugr_msgs::ObservationWithCovarianceArrayStamped &, vector<VectorXf> &, vector<int> &);
 
     void landmarks_to_observations(vector<VectorXf> &lm, vector<VectorXf> &obs, VectorXf &pose);
     void landmark_to_observation(VectorXf &lm, VectorXf &obs, VectorXf &pose);

@@ -91,7 +91,7 @@ void Particle::decRev()
 {
   _rev--;
 }
-void Particle::setPv(MatrixXf &variance)
+void Particle::setVariance(MatrixXf &variance)
 {
   _variance = variance;
 }

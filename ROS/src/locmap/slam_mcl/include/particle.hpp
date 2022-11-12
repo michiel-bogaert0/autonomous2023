@@ -22,7 +22,7 @@ class Particle
 public:
     Particle();
     Particle(float &w, VectorXf &pose, MatrixXf &variance);
-    ~Particle();
+    inline ~Particle() {};
 
     // getters
     float &w();
@@ -47,3 +47,5 @@ private:
     int _rev;
     MatrixXf _variance;
 };
+
+#endif

@@ -42,8 +42,6 @@ using namespace Eigen;
 namespace slam
 {
 
-
-
   MCL::MCL(ros::NodeHandle &n) : tfListener(tfBuffer),
                                  n(n),
                                  base_link_frame(n.param<string>("base_link_frame", "ugr/car_base_link")),
@@ -66,7 +64,7 @@ namespace slam
     this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
 
     obs_sub.subscribe(n, "/input/observations", 1);
-    tf2_filter.registerCallback(boost::bind(&FastSLAM1::handleObservations, this, _1));
+    tf2_filter.registerCallback(boost::bind(&MCL::handleObservations, this, _1));
 
     vector<double> QAsVector;
     vector<double> RAsVector;
@@ -112,7 +110,7 @@ namespace slam
     dYaw = VG(1);
 
     // predict state
-    VectorXf xv = particle.xv();
+    VectorXf xv = particle.pose();
     VectorXf xv_temp(3);
     xv_temp << xv(0) + dDist * cos(dYaw + xv(2)),
         xv(1) + dDist * sin(dYaw + xv(2)),
@@ -169,9 +167,8 @@ namespace slam
    *  landmarks[out]: the landmark means (coming from observations) that were actually 'associated'
    *  indices[out]: the indices of landmarks on the current map that were 'associated'
    */
-  void MCL::build_associations(Particle &particle, ugr_msgs::ObservationWithCovarianceArrayStamped &observations, vector<VectorXf> landmarks, vector<int> &indices)
+  void MCL::build_associations(Particle &particle, ugr_msgs::ObservationWithCovarianceArrayStamped &observations, vector<VectorXf> &landmarks, vector<int> &indices)
   {
-    knownLandmarks.clear();
     landmarks.clear();
 
     if (_map.size() == 0)
@@ -182,7 +179,7 @@ namespace slam
     for (auto observation : observations.observations)
     {
 
-      if (observation.observation_class < 0 || observation.observation_class > LANDMARK_CLASS_COUNT)
+      if (observation.observation.observation_class < 0 || observation.observation.observation_class > LANDMARK_CLASS_COUNT)
         continue;
 
       // Prepare observation
@@ -195,18 +192,18 @@ namespace slam
       const KDTreePoint query(landmark, -1);
 
       double distance;
-      int kdpointIndex = _trees[observation.observation_class].nnSearch(query, &distance);
+      int kdpointIndex = _trees[observation.observation.observation_class].nnSearch(query, &distance);
 
       if (distance < this->eps)
       {
-        KDTreePoint point = _trees[observation.observation_class].getPoints(kdpointIndex);
+        KDTreePoint point = (_trees[observation.observation.observation_class].getPoints())[kdpointIndex];
         indices.push_back(point.getId());
         landmarks.push_back(obsAsVector);
       }
     }
   }
 
-  void resample_particles()
+  void MCL::resample_particles()
   {
     unsigned long i;
     unsigned long N = particles.size();
@@ -231,7 +228,7 @@ namespace slam
     vector<Particle> old_particles = vector<Particle>(particles);
     particles.resize(keep.size());
 
-    if ((Neff < Nmin) && (doresample == 1))
+    if ((Neff < effective_particle_count))
     {
       for (i = 0; i < keep.size(); i++)
       {
@@ -264,7 +261,7 @@ namespace slam
     vector<VectorXf> mapLandmarks;
     for (int association : associations)
     {
-      mapLandmarks.push(_map[association].pose);
+      mapLandmarks.push_back(_map[association].pose);
     }
 
     vector<VectorXf> expectedObservations;
@@ -358,7 +355,7 @@ namespace slam
         continue;
       }
 
-      if (transformed_obs.observation.observation_class < 0 || transformed_obs.observation.observation_class > LANDMARK_CLASS_COUNT)
+      if (observation.observation.observation_class < 0 || observation.observation.observation_class > LANDMARK_CLASS_COUNT)
         continue;
 
       transformed_ob.covariance = observation.covariance;
@@ -401,7 +398,7 @@ namespace slam
     for (int j = 0; j < particles.size(); j++)
     {
       Particle &particle = particles[j];
-      this->predict(particle, dDist, dYaw);
+      this->motion_update(particle, dDist, dYaw);
     }
 
     // Step 2: sensor update (if allowed)
@@ -425,7 +422,7 @@ namespace slam
       }
 
       // Resampling step
-      resample_particles(this->particles, this->effective_particle_count, 1);
+      resample_particles();
 
       t2 = std::chrono::steady_clock::now();
 
@@ -473,11 +470,11 @@ namespace slam
         w = 0.001;
       }
 
-      poseX.push_back(particle.xv()(0));
-      poseY.push_back(particle.xv()(1));
-      poseYaw.push_back(particle.xv()(2));
+      poseX.push_back(particle.pose()(0));
+      poseY.push_back(particle.pose()(1));
+      poseYaw.push_back(particle.pose()(2));
 
-      float curYaw = particle.xv()(2);
+      float curYaw = particle.pose()(2);
 
       // Detect code unwrapping and add offset
       if (particle.prevyaw() - curYaw > yaw_unwrap_threshold)
@@ -498,16 +495,16 @@ namespace slam
       // Correct yaw by offsetting
       curYaw += particle.rev() * 2 * M_PI;
 
-      if (abs(particle.xv()(2) - particle.prevyaw()) > yaw_unwrap_threshold)
+      if (abs(particle.pose()(2) - particle.prevyaw()) > yaw_unwrap_threshold)
         // Print corrected yaw
         ROS_DEBUG_STREAM("Corrected yaw: " << curYaw);
 
-      x += particle.xv()(0) * w;
-      y += particle.xv()(1) * w;
+      x += particle.pose()(0) * w;
+      y += particle.pose()(1) * w;
       yaw += curYaw * w;
       totalW += w;
 
-      particle.setPrevyaw(particle.xv()(2));
+      particle.setPrevyaw(particle.pose()(2));
 
       if (w > maxW)
       {
