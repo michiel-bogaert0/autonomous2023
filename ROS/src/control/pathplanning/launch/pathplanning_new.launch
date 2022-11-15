@@ -7,7 +7,7 @@
         <param name="max_iter" value="100" />
         <param name="triangulation_min_var" value="100" />
         <param name="triangulation_var_threshold" value="2" />
-        <param name="max_angle_change" value="1" />
+        <param name="max_angle_change" value="0.75" />
         <param name="max_path_distance" value="6" />
         <param name="safety_dist" value="0.5" />
         <param name="track_width" value="3" />
