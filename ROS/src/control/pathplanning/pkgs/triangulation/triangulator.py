@@ -132,7 +132,7 @@ class Triangulator:
             print("There were no available paths!")
             sys.exit(1)
 
-        costs = np.zeros((len(leaves), 5))
+        costs = np.zeros((len(leaves), 2))
         paths = []
         path_lengths = np.zeros(1)
 
@@ -149,18 +149,12 @@ class Triangulator:
 
             # Calculate the path cost and normalise it
             (
-                color_cost,
                 angle_cost,
-                width_cost,
-                spacing_cost,
                 length_cost,
             ) = self.triangulation_paths.get_cost_branch(path, cones)
             costs[i] = [
-                5 * color_cost,
                 angle_cost,
-                width_cost,
-                spacing_cost,
-                1e5 * length_cost,
+                length_cost,
             ]
             paths.append(path)
             path_lengths = np.append(path_lengths, len(path))
@@ -168,6 +162,8 @@ class Triangulator:
         np.set_printoptions(suppress=True)
 
         print(f"{len(paths)} path(s) - {np.max(path_lengths)} max")
+        
+        costs = costs / costs.max(axis=0)
         total_cost = np.sum(costs, axis=1)
 
         # Get the least-cost path
