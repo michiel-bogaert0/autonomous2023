@@ -93,12 +93,8 @@ class TriangulationPaths:
                 if abs_angle_change > self.max_angle_change:
                     continue
                 
-                # TODO is this needed??
                 distance_node = (parent.x - next_pos[0]) ** 2 + (parent.y - next_pos[1]) ** 2
-                # Check the distance between subsequent nodes in the planned path
-                if distance_node > self.max_path_distance ** 2:
-                    continue
-
+                
                 # Check we're not colliding with a cone
                 if utils.no_collision(
                     parent, next_pos, cones, self.safety_dist_squared

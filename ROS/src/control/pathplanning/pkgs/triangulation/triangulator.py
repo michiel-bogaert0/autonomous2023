@@ -168,7 +168,6 @@ class Triangulator:
         np.set_printoptions(suppress=True)
 
         print(f"{len(paths)} path(s) - {np.max(path_lengths)} max")
-        # print(costs)
         total_cost = np.sum(costs, axis=1)
 
         # Get the least-cost path
