@@ -97,11 +97,11 @@ class OusterImage : public nodelet::Nodelet {
 
         // image processing
         pc1_sub = nh.subscribe<sensor_msgs::PointCloud2>(
-            topic("points", 0), 100, &OusterImage::first_cloud_handler, this);
+            topic("/ugr/car/sensors/lidar", 0), 100, &OusterImage::first_cloud_handler, this);
 
         if (n_returns > 1) {
             pc2_sub = nh.subscribe<sensor_msgs::PointCloud2>(
-                topic("points", 1), 100, &OusterImage::second_cloud_handler,
+                topic("ugr/car/sensors/lidar", 1), 100, &OusterImage::second_cloud_handler,
                 this);
         }
     }
