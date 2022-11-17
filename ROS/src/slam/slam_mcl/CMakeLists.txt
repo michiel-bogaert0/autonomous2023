@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   ugr_msgs
   tf2
+  tf_service
   tf2_geometry_msgs
   tf2_ros
 )

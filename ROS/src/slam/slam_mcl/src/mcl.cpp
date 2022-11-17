@@ -7,6 +7,7 @@
 #include <tf2_ros/message_filter.h>
 
 #include "particle.hpp"
+#include "tf_service/buffer_client.h"
 
 #include <Eigen/Dense>
 
@@ -39,7 +40,9 @@
 using namespace std;
 using namespace Eigen;
 
-//TODO initial position (on first iteration)
+// TODO launch file
+// TODO docs
+// TODO name (Fastslam1 to MCL)
 
 namespace slam
 {
@@ -91,25 +94,54 @@ namespace slam
     this->R(0, 1) = pow(RAsVector[1], 2);
     this->R(1, 0) = pow(RAsVector[2], 2);
     this->R(1, 1) = pow(RAsVector[3], 2);
+
+    // Try to fetch the initial position of the car using tf service
+    tf_service::BufferClient buffer("/tf_service");
+    buffer.waitForServer();
+
+    // Use it like any other TF2 buffer.
+    std::string errstr;
+    if (buffer.canTransform(this->world_frame, this->base_link_frame, ros::Time(0), ros::Duration(1), &errstr))
+    {
+      geometry_msgs::TransformStamped initial_car_pose = buffer.lookupTransform(this->world_frame, this->base_link_frame, ros::Time(0), ros::Duration(1));
+
+      const tf2::Quaternion quat(
+          initial_car_pose.transform.rotation.x,
+          initial_car_pose.transform.rotation.y,
+          initial_car_pose.transform.rotation.z,
+          initial_car_pose.transform.rotation.w);
+
+      double roll, pitch, yaw;
+      this->prev_state[0] = initial_car_pose.transform.translation.x;
+      this->prev_state[1] = initial_car_pose.transform.translation.y;
+      tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+      this->prev_state[2] = yaw;
+    }
+    ROS_INFO("MCL has started!");
   }
 
-  void MCL::handleMap(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs) {
-    
+  void MCL::handleMap(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs)
+  {
+
+    vector<KDTreePoint> points[LANDMARK_CLASS_COUNT];
+
     // Convert the message to the vector<Landmark> thing
     _map.clear();
-
-    for (auto observation : obs->observations) {
+    int id = 0;
+    for (auto observation : obs->observations)
+    {
       Landmark landmark;
-      VectorXf pose(3);
+      VectorXf pose(2);
       MatrixXf variance(3, 3);
 
       landmark.landmarkClass = observation.observation.observation_class;
       pose(0) = observation.observation.location.x;
       pose(1) = observation.observation.location.y;
-      pose(2) = observation.observation.location.z;
 
-      for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
+      for (int i = 0; i < 3; i++)
+      {
+        for (int j = 0; j < 3; j++)
+        {
           variance(i, j) = observation.covariance[i * 3 + j];
         }
       }
@@ -118,7 +150,18 @@ namespace slam
       landmark.variance = variance;
 
       _map.push_back(landmark);
+
+      points[observation.observation.observation_class].push_back(KDTreePoint(pose, id));
+      id++;
     }
+
+    // Build KDTrees
+    for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
+    {
+      _trees[i].build(points[i]);
+    }
+
+    ROS_INFO("Took in new map!");
   }
 
   /**
@@ -305,7 +348,15 @@ namespace slam
     for (unsigned int i = 0; i < associations.size(); i++)
     {
       MatrixXf sigma = _map[associations[i]].variance;
-      weight *= 1 / sqrt(pow(2 * M_PI, 2) * sigma.determinant()) * exp(-0.5 * (mapLandmarks[i] - expectedObservations[i]).transpose() * sigma.inverse() * (mapLandmarks[i] - expectedObservations[i]));
+      VectorXf difference = z[i] - expectedObservations[i];
+      
+      difference[1] = pi_to_pi(difference[1]);
+      if (sigma.determinant() < 0.001)
+        sigma = this->R;
+
+      float den = 2 * M_PI * sqrt(sigma.determinant());
+      float num = std::exp(-0.5 * difference.transpose() * sigma.inverse() * difference);
+      weight *= 1.0 / sqrt(pow(2 * M_PI, 2) * sigma.determinant()) * exp(-0.5 * difference.transpose() * sigma.inverse() * difference);
     }
 
     return weight;

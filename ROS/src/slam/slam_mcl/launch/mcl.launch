@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="locmap_fastslam" output="screen" type="fastslam1" name="local_fastslam_car" respawn="False">
+  <node pkg="slam_mcl" output="screen" type="slam_mcl" name="slam_mcl" respawn="False">
     # Parameters
     <param name="world_frame" value="ugr/car_odom" />
     <param name="base_link_frame" value="ugr/car_base_link" />
@@ -17,21 +17,16 @@
     <param name="yaw_unwrap_threshold" value="4.0" />
 
     <rosparam param="measurement_covariance">[0.3, 0.0, 0.0, 0.05]</rosparam>
-    <rosparam param="input_noise">[0.1, 0.0, 0.0, 0.02]</rosparam>
+    <rosparam param="input_noise">[0.2, 0.0, 0.0, 0.1]</rosparam>
     <param name="acceptance_score" value="2.0" />
     <param name="penalty_score" value="-0.2" />
     <param name="discard_score" value="-100.0" />
     # Input/output remapping
     <remap from="/input/observations" to="ugr/car/observations/lidar" />
+    <remap from="/input/map" to="ugr/car/map" />
 
     <remap from="/output/observations" to="/ugr/car/observations/fastslam" />
     <remap from="/output/map" to="/ugr/car/map/fastslam" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/fastslam" />
-  </node>
-  <node pkg="locmap_vis" output="screen" type="vis_car.py" name="fdlksjafldskjflakdjfklsja">
-    <param name="namespace" value="slam_map/car" />
-
-    <remap from="/input/vis" to="/ugr/car/odometry/filtered/fastslam" />
-    <remap from="/output/vis" to="/vis/locmap" />
   </node>
 </launch>
