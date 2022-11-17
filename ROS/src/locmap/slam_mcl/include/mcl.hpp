@@ -86,7 +86,6 @@ namespace slam
     // Subscribers
     ros::Subscriber observationsSubscriber;
     ros::Subscriber mapSubscriber;
-    ros::Subscriber initialPositionSubscriber;
 
     // Publishers
     ros::Publisher odomPublisher;
@@ -99,7 +98,6 @@ namespace slam
 
     // Handlers
     void handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs);
-    void handleInitialPosition(const nav_msgs::Odometry &obs);
     void handleMap(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs);
 
     void motion_update(Particle &particle, double dDist, double dYaw);
