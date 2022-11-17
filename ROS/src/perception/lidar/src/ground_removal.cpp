@@ -15,8 +15,13 @@ GroundRemoval::GroundRemoval(ros::NodeHandle &n) : n_(n) {
   n.param<double>("sensor_height", sensor_height_, 0.4);
 
   n.param<double>("th_floor", th_floor_, 0.5);
-  n.param<int>("radial_buckets", radial_buckets_, 10);
+  n.param<double>("small_radial_bucket_length", small_radial_bucket_length_,
+                  0.3);
+  n.param<double>("big_radial_bucket_length", big_radial_bucket_length_, 4);
   n.param<int>("angular_buckets", angular_buckets_, 10);
+  n.param<double>("radial_bucket_tipping_point", radial_bucket_tipping_point_,
+                  10);
+  n.param<bool>("use_slope", use_slope_, true);
 }
 
 /**
@@ -53,6 +58,15 @@ void GroundRemoval::groundRemovalBins(
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points) {
 
+  // Calculate the number of buckets between 1 meter and the tipping point
+  int number_of_small_buckets = std::ceil((radial_bucket_tipping_point_ - 1.0) /
+                                  small_radial_bucket_length_);
+  // Calculate the number of big buckets between the tipping point and the max distance point at 21m.
+  int number_of_big_buckets = std::ceil((21 - radial_bucket_tipping_point_) /
+                                  big_radial_bucket_length_);
+
+  int radial_buckets_ =  number_of_small_buckets + number_of_big_buckets;
+                        ;
   // compute the number of buckets that will be necesarry
   int bucket_size = angular_buckets_ * radial_buckets_;
   pcl::PointCloud<pcl::PointXYZI> buckets[bucket_size];
@@ -67,7 +81,16 @@ void GroundRemoval::groundRemovalBins(
 
     // Calculate which bucket the points falls into
     int angle_bucket = std::floor(angle / (2.5 / double(angular_buckets_)));
-    int hypot_bucket = std::floor(hypot / (20 / double(radial_buckets_)));
+
+    // calculate which bucket a specific points belongs to
+    int hypot_bucket = 0;
+    if (hypot < radial_bucket_tipping_point_ - 1) {
+      hypot_bucket = std::floor(hypot / small_radial_bucket_length_);
+    } else {
+      hypot_bucket = std::floor((hypot - (radial_bucket_tipping_point_ - 1)) /
+                                big_radial_bucket_length_) +
+                     number_of_small_buckets;
+    }
 
     // add point to allocated bucket
     buckets[radial_buckets_ * angle_bucket + hypot_bucket].push_back(point);
@@ -103,21 +126,23 @@ void GroundRemoval::groundRemovalBins(
       // classify ground points for previous bucket if it exists
       if (i % radial_buckets_ != 0) {
         process_bucket(buckets[i - 1], prev2_centroid, prev_centroid,
-                       centroid_pos, (i - 1 % radial_buckets_ == 0)? PositionEnum::BEGIN: PositionEnum::MID,
+                       centroid_pos,
+                       (i - 1 % radial_buckets_ == 0) ? PositionEnum::BEGIN
+                                                      : PositionEnum::MID,
                        notground_points, ground_points);
       }
 
       // calculate ground for current bucket if it is the last radial bucket in
       // an angular segment
       if ((i + 1) % radial_buckets_ == 0) {
-        process_bucket(bucket, prev_centroid, centroid_pos, centroid_pos, PositionEnum::END,
-                       notground_points, ground_points);
+        process_bucket(bucket, prev_centroid, centroid_pos, centroid_pos,
+                       PositionEnum::END, notground_points, ground_points);
       }
 
       // edge case for when there is only one radial bucket
       if (radial_buckets_ == 1) {
-        process_bucket(bucket, prev_centroid, centroid_pos, centroid_pos, PositionEnum::END,
-                       notground_points, ground_points);
+        process_bucket(bucket, prev_centroid, centroid_pos, centroid_pos,
+                       PositionEnum::END, notground_points, ground_points);
       }
 
       // setup variable for next bucket;
@@ -275,12 +300,15 @@ void GroundRemoval::extractInitialSeeds(
  */
 void GroundRemoval::process_bucket(
     pcl::PointCloud<pcl::PointXYZI> bucket, pcl::PointXYZ prev_centroid,
-    pcl::PointXYZ current_centroid, pcl::PointXYZ next_centroid, PositionEnum position,
+    pcl::PointXYZ current_centroid, pcl::PointXYZ next_centroid,
+    PositionEnum position,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points) {
   for (uint16_t p = 0; p < bucket.points.size(); p++) {
-    double floor = calculate_ground(prev_centroid, current_centroid,
-                                    next_centroid, bucket.points[p], position);
+    double floor =
+        use_slope_ ? calculate_ground(prev_centroid, current_centroid,
+                                      next_centroid, bucket.points[p], position)
+                   : current_centroid.z;
     pcl::PointXYZINormal point;
     point.x = bucket.points[p].x;
     point.y = bucket.points[p].y;
@@ -306,19 +334,27 @@ double GroundRemoval::calculate_ground(pcl::PointXYZ prev_centroid,
                                        pcl::PointXYZ next_centroid,
                                        pcl::PointXYZI point,
                                        PositionEnum position) {
-  double r_current = std::hypot(prev_centroid.x, prev_centroid.y);
+  double r_current = std::hypot(current_centroid.x, current_centroid.y);
   double r_point = std::hypot(point.x, point.y);
-  double r_prev = position == PositionEnum::BEGIN ? 0 : std::hypot(prev_centroid.x, prev_centroid.y);
-  double r_next = position == PositionEnum::END ? 100 : std::hypot(next_centroid.x, next_centroid.y);
+  double r_prev = position == PositionEnum::BEGIN
+                      ? 0
+                      : std::hypot(prev_centroid.x, prev_centroid.y);
+  double r_next = position == PositionEnum::END
+                      ? 100
+                      : std::hypot(next_centroid.x, next_centroid.y);
 
-  double z_prev = position == PositionEnum::BEGIN ? current_centroid.z : prev_centroid.z;
-  double z_next = position == PositionEnum::END ? current_centroid.z : next_centroid.z;
+  double z_prev =
+      position == PositionEnum::BEGIN ? current_centroid.z : prev_centroid.z;
+  double z_next =
+      position == PositionEnum::END ? current_centroid.z : next_centroid.z;
 
   double floor = 0.0;
   if (r_point <= r_current) {
-    floor = z_prev + (r_point - r_prev) / (r_current - r_prev) *(current_centroid.z - z_prev);
+    floor = z_prev + (r_point - r_prev) / (r_current - r_prev) *
+                         (current_centroid.z - z_prev);
   } else {
-    floor = current_centroid.z + (r_point - r_current) / (r_next - r_current) *(z_next - current_centroid.z);
+    floor = current_centroid.z + (r_point - r_current) / (r_next - r_current) *
+                                     (z_next - current_centroid.z);
   }
   return floor;
 }

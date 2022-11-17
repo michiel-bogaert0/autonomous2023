@@ -1,5 +1,0 @@
-# Process id
-# Success: true if stop has worked
-int16 id
----
-bool success

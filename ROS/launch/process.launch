@@ -202,7 +202,7 @@
     <!-- ? Clustermapping (if applicable)-->
     <group if="$(eval arg('slamtype') == 'clustering')">
 
-        <node pkg="locmap_clustering" output="screen" type="clustermapping.py" name="local_clustering" respawn="True">
+        <node pkg="slam_clustering" output="screen" type="clustermapping.py" name="local_clustering" respawn="True">
             # Parameters
             <param name="world_frame" value="ugr/car_odom" />
             <param name="base_link_frame" value="ugr/car_base_link" />
@@ -222,17 +222,17 @@
             <remap from="/output/samples" to="ugr/car/samples/clustering" />
         </node>
 
-        <node pkg="locmap_vis" output="screen" type="vis_car.py" name="fdlksjafldskjflakdjfklsja">
+        <node pkg="slam_vis" output="screen" type="vis_car.py" name="fdlksjafldskjflakdjfklsja">
             <param name="namespace" value="$(arg slamtype)/car" />
 
             <remap from="/input/vis" to="/ugr/car/odometry/filtered/odom" />
-            <remap from="/output/vis" to="/vis/locmap" />
+            <remap from="/output/vis" to="/vis/slam" />
         </node>
     </group>
 
     <group if="$(eval arg('slamtype') == 'fastslam')">
 
-        <node pkg="locmap_fastslam" output="screen" type="fastslam1" name="local_fastslam_car" respawn="False">
+        <node pkg="slam_fastslam" output="screen" type="fastslam1" name="local_fastslam_car" respawn="False">
             # Parameters
             <param name="world_frame" value="ugr/car_odom" />
             <param name="base_link_frame" value="ugr/car_base_link" />
@@ -263,32 +263,32 @@
             <remap from="/output/map" to="/ugr/car/map/fastslam" />
             <remap from="/output/odom" to="/ugr/car/odometry/filtered/fastslam" />
         </node>
-        <node pkg="locmap_vis" output="screen" type="vis_car.py" name="fdlksjafldskjflakdjfklsja">
+        <node pkg="slam_vis" output="screen" type="vis_car.py" name="fdlksjafldskjflakdjfklsja">
             <param name="namespace" value="$(arg slamtype)/car" />
 
             <remap from="/input/vis" to="/ugr/car/odometry/filtered/fastslam" />
-            <remap from="/output/vis" to="/vis/locmap" />
+            <remap from="/output/vis" to="/vis/slam" />
         </node>
 
     </group>
 
     <!-- ? Vis observations -->
 
-    <node pkg="locmap_vis" output="screen" name="vis_obs" type="vis_obs.py">
+    <node pkg="slam_vis" output="screen" name="vis_obs" type="vis_obs.py">
 
         <param name="use_cones" value="true" />
         <param name="namespace" value="$(arg slamtype)/observations" />
 
         <remap from="/input/vis" to="/ugr/car/observations/$(arg slamtype)" />
-        <remap from="/output/vis" to="/vis/locmap" />
+        <remap from="/output/vis" to="/vis/slam" />
     </node>
-    <node pkg="locmap_vis" output="screen" name="vis_map" type="vis_obs.py">
+    <node pkg="slam_vis" output="screen" name="vis_map" type="vis_obs.py">
 
         <param name="use_cones" value="true" />
         <param name="namespace" value="$(arg slamtype)/map" />
 
         <remap from="/input/vis" to="/ugr/car/map/$(arg slamtype)" />
-        <remap from="/output/vis" to="/vis/locmap" />
+        <remap from="/output/vis" to="/vis/slam" />
     </node>
 
     <!-- ? Pathplanning  -->

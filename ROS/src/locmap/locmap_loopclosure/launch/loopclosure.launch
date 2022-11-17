@@ -1,7 +1,0 @@
-<launch>
-    <node pkg="locmap_loopclosure" output="screen" type="loopclosure" name="loopclosure">
-        <remap from="/input/odometry" to="/ugr/car/odometry/filtered/fastslam" />
-        <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
-        <remap from="/reset_closure" to="/ugr/car/reset_closure"/>
-    </node>
-</launch>
