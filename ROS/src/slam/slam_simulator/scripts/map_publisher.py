@@ -37,6 +37,8 @@ class MapPublisher():
         with open(self.map, 'r') as file:
             map = yaml.safe_load(file)
             fill_message_args(ros_map, map)
+        
+            self.map_publisher.publish(ros_map)
 
 
 node = MapPublisher()
