@@ -73,7 +73,7 @@ class OusterCloud : public nodelet::Nodelet {
 
         NODELET_INFO_STREAM("Profile has " << n_returns << " return(s)");
 
-        imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 100);
+        imu_pub = nh.advertise<sensor_msgs::Imu>("/ugr/car/sensors/imu2", 100);
 
         auto img_suffix = [](int ind) {
             if (ind == 0) return std::string();
@@ -83,7 +83,7 @@ class OusterCloud : public nodelet::Nodelet {
         lidar_pubs.resize(n_returns);
         for (int i = 0; i < n_returns; i++) {
             auto pub = nh.advertise<sensor_msgs::PointCloud2>(
-                std::string("points") + img_suffix(i), 10);
+                "/ugr/car/sensors/lidar" + img_suffix(i), 10);
             lidar_pubs[i] = pub;
         }
 

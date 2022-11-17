@@ -10,7 +10,7 @@ Lidar::Lidar(ros::NodeHandle &n)
   // rawLidarSubscriber_ = n.subscribe("perception/raw_pc", 10,
   // &Lidar::rawPcCallback, this);
   rawLidarSubscriber_ =
-      n.subscribe("/os_cloud_node/points", 10, &Lidar::rawPcCallback, this);
+      n.subscribe("/ugr/car/sensors/lidar", 10, &Lidar::rawPcCallback, this);
 
   // Publish to the filtered and clustered lidar topic
   preprocessedLidarPublisher_ =

@@ -66,8 +66,6 @@
     <!-- ? Lidar -->
 
     <include file="$(find ouster_ros)/launch/sensor.launch">
-        <remap name="/ouster/imu" value="/ugr/car/sensors/imu2" />
-        <remap from="/ouster/points" value="/ugr/car/sensors/lidar" />
     </include>
 
     <!-- ? CAN -->
