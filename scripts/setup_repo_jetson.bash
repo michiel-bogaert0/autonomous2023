@@ -41,13 +41,6 @@ sudo apt-get install -y ros-noetic-tf2-geometry-msgs \
     python3-pcl \
     pcl-tools
 
-# Install AirSim deps
-AirSim/setup.sh
-
-# Add FSDS settings
-mkdir ~/Formula-Student-Driverless-Simulator
-cp settings.json ~/Formula-Student-Driverless-Simulator/
-
 # Setup some handy bashrc lines
 echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.bashrc
 echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
