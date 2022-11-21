@@ -35,6 +35,7 @@ sudo apt-get install -y ros-noetic-tf2-geometry-msgs \
     ros-noetic-can-msgs \
     ros-noetic-cv-bridge \
     ros-noetic-nmea-navsat-driver \
+    ros-noetic-catkin-virtualenv \
     python3-catkin-tools \
     libyaml-cpp-dev \
     libcurl4-openssl-dev \
