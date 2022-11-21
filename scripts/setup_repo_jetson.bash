@@ -15,7 +15,8 @@ sudo apt install -y \
     curl \
     lsb-release \
     mesa-utils \
-    htop 
+    htop \
+    busybox
     
 
 # Install the python requirements
