@@ -32,8 +32,6 @@ def no_collision(
     Returns:
     True if no collision happened else False
     """
-
-    # New implementation
     x1 = parent.x
     y1 = parent.y
     x2 = point[0]
