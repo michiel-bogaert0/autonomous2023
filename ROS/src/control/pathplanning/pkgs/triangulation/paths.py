@@ -118,7 +118,7 @@ class TriangulationPaths:
                     parent.children.append(node)
                     found_child = True
 
-            # Check whether this node is a child node
+            # Check whether this node is a leave node
             if not found_child:
                 leaves.append(parent)
 
@@ -126,7 +126,7 @@ class TriangulationPaths:
 
     def get_cost_branch(
         self, branch: np.ndarray, cones: np.ndarray
-    ) -> Tuple[float, float, float, float, float]:
+    ) -> Tuple[float, float]:
         """Get cost of branch.
 
         Args:
@@ -135,12 +135,15 @@ class TriangulationPaths:
 
         Returns:
         tuple of angle_cost, color_cost, width_cost, spacing_cost, length_cost
-        """
-        # Maybe average angle change
-        var_angle_change = np.var([point.angle_change for point in branch])
-        max_angle_var = (self.max_angle_change / 2) ** 2
-        angle_cost = (var_angle_change / max_angle_var) ** 2
+        """ 
+        # angle should not change much over one path
+        angle_changes = np.array([abs(point.angle_change) for point in branch])
+        angle_cost = np.var(angle_changes)
 
-        length_cost = np.var([point.distance for point in branch])
+        # longer paths usually work better as they make use of more center points
+        # also the length of each part of a path should not change much
+        node_distances = np.array([point.distance for point in branch])
+        distance = np.sum(node_distances)
+        length_cost = 1 / distance + np.var(node_distances) / 20
 
         return angle_cost, length_cost

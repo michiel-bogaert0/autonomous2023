@@ -80,6 +80,7 @@ class Triangulator:
             position_cones, self.triangulation_min_var, self.triangulation_var_threshold
         )
 
+        # Try to get rid of false positive
         center_points = filter_center_points(
             center_points, triangulation_centers, cones
         )
@@ -147,7 +148,7 @@ class Triangulator:
                 parent = parent.parent
             path.reverse()
 
-            # Calculate the path cost and normalise it
+            # Calculate the path cost
             (
                 angle_cost,
                 length_cost,
@@ -158,12 +159,8 @@ class Triangulator:
             ]
             paths.append(path)
             path_lengths = np.append(path_lengths, len(path))
-
-        np.set_printoptions(suppress=True)
-
-        print(f"{len(paths)} path(s) - {np.max(path_lengths)} max")
         
-        costs = costs / costs.max(axis=0)
+        costs = costs / np.max(costs, axis=0) #normalize costs
         total_cost = np.sum(costs, axis=1)
 
         # Get the least-cost path

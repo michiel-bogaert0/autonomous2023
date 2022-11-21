@@ -81,6 +81,4 @@ def filter_center_points(
         )
     ]
 
-    # TODO: False negatives
-
     return filtered_points
