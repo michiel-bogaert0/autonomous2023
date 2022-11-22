@@ -1,4 +1,4 @@
-²<launch>
+<launch>
 
   <arg name="ouster_ns" default="ouster" doc="Override the default namespace of all ouster nodes"/>
   <arg name="sensor_hostname" default="os1-122101000130.local" doc="hostname or IP in dotted decimal form of the sensor"/>
