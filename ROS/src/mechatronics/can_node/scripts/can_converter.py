@@ -96,8 +96,8 @@ class CanConverter:
                     self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.WARN,
-                            name="[Mechatronics] CAN converter (IMU [{imu_id}])",
-                            message=f"IMU generated faulty message.",
+                            name=f"[Mechatronics] CAN converter (IMU [{imu_id}])",
+                            message="IMU generated faulty message.",
                         )
                     )
                     continue
@@ -105,8 +105,8 @@ class CanConverter:
                 self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
-                            name="[Mechatronics] CAN converter (IMU [{imu_id}])",
-                            message=f"IMU operational.",
+                            name=f"[Mechatronics] CAN converter (IMU [{imu_id}])",
+                            message="IMU operational.",
                         )
                     )
                 self.imu.handle_imu_msg(msg, imu_id == self.IMU_IDS[0])
