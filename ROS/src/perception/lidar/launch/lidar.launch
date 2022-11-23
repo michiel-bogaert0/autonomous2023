@@ -25,7 +25,6 @@
         <param name= "minimal_height_cone" value = "0.07"/>
         <param name= "cone_shape_factor" value = "0.4"/>
  
-        <remap from="/os_cloud_node/points" to="/ugr/car/sensors/lidar"/>
         <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
 
         <remap from="lidar/perception/preprocessed_pc" to="ugr/vis/lidar/preprocessed_pc"/>

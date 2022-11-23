@@ -65,9 +65,7 @@
 
     <!-- ? Lidar -->
 
-    <include file="$(find ouster_ros)/ouster.launch">
-        <arg name="imu_topic" value="/ugr/car/sensors/imu2" />
-        <arg name="lidar_topic" value="/ugr/car/sensors/lidar" />
+    <include file="$(find ouster_ros)/launch/sensor.launch">
     </include>
 
     <!-- ? CAN -->
