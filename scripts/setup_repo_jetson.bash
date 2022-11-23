@@ -15,7 +15,8 @@ sudo apt install -y \
     curl \
     lsb-release \
     mesa-utils \
-    htop 
+    htop \
+    busybox
     
 
 # Install the python requirements
@@ -35,18 +36,13 @@ sudo apt-get install -y ros-noetic-tf2-geometry-msgs \
     ros-noetic-can-msgs \
     ros-noetic-cv-bridge \
     ros-noetic-nmea-navsat-driver \
+    ros-noetic-catkin-virtualenv \
+    ros-noetic-rosbridge-suite \
     python3-catkin-tools \
     libyaml-cpp-dev \
     libcurl4-openssl-dev \
     python3-pcl \
     pcl-tools
-
-# Install AirSim deps
-AirSim/setup.sh
-
-# Add FSDS settings
-mkdir ~/Formula-Student-Driverless-Simulator
-cp settings.json ~/Formula-Student-Driverless-Simulator/
 
 # Setup some handy bashrc lines
 echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.bashrc
