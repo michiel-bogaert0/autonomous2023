@@ -40,10 +40,6 @@
 using namespace std;
 using namespace Eigen;
 
-// TODO launch file
-// TODO docs
-// TODO name (Fastslam1 to MCL)
-
 namespace slam
 {
 
