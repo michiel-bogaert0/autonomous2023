@@ -110,9 +110,13 @@ namespace rviz_observations_visualization
     cone_node_ = frame_node_->createChildSceneNode();
     position_node_ = frame_node_->createChildSceneNode();
 
-    cone_shape_ = new rviz::Arrow(scene_manager_, cone_node_);
+    cone_shape_ = new rviz::Arrow(scene_manager_, cone_node_, 0.0, 0.0, 0.33, 0.23);
     
-    // TODO cone_shape goedzetten
+    Ogre::Vector3 direction;
+    direction.x = 0.0;
+    direction.y = 0.0;
+    direction.z = 1.0;
+    cone_shape_->setDirection(direction);
 
     position_shape_ = new rviz::Shape(rviz::Shape::Sphere, scene_manager_, position_node_);
   }
