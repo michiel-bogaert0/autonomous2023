@@ -4,7 +4,7 @@
 
 /**
  * FastSLAM 1.0 wrapper
- * 
+ *
  */
 int main(int argc, char **argv)
 {
@@ -15,10 +15,14 @@ int main(int argc, char **argv)
 
   slam::MCL mcl(n);
 
-  // Spin the node
-  while (ros::ok()) {
-    // Keep the node alive
+  float targetRate = n.param<float>("target_rate", 50.0);
+  ros::Rate loop_rate(targetRate);
+
+  while (ros::ok())
+  {
     ros::spinOnce();
+    mcl.step();
+    loop_rate.sleep();
   }
 
   return 0;

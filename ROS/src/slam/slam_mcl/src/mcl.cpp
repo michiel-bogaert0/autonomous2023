@@ -349,7 +349,7 @@ namespace slam
     {
       MatrixXf sigma = _map[associations[i]].variance;
       VectorXf difference = z[i] - expectedObservations[i];
-      
+
       difference[1] = pi_to_pi(difference[1]);
       if (sigma.determinant() < 0.001)
         sigma = this->R;
@@ -375,7 +375,7 @@ namespace slam
     if (this->latestTime - obs->header.stamp.toSec() > 0.5 && this->latestTime > 0.0)
     {
       // Reset
-      ROS_WARN("Time went backwards! Resetting fastslam...");
+      ROS_WARN("Time went backwards! Resetting MCL...");
 
       this->particles.clear();
       for (int i = 0; i < this->particle_count; i++)
@@ -393,6 +393,12 @@ namespace slam
       this->latestTime = obs->header.stamp.toSec();
     }
 
+    this->observations = *obs;
+  }
+
+  void MCL::step()
+  {
+
     // Should the particle filter ignore the observations or not?
     chrono::steady_clock::time_point time = chrono::steady_clock::now();
     bool doSensorUpdate = abs(std::chrono::duration_cast<std::chrono::duration<double>>(time - this->prev_time).count()) > this->observe_dt;
@@ -400,31 +406,25 @@ namespace slam
     if (doSensorUpdate)
       this->prev_time = time;
 
-    // Step 1: motion update
-    std::chrono::steady_clock::time_point t1;
-    std::chrono::steady_clock::time_point t2;
-    double time_round;
-    t1 = std::chrono::steady_clock::now();
-
-    // Transform observations to base_link_frame at current time
+    // Transform observations into the car_base_link frame to current time and apply a filter
     ugr_msgs::ObservationWithCovarianceArrayStamped transformed_obs;
-    transformed_obs.header = obs->header;
-    for (auto observation : obs->observations)
+    transformed_obs.header.frame_id = this->base_link_frame;
+    for (auto observation : this->observations.observations)
     {
 
       ugr_msgs::ObservationWithCovariance transformed_ob;
 
       geometry_msgs::PointStamped locStamped;
       locStamped.point = observation.observation.location;
-      locStamped.header = obs->header;
+      locStamped.header = this->observations.header;
 
       try
       {
-        transformed_ob.observation.location = this->tfBuffer.transform<geometry_msgs::PointStamped>(locStamped, this->base_link_frame, ros::Duration(0)).point;
+        transformed_ob.observation.location = this->tfBuffer.transform<geometry_msgs::PointStamped>(locStamped, this->observations.header.frame_id, ros::Time(0), this->world_frame, ros::Duration(0.1)).point;
       }
       catch (const exception e)
       {
-        ROS_ERROR("observation static transform failed: %s", e.what());
+        ROS_ERROR("observation transform failed: %s", e.what());
         return;
       }
 
@@ -452,7 +452,7 @@ namespace slam
     geometry_msgs::TransformStamped car_pose;
     try
     {
-      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, transformed_obs.header.stamp, ros::Duration(0.1));
+      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, ros::Time(0), ros::Duration(0.1));
     }
     catch (const exception e)
     {
@@ -473,11 +473,6 @@ namespace slam
     dYaw = yaw - this->prev_state[2];
     dDist = pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1], 2), 0.5);
 
-    t2 = std::chrono::steady_clock::now();
-
-    time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-    ROS_INFO("Observations preparation took: %f s", time_round);
-
     for (int j = 0; j < particles.size(); j++)
     {
       Particle &particle = particles[j];
@@ -487,7 +482,6 @@ namespace slam
     // Step 2: sensor update (if allowed)
     if (doSensorUpdate)
     {
-      t1 = std::chrono::steady_clock::now();
 
       for (int j = 0; j < particles.size(); j++)
       {
@@ -507,10 +501,6 @@ namespace slam
       // Resampling step
       resample_particles();
 
-      t2 = std::chrono::steady_clock::now();
-
-      time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-      ROS_INFO("FastSLAM1.0 took: %f s. That is %f s per particle", time_round, time_round / this->particles.size());
     }
 
     // Finalizing
@@ -518,16 +508,12 @@ namespace slam
 
     // Done ! Now produce the output
     this->publishOutput();
+
+    this->observations.observations.clear();
   }
 
   void MCL::publishOutput()
   {
-
-    std::chrono::steady_clock::time_point t1;
-    std::chrono::steady_clock::time_point t2;
-    double time_round;
-
-    t1 = std::chrono::steady_clock::now();
 
     // Calculate statistical mean and covariance of the particle filter (pose)
     // Also gather some other information while we are looping
@@ -611,12 +597,6 @@ namespace slam
     poseCovariance[30] = poseCovariance[5];
     poseCovariance[31] = poseCovariance[11];
 
-    t2 = std::chrono::steady_clock::now();
-
-    time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-    ROS_INFO("Output averaging took %f s. That is %f s per particle", time_round, time_round / this->particles.size());
-
-    t1 = std::chrono::steady_clock::now();
 
     // Odometry message
     nav_msgs::Odometry odom;
@@ -665,10 +645,5 @@ namespace slam
 
     // Publish everything!
     this->odomPublisher.publish(odom);
-
-    t2 = std::chrono::steady_clock::now();
-
-    time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-    ROS_INFO("Output publishing took %f s.", time_round);
   }
 }

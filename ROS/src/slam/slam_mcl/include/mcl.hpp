@@ -16,6 +16,9 @@
 #include <nav_msgs/Odometry.h>
 #include "kdtreepoint.h"
 
+#include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
+#include <ugr_msgs/ObservationWithCovariance.h>
+
 using namespace std;
 
 #define LANDMARK_CLASS_COUNT 4
@@ -47,6 +50,8 @@ namespace slam
 
     static tf2_ros::TransformBroadcaster br;
 
+    void step();
+
   private:
     // ROS
     ros::NodeHandle n;
@@ -63,6 +68,7 @@ namespace slam
     double eps;
 
     // Internal parameters
+    ugr_msgs::ObservationWithCovarianceArrayStamped observations;
     double latestTime;
 
     double max_range;
