@@ -92,13 +92,21 @@ class CanConverter:
                     rospy.logerr(
                         f"Message (id {msg.arbitration_id}) contained errors, status: {status}"
                     )
+
+                    self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.WARN,
+                            name=f"[Mechatronics] CAN converter (IMU [{imu_id}])",
+                            message="IMU generated faulty message.",
+                        )
+                    )
                     continue
 
                 self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
-                            name="[Mechatronics] CAN converter (IMU)",
-                            message=f"IMU [{imu_id}] message received.",
+                            name=f"[Mechatronics] CAN converter (IMU [{imu_id}])",
+                            message="IMU operational.",
                         )
                     )
                 self.imu.handle_imu_msg(msg, imu_id == self.IMU_IDS[0])
@@ -117,8 +125,22 @@ class CanConverter:
                 button = (msg.data[0] & 0b0000100) >> 2
                 if switch:
                     self.start_pub.publish(Empty())
+                    self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="[Mechatronics] RES",
+                            message="START",
+                        )
+                    )
                 else:
                     self.stop_pub.publish(Empty())
+                    self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.WARN,
+                            name="[Mechatronics] RES",
+                            message="STOP",
+                        )
+                    )
 
                 if button:
                     self.reset_pub.publish(Empty())
