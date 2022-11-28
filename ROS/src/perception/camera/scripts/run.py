@@ -39,6 +39,8 @@ class PerceptionNode:
 
         self.bb_vis = rospy.get_param("~vis", False)
 
+        self.is_rgb = rospy.get_param("~is_rgb", True)
+
         self.pub_image_annotated = rospy.Publisher(
             "/output/image_annotated", 
             Image, 
@@ -122,6 +124,8 @@ class PerceptionNode:
         timings = []
 
         image = ros_img_to_np(image=ros_image)
+        if not self.is_rgb:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         start = time.perf_counter()
         bbs = self.cone_detector.detect_cones(image)
