@@ -2,16 +2,26 @@
     <node pkg="pathplanning" type="run_node.py" name="pathplanning" respawn="true" output="screen">
         <param name="output_frame" value="ugr/car_odom" />
         <param name="algorithm" value="tri" />
-        <param name="max_iter" value="200" />
+        <param name="expand_dist" value="1" />
+        <param name="plan_dist" value="12.0" />
+        <param name="max_iter" value="100" />
+        <param name="triangulation_min_var" value="100" />
         <param name="triangulation_var_threshold" value="2" />
-        <param name="max_angle_change" value="0.8" />
+        <param name="max_angle_change" value="0.5" />
+        <param name="max_path_distance" value="6" />
         <param name="safety_dist" value="0.5" />
+        <param name="track_width" value="3" />
+        <param name="max_track_width" value="4" />
+        <param name="search_rad" value="None" />
+        <param name="iter_threshold" value="560" />
+        <param name="angle_inc" value="0.2" />
+        <param name="angle_fac" value="1.5" />
         
-        <remap from="/input/local_map" to="/ugr/car/observations/fastslam"/>
+        <remap from="/input/local_map" to="/ugr/car/observations/global"/>
         <remap from="/output/path" to="/pathplanning/path"/>
         <remap from="/output/path_stamped" to="/pathplanning/path_stamped"/>
 
-        <param name="debug_visualisation" value="True" />
+        <param name="debug_visualisation" value="False" />
         <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
         <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
     </node>
