@@ -45,7 +45,7 @@ namespace slam
                                              slam_world_frame(n.param<string>("slam_world_frame", "ugr/slam_odom")),
                                              world_frame(n.param<string>("world_frame", "ugr/car_odom")),
                                              particle_count(n.param<int>("particle_count", 100)),
-                                             post_clustering(n.param<bool>("post_clustering", true)),
+                                             post_clustering(n.param<bool>("post_clustering", false)),
                                              effective_particle_count(n.param<int>("effective_particle_count", 75)),
                                              min_clustering_point_count(n.param<int>("min_clustering_point_count", 30)),
                                              eps(n.param<double>("eps", 2.0)),
