@@ -150,8 +150,6 @@ class PathPlanning(ROSNode):
                 for obs_with_cov in track.observations
             ]
         )
-        if cones is None:
-            rospy.loginfo("help")
 
         # Compute
         start = time.perf_counter()
