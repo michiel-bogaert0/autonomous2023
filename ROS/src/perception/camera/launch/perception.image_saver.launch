@@ -1,5 +1,6 @@
 <launch>
     <node pkg="camera" type="save_img.py" name="image_saver" output="screen">
+        <remap from="/input/save" to="/save_image" />
         <remap from="/input/image" to="/ugr/car/sensors/cam0" />
     </node>
 </launch>
