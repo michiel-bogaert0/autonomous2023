@@ -25,6 +25,9 @@ Lidar::Lidar(ros::NodeHandle &n)
       "perception/observations", 5);
   diagnosticPublisher_ =
       n.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 5);
+  
+  n.param<bool>("vis_cones", vis_cones_, true);
+  n.param<bool>("big_box", big_box_, false);
 }
 
 /**
@@ -190,9 +193,9 @@ void Lidar::publishMarkers(const sensor_msgs::PointCloud cones) {
     marker.pose.orientation.z = 0.0;
     marker.pose.orientation.w = 1.0;
 
-    marker.scale.x = 0.5; // 0.228; // in meters
-    marker.scale.y = 0.5; // 0.228;
-    marker.scale.z = 0.5; // 0.325;
+    marker.scale.x = big_box_ ? 0.5 : x_size; // 0.228; // in meters
+    marker.scale.y = big_box_ ? 0.5 : y_size; // 0.228;
+    marker.scale.z = big_box_ ? 0.5 : z_size; // 0.325;
 
     if (color == 2) {
       marker.color.r = 1;
@@ -200,10 +203,20 @@ void Lidar::publishMarkers(const sensor_msgs::PointCloud cones) {
       marker.color.b = 0;
       marker.color.a = 1;
     } else {
-      marker.color.r = color;
-      marker.color.g = color;
-      marker.color.b = 1 - color;
-      marker.color.a = 1;
+      if(vis_cones_){
+        marker.type = visualization_msgs::Marker::MESH_RESOURCE;
+        marker.mesh_use_embedded_materials = true;
+        marker.mesh_resource = color == 1? yellow_url_: blue_url_;
+        marker.scale.x = 1;
+        marker.scale.y = 1;
+        marker.scale.z = 1;
+      }
+      else{
+        marker.color.r = color;
+        marker.color.g = color;
+        marker.color.b = 1 - color;
+        marker.color.a = 1;
+      }
     }
 
     markers.markers.push_back(marker);
