@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   ugr_msgs
   pcl_conversions
+  diagnostic_msgs
   pcl_msgs
   pcl_ros
 )
@@ -35,6 +36,7 @@ add_executable(${PROJECT_NAME}
   src/lidar.cpp
   src/ground_removal.cpp
   src/cone_clustering.cpp
+  src/cone_classification.cpp
   src/run.cpp
   )
 target_link_libraries(${PROJECT_NAME}

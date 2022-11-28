@@ -1,0 +1,8 @@
+<launch>
+
+  <!-- Map server -->
+  <node name="slam_controller" pkg="slam_controller" type="map_server.py">
+    <param name="topic_prefix" value="/ugr/car/map" />
+  </node>
+
+</launch>

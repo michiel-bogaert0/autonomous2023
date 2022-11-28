@@ -1,6 +1,7 @@
 #ifndef CONECLUSTERING_HPP
 #define CONECLUSTERING_HPP
 
+#include "cone_classification.hpp"
 #include "geometry_msgs/Point32.h"
 #include "sensor_msgs/PointCloud.h"
 #include <pcl/common/common.h>
@@ -10,15 +11,8 @@
 #include <ros/ros.h>
 
 namespace ns_lidar {
-typedef struct {
-  geometry_msgs::Point32 pos;
-  bool is_cone;
-  float color;
-  double bounds[3];
-} ConeCheck;
-
 struct {
-  bool operator()(pcl::PointXYZI a, pcl::PointXYZI b) const {
+  bool operator()(pcl::PointXYZINormal a, pcl::PointXYZINormal b) const {
     return a.y < b.y;
   }
 } leftrightsort;
@@ -29,30 +23,27 @@ public:
   ConeClustering(ros::NodeHandle &n);
 
   sensor_msgs::PointCloud
-  cluster(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
-          const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground);
+  cluster(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
+          const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground);
 
 private:
   ros::NodeHandle &n_;
 
+  ConeClassification coneClassification_;
+
   std::string clustering_method_; // Default: euclidian, others: string
   double cluster_tolerance_;      // The cone clustering tolerance (m)
-  double point_count_threshold_;   // How much % can the cone point count
-                                  // prediction be off from the actual count
-  double min_distance_factor_; // distance around the cone that contains no
+  double
+      min_distance_factor_; // distance around the cone that contains no
                             // other cones as a factor to the width of the cone
-  int minimal_points_cone_;
-  float minimal_height_cone_; //minimal height of cone above the floor threshold
 
   sensor_msgs::PointCloud
-  euclidianClustering(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud,
-                      const pcl::PointCloud<pcl::PointXYZI>::Ptr &ground);
+  euclidianClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
+                      const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground);
   sensor_msgs::PointCloud
-  stringClustering(const pcl::PointCloud<pcl::PointXYZI>::Ptr &cloud);
+  stringClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud);
   sensor_msgs::PointCloud
-      construct_message(std::vector<pcl::PointCloud<pcl::PointXYZI>>);
-  ConeCheck isCloudCone(pcl::PointCloud<pcl::PointXYZI> cone);
-  float hypot3d(float a, float b, float c);
+      constructMessage(std::vector<pcl::PointCloud<pcl::PointXYZINormal>>);
   float arctan(float x, float y);
 };
 } // namespace ns_lidar

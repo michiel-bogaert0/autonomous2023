@@ -12,14 +12,13 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(
   FILES
-  PerceptionUpdate.msg
   ConeKeypoint.msg
   CarPath.msg
   Particle.msg
   Particles.msg
   ConeKeypoints.msg
   Observation.msg
-  Observations.msg
+  ObservationArray.msg
   ConeDetections.msg
   BoundingBox.msg
   Map.msg
@@ -29,9 +28,13 @@ add_message_files(
   StateUpdate.msg
   Edge.msg
   VisExploration.msg
+  ConeLocation.msg
   ObservationWithCovariance.msg
   ObservationStamped.msg
   ObservationWithCovarianceStamped.msg
+  ObservationWithCovarianceArray.msg
+  ObservationWithCovarianceArrayStamped.msg
+  ObservationArrayWithCovarianceStamped.msg
 )
 
 generate_messages(

@@ -11,7 +11,7 @@ from visualization_msgs.msg import MarkerArray
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from std_msgs.msg import Header
 from tf.transformations import quaternion_from_euler
-from ugr_msgs.msg import Observation, Observations
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
 from rrt.rrt import Rrt
 from triangulation.triangulator import Triangulator
@@ -137,7 +137,7 @@ class PathPlanning(ROSNode):
         AddSubscriber("/input/local_map", 1)(self.receive_new_map)
         self.add_subscribers()
 
-    def receive_new_map(self, _, track: Observations):
+    def receive_new_map(self, _, track: ObservationWithCovarianceArrayStamped):
         """Receives observations from input topic.
 
         Args:
@@ -146,8 +146,8 @@ class PathPlanning(ROSNode):
         """
         cones = np.array(
             [
-                [obs.location.x, obs.location.y, obs.observation_class]
-                for obs in track.observations
+                [obs_with_cov.observation.location.x, obs_with_cov.observation.location.y, obs_with_cov.observation.observation_class]
+                for obs_with_cov in track.observations
             ]
         )
 

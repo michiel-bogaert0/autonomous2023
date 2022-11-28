@@ -1,4 +1,2 @@
-# Observation with covariance for x, y and color
-geometry_msgs/Point location
-uint8 observation_class
+ugr_msgs/Observation observation
 float64[9] covariance

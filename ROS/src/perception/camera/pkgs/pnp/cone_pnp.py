@@ -9,7 +9,13 @@ import cv2
 import numpy as np
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point
-from ugr_msgs.msg import ConeKeypoint, ConeKeypoints, Observations,Observation
+from ugr_msgs.msg import (
+    ConeKeypoint,
+    ConeKeypoints,
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+    Observation,
+)
 
 
 class ConePnp:
@@ -24,16 +30,16 @@ class ConePnp:
 
     def generate_perception_update(
         self, cone_keypoints_msg: ConeKeypoints, img_size: Tuple[int, int]
-    ) -> Observations:
+    ) -> ObservationWithCovarianceArrayStamped:
         """
         Receives a keypoint update message and applies a PnP algorithm to it.
-        It returns a PerceptionUpdate.
+        It returns a ObservationWithCovarianceArrayStamped.
 
         Args:
             cone_keypoints_msg: the message that contains the cone keypoints
             img_size: a tuple (W, H) of the original image size
         """
-        cone_relative_positions: List[Cone] = []
+        cone_relative_positions: List[ObservationWithCovariance] = []
 
         for cone_keypoint in cone_keypoints_msg.cone_keypoints:
 
@@ -47,15 +53,21 @@ class ConePnp:
             x, y, z = tuple(relative_position * self.scale)
             loc = Point(z[0], -1 * x[0], y[0])
 
-            distance = (x ** 2 + y ** 2 + z ** 2) ** (1 / 2)
+            distance = (x**2 + y**2 + z**2) ** (1 / 2)
             if distance >= self.max_distance:
                 continue
 
             cone_relative_positions.append(
-                Observation(observation_class=cone_keypoint.bb_info.cone_type, location=loc)
+                ObservationWithCovariance(
+                    observation=Observation(
+                        observation_class=cone_keypoint.bb_info.cone_type,
+                        location=loc,
+                    ),
+                    covariance=[0.7, 0, 0, 0, 0.3, 0, 0, 0, 0.1],
+                )
             )
 
-        perception_observation = Observations()
+        perception_observation = ObservationWithCovarianceArrayStamped()
         perception_observation.observations = cone_relative_positions
         perception_observation.header.stamp = cone_keypoints_msg.header.stamp
         perception_observation.header.frame_id = cone_keypoints_msg.header.frame_id

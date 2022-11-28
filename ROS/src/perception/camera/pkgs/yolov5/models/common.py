@@ -21,10 +21,19 @@ import yaml
 from PIL import Image
 from torch.cuda import amp
 from yolov5.utils.dataloaders import exif_transpose, letterbox
-from yolov5.utils.general import (LOGGER, check_requirements, check_suffix,
-                                  check_version, colorstr, increment_path,
-                                  make_divisible, non_max_suppression,
-                                  scale_coords, xywh2xyxy, xyxy2xywh)
+from yolov5.utils.general import (
+    LOGGER,
+    check_requirements,
+    check_suffix,
+    check_version,
+    colorstr,
+    increment_path,
+    make_divisible,
+    non_max_suppression,
+    scale_coords,
+    xywh2xyxy,
+    xyxy2xywh,
+)
 from yolov5.utils.plots import Annotator, colors, save_one_box
 from yolov5.utils.torch_utils import copy_attr, time_sync
 
@@ -340,9 +349,9 @@ class Expand(nn.Module):
     def forward(self, x):
         b, c, h, w = x.size()  # assert C / s ** 2 == 0, 'Indivisible gain'
         s = self.gain
-        x = x.view(b, s, s, c // s ** 2, h, w)  # x(1,2,2,16,80,80)
+        x = x.view(b, s, s, c // s**2, h, w)  # x(1,2,2,16,80,80)
         x = x.permute(0, 3, 4, 1, 5, 2).contiguous()  # x(1,16,80,2,80,2)
-        return x.view(b, c // s ** 2, h * s, w * s)  # x(1,16,160,160)
+        return x.view(b, c // s**2, h * s, w * s)  # x(1,16,160,160)
 
 
 class Concat(nn.Module):
@@ -377,8 +386,7 @@ class DetectMultiBackend(nn.Module):
         #   TensorFlow GraphDef:            *.pb
         #   TensorFlow Lite:                *.tflite
         #   TensorFlow Edge TPU:            *_edgetpu.tflite
-        from models.experimental import \
-            attempt_load  # scoped to avoid circular import
+        from models.experimental import attempt_load  # scoped to avoid circular import
 
         super().__init__()
         w = str(weights[0] if isinstance(weights, list) else weights)
@@ -526,8 +534,7 @@ class DetectMultiBackend(nn.Module):
                 tflite or edgetpu
             ):  # https://www.tensorflow.org/lite/guide/python#install_tensorflow_lite_for_python
                 try:  # https://coral.ai/docs/edgetpu/tflite-python/#update-existing-tf-lite-code-for-the-edge-tpu
-                    from tflite_runtime.interpreter import (Interpreter,
-                                                            load_delegate)
+                    from tflite_runtime.interpreter import Interpreter, load_delegate
                 except ImportError:
                     import tensorflow as tf
 

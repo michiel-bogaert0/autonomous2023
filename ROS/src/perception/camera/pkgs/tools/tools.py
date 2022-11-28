@@ -1,8 +1,8 @@
 import numpy as np
 from sensor_msgs.msg import Image
+import rospy
 
-
-def np_to_ros_image(self, arr: np.ndarray) -> Image:
+def np_to_ros_image(arr: np.ndarray) -> Image:
     """Creates a ROS image type based on a Numpy array
     Args:
         arr: numpy array in RGB format (H, W, 3), datatype uint8

@@ -24,7 +24,7 @@ from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from tf2_kdl import transform_to_kdl
-from ugr_msgs.msg import BoundingBox, Map, Observation, Observations, PerceptionUpdate
+from ugr_msgs.msg import BoundingBox, Map, ObservationWithCovariance, ObservationWithCovarianceArrayStamped
 
 
 @dataclass
@@ -154,59 +154,31 @@ class ROSNode:
         self.publishers = {}
 
     @staticmethod
-    def do_transform_perception_update(
-        perception_update: PerceptionUpdate, transform: TransformStamped
-    ) -> PerceptionUpdate:
-        """
-        Custom transformation method to apply a transformation to a perception update
-        Args:
-          - perception_update: PerceptionUpdate = the message to transform
-          - transform: TransformStamped = the transformation to apply
-
-        Returns:
-          A transformed PerceptionUpdate
-        """
-        kdl_transform = transform_to_kdl(transform)
-        res = PerceptionUpdate()
-        for cone in perception_update.cone_relative_positions:
-            p = kdl_transform * PyKDL.Vector(
-                cone.location.x, cone.location.y, cone.location.z
-            )
-            new_cone = Cone()
-            new_cone.color = cone.color
-            new_cone.location.x = p[0]
-            new_cone.location.y = p[1]
-            new_cone.location.z = p[2]
-            res.cone_relative_positions.append(new_cone)
-
-        res.header = transform.header
-        return res
-
-    @staticmethod
     def do_transform_observations(
-        observations: Observations, transform: TransformStamped
-    ) -> Observations:
+        observations: ObservationWithCovarianceArrayStamped, transform: TransformStamped
+    ) -> ObservationWithCovarianceArrayStamped:
         """
-        Custom transformation method to apply a transformation to a the Observations message
+        Custom transformation method to apply a transformation to a the ObservationWithCovarianceArrayStamped message
         Args:
-          - observations: Observations = the message to transform
+          - observations: ObservationWithCovarianceArrayStamped = the message to transform
           - transform: TransformStamped = the transformation to apply
 
         Returns:
-          A transformed Observations message
+          A transformed ObservationWithCovarianceArrayStamped message
         """
         kdl_transform = transform_to_kdl(transform)
-        res = Observations()
+        res = ObservationWithCovarianceArrayStamped()
         for obs in observations.observations:
             p = kdl_transform * PyKDL.Vector(
                 obs.location.x, obs.location.y, obs.location.z
             )
 
-            new_observation = Observation()
-            new_observation.location.x = p[0]
-            new_observation.location.y = p[1]
-            new_observation.location.z = p[2]
-            new_observation.observation_class = obs.observation_class
+            new_observation = ObservationWithCovariance()
+            new_observation.observation.location.x = p[0]
+            new_observation.observation.location.y = p[1]
+            new_observation.observation.location.z = p[2]
+            new_observation.observation.observation_class = obs.observation.observation_class
+            new_observation.observation.belief = obs.observation.belief
 
             res.observations.append(new_observation)
 

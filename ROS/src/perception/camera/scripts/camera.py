@@ -58,9 +58,9 @@ class CameraNode(PublishNode):
         image = self.camera.GetImage()
 
         if not image.IsEmpty():
-            img = image.GetNPArray()
+            img = image.GetNPArray()[..., ::-1]  # BGR to RGB
 
-            ros_img = self.np_to_ros_image(image.GetNPArray())
+            ros_img = self.np_to_ros_image(img)
 
             return ros_img
 

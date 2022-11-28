@@ -9,40 +9,41 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <ugr_msgs/Observations.h>
 #include <ugr_msgs/Observation.h>
-#include <ugr_msgs/ObservationWithCovarianceStamped.h>
+#include <ugr_msgs/ObservationWithCovariance.h>
+#include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
 
+namespace ns_lidar {
 
-namespace ns_lidar
-{
-  class Lidar
-  {
+enum DiagnosticStatusEnum { OK, WARN, ERROR, STALE };
 
-  public:
-    Lidar(ros::NodeHandle &n);
+class Lidar {
 
-  private:
-    ros::NodeHandle n_;
-    ros::Subscriber rawLidarSubscriber_;
-    ros::Publisher preprocessedLidarPublisher_;
-    ros::Publisher groundRemovalLidarPublisher_;
-    ros::Publisher clusteredLidarPublisher_;
-    ros::Publisher visPublisher_;
-    ros::Publisher conePublisher_;
+public:
+  Lidar(ros::NodeHandle &n);
 
-    ConeClustering cone_clustering_;
-    GroundRemoval ground_removal_;
+private:
+  ros::NodeHandle n_;
+  ros::Subscriber rawLidarSubscriber_;
+  ros::Publisher preprocessedLidarPublisher_;
+  ros::Publisher groundRemovalLidarPublisher_;
+  ros::Publisher clusteredLidarPublisher_;
+  ros::Publisher visPublisher_;
+  ros::Publisher conePublisher_;
+  ros::Publisher diagnosticPublisher_;
 
-    bool show_debug_;
+  ConeClustering cone_clustering_;
+  GroundRemoval ground_removal_;
 
-    void rawPcCallback(const sensor_msgs::PointCloud2 &msg);
-    void preprocessing(const pcl::PointCloud<pcl::PointXYZI> &raw,
-                       pcl::PointCloud<pcl::PointXYZI>::Ptr &preprocessed_pc);
-    void publishMarkers(const sensor_msgs::PointCloud cones);
+  void rawPcCallback(const sensor_msgs::PointCloud2 &msg);
+  void preprocessing(const pcl::PointCloud<pcl::PointXYZI> &raw,
+                     pcl::PointCloud<pcl::PointXYZI>::Ptr &preprocessed_pc);
+  void publishMarkers(const sensor_msgs::PointCloud cones);
 
-    void publishObservations(const sensor_msgs::PointCloud cones);
-  };
+  void publishObservations(const sensor_msgs::PointCloud cones);
+  void publishDiagnostic(DiagnosticStatusEnum status, std::string name,
+                         std::string message);
+};
 } // namespace ns_lidar
 
 #endif
