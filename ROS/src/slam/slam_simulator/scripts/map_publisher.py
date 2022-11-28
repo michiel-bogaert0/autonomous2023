@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-import yaml
-import rospy
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
+import os
 
+import rospy
+import yaml
 from genpy.message import fill_message_args
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
 
 class MapPublisher():
@@ -12,7 +13,7 @@ class MapPublisher():
         rospy.init_node("slam_simulator_map_publisher")
 
         self.map = rospy.get_param(
-            "~map", "/home/lowiek/autonomous2023/ROS/src/slam/slam_simulator/maps/rc_gt1.yaml")
+            "~map", f"{os.path.dirname(__file__)}/../maps/rc_gt1.yaml")
         self.override_time = rospy.get_param("~override_time", True)
 
         self.map_publisher = rospy.Publisher(
