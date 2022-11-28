@@ -6,7 +6,7 @@
         <param name="cuda" value="True" />
         <param name="tensorrt" value="True"/>
         <param name="detection_height_threshold" value="30" />
-        <param name="isRGB" value="True" />
+        <param name="is_rgb" value="True" />
         <param name="rate" value="10" />
         <param name="vis" value="False" />
         <remap from="/output/cone_keypoints" to="/ugr/car/perception/camera/keypoints" />
