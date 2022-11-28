@@ -116,6 +116,12 @@ namespace slam
     ROS_INFO("MCL has started!");
   }
 
+  /**
+   * Subscriber handler for a "map". Takes the incoming map and prepares the system, such as the k-d trees
+   * 
+   * Args:
+   *  obs: a reference to the received ObservationWithCovarianceArrayStamped message containing the map
+  */
   void MCL::handleMap(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs)
   {
 
@@ -274,6 +280,12 @@ namespace slam
     }
   }
 
+  /**
+   * Resamples the particle set. The odds of an old particle being 'chosen' to be part of
+   * the new set is proportionate with its weights. An old particle can be 'chosen' multiple times,
+   * but there will be at least effective_particle_count 'unique' particles. When an old particle 
+   * gets chosen, its map and everything gets copied into the new set.
+  */
   void MCL::resample_particles()
   {
     unsigned long i;
