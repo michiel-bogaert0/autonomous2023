@@ -41,16 +41,20 @@ class PathPlanning(ROSNode):
 
         # Defines which algorithm to run triangulatie ("tri") or RRT ("RRT")
         self.params["algo"] = rospy.get_param("~algorithm", "tri")
+        
         # Load at least all params from config file via ros parameters
-        # The distance by which the car drives every update
-        self.params["expand_dist"] = rospy.get_param("~expand_dist", 0.5)
-        # The distance the car can see in front
-        self.params["plan_dist"] = rospy.get_param("~plan_dist", 12.0)
-        # The amount of branches generated
-        self.params["max_iter"] = rospy.get_param(
-            "~max_iter", 100 if self.params["expand_dist"] == "tri" else 750
-        )
 
+        # General parameters
+        # The amount of branches generated
+        self.params["max_iter"] = rospy.get_param("~max_iter", 100)
+        # Early prune settings
+        # The maximum angle (rad) for a branch to be valid (sharper turns will be pruned prematurely)
+        self.params["max_angle_change"] = rospy.get_param("~max_angle_change", 0.5)
+        # The radius around a obstacle (cone) where no path can be planned
+        # Should be at least the half the width of the car
+        self.params["safety_dist"] = rospy.get_param("~safety_dist", 1)
+        
+        # Extra parameters for triangulation
         # The minimal variance each allowed set of triangle edge lengths can always have.
         #   So it's the minimal maximum variance
         self.params["triangulation_min_var"] = rospy.get_param(
@@ -60,17 +64,14 @@ class PathPlanning(ROSNode):
         self.params["triangulation_var_threshold"] = rospy.get_param(
             "~triangulation_var_threshold", 1.2
         )
-
-        # Early prune settings
-        # The maximum angle (rad) for a branch to be valid (sharper turns will be pruned prematurely)
-        self.params["max_angle_change"] = rospy.get_param("~max_angle_change", 0.5)
         # Maximum distance between nodes in the planned path (paths with nodes further than this will be pruned prematurely)
         self.params["max_path_distance"] = rospy.get_param("~max_path_distance", 6)
-        # The radius around a obstacle (cone) where no path can be planned
-        # Should be at least the half the width of the car
-        self.params["safety_dist"] = rospy.get_param("~safety_dist", 1)
-
+        
         # Extra parameters for RRT
+        # The distance by which the car drives every update
+        self.params["expand_dist"] = rospy.get_param("~expand_dist", 0.5)
+        # The distance the car can see in front
+        self.params["plan_dist"] = rospy.get_param("~plan_dist", 12.0)
         # Minimum or average width of the track
         # Used to estimate middle one side of cones is missing.
         self.params["track_width"] = rospy.get_param("~track_width", 3)
@@ -84,7 +85,6 @@ class PathPlanning(ROSNode):
             or rospy.get_param("~search_rad", None) == "None"
             else rospy.get_param("~search_rad", None)
         )
-
         # Iteration threshold which triggers parameter update. (3/4 of max_iter seems to be ok)
         self.params["iter_threshold"] = rospy.get_param("~iter_threshold", 560)
         # Percentage to increase maximum angle when parameter update is triggered.
@@ -150,6 +150,8 @@ class PathPlanning(ROSNode):
                 for obs_with_cov in track.observations
             ]
         )
+        if cones is None:
+            rospy.loginfo("help")
 
         # Compute
         start = time.perf_counter()
