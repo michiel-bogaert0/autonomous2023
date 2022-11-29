@@ -1,6 +1,6 @@
 import math
 import random
-from pathplanning.dataclasses.node import Node, dataclass
+from pathplanning_dc.node import Node, dataclass
 from typing import List, Tuple
 
 import numpy as np
@@ -790,11 +790,12 @@ class Rrt:
         theta = 2 * (random.random() - 0.5) * self.max_angle_change * self.angle_fac
         return r * math.cos(theta), r * math.sin(theta)
 
-    def get_path(self, front_cones):
+    def get_path(self, front_cones, header):
         """
         Run complete algorithm on front_cones
         Args:
             front_cones: cones given by perception
+            header: used in triangulation, can be used for visualisation
 
         Returns:
             Calculated path to follow
