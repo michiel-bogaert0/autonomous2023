@@ -37,10 +37,6 @@ class CameraNode(PublishNode):
         )
         camera.f.AcquisitionFrameRate = 24  # set the frame rate to 24 fps (optional)
 
-        camera.f.ExposureAuto.Set(False)
-        print(camera.f.ExposureAuto.Set(neoapi.ExposureMode_Timed))
-        camera.f.ExposureTime.value = 2000000
-
         if camera.f.PixelFormat.GetEnumValueList().IsReadable("BGR8"):
             camera.f.PixelFormat.SetString("BGR8")
 
