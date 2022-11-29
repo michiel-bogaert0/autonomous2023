@@ -8,7 +8,6 @@ import tf2_ros
 from nav_msgs.msg import Path
 from geometry_msgs.msg import Point, Pose, PoseArray, PoseStamped, Quaternion
 from visualization_msgs.msg import MarkerArray
-from node_fixture.node_fixture import AddSubscriber, ROSNode
 from std_msgs.msg import Header
 from tf.transformations import quaternion_from_euler
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
@@ -17,12 +16,12 @@ from rrt.rrt import Rrt
 from triangulation.triangulator import Triangulator
 
 
-class PathPlanning(ROSNode):
+class PathPlanning():
     """Path planning node. Calculates and publishes path based on observations."""
 
     def __init__(self) -> None:
         """Initialize node"""
-        super().__init__("exploration_mapping", False)
+        rospy.init_node("exploration_mapping")
 
         self.frametf = TransformFrames()
 
@@ -134,8 +133,8 @@ class PathPlanning(ROSNode):
         self.pub = rospy.Publisher("/output/path", PoseArray, queue_size=10)
         self.pub_stamped = rospy.Publisher("/output/path_stamped", Path, queue_size=10)
 
-        AddSubscriber("/input/local_map", 1)(self.receive_new_map)
-        self.add_subscribers()
+        rospy.Subscriber("/input/local_map", ObservationWithCovarianceArrayStamped, self.receive_new_map)
+        rospy.spin()
 
     def receive_new_map(self, _, track: ObservationWithCovarianceArrayStamped):
         """Receives observations from input topic.
@@ -150,7 +149,7 @@ class PathPlanning(ROSNode):
                 for obs_with_cov in track.observations
             ]
         )
-
+        
         # Compute
         start = time.perf_counter()
         self.compute(cones, track.header)
@@ -280,4 +279,3 @@ class TransformFrames:
 
 
 node = PathPlanning()
-node.start()
