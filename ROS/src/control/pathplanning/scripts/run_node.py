@@ -135,11 +135,10 @@ class PathPlanning():
         rospy.Subscriber("/input/local_map", ObservationWithCovarianceArrayStamped, self.receive_new_map)
         rospy.spin()
 
-    def receive_new_map(self, _, track: ObservationWithCovarianceArrayStamped):
+    def receive_new_map(self, track: ObservationWithCovarianceArrayStamped):
         """Receives observations from input topic.
 
         Args:
-            _: Not used
             track: The observations/message on input topic.
         """
         cones = np.array(
