@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import time
 import numpy as np
 import rospy
 import tf2_geometry_msgs
@@ -149,12 +148,10 @@ class PathPlanning():
                 for obs_with_cov in track.observations
             ]
         )
-        
+
         # Compute
-        start = time.perf_counter()
         self.compute(cones, track.header)
-        stop = time.perf_counter()
-        rospy.loginfo(f"{(stop - start)*1000:.1f} ms")
+        
 
     def compute(self, cones: np.ndarray, header: Header) -> None:
         """Calculate path and publish it.
