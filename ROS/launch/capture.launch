@@ -65,8 +65,8 @@
 
     <!-- ? Lidar -->
 
-    <include file="$(find ouster_ros)/launch/sensor.launch">
-    </include>
+    <!-- <include file="$(find ouster_ros)/launch/sensor.launch">
+    </include> -->
 
     <!-- ? CAN -->
     <include file="$(find can_node)/launch/can_converter.launch">
