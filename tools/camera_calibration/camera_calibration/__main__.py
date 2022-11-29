@@ -43,7 +43,7 @@ class Validator(object):
 def main():
 
     gridSize = Validator(r"([0-9]{1,})x([0-9]{1,})")
-    jpg = Validator(r"([^\s]+(\.(jpg))$)")
+    jpg_or_png = Validator(r"([^\s]+(\.(jpg)|(png))$)")
     npz = Validator(r"([^\s]+(\.(npz))$)")
     board_type = Validator(r"chess|charuco")
 
@@ -51,7 +51,7 @@ def main():
 
     parser.add_argument(
         "img",
-        type=jpg,
+        type=jpg_or_png,
         help="image mask for calibration (for example, cal_*.jpg)",
     )
     parser.add_argument("size", type=gridSize, help="")
