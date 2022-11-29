@@ -40,11 +40,6 @@ class CameraNode(PublishNode):
         if camera.f.PixelFormat.GetEnumValueList().IsReadable("BGR8"):
             camera.f.PixelFormat.SetString("BGR8")
 
-        # Limit the height of the output image
-        height = rospy.get_param("~heigth", 900)
-        camera.f.Height = height
-        camera.f.OffsetY = 1200 - height
-
         self.camera = camera
 
     def process_data(self):
