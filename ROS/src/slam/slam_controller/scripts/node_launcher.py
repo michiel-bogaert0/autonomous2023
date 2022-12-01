@@ -8,6 +8,7 @@ import rospy
 
 class NodeLauncher:
     def __init__(self) -> None:
+        """Initialize NodeLauncher"""
         self.active: roslaunch.parent.ROSLaunchParent = None
 
         # Initialize uuid
@@ -16,10 +17,17 @@ class NodeLauncher:
         roslaunch.configure_logging(self.uuid)
 
     def launch_node(self, package: str, launchfile: str) -> None:
+        """Launch roslaunch file
+
+        Args:
+            package: Package of which launch file should be taken
+            launchfile: Path of the roslaunch file relative to package location
+
+        """
         # Convert str to Path
         launchfile = Path(launchfile)
 
-        # Get path of package to launch from
+        # Get path of package
         rospack = rospkg.RosPack()
         pkg_path = rospack.get_path(package)
 
@@ -40,6 +48,7 @@ class NodeLauncher:
         self.active.start()
 
     def shutdown(self) -> None:
+        """Terminate active launchfile"""
         # Shutdown active launch
         if self.active:
             self.active.shutdown()
