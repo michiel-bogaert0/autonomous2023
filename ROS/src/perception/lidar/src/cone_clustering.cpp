@@ -188,7 +188,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
       // filter other clusters
       else {
         // cluster to far to the left to be considered when adding new points
-        if (rightmost.y + 0.32 < point.y) {
+        if (rightmost.y + 0.285 * min_distance_factor_ < point.y) {
           finished_clusters.push_back(clusters[cluster_id]);
 
           // cluster still needs to be considered

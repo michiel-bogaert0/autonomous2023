@@ -44,31 +44,23 @@ ConeCheck ConeClassification::classifyCone(
     float num_points = 0.0;
     bool is_orange = false;
 
-    // check size cloud for yellow/blue cone
-    if (bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.4) {
-      // Calculate the expected number of points that hit the cone
-      // Using the AMZ formula with w_c = average of x and y widths and
-      // r_v=0.35° and r_h=2048 points per rotation
-      // @ref https://arxiv.org/pdf/1809.10099.pdf
-      num_points = (1 / 2.0f) * (0.325 / (2.0f * dist * VERT_RES_TAN)) *
-                   (0.228 / (2.0f * dist * HOR_RES_TAN));
-    }
 
     // check size cloud for orange cone
-    else if (bound_x < 0.3 && bound_y < 0.3 && bound_z < 0.55) {
+    if (bound_z < 0.55 && bound_z > 0.4) {
       num_points = (1 / 2.0f) * (0.505 / (2.0f * dist * VERT_RES_TAN)) *
                    (0.285 / (2.0f * dist * HOR_RES_TAN));
       is_orange = true;
     }
-
+    else{
+      num_points = (1 / 2.0f) * (0.325 / (2.0f * dist * VERT_RES_TAN)) *
+                   (0.228 / (2.0f * dist * HOR_RES_TAN));
+    }
     // We allow for some play in the point count prediction
     // and check whether the pointcloud has a shape similar to a cone
     // add the "coneness" metric to the cone_check struct
     double cone_metric =
         ConeClassification::checkShape(cone, centroid, is_orange);
     if (dist != 0.0 &&
-        (std::abs(num_points - cone.points.size()) / num_points) <
-            point_count_threshold_ &&
         (cone_metric > cone_shape_factor_)) {
       cone_check.pos.x = centroid[0];
       cone_check.pos.y = centroid[1];
