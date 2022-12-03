@@ -81,7 +81,7 @@ class CanConverter:
                             message="ODrive message received.",
                         )
                     )
-                    self.odrive.handle_odrive_vel_msg(msg, axis_id, cmd_id)
+                    self.odrive.handle_vel_msg(msg, axis_id, cmd_id)
                     continue
 
             imu_id = msg.arbitration_id & 0xFF
