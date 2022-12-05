@@ -29,7 +29,8 @@ class OdriveConverter:
         if bus is not None:
             self.bus = bus
 
-    def handle_odrive_vel_msg(
+
+    def handle_vel_msg(
         self, msg: can.Message, axis_id: int, cmd_id: int
     ) -> None:
         """Publishes an ODrive velocity message to the correct ROS topic

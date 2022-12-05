@@ -9,6 +9,8 @@ from math import pi
 CAN_NODE_ID = 0xE0
 CAN_REBOOT_ID = 0x1
 CAN_STEER_ID = 0x3
+ODRIVE_VELOCITY_CONTROL_MODE = 2
+ODRIVE_PASSTHROUGH_INPUT_MODE = 1
 
 
 class JetsonController:
@@ -36,6 +38,9 @@ class JetsonController:
 
         # Local parameters
         self.is_running = False
+
+        # Set ODrive to velocity control mode
+        self.set_odrive_velocity_control()
 
         rospy.spin()
 
@@ -80,6 +85,24 @@ class JetsonController:
         )
 
         self.bus.send(msg)
+    
+    def set_odrive_velocity_control(self):
+        """Sends a CAN message to switch the ODrive to velocity control mode
+        """
+        if self.bus is None:
+            rospy.logerr(
+                "The ODrive package was not configured to send messages, please run it as a separate node."
+            )
+            return
+        ctrl_msg = self.odrive_db.get_message_by_name("Set_Controller_Mode")
+        data = ctrl_msg.encode({"Input_Mode": ODRIVE_PASSTHROUGH_INPUT_MODE, "Control_Mode": ODRIVE_VELOCITY_CONTROL_MODE})
+
+        self.bus.send(
+            can.Message(arbitration_id=(1 << 5 | 0x00D), data=data, is_extended_id=False)
+        )  # Right
+        self.bus.send(
+            can.Message(arbitration_id=(2 << 5 | 0x00D), data=data, is_extended_id=False)
+        )  # Left
 
     def set_odrive_velocity(self, vel: float, axis: int) -> None:
         """Publishes a drive command with a given velocity to the ODrive
