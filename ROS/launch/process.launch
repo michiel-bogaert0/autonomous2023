@@ -293,6 +293,6 @@
 
     <!-- ? Pathplanning  -->
     <include file="$(find pathplanning)/launch/pathplanning.launch">
-        <arg name="pathplanning_type" value="triangulation" />
+        <arg name="pathplanning_type" default="triangulation" />
     </include>
 </launch>
