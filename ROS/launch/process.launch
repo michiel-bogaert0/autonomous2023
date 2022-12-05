@@ -4,6 +4,7 @@
     <arg name="slamtype" default="clustering" />
     <arg name="reference_frame" default="ugr/car_odom" />
     <arg name="use_sim_time" default="false" />
+    <arg name="pathplanning_type" default="triangulation" />
 
     <param name="use_sim_time" value="$(arg use_sim_time)" />
     <param name="iteration" value="$(arg iteration)" />
@@ -292,7 +293,5 @@
     </node>
 
     <!-- ? Pathplanning  -->
-    <include file="$(find pathplanning)/launch/pathplanning.launch">
-        <arg name="pathplanning_type" default="triangulation" />
-    </include>
+    <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true"></include>
 </launch>
