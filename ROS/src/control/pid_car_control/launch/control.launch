@@ -23,7 +23,7 @@
         <param name="world_frame" value="$(arg reference_frame)" />
 
         <remap from="/input/path" to="/pathplanning/path" />
-        <remap from="/output/drive_command" to="/control/control_command" />
+        <remap from="/output/control_command" to="/control/control_command" />
         <remap from="/output/target_point" to="/control/target_point" />
     </node>
 
