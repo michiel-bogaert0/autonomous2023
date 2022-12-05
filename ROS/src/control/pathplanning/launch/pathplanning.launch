@@ -1,5 +1,7 @@
 <launch>
-    <group if="$(eval arg('pathplanningtype') == 'triangulation')">
+    <arg name="pathplanning_type" default="triangulation" />
+
+    <group if="$(eval arg('pathplanning_type') == 'triangulation')">
         <node pkg="pathplanning" type="run_node.py" name="triangulation" respawn="true" output="screen">
             <param name="output_frame" value="ugr/car_odom" />
             <param name="algorithm" value="tri" />
@@ -20,8 +22,8 @@
             <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
             <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
         </node>
-    <group>
-    <group if="$(eval arg('pathplanningtype') == 'rrt')">
+    </group>
+    <group if="$(eval arg('pathplanning_type') == 'rrt')">
         <node pkg="pathplanning" type="run_node.py" name="rrt" respawn="true" output="screen">
             <param name="output_frame" value="ugr/car_odom" />
             <param name="algorithm" value="rrt" />
@@ -47,5 +49,5 @@
             <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
             <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
         </node>
-    <group>
+    </group>
 </launch>
