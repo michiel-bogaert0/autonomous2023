@@ -1,113 +1,105 @@
 #! /usr/bin/python3
 import rospy
 from enum import Enum
-from std_msgs.msg import UInt16MultiArray, UInt16
+from std_msgs.msg import UInt16
 from std_srvs.srv import Empty
-"""
-this is temp to init states, this will be changed in the future
-"""
-class State(Enum):
-    Racing = 1
-    Exploring = 2
-    Idle = 3
+from ugr_msgs.msg import State
+from node_launcher import NodeLauncher
+
+
+class AutonomousState(str, Enum):
+    IDLE = 'idle'
+    EXPLORATION = 'exploration'
+    RACING = 'racing'
+    FINISHED = 'finished'
+
+
+class AutonomousMission(str, Enum):
+    AUTOCROSS = 'autocross',
+    ACCELERATION = 'acceleration',
+    TRACKDRIVE = 'trackdrive',
+
 
 class Controller:
-    resetLoopCloser = rospy.Subscriber
-    totalAmountOfLaps = 0
 
-    def DeployRacingMode():
-        """
-        Initialize the racing mode and the packages around it
-        """
-        rospy.loginfo("Deploy the racing mode")
-    
-    def DestroyRacingMode():
-        """
-        Destroy the package is RacingMode
-        """
-        rospy.loginfo("Destroy the racing mode")
+    def __init__(self) -> None:
+        rospy.init_node("slam_controller")
 
-    def DeployExploringMode():
-        """
-        Initialize the racing mode and the packages around it
-        """
-        rospy.loginfo("Deploy the exploring mode")
+        # Loop closure for state change detection
+        self.state_publisher = rospy.Subscriber(
+            "/input/loopclosure", UInt16, self.lapFinished)
 
-    def DestoryExploringMode():
-        """
-        Destroy the package is explorationMode
-        """
-        rospy.loginfo("Destroy the exploring mode")
+        self.state = AutonomousState.IDLE
 
-    def FromExploringToDriving(self):
-        """
-        Setup the packages for deletion and creation when changing from explorating to driving
-        """
-        self.DestoryExploringMode()
-        self.DeployRacingMode()
-    
-    def FromDrivingToIdle(self):
-        """
-        Setup the packages for creation and deletion when changing to Idle from driving
-        """
-        self.DestroyRacingMode()
-        self.totalAmountOfLaps = 0
-        #is possible to delete even more
-    
-    def FromExplorationToIdle(self):
-        """
-        Setup the packages for creation and deletion when changing to Idle from Exploration
-        """
-        self.totalAmountOfLaps = 0
-        self.DestoryExploringMode()
-    
-    def FromIdleToExploring(self):
-        """
-        Setup the packages for creation and deletion when changing to Idle from Exploration
-        """
-        self.DeployExploringMode()
-        
+        self.launcher = NodeLauncher()
+        self.mission = ""
+
+        self.target_lap_count = -1
+
+        rospy.Subscriber("/state", State, self.handle_state_change)
+        rospy.Publisher("/state", State, queue_size=10)
+
+        while not rospy.is_shutdown():
+            self.launcher.run()
+            rospy.sleep(0.01)
+
+    def handle_state_change(self, state: State):
+
+        new_state = self.state
+
+        if state.scope == "ugentracing":
+
+            if (self.state == AutonomousState.IDLE or self.state == AutonomousState.FINISHED) and state.cur_state == "ASDrive":
+
+                if rospy.has_param("/mission"):
+                    # Go to state depending on mission
+                    self.mission = rospy.get_param("/mission")
+
+                    # Reset loop counter
+                    rospy.ServiceProxy('/reset_closure', Empty)
+
+                    if self.mission == AutonomousMission.ACCELERATION:
+                        self.target_lap_count = 1
+                        new_state = AutonomousState.RACING
+                    else:
+                        new_state = AutonomousState.EXPLORATION
+                        if self.mission == AutonomousMission.AUTOCROSS:
+                            self.target_lap_count = 1
+                        elif self.mission == AutonomousMission.TRACKDRIVE:
+                            self.target_lap_count = 10
+                        else:
+                            self.target_lap_count = -1  # idk, no lap count I guess
+
+                    # Launch nodes
+                    self.launcher.launch_node(
+                        "slam_controller", f"launch/{self.mission}_{new_state}.launch")
+
+            elif state.cur_state != "ASDrive":
+                # Just stop everything
+                self.launcher.shutdown()
+
+        self.state_publisher.publish(
+            State(scope="autonomous", prev_state=self.state, cur_state=new_state))
+        self.state = new_state
+
     def lapFinished(self, laps):
-        """
-        this only needs to happen if the currentState is in exploration
-        """
-        
-        self.totalAmountOfLaps +=1
-        if(self.totalAmountOfLaps == 1):
-            rospy.ServiceProxy('/reset_closure', Empty)
-    
-    
-    def StartChangingState(self,data):
-        """
-        starts up the nodes that is used in the different stages
-        and destroys the current nodes
 
-        Args:
-            the next state that the upper controller passes through
-        """
-        previousState = State(data[0])
-        nextState = State(data[1])
-        if(previousState == State.Exploring):
-            if(nextState == State.Racing):
-                self.FromExploringToDriving()
-            elif(nextState == State.Idle):
-                self.FromExplorationToIdle()
-        elif (previousState == State.Racing):
-            if(nextState == State.Idle):
-                self.FromDrivingToIdle()
-        elif (previousState == State.Idle):
-            if(nextState == State.Exploring):
-                self.FromIdleToExploring()
-        else: 
-            #other states
-            print("Other state")
+        if self.target_lap_count == laps:
 
-    def __init__(self, service_class) -> None:
-        rospy.init_node("controller")
-        rospy.logerr("information")
-        #the array represents the current state at 0 and the next state at 1 but will be changed in the future
-        rospy.Subscriber("stateChange",UInt16MultiArray , self.StartChangingState)
-        self.resetLoopCloser =  rospy.Subscriber("/output/loopClosure", UInt16, self.lapFinished)
-        rospy.spin()
+            if self.state == AutonomousState.EXPLORATION:
 
-node = Controller(None)
+                if self.mission == AutonomousMission.TRACKDRIVE:
+                    self.state = AutonomousState.RACING
+
+                    # Relaunch (different) nodes
+                    self.launcher.launch_node(
+                        "slam_controller", f"launch/{self.mission}_{self.state}.launch")
+                else:
+                    self.state = AutonomousState.FINISHED
+                    self.launcher.shutdown()
+            else:
+                self.state = AutonomousState.FINISHED
+                self.launcher.shutdown()
+
+
+node = Controller()

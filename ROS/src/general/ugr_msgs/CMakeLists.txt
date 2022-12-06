@@ -24,6 +24,7 @@ add_message_files(
   Map.msg
   MapUpdate.msg
   ExplorationMove.msg
+  State.msg
   ExplorationPath.msg
   StateUpdate.msg
   Edge.msg

@@ -16,6 +16,18 @@ class NodeLauncher:
         # Needeed according to documentation (http://docs.ros.org/en/kinetic/api/roslaunch/html/roslaunch-module.html)
         roslaunch.configure_logging(self.uuid)
 
+        self.action_to_execute = None
+
+    def run(self):
+        
+        if self.action_to_execute == 'start':
+            self.active.start()
+        elif self.action_to_execute == 'shutdown':
+            self.shutdown()
+
+        self.action_to_execute = ''
+
+
     def launch_node(self, package: str, launchfile: str) -> None:
         """Launch roslaunch file
 
@@ -32,11 +44,11 @@ class NodeLauncher:
         pkg_path = rospack.get_path(package)
 
         # Construct path of launch file
-        rel_path = pkg_path / rel_path
+        rel_path = pkg_path / launchfile
         # Check if roslaunch file is syntactic correct
         rospy.logdebug(roslaunch.rlutil.check_roslaunch(str(rel_path.absolute())))
 
-        if self.active is None:
+        if self.active is not None:
             # Shutdown currently active launch
             self.active.shutdown()
             self.active = None
@@ -45,7 +57,7 @@ class NodeLauncher:
         self.active = roslaunch.parent.ROSLaunchParent(
             self.uuid, [str(rel_path.absolute())]
         )
-        self.active.start()
+        self.action_to_execute = "start"
 
     def shutdown(self) -> None:
         """Terminate active launchfile"""
