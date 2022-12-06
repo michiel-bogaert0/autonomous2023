@@ -1,0 +1,6 @@
+<launch>
+  
+  <!-- ? FastSLAM -->
+  <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true" />
+
+</launch>
