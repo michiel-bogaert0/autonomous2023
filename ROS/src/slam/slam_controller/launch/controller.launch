@@ -1,7 +1,7 @@
 <launch>
 
   <!-- ? Controller -->
-  <node name="slam_controller" pkg="slam_controller" type="controller.py"></node>
+  <node name="slam_controller" pkg="slam_controller" type="controller.py" output="screen"></node>
 
   <!-- ? Map server -->
   <node name="slam_map_server" pkg="slam_controller" type="map_server.py">
@@ -12,5 +12,5 @@
   <include file="$(find slam_controller)/launch/ISE.launch" pass_all_args="true"/>
   
   <!-- ? Lap counter -->
-  <include file="$(find slam_loopclosure/launch/loopclosure.launch" pass_all_args="true" />
+  <include file="$(find slam_loopclosure)/launch/loopclosure.launch" pass_all_args="true" />
 </launch>

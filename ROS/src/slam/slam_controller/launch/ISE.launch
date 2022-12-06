@@ -1,6 +1,8 @@
 <launch>
   <!-- ? Coordinate transformations -->
 
+  <arg name="iteration" default="1" />
+
   <group>
     <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_axis0" args="-0.36 0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis0" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_axis1" args="-0.36 -0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis1" />

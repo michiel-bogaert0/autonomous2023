@@ -8,7 +8,7 @@
   <arg name="effective_particle_count" default="50"/>
   <arg name="eps" default="0.5"/>
   <arg name="max_range" default="15"/>
-  <arg name="max_half_range" default="1.5"/>
+  <arg name="max_half_angle" default="1.5"/>
   <arg name="expected_range" default="15"/>
   <arg name="expected_half_angle" default="1.5"/>
   <arg name="observe_dt" default="0.0"/>
@@ -31,7 +31,7 @@
     <param name="max_range" value="$(arg max_range)" />
     <param name="max_half_angle" value="$(arg max_half_angle)" />
     <param name="expected_range" value="$(arg expected_range)" />
-    <param name="expected_half_angle" value="$(arg expected_half_range)" />
+    <param name="expected_half_angle" value="$(arg expected_half_angle)" />
     <param name="observe_dt" value="$(arg observe_dt)" />
 
     <param name="yaw_unwrap_threshold" value="$(arg yaw_unwrap_threshold)" />

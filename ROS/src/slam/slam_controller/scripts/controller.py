@@ -25,10 +25,6 @@ class Controller:
     def __init__(self) -> None:
         rospy.init_node("slam_controller")
 
-        # Loop closure for state change detection
-        self.state_publisher = rospy.Subscriber(
-            "/input/loopclosure", UInt16, self.lapFinished)
-
         self.state = AutonomousState.IDLE
 
         self.launcher = NodeLauncher()
@@ -37,7 +33,9 @@ class Controller:
         self.target_lap_count = -1
 
         rospy.Subscriber("/state", State, self.handle_state_change)
-        rospy.Publisher("/state", State, queue_size=10)
+        rospy.Subscriber("/input/loopclosure", UInt16, self.lapFinished)
+
+        self.state_publisher = rospy.Publisher("/state", State, queue_size=10)
 
         while not rospy.is_shutdown():
             self.launcher.run()
@@ -49,8 +47,10 @@ class Controller:
 
         if state.scope == "ugentracing":
 
-            if (self.state == AutonomousState.IDLE or self.state == AutonomousState.FINISHED) and state.cur_state == "ASDrive":
+            print(self.state)
 
+            if (self.state == AutonomousState.IDLE or self.state == AutonomousState.FINISHED) and state.cur_state == "ASDrive":
+                print(rospy.has_param("/mission"))
                 if rospy.has_param("/mission"):
                     # Go to state depending on mission
                     self.mission = rospy.get_param("/mission")
@@ -66,17 +66,21 @@ class Controller:
                         if self.mission == AutonomousMission.AUTOCROSS:
                             self.target_lap_count = 1
                         elif self.mission == AutonomousMission.TRACKDRIVE:
+                            print("OK Launch nodes", self.mission, f"launch/{self.mission}_{new_state}.launch")
                             self.target_lap_count = 10
                         else:
                             self.target_lap_count = -1  # idk, no lap count I guess
 
                     # Launch nodes
-                    self.launcher.launch_node(
-                        "slam_controller", f"launch/{self.mission}_{new_state}.launch")
+                    self.launcher.launch_node("slam_controller", f"launch/{self.mission}_{new_state}.launch")
 
             elif state.cur_state != "ASDrive":
                 # Just stop everything
                 self.launcher.shutdown()
+                new_state = AutonomousState.IDLE
+                
+        elif state.scope == "autonomous":
+            return
 
         self.state_publisher.publish(
             State(scope="autonomous", prev_state=self.state, cur_state=new_state))
