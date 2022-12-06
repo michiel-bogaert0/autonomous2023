@@ -2,28 +2,32 @@
     <node pkg="lidar" type="lidar" name="lidar" output="screen">
         <!-- ground removal -->
         <param name="ground_removal_method" value="bins"/>
-        <param name="num_iter" value="3" />
-        <param name="num_lpr" value="250" />
-        <param name="th_seeds" value="0.15" />
-        <param name="th_dist" value="0.05" />
-        <param name="sensor_height" value="0.3" />
+        <param name="num_iter" value="3"/>
+        <param name="num_lpr" value="250"/>
+        <param name="th_seeds" value="0.15"/>
+        <param name="th_dist" value="0.05"/>
+        <param name="sensor_height" value="0.3"/>
 
         <param name= "th_floor" value = "0.04"/>
         <param name= "angular_buckets" value = "15"/>
         <param name= "small_radial_bucket_length" value = "0.5"/>
-        <param name= "big_radial_bucket_length" value = "6"/>
+        <param name= "big_radial_bucket_length" value = "1"/>
         <param name= "radial_bucket_tipping_point" value = "8"/>
-        <param name= "use_sloop" value = "false"/>
+        <param name= "use_slope" value = "true"/>
 
         <!-- Clustering -->
-        <param name="clustering_method" value="string" />
-        <param name="cluster_tolerance" value="1" />
-        <param name="point_count_threshold" value="2" />
+        <param name= "clustering_method" value="string" />
+        <param name= "cluster_tolerance" value="1" />
+        <param name= "point_count_threshold" value="2"/>
         
-        <param name="min_distance_factor" value="1.5"/>
+        <param name= "min_distance_factor" value="1.5"/>
         <param name= "minimal_points_cone" value = "3"/>
+        <param name= "threshold_height_big_cone" value ="0.4"/>
         <param name= "minimal_height_cone" value = "0.07"/>
         <param name= "cone_shape_factor" value = "0.4"/>
+
+        <param name= "vis_cones" value = "false"/>
+        <param name= "big_box" value = "true"/>
  
         <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
 
