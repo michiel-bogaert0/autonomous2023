@@ -22,7 +22,7 @@
         
         <param name= "min_distance_factor" value="1.5"/>
         <param name= "minimal_points_cone" value = "3"/>
-        <param name= "threshold_height_orange_cone" value ="0.4"/>
+        <param name= "threshold_height_big_cone" value ="0.4"/>
         <param name= "minimal_height_cone" value = "0.07"/>
         <param name= "cone_shape_factor" value = "0.4"/>
 
