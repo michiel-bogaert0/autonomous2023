@@ -23,7 +23,7 @@ class VisObs(ROSNode):
             vis_namespace: the namespace to use
             vis_lifetime: how long a marker should stay alive
         """
-        super().__init__(f"slam_vis_obs_{time.time()}")
+        super().__init__(f"slam_vis_obs_{time.time()}", False)
 
         self.blue_cone_model_url = rospy.get_param(
             "~cone_models/blue",
@@ -43,6 +43,8 @@ class VisObs(ROSNode):
         self.vis_handler = SlamVis(
             [self.blue_cone_model_url, self.yellow_cone_model_url]
         )
+
+        self.add_subscribers()
 
     @AddSubscriber("/input/vis")
     def handleObs(self, msg: ObservationWithCovarianceArrayStamped):
