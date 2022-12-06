@@ -12,7 +12,7 @@ ConeClassification::ConeClassification(ros::NodeHandle &n) : n_(n) {
   n.param<double>("point_count_threshold", point_count_threshold_, 0.5);
   n.param<int>("minimal_points_cone", minimal_points_cone_, 0);
   n.param<float>("minimal_height_cone", minimal_height_cone_, 0.05);
-  n.param<float>("threshold_height_orange_cone", threshold_height_orange_cone_, 0.40);
+  n.param<float>("threshold_height_big_cone", threshold_height_big_cone_, 0.40);
   n.param<double>("cone_shape_factor", cone_shape_factor_, 0.3);
 }
 
@@ -47,7 +47,7 @@ ConeCheck ConeClassification::classifyCone(
 
 
     // check size cloud for orange cone
-    if (bound_z > threshold_height_orange_cone_) {
+    if (bound_z > threshold_height_big_cone_) {
       is_orange = true;
     }
     // We allow for some play in the point count prediction

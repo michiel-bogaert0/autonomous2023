@@ -2,7 +2,7 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
-#define WIDTH_ORANGE_CONE 0.285
+#define WIDTH_BIG_CONE 0.285
 
 namespace ns_lidar {
 // Constructor
@@ -160,7 +160,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
 
       // A cone is max 285mm wide, check whether this point is within that
       // distance from the rightmost point in each cluster
-      if (dist < WIDTH_ORANGE_CONE * min_distance_factor_) {
+      if (dist < WIDTH_BIG_CONE * min_distance_factor_) {
         found_cluster = true;
 
         // Add the point to the cluster
@@ -189,7 +189,7 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
       // filter other clusters
       else {
         // cluster to far to the left to be considered when adding new points
-        if (rightmost.y + WIDTH_ORANGE_CONE * min_distance_factor_ < point.y) {
+        if (rightmost.y + WIDTH_BIG_CONE * min_distance_factor_ < point.y) {
           finished_clusters.push_back(clusters[cluster_id]);
 
           // cluster still needs to be considered
