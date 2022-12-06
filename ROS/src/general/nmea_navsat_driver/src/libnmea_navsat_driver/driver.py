@@ -161,6 +161,8 @@ class RosNMEADriver(object):
             9: 'WAAS',
         }
 
+        self.gps_name = rospy.get_param('~frame_id', 'gpsX').split('/')[-1]
+
     def add_sentence(self, nmea_string, frame_id, timestamp=None):
         """Public method to provide a new NMEA sentence to the driver.
 
@@ -253,7 +255,7 @@ class RosNMEADriver(object):
             self.diagnostics.publish(
                     create_diagnostic_message(
                         level=DiagnosticStatus.WARN if fix_type != 4 else DiagnosticStatus.OK,
-                        name=f"[GPS] GPS Status (GPS xx)",
+                        name=f"[GPS] GPS Status (GPS {self.gps_name})",
                         message=f"Status: {self.gps_qualities_diagnostics[fix_type]}",
                     )
                 )
@@ -312,7 +314,7 @@ class RosNMEADriver(object):
                 self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.WARN if fix_type != 4 else DiagnosticStatus.OK,
-                            name=f"[GPS] GPS Status (GPS xx)",
+                            name=f"[GPS] GPS Status (GPS {self.gps_name})",
                             message=f"Status: {self.gps_qualities_diagnostics[fix_type]}",
                         )
                     )
