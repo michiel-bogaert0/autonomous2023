@@ -277,7 +277,7 @@
 
     <node pkg="slam_vis" output="screen" name="vis_obs" type="vis_obs.py">
 
-        <param name="use_cones" value="true" />
+        <param name="use_cones" value="false" />
         <param name="namespace" value="$(arg slamtype)/observations" />
 
         <remap from="/input/vis" to="/ugr/car/observations/$(arg slamtype)" />
@@ -285,7 +285,7 @@
     </node>
     <node pkg="slam_vis" output="screen" name="vis_map" type="vis_obs.py">
 
-        <param name="use_cones" value="true" />
+        <param name="use_cones" value="false" />
         <param name="namespace" value="$(arg slamtype)/map" />
 
         <remap from="/input/vis" to="/ugr/car/map/$(arg slamtype)" />
