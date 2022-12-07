@@ -6,23 +6,19 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Tuple, Type, get_type_hints
 
-import cv2
 import numpy as np
 import PyKDL
 import roslib.message
 import rospy
 import rostopic
-import torch
-from cv_bridge import CvBridge
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import TransformStamped
 from rospy.impl.tcpros import DEFAULT_BUFF_SIZE, get_tcpros_handler
 from rospy.rostime import Time
-from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from tf2_kdl import transform_to_kdl
-from ugr_msgs.msg import (BoundingBox, Map, ObservationWithCovariance,
+from ugr_msgs.msg import (Map, ObservationWithCovariance,
                           ObservationWithCovarianceArrayStamped)
 
 
