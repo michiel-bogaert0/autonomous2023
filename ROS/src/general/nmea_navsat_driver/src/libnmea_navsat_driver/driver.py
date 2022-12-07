@@ -41,6 +41,8 @@ from geometry_msgs.msg import TwistStamped, QuaternionStamped
 from tf.transformations import quaternion_from_euler
 
 from libnmea_navsat_driver.checksum_utils import check_nmea_checksum
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+from node_fixture.node_fixture import create_diagnostic_message
 import libnmea_navsat_driver.parser
 
 
@@ -75,6 +77,7 @@ class RosNMEADriver(object):
                 Value to use for default EPE quality for fix type 9. (default 3.0)
         """
         self.fix_pub = rospy.Publisher('fix', NavSatFix, queue_size=1)
+        self.diagnostics_pub = rospy.Publisher('/diagnostics', DiagnosticArray, queue_size=10)
         self.vel_pub = rospy.Publisher('vel', TwistStamped, queue_size=1)
         self.heading_pub = rospy.Publisher(
             'heading', QuaternionStamped, queue_size=1)
@@ -147,6 +150,18 @@ class RosNMEADriver(object):
                 NavSatFix.COVARIANCE_TYPE_APPROXIMATED
             ]
         }
+
+        self.gps_qualities_diagnostics = {
+            -1: 'Unknown',
+            0: 'Invalid',
+            1: 'SPS',
+            2: 'DGPS',
+            4: 'RTK Fix',
+            5: 'RTK Float',
+            9: 'WAAS',
+        }
+
+        self.gps_name = rospy.get_param('~frame_id', 'gpsX').split('/')[-1]
 
     def add_sentence(self, nmea_string, frame_id, timestamp=None):
         """Public method to provide a new NMEA sentence to the driver.
@@ -237,6 +252,13 @@ class RosNMEADriver(object):
                 2 * hdop * self.alt_std_dev) ** 2  # FIXME
 
             self.fix_pub.publish(current_fix)
+            self.diagnostics.publish(
+                    create_diagnostic_message(
+                        level=DiagnosticStatus.WARN if fix_type != 4 else DiagnosticStatus.OK,
+                        name=f"[GPS] GPS Status (GPS {self.gps_name})",
+                        message=f"Status: {self.gps_qualities_diagnostics[fix_type]}",
+                    )
+                )
 
             if not (math.isnan(data['utc_time'][0]) or self.use_GNSS_time):
                 current_time_ref.time_ref = rospy.Time(
@@ -289,6 +311,13 @@ class RosNMEADriver(object):
                     NavSatFix.COVARIANCE_TYPE_UNKNOWN
 
                 self.fix_pub.publish(current_fix)
+                self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.WARN if fix_type != 4 else DiagnosticStatus.OK,
+                            name=f"[GPS] GPS Status (GPS {self.gps_name})",
+                            message=f"Status: {self.gps_qualities_diagnostics[fix_type]}",
+                        )
+                    )
 
                 if not (math.isnan(data['utc_time'][0]) or self.use_GNSS_time):
                     current_time_ref.time_ref = rospy.Time(
