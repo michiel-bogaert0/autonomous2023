@@ -776,23 +776,24 @@ namespace slam
     br.sendTransform(transformMsg);
 
     // Initialize global request
-    slam_controller::SetMap::Request global_req{};
-    global_req.map = global;
-    global_req.namespace = "global";
+    slam_controller::SetMap global_srv;
+    global_srv.request.map = global;
+    global_srv.request.name = "global";
 
     this->setmap_srv_client.waitForExistence();
     // Set global map with Service
-    if (!this->setmap_srv_client.call(global_req)) {
+    if (!this->setmap_srv_client.call(global_srv)) {
         ROS_ERROR("Service call failed!");
     }
     
     // Initialize local request
-    slam_controller::SetMap::Request local_req{};
-    local_req.map = local;
-    local_req.namespace = "local";
-    // Set local map with Service
+    slam_controller::SetMap local_srv;
+    local_srv.request.map = local;
+    local_srv.request.name = "local";
+
     this->setmap_srv_client.waitForExistence();
-    if (!this->setmap_srv_client.call(local_req)) {
+    // Set local map with Service
+    if (!this->setmap_srv_client.call(local_srv)) {
         ROS_ERROR("Service call failed!");
     }
 
