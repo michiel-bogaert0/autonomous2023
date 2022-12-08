@@ -13,6 +13,9 @@
 #include "ros/ros.h"
 #include "ros/console.h"
 
+#include "ros/service_client.h"
+#include <slam_controller/SetMap.h>
+
 #include "tf2_ros/buffer.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
@@ -67,8 +70,12 @@ namespace slam
                                              tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0)
   {
 
-    this->globalPublisher = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("/output/map", 5);
-    this->localPublisher = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("/output/observations", 5);
+    // this->globalPublisher = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("/output/map", 5);
+    // this->localPublisher = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("/output/observations", 5);
+
+    // Initialize map Service Client
+    this->setmap_srv_client = n.serviceClient<slam_controller::SetMap::Request>("ugr/srv/slam_map_server/set");
+
     this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
 
     obs_sub.subscribe(n, "/input/observations", 1);
@@ -772,8 +779,30 @@ namespace slam
     br.sendTransform(transformMsg);
 
     // Publish everything!
-    this->globalPublisher.publish(global);
-    this->localPublisher.publish(local);
+    // Change this:
+    // this->globalPublisher.publish(global);
+    // this->localPublisher.publish(local);
+
+    // Initialize global request
+    slam_controller::SetMap::Request global_req{};
+    global_req.map = global;
+    global_req.namespace = "global";
+
+    this->setmap_srv_client.waitForExistence();
+    if (!this->setmap_srv_client.call(global_req)) {
+        ROS_ERROR("Service call failed!");
+    }
+    
+    // Initialize local request
+    slam_controller::SetMap::Request local_req{};
+    local_req.map = local;
+    local_req.namespace = "local";
+
+    this->setmap_srv_client.waitForExistence();
+    if (!this->setmap_srv_client.call(local_req)) {
+        ROS_ERROR("Service call failed!");
+    }
+
     this->odomPublisher.publish(odom);
 
     t2 = std::chrono::steady_clock::now();
