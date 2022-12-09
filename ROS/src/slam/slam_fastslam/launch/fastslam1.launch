@@ -21,6 +21,12 @@
     <param name="acceptance_score" value="2.0" />
     <param name="penalty_score" value="-0.2" />
     <param name="discard_score" value="-100.0" />
+
+    # Map service Parameters
+    <param name="SetMap_service" value="ugr/srv/slam_map_server/set" />
+    <param name="globalmap_namespace" value="global" />
+    <param name="localmap_namespace" value="local" />
+
     # Input/output remapping
     <remap from="/input/observations" to="ugr/car/observations/lidar" />
 

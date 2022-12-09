@@ -71,7 +71,10 @@ namespace slam
   {
 
     // Initialize map Service Client
-    this->setmap_srv_client = n.serviceClient<slam_controller::SetMap::Request>("ugr/srv/slam_map_server/set");
+    string SetMap_service = n.param<string>("SetMap_service", "ugr/srv/slam_map_server/set");
+    this->setmap_srv_client = n.serviceClient<slam_controller::SetMap::Request>(SetMap_service);
+    this->globalmap_namespace = n.param<string>("globalmap_namespace", "global");
+    this->localmap_namespace = n.param<string>("localmap_namespace", "local");
 
     this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
 
@@ -779,7 +782,7 @@ namespace slam
       // Initialize global request
       slam_controller::SetMap global_srv;
       global_srv.request.map = global;
-      global_srv.request.name = "global";
+      global_srv.request.name = this->globalmap_namespace;
 
       // Set global map with Service
       if (!this->setmap_srv_client.call(global_srv)) {
@@ -789,7 +792,7 @@ namespace slam
       // Initialize local request
       slam_controller::SetMap local_srv;
       local_srv.request.map = local;
-      local_srv.request.name = "local";
+      local_srv.request.name = this->localmap_namespace;
 
       // Set local map with Service
       if (!this->setmap_srv_client.call(local_srv)) {

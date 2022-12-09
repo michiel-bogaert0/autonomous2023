@@ -68,6 +68,8 @@ namespace slam
 
       // Set Map Service Client
       ros::ServiceClient setmap_srv_client;
+      string globalmap_namespace;
+      string localmap_namespace;
 
       // TF2
       tf2_ros::Buffer tfBuffer;
