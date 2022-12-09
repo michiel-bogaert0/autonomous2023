@@ -775,26 +775,28 @@ namespace slam
     static tf2_ros::TransformBroadcaster br;
     br.sendTransform(transformMsg);
 
-    // Initialize global request
-    slam_controller::SetMap global_srv;
-    global_srv.request.map = global;
-    global_srv.request.name = "global";
+    if(this->setmap_srv_client.exists()) {
+      // Initialize global request
+      slam_controller::SetMap global_srv;
+      global_srv.request.map = global;
+      global_srv.request.name = "global";
 
-    this->setmap_srv_client.waitForExistence();
-    // Set global map with Service
-    if (!this->setmap_srv_client.call(global_srv)) {
-        ROS_ERROR("Service call failed!");
-    }
-    
-    // Initialize local request
-    slam_controller::SetMap local_srv;
-    local_srv.request.map = local;
-    local_srv.request.name = "local";
+      // Set global map with Service
+      if (!this->setmap_srv_client.call(global_srv)) {
+        ROS_WARN("Global map service call failed!");
+      }
+      
+      // Initialize local request
+      slam_controller::SetMap local_srv;
+      local_srv.request.map = local;
+      local_srv.request.name = "local";
 
-    this->setmap_srv_client.waitForExistence();
-    // Set local map with Service
-    if (!this->setmap_srv_client.call(local_srv)) {
-        ROS_ERROR("Service call failed!");
+      // Set local map with Service
+      if (!this->setmap_srv_client.call(local_srv)) {
+        ROS_WARN("Local map service call failed!");
+      }
+    } else {
+      ROS_WARN("SetMap service call does not exist (yet)!");
     }
 
     // Publish odometry
