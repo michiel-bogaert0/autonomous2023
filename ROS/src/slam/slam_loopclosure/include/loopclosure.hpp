@@ -40,6 +40,7 @@ namespace slam
 
         Point startPosition = Point();
         float maxDistanceSquare = 1.f;
+        double latestTime;
         bool doNotCheckDistance = false;
         bool checkDistanceGoingUpWhenInRange = false;
         Point directionWhenGoingInRange = Point();

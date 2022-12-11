@@ -22,6 +22,14 @@ namespace slam
     void LoopClosure::CheckWhenLoopIsClosed()
     {
 
+        if (this->latestTime - ros::Time::now().toSec() > 0.5 && this->latestTime > 0.0)
+        {
+            ROS_WARN("Time went backwards! Resetting...");
+            ResetClosure();
+            return;
+        }
+        this->latestTime = ros::Time::now().toSec();
+
         geometry_msgs::TransformStamped car_pose;
         try
         {
@@ -110,6 +118,8 @@ namespace slam
         checkDistanceGoingUpWhenInRange = false;
         directionWhenGoingInRange = slam::Point();
         amountOfLaps = 0;
+
+        this->latestTime = ros::Time::now().toSec();
 
         this->publish();
     }
