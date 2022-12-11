@@ -495,10 +495,10 @@ namespace slam
     this->observations.observations.clear();
 
     // Done ! Now produce the output
-    this->publishOutput();
+    this->publishOutput(transformed_obs.header.stamp);
   }
 
-  void FastSLAM1::publishOutput()
+  void FastSLAM1::publishOutput(ros::Time lookupTime)
   {
 
     std::chrono::steady_clock::time_point t1;
@@ -706,9 +706,9 @@ namespace slam
     ugr_msgs::ObservationWithCovarianceArrayStamped global;
     ugr_msgs::ObservationWithCovarianceArrayStamped local;
     global.header.frame_id = this->slam_world_frame;
-    global.header.stamp = ros::Time::now();
+    global.header.stamp = lookupTime;
     local.header.frame_id = this->base_link_frame;
-    local.header.stamp = ros::Time::now();
+    local.header.stamp = lookupTime;
 
     for (int i = 0; i < filteredLandmarks.size(); i++)
     {
@@ -776,7 +776,7 @@ namespace slam
     // So from world_frame to base_link_frame
     nav_msgs::Odometry odom;
 
-    odom.header.stamp = ros::Time::now();
+    odom.header.stamp = lookupTime;
     odom.header.frame_id = this->slam_world_frame;
     odom.child_frame_id = this->base_link_frame;
 
@@ -804,7 +804,7 @@ namespace slam
 
     geometry_msgs::TransformStamped transformMsg;
     transformMsg.header.frame_id = this->base_link_frame;
-    transformMsg.header.stamp = ros::Time::now();
+    transformMsg.header.stamp = lookupTime;
     transformMsg.child_frame_id = this->slam_world_frame;
 
     transformMsg.transform.translation.x = invTranslation.x();

@@ -85,7 +85,7 @@ namespace slam
 
       void handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs);
 
-      void publishOutput();
+      void publishOutput(ros::Time);
 
       void predict(Particle &particle, double dDist, double dYaw);
 
