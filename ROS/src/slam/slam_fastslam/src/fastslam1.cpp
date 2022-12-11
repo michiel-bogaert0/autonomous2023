@@ -368,7 +368,11 @@ namespace slam
     tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 
     dYaw = yaw - this->prev_state[2];
-    dDist = pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1], 2), 0.5);
+    
+    // Check for reverse
+    double drivingAngle = atan2(y - this->prev_state[1], x - this->prev_state[0]);
+    bool forward = abs(drivingAngle - yaw) < M_PI_2;
+    dDist = (forward ? 1 : -1) *  pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1], 2), 0.5);
 
     // Initial pose mechanism
     if (firstRound)
