@@ -28,6 +28,9 @@ namespace slam
 
       static tf2_ros::TransformBroadcaster br;
 
+      // This functions executes a FastSLAM1.0 step
+      void step();
+
     private:
       
       // ROS
@@ -47,7 +50,12 @@ namespace slam
       double clustering_eps;
       double belief_factor;
 
+      bool doSynchronous;
+
       double latestTime;
+
+      bool firstRound;
+      bool updateRound;
       
       double minThreshold;
       double acceptance_score;
@@ -56,6 +64,8 @@ namespace slam
       double max_half_fov;
       double expected_range;
       double expected_half_fov; // radians, single side 
+
+      ugr_msgs::ObservationWithCovarianceArrayStamped observations;
 
       // Subscribers
       ros::Subscriber observationsSubscriber;
