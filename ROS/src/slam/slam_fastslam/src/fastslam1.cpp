@@ -492,6 +492,7 @@ namespace slam
     // Finalizing
     this->prev_state = {x, y, yaw};
     this->updateRound = false;
+    this->observations.observations.clear();
 
     // Done ! Now produce the output
     this->publishOutput();
