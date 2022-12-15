@@ -1,0 +1,9 @@
+<launch>
+    <node 
+        pkg="rpg_trajectory_evaluation" 
+        name="rpg_trajectory_evaluation"
+        output="screen" type="trajectory.py"
+        >
+        <param name="clustering/results_dir" value="../TestDataResult" />
+    </node>
+</launch>
