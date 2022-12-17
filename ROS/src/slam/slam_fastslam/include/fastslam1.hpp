@@ -2,6 +2,7 @@
 #define FASTSLAM1_HPP
 
 #include <ros/ros.h>
+#include <ros/service_client.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
@@ -61,9 +62,14 @@ namespace slam
       ros::Subscriber observationsSubscriber;
       
       // Publishers
-      ros::Publisher globalPublisher;
-      ros::Publisher localPublisher;
+      // ros::Publisher globalPublisher;
+      // ros::Publisher localPublisher;
       ros::Publisher odomPublisher;
+
+      // Set Map Service Client
+      ros::ServiceClient setmap_srv_client;
+      string globalmap_namespace;
+      string localmap_namespace;
 
       // TF2
       tf2_ros::Buffer tfBuffer;
