@@ -22,7 +22,7 @@ class NodeLauncher:
         
         if self.action_to_execute == 'start':
             self.active.start()
-            print("start")
+
         elif self.action_to_execute == 'shutdown':
             self.shutdown()
 
@@ -58,7 +58,7 @@ class NodeLauncher:
         self.active = roslaunch.parent.ROSLaunchParent(
             self.uuid, [str(rel_path.absolute())]
         )
-        print("bump", self.action_to_execute, self.active)
+
         self.action_to_execute = "start"
 
     def shutdown(self) -> None:

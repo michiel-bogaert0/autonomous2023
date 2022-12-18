@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="world_frame" default="ugr_car_odom"/>
+  <arg name="world_frame" default="ugr/car_odom"/>
   <arg name="base_link_frame" default="ugr/car_base_link"/>
   <arg name="slam_world_frame" default="ugr/slam_map"/>
 
@@ -43,9 +43,9 @@
     <param name="discard_score" value="$(arg discard_score)" />
     
     # Map service Parameters
-    <param name="SetMap_service" value="ugr/srv/slam_map_server/set" />
-    <param name="globalmap_namespace" value="global" />
-    <param name="localmap_namespace" value="local" />
+    <param name="SetMap_service" value="/ugr/srv/slam_map_server/set" />
+    <param name="globalmap_namespace" value="fastslam/global" />
+    <param name="localmap_namespace" value="fastslam/local" />
 
     # Input/output remapping
     <remap from="/input/observations" to="ugr/car/observations/lidar" />

@@ -23,6 +23,9 @@ class AutonomousMission(str, Enum):
 class Controller:
 
     def __init__(self) -> None:
+        """
+        SLAM controller
+        """
         rospy.init_node("slam_controller")
 
         self.state = AutonomousState.IDLE
@@ -42,15 +45,19 @@ class Controller:
             rospy.sleep(0.01)
 
     def handle_state_change(self, state: State):
+        """
+        Handles state transition from other state machines
+
+        Args:
+            state: the state transition
+        """
 
         new_state = self.state
 
         if state.scope == "ugentracing":
 
-            print(self.state)
-
             if (self.state == AutonomousState.IDLE or self.state == AutonomousState.FINISHED) and state.cur_state == "ASDrive":
-                print(rospy.has_param("/mission"))
+
                 if rospy.has_param("/mission"):
                     # Go to state depending on mission
                     self.mission = rospy.get_param("/mission")
@@ -63,13 +70,7 @@ class Controller:
                         new_state = AutonomousState.RACING
                     else:
                         new_state = AutonomousState.EXPLORATION
-                        if self.mission == AutonomousMission.AUTOCROSS:
-                            self.target_lap_count = 1
-                        elif self.mission == AutonomousMission.TRACKDRIVE:
-                            print("OK Launch nodes", self.mission, f"launch/{self.mission}_{new_state}.launch")
-                            self.target_lap_count = 10
-                        else:
-                            self.target_lap_count = -1  # idk, no lap count I guess
+                        self.target_lap_count = 1
 
                     # Launch nodes
                     self.launcher.launch_node("slam_controller", f"launch/{self.mission}_{new_state}.launch")
@@ -87,8 +88,14 @@ class Controller:
         self.state = new_state
 
     def lapFinished(self, laps):
+        """
+        Subscriber callback for the lap counter. Does an internal state transition if required
 
-        if self.target_lap_count == laps:
+        Args:
+            laps: the UInt16 message containing the lap count 
+        """
+
+        if self.target_lap_count == laps.data:
 
             if self.state == AutonomousState.EXPLORATION:
 

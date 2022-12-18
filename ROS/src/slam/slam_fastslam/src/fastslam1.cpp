@@ -71,8 +71,9 @@ namespace slam
   {
 
     // Initialize map Service Client
-    string SetMap_service = n.param<string>("SetMap_service", "ugr/srv/slam_map_server/set");
-    this->setmap_srv_client = n.serviceClient<slam_controller::SetMap::Request>(SetMap_service);
+    string SetMap_service = n.param<string>("SetMap_service", "/ugr/srv/slam_map_server/set");
+    this->setmap_srv_client = n.serviceClient<slam_controller::SetMap::Request>(SetMap_service, true);
+    
     this->globalmap_namespace = n.param<string>("globalmap_namespace", "global");
     this->localmap_namespace = n.param<string>("localmap_namespace", "local");
 
