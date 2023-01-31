@@ -21,10 +21,10 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
  * The type of clustering that is applied is chosen by the clustering_method
  * parameter.
  */
-sensor_msgs::PointCloud ConeClustering::cluster(
+std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
-  sensor_msgs::PointCloud cluster_msg;
+  std::vector<pcl::PointCloud<pcl::PointXYZINormal>> cluster_msg;
   if (clustering_method_ == "string") {
     cluster_msg = ConeClustering::stringClustering(cloud);
   } else {
@@ -39,7 +39,7 @@ sensor_msgs::PointCloud ConeClustering::cluster(
  * ROS message.
  *
  */
-sensor_msgs::PointCloud ConeClustering::euclidianClustering(
+std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::euclidianClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
   // Create a PC and channel for the cone colour
@@ -109,7 +109,7 @@ sensor_msgs::PointCloud ConeClustering::euclidianClustering(
     }
   }
 
-  return ConeClustering::constructMessage(clusters);
+  return clusters;
 }
 
 /**
@@ -121,7 +121,7 @@ sensor_msgs::PointCloud ConeClustering::euclidianClustering(
  *
  *
  */
-sensor_msgs::PointCloud ConeClustering::stringClustering(
+std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::stringClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud) {
 
   // sort point from left to right (because they are ordered from left to right)
@@ -228,7 +228,28 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
     clusters.push_back(cluster);
   }
 
-  return ConeClustering::constructMessage(clusters);
+  return clusters;
+}
+
+  sensor_msgs::PointCloud2 ConeClustering::clustersColoredMessage(std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters){
+  pcl::PointCloud<pcl::PointXYZRGB> points;
+  for(pcl::PointCloud<pcl::PointXYZINormal> cluster: clusters){
+    for(pcl::PointXYZINormal point: cluster){
+      pcl::PointXYZRGB new_point;
+      new_point.x = point.x;
+      new_point.x = point.y;
+      new_point.x = point.z;
+      new_point.r = 0.1;
+      new_point.g = 0.1;
+      new_point.b = 0.1;
+      points.push_back(new_point);
+    }
+  }
+
+  sensor_msgs::PointCloud2 clusterscolored_msg;
+  pcl::toROSMsg(points, clusterscolored_msg);
+
+  return clusterscolored_msg;
 }
 
 /**

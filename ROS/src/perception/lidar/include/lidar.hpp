@@ -28,6 +28,7 @@ private:
   ros::Publisher preprocessedLidarPublisher_;
   ros::Publisher groundRemovalLidarPublisher_;
   ros::Publisher clusteredLidarPublisher_;
+  ros::Publisher clustersColoredpublisher;
   ros::Publisher visPublisher_;
   ros::Publisher conePublisher_;
   ros::Publisher diagnosticPublisher_;
