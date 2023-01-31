@@ -35,7 +35,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
 }
 
 /**
- * @brief Clusters the cones in the final filtered point cloud and returns a
+ * @brief Clusters the cones in the final filtered point cloud and returns a 
  * vector containing the different clusters
  *
  */
@@ -59,7 +59,7 @@ ConeClustering::euclidianClustering(
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
   pcl::EuclideanClusterExtraction<pcl::PointXYZINormal> ec;
   ec.setClusterTolerance(cluster_tolerance_);
-  ec.setMinClusterSize(2);
+  ec.setMinClusterSize(5);
   ec.setMaxClusterSize(200);
   ec.setSearchMethod(tree);
   ec.setInputCloud(cloud);
@@ -105,7 +105,7 @@ ConeClustering::euclidianClustering(
     }
 
     // If the closest cluster is close enough, add the point to the cluster
-    if (closest_cluster_dist < 0.3) {
+    if (closest_cluster_dist < 0.15) {
       clusters[closest_cluster_id].points.push_back(point);
     }
   }
@@ -127,7 +127,7 @@ ConeClustering::stringClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud) {
 
   // sort point from left to right (because they are ordered from left to right)
-  std::sort(cloud->begin(), cloud->end(), leftrightsort);
+  // std::sort(cloud->begin(), cloud->end(), leftrightsort);
 
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
   std::vector<pcl::PointXYZINormal>
@@ -183,7 +183,7 @@ ConeClustering::stringClustering(
         float bound_z = std::fabs(max[2] - min[2]);
 
         // Filter based on the shape of cones
-        if (bound_x < 1 && bound_y < 1 && bound_z < 1) {
+        if (bound_x < 1 && bound_y < 1 && bound_z < 0.6 && max[2] < 0.5) {
           // This cluster can still be a cone
           clusters_to_keep.push_back(cluster_id);
         }

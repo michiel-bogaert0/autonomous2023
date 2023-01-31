@@ -1,6 +1,8 @@
 #include "lidar.hpp"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include <chrono>
+#include <iostream>
+#include <fstream>
 
 // Constructor
 namespace ns_lidar {
@@ -70,6 +72,13 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   publishDiagnostic(OK, "[perception] ground removal points",
                     "#points: " + std::to_string(notground_points->size()));
 
+  //  std::ofstream myfile;
+  // myfile.open("/home/lomeg/points_after_ground.txt");
+  // for(pcl::PointXYZINormal point: notground_points->points){
+  //   myfile << point.x <<  "," << point.y << std::endl;
+  // }
+  // myfile.close();
+  // exit(0);
   double time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
           .count();
@@ -132,9 +141,10 @@ void Lidar::preprocessing(
   // Clean up the points belonging to the car and noise in the sky
   for (auto &iter : raw.points) {
     // Remove points closer than 1m, higher than 0.6m or further than 20m
-    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 1 ||
+    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
         std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||
-        std::atan2(iter.x, iter.y) > 2.8)
+        std::atan2(iter.x, iter.y) > 2.8 ||
+        std::abs(iter.y) > 4)
       continue;
 
     preprocessed_pc->points.push_back(iter);
