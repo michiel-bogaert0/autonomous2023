@@ -27,7 +27,7 @@
         <param name= "cone_shape_factor" value = "0.4"/>
 
         <param name= "vis_cones" value = "false"/>
-        <param name= "big_box" value = "true"/>
+        <param name= "big_box" value = "false"/>
  
         <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
 
@@ -35,5 +35,6 @@
         <remap from="lidar/perception/groundremoval_pc" to="ugr/vis/lidar/groundremoval_pc"/>
         <remap from="lidar/perception/clustered_pc" to="ugr/vis/lidar/clustered_pc"/>
         <remap from="lidar/perception/cones_lidar" to="ugr/vis/lidar/cones"/>
+        <remap from="lidar/perception/clusters_colored" to="ugr/vis/lidar/clusters"/>
     </node>
 </launch>

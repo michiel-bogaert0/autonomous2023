@@ -20,7 +20,7 @@ Lidar::Lidar(ros::NodeHandle &n)
   clusteredLidarPublisher_ =
       n.advertise<sensor_msgs::PointCloud>("perception/clustered_pc", 5);
   clustersColoredpublisher =
-      n.advertise<sensor_msgs::PointCloud>("perception/clusters_pc", 5);
+      n.advertise<sensor_msgs::PointCloud2>("perception/clusters_colored", 5);
   visPublisher_ =
       n.advertise<visualization_msgs::MarkerArray>("perception/cones_lidar", 5);
   conePublisher_ = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>(
