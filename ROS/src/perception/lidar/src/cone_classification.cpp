@@ -45,7 +45,6 @@ ConeCheck ConeClassification::classifyCone(
     float num_points = 0.0;
     bool is_orange = false;
 
-
     // check size cloud for orange cone
     if (bound_z > threshold_height_big_cone_) {
       is_orange = true;
@@ -55,8 +54,7 @@ ConeCheck ConeClassification::classifyCone(
     // add the "coneness" metric to the cone_check struct
     double cone_metric =
         ConeClassification::checkShape(cone, centroid, is_orange);
-    if (dist != 0.0 &&
-        (cone_metric > cone_shape_factor_)) {
+    if (dist != 0.0 && (cone_metric > cone_shape_factor_)) {
       cone_check.pos.x = centroid[0];
       cone_check.pos.y = centroid[1];
       cone_check.pos.z = centroid[2];
