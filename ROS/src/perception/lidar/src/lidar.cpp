@@ -19,7 +19,7 @@ Lidar::Lidar(ros::NodeHandle &n)
       n.advertise<sensor_msgs::PointCloud2>("perception/groundremoval_pc", 5);
   clusteredLidarPublisher_ =
       n.advertise<sensor_msgs::PointCloud>("perception/clustered_pc", 5);
-  clustersColoredpublisher =
+  clustersColoredpublisher_ =
       n.advertise<sensor_msgs::PointCloud2>("perception/clusters_colored", 5);
   visPublisher_ =
       n.advertise<visualization_msgs::MarkerArray>("perception/cones_lidar", 5);
@@ -30,6 +30,7 @@ Lidar::Lidar(ros::NodeHandle &n)
   
   n.param<bool>("vis_cones", vis_cones_, true);
   n.param<bool>("big_box", big_box_, false);
+  n.param<bool>("color_clusters", color_clusters_, true);
 }
 
 /**
@@ -97,10 +98,12 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   publishDiagnostic(time_round < 1 ? OK : WARN, "[perception] clustering time",
                     "time needed: " + std::to_string(time_round));
 
-  clustersColored = cone_clustering_.clustersColoredMessage(clusters);
-  clustersColored.header.frame_id = msg.header.frame_id;
-  clustersColored.header.stamp = msg.header.stamp;
-  clustersColoredpublisher.publish(clustersColored);
+  if(color_clusters_){
+    clustersColored = cone_clustering_.clustersColoredMessage(clusters);
+    clustersColored.header.frame_id = msg.header.frame_id;
+    clustersColored.header.stamp = msg.header.stamp;
+    clustersColoredpublisher_.publish(clustersColored);
+  }
 
   cluster.header.frame_id = msg.header.frame_id;
   cluster.header.stamp = msg.header.stamp;
