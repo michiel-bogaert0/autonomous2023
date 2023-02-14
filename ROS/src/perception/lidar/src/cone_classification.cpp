@@ -41,7 +41,6 @@ ConeCheck ConeClassification::classifyCone(
   if (cone.points.size() >= minimal_points_cone_ &&
       centroid[2] - cone.points[0].normal_z > minimal_height_cone_) {
     float dist = hypot3d(centroid[0], centroid[1], centroid[2]);
-    ;
     float num_points = 0.0;
     bool is_orange = false;
 
