@@ -96,12 +96,7 @@ class CanConverter:
                         )
                     )
                     self.odrive.handle_power_msg(msg, axis_id, cmd_id)
-                else:
-                    print(cmd_id, node_id, axis_id)
-                    # print("CMD: ", cmd_id)
-            # else:
-            #     print("AXIS: ", axis_id)
-
+                
             imu_id = msg.arbitration_id & 0xFF
             if imu_id in self.IMU_IDS:
                 status = msg.data[6]
