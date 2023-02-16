@@ -24,10 +24,10 @@
         <param name="user" value="UGentRacing" />
         <param name="password" value="UGentRacing" />
         <param name="baudrate" value="460800" />
-        <param name="device" value="/dev/ttyUSB0" />
+        <param name="device" value="/dev/ttyUSB1" />
     </node>
     <node pkg="nmea_navsat_driver" output="log" type="nmea_serial_driver" name="nmea_publisher_right">
-        <param name="port" value="/dev/ttyUSB0"></param>
+        <param name="port" value="/dev/ttyUSB1"></param>
         <param name="baud" value="460800"></param>
 
         <param name="frame_id" value="ugr/car_base_link/gps0" />
@@ -44,10 +44,10 @@
         <param name="user" value="UGentRacing" />
         <param name="password" value="UGentRacing" />
         <param name="baudrate" value="460800" />
-        <param name="device" value="/dev/ttyUSB1" />
+        <param name="device" value="/dev/ttyUSB0" />
     </node>
     <node pkg="nmea_navsat_driver" output="log" type="nmea_serial_driver" name="nmea_publisher_left">
-        <param name="port" value="/dev/ttyUSB1"></param>
+        <param name="port" value="/dev/ttyUSB0"></param>
         <param name="baud" value="460800"></param>
 
         <param name="frame_id" value="ugr/car_base_link/gps1" />
@@ -75,7 +75,7 @@
     <!-- Camera -->
     <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries" />
 
-    <!-- <include file="$(find camera)/launch/perception.camera.publisher.launch">
+    <include file="$(find camera)/launch/perception.camera.publisher.launch">
         <arg name="type" value="camera"/>
-    </include> -->
+    </include>
 </launch>

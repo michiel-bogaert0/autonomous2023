@@ -50,6 +50,8 @@ class CanConverter:
         self.last_send_time = rospy.get_time()
         self.bus.send(RES_ACTIVATION_MSG)
 
+        print("Started!")
+
         try:
             self.listen_on_can()
         except rospy.ROSInterruptException:
@@ -70,9 +72,11 @@ class CanConverter:
 
             # Check if the message is a ODrive command
             axis_id = msg.arbitration_id >> 5
+            # node_id = msg.arbitration_id 
             if axis_id == 1 or axis_id == 2:
                 cmd_id = msg.arbitration_id & 0b11111
-
+                node_id = msg.arbitration_id & 0b11111000000
+                
                 if cmd_id == 9:
                     self.diagnostics.publish(
                         create_diagnostic_message(
@@ -83,6 +87,20 @@ class CanConverter:
                     )
                     self.odrive.handle_vel_msg(msg, axis_id, cmd_id)
                     continue
+                elif cmd_id == 23:
+                    self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="[Mechatronics] CAN converter (ODrive)",
+                            message="ODrive power message received.",
+                        )
+                    )
+                    self.odrive.handle_power_msg(msg, axis_id, cmd_id)
+                else:
+                    print(cmd_id, node_id, axis_id)
+                    # print("CMD: ", cmd_id)
+            # else:
+            #     print("AXIS: ", axis_id)
 
             imu_id = msg.arbitration_id & 0xFF
             if imu_id in self.IMU_IDS:
