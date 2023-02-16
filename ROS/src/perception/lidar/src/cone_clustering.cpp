@@ -21,10 +21,10 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
  * The type of clustering that is applied is chosen by the clustering_method
  * parameter.
  */
-sensor_msgs::PointCloud ConeClustering::cluster(
+std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
-  sensor_msgs::PointCloud cluster_msg;
+  std::vector<pcl::PointCloud<pcl::PointXYZINormal>> cluster_msg;
   if (clustering_method_ == "string") {
     cluster_msg = ConeClustering::stringClustering(cloud);
   } else {
@@ -35,11 +35,12 @@ sensor_msgs::PointCloud ConeClustering::cluster(
 }
 
 /**
- * @brief Clusters the cones in the final filtered point cloud and generates a
- * ROS message.
+ * @brief Clusters the cones in the final filtered point cloud and returns a
+ * vector containing the different clusters
  *
  */
-sensor_msgs::PointCloud ConeClustering::euclidianClustering(
+std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
+ConeClustering::euclidianClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
   // Create a PC and channel for the cone colour
@@ -109,19 +110,20 @@ sensor_msgs::PointCloud ConeClustering::euclidianClustering(
     }
   }
 
-  return ConeClustering::constructMessage(clusters);
+  return clusters;
 }
 
 /**
- * @brief Clusters the cones in the final filtered point cloud and generates a
- * ROS message.
+ * @brief Clusters the cones in the final filtered point cloud and returns a
+ * vector containing the different clusters
  *
  * This time using String Clustering.
  * @refer Broström, Carpenfelt
  *
  *
  */
-sensor_msgs::PointCloud ConeClustering::stringClustering(
+std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
+ConeClustering::stringClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud) {
 
   // sort point from left to right (because they are ordered from left to right)
@@ -228,7 +230,44 @@ sensor_msgs::PointCloud ConeClustering::stringClustering(
     clusters.push_back(cluster);
   }
 
-  return ConeClustering::constructMessage(clusters);
+  return clusters;
+}
+
+/**
+ * @brief Construct a ROS message from the clusters.
+ * This message is a pointcloud where each point is colored based on the cluster
+ * it belongs to.
+ * @returns a sensor_msgs::PointCloud the colored points.
+ */
+sensor_msgs::PointCloud2 ConeClustering::clustersColoredMessage(
+    std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters) {
+
+  pcl::PointCloud<pcl::PointXYZRGB> points;
+  for (pcl::PointCloud<pcl::PointXYZINormal> cluster : clusters) {
+    // choose color of cluster based on position of the first point in the
+    // cluster to keep the cluster color as constant as possible
+    pcl::PointXYZINormal first = cluster.points[0];
+    int color = int((first.x / 0.3) * (first.y / 0.3)) % 21;
+    int r = ConeClustering::colors_clusters[color][0];
+    int g = ConeClustering::colors_clusters[color][1];
+    int b = ConeClustering::colors_clusters[color][2];
+
+    // color the points of the cluster
+    for (pcl::PointXYZINormal point : cluster) {
+      pcl::PointXYZRGB new_point;
+      new_point.x = point.x;
+      new_point.y = point.y;
+      new_point.z = point.z;
+      new_point.r = r;
+      new_point.g = g;
+      new_point.b = b;
+      points.push_back(new_point);
+    }
+  }
+
+  sensor_msgs::PointCloud2 clusters_colored_msg;
+  pcl::toROSMsg(points, clusters_colored_msg);
+  return clusters_colored_msg;
 }
 
 /**

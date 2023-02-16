@@ -21,13 +21,14 @@
         <param name= "point_count_threshold" value="2"/>
         
         <param name= "min_distance_factor" value="1.5"/>
-        <param name= "minimal_points_cone" value = "3"/>
+        <param name= "minimal_points_cone" value = "5"/>
         <param name= "threshold_height_big_cone" value ="0.4"/>
         <param name= "minimal_height_cone" value = "0.07"/>
         <param name= "cone_shape_factor" value = "0.4"/>
 
         <param name= "vis_cones" value = "false"/>
         <param name= "big_box" value = "true"/>
+        <param name= "color_clusters" value = "true"/>
  
         <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
 
@@ -35,5 +36,6 @@
         <remap from="lidar/perception/groundremoval_pc" to="ugr/vis/lidar/groundremoval_pc"/>
         <remap from="lidar/perception/clustered_pc" to="ugr/vis/lidar/clustered_pc"/>
         <remap from="lidar/perception/cones_lidar" to="ugr/vis/lidar/cones"/>
+        <remap from="lidar/perception/clusters_colored" to="ugr/vis/lidar/clusters"/>
     </node>
 </launch>

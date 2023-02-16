@@ -26,7 +26,7 @@ public:
 
     double operator[](const int index) const {
         VectorXf mean = this->mean;
-        
+
         double val = mean(0);
 
         if (index == 0)
@@ -36,7 +36,7 @@ public:
         else 
             throw std::invalid_argument("Index must be 0 or 1");
     };
-    
+
     int getId() {
         return this->id;
     };

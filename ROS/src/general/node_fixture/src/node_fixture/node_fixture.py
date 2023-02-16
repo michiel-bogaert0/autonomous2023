@@ -1,66 +1,25 @@
 #!/usr/bin/python3
+import enum
 import queue
 from collections import deque
-from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from typing import Any, Tuple, Type, get_type_hints
 
-import enum
-
-import cv2
 import numpy as np
 import PyKDL
 import roslib.message
 import rospy
 import rostopic
-import torch
-from cv_bridge import CvBridge
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import TransformStamped
 from rospy.impl.tcpros import DEFAULT_BUFF_SIZE, get_tcpros_handler
 from rospy.rostime import Time
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from tf2_kdl import transform_to_kdl
-from ugr_msgs.msg import BoundingBox, Map, ObservationWithCovariance, ObservationWithCovarianceArrayStamped
-
-
-@dataclass
-class IntBoundingBox:
-    left: int
-    top: int
-    width: int
-    height: int
-    right: int
-    bottom: int
-
-    tl: Tuple[int, int] = (0, 0)
-    br: Tuple[int, int] = (0, 0)
-
-    def __post_init__(self):
-        self.tl = (self.left, self.top)
-        self.br = (self.right, self.bottom)
-
-    @staticmethod
-    def from_img(or_bb: BoundingBox, img: np.ndarray):
-        h, w, c = img.shape
-        bb_left = int(w * or_bb.left)
-        bb_top = int(h * or_bb.top)
-        bb_w = int(w * or_bb.width)
-        bb_h = int(h * or_bb.height)
-        bb_right = bb_left + bb_w
-        bb_bottom = bb_top + bb_h
-
-        return IntBoundingBox(
-            left=bb_left,
-            top=bb_top,
-            width=bb_w,
-            height=bb_h,
-            right=bb_right,
-            bottom=bb_bottom,
-        )
+from ugr_msgs.msg import (Map, ObservationWithCovariance,
+                          ObservationWithCovarianceArrayStamped)
 
 
 class AddSubscriber:
@@ -145,7 +104,6 @@ class ROSNode:
     def __init__(self, name: str, already_add_subscriber: bool = True):
         self.name = name
 
-        self.bridge = CvBridge()
         rospy.init_node(self.name, anonymous=True)
 
         if already_add_subscriber:
@@ -177,7 +135,9 @@ class ROSNode:
             new_observation.observation.location.x = p[0]
             new_observation.observation.location.y = p[1]
             new_observation.observation.location.z = p[2]
-            new_observation.observation.observation_class = obs.observation.observation_class
+            new_observation.observation.observation_class = (
+                obs.observation.observation_class
+            )
             new_observation.observation.belief = obs.observation.belief
 
             res.observations.append(new_observation)
@@ -234,39 +194,12 @@ class ROSNode:
                 buff_size=buff_size,
             )
 
-    def to_int_bb(self, or_bb: BoundingBox, img: np.ndarray) -> IntBoundingBox:
-        return IntBoundingBox.from_img(or_bb, img)
-
-    def to_channel_in_front(self, img: np.ndarray):
-        return np.moveaxis(img, -1, 0)
-
-    def to_channel_in_back(self, img: np.ndarray):
-        return np.moveaxis(img, 0, -1)
-
     @AddSubscriber(topic="state")
     def state_callback(self, data: String):
         self.state_update(str(data))
 
     def state_update(self, new_state: str):
         pass
-
-    def ros_img_to_cv_img(self, img: Image):
-        return self.bridge.imgmsg_to_cv2(img, "rgb8")
-
-    def cv_img_to_ros_img(self, img: np.array):
-        return self.bridge.cv2_to_imgmsg(img, "rgb8")
-
-    def pytorch_ros_prepare(self, img: Image, img_size: Tuple[int, int]):
-        # img_size is (w,h)
-        cv_img = self.ros_img_to_cv_img(img)
-        return self.pytorch_cv_prepare(cv_img, img_size)
-
-    def pytorch_cv_prepare(self, img: np.ndarray, img_size: Tuple[int, int]):
-        img = cv2.resize(img, img_size)
-        img = self.to_channel_in_front(img)
-        img = img.astype(np.float32)
-        img /= 255
-        return torch.FloatTensor(img)
 
     def get_publisher(self, topic: str, msg_type: Type):
         key = (topic, msg_type)
@@ -296,11 +229,13 @@ class ROSNode:
         """
         return int(rosstamp.__str__()) / 10**9
 
+
 class DiagnosticStatusEnum(enum.Enum):
     OK = 0
     WARN = 1
     ERROR = 2
     STALE = 3
+
 
 def create_diagnostic_message(
     level: DiagnosticStatusEnum,
