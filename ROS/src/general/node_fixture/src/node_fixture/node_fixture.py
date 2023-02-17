@@ -128,7 +128,7 @@ class ROSNode:
         res = ObservationWithCovarianceArrayStamped()
         for obs in observations.observations:
             p = kdl_transform * PyKDL.Vector(
-                obs.location.x, obs.location.y, obs.location.z
+                obs.observation.location.x, obs.observation.location.y, obs.observation.location.z
             )
 
             new_observation = ObservationWithCovariance()
