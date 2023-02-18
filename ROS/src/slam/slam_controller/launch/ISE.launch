@@ -32,8 +32,8 @@
     <param name="map_frame" value="ugr/car_map" />
     <param name="odom_frame" value="ugr/car_odom" />
     <param name="base_link_frame" value="ugr/car_base_link" />
-    <param name="frequency" value="30" />
-    <param name="sensor_timeout" value="1" />
+    <param name="frequency" value="60" />
+    <param name="sensor_timeout" value="0.05" />
 
     <param name="two_d_mode" value="true" />
     <param name="reset_on_time_jump" value="true" />
@@ -93,8 +93,8 @@
     <param name="map_frame" value="ugr/car_map" />
     <param name="odom_frame" value="ugr/car_odom" />
     <param name="base_link_frame" value="ugr/car_base_link" />
-    <param name="frequency" value="30" />
-    <param name="sensor_timeout" value="1" />
+    <param name="frequency" value="60" />
+    <param name="sensor_timeout" value="0.05" />
 
     <param name="two_d_mode" value="true" />
     <param name="reset_on_time_jump" value="true" />
@@ -157,7 +157,7 @@
     <param name="imu0_differential" value="false" />
     <param name="imu0_relative" value="true" />
 
-    <param name="odom0" value="/ugr/car/odometry/filtered/gps" />
+    <param name="odom0" value="/output/gps" />
     <rosparam param="odom0_config">[true, true, false,
                                      false, false, false,
                                      false, false, false,
