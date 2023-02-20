@@ -252,7 +252,7 @@ class RosNMEADriver(object):
                 2 * hdop * self.alt_std_dev) ** 2  # FIXME
 
             self.fix_pub.publish(current_fix)
-            self.diagnostics.publish(
+            self.diagnostics_pub.publish(
                     create_diagnostic_message(
                         level=DiagnosticStatus.WARN if fix_type != 4 else DiagnosticStatus.OK,
                         name=f"[GPS] GPS Status (GPS {self.gps_name})",
