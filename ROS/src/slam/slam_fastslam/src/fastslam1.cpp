@@ -46,6 +46,7 @@ namespace slam
                                              world_frame(n.param<string>("world_frame", "ugr/car_odom")),
                                              particle_count(n.param<int>("particle_count", 100)),
                                              post_clustering(n.param<bool>("post_clustering", false)),
+                                             doSynchronous(n.param<bool>("synchronous", true)),
                                              effective_particle_count(n.param<int>("effective_particle_count", 75)),
                                              min_clustering_point_count(n.param<int>("min_clustering_point_count", 30)),
                                              eps(n.param<double>("eps", 2.0)),
@@ -259,12 +260,26 @@ namespace slam
       this->prev_state = {0.0, 0.0, 0.0};
       this->latestTime = 0.0;
 
+      firstRound = true;
+
       return;
     }
     else
     {
       this->latestTime = obs->header.stamp.toSec();
     }
+
+    this->observations = *obs;
+    this->updateRound = true;
+
+    if (this->doSynchronous)
+    {
+      this->step();
+    }
+  }
+
+  void FastSLAM1::step()
+  {
 
     // Sometimes let the particle filter spread out
     chrono::steady_clock::time_point time = chrono::steady_clock::now();
@@ -273,7 +288,8 @@ namespace slam
     if (doObserve)
       this->prev_time = time;
 
-    // Transform the observations to the base_link frame
+    // Transform the observations to the base_link frame (statically)
+    // Only if using the 'asynchronous method' also to current time
 
     std::chrono::steady_clock::time_point t1;
     std::chrono::steady_clock::time_point t2;
@@ -281,25 +297,34 @@ namespace slam
 
     t1 = std::chrono::steady_clock::now();
     ugr_msgs::ObservationWithCovarianceArrayStamped transformed_obs;
-    transformed_obs.header = obs->header;
+    transformed_obs.header.frame_id = this->base_link_frame;
 
-    for (auto observation : obs->observations)
+    if (this->doSynchronous)
+    {
+      transformed_obs.header.stamp = this->observations.header.stamp;
+    }
+    else
+    {
+      transformed_obs.header.stamp = ros::Time::now();
+    }
+
+    for (auto observation : this->observations.observations)
     {
 
       ugr_msgs::ObservationWithCovariance transformed_ob;
 
       geometry_msgs::PointStamped locStamped;
       locStamped.point = observation.observation.location;
-      locStamped.header = obs->header;
+      locStamped.header = this->observations.header;
 
       try
       {
-        transformed_ob.observation.location = this->tfBuffer.transform<geometry_msgs::PointStamped>(locStamped, this->base_link_frame, ros::Duration(0)).point;
+        transformed_ob.observation.location = this->tfBuffer.transform<geometry_msgs::PointStamped>(locStamped, this->base_link_frame, transformed_obs.header.stamp, this->world_frame, ros::Duration(0.1)).point;
       }
       catch (const exception e)
 
       {
-        ROS_ERROR("observation static transform failed: %s", e.what());
+        ROS_ERROR("Observation static transform (and perhaps time transform) failed: %s", e.what());
         return;
       }
 
@@ -318,7 +343,7 @@ namespace slam
       transformed_obs.observations.push_back(transformed_ob);
     }
 
-    // Fetch the current pose estimate so that we can estimate dDist and dYaw
+    // Fetch the current pose estimate (current in: equal to the one of the observations) so that we can estimate dDist and dYaw
     double dDist, dYaw = 0;
 
     geometry_msgs::TransformStamped car_pose;
@@ -343,7 +368,22 @@ namespace slam
     tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 
     dYaw = yaw - this->prev_state[2];
-    dDist = pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1], 2), 0.5);
+    
+    // Check for reverse
+    double drivingAngle = atan2(y - this->prev_state[1], x - this->prev_state[0]);
+    bool forward = abs(drivingAngle - yaw) < M_PI_2;
+    dDist = (forward ? 1 : -1) *  pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1], 2), 0.5);
+
+    // Initial pose mechanism
+    if (firstRound)
+    {
+      this->prev_state[0] = x;
+      this->prev_state[1] = y;
+      this->prev_state[2] = yaw;
+
+      firstRound = false;
+      return;
+    } 
 
     vector<vector<int>> knownObsIndicesVector;
     vector<int> newLmsCounts;
@@ -414,22 +454,26 @@ namespace slam
 
       t1 = std::chrono::steady_clock::now();
       // Check which cones should have been seen but were not and lower their score
-      for (int k = 0; k < particles.size(); k++)
+
+      if (this->updateRound)
       {
-
-        Particle &particle = particles[k];
-        vector<int> &indices = knownObsIndicesVector[k];
-
-        vector<VectorXf> zs;
-        this->landmarks_to_observations(particle.xf(), zs, particle.xv());
-
-        for (int i = 0; i < zs.size() - newLmsCounts[k]; i++)
+        for (int k = 0; k < particles.size(); k++)
         {
-          if (zs[i](0) < this->expected_range && abs(zs[i](1)) < this->expected_half_fov && count(indices.begin(), indices.end(), i) == 0)
+
+          Particle &particle = particles[k];
+          vector<int> &indices = knownObsIndicesVector[k];
+
+          vector<VectorXf> zs;
+          this->landmarks_to_observations(particle.xf(), zs, particle.xv());
+
+          for (int i = 0; i < zs.size() - newLmsCounts[k]; i++)
           {
-            LandmarkMetadata meta = particle.metadata()[i];
-            meta.score += penalty_score;
-            particle.setMetadatai(i, meta);
+            if (zs[i](0) < this->expected_range && abs(zs[i](1)) < this->expected_half_fov && count(indices.begin(), indices.end(), i) == 0)
+            {
+              LandmarkMetadata meta = particle.metadata()[i];
+              meta.score += penalty_score;
+              particle.setMetadatai(i, meta);
+            }
           }
         }
       }
@@ -451,12 +495,14 @@ namespace slam
 
     // Finalizing
     this->prev_state = {x, y, yaw};
+    this->updateRound = false;
+    this->observations.observations.clear();
 
     // Done ! Now produce the output
-    this->publishOutput();
+    this->publishOutput(transformed_obs.header.stamp);
   }
 
-  void FastSLAM1::publishOutput()
+  void FastSLAM1::publishOutput(ros::Time lookupTime)
   {
 
     std::chrono::steady_clock::time_point t1;
@@ -501,22 +547,25 @@ namespace slam
       float curYaw = particle.xv()(2);
 
       // Detect code unwrapping and add offset
-      if(particle.prevyaw() - curYaw > yaw_unwrap_threshold) {
+      if (particle.prevyaw() - curYaw > yaw_unwrap_threshold)
+      {
         // Increment revolutions of cone
         particle.incRev();
         // Print debug info
-        ROS_DEBUG_STREAM("+Previous yaw: " << particle.prevyaw() << " Current yaw: " << curYaw << " Diff: " << abs(particle.prevyaw()-curYaw) << " Rev:" << particle.rev());
-      } else if (curYaw - particle.prevyaw() > yaw_unwrap_threshold) {
+        ROS_DEBUG_STREAM("+Previous yaw: " << particle.prevyaw() << " Current yaw: " << curYaw << " Diff: " << abs(particle.prevyaw() - curYaw) << " Rev:" << particle.rev());
+      }
+      else if (curYaw - particle.prevyaw() > yaw_unwrap_threshold)
+      {
         // Increment revolutions of cone
         particle.decRev();
         // Print debug info
-        ROS_DEBUG_STREAM("-Previous yaw: " << particle.prevyaw() << " Current yaw: " << curYaw << " Diff: " << abs(particle.prevyaw()-curYaw) << " Rev:" << particle.rev());
+        ROS_DEBUG_STREAM("-Previous yaw: " << particle.prevyaw() << " Current yaw: " << curYaw << " Diff: " << abs(particle.prevyaw() - curYaw) << " Rev:" << particle.rev());
       }
 
       // Correct yaw by offsetting
       curYaw += particle.rev() * 2 * M_PI;
 
-      if(abs(particle.xv()(2) - particle.prevyaw()) > yaw_unwrap_threshold)
+      if (abs(particle.xv()(2) - particle.prevyaw()) > yaw_unwrap_threshold)
         // Print corrected yaw
         ROS_DEBUG_STREAM("Corrected yaw: " << curYaw);
 
@@ -603,7 +652,7 @@ namespace slam
       {
         vector<unsigned int> cluster = clusters[i];
 
-        MatrixXf cov(2,2);
+        MatrixXf cov(2, 2);
 
         vector<float> X;
         vector<float> Y;
@@ -620,7 +669,9 @@ namespace slam
 
         positionCovariances.push_back(cov);
       }
-    } else {
+    }
+    else
+    {
       // Just take all the particles from the best particle
       lmMeans = bestParticle.xf();
       lmMetadatas = bestParticle.metadata();
@@ -659,9 +710,9 @@ namespace slam
     ugr_msgs::ObservationWithCovarianceArrayStamped global;
     ugr_msgs::ObservationWithCovarianceArrayStamped local;
     global.header.frame_id = this->slam_world_frame;
-    global.header.stamp = ros::Time::now();
+    global.header.stamp = lookupTime;
     local.header.frame_id = this->base_link_frame;
-    local.header.stamp = ros::Time::now();
+    local.header.stamp = lookupTime;
 
     for (int i = 0; i < filteredLandmarks.size(); i++)
     {
@@ -729,7 +780,7 @@ namespace slam
     // So from world_frame to base_link_frame
     nav_msgs::Odometry odom;
 
-    odom.header.stamp = ros::Time::now();
+    odom.header.stamp = lookupTime;
     odom.header.frame_id = this->slam_world_frame;
     odom.child_frame_id = this->base_link_frame;
 
@@ -757,7 +808,7 @@ namespace slam
 
     geometry_msgs::TransformStamped transformMsg;
     transformMsg.header.frame_id = this->base_link_frame;
-    transformMsg.header.stamp = ros::Time::now();
+    transformMsg.header.stamp = lookupTime;
     transformMsg.child_frame_id = this->slam_world_frame;
 
     transformMsg.transform.translation.x = invTranslation.x();
