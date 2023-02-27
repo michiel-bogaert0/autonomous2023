@@ -34,7 +34,6 @@ class OdriveConverter:
         self, msg: can.Message, axis_id: int, cmd_id: int
     ):
         can_msg = self.odrive_db.decode_message(cmd_id, msg.data)
-        print(can_msg)
 
     def handle_vel_msg(
         self, msg: can.Message, axis_id: int, cmd_id: int
