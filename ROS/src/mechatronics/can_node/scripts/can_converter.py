@@ -50,8 +50,6 @@ class CanConverter:
         self.last_send_time = rospy.get_time()
         self.bus.send(RES_ACTIVATION_MSG)
 
-        print("Started!")
-
         try:
             self.listen_on_can()
         except rospy.ROSInterruptException:
@@ -72,7 +70,6 @@ class CanConverter:
 
             # Check if the message is a ODrive command
             axis_id = msg.arbitration_id >> 5
-            # node_id = msg.arbitration_id 
             if axis_id == 1 or axis_id == 2:
                 cmd_id = msg.arbitration_id & 0b11111
                 node_id = msg.arbitration_id & 0b11111000000
