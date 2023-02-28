@@ -20,7 +20,7 @@ typedef struct {
   double y;
   double floor;
   double height_cone = 0.305;
-  double half_width_cone = 0.765;
+  double half_width_cone = 0.0765;
 } ConeModel;
 
 float hypot3d(float a, float b, float c);
