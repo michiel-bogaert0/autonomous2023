@@ -49,7 +49,7 @@ class NodeLauncher:
         # Check if roslaunch file is syntactic correct
         rospy.logdebug(roslaunch.rlutil.check_roslaunch(str(rel_path.absolute())))
 
-        if self.active is not None:
+        if self.active:
             # Shutdown currently active launch
             self.active.shutdown()
             self.active = None
