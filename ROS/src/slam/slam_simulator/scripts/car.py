@@ -7,7 +7,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import (
     TwistWithCovarianceStamped,
     Quaternion,
-    
+    TransformStamped
 )
 from sensor_msgs.msg import Imu
 from tf.transformations import quaternion_from_euler
@@ -58,14 +58,15 @@ class CarSimulator:
         }
 
         # Parameters
-        self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
+        self.world_frame = rospy.get_param("~world_frame", "ugr/car_map")
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
         self.L = rospy.get_param("~wheelbase", 1.0)
-        self.delta_max = rospy.get_param("~max_steering_angle", 1.0)
+        self.delta_max = rospy.get_param("~max_steering_angle", 0.8)
+        self.v_max = rospy.get_param("~max_speed", 5.0)
         self.alpha = rospy.get_param("~alpha", 0.1)
-        self.beta = rospy.get_param("~beta", 1.0)
-        self.input_scale = rospy.get_param("~input_scale", [1.0, 3.0])
+        self.beta = rospy.get_param("~beta", 0.8)
+        self.input_scale = rospy.get_param("~input_scale", [1.0, 1.0])
 
         self.gt_publish_rate = rospy.get_param("~publish_rates/gt", 200)
         self.encoder_publish_rate = rospy.get_param("~publish_rates/encoder", 30)
@@ -81,6 +82,7 @@ class CarSimulator:
         self.key_events = keyboard.Events()
 
         # Publishers
+        self.br = tf2.TransformBroadcaster()
         self.gt_pub = rospy.Publisher('/output/gt_odometry', Odometry, queue_size=5)
         self.encoder_pub = rospy.Publisher('/output/encoder0', TwistWithCovarianceStamped, queue_size=5)
         self.imu_pub = rospy.Publisher('/output/imu0', Imu, queue_size=5)
@@ -156,9 +158,9 @@ class CarSimulator:
             self.a = 0.0 - (self.v / abs(self.v) * self.alpha if abs(self.v) > 0.001 else 0.0)
         
         if self.key_state["right"]:
-            self.ohm = 1.0
-        elif self.key_state["left"]:
             self.ohm = -1.0
+        elif self.key_state["left"]:
+            self.ohm = 1.0
         else:
             self.ohm = 0.0 - ( self.delta / abs(self.delta) * self.beta if abs(self.delta) > 0.001 else 0.0)
 
@@ -175,6 +177,7 @@ class CarSimulator:
         self.delta = max(-self.delta_max, min(self.delta, self.delta_max))
 
         self.v += self.input_scale[0] * dt * self.a
+        self.v = max(-self.v_max, min(self.v, self.v_max))
 
         if abs(self.v) < 0.001:
             self.v = 0.0
@@ -208,6 +211,23 @@ class CarSimulator:
         odom.twist.twist.angular.z = self.omega
 
         self.gt_pub.publish(odom)
+
+        t = TransformStamped()
+
+        t.header.stamp = rospy.Time.now()
+        t.header.frame_id = self.world_frame
+        t.child_frame_id = self.base_link_frame
+        t.transform.translation.x = self.x
+        t.transform.translation.y = self.y
+        t.transform.translation.z = 0.0
+        q = quaternion_from_euler(0, 0, self.theta)
+        t.transform.rotation.x = q[0]
+        t.transform.rotation.y = q[1]
+        t.transform.rotation.z = q[2]
+        t.transform.rotation.w = q[3]
+
+        self.br.sendTransform(t)
+
 
     def apply_noise_and_quantise(self, x, noise):
         """
