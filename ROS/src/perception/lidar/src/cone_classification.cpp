@@ -120,7 +120,7 @@ ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
   // adapt the cone model for orange cone
   if (orange) {
     cone_model.height_cone = 0.50;
-    cone_model.half_width_cone = 0.980;
+    cone_model.half_width_cone = 0.0980;
   }
 
   // compute the center of the cone
