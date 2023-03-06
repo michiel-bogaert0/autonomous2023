@@ -360,6 +360,11 @@ double GroundRemoval::calculate_ground(pcl::PointXYZ prev_centroid,
   return floor;
 }
 
+/**
+ * @brief Colors the pointcloud in from first point to last point 
+ * with increasing luminance values.
+ * This makes it easier to see in which order points arrive at clustering.
+ */
 sensor_msgs::PointCloud2 GroundRemoval::publishColoredGround(pcl::PointCloud<pcl::PointXYZINormal> points){
   int i= 0; 
   pcl::PointCloud<pcl::PointXYZRGB> new_points;

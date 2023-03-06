@@ -147,8 +147,7 @@ void Lidar::preprocessing(
     // Remove points closer than 1m, higher than 0.6m or further than 20m
     if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
         std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||
-        std::atan2(iter.x, iter.y) > 2.8 ||
-        std::abs(iter.y) > 4)
+        std::atan2(iter.x, iter.y) > 2.8)
       continue;
 
     preprocessed_pc->points.push_back(iter);
