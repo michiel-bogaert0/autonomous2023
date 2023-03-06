@@ -29,6 +29,7 @@
         <param name= "vis_cones" value = "false"/>
         <param name= "big_box" value = "true"/>
         <param name= "color_clusters" value = "true"/>
+        <param name= "use_sort" value = "true"/>
  
         <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
 

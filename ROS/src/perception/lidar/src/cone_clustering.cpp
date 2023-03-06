@@ -12,6 +12,7 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
   n.param<std::string>("clustering_method", clustering_method_, "string");
   n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
+  n.param<bool>("use_sort", use_sort_, false);
 }
 
 /**
@@ -125,10 +126,14 @@ ConeClustering::euclidianClustering(
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
 ConeClustering::stringClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud) {
+  
 
-  // sort point from left to right (because they are ordered from left to right)
-  // std::sort(cloud->begin(), cloud->end(), leftrightsort);
+  if(use_sort_){
+    // sort point from left to right (because they are ordered from left to right)
+    std::sort(cloud->begin(), cloud->end(), leftrightsort);
 
+  }
+  
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
   std::vector<pcl::PointXYZINormal>
       cluster_rightmost; // The rightmost point in each cluster
