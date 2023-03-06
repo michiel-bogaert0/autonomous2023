@@ -162,7 +162,7 @@ ConeClustering::stringClustering(
       float delta_r = std::abs(r_point - r_rightmost);
       float delta_arc = std::abs(std::atan2(point.x, point.y) -
                                  atan2(rightmost.x, rightmost.y)) *
-                        r_rightmost;
+                        r_point;
       float dist = std::max(delta_r, delta_arc);
 
       // A cone is max 285mm wide, check whether this point is within that

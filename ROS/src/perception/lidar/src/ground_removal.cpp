@@ -22,6 +22,7 @@ GroundRemoval::GroundRemoval(ros::NodeHandle &n) : n_(n) {
   n.param<double>("radial_bucket_tipping_point", radial_bucket_tipping_point_,
                   10);
   n.param<bool>("use_slope", use_slope_, true);
+  n.param<int>("color_factor", factor_color_, 5);
 }
 
 /**
@@ -358,4 +359,26 @@ double GroundRemoval::calculate_ground(pcl::PointXYZ prev_centroid,
   }
   return floor;
 }
+
+sensor_msgs::PointCloud2 GroundRemoval::publishColoredGround(pcl::PointCloud<pcl::PointXYZINormal> points){
+  int i= 0; 
+  pcl::PointCloud<pcl::PointXYZRGB> new_points;
+        // color the points of the cluster
+  for (pcl::PointXYZINormal point : points) {
+    int intens = int(i++/factor_color_) % 256;
+    pcl::PointXYZRGB new_point;
+    new_point.x = point.x;
+    new_point.y = point.y;
+    new_point.z = point.z;
+    new_point.r = intens;
+    new_point.g = intens;
+    new_point.b = intens;
+    new_points.push_back(new_point);
+  }
+
+  sensor_msgs::PointCloud2 ground_colored_msg;
+  pcl::toROSMsg(new_points, ground_colored_msg);
+  return ground_colored_msg;
+}
+
 } // namespace ns_lidar

@@ -29,6 +29,8 @@ Lidar::Lidar(ros::NodeHandle &n)
       "perception/observations", 5);
   diagnosticPublisher_ =
       n.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 5);
+  groundColoredPublisher_ =
+      n.advertise<sensor_msgs::PointCloud2>("/perception/ground_colored", 5);
 
   n.param<bool>("vis_cones", vis_cones_, true);
   n.param<bool>("big_box", big_box_, false);
@@ -79,6 +81,8 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   // }
   // myfile.close();
   // exit(0);
+  sensor_msgs::PointCloud2 ground_msg = ground_removal_.publishColoredGround(*notground_points);
+  groundColoredPublisher_.publish(ground_msg);
   double time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
           .count();
