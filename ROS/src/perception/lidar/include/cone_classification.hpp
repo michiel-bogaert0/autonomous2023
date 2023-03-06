@@ -47,7 +47,7 @@ private:
                              // 0 -> the pointcloud can have any shape
                              // 1 -> the pointcloud must have the precise shape
                              // of a cone
-  double height_width_factor_; // what is the relation between a cones height and width/depth
+  double height_width_factor_; // the minimal value height/depth needs to have
   double checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
                     Eigen::Vector4f centroid, bool orange);
 };

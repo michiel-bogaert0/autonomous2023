@@ -74,13 +74,6 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   publishDiagnostic(OK, "[perception] ground removal points",
                     "#points: " + std::to_string(notground_points->size()));
 
-  //  std::ofstream myfile;
-  // myfile.open("/home/lomeg/points_after_ground.txt");
-  // for(pcl::PointXYZINormal point: notground_points->points){
-  //   myfile << point.x <<  "," << point.y << std::endl;
-  // }
-  // myfile.close();
-  // exit(0);
   sensor_msgs::PointCloud2 ground_msg = ground_removal_.publishColoredGround(*notground_points);
   groundColoredPublisher_.publish(ground_msg);
   double time_round =

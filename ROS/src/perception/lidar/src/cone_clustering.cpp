@@ -60,7 +60,7 @@ ConeClustering::euclidianClustering(
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
   pcl::EuclideanClusterExtraction<pcl::PointXYZINormal> ec;
   ec.setClusterTolerance(cluster_tolerance_);
-  ec.setMinClusterSize(5);
+  ec.setMinClusterSize(2);
   ec.setMaxClusterSize(200);
   ec.setSearchMethod(tree);
   ec.setInputCloud(cloud);
@@ -106,7 +106,7 @@ ConeClustering::euclidianClustering(
     }
 
     // If the closest cluster is close enough, add the point to the cluster
-    if (closest_cluster_dist < 0.15) {
+    if (closest_cluster_dist < 0.3) {
       clusters[closest_cluster_id].points.push_back(point);
     }
   }

@@ -55,7 +55,7 @@ private:
   double big_radial_bucket_length_;    // length of big buckets
   bool use_slope_;                     // Is the slope used for GR or not
 
-  int factor_color_;
+  int factor_color_; //number of consecutive points that get the same color
 
   void groundRemovalZermas(
       const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
