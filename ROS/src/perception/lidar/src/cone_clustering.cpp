@@ -188,7 +188,7 @@ ConeClustering::stringClustering(
         float bound_z = std::fabs(max[2] - min[2]);
 
         // Filter based on the shape of cones
-        if (bound_x < 1 && bound_y < 1 && bound_z < 0.6 && max[2] < 0.5) {
+        if (bound_x < 1 && bound_y < 1 && bound_z < 0.6) {
           // This cluster can still be a cone
           clusters_to_keep.push_back(cluster_id);
         }

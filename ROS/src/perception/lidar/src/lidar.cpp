@@ -137,7 +137,8 @@ void Lidar::preprocessing(
     pcl::PointCloud<pcl::PointXYZI>::Ptr &preprocessed_pc) {
   // Clean up the points belonging to the car and noise in the sky
   for (auto &iter : raw.points) {
-    // Remove points closer than 1m, higher than 0.6m or further than 20m
+    // Remove points closer than 1m, higher than 0.5m or further than 20m 
+    // and points outside the frame of Pegasus
     if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
         std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||
         std::atan2(iter.x, iter.y) > 2.8)
