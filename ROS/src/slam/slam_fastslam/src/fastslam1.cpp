@@ -26,6 +26,8 @@
 #include "dbscan.hpp"
 
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/Pose.h>
 
 #include <string>
 
@@ -71,6 +73,7 @@ namespace slam
     this->globalPublisher = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("/output/map", 5);
     this->localPublisher = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("/output/observations", 5);
     this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
+    this->particlePosePublisher = n.advertise<geometry_msgs::PoseArray>("/output/particles", 5);
 
     obs_sub.subscribe(n, "/input/observations", 1);
     tf2_filter.registerCallback(boost::bind(&FastSLAM1::handleObservations, this, _1));
@@ -591,8 +594,29 @@ namespace slam
       }
     }
 
+    // Publish particles as PoseArray
+    geometry_msgs::PoseArray particlePoses;
+    particlePoses.header.frame_id = this->slam_world_frame;
+    for (int i = 0; i < this->particles.size(); i++)
+    {
+      geometry_msgs::Pose particlePose;
+      particlePose.position.x = poseX[i];
+      particlePose.position.y = poseY[i];
+
+      tf2::Quaternion quat;
+      quat.setRPY(0, 0, poseYaw[i]);
+
+      particlePose.orientation.x = quat.x();
+      particlePose.orientation.y = quat.y();
+      particlePose.orientation.z = quat.z();
+      particlePose.orientation.w = quat.w();
+
+      particlePoses.poses.push_back(particlePose);
+    }
+    this->particlePosePublisher.publish(particlePoses);
+
     VectorXf pose(3);
-    pose << x, y, yaw;
+    pose << bestParticle.xv()(0), bestParticle.xv()(1), bestParticle.xv()(2);
 
     boost::array<double, 36> poseCovariance;
 

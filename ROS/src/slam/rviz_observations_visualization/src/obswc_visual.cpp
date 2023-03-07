@@ -30,9 +30,11 @@
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
+#include <OGRE/OgreEntity.h>
 
 #include <rviz/ogre_helpers/arrow.h>
 #include <rviz/ogre_helpers/shape.h>
+#include <rviz/mesh_loader.h>
 
 #include <Eigen/Dense>
 #include <ros/ros.h>
@@ -103,30 +105,57 @@ namespace rviz_observations_visualization
     scale.z = 0;
   }
 
-  ObservationWithCovarianceVisual::ObservationWithCovarianceVisual(Ogre::SceneManager *scene_manager, Ogre::SceneNode *parent_node)
+  ObservationWithCovarianceVisual::ObservationWithCovarianceVisual(Ogre::SceneManager *scene_manager, Ogre::SceneNode *parent_node, unsigned int cls, bool realistic)
   {
+    visual_class_ = cls;
+    realistic_ = realistic;
+
     scene_manager_ = scene_manager;
     frame_node_ = parent_node->createChildSceneNode();
     cone_node_ = frame_node_->createChildSceneNode();
+
+    // Only supports classes 0 through 3 (inclusive)
+    if (!realistic_ || cls > 3)
+    {
+      realistic_ = false;
+      cone_shape_ = new rviz::Arrow(scene_manager_, cone_node_, 0.0, 0.0, 0.33, 0.23);
+
+      Ogre::Vector3 direction;
+      direction.x = 0.0;
+      direction.y = 0.0;
+      direction.z = 1.0;
+      cone_shape_->setDirection(direction);
+    }
+    else
+    {
+
+      std::string resource = "package://rviz_observations_visualization/media/class_" + std::to_string(cls) + ".dae";
+
+      if (rviz::loadMeshFromResource("package://rviz_observations_visualization/media/class_" + std::to_string(cls) + ".dae").isNull())
+      {
+        ROS_ERROR("Failed to load model resource '%s'.", resource.c_str());
+        return;
+      }
+
+      Ogre::Entity *entity = scene_manager_->createEntity(resource);
+      cone_node_->attachObject(entity);
+    }
+
     position_node_ = frame_node_->createChildSceneNode();
-
-    cone_shape_ = new rviz::Arrow(scene_manager_, cone_node_, 0.0, 0.0, 0.33, 0.23);
-    
-    Ogre::Vector3 direction;
-    direction.x = 0.0;
-    direction.y = 0.0;
-    direction.z = 1.0;
-    cone_shape_->setDirection(direction);
-
     position_shape_ = new rviz::Shape(rviz::Shape::Sphere, scene_manager_, position_node_);
   }
 
   ObservationWithCovarianceVisual::~ObservationWithCovarianceVisual()
   {
-    delete cone_shape_;
-    delete position_shape_;
+    if (!realistic_)
+    {
+      delete cone_shape_;
+    }
 
     scene_manager_->destroySceneNode(cone_node_);
+
+    delete position_shape_;
+
     scene_manager_->destroySceneNode(position_node_);
     scene_manager_->destroySceneNode(frame_node_);
   }
@@ -135,8 +164,14 @@ namespace rviz_observations_visualization
   {
     frame_node_->setPosition(x, y, 0.0);
   }
+  void ObservationWithCovarianceVisual::setLocalPosition(float x, float y)
+  {
+    position_node_->setPosition(x, y, 0.0);
+    cone_node_->setPosition(x, y, 0.0);
+  }
 
-  void ObservationWithCovarianceVisual::setOrientation(Ogre::Quaternion orientation) {
+  void ObservationWithCovarianceVisual::setOrientation(Ogre::Quaternion orientation)
+  {
     frame_node_->setOrientation(orientation);
   }
 
@@ -162,7 +197,10 @@ namespace rviz_observations_visualization
 
   void ObservationWithCovarianceVisual::setColor(float r, float g, float b, float a)
   {
-    cone_shape_->setColor(r, g, b, 1.0);
+    if (!realistic_)
+    {
+      cone_shape_->setColor(r, g, b, a);
+    }
     position_shape_->setColor(r, g, b, a);
   }
 }

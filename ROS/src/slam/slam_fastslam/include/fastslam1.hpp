@@ -13,6 +13,7 @@
 #include "tf2_ros/message_filter.h"
 #include "message_filters/subscriber.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include <nav_msgs/Path.h>
 
 using namespace std;
 
@@ -74,6 +75,7 @@ namespace slam
       ros::Publisher globalPublisher;
       ros::Publisher localPublisher;
       ros::Publisher odomPublisher;
+      ros::Publisher particlePosePublisher;
 
       // TF2
       tf2_ros::Buffer tfBuffer;

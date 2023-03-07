@@ -1,6 +1,8 @@
 #include "lidar.hpp"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include <chrono>
+#include <iostream>
+#include <fstream>
 
 // Constructor
 namespace ns_lidar {
@@ -27,6 +29,8 @@ Lidar::Lidar(ros::NodeHandle &n)
       "perception/observations", 5);
   diagnosticPublisher_ =
       n.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 5);
+  groundColoredPublisher_ =
+      n.advertise<sensor_msgs::PointCloud2>("/perception/ground_colored", 5);
 
   n.param<bool>("vis_cones", vis_cones_, true);
   n.param<bool>("big_box", big_box_, false);
@@ -70,6 +74,8 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   publishDiagnostic(OK, "[perception] ground removal points",
                     "#points: " + std::to_string(notground_points->size()));
 
+  sensor_msgs::PointCloud2 ground_msg = ground_removal_.publishColoredGround(*notground_points);
+  groundColoredPublisher_.publish(ground_msg);
   double time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
           .count();
@@ -131,8 +137,9 @@ void Lidar::preprocessing(
     pcl::PointCloud<pcl::PointXYZI>::Ptr &preprocessed_pc) {
   // Clean up the points belonging to the car and noise in the sky
   for (auto &iter : raw.points) {
-    // Remove points closer than 1m, higher than 0.6m or further than 20m
-    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 1 ||
+    // Remove points closer than 1m, higher than 0.5m or further than 20m 
+    // and points outside the frame of Pegasus
+    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
         std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||
         std::atan2(iter.x, iter.y) > 2.8)
       continue;

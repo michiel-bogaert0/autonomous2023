@@ -59,7 +59,7 @@ namespace rviz_observations_visualization
   public:
     // Constructor.  Creates the visual stuff and puts it into the
     // scene, but in an unconfigured state.
-    ObservationWithCovarianceVisual(Ogre::SceneManager *scene_manager, Ogre::SceneNode *parent_node);
+    ObservationWithCovarianceVisual(Ogre::SceneManager *scene_manager, Ogre::SceneNode *parent_node, unsigned int cls, bool realistic);
 
     // Destructor.  Removes the visual stuff from the scene.
     virtual ~ObservationWithCovarianceVisual();
@@ -72,6 +72,7 @@ namespace rviz_observations_visualization
     }
     void setOrientation(Ogre::Quaternion orientation);
     void setPosition(float x, float y); 
+    void setLocalPosition(float x, float y); 
     void setCovariance(boost::array<double, 9> &covariance);
 
     // Set the color and alpha of the visual, which are user-editable
@@ -80,6 +81,7 @@ namespace rviz_observations_visualization
 
   private:
     unsigned int visual_class_;
+    bool realistic_;
 
     rviz::Arrow* cone_shape_;
     rviz::Shape* position_shape_;
