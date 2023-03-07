@@ -58,8 +58,9 @@ class CarSimulator:
         }
 
         # Parameters
-        self.world_frame = rospy.get_param("~world_frame", "ugr/car_map")
+        self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
+        self.gt_base_link_frame = rospy.get_param("~gt_base_link_frame", "ugr/gt_base_link")
 
         self.L = rospy.get_param("~wheelbase", 1.0)
         self.delta_max = rospy.get_param("~max_steering_angle", 0.8)
@@ -149,6 +150,21 @@ class CarSimulator:
                 self.a = 0.0
                 self.ohm = 0.0
                 self.omega = 0.0
+            elif key == keyboard.Key.esc:
+                self.key_state = {
+                    "up": False,
+                    "down": False,
+                    "right": False,
+                    "left": False
+                }
+                self.v = 0.0
+                self.delta = 0.0
+                self.a = 0.0
+                self.ohm = 0.0
+                self.omega = 0.0
+                self.x = 0.0
+                self.y = 0.0
+                self.theta = 0.0
         
         if self.key_state["up"]:
             self.a = 1.0
@@ -197,8 +213,9 @@ class CarSimulator:
 
         # Ground truth odometry
         odom = Odometry()
+        odom.header.stamp = rospy.Time().now()
         odom.header.frame_id = self.world_frame
-        odom.child_frame_id = self.base_link_frame
+        odom.child_frame_id = self.gt_base_link_frame
         
         odom.pose.pose.position.x = self.x
         odom.pose.pose.position.y = self.y
@@ -216,7 +233,7 @@ class CarSimulator:
 
         t.header.stamp = rospy.Time.now()
         t.header.frame_id = self.world_frame
-        t.child_frame_id = self.base_link_frame
+        t.child_frame_id = self.gt_base_link_frame
         t.transform.translation.x = self.x
         t.transform.translation.y = self.y
         t.transform.translation.z = 0.0
@@ -249,6 +266,7 @@ class CarSimulator:
         noisy_v = self.apply_noise_and_quantise(self.v, self.encoder_noise)
 
         twist = TwistWithCovarianceStamped()
+        twist.header.stamp = rospy.Time().now()
         twist.header.frame_id = self.base_link_frame
         twist.twist.twist.linear.x = noisy_v
 
@@ -263,6 +281,7 @@ class CarSimulator:
         noisy_a = self.apply_noise_and_quantise(self.a, self.imu_acceleration_noise)
 
         imu = Imu()
+        imu.header.stamp = rospy.Time().now()
         imu.header.frame_id = self.base_link_frame
         imu.linear_acceleration.x = noisy_a
         imu.angular_velocity.z = noisy_omega
