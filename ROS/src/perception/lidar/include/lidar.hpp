@@ -32,13 +32,14 @@ private:
   ros::Publisher visPublisher_;
   ros::Publisher conePublisher_;
   ros::Publisher diagnosticPublisher_;
+  ros::Publisher groundColoredPublisher_;
 
   ConeClustering cone_clustering_;
   GroundRemoval ground_removal_;
 
   bool vis_cones_;      // show cones or boxes
   bool big_box_;        // adapt size box to observation or not
-  bool color_clusters_; // color the clusters and publish thenm
+  bool color_clusters_; // color the clusters and publish them
   std::string blue_url_ = "https://storage.googleapis.com/"
                           "learnmakeshare_cdn_public/blue_cone_final.dae";
   std::string yellow_url_ = "https://storage.googleapis.com/"

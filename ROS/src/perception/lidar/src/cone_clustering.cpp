@@ -12,6 +12,7 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
   n.param<std::string>("clustering_method", clustering_method_, "string");
   n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
+  n.param<bool>("use_sort", use_sort_, false);
 }
 
 /**
@@ -35,7 +36,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
 }
 
 /**
- * @brief Clusters the cones in the final filtered point cloud and returns a
+ * @brief Clusters the cones in the final filtered point cloud and returns a 
  * vector containing the different clusters
  *
  */
@@ -125,10 +126,14 @@ ConeClustering::euclidianClustering(
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
 ConeClustering::stringClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud) {
+  
 
-  // sort point from left to right (because they are ordered from left to right)
-  std::sort(cloud->begin(), cloud->end(), leftrightsort);
+  if(use_sort_){
+    // sort point from left to right (because they are ordered from left to right)
+    std::sort(cloud->begin(), cloud->end(), leftrightsort);
 
+  }
+  
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
   std::vector<pcl::PointXYZINormal>
       cluster_rightmost; // The rightmost point in each cluster
@@ -157,7 +162,7 @@ ConeClustering::stringClustering(
       float delta_r = std::abs(r_point - r_rightmost);
       float delta_arc = std::abs(std::atan2(point.x, point.y) -
                                  atan2(rightmost.x, rightmost.y)) *
-                        r_rightmost;
+                        r_point;
       float dist = std::max(delta_r, delta_arc);
 
       // A cone is max 285mm wide, check whether this point is within that
@@ -183,7 +188,7 @@ ConeClustering::stringClustering(
         float bound_z = std::fabs(max[2] - min[2]);
 
         // Filter based on the shape of cones
-        if (bound_x < 1 && bound_y < 1 && bound_z < 1) {
+        if (bound_x < 1 && bound_y < 1 && bound_z < 0.6) {
           // This cluster can still be a cone
           clusters_to_keep.push_back(cluster_id);
         }
