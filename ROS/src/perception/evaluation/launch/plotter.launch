@@ -1,0 +1,13 @@
+<launch>
+    <node pkg="evaluation" type="plottingnode.py" name="plotter" output="screen">
+       <param name="aggregation_function" value="divide" />
+       <remap from="/input/x" to="publisher/x"/>
+        <remap from="/input/y" to="publisher/y"/>
+    </node>
+
+
+    <node pkg="evaluation" type="test_agg.py" name="pub" output="screen">
+        <remap from="/output/x" to="publisher/x"/>
+        <remap from="/output/y" to="publisher/y"/>
+    </node>
+</launch>
