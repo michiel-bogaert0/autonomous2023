@@ -13,6 +13,9 @@
 #include "ros/ros.h"
 #include "ros/console.h"
 
+#include "ros/service_client.h"
+#include <slam_controller/SetMap.h>
+
 #include "tf2_ros/buffer.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
@@ -70,8 +73,13 @@ namespace slam
                                              tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0)
   {
 
-    this->globalPublisher = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("/output/map", 5);
-    this->localPublisher = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>("/output/observations", 5);
+    // Initialize map Service Client
+    string SetMap_service = n.param<string>("SetMap_service", "/ugr/srv/slam_map_server/set");
+    this->setmap_srv_client = n.serviceClient<slam_controller::SetMap::Request>(SetMap_service, true);
+    
+    this->globalmap_namespace = n.param<string>("globalmap_namespace", "global");
+    this->localmap_namespace = n.param<string>("localmap_namespace", "local");
+
     this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
     this->particlePosePublisher = n.advertise<geometry_msgs::PoseArray>("/output/particles", 5);
 
@@ -846,9 +854,31 @@ namespace slam
     static tf2_ros::TransformBroadcaster br;
     br.sendTransform(transformMsg);
 
-    // Publish everything!
-    this->globalPublisher.publish(global);
-    this->localPublisher.publish(local);
+    if(this->setmap_srv_client.exists()) {
+      // Initialize global request
+      slam_controller::SetMap global_srv;
+      global_srv.request.map = global;
+      global_srv.request.name = this->globalmap_namespace;
+
+      // Set global map with Service
+      if (!this->setmap_srv_client.call(global_srv)) {
+        ROS_WARN("Global map service call failed!");
+      }
+      
+      // Initialize local request
+      slam_controller::SetMap local_srv;
+      local_srv.request.map = local;
+      local_srv.request.name = this->localmap_namespace;
+
+      // Set local map with Service
+      if (!this->setmap_srv_client.call(local_srv)) {
+        ROS_WARN("Local map service call failed!");
+      }
+    } else {
+      ROS_WARN("SetMap service call does not exist (yet)!");
+    }
+
+    // Publish odometry
     this->odomPublisher.publish(odom);
 
     t2 = std::chrono::steady_clock::now();

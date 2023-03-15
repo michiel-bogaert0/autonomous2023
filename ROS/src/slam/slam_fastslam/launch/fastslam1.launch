@@ -1,39 +1,58 @@
 <launch>
+
+  <arg name="world_frame" default="ugr/car_odom"/>
+  <arg name="base_link_frame" default="ugr/car_base_link"/>
+  <arg name="slam_world_frame" default="ugr/slam_map"/>
+
+  <arg name="particle_count" default="100"/>
+  <arg name="effective_particle_count" default="50"/>
+  <arg name="eps" default="0.5"/>
+  <arg name="max_range" default="15"/>
+  <arg name="max_half_angle" default="1.5"/>
+  <arg name="expected_range" default="15"/>
+  <arg name="expected_half_angle" default="1.5"/>
+  <arg name="observe_dt" default="0.0"/>
+
+  <arg name="yaw_unwrap_threshold" default="4.0"/>
+
+  <arg name="acceptance_score" default="5.0"/>
+  <arg name="penalty_score" default="-0.4"/>
+  <arg name="discard_score" default="-100.0"/>
+
   <node pkg="slam_fastslam" output="screen" type="fastslam1" name="local_fastslam_car" respawn="False">
     # Parameters
-    <param name="world_frame" value="ugr/car_odom" />
-    <param name="base_link_frame" value="ugr/car_base_link" />
-    <param name="slam_world_frame" value="ugr/slam_map" />
+    <param name="world_frame" value="$(arg world_frame)" />
+    <param name="base_link_frame" value="$(arg base_link_frame)" />
+    <param name="slam_world_frame" value="$(arg slam_world_frame)" />
 
-    <param name="particle_count" value="70" />
-    <param name="effective_particle_count" value="50" />
-    <param name="eps" value="0.5" />
-    <param name="max_range" value="15" />
-    <param name="max_half_angle" value="1.5" />
-    <param name="expected_range" value="15" />
-    <param name="expected_half_angle" value="1.5" />
-    <param name="observe_dt" value="0.0" />
+    <param name="particle_count" value="$(arg particle_count)" />
+    <param name="effective_particle_count" value="$(arg effective_particle_count)" />
+    <param name="eps" value="$(arg eps)" />
+    <param name="max_range" value="$(arg max_range)" />
+    <param name="max_half_angle" value="$(arg max_half_angle)" />
+    <param name="expected_range" value="$(arg expected_range)" />
+    <param name="expected_half_angle" value="$(arg expected_half_angle)" />
+    <param name="observe_dt" value="$(arg observe_dt)" />
 
+    <param name="yaw_unwrap_threshold" value="$(arg yaw_unwrap_threshold)" />
     <param name="synchronous" value="false"/>
 
-    <param name="yaw_unwrap_threshold" value="4.0" />
-
     <rosparam param="measurement_covariance">[0.3, 0.0, 0.0, 0.05]</rosparam>
-    <rosparam param="input_noise">[0.1, 0.0, 0.0, 0.02]</rosparam>
-    <param name="acceptance_score" value="2.0" />
-    <param name="penalty_score" value="-0.2" />
-    <param name="discard_score" value="-100.0" />
+    <rosparam param="input_noise">[0.1, 0.0, 0.0, 0.01]</rosparam>
+    <param name="acceptance_score" value="$(arg acceptance_score)" />
+    <param name="penalty_score" value="$(arg penalty_score)" />
+    <param name="discard_score" value="$(arg discard_score)" />
+    
+    # Map service Parameters
+    <param name="SetMap_service" value="/ugr/srv/slam_map_server/set" />
+    <param name="globalmap_namespace" value="fastslam/global" />
+    <param name="localmap_namespace" value="fastslam/local" />
+
     # Input/output remapping
     <remap from="/input/observations" to="ugr/car/observations/lidar" />
 
     <remap from="/output/observations" to="/ugr/car/observations/fastslam" />
     <remap from="/output/map" to="/ugr/car/map/fastslam" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/fastslam" />
-  </node>
-  <node pkg="slam_vis" output="screen" type="vis_car.py" name="fdlksjafldskjflakdjfklsja">
-    <param name="namespace" value="slam_map/car" />
-
-    <remap from="/input/vis" to="/ugr/car/odometry/filtered/fastslam" />
-    <remap from="/output/vis" to="/vis/slam" />
   </node>
 </launch>
