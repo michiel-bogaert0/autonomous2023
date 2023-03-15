@@ -31,6 +31,9 @@ class CarSimulator:
             "left": False
         }
 
+        self.car_state = (0, 0, 0) # (x, y, heading)
+        self.sensors = (0, 0, 0) # (forward velocity, linear acceleration, angular acceleration)
+
         # Parameters
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
@@ -90,7 +93,7 @@ class CarSimulator:
                     self.key_events = events
                     self.get_input()
                     t1 = rospy.Time.now().to_sec()
-                    self.model.update(t1 - t0, self.driving_intention, self.steering_intention)
+                    self.car_state, self.sensors = self.model.update(t1 - t0, self.driving_intention, self.steering_intention)
                     t0 = t1
 
         except Exception as e:
@@ -151,21 +154,24 @@ class CarSimulator:
         Publishes GT Odometry message
         """
 
+        x, y, theta = self.car_state
+        v, _, omega = self.sensors
+
         # Ground truth odometry
         odom = Odometry()
         odom.header.stamp = rospy.Time().now()
         odom.header.frame_id = self.world_frame
         odom.child_frame_id = self.gt_base_link_frame
         
-        odom.pose.pose.position.x = self.x
-        odom.pose.pose.position.y = self.y
-        quat = quaternion_from_euler(0, 0, self.theta)
+        odom.pose.pose.position.x = x
+        odom.pose.pose.position.y = y
+        quat = quaternion_from_euler(0, 0, theta)
         odom.pose.pose.orientation = Quaternion(
             quat[0], quat[1], quat[2], quat[3]
         )
 
-        odom.twist.twist.linear.x = self.v
-        odom.twist.twist.angular.z = self.omega
+        odom.twist.twist.linear.x = v
+        odom.twist.twist.angular.z = omega
 
         self.gt_pub.publish(odom)
 
@@ -174,10 +180,10 @@ class CarSimulator:
         t.header.stamp = rospy.Time.now()
         t.header.frame_id = self.world_frame
         t.child_frame_id = self.gt_base_link_frame
-        t.transform.translation.x = self.x
-        t.transform.translation.y = self.y
+        t.transform.translation.x = x
+        t.transform.translation.y = y
         t.transform.translation.z = 0.0
-        q = quaternion_from_euler(0, 0, self.theta)
+        q = quaternion_from_euler(0, 0, theta)
         t.transform.rotation.x = q[0]
         t.transform.rotation.y = q[1]
         t.transform.rotation.z = q[2]
@@ -203,7 +209,9 @@ class CarSimulator:
         Publishes simulated encoder (TwistWithCovarianceStamped)
         """
 
-        noisy_v = self.apply_noise_and_quantise(self.v, self.encoder_noise)
+        v, _, _ = self.sensors
+
+        noisy_v = self.apply_noise_and_quantise(v, self.encoder_noise)
 
         twist = TwistWithCovarianceStamped()
         twist.header.stamp = rospy.Time().now()
@@ -217,8 +225,10 @@ class CarSimulator:
         Publishes simulated IMU (only angular velocity) (Imu)
         """
 
-        noisy_omega = self.apply_noise_and_quantise(self.omega, self.imu_angular_velocity_noise)
-        noisy_a = self.apply_noise_and_quantise(self.a, self.imu_acceleration_noise)
+        _, a, omega = self.sensors
+
+        noisy_omega = self.apply_noise_and_quantise(omega, self.imu_angular_velocity_noise)
+        noisy_a = self.apply_noise_and_quantise(a, self.imu_acceleration_noise)
 
         imu = Imu()
         imu.header.stamp = rospy.Time().now()

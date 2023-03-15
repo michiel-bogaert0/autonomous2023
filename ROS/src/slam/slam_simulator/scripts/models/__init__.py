@@ -1,1 +1,1 @@
-from BicycleModel import BicycleModel
+from .BicycleModel import BicycleModel

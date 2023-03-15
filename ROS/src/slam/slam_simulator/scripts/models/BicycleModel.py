@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import numpy as np
-from CarModel import CarModel
+from .CarModel import CarModel
 import rospy
 
 class BicycleModel(CarModel):

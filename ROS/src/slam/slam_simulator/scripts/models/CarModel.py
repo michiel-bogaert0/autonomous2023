@@ -31,7 +31,7 @@ class CarModel(ABC):
         """
         pass
  
-    @absractmethod
+    @abstractmethod
     def update(self, dt, driving_intention, steering_intention):
         """
         Should update internal state and motion model
@@ -43,6 +43,8 @@ class CarModel(ABC):
         
             
         Returns: 
-          Car state (according to our frame conventions): x, y, heading (yaw)
+          Note: should be in our frame conventions
+  
+          (x, y, heading), (forward velocity, linear acceleration, angular acceleration)
         """
         pass
