@@ -22,13 +22,23 @@ int main(int argc, char **argv)
 
   ROS_INFO("FastSLAM1.0 running in %s mode!", doSynchronous ? "synchronous" : "asynchronous");
 
+    std::chrono::steady_clock::time_point t1;
+    std::chrono::steady_clock::time_point t2;
+
   // Spin the node
   while (ros::ok()) {
     // Keep the node alive
     ros::spinOnce();
 
+
     if (!doSynchronous) {
+      t1 = std::chrono::steady_clock::now();
       fastslam.step();
+      t2 = std::chrono::steady_clock::now();
+
+      double time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
+
+      ROS_INFO("Theoretical FPS:  %f \n", 1.0 / time_round);
     }
     
     loop_rate.sleep();

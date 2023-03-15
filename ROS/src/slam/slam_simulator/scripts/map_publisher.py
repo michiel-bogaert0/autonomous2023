@@ -13,7 +13,7 @@ class MapPublisher():
         rospy.init_node("slam_simulator_map_publisher")
 
         self.map = rospy.get_param(
-            "~map", f"{os.path.dirname(__file__)}/../maps/straigth_L100.yaml")
+            "~map", f"{os.path.dirname(__file__)}/../maps/circle_R15.yaml")
         self.override_time = rospy.get_param("~override_time", True)
 
         self.map_publisher = rospy.Publisher(
