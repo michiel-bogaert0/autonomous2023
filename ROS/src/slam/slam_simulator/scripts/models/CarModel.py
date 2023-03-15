@@ -1,21 +1,34 @@
 #!/usr/bin/env python3
 from abc import ABC, abstractmethod
-import numpy as np
 
 class CarModel(ABC):
     
     def __init__(self) -> None:
+        """
+        Car model abstract class
 
-        # Be sure to add all ROS parameters here!
+        Be sure to add ROS parameters and internal state.
+        Except for abstract methods, you are free to implement whatever.
+        No guarantees can be made about speed of calling update. Max is 100FPS
+        
+        In order to make a model, extend this class in a new file. 
+        Don't forget to update __init__.py and the main car.py file
+        """
 
         self.reset()
 
     @abstractmethod
     def reset(self):
+        """
+        Resets the car to initial (0, 0) position
+        """
         pass
         
     @abstractmethod
     def stop(self):
+        """
+        Stops the car
+        """
         pass
  
     @absractmethod
@@ -32,23 +45,4 @@ class CarModel(ABC):
         Returns: 
           Car state (according to our frame conventions): x, y, heading (yaw)
         """
-        
         pass
-        
-        # First calculate new speed and delta
-        self.delta += self.input_scale[1] * dt * steering_intention
-        self.delta = max(-self.delta_max, min(self.delta, self.delta_max))
-
-        self.v += self.input_scale[0] * dt * driving_intention
-        self.v = max(-self.v_max, min(self.v, self.v_max))
-
-        if abs(self.v) < 0.001:
-            self.v = 0.0
-        if abs(self.delta) < 0.001:
-            self.delta = 0.0
-
-        # Now position and theta (bicycle model)
-        self.x += self.v * dt * np.cos(self.theta)
-        self.y += self.v * dt * np.sin(self.theta)
-        self.omega = self.v * np.tan(self.delta) / self.L
-        self.theta += dt * self.omega
