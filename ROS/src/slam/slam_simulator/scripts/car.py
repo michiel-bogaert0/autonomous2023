@@ -17,6 +17,51 @@ import models
 
 class CarSimulator:
     def __init__(self) -> None:
+        """
+        Car simulator framework.
+        Basically executes practically any car model you can model in Python and simulates sensors.
+        Pbulishes those sensors, GT and transformation
+
+        Pressing the arrow keys basically translates into an 'intention' (forwards, backwards) to do something.
+        Pressing UP sets the driving intention to '1.0', pressing DOWN, sets the intention to '-1.0'. Similar for steering.
+        It is up to the model to decide if the car actually does what is intended, or if there some 'lag' like in a real car.
+
+        Model requirements:
+        - Reports ground truth (x, y) position and heading (yaw: angle of center of gravity around z-axis)
+        - Reports forwards velocity, linear acceleration and angular acceleration (according to local car frame)
+        - Complies with conventions (REP103)
+        - Should be a time continous state space representation 
+        - Takes in "driving intention" and "steering intention", see further  
+
+        Sensor noise model:
+        - Gaussian noise of specific mean and standard deviation
+        - Quantisation
+
+        Args:
+            
+            > Frames: 
+            
+            world_frame: frame where GT is reported
+            base_link_frame: frame where sensors are reported in
+            gt_base_link_frame: frame where GT data of sensors are reported in
+
+            
+            > Publishing rates sensors:
+            
+            publish_rates/gt
+            publish_rates/encoder
+            publish_rates/imu
+
+            > Noise model of sensors (mean, std deviation, quantisation step) 
+            
+            noise/encoder
+            noise/imu_acceleration
+            noise/imu_angular_velocity
+            
+            > Model name to use
+
+            model
+        """
 
         rospy.init_node("car_simulator")
 
@@ -82,7 +127,15 @@ class CarSimulator:
             self.publish_imu,
         )
 
-        print("Started! Press the arrow keys to start moving!")
+        print(f"Car simulator loaded. Using model '{self.model_name}'")
+        print("Keys:")
+        print("  UP: forward")
+        print("  DOWN: backwards")
+        print("  LEFT: steer left")
+        print("  RIGHT: steer right")
+        print("")
+        print("  SPACE: stop immediately")
+        print("  ESC: reset simulation")
 
         # Main loop
         try:
