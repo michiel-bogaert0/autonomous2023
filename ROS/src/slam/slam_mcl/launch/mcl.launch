@@ -2,7 +2,7 @@
 
   <arg name="world_frame" default="ugr/car_odom" />
   <arg name="base_link_frame" default="ugr/car_base_link" />
-  <arg name="slam_world_frame" default="ugr/slam_map" />
+  <arg name="slam_world_frame" default="ugr/map" />
 
   <arg name="particle_count" default="70" />
   <arg name="effective_particle_count" default="50" />

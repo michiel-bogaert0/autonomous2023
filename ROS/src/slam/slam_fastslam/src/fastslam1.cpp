@@ -829,31 +829,6 @@ namespace slam
 
     odom.pose.covariance = poseCovariance;
 
-    // TF Transformation
-    // This uses the 'inversed frame' principle
-    // So the new slam_world_frame is a child of base_link_frame and then the inverse transform is published
-    tf2::Transform transform(quat, tf2::Vector3(pose(0), pose(1), 0));
-    tf2::Transform invTransform = transform.inverse();
-
-    tf2::Quaternion invQuat = invTransform.getRotation();
-    tf2::Vector3 invTranslation = invTransform.getOrigin();
-
-    geometry_msgs::TransformStamped transformMsg;
-    transformMsg.header.frame_id = this->base_link_frame;
-    transformMsg.header.stamp = lookupTime;
-    transformMsg.child_frame_id = this->slam_world_frame;
-
-    transformMsg.transform.translation.x = invTranslation.x();
-    transformMsg.transform.translation.y = invTranslation.y();
-
-    transformMsg.transform.rotation.x = invQuat.getX();
-    transformMsg.transform.rotation.y = invQuat.getY();
-    transformMsg.transform.rotation.z = invQuat.getZ();
-    transformMsg.transform.rotation.w = invQuat.getW();
-
-    static tf2_ros::TransformBroadcaster br;
-    br.sendTransform(transformMsg);
-
     if(this->setmap_srv_client.exists()) {
       // Initialize global request
       slam_controller::SetMap global_srv;
