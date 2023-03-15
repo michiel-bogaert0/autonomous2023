@@ -14,6 +14,7 @@
 #include "tf2_ros/message_filter.h"
 #include "message_filters/subscriber.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include <nav_msgs/Path.h>
 
 using namespace std;
 
@@ -28,6 +29,9 @@ namespace slam
       }
 
       static tf2_ros::TransformBroadcaster br;
+
+      // This functions executes a FastSLAM1.0 step
+      void step();
 
     private:
       
@@ -48,7 +52,12 @@ namespace slam
       double clustering_eps;
       double belief_factor;
 
+      bool doSynchronous;
+
       double latestTime;
+
+      bool firstRound;
+      bool updateRound;
       
       double minThreshold;
       double acceptance_score;
@@ -58,6 +67,8 @@ namespace slam
       double expected_range;
       double expected_half_fov; // radians, single side 
 
+      ugr_msgs::ObservationWithCovarianceArrayStamped observations;
+
       // Subscribers
       ros::Subscriber observationsSubscriber;
       
@@ -65,6 +76,7 @@ namespace slam
       // ros::Publisher globalPublisher;
       // ros::Publisher localPublisher;
       ros::Publisher odomPublisher;
+      ros::Publisher particlePosePublisher;
 
       // Set Map Service Client
       ros::ServiceClient setmap_srv_client;
@@ -81,7 +93,7 @@ namespace slam
 
       void handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs);
 
-      void publishOutput();
+      void publishOutput(ros::Time);
 
       void predict(Particle &particle, double dDist, double dYaw);
 

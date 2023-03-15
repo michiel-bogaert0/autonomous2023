@@ -22,6 +22,7 @@ GroundRemoval::GroundRemoval(ros::NodeHandle &n) : n_(n) {
   n.param<double>("radial_bucket_tipping_point", radial_bucket_tipping_point_,
                   10);
   n.param<bool>("use_slope", use_slope_, true);
+  n.param<int>("color_factor", factor_color_, 5);
 }
 
 /**
@@ -60,13 +61,13 @@ void GroundRemoval::groundRemovalBins(
 
   // Calculate the number of buckets between 1 meter and the tipping point
   int number_of_small_buckets = std::ceil((radial_bucket_tipping_point_ - 1.0) /
-                                  small_radial_bucket_length_);
-  // Calculate the number of big buckets between the tipping point and the max distance point at 21m.
+                                          small_radial_bucket_length_);
+  // Calculate the number of big buckets between the tipping point and the max
+  // distance point at 21m.
   int number_of_big_buckets = std::ceil((21 - radial_bucket_tipping_point_) /
-                                  big_radial_bucket_length_);
+                                        big_radial_bucket_length_);
 
-  int radial_buckets_ =  number_of_small_buckets + number_of_big_buckets;
-                        ;
+  int radial_buckets_ = number_of_small_buckets + number_of_big_buckets;
   // compute the number of buckets that will be necesarry
   int bucket_size = angular_buckets_ * radial_buckets_;
   pcl::PointCloud<pcl::PointXYZI> buckets[bucket_size];
@@ -77,7 +78,7 @@ void GroundRemoval::groundRemovalBins(
 
     // let hypot and angle start from 0 instead of 1 and 0.3 respectively
     double hypot = std::hypot(point.x, point.y) - 1;
-    double angle = std::atan2(point.x, point.y) - 0.3;
+    double angle = 2.5 - (std::atan2(point.x, point.y) - 0.3);
 
     // Calculate which bucket the points falls into
     int angle_bucket = std::floor(angle / (2.5 / double(angular_buckets_)));
@@ -111,8 +112,8 @@ void GroundRemoval::groundRemovalBins(
       // taken the 10% lowest points
       int number_of_points = std::max(int(std::ceil(bucket.size() / 10)), 1);
       pcl::PointCloud<pcl::PointXYZI> expected_ground_points;
-      for (int i = 0; i < number_of_points; i++) {
-        expected_ground_points.push_back(bucket.points[i]);
+      for (int j = 0; j < number_of_points; j++) {
+        expected_ground_points.push_back(bucket.points[j]);
       }
 
       // calculate the averge floor level from these points
@@ -358,4 +359,31 @@ double GroundRemoval::calculate_ground(pcl::PointXYZ prev_centroid,
   }
   return floor;
 }
+
+/**
+ * @brief Colors the pointcloud in from first point to last point 
+ * with increasing luminance values.
+ * This makes it easier to see in which order points arrive at clustering.
+ */
+sensor_msgs::PointCloud2 GroundRemoval::publishColoredGround(pcl::PointCloud<pcl::PointXYZINormal> points){
+  int i= 0; 
+  pcl::PointCloud<pcl::PointXYZRGB> new_points;
+        // color the points of the cluster
+  for (pcl::PointXYZINormal point : points) {
+    int intens = int(i++/factor_color_) % 256;
+    pcl::PointXYZRGB new_point;
+    new_point.x = point.x;
+    new_point.y = point.y;
+    new_point.z = point.z;
+    new_point.r = intens;
+    new_point.g = intens;
+    new_point.b = intens;
+    new_points.push_back(new_point);
+  }
+
+  sensor_msgs::PointCloud2 ground_colored_msg;
+  pcl::toROSMsg(new_points, ground_colored_msg);
+  return ground_colored_msg;
+}
+
 } // namespace ns_lidar

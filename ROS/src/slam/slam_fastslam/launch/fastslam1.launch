@@ -35,6 +35,7 @@
     <param name="observe_dt" value="$(arg observe_dt)" />
 
     <param name="yaw_unwrap_threshold" value="$(arg yaw_unwrap_threshold)" />
+    <param name="synchronous" value="false"/>
 
     <rosparam param="measurement_covariance">[0.3, 0.0, 0.0, 0.05]</rosparam>
     <rosparam param="input_noise">[0.1, 0.0, 0.0, 0.01]</rosparam>

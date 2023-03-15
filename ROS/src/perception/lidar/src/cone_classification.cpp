@@ -14,6 +14,7 @@ ConeClassification::ConeClassification(ros::NodeHandle &n) : n_(n) {
   n.param<float>("minimal_height_cone", minimal_height_cone_, 0.05);
   n.param<float>("threshold_height_big_cone", threshold_height_big_cone_, 0.40);
   n.param<double>("cone_shape_factor", cone_shape_factor_, 0.3);
+  n.param<double>("cone_height_width_factor", height_width_factor_, 0.9);
 }
 
 /**
@@ -39,12 +40,12 @@ ConeCheck ConeClassification::classifyCone(
 
   // filter based on number of points and height centroid.
   if (cone.points.size() >= minimal_points_cone_ &&
-      centroid[2] - cone.points[0].normal_z > minimal_height_cone_) {
+      centroid[2] - cone.points[0].normal_z > minimal_height_cone_
+      && bound_z > bound_x*height_width_factor_
+      && bound_z > bound_y*height_width_factor_) {
     float dist = hypot3d(centroid[0], centroid[1], centroid[2]);
-    ;
     float num_points = 0.0;
     bool is_orange = false;
-
 
     // check size cloud for orange cone
     if (bound_z > threshold_height_big_cone_) {
@@ -55,8 +56,7 @@ ConeCheck ConeClassification::classifyCone(
     // add the "coneness" metric to the cone_check struct
     double cone_metric =
         ConeClassification::checkShape(cone, centroid, is_orange);
-    if (dist != 0.0 &&
-        (cone_metric > cone_shape_factor_)) {
+    if (dist != 0.0 && (cone_metric > cone_shape_factor_)) {
       cone_check.pos.x = centroid[0];
       cone_check.pos.y = centroid[1];
       cone_check.pos.z = centroid[2];
