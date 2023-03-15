@@ -12,43 +12,17 @@ from geometry_msgs.msg import (
 from sensor_msgs.msg import Imu
 from tf.transformations import quaternion_from_euler
 import tf2_ros as tf2
-import math
+
+import models
 
 class CarSimulator:
     def __init__(self) -> None:
 
         rospy.init_node("car_simulator")
 
-        """
-        Bicycle model
-
-        Inputs:
-          a: linear acceleration
-          Ohm: angular turning speed of steering wheel
-
-        Outputs (state):
-          x: x-position of back wheel 
-          y: y-position of back wheel
-          theta: heading to x-as
-
-        Args:
-          alpha: linear velocity 'friction' factor
-          beta: steering 'homing' factor
-          L: wheelbase length
-          input_scale: input scaling 
-
-        """
-
         # Internal state
-        self.a = 0
-        self.ohm = 0
-
-        self.v = 0
-        self.delta = 0
-        self.x = 0
-        self.y = 0
-        self.theta = 0
-        self.omega = 0
+        self.driving_intention = 0
+        self.steering_intention = 0
 
         self.key_state = {
             "up": False,
@@ -62,13 +36,6 @@ class CarSimulator:
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.gt_base_link_frame = rospy.get_param("~gt_base_link_frame", "ugr/gt_base_link")
 
-        self.L = rospy.get_param("~wheelbase", 1.0)
-        self.delta_max = rospy.get_param("~max_steering_angle", 0.8)
-        self.v_max = rospy.get_param("~max_speed", 5.0)
-        self.alpha = rospy.get_param("~alpha", 0.1)
-        self.beta = rospy.get_param("~beta", 0.8)
-        self.input_scale = rospy.get_param("~input_scale", [1.0, 1.0])
-
         self.gt_publish_rate = rospy.get_param("~publish_rates/gt", 200)
         self.encoder_publish_rate = rospy.get_param("~publish_rates/encoder", 30)
         self.imu_publish_rate = rospy.get_param("~publish_rates/imu", 90)
@@ -76,6 +43,16 @@ class CarSimulator:
         self.encoder_noise = rospy.get_param("~noise/encoder", [0, 0.05, 0.05])
         self.imu_acceleration_noise = rospy.get_param("~noise/imu_acceleration", [0.0, 0.1, 0.01])
         self.imu_angular_velocity_noise = rospy.get_param("~noise/imu_angular_velocity", [0, 0.1, 0.01])
+
+        self.model_name = rospy.get_param("~model", "bicycle")
+
+        if self.model_name == "bicycle":
+            self.model =  models.BicycleModel()
+        
+        else:
+            raise "Unknown model!"
+        
+        self.model.reset()
 
         # Input handler
         self.listener = keyboard.Listener()
@@ -113,7 +90,7 @@ class CarSimulator:
                     self.key_events = events
                     self.get_input()
                     t1 = rospy.Time.now().to_sec()
-                    self.update_motion_model(t1 - t0)
+                    self.model.update(t1 - t0, self.driving_intention, self.steering_intention)
                     t0 = t1
 
         except Exception as e:
@@ -145,11 +122,7 @@ class CarSimulator:
                     "right": False,
                     "left": False
                 }
-                self.v = 0.0
-                self.delta = 0.0
-                self.a = 0.0
-                self.ohm = 0.0
-                self.omega = 0.0
+                self.model.stop()
             elif key == keyboard.Key.esc:
                 self.key_state = {
                     "up": False,
@@ -157,54 +130,21 @@ class CarSimulator:
                     "right": False,
                     "left": False
                 }
-                self.v = 0.0
-                self.delta = 0.0
-                self.a = 0.0
-                self.ohm = 0.0
-                self.omega = 0.0
-                self.x = 0.0
-                self.y = 0.0
-                self.theta = 0.0
+                self.model.reset()
         
         if self.key_state["up"]:
-            self.a = 1.0
+            self.driving_intention = 1.0
         elif self.key_state["down"]:
-            self.a = -1.0
+            self.driving_intention = -1.0
         else:
-            self.a = 0.0 - (self.v / abs(self.v) * self.alpha if abs(self.v) > 0.001 else 0.0)
+            self.driving_intention = 0
         
         if self.key_state["right"]:
-            self.ohm = -1.0
+            self.steering_intention = -1.0
         elif self.key_state["left"]:
-            self.ohm = 1.0
+            self.steering_intention = 1.0
         else:
-            self.ohm = 0.0 - ( self.delta / abs(self.delta) * self.beta if abs(self.delta) > 0.001 else 0.0)
-
-    def update_motion_model(self, dt):
-        """
-        Updates motion model
-
-        Args:
-            dt: time since last update
-        """
-
-        # First calculate new speed and delta
-        self.delta += self.input_scale[1] * dt * self.ohm
-        self.delta = max(-self.delta_max, min(self.delta, self.delta_max))
-
-        self.v += self.input_scale[0] * dt * self.a
-        self.v = max(-self.v_max, min(self.v, self.v_max))
-
-        if abs(self.v) < 0.001:
-            self.v = 0.0
-        if abs(self.delta) < 0.001:
-            self.delta = 0.0
-
-        # Now position and theta (bicycle model)
-        self.x += self.v * dt * np.cos(self.theta)
-        self.y += self.v * dt * np.sin(self.theta)
-        self.omega = self.v * np.tan(self.delta) / self.L
-        self.theta += dt * self.omega
+            self.steering_intention = 0.0
 
     def publish_gt(self, _):
         """
