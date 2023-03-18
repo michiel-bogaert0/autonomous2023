@@ -1,0 +1,39 @@
+<launch>
+
+  <arg name="gt_map_topic" default="ugr/car/map/gt" />
+  <arg name="filename" default="" />
+
+  <!-- Car simulator-->
+
+  <node name="car_simulator" pkg="slam_simulator" output="screen" type="car.py">
+
+    <remap from="/output/gt_odometry" to="/ugr/gt/odometry/filtered" />
+    <remap from="/output/encoder0" to="/ugr/car/sensors/encoder0" />
+    <remap from="/output/imu0" to="/ugr/car/sensors/imu0" />
+  </node>
+
+  <!-- Perception simulator -->
+
+  <node name="perception_simulator" pkg="slam_simulator" output="screen" type="perception.py">
+
+    <param name="world_frame" value="ugr/map"/>
+    <param name="base_link_frame" value="ugr/car_base_link"/>
+    <param name="gt_base_link_frame" value="ugr/gt_base_link"/>
+    <param name="viewing_distance" value="15"/>
+    <param name="fov" value="90"/>
+    <param name="add_noise" value="true"/>
+    <rosparam name="cone_noise">[0.2, 0.2]</rosparam>
+
+    <remap from="/output/observations" to="/ugr/car/observations/lidar" />
+    <remap from="/input/track" to="$(arg gt_map_topic)" />
+  </node>
+
+  <!-- GT map publisher-->
+
+  <node name="map_publisher" pkg="slam_simulator" output="screen" type="map_publisher.py">
+    <param name="map" value="$(find slam_simulator)/maps/$(arg filename)" />
+
+    <remap from="/output/map" to="$(arg gt_map_topic)" />
+  </node>
+
+</launch>

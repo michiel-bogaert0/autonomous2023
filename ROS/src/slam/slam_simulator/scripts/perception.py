@@ -47,8 +47,8 @@ class PerceptionSimulator(StageSimulator):
         self.gt_base_link_frame = rospy.get_param("~gt_base_link_frame", "ugr/gt_base_link")
         self.viewing_distance = rospy.get_param("~viewing_distance", 15.0) ** 2
         self.fov = np.deg2rad(rospy.get_param("~fov", 90))
-        self.add_noise = rospy.get_param("~add_noise", False)
-        self.cone_noise = rospy.get_param("~cone_noise", 0.2)
+        self.add_noise = rospy.get_param("~add_noise", True)
+        self.cone_noise = rospy.get_param("~cone_noise", [0.2, 0.2]) # Noise in [range, heading] per meter distance. Gets scaled with range
 
     @AddSubscriber("/input/track")
     def track_update(self, track: ObservationWithCovarianceArrayStamped):
@@ -93,7 +93,7 @@ class PerceptionSimulator(StageSimulator):
         )
 
         if self.add_noise:
-            new_cones[:, :2] += np.random.randn(new_cones.shape[0], 2) * self.cone_noise
+            new_cones[:, :2] += np.multiply(np.random.randn(new_cones.shape[0], 2) * self.cone_noise, [new_cones[:, 0], new_cones[:, 0]])
 
         filtered_cones = []
         for cone in new_cones:
