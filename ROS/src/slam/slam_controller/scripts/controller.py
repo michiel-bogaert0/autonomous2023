@@ -4,8 +4,9 @@ from enum import Enum
 from std_msgs.msg import UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from node_launcher import NodeLauncher
-
+from node_fixture.node_fixture import create_diagnostic_message
 
 class AutonomousState(str, Enum):
     IDLE = 'idle'
@@ -39,6 +40,7 @@ class Controller:
         rospy.Subscriber("/input/loopclosure", UInt16, self.lapFinished)
 
         self.state_publisher = rospy.Publisher("/state", State, queue_size=10)
+        self.diagnostics = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
 
         while not rospy.is_shutdown():
             self.launcher.run()
@@ -85,6 +87,13 @@ class Controller:
 
         self.state_publisher.publish(
             State(scope="autonomous", prev_state=self.state, cur_state=new_state))
+        self.diagnostics.publish(
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="[SLAM] Controller new state",
+                message=f"{new_state}",
+            )
+        )
         self.state = new_state
 
     def lapFinished(self, laps):
@@ -101,15 +110,38 @@ class Controller:
 
                 if self.mission == AutonomousMission.TRACKDRIVE:
                     self.state = AutonomousState.RACING
+                    self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="[SLAM] Controller new state",
+                            message=f"{self.state}",
+                        )
+                    )
 
                     # Relaunch (different) nodes
                     self.launcher.launch_node(
                         "slam_controller", f"launch/{self.mission}_{self.state}.launch")
                 else:
                     self.state = AutonomousState.FINISHED
+                    # Publish diagnostic finished state
+                    self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="[SLAM] Controller new state",
+                            message=f"{self.state}",
+                        )
+                    )
                     self.launcher.shutdown()
             else:
                 self.state = AutonomousState.FINISHED
+                # Publish diagnostic finished state
+                self.diagnostics.publish(
+                    create_diagnostic_message(
+                        level=DiagnosticStatus.OK,
+                        name="[SLAM] Controller new state",
+                        message=f"{self.state}",
+                    )
+                )
                 self.launcher.shutdown()
 
 
