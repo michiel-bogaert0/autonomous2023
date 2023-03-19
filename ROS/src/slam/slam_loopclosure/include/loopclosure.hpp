@@ -8,6 +8,8 @@
 
 namespace slam
 {
+    enum DiagnosticStatusEnum { OK, WARN, ERROR, STALE };
+
     struct Point
     {
         float x = FLT_MAX;
@@ -26,12 +28,14 @@ namespace slam
         float DotProduct(const Point &a, const Point &b);
         void ResetLoop();
         void publish();
+        void publishDiagnostic(DiagnosticStatusEnum status, std::string name, std::string message);
 
         ros::NodeHandle &n;
 
         tf2_ros::Buffer tfBuffer;
         tf2_ros::TransformListener tfListener;
 
+        ros::Publisher diagnosticPublisher;
         ros::Publisher loopClosedPublisher;
         ros::ServiceServer reset_service;
 

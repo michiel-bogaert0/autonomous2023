@@ -1,5 +1,6 @@
 #include "loopclosure.hpp"
 #include "std_msgs/UInt16.h"
+#include "diagnostic_msgs/DiagnosticArray.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2_ros/buffer.h"
 #include <tf2_ros/transform_listener.h>
@@ -11,6 +12,8 @@ namespace slam
                                                    base_link_frame(n.param<std::string>("base_link_frame", "ugr/car_base_link")),
                                                    world_frame(n.param<std::string>("world_frame", "ugr/slam_map"))
     {
+        diagnosticPublisher =
+            n.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 5);
         loopClosedPublisher = n.advertise<std_msgs::UInt16>("/output/loopClosure", 5, true);
         reset_service = n.advertiseService("/reset_closure", &slam::LoopClosure::handleResetClosureService, this);
 
@@ -129,11 +132,24 @@ namespace slam
         std_msgs::UInt16 msg1;
         msg1.data = amountOfLaps;
         loopClosedPublisher.publish(msg1);
+        publishDiagnostic(OK, "[SLAM] Loop Closure count",
+                    "#laps: " + std::to_string(amountOfLaps));
     }
 
     bool LoopClosure::handleResetClosureService(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response)
     {
         this->ResetClosure();
         return true;
+    }
+
+    void LoopClosure::publishDiagnostic(DiagnosticStatusEnum status, std::string name, std::string message) {
+        diagnostic_msgs::DiagnosticArray diag_array;
+        diagnostic_msgs::DiagnosticStatus diag_status;
+        diag_status.level = status;
+        diag_status.name = name;
+        diag_status.message = message;
+        diag_array.status.push_back(diag_status);
+
+        diagnosticPublisher.publish(diag_array);
     }
 }
