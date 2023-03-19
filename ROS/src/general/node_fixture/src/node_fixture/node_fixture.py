@@ -194,13 +194,6 @@ class ROSNode:
                 buff_size=buff_size,
             )
 
-    @AddSubscriber(topic="state")
-    def state_callback(self, data: String):
-        self.state_update(str(data))
-
-    def state_update(self, new_state: str):
-        pass
-
     def get_publisher(self, topic: str, msg_type: Type):
         key = (topic, msg_type)
         if key not in self.publishers:

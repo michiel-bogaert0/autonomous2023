@@ -111,4 +111,4 @@ class BicycleModel(CarModel):
         self.omega = self.v * np.tan(self.delta) / self.L
         self.theta += dt * self.omega
 
-        return (self.x, self.y, self.theta), (self.v, self.a, self.ohm)
+        return (self.x, self.y, self.theta), (self.v, self.a, self.omega)
