@@ -2,10 +2,10 @@
 
   <arg name="world_frame" default="ugr/car_odom" />
   <arg name="base_link_frame" default="ugr/car_base_link" />
-  <arg name="slam_world_frame" default="ugr/map" />
+  <arg name="slam_base_link_frame" default="ugr/slam_base_link" />
 
-  <arg name="particle_count" default="70" />
-  <arg name="effective_particle_count" default="50" />
+  <arg name="particle_count" default="200" />
+  <arg name="effective_particle_count" default="150" />
   <arg name="eps" default="0.5" />
   <arg name="max_range" default="15" />
   <arg name="max_half_angle" default="1.5" />
@@ -17,7 +17,7 @@
     # Parameters
     <param name="world_frame" value="$(arg world_frame)" />
     <param name="base_link_frame" value="$(arg base_link_frame)" />
-    <param name="slam_world_frame" value="$(arg slam_world_frame)" />
+    <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
 
     <param name="particle_count" value="$(arg particle_count)" />
     <param name="effective_particle_count" value="$(arg effective_particle_count)" />

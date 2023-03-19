@@ -1,7 +1,7 @@
 <launch>
 
   <arg name="gt_map_topic" default="ugr/car/map/gt" />
-  <arg name="filename" default="" />
+  <arg name="filename"/>
 
   <!-- Car simulator-->
 
@@ -22,7 +22,7 @@
     <param name="viewing_distance" value="15"/>
     <param name="fov" value="90"/>
     <param name="add_noise" value="true"/>
-    <rosparam name="cone_noise">[0.2, 0.2]</rosparam>
+    <param name="cone_noise" value="0.01"/>
 
     <remap from="/output/observations" to="/ugr/car/observations/lidar" />
     <remap from="/input/track" to="$(arg gt_map_topic)" />

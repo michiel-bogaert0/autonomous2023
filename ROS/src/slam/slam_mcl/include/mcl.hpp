@@ -59,7 +59,7 @@ namespace slam
     // ROS parameters
     string base_link_frame;
     string world_frame;
-    string slam_world_frame;
+    string slam_base_link_frame;
 
     int particle_count;
     int effective_particle_count;
