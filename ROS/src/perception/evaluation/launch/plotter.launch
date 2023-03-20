@@ -1,6 +1,6 @@
 <launch>
     <node pkg="evaluation" type="plottingnode.py" name="plotter" output="screen">
-       <param name="aggregation_function" value="divide" />
+       <param name="aggregation_function" value="plus" />
        <remap from="/input/x" to="publisher/x"/>
         <remap from="/input/y" to="publisher/y"/>
     </node>

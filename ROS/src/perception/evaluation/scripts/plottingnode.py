@@ -3,8 +3,9 @@
 
 import rospy
 from std_msgs.msg import Float32
-from aggregation import Aggregation
+from aggregation.aggregation import Aggregation
 from typing import Any
+from aggregation.aggr_plus import plus_aggr
 class plotListener:
     """
     ROSNode for plotting purposes
@@ -17,24 +18,25 @@ class plotListener:
         rospy.init_node("plotlistener")
         # get the right aggregation function
         self.agg_function = rospy.get_param("~aggregation_function","")
+        self.aggregators = {"plus":plus_aggr()}
         
         # initialize aggregator class
-        self.aggregator = Aggregation()
+        self.aggregator = self.aggregators[self.agg_function]
 
         # get names of the aggration function arguments
         args = self.aggregator.get_attrs(self.agg_function)
-        args = args.args[1:]
+        
         
         # initialize dict and nr of updates
-        self.arg_values  = {arg: None for arg in args}
+        self.arg_values  = {arg: None for arg in args.keys()}
         self.nr_updates = 0
 
         # initialize subscribers
-        for arg in args:
-            sub = rospy.Subscriber(f"/input/{arg}",Float32,self.update,arg)
+        for arg in args.keys():
+            sub = rospy.Subscriber(f"/input/{arg}",args[arg],self.update,arg)
         
         #initialize output publisher
-        self.output_publisher = rospy.Publisher("output/",Float32,queue_size=10)
+        self.output_publisher = rospy.Publisher("output/",self.aggregator.get_output_type(),queue_size=10)
         
         rospy.spin()
 
@@ -48,7 +50,7 @@ class plotListener:
         
         """
         # update values dict
-        self.arg_values[input] = value.data
+        self.arg_values[input] = value
 
         # check: first updated value should correspond with the first input of the agg function
         if self.nr_updates == 0 and list(self.arg_values.values())[0] is None:
@@ -62,7 +64,7 @@ class plotListener:
             
             # reset nr of updates
             self.nr_updates = 0
-            self.output_publisher.publisher(Float32(data=val))
+            self.output_publisher.publish(val)
 
 
 

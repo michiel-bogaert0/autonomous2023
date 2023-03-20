@@ -1,36 +1,22 @@
 import inspect
-from typing import Any
-class Aggregation:
+from abc  import ABC,abstractmethod
+from typing import Any,get_type_hints
+class Aggregation(ABC):
     """
     Class to include your aggregation functions
     these should be of the form do_{agg_string}
     """
-    def __init__(self) -> None:
-        return self
-    
-    def do_plus(self,x:float=None,y:float=None)->float:
-        """
-        Example aggregation function: addition
-        Args:
-            x
-            y
-        Returns:
-            x+y
-        """
-        return x + y
-    
-    def do_divide(self,x:float=None,y:float=None)->float:
-        """
-        Example aggregation function: division
-        Args:
-            x
-            y
-        Returns:
-            x/y
-        """
-        return x/y
-    
-    def get_attrs(self,func:str)->inspect.Argspec:
+    def __init__(self,name) -> None:
+        self.name = name
+    @abstractmethod
+    def aggregate_data(self):
+        pass
+
+    @abstractmethod
+    def get_output_type(self):
+        pass
+
+    def get_attrs(self,func:str) -> dict:
         """
         Get the argument names of a function
         Args:
@@ -39,12 +25,12 @@ class Aggregation:
             the argument specifications of that function
         """
         # get the "hidden" name of the function inside this class
-        do = f"do_{func}"
+        do = f"aggregate_data"
 
         # check if string is valid
         if hasattr(self, do) and callable(func := getattr(self, do)):
             
-            return inspect.getargspec(getattr(self,do))
+            return get_type_hints(getattr(self,do))
         
     def apply(self,func:str,kwargs:dict)-> Any:
         """
@@ -57,7 +43,7 @@ class Aggregation:
         """
 
         # get the "hidden" name of the function inside this class
-        do = f"do_{func}"
+        do = f"aggregate_data"
         # check if string is valid
         if hasattr(self, do) and callable(func := getattr(self, do)):
             return getattr(self,do)(**kwargs)
