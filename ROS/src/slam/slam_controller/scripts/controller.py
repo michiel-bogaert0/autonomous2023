@@ -5,19 +5,9 @@ from std_msgs.msg import UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 from node_launcher import NodeLauncher
+from node_fixture.node_fixture import AutonomousMission, SLAMStatesEnum, AutonomousStatesEnum, StateMachineScopeEnum
 
 
-class AutonomousState(str, Enum):
-    IDLE = "idle"
-    EXPLORATION = "exploration"
-    RACING = "racing"
-    FINISHED = "finished"
-
-
-class AutonomousMission(str, Enum):
-    AUTOCROSS = "autocross"
-    ACCELERATION = "acceleration"
-    TRACKDRIVE = "trackdrive"
 
 class Controller:
     def __init__(self) -> None:
@@ -26,7 +16,7 @@ class Controller:
         """
         rospy.init_node("slam_controller")
 
-        self.state = AutonomousState.IDLE
+        self.state = SLAMStatesEnum.IDLE
 
         self.launcher = NodeLauncher()
         self.mission = ""
@@ -52,12 +42,12 @@ class Controller:
 
         new_state = self.state
 
-        if state.scope == "autonomous":
+        if state.scope == StateMachineScopeEnum.AUTONOMOUS:
 
             if (
-                self.state == AutonomousState.IDLE
-                or self.state == AutonomousState.FINISHED
-            ) and state.cur_state == "asdrive":
+                self.state == SLAMStatesEnum.IDLE
+                or self.state == SLAMStatesEnum.FINISHED
+            ) and state.cur_state == AutonomousStatesEnum.ASDRIVE:
 
                 if rospy.has_param("/mission"):
                     # Go to state depending on mission
@@ -68,9 +58,9 @@ class Controller:
 
                     if self.mission == AutonomousMission.ACCELERATION:
                         self.target_lap_count = 1
-                        new_state = AutonomousState.RACING
+                        new_state = SLAMStatesEnum.RACING
                     else:
-                        new_state = AutonomousState.EXPLORATION
+                        new_state = SLAMStatesEnum.EXPLORATION
                         self.target_lap_count = 1
 
                     # Launch nodes
@@ -78,16 +68,16 @@ class Controller:
                         "slam_controller", f"launch/{self.mission}_{new_state}.launch"
                     )
 
-            elif state.cur_state != "asdrive":
+            elif state.cur_state != AutonomousStatesEnum.ASDRIVE:
                 # Just stop everything
                 self.launcher.shutdown()
-                new_state = AutonomousState.IDLE
+                new_state = SLAMStatesEnum.IDLE
 
-        elif state.scope == "slam":
+        elif state.scope == StateMachineScopeEnum.SLAM:
             return
 
         self.state_publisher.publish(
-            State(scope="slam", prev_state=self.state, cur_state=new_state)
+            State(scope=StateMachineScopeEnum.SLAM, prev_state=self.state, cur_state=new_state)
         )
         self.state = new_state
 
@@ -103,24 +93,26 @@ class Controller:
 
             new_state = self.state
 
-            if self.state == AutonomousState.EXPLORATION:
+            if self.state == SLAMStatesEnum.EXPLORATION:
 
                 if self.mission == AutonomousMission.TRACKDRIVE:
-                    new_state = AutonomousState.RACING
+                    new_state = SLAMStatesEnum.RACING
+
+                    self.target_lap_count = 10
 
                     # Relaunch (different) nodes
                     self.launcher.launch_node(
                         "slam_controller", f"launch/{self.mission}_{new_state}.launch"
                     )
                 else:
-                    new_state = AutonomousState.FINISHED
+                    new_state = SLAMStatesEnum.FINISHED
                     self.launcher.shutdown()
             else:
-                new_state = AutonomousState.FINISHED
+                new_state = SLAMStatesEnum.FINISHED
                 self.launcher.shutdown()
 
             self.state_publisher.publish(
-                State(scope="slam", prev_state=self.state, cur_state=new_state)
+                State(scope=StateMachineScopeEnum.SLAM, prev_state=self.state, cur_state=new_state)
             )
             self.state = new_state
 
