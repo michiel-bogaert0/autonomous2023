@@ -15,10 +15,9 @@ class AutonomousState(str, Enum):
 
 
 class AutonomousMission(str, Enum):
-    AUTOCROSS = ("autocross",)
-    ACCELERATION = ("acceleration",)
-    TRACKDRIVE = ("trackdrive",)
-
+    AUTOCROSS = "autocross"
+    ACCELERATION = "acceleration"
+    TRACKDRIVE = "trackdrive"
 
 class Controller:
     def __init__(self) -> None:
