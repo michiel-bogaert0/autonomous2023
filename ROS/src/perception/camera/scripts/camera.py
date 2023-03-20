@@ -2,8 +2,13 @@
 
 import cv2 as cv
 import neoapi
+import numpy as np
 import rospy
 from publisher_abstract.publisher import PublishNode
+
+
+import os
+from pathlib import Path
 
 
 class CameraNode(PublishNode):
@@ -42,6 +47,18 @@ class CameraNode(PublishNode):
 
         self.camera = camera
 
+        camcal_location = rospy.get_param(
+            "~camcal_location", "camera_calibration_baumer.npz"
+        )
+        camera_cal_archive = np.load(
+            Path(os.getenv("BINARY_LOCATION")) / "pnp" / camcal_location
+        )
+        self.camera_matrix = camera_cal_archive["camera_matrix"]
+        self.distortion_matrix = camera_cal_archive["distortion_matrix"]
+        self.optimal_camera_matrix, _ = cv.getOptimalNewCameraMatrix(
+            self.camera_matrix, np.zeros(4), (1920, 1200), 1
+        )
+
     def process_data(self):
         """
         reads the frames from the mp4 file
@@ -54,6 +71,14 @@ class CameraNode(PublishNode):
 
         if not image.IsEmpty():
             img = image.GetNPArray()[..., ::-1]  # BGR to RGB
+
+            img = cv.undistort(
+                img,
+                self.camera_matrix,
+                self.distortion_matrix,
+                None,
+                self.optimal_camera_matrix,
+            )
 
             ros_img = self.np_to_ros_image(img)
 

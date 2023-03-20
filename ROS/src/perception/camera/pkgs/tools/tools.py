@@ -4,8 +4,12 @@ from typing import Any, Tuple, Type, get_type_hints
 import numpy as np
 import rospy
 from sensor_msgs.msg import Image
-from ugr_msgs.msg import (BoundingBox, Map, ObservationWithCovariance,
-                          ObservationWithCovarianceArrayStamped)
+from ugr_msgs.msg import (
+    BoundingBox,
+    Map,
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+)
 
 
 def np_to_ros_image(arr: np.ndarray) -> Image:

@@ -8,19 +8,15 @@ from tools.tools import np_to_ros_image, ros_img_to_np
 from sensor_msgs.msg import Image
 from std_msgs.msg import Empty
 
+
 class ImageSaver:
     def __init__(self):
         rospy.init_node("image_saver")
-        self.sub_save = rospy.Subscriber(
-            "/input/save", Empty, self.save_image
-        )
-        self.sub_img = rospy.Subscriber(
-            "/input/image", Image, self.receive_image
-        )
+        self.sub_save = rospy.Subscriber("/input/save", Empty, self.save_image)
+        self.sub_img = rospy.Subscriber("/input/image", Image, self.receive_image)
         self.last_image = None
 
         rospy.spin()
-
 
     def save_image(self, ros_image: Image) -> None:
         """
