@@ -85,7 +85,7 @@ class PerceptionNode:
         # PNP
         # See documentation for more information about these settings!
         max_distance = rospy.get_param("~max_distance", 20.0)
-        scale = rospy.get_param("~scale", 0.001)
+        scale = rospy.get_param("~scale", 1)
         cones_location = rospy.get_param("~cones_location", "cones.npz")
         camcal_location = rospy.get_param(
             "~camcal_location", "camera_calibration_baumer.npz"
