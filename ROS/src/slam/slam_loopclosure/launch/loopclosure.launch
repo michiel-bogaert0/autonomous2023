@@ -1,5 +1,7 @@
 <launch>
     <node pkg="slam_loopclosure" output="screen" type="loopclosure" name="loopclosure">
+        <param name="world_frame" value="ugr/map"/>
+        
         <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
         <remap from="/reset_closure" to="/ugr/srv/reset_loopclosure"/>
     </node>

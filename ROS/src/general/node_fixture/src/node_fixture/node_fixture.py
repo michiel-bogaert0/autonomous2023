@@ -194,13 +194,6 @@ class ROSNode:
                 buff_size=buff_size,
             )
 
-    @AddSubscriber(topic="state")
-    def state_callback(self, data: String):
-        self.state_update(str(data))
-
-    def state_update(self, new_state: str):
-        pass
-
     def get_publisher(self, topic: str, msg_type: Type):
         key = (topic, msg_type)
         if key not in self.publishers:
@@ -229,6 +222,38 @@ class ROSNode:
         """
         return int(rosstamp.__str__()) / 10**9
 
+##
+## See https://ugentracing.sharepoint.com/sites/UGRWiki/SitePages/State-machine-conventions.aspx
+##
+
+# All scopes of state machines in autonomous
+class StateMachineScopeEnum(str, enum.Enum):
+    AUTONOMOUS = "autonomous"
+    SLAM = "slam"
+
+# States of SLAM state machine
+class SLAMStatesEnum(str, enum.Enum):
+    IDLE = "idle"
+    EXPLORATION = "exploration"
+    RACING = "racing"
+    FINISHED = "finished"
+
+# Autonomous missions
+class AutonomousMission(str, enum.Enum):
+    AUTOCROSS = "autocross"
+    ACCELERATION = "acceleration"
+    TRACKDRIVE = "trackdrive"
+    EBSTEST = "emergencybraketest"
+    SKIDPAD = "skidpad"
+    
+# States of global state machine
+class AutonomousStatesEnum(str, enum.Enum):
+    ASDRIVE = "asdrive"
+    ASREADY = "asready"
+    MANUAL = "manual"
+    ASOFF = "asoff"
+    ASEMERGENCY = "asemergency"
+    ASFINISHED = "asfinished"
 
 class DiagnosticStatusEnum(enum.Enum):
     OK = 0
