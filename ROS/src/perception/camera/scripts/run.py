@@ -42,8 +42,8 @@ class PerceptionNode:
         self.is_rgb = rospy.get_param("~is_rgb", True)
 
         self.pub_image_annotated = rospy.Publisher(
-            "/output/image_annotated", 
-            Image, 
+            "/output/image_annotated",
+            Image,
             queue_size=10,
         )
 
@@ -85,7 +85,7 @@ class PerceptionNode:
         # PNP
         # See documentation for more information about these settings!
         max_distance = rospy.get_param("~max_distance", 20.0)
-        scale = rospy.get_param("~scale", 0.001)
+        scale = rospy.get_param("~scale", 1)
         cones_location = rospy.get_param("~cones_location", "cones.npz")
         camcal_location = rospy.get_param(
             "~camcal_location", "camera_calibration_baumer.npz"
@@ -149,13 +149,29 @@ class PerceptionNode:
             # Cone type: Blue, Yellow, Orange_Big, Orange_Small, Unknown (Red)
             # Image is in RGB, but OpenCV works in BGR
             # so we have to swap colors as input for OpenCV
-            colors = [(0, 0, 255), (255, 255, 0), (255, 140, 0), (255, 140, 0), (255, 0, 0)]
+            colors = [
+                (0, 0, 255),
+                (255, 255, 0),
+                (255, 140, 0),
+                (255, 140, 0),
+                (255, 0, 0),
+            ]
             image_annotated = image
 
             for bb in bbs:
-                x_left, x_right = int(bb.left*ros_image.width), int((bb.left+bb.width)*ros_image.width)
-                y_top, y_bottom = int(bb.top*ros_image.height), int((bb.top+bb.height)*ros_image.height)
-                img_annotated = cv2.rectangle(image_annotated, tuple([x_left, y_top]), tuple([x_right, y_bottom]), colors[bb.cone_type], 6)
+                x_left, x_right = int(bb.left * ros_image.width), int(
+                    (bb.left + bb.width) * ros_image.width
+                )
+                y_top, y_bottom = int(bb.top * ros_image.height), int(
+                    (bb.top + bb.height) * ros_image.height
+                )
+                img_annotated = cv2.rectangle(
+                    image_annotated,
+                    tuple([x_left, y_top]),
+                    tuple([x_right, y_bottom]),
+                    colors[bb.cone_type],
+                    6,
+                )
 
             image_annotated = np_to_ros_image(img_annotated)
             image_annotated.header = ros_image.header
@@ -182,17 +198,18 @@ class PerceptionNode:
 
             # Run PNP
             start = time.perf_counter()
-            update_msg = self.pnp.generate_perception_update(cone_keypoints_msg, img_size=(w, h))
+            update_msg = self.pnp.generate_perception_update(
+                cone_keypoints_msg, img_size=(w, h)
+            )
             end = time.perf_counter()
             timings.append(end - start)
 
             # assign the belief scores to the individual observations
-            for i,obs in enumerate(update_msg.observations):
+            for i, obs in enumerate(update_msg.observations):
                 obs.observation.belief = beliefs[i]
-            
+
             # publish the observation message
             self.pub_pnp.publish(update_msg)
-
 
         self.diagnostics.publish(
             create_diagnostic_message(
@@ -202,8 +219,6 @@ class PerceptionNode:
             )
         )
 
-
-        
 
 if __name__ == "__main__":
     try:
