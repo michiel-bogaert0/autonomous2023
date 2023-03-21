@@ -4,7 +4,7 @@ import os
 import argparse
 
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pypdlot as plt
 from matplotlib import rc
 import matplotlib
 from colorama import init, Fore
@@ -15,6 +15,8 @@ import plot_utils as pu
 from fn_constants import kNsToEstFnMapping, kNsToMatchFnMapping, kFnExt
 from multiple_traj_errors import MulTrajError
 import time
+
+
 init(autoreset=True)
 rc('font', **{'family': 'serif', 'serif': ['Cardo']})
 rc('text', usetex=True)
@@ -51,23 +53,23 @@ def analyze_multiple_trials(results_dir, est_type, n_trials,
             preset_boxplot_distances=preset_boxplot_distances,
             preset_boxplot_percentages=preset_boxplot_percentages)
         
-        
+        #calculation after data is loaded
         if traj.data_loaded:
             traj.compute_absolute_error()
             if compute_odometry_error:
                 traj.compute_relative_errors()
         if traj.success:
             traj.cache_current_error()
-            traj.write_errors_to_yaml()
+
 
         if traj.success and not preset_boxplot_distances:
             #print("Save the boxplot distances for next trials.")
             preset_boxplot_distances = traj.preset_boxplot_distances
 
         if traj.success:
+            print(trial_i)
             mt_error.addTrajectoryError(traj, trial_i)
             traj_list.append(traj)
-
         #else:
             #print("Trials {0} fails, will not count.".format(trial_i))
     #mt_error.summary()
@@ -160,11 +162,12 @@ if __name__ == '__main__':
         traj_list, mt_error = analyze_multiple_trials(
                 args.result_dir, est_type_i, n_trials, args.recalculate_errors)
         
-        for i in range(50):
-            traj_list, mt_error = analyze_multiple_trials(
-                args.result_dir, est_type_i, n_trials, args.recalculate_errors)
-            #end = time.time()
-            #print(end-start)
+        # for i in range(50):
+        #     #start = time.time()
+        #     traj_list, mt_error = analyze_multiple_trials(
+        #         args.result_dir, est_type_i, n_trials, args.recalculate_errors)
+        #     #end = time.time()
+        #     #print(end-start)
         if traj_list:
             plot_traj = traj_list[args.mul_plot_idx[0]]
         else:
