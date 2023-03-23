@@ -55,6 +55,31 @@ def load_estimate_and_associate(fn_gt,
 
     return t_gt, p_es, q_es, t_gt, p_gt, q_gt
 
+# load the data same as previous function but without loading data
+def load_estimate_and_associate_only_data(timestamp_gt, timestamp_est,data_est,data_gt,max_diff=0.02):
+    matches = associ.associate(timestamp_gt, timestamp_est, 0.0, max_diff)
+
+    dict_matches = dict(matches)
+    p_es = []
+    p_gt = []
+    q_es = []
+    q_gt = []
+    t_gt = []
+    for es_id, es in enumerate(data_est):
+        if es_id in dict_matches:
+            gt = data_gt[dict_matches[es_id]]
+            t_gt.append(gt[0])    
+            p_es.append(es[1:4])
+            p_gt.append(gt[1:4])
+            q_es.append(es[4:8])
+            q_gt.append(gt[4:8])
+    p_es = np.array(p_es)
+    p_gt = np.array(p_gt)
+    q_es = np.array(q_es)
+    q_gt = np.array(q_gt)
+    t_gt = np.array(t_gt)
+
+    return t_gt, p_es, q_es, t_gt, p_gt, q_gt
 
 def load_stamped_dataset(results_dir,
                          nm_gt='stamped_groundtruth.txt',
@@ -68,7 +93,7 @@ def load_stamped_dataset(results_dir,
     '''
     fn_gt = os.path.join(results_dir, nm_gt)
     data_gt = np.loadtxt(fn_gt)
-
+  
     fn_es = os.path.join(results_dir, nm_est)
     fn_matches = os.path.join(results_dir, nm_matches)
 
@@ -94,5 +119,22 @@ def load_raw_groundtruth(results_dir, nm_gt ='stamped_groundtruth.txt',
     q_gt = np.array(q_gt)
 
     return t_gt, p_gt, q_gt
+
+#same as before but no need to load data
+
+def get_raw_groundtruth(data_gt):
+    t_gt = []
+    p_gt = []
+    q_gt = []
+    for d in data_gt:
+        t_gt.append(d[0])    
+        p_gt.append(d[1:4])
+        q_gt.append(d[4:8])
+    t_gt = np.array(t_gt)
+    p_gt = np.array(p_gt)
+    q_gt = np.array(q_gt)
+
+    return t_gt, p_gt, q_gt
+
 
 

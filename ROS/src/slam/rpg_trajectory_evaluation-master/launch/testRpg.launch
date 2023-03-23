@@ -2,8 +2,16 @@
     <node 
         pkg="rpg_trajectory_evaluation" 
         name="rpg_trajectory_evaluation"
-        output="screen" type="trajectory.py"
+        output="screen" type="analyze_while_running.py"
         >
         <param name="clustering/results_dir" value="../TestDataResult" />
+        <remap from="/input/odometry" to="/ugr/car/odometry/filtered/odom"/>
+        <remap from="/input/gps" to="/ugr/car/odometry/filtered/gps"/>
+        <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
+    </node>
+        <node pkg="slam_loopclosure" output="screen" type="loopclosure" name="loopclosure">
+        <remap from="/input/odometry" to="/ugr/car/odometry/filtered/fastslam" />
+        <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
+        <remap from="/reset_closure" to="/ugr/srv/reset_loopclosure"/>
     </node>
 </launch>

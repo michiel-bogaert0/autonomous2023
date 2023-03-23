@@ -30,19 +30,21 @@ class Trajectory():
     cache_res_dir_nm = 'cached'
     default_boxplot_perc = [0.1, 0.2, 0.3, 0.4, 0.5]
 
-    def __init__(self, results_dir, platform='', alg_name='', dataset_name='',
+    def __init__(self, results_dir='', platform='', alg_name='', dataset_name='',
                  align_type='sim3', align_num_frames=-1, suffix='',
                  est_type='traj_est',
                  nm_gt='stamped_groundtruth.txt',
                  nm_est='stamped_traj_estimate.txt',
                  nm_matches='stamped_est_gt_matches.txt',
                  preset_boxplot_distances=[],
-                 preset_boxplot_percentages=[]):
+                 preset_boxplot_percentages=[],
+                 load_data=True):
         #super().__init__("Trajectory")
         #rospy.init_node('my_node', log_level=rospy.DEBUG)
-        assert os.path.exists(results_dir),\
-            "Specified directory {0} does not exist.".format(results_dir)
-        assert align_type in ['first_frame', 'sim3', 'se3']
+        if load_data:
+            assert os.path.exists(results_dir),\
+                "Specified directory {0} does not exist.".format(results_dir)
+            assert align_type in ['first_frame', 'sim3', 'se3']
         #rospy.loginfo("test")
         # information of the results, useful as labels
         self.platform = platform
@@ -105,41 +107,44 @@ class Trajectory():
             self.cache_results_dir,
             self.rel_error_cached_nm+self.suffix_str+".pickle")
 
-       # print("Loading {0} and {1}...".format(nm_gt, nm_est))
-        #this needs to be reduced remove it if possible
-        self.data_loaded = self.load_data(nm_gt, nm_est, nm_matches)
-        if not self.data_loaded:
-            print(Fore.RED+"Loading data failed.")
-            return
+        if load_data:
 
-        self.boxplot_pcts = preset_boxplot_percentages
-        if len(preset_boxplot_distances) != 0:
+            self.data_loaded = self.load_data(nm_gt, nm_est, nm_matches)
+            self.boxplot_pcts = preset_boxplot_percentages
+            if len(preset_boxplot_distances) != 0:
+                #print("Use preset boxplot distances.")
+                self.preset_boxplot_distances = preset_boxplot_distances
+            else:
+                if not self.boxplot_pcts:
+                    self.boxplot_pcts = Trajectory.default_boxplot_perc
+                #print("Use percentages {} for boxplot.".format(self.boxplot_pcts))
+                self.compute_boxplot_distances()
+                
+            if not self.data_loaded:
+                print(Fore.RED+"Loading data failed.")
+                return
+            self.align_trajectory()
+
+    def align_trajectory_with_data(self, data_gt, data_est, stamps_gt, stamps_est):
+        self.data_loaded = True
+        self.t_es, self.p_es, self.q_es, self.t_gt, self.p_gt, self.q_gt =\
+            traj_loading.load_estimate_and_associate_only_data(stamps_gt, stamps_est,data_gt,data_est, 0.02)
+        self.t_gt_raw, self.p_gt_raw, self.q_gt_raw =\
+            traj_loading.get_raw_groundtruth(data_gt)
+        self.accum_distances = traj_utils.get_distance_from_start(self.p_gt_raw)
+        self.traj_length = self.accum_distances[-1]
+        self.accum_distances = traj_utils.get_distance_from_start(self.p_gt)
+        self.align_trajectory()
+        self.boxplot_pcts = []
+        if len(self.boxplot_pcts) != 0:
             #print("Use preset boxplot distances.")
-            self.preset_boxplot_distances = preset_boxplot_distances
+            self.preset_boxplot_distances = self.boxplot_pcts
         else:
             if not self.boxplot_pcts:
                 self.boxplot_pcts = Trajectory.default_boxplot_perc
             #print("Use percentages {} for boxplot.".format(self.boxplot_pcts))
             self.compute_boxplot_distances()
         
-        self.align_trajectory()
-
-        #data to start with
-        self.odomData = []
-        self.gpsData = []
-
-        #adding subscribers
-        
-
-    #@AddSubscriber("/input/odometry")
-    #def addDataOdom(self, msg: Odometry):
-    #    self.odomData.append(msg.pose.pose.position)
-        
-    #@AddSubscriber("/input/gps")
-    #def addDataGps(self, msg: NavSatFix):
-    #    self.gpsData.append(msg.latitude)
-        
-
     def load_data(self, nm_gt, nm_est, nm_matches):
         """
         Loads the trajectory data. The resuls {p_es, q_es, p_gt, q_gt} is
@@ -406,6 +411,13 @@ class Trajectory():
         rel_errors = {}
         for err_i in error_types:
             assert err_i in kRelMetrics
+            rel_errors[err_i] = [[self.rel_errors[d][err_i]
+                                 for d in self.preset_boxplot_distances]]
+        return rel_errors, self.preset_boxplot_distances
+    def get_relative_errors_and_distance_no_ignore(
+            self, error_types=['rel_trans', 'rel_trans_perc', 'rel_yaw']):
+        rel_errors = {}
+        for err_i in error_types:
             rel_errors[err_i] = [[self.rel_errors[d][err_i]
                                  for d in self.preset_boxplot_distances]]
         return rel_errors, self.preset_boxplot_distances

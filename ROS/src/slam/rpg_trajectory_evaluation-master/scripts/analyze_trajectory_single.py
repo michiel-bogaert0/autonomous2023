@@ -3,8 +3,8 @@
 import os
 import argparse
 
-import numpy as np
-import matplotlib.pypdlot as plt
+import numpy as npS
+import matplotlib.pyplot as plt
 from matplotlib import rc
 import matplotlib
 from colorama import init, Fore
