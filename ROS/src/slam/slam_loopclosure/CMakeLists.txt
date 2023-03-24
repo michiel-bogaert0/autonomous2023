@@ -7,12 +7,13 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   std_srvs
   geometry_msgs
+  diagnostic_msgs
 )
 find_package(Boost REQUIRED)
 
 catkin_package(
 
-  CATKIN_DEPENDS geometry_msgs roscpp std_srvs tf2 nav_msgs tf2_ros
+  CATKIN_DEPENDS geometry_msgs roscpp std_srvs tf2 nav_msgs tf2_ros diagnostic_msgs
 
 )
 
