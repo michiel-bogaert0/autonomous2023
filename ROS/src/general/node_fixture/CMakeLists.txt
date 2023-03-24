@@ -10,7 +10,7 @@ catkin_python_setup()
 
 catkin_package(
 
-  CATKIN_DEPENDS geometry_msgs roscpp diagnostic_msgs
+  CATKIN_DEPENDS roscpp diagnostic_msgs
 
 )
 
