@@ -21,7 +21,6 @@ from tf2_kdl import transform_to_kdl
 from ugr_msgs.msg import (Map, ObservationWithCovariance,
                           ObservationWithCovarianceArrayStamped)
 
-
 class AddSubscriber:
     functions_to_subscribe = {}
 
@@ -253,6 +252,7 @@ class AutonomousStatesEnum(str, enum.Enum):
     MANUAL = "manual"
     ASOFF = "asoff"
     ASEMERGENCY = "asemergency"
+    ASSTOP = "asstop"
     ASFINISHED = "asfinished"
 
 class DiagnosticStatusEnum(enum.Enum):
