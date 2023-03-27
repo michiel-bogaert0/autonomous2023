@@ -27,7 +27,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> cluster_msg;
   if (clustering_method_ == "string") {
-    cluster_msg = ConeClustering::stringClustering(cloud);
+    cluster_msg = ConeClustering::stringClustering(cloud, ground);
   } else {
     cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
   }
@@ -125,7 +125,8 @@ ConeClustering::euclidianClustering(
  */
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
 ConeClustering::stringClustering(
-    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud) {
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
   
 
   if(use_sort_){
@@ -233,6 +234,41 @@ ConeClustering::stringClustering(
   // the left
   for (pcl::PointCloud<pcl::PointXYZINormal> cluster : finished_clusters) {
     clusters.push_back(cluster);
+  }
+
+  std::vector<pcl::PointXYZ> cluster_centroids;
+  for(pcl::PointCloud<pcl::PointXYZINormal> cluster: clusters){
+    // Compute centroid of each cluster
+    Eigen::Vector4f centroid;
+    pcl::compute3DCentroid(cluster, centroid);
+    pcl::PointXYZ centroid_pos;
+    centroid_pos.x = centroid[0];
+    centroid_pos.y = centroid[1];
+    centroid_pos.z = centroid[2];
+    cluster_centroids.push_back(centroid_pos);
+  }
+
+  // For each ground point find the closest centroid
+  // if it is within a certain threshold, add the point to that cluster
+  for (pcl::PointXYZINormal point : ground->points) {
+    float closest_cluster_dist = INFINITY;
+    uint16_t closest_cluster_id = 0;
+
+    for (uint16_t cluster_id = 0; cluster_id < clusters.size(); cluster_id++) {
+      // AFilter in a cylindrical volume around each centroid
+      float dist = std::hypot(point.x - cluster_centroids[cluster_id].x,
+                              point.y - cluster_centroids[cluster_id].y);
+
+      if (dist < closest_cluster_dist) {
+        closest_cluster_dist = dist;
+        closest_cluster_id = cluster_id;
+      }
+    }
+
+    // If the closest cluster is close enough, add the point to the cluster
+    if (closest_cluster_dist < 0.2) {
+      clusters[closest_cluster_id].points.push_back(point);
+    }
   }
 
   return clusters;

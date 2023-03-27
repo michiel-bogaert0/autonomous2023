@@ -48,7 +48,8 @@ private:
   euclidianClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
                       const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground);
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
-  stringClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud);
+  stringClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
+                  const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground);
   float arctan(float x, float y);
 
   // The colors: https://sashamaps.net/docs/resources/20-colors/
