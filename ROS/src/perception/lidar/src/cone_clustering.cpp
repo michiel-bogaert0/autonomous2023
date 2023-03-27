@@ -12,7 +12,7 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
   n.param<std::string>("clustering_method", clustering_method_, "string");
   n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
-  n.param<bool>("use_sort", use_sort_, false);
+  n.param<double>("cone_reconstruction_treshold", cone_reconstruction_treshold_, 0.2);
 }
 
 /**
@@ -24,10 +24,11 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
  */
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
-    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) 
+{
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> cluster_msg;
   if (clustering_method_ == "string") {
-    cluster_msg = ConeClustering::stringClustering(cloud);
+    cluster_msg = ConeClustering::stringClustering(cloud, ground);
   } else {
     cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
   }
@@ -43,7 +44,9 @@ std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
 ConeClustering::euclidianClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
-    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) 
+{
+
   // Create a PC and channel for the cone colour
   sensor_msgs::PointCloud cluster_msg;
   sensor_msgs::ChannelFloat32 cone_channel;
@@ -114,6 +117,11 @@ ConeClustering::euclidianClustering(
   return clusters;
 }
 
+
+
+
+
+
 /**
  * @brief Clusters the cones in the final filtered point cloud and returns a
  * vector containing the different clusters
@@ -125,18 +133,13 @@ ConeClustering::euclidianClustering(
  */
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
 ConeClustering::stringClustering(
-    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud) {
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) 
+{
   
-
-  if(use_sort_){
-    // sort point from left to right (because they are ordered from left to right)
-    std::sort(cloud->begin(), cloud->end(), leftrightsort);
-
-  }
-  
+  //construct clusters for further use
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
-  std::vector<pcl::PointXYZINormal>
-      cluster_rightmost; // The rightmost point in each cluster
+  std::vector<pcl::PointXYZINormal> cluster_rightmost; // The rightmost point in each cluster
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> finished_clusters;
 
   // Iterate over all points, up and down, left to right (elevation & azimuth)
@@ -233,6 +236,44 @@ ConeClustering::stringClustering(
   // the left
   for (pcl::PointCloud<pcl::PointXYZINormal> cluster : finished_clusters) {
     clusters.push_back(cluster);
+  }
+
+
+  // determine centroid of each cluster to reduced
+  // duplicate calculations
+  std::vector<pcl::PointXYZ> cluster_centroids;
+  for(pcl::PointCloud<pcl::PointXYZINormal> cluster: clusters){
+    // Compute centroid of each cluster
+    Eigen::Vector4f centroid;
+    pcl::compute3DCentroid(cluster, centroid);
+    pcl::PointXYZ centroid_pos;
+    centroid_pos.x = centroid[0];
+    centroid_pos.y = centroid[1];
+    centroid_pos.z = centroid[2];
+    cluster_centroids.push_back(centroid_pos);
+  }
+
+  // For each ground point find the closest centroid
+  // if it is within a certain threshold, add the point to that cluster
+  for (pcl::PointXYZINormal point : ground->points) {
+    float closest_cluster_dist = INFINITY;
+    uint16_t closest_cluster_id = 0;
+
+    for (uint16_t cluster_id = 0; cluster_id < clusters.size(); cluster_id++) {
+      // AFilter in a cylindrical volume around each centroid
+      float dist = std::hypot(point.x - cluster_centroids[cluster_id].x,
+                              point.y - cluster_centroids[cluster_id].y);
+
+      if (dist < closest_cluster_dist) {
+        closest_cluster_dist = dist;
+        closest_cluster_id = cluster_id;
+      }
+    }
+
+    // If the closest cluster is close enough, add the point to the cluster
+    if (closest_cluster_dist < cone_reconstruction_treshold_) {
+      clusters[closest_cluster_id].points.push_back(point);
+    }
   }
 
   return clusters;
