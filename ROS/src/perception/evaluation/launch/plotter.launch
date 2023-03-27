@@ -3,6 +3,8 @@
        <param name="aggregation_function" value="plus" />
        <remap from="/input/x" to="publisher/x"/>
         <remap from="/input/y" to="publisher/y"/>
+        <param name="plot" value="True" />
+        <param name="savedir" value="$(env HOME)/plot.png"/>
     </node>
 
 
