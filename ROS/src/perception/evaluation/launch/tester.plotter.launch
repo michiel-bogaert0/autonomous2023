@@ -1,0 +1,8 @@
+<launch>
+    <node pkg="evaluation" type="test_agg.py" name="pub" output="screen">
+        <remap from="/output/x" to="publisher/x"/>
+        <remap from="/output/y" to="publisher/y"/>
+    </node>
+
+    <include file="$(find evaluation)/launch/plotter.launch" pass_all_args="true"/>
+</launch>

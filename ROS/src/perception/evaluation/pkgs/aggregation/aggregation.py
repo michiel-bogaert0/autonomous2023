@@ -1,6 +1,6 @@
 import inspect
 from abc import ABC, abstractmethod
-from typing import Any, get_type_hints
+from typing import Any, get_type_hints,List
 
 
 class Aggregation(ABC):
@@ -28,7 +28,7 @@ class Aggregation(ABC):
         pass
 
     @abstractmethod
-    def plot(self, values: list[Any], savedir: str) -> None:
+    def plot(self, values: List[Any], savedir: str) -> None:
         """
         Custom plot function
         args:
