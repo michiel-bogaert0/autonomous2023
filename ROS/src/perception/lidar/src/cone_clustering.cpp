@@ -13,7 +13,6 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
   n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
   n.param<double>("cone_reconstruction_treshold", cone_reconstruction_treshold_, 0.2);
-  n.param<bool>("use_sort", use_sort_, false);
 }
 
 /**
@@ -25,7 +24,8 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
  */
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
-    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) 
+{
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> cluster_msg;
   if (clustering_method_ == "string") {
     cluster_msg = ConeClustering::stringClustering(cloud, ground);
@@ -44,7 +44,9 @@ std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
 ConeClustering::euclidianClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
-    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) 
+{
+
   // Create a PC and channel for the cone colour
   sensor_msgs::PointCloud cluster_msg;
   sensor_msgs::ChannelFloat32 cone_channel;
@@ -115,6 +117,11 @@ ConeClustering::euclidianClustering(
   return clusters;
 }
 
+
+
+
+
+
 /**
  * @brief Clusters the cones in the final filtered point cloud and returns a
  * vector containing the different clusters
@@ -127,18 +134,12 @@ ConeClustering::euclidianClustering(
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
 ConeClustering::stringClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
-    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) 
+{
   
-
-  if(use_sort_){
-    // sort point from left to right (because they are ordered from left to right)
-    std::sort(cloud->begin(), cloud->end(), leftrightsort);
-
-  }
-  
+  //construct clusters for further use
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
-  std::vector<pcl::PointXYZINormal>
-      cluster_rightmost; // The rightmost point in each cluster
+  std::vector<pcl::PointXYZINormal> cluster_rightmost; // The rightmost point in each cluster
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> finished_clusters;
 
   // Iterate over all points, up and down, left to right (elevation & azimuth)
@@ -237,6 +238,9 @@ ConeClustering::stringClustering(
     clusters.push_back(cluster);
   }
 
+
+  // determine centroid of each cluster to reduced
+  // duplicate calculations
   std::vector<pcl::PointXYZ> cluster_centroids;
   for(pcl::PointCloud<pcl::PointXYZINormal> cluster: clusters){
     // Compute centroid of each cluster
