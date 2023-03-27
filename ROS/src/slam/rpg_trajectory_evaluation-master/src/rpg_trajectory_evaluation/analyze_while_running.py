@@ -125,11 +125,11 @@ class analyze_while_running(ROSNode):
         fig = plt.figure(figsize=(6, 5.5))
         ax = fig.add_subplot(111, aspect='equal',
                              xlabel='x [m]', ylabel='z [m]')
-        pu.plot_trajectory_side(ax, self.traj.p_es_aligned, 'b', 'Estimate')
-        pu.plot_trajectory_side(ax, self.traj.p_gt, 'm', 'Groundtruth')
+        pu.plot_trajectory_top(ax, self.traj.p_es_aligned, 'b', 'Estimate')
+        pu.plot_trajectory_top(ax, self.traj.p_gt, 'm', 'Groundtruth')
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         fig.tight_layout()
-        fig.savefig(self.dirpath+'/trajectory_side' + FORMAT, bbox_inches="tight")
+        fig.savefig(self.dirpath+'/trajectory_top' + FORMAT, bbox_inches="tight")
 
 
         #rel errors position 

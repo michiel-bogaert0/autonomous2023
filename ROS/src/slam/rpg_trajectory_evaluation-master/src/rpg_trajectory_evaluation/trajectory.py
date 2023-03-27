@@ -128,7 +128,7 @@ class Trajectory():
     def align_trajectory_with_data(self, data_gt, data_est, stamps_gt, stamps_est):
         self.data_loaded = True
         self.t_es, self.p_es, self.q_es, self.t_gt, self.p_gt, self.q_gt =\
-            traj_loading.load_estimate_and_associate_only_data(stamps_gt, stamps_est,data_gt,data_est, 0.02)
+            traj_loading.load_estimate_and_associate_only_data(stamps_gt, stamps_est,data_est,data_gt, 0.02)
         self.t_gt_raw, self.p_gt_raw, self.q_gt_raw =\
             traj_loading.get_raw_groundtruth(data_gt)
         self.accum_distances = traj_utils.get_distance_from_start(self.p_gt_raw)
@@ -136,6 +136,7 @@ class Trajectory():
         self.accum_distances = traj_utils.get_distance_from_start(self.p_gt)
         self.align_trajectory()
         self.boxplot_pcts = []
+
         if len(self.boxplot_pcts) != 0:
             #print("Use preset boxplot distances.")
             self.preset_boxplot_distances = self.boxplot_pcts
