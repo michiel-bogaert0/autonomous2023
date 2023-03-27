@@ -12,6 +12,7 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
   n.param<std::string>("clustering_method", clustering_method_, "string");
   n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
+  n.param<double>("cone_reconstruction_treshold", cone_reconstruction_treshold_, 0.2);
   n.param<bool>("use_sort", use_sort_, false);
 }
 
@@ -266,7 +267,7 @@ ConeClustering::stringClustering(
     }
 
     // If the closest cluster is close enough, add the point to the cluster
-    if (closest_cluster_dist < 0.2) {
+    if (closest_cluster_dist < cone_reconstruction_treshold_) {
       clusters[closest_cluster_id].points.push_back(point);
     }
   }

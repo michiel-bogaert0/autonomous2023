@@ -39,6 +39,7 @@ private:
 
   std::string clustering_method_; // Default: euclidian, others: string
   double cluster_tolerance_;      // The cone clustering tolerance (m)
+  double cone_reconstruction_treshold_; // threshold to determind which ground points are re-added to the clusters
   bool use_sort_;                 // Use a sort at the beginning of clustering
   double
       min_distance_factor_; // distance around the cone that contains no
