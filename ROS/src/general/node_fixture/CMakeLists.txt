@@ -21,6 +21,7 @@ include_directories(
   ${roscpp_INCLUDE_DIRS}
 )
 
-file(GLOB src/node_fixture.cpp include/node_fixture.hpp)
+file(GLOB srcs src/node_fixture.cpp)
+add_library(${PROJECT_NAME} ${srcs})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
