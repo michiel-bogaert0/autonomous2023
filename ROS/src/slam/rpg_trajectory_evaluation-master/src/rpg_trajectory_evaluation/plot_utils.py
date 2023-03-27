@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 """
 @author: Christian Forster
 """
@@ -46,7 +46,7 @@ def boxplot_compare(ax, xlabels,
         leg_handles.append(tmp)
         leg_labels.append(data_labels[idx])
         idx += 1
-
+        
     ax.set_xticks(np.arange(n_xlabel))
     ax.set_xticklabels(xlabels)
     xlims = ax.get_xlim()

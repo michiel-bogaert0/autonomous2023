@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import os
 import time
@@ -311,6 +311,7 @@ class Trajectory():
             stats_trans = res_writer.compute_statistics(e_trans)
             stats_rot = res_writer.compute_statistics(e_rot)
             stats_scale = res_writer.compute_statistics(e_scale_perc)
+           
 
             self.abs_errors['abs_e_trans'] = e_trans
             self.abs_errors['abs_e_trans_stats'] = stats_trans
