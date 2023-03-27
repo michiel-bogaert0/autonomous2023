@@ -5,7 +5,7 @@ from statistics import covariance
 import numpy as np
 import rospy
 from fs_msgs.msg import Track
-from geometry_msgs.msg import Point, Quaternion
+from geometry_msgs.msg import Point, Quaternion, TransformStamped
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import AddSubscriber, DataLatch, ROSNode
 from StageSimulator import StageSimulator
@@ -15,12 +15,21 @@ from ugr_msgs.msg import (
     ObservationWithCovarianceArrayStamped,
     Observation,
 )
+import tf2_ros as tf
 
 
 class PerceptionSimulator(StageSimulator):
     def __init__(self) -> None:
         """
         This node simulates the perception stage by publishing cone "observations".
+
+        Args:
+            world_frame
+            base_link_frame
+            viewing_distance: the radius around base_link_frame of cones that are 'visible'
+            fov: the Field of View (fov/2 'to the left' and fov/2 'to the right') of cones that are 'visible'
+            add_noise: If true, adds some noise, if false, it just publishes GT
+            cone_noise: if add_noise is True, this is the standard deviation of the (Gaussian) noise source in meter
         """
 
         self.datalatch = DataLatch()
@@ -30,67 +39,50 @@ class PerceptionSimulator(StageSimulator):
 
         super().__init__("perception")
 
-        self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
+        self.tf_buffer = tf.Buffer()
+        self.tf_listener = tf.TransformListener(self.tf_buffer)
+
+        self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
-        self.viewing_distance = rospy.get_param("~viewing_distance", 12.0) ** 2
-        self.fov = np.deg2rad(rospy.get_param("~fov", 60))
+        self.gt_base_link_frame = rospy.get_param("~gt_base_link_frame", "ugr/gt_base_link")
+        self.viewing_distance = rospy.get_param("~viewing_distance", 15.0) ** 2
+        self.fov = np.deg2rad(rospy.get_param("~fov", 90))
         self.add_noise = rospy.get_param("~add_noise", True)
-        self.cone_noise = rospy.get_param("~cone_noise", 0.2)
-        self.publish_delay = rospy.get_param("~publish_delay", 0.5)
+        self.cone_noise = rospy.get_param("~cone_noise", 0.2 / 20) # Noise per meter distance. Gets scaled with range
 
     @AddSubscriber("/input/track")
-    def track_update(self, track: Track):
+    def track_update(self, track: ObservationWithCovarianceArrayStamped):
         """
         Track update is used to collect the ground truth cones
         """
         cones = []
-        for cone in track.track:
+        for cone in track.observations:
             cones.append(
                 np.array(
-                    [cone.location.x, cone.location.y, cone.location.z, cone.color],
+                    [cone.observation.location.x, cone.observation.location.y, cone.observation.location.z, cone.observation.observation_class],
                     dtype=np.float32,
                 )
             )
-
+        
         cones = np.array(cones)
-
         self.datalatch.set("cones", cones)
 
-    @AddSubscriber("/input/odometry")
-    def odom_update(self, odom: Odometry):
+    def simulate(self, _):
         """
-        Odometry is used to be able to decide which cones are 'visible'
+        This function gets executed at a specific frequency. Basically publishes the 'visible' cones as observations
+        Those observations are relative to the base_link frame
         """
-        self.datalatch.set("odom", odom)
 
-    def simulate(self, timer):
-        now = self.convertROSStampToTimestamp(rospy.get_rostime())
+        # Fetch GT position of car
+        transform: TransformStamped = self.tf_buffer.lookup_transform(
+            self.world_frame,
+            self.gt_base_link_frame,
+            rospy.Time(0),
+            rospy.Duration(1)
+        )
 
-        odometry_updates = self.datalatch.get("odom")
-
-        # Check if there is an update old enough
-        if (
-            len(odometry_updates) == 0
-            or now
-            - ROSNode.convertROSStampToTimestamp(odometry_updates[0].header.stamp)
-            < self.publish_delay
-        ):
-            return
-
-        odom = odometry_updates.popleft()
-
-        # Try to find the odom update with the right delay
-        # TODO Should be done with the tf package!
-        while (
-            len(odometry_updates) != 0
-            and now - ROSNode.convertROSStampToTimestamp(odom.header.stamp)
-            > self.publish_delay
-        ):
-            now = ROSNode.convertROSStampToTimestamp(rospy.get_rostime())
-            odom = odometry_updates.popleft()
-
-        pos: Point = odom.pose.pose.position
-        orient: Quaternion = odom.pose.pose.orientation
+        pos = transform.transform.translation
+        orient: Quaternion = transform.transform.rotation
         roll, pitch, yaw = euler_from_quaternion(
             [orient.x, orient.y, orient.z, orient.w]
         )
@@ -100,10 +92,6 @@ class PerceptionSimulator(StageSimulator):
             new_cones[:, :-2], [pos.x, pos.y], yaw, True
         )
 
-        if self.add_noise:
-            new_cones[:, :2] += (
-                1 / 2 * np.random.randn(new_cones.shape[0], 2) * self.cone_noise
-            )
         filtered_cones = []
         for cone in new_cones:
             if (
@@ -113,6 +101,11 @@ class PerceptionSimulator(StageSimulator):
             ) > self.fov:
                 continue
 
+            if self.add_noise:
+                range = (cone[0] ** 2 + cone[1] ** 2) ** (1/2)
+                cone[0] += np.random.randn() * self.cone_noise * range
+                cone[1] += np.random.randn() * self.cone_noise * range
+            
             filtered_cones.append(
                 ObservationWithCovariance(
                     observation=Observation(
@@ -123,7 +116,7 @@ class PerceptionSimulator(StageSimulator):
             )
 
         observations = ObservationWithCovarianceArrayStamped()
-        observations.header.stamp = odom.header.stamp
+        observations.header.stamp = transform.header.stamp
         observations.header.frame_id = self.base_link_frame
         observations.observations = filtered_cones
 

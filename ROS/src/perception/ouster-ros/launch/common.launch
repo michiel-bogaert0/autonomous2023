@@ -16,13 +16,13 @@
     </node>
   </group>
 
-  <group ns="$(arg ouster_ns)">
+  <!-- <group ns="$(arg ouster_ns)">
     <node pkg="nodelet" type="nodelet" name="img_node"
       output="screen" required="true"
       launch-prefix="bash -c 'sleep 4; $0 $@' "
       args="load nodelets_os/OusterImage os_nodelet_mgr">
     </node>
-  </group>
+  </group> -->
 
   <!-- TODO: how can/should we handle the change of default ouster namespace in RVIZ? -->
   <node if="$(arg viz)"

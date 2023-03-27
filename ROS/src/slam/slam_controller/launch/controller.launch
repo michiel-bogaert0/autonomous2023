@@ -1,8 +1,21 @@
 <launch>
 
-  <!-- Map server -->
-  <node name="slam_controller" pkg="slam_controller" type="map_server.py">
+  <!-- ? Controller -->
+  <node name="slam_controller" pkg="slam_controller" type="controller.py" output="screen">
+    <remap from="/input/loopclosure" to="/ugr/car/loopclosure" />
+  </node>
+
+  <!-- ? Map server -->
+  <node name="slam_map_server" pkg="slam_controller" type="map_server.py">
     <param name="topic_prefix" value="/ugr/car/map" />
   </node>
 
+  <!-- ? ISE -->
+  <include file="$(find slam_controller)/launch/ISE.launch" pass_all_args="true"/>
+  
+  <!-- ? Lap counter -->
+  <include file="$(find slam_loopclosure)/launch/loopclosure.launch" pass_all_args="true" />
+
+  <!-- ? TF service -->
+  <node name="tf_service" pkg="tf_service" type="server" ></node>
 </launch>

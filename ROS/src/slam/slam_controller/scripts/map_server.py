@@ -41,24 +41,24 @@ class MapServer:
           req: the SetMap request, see SetMap.srv file
         """
 
-        is_new_publisher = req.namespace not in self.maps.keys()
-        self.maps[req.namespace] = req.map
+        is_new_publisher = req.name not in self.maps.keys()
+        self.maps[req.name] = req.map
 
         # Also publish
         publisher = (
             rospy.Publisher(
-                f"/{self.prefix}/{req.namespace}".replace("//", "/"),
+                f"/{self.prefix}/{req.name}".replace("//", "/"),
                 ObservationWithCovarianceArrayStamped,
                 queue_size=1,
                 latch=True,
             )
             if is_new_publisher
-            else self.publishers[req.namespace]
+            else self.publishers[req.name]
         )
 
-        publisher.publish(self.maps[req.namespace])
+        publisher.publish(self.maps[req.name])
 
-        self.publishers[req.namespace] = publisher
+        self.publishers[req.name] = publisher
 
         return SetMapResponse()
 
@@ -70,15 +70,15 @@ class MapServer:
           req: the GetMap request, see GetMap.srv file
 
         Exceptions:
-          ServiceExcepion: when req.namespace has no map attached to it
+          ServiceExcepion: when req.name has no map attached to it
         """
 
-        if req.namespace not in self.maps.keys():
+        if req.name not in self.maps.keys():
             raise rospy.service.ServiceException(
-                f"Namespace '{req.namespace}' does not have a map attached to it"
+                f"Namespace '{req.name}' does not have a map attached to it"
             )
         else:
-            return GetMapResponse(map=self.maps[req.namespace])
+            return GetMapResponse(map=self.maps[req.name])
 
 
 node = MapServer()

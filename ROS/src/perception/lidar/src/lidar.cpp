@@ -1,6 +1,8 @@
 #include "lidar.hpp"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include <chrono>
+#include <iostream>
+#include <fstream>
 
 // Constructor
 namespace ns_lidar {
@@ -19,12 +21,20 @@ Lidar::Lidar(ros::NodeHandle &n)
       n.advertise<sensor_msgs::PointCloud2>("perception/groundremoval_pc", 5);
   clusteredLidarPublisher_ =
       n.advertise<sensor_msgs::PointCloud>("perception/clustered_pc", 5);
+  clustersColoredpublisher_ =
+      n.advertise<sensor_msgs::PointCloud2>("perception/clusters_colored", 5);
   visPublisher_ =
       n.advertise<visualization_msgs::MarkerArray>("perception/cones_lidar", 5);
   conePublisher_ = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>(
       "perception/observations", 5);
   diagnosticPublisher_ =
       n.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 5);
+  groundColoredPublisher_ =
+      n.advertise<sensor_msgs::PointCloud2>("/perception/ground_colored", 5);
+
+  n.param<bool>("vis_cones", vis_cones_, true);
+  n.param<bool>("big_box", big_box_, false);
+  n.param<bool>("color_clusters", color_clusters_, true);
 }
 
 /**
@@ -64,6 +74,8 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   publishDiagnostic(OK, "[perception] ground removal points",
                     "#points: " + std::to_string(notground_points->size()));
 
+  sensor_msgs::PointCloud2 ground_msg = ground_removal_.publishColoredGround(*notground_points);
+  groundColoredPublisher_.publish(ground_msg);
   double time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
           .count();
@@ -79,15 +91,25 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
 
   // Cone clustering
   sensor_msgs::PointCloud cluster;
+  sensor_msgs::PointCloud2 clustersColored;
+  std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
 
   t2 = std::chrono::steady_clock::now();
-  cluster = cone_clustering_.cluster(notground_points, ground_points);
+  clusters = cone_clustering_.cluster(notground_points, ground_points);
+  cluster = cone_clustering_.constructMessage(clusters);
   t1 = std::chrono::steady_clock::now();
   time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
           .count();
   publishDiagnostic(time_round < 1 ? OK : WARN, "[perception] clustering time",
                     "time needed: " + std::to_string(time_round));
+
+  if (color_clusters_) {
+    clustersColored = cone_clustering_.clustersColoredMessage(clusters);
+    clustersColored.header.frame_id = msg.header.frame_id;
+    clustersColored.header.stamp = msg.header.stamp;
+    clustersColoredpublisher_.publish(clustersColored);
+  }
 
   cluster.header.frame_id = msg.header.frame_id;
   cluster.header.stamp = msg.header.stamp;
@@ -115,8 +137,9 @@ void Lidar::preprocessing(
     pcl::PointCloud<pcl::PointXYZI>::Ptr &preprocessed_pc) {
   // Clean up the points belonging to the car and noise in the sky
   for (auto &iter : raw.points) {
-    // Remove points closer than 1m, higher than 0.6m or further than 20m
-    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 1 ||
+    // Remove points closer than 1m, higher than 0.5m or further than 20m 
+    // and points outside the frame of Pegasus
+    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
         std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||
         std::atan2(iter.x, iter.y) > 2.8)
       continue;
@@ -190,9 +213,9 @@ void Lidar::publishMarkers(const sensor_msgs::PointCloud cones) {
     marker.pose.orientation.z = 0.0;
     marker.pose.orientation.w = 1.0;
 
-    marker.scale.x = 0.5; // 0.228; // in meters
-    marker.scale.y = 0.5; // 0.228;
-    marker.scale.z = 0.5; // 0.325;
+    marker.scale.x = big_box_ ? 0.5 : x_size; // 0.228; // in meters
+    marker.scale.y = big_box_ ? 0.5 : y_size; // 0.228;
+    marker.scale.z = big_box_ ? 0.5 : z_size; // 0.325;
 
     if (color == 2) {
       marker.color.r = 1;
@@ -200,10 +223,19 @@ void Lidar::publishMarkers(const sensor_msgs::PointCloud cones) {
       marker.color.b = 0;
       marker.color.a = 1;
     } else {
-      marker.color.r = color;
-      marker.color.g = color;
-      marker.color.b = 1 - color;
-      marker.color.a = 1;
+      if (vis_cones_) {
+        marker.type = visualization_msgs::Marker::MESH_RESOURCE;
+        marker.mesh_use_embedded_materials = true;
+        marker.mesh_resource = color == 1 ? yellow_url_ : blue_url_;
+        marker.scale.x = 1;
+        marker.scale.y = 1;
+        marker.scale.z = 1;
+      } else {
+        marker.color.r = color;
+        marker.color.g = color;
+        marker.color.b = 1 - color;
+        marker.color.a = 1;
+      }
     }
 
     markers.markers.push_back(marker);

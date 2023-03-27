@@ -4,6 +4,8 @@
 #include <Eigen/Dense>
 #include <pcl/common/common.h>
 #include <pcl/common/transforms.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 
 namespace ns_lidar {
@@ -30,6 +32,7 @@ public:
   groundRemoval(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
                 pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
                 pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
+  sensor_msgs::PointCloud2 publishColoredGround(pcl::PointCloud<pcl::PointXYZINormal> points);
 
 private:
   ros::NodeHandle &n_;
@@ -51,6 +54,8 @@ private:
   double small_radial_bucket_length_;  // length of small buckets
   double big_radial_bucket_length_;    // length of big buckets
   bool use_slope_;                     // Is the slope used for GR or not
+
+  int factor_color_; //number of consecutive points that get the same color
 
   void groundRemovalZermas(
       const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,

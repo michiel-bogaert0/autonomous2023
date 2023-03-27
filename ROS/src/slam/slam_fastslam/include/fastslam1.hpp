@@ -2,6 +2,7 @@
 #define FASTSLAM1_HPP
 
 #include <ros/ros.h>
+#include <ros/service_client.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
@@ -13,6 +14,7 @@
 #include "tf2_ros/message_filter.h"
 #include "message_filters/subscriber.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include <nav_msgs/Path.h>
 
 using namespace std;
 
@@ -28,6 +30,9 @@ namespace slam
 
       static tf2_ros::TransformBroadcaster br;
 
+      // This functions executes a FastSLAM1.0 step
+      void step();
+
     private:
       
       // ROS
@@ -36,7 +41,7 @@ namespace slam
       // ROS parameters
       string base_link_frame;
       string world_frame;
-      string slam_world_frame;
+      string slam_base_link_frame;
       bool post_clustering;
       int particle_count;
       double penalty_score;
@@ -47,7 +52,12 @@ namespace slam
       double clustering_eps;
       double belief_factor;
 
+      bool doSynchronous;
+
       double latestTime;
+
+      bool firstRound;
+      bool updateRound;
       
       double minThreshold;
       double acceptance_score;
@@ -57,13 +67,21 @@ namespace slam
       double expected_range;
       double expected_half_fov; // radians, single side 
 
+      ugr_msgs::ObservationWithCovarianceArrayStamped observations;
+
       // Subscribers
       ros::Subscriber observationsSubscriber;
       
       // Publishers
-      ros::Publisher globalPublisher;
-      ros::Publisher localPublisher;
+      // ros::Publisher globalPublisher;
+      // ros::Publisher localPublisher;
       ros::Publisher odomPublisher;
+      ros::Publisher particlePosePublisher;
+
+      // Set Map Service Client
+      ros::ServiceClient setmap_srv_client;
+      string globalmap_namespace;
+      string localmap_namespace;
 
       // TF2
       tf2_ros::Buffer tfBuffer;
@@ -75,7 +93,7 @@ namespace slam
 
       void handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs);
 
-      void publishOutput();
+      void publishOutput(ros::Time);
 
       void predict(Particle &particle, double dDist, double dYaw);
 

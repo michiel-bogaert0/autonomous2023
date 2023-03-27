@@ -18,7 +18,7 @@ class Convert(ROSNode):
         super().__init__("converter")
 
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
-        self.world_frame = rospy.get_param("~world_frame", "ugr/car_map")
+        self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.gt_world_frame = rospy.get_param("~gt_world_frame", "ugr/gt_car_map")
         self.gt_base_link_frame = rospy.get_param(
             "~gt_base_link_frame", "ugr/gt_car_base_link"

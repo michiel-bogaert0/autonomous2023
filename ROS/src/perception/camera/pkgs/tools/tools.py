@@ -1,6 +1,16 @@
+from dataclasses import dataclass
+from typing import Any, Tuple, Type, get_type_hints
+
 import numpy as np
-from sensor_msgs.msg import Image
 import rospy
+from sensor_msgs.msg import Image
+from ugr_msgs.msg import (
+    BoundingBox,
+    Map,
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+)
+
 
 def np_to_ros_image(arr: np.ndarray) -> Image:
     """Creates a ROS image type based on a Numpy array

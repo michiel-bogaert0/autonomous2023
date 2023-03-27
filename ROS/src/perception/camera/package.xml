@@ -2,9 +2,7 @@
 <package format="2">
   <name>camera</name>
   <version>0.0.0</version>
-  <description>The camera package</description>
-
-  
+  <description>The perception package</description>
   <maintainer email="tristan.dhoedt@ugentracing.be">Tristan Dhoedt</maintainer>
   <license>MIT</license>
   <buildtool_depend>catkin</buildtool_depend>

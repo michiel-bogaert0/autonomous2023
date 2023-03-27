@@ -40,12 +40,14 @@ private:
   int minimal_points_cone_;
   float minimal_height_cone_; // minimal height of cone above the floor
                               // threshold
-  double cone_shape_factor_;  // how similar should a pointcloud be to the cone
-                              // model
-                              // 0 -> the pointcloud can have any shape
-                              // 1 -> the pointcloud must have the precise shape
-                              // of a cone
-
+  float threshold_height_big_cone_; // minimal height of cone above the floor
+                                    // threshold to be classified as a orange cone
+  double cone_shape_factor_; // how similar should a pointcloud be to the cone
+                             // model
+                             // 0 -> the pointcloud can have any shape
+                             // 1 -> the pointcloud must have the precise shape
+                             // of a cone
+  double height_width_factor_; // the minimal value height/depth needs to have
   double checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
                     Eigen::Vector4f centroid, bool orange);
 };
