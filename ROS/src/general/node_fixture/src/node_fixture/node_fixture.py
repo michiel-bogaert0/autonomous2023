@@ -239,6 +239,7 @@ class SLAMStatesEnum(str, enum.Enum):
 
 # Autonomous missions
 class AutonomousMission(str, enum.Enum):
+    MANUAL = "manual"
     AUTOCROSS = "autocross"
     ACCELERATION = "acceleration"
     TRACKDRIVE = "trackdrive"
@@ -252,7 +253,7 @@ class AutonomousStatesEnum(str, enum.Enum):
     MANUAL = "manual"
     ASOFF = "asoff"
     ASEMERGENCY = "asemergency"
-    ASSTOP = "asstop"
+    ASFINISHING = "asfinishing"
     ASFINISHED = "asfinished"
 
 class DiagnosticStatusEnum(enum.Enum):

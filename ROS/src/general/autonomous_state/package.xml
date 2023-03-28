@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>node_fixture</name>
+  <name>autonomous_state</name>
   <version>0.0.0</version>
   <description>The node_fixture package</description>
 
