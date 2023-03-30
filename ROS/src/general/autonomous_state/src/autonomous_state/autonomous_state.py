@@ -21,6 +21,10 @@ class AutonomousController:
     def __init__(self) -> None:
         """
         Autonomous controller
+
+        Implemented according to T14/T15. Note that this class relies on an underlying model
+        such as "simulation" or "pegasus". These models are the ones responsible for
+        providing the data required to set the autonomous state.
         """
         rospy.init_node("as_controller")
 
@@ -50,8 +54,10 @@ class AutonomousController:
                 "ASSI": carStateEnum.OFF,
             }
         )
-
+        
         self.t = rospy.Time().to_sec()
+        self.odom_msg : Odometry = None
+        self.mission_finished = False
 
         while not rospy.is_shutdown():
             self.main()
@@ -61,83 +67,47 @@ class AutonomousController:
 
         ccs = self.car.get_state()
 
-        # Follows flowchart in figure 17, section T14.10 in rules
-        # "Autonomous System Status Definitions"
+        # Follows flowchart in section T14.10 and related rules (T14/T15)
+        
+        if ccs["EBS"] == carStateEnum.ACTIVATED:
 
-        if (
-            self.state == AutonomousStatesEnum.ASOFF
-            and ccs["EBS"] == carStateEnum.ARMED
-            and ccs["TS"] == carStateEnum.ON
-            and ccs["ASMS"] == carStateEnum.ON
-        ):
-            if rosparam.has_param("/mission"):
+            if self.mission_finished and abs(self.odom_msg.twist.twist.linear.x) < 0.05:
+                
+                self.change_state(AutonomousStatesEnum.ASFINISHED)
 
-                if rosparam.get_param("/mission") == AutonomousMission.MANUAL:
-                    self.change_state(AutonomousStatesEnum.MANUAL)
-                    self.car.set_state(
-                        {
-                            "TS": carStateEnum.ON,
-                            "R2D": carStateEnum.ON,
-                            "SA": carStateEnum.UNAVAILABLE,
-                            "ASB": carStateEnum.UNAVAILABLE,
-                            "EBS": carStateEnum.UNAVAILABLE,
-                            "ASSI": carStateEnum.OFF,
-                        }
-                    )
+            else:
+
+                self.change_state(AutonomousStatesEnum.ASEMERGENCY)
+
+        else:
+
+            if rosparam.has_param("/mission") and ccs["ASMS"] == carStateEnum.ON and ccs["ASB"] != carStateEnum.UNAVAILABLE and ccs["TS"] == carStateEnum.ON:
+
+                if ccs["R2D"] == carStateEnum.ACTIVATED and self.state == AutonomousStatesEnum.ASREADY and rospy.Time().to_sec() - self.t > 5.1:
+
+                    self.change_state(AutonomousStatesEnum.ASDRIVE)
 
                 else:
-                    self.t = rospy.Time().to_sec()
-                    self.change_state(AutonomousStatesEnum.ASREADY)
-                    self.car.set_state(
-                        {
-                            "TS": carStateEnum.ON,
-                            "R2D": carStateEnum.OFF,
-                            "SA": carStateEnum.AVAILABLE,
-                            "ASB": carStateEnum.ENGAGED,
-                            "EBS": carStateEnum.ARMED,
-                            "ASSI": carStateEnum.YELLOW_CONTINUOUS,
-                        }
-                    )
 
-        elif self.state == AutonomousStatesEnum.ASREADY:
+                    if ccs["ASB"] == carStateEnum.ENGAGED:
 
-            if rospy.Time().to_sec() - self.t > 5 and ccs["GO"] == carStateEnum.ON:
-                self.change_state(AutonomousStatesEnum.ASDRIVE)
-                self.car.set_state(
-                    {
-                        "TS": carStateEnum.ON,
-                        "R2D": carStateEnum.ON,
-                        "SA": carStateEnum.AVAILABLE,
-                        "ASB": carStateEnum.AVAILABLE,
-                        "EBS": carStateEnum.ARMED,
-                        "ASSI": carStateEnum.YELLOW_FLASH,
-                    }
-                )
+                        if self.state != AutonomousStatesEnum.ASREADY:
+                            self.t = rospy.Time().to_sec()
 
-            # if self.state == AutonomousStatesEnum.ASREADY: # And other stuff
-            # self.change_state(AutonomousStatesEnum.ASOFF)
+                        self.change_state(AutonomousStatesEnum.ASREADY)
+
+                    else:
+                        self.change_state(AutonomousStatesEnum.ASOFF)
 
     def handle_odom(self, odom: Odometry):
         """
-        Checks if we are currently in ASFINISHING and if speed becomes almost zero, we do a state change to ASFINISHED
+        Just keeps track of latest odometry estimate
 
         Args:
             odom: the odometry message containing speed information
         """
 
-        if self.state == AutonomousStatesEnum.ASFINISHING:
-            # Check if our speed is almost zero
-            if odom.twist.twist.linear.x < 0.1:
-                self.change_state(AutonomousStatesEnum.ASFINISHED)
-                self.car.set_state(
-                    {
-                        "TS": carStateEnum.OFF,
-                        "R2D": carStateEnum.OFF,
-                        "SA": carStateEnum.UNAVAILABLE,
-                        "EBS": carStateEnum.ACTIVATED,
-                        "ASSI": carStateEnum.BLUE_CONTINUOUS,
-                    }
-                )
+        self.odom_msg = odom
 
     def change_state(self, new_state: AutonomousStatesEnum):
         """
@@ -167,33 +137,15 @@ class AutonomousController:
             state: the state transition
         """
 
-        new_state = self.state
-
         if state.scope == StateMachineScopeEnum.SLAM:
             """
-            When SLAM reports being in the finished mode, autonomous should
+            When SLAM reports being in the finished mode, autonomous should perhaps
             also do something
             """
 
-            if (
-                self.state == AutonomousStatesEnum.ASDRIVE
-                and state.cur_state == SLAMStatesEnum.FINISHED
-            ):
-                new_state = AutonomousStatesEnum.ASFINISHING
+            self.mission_finished = self.state == AutonomousStatesEnum.ASDRIVE
 
         elif state.scope == StateMachineScopeEnum.AUTONOMOUS:
             return
-
-        self.change_state(new_state)
-
-    def handleCan(self, laps):
-        """
-        Subscriber callback for the lap counter. Does an internal state transition if required
-
-        Args:
-            laps: the UInt16 message containing the lap count
-        """
-        pass
-
 
 node = AutonomousController()
