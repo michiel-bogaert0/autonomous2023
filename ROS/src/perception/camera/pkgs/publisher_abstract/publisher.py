@@ -1,17 +1,17 @@
-from abc import ABC, abstractmethod
-from typing import Any
-
-import numpy as np
-import rospy
-from node_fixture.node_fixture import AddSubscriber, ROSNode
-from sensor_msgs.msg import Image
-from std_msgs.msg import Header
-
 """
 A perception publisher should have the following structure:
 option 1: with a predefined rate and a publish function -> call the publish_image_data function 
 option 2: subscribes to a topic that publishes raw data -> start the child rosnode (by calling node.start())
 """
+from abc import ABC, abstractmethod
+from typing import Any
+
+import sys
+import numpy as np
+import rospy
+from node_fixture.node_fixture import AddSubscriber, ROSNode
+from sensor_msgs.msg import Image
+from std_msgs.msg import Header
 
 
 class PublishNode(ROSNode, ABC):
@@ -51,8 +51,8 @@ class PublishNode(ROSNode, ABC):
             and sys.byteorder == "big"
         )
 
-        ros_img.header.stamp = rospy.Time.now()
-        ros_img.header.frame_id = "ugr/car_base_link/sensors/cam0"
+        header = self.create_header()
+        ros_img.header = header
 
         return ros_img
 

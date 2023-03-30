@@ -36,14 +36,14 @@ class DummyCamNode(PublishNode):
         """
 
         if not self.cap.isOpened():
-            print(f"Error opening video stream or file: {path}")
+            print(f"Error opening video stream or file: {self.path}")
 
         # Capture frame-by-frame
         ret, frame = self.cap.read()
 
         if ret:
             # Publish the image as a ROS image
-            frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+            frame = frame[..., ::-1]  # BGR to RGB
             ros_img = self.np_to_ros_image(frame)
 
             return ros_img
