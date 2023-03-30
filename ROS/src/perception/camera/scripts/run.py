@@ -1,12 +1,21 @@
 #! /usr/bin/python3
 
 import rospy
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
+from ugr_msgs.msg import (
+    ObservationWithCovarianceArrayStamped,
+    ObservationWithCovariance,
+    Observation,
+)
+from geometry_msgs.msg import Point
+from typing import List
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from sensor_msgs.msg import Image
 from node_fixture.node_fixture import create_diagnostic_message
 import torch
 from cone_detector import ConeDetector
+import numpy as np
+import numpy.typing as npt
+
 
 class PerceptionNode:
     def __init__(self):
@@ -49,9 +58,7 @@ class PerceptionNode:
 
         # Setup node and spin
         self.cone_detector = ConeDetector(
-            self.device,
-            self.tensorrt,
-            self.detection_height_threshold
+            self.device, self.tensorrt, self.detection_height_threshold
         )
 
         self.diagnostics.publish(
@@ -73,7 +80,59 @@ class PerceptionNode:
             ros_image: The input image as ROS message
         """
 
-        return
+        img = self.ros_img_to_np(ros_image)
+
+        # Nx4 array of cones: category, X, Y, Z
+        cones = self.cone_detector.process_image(img)
+
+        msg = self.create_observation_msg(cones, ros_image.header)
+
+        self.pub_cone_locations.publish(msg)
+
+    def create_observation_msg(
+        cones: npt.ArrayLike, header
+    ) -> ObservationWithCovarianceArrayStamped:
+        """Given an array of cone locations and a message header, create an observation message
+
+        Args:
+            cones: Nx4 array of cone locations: category, X, Y, Z
+            header: the header of the original image message
+
+        Returns:
+            An ObservationWithCovarianceArrayStamped message containing the detected cones
+        """
+
+        cone_positions: List[ObservationWithCovariance] = []
+
+        for cone in cones:
+            cone_positions.append(
+                ObservationWithCovariance(
+                    observation=Observation(
+                        observation_class=int(cone[0]),
+                        location=Point(*cone[1:]),
+                    ),
+                    covariance=[0.7, 0, 0, 0, 0.3, 0, 0, 0, 0.1],  # TODO: tweak
+                )
+            )
+
+        msg = ObservationWithCovarianceArrayStamped()
+        msg.observations = cone_positions
+        msg.header = header
+
+        return msg
+
+    def ros_img_to_np(self, image: Image) -> np.ndarray:
+        """Converts a ros image into an numpy array
+        Args:
+            image: ros image
+        returns:
+            numpy array containing the image data
+        """
+        img = np.frombuffer(image.data, dtype=np.uint8).reshape(
+            image.height, image.width, -1
+        )
+
+        return img
 
 
 if __name__ == "__main__":
