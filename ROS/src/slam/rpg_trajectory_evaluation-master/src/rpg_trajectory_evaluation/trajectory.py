@@ -39,14 +39,10 @@ class Trajectory():
                  preset_boxplot_distances=[],
                  preset_boxplot_percentages=[],
                  load_data=True):
-        #super().__init__("Trajectory")
-        #rospy.init_node('my_node', log_level=rospy.DEBUG)
         if load_data:
             assert os.path.exists(results_dir),\
                 "Specified directory {0} does not exist.".format(results_dir)
             assert align_type in ['first_frame', 'sim3', 'se3']
-        #rospy.loginfo("test")
-        # information of the results, useful as labels
         self.platform = platform
         self.alg = alg_name
         self.dataset_short_name = dataset_name
@@ -89,15 +85,12 @@ class Trajectory():
         self.start_time_sec = -float('inf')
         self.end_time_sec = float('inf')
         if os.path.exists(self.start_end_time_fn):
-            #print("Find start end time for evaluation.")
             with open(self.start_end_time_fn, 'r') as f:
                 d = yaml.load(f, Loader=yaml.FullLoader)
                 if 'start_time_sec' in d:
                     self.start_time_sec = d['start_time_sec']
                 if 'end_time_sec' in d:
                     self.end_time_sec = d['end_time_sec']
-                #print("Will analyze trajectory ranging from {} to {}.".format(
-                 #   self.start_time_sec, self.end_time_sec))
         
         self.abs_errors = {}
 
@@ -112,12 +105,10 @@ class Trajectory():
             self.data_loaded = self.load_data(nm_gt, nm_est, nm_matches)
             self.boxplot_pcts = preset_boxplot_percentages
             if len(preset_boxplot_distances) != 0:
-                #print("Use preset boxplot distances.")
                 self.preset_boxplot_distances = preset_boxplot_distances
             else:
                 if not self.boxplot_pcts:
                     self.boxplot_pcts = Trajectory.default_boxplot_perc
-                #print("Use percentages {} for boxplot.".format(self.boxplot_pcts))
                 self.compute_boxplot_distances()
                 
             if not self.data_loaded:
@@ -138,12 +129,10 @@ class Trajectory():
         self.boxplot_pcts = []
 
         if len(self.boxplot_pcts) != 0:
-            #print("Use preset boxplot distances.")
             self.preset_boxplot_distances = self.boxplot_pcts
         else:
             if not self.boxplot_pcts:
                 self.boxplot_pcts = Trajectory.default_boxplot_perc
-            #print("Use percentages {} for boxplot.".format(self.boxplot_pcts))
             self.compute_boxplot_distances()
         
     def load_data(self, nm_gt, nm_est, nm_matches):
@@ -186,7 +175,6 @@ class Trajectory():
             print("Loaded odometry error calcualted at {0}".format(
                 self.rel_errors.keys()))
 
-        print(Fore.GREEN+'...done.')
 
         return True
 
@@ -206,7 +194,6 @@ class Trajectory():
 
     @staticmethod
     def remove_cached_error(data_dir, est_type='', suffix=''):
-        #print("To remove cached error in {0}".format(data_dir))
         suffix_str = Trajectory.get_suffix_str(suffix)
         base_fn = Trajectory.rel_error_cached_nm+suffix_str+'.pickle'
         Trajectory.remove_files_in_cache_dir(data_dir, est_type, base_fn)
@@ -215,9 +202,6 @@ class Trajectory():
     def _safe_remove_file(abs_rm_fn):
         if os.path.exists(abs_rm_fn):
             os.remove(abs_rm_fn)
-            #print('Removed {0}'.format(abs_rm_fn))
-        #else:
-        #   print(Fore.YELLOW + 'Cannot find file {0}'.format(abs_rm_fn))
 
     @staticmethod
     def remove_files_in_cache_dir(data_dir, est_type, base_fn):
@@ -248,26 +232,15 @@ class Trajectory():
 
 
     def compute_boxplot_distances(self):
-        #print("Computing preset subtrajectory lengths for relative errors...")
-        #print("Use percentage {0} of trajectory length.".format(self.boxplot_pcts))
-        #print("Trajectory length {0}".format(self.traj_length))
         self.preset_boxplot_distances = [self.truncate(pct*self.traj_length, 2)
                                           for pct in self.boxplot_pcts]
 
-        #print("...done. Computed preset subtrajecory lengths:"
-        #      " {0}".format(self.preset_boxplot_distances))
 
     def align_trajectory(self):
         if self.data_aligned:
-            print("Trajectory already aligned")
             return
-        #print(Fore.RED +
-        #      "Aliging the trajectory estimate to the groundtruth...")
-
-        #print("Alignment type is {0}.".format(self.align_type))
         n = int(self.align_num_frames)
         if n < 0.0:
-            #print('To align all frames.')
             n = len(self.p_es)
         else:
             print('To align trajectory using ' + str(n) + ' frames.')
@@ -294,14 +267,11 @@ class Trajectory():
             self.q_es_aligned[i, :] = tf.quaternion_from_matrix(q_es_T)
 
         self.data_aligned = True
-        #print(Fore.GREEN+"... trajectory alignment done.")
 
     def compute_absolute_error(self):
         if self.abs_errors:
             print("Absolute errors already calculated")
         else:
-            print(Fore.RED+'Calculating RMSE...')
-            # align trajectory if necessary
             self.align_trajectory()
             e_trans, e_trans_vec, e_rot, e_ypr, e_scale_perc =\
                 traj_err.compute_absolute_error(self.p_es_aligned,
@@ -325,7 +295,6 @@ class Trajectory():
 
             self.abs_errors['abs_e_scale_perc'] = e_scale_perc
             self.abs_errors['abs_e_scale_stats'] = stats_scale
-            print(Fore.GREEN+'...RMSE calculated.')
         return
 
     def write_errors_to_yaml(self):
@@ -363,11 +332,7 @@ class Trajectory():
 
         if self.rel_errors and (subtraj_len in self.rel_errors):
             x = 1
-            #print("Relative error at sub-trajectory length {0} is already "
-            #      "computed or loaded from cache.".format(subtraj_len))
         else:
-            #print("Computing relative error at sub-trajectory "
-            #      "length {0}".format(subtraj_len))
             Tcm = np.identity(4)
             _, e_trans, e_trans_perc, e_yaw, e_gravity, e_rot, e_rot_deg_per_m =\
                 traj_err.compute_relative_error(
@@ -401,12 +366,9 @@ class Trajectory():
             for l in subtraj_lengths:
                 suc = suc and self.compute_relative_error_at_subtraj_len(l)
         else:
-            print(Fore.RED+"Computing the relative errors based on preset"
-                  " subtrajectory lengths...")
             for l in self.preset_boxplot_distances:
                 suc = suc and self.compute_relative_error_at_subtraj_len(l)
         self.success = suc
-        print(Fore.GREEN+"...done.")
 
     def get_relative_errors_and_distances(
             self, error_types=['rel_trans', 'rel_trans_perc', 'rel_yaw']):
