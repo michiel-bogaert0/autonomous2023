@@ -26,5 +26,7 @@
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>	
+
+  <depend>node_fixture</depend>
   <export></export>
 </package>

@@ -10,6 +10,7 @@ catkin_python_setup()
 
 catkin_package(
 
+  INCLUDE_DIRS include
   CATKIN_DEPENDS roscpp diagnostic_msgs
   LIBRARIES ${PROJECT_NAME}
 
