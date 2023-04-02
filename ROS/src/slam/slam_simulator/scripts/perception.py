@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import copy
-from statistics import covariance
 
 import numpy as np
 import rospy
@@ -37,6 +36,8 @@ class PerceptionSimulator(StageSimulator):
         self.datalatch.create("cones", 1)
         self.datalatch.create("odom", 400)
 
+        self.started = False
+
         super().__init__("perception")
 
         self.tf_buffer = tf.Buffer()
@@ -48,7 +49,7 @@ class PerceptionSimulator(StageSimulator):
         self.viewing_distance = rospy.get_param("~viewing_distance", 15.0) ** 2
         self.fov = np.deg2rad(rospy.get_param("~fov", 90))
         self.add_noise = rospy.get_param("~add_noise", True)
-        self.cone_noise = rospy.get_param("~cone_noise", 0.2 / 20) # Noise per meter distance. Gets scaled with range
+        self.cone_noise = rospy.get_param("~cone_noise", 0.0 / 20) # Noise per meter distance. Gets scaled with range
 
     @AddSubscriber("/input/track")
     def track_update(self, track: ObservationWithCovarianceArrayStamped):
@@ -67,11 +68,16 @@ class PerceptionSimulator(StageSimulator):
         cones = np.array(cones)
         self.datalatch.set("cones", cones)
 
+        self.started = True
+
     def simulate(self, _):
         """
         This function gets executed at a specific frequency. Basically publishes the 'visible' cones as observations
         Those observations are relative to the base_link frame
         """
+
+        if not self.started:
+            return
 
         # Fetch GT position of car
         transform: TransformStamped = self.tf_buffer.lookup_transform(
@@ -88,6 +94,7 @@ class PerceptionSimulator(StageSimulator):
         )
 
         new_cones = copy.deepcopy(self.datalatch.get("cones"))
+        
         new_cones[:, :-2] = PerceptionSimulator.apply_transformation(
             new_cones[:, :-2], [pos.x, pos.y], yaw, True
         )
