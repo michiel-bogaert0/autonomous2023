@@ -374,14 +374,14 @@ namespace slam
       car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, transformed_obs.header.stamp, ros::Duration(0.1));
       this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                              "car_pose transform",
-                                             "Transform success!");
+                                             "success");
     }
     catch (const exception e)
     {
       ROS_ERROR("car_pose transform failed: %s", e.what());
       this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::ERROR,
                                              "car_pose transform",
-                                             "Transform failed!");
+                                             "failed");
       return;
     }
     const tf2::Quaternion quat(
@@ -484,8 +484,8 @@ namespace slam
       ROS_INFO("FastSLAM1.0 took: %f s. That is %f s per particle", time_round, time_round / this->particles.size());
       this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                              "FastSLAM1.0 algorithm",
-                                             "Time: " + std::to_string(time_round) + " s\n" +
-                                             "#Particles: " + std::to_string(this->particles.size()) + "\n" +
+                                             "Time: " + std::to_string(time_round) + " s ; " +
+                                             "#Particles: " + std::to_string(this->particles.size()) + " ; " +
                                              "Seconds per particle: " + std::to_string(time_round / this->particles.size()));
 
       t1 = std::chrono::steady_clock::now();
@@ -519,8 +519,8 @@ namespace slam
       ROS_INFO("FP Filter took %f s. That is %f s per particle", time_round, time_round / this->particles.size());
       this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                              "FP Filter",
-                                             "Time: " + std::to_string(time_round) + " s\n" +
-                                             "#Particles: " + std::to_string(this->particles.size()) + "\n" +
+                                             "Time: " + std::to_string(time_round) + " s ; " +
+                                             "#Particles: " + std::to_string(this->particles.size()) + " ; " +
                                              "Seconds per particle: " + std::to_string(time_round / this->particles.size()));
     }
     else
@@ -749,8 +749,8 @@ namespace slam
     ROS_INFO("Output averaging took %f s. That is %f s per particle", time_round, time_round / this->particles.size());
     this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                            "Output averaging",
-                                           "Time: " + std::to_string(time_round) + " s\n" +
-                                           "#Particles: " + std::to_string(this->particles.size()) + "\n" +
+                                           "Time: " + std::to_string(time_round) + " s ; " +
+                                           "#Particles: " + std::to_string(this->particles.size()) + " ; " +
                                            "Seconds per particle: " + std::to_string(time_round / this->particles.size()));
 
     t1 = std::chrono::steady_clock::now();
@@ -901,7 +901,7 @@ namespace slam
     if(this->setmap_srv_client.exists()) {
       this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                              "SetMap service call",
-                                             "Exist!");
+                                             "exists");
       // Initialize global request
       slam_controller::SetMap global_srv;
       global_srv.request.map = global;
@@ -912,11 +912,11 @@ namespace slam
         ROS_WARN("Global map service call failed!");
         this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
                                                "Global map service call",
-                                               "Failed!");
+                                               "failed");
       } else {
         this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                                "Global map service call",
-                                               "Success!");
+                                               "success");
       }
       
       // Initialize local request
@@ -929,11 +929,11 @@ namespace slam
         ROS_WARN("Local map service call failed!");
         this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
                                                "Local map service call",
-                                               "Failed!");
+                                               "failed");
       } else {
         this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                                "Local map service call",
-                                               "Success!");
+                                               "success");
       }
     } else {
       ROS_WARN("SetMap service call does not exist (yet)!");
