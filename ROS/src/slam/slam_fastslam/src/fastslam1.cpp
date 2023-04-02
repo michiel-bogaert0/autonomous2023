@@ -344,7 +344,7 @@ namespace slam
 
       {
         ROS_ERROR("Observation static transform (and perhaps time transform) failed: %s", e.what());
-        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::ERROR,
                                                "Observation transform",
                                                "Static transform (and perhaps time transform) failed!");
         return;
@@ -379,7 +379,7 @@ namespace slam
     catch (const exception e)
     {
       ROS_ERROR("car_pose transform failed: %s", e.what());
-      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::ERROR,
                                              "car_pose transform",
                                              "Transform failed!");
       return;
