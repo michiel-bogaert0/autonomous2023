@@ -76,6 +76,14 @@ class Controller:
 
                     # Launch nodes
                     self.launcher.launch_node("slam_controller", f"launch/{self.mission}_{new_state}.launch")
+                    # Publish mission
+                    self.diagnostics.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="[SLAM Controller] new mission",
+                            message=f"{self.mission}",
+                        )
+                    )
 
             elif state.cur_state != "ASDrive":
                 # Just stop everything
@@ -90,7 +98,7 @@ class Controller:
         self.diagnostics.publish(
             create_diagnostic_message(
                 level=DiagnosticStatus.OK,
-                name="[SLAM] Controller new state",
+                name="[SLAM Controller] new state",
                 message=f"{new_state}",
             )
         )
@@ -113,7 +121,7 @@ class Controller:
                     self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
-                            name="[SLAM] Controller new state",
+                            name="[SLAM Controller] new state",
                             message=f"{self.state}",
                         )
                     )
@@ -127,7 +135,7 @@ class Controller:
                     self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
-                            name="[SLAM] Controller new state",
+                            name="[SLAM Controller] new state",
                             message=f"{self.state}",
                         )
                     )
@@ -138,7 +146,7 @@ class Controller:
                 self.diagnostics.publish(
                     create_diagnostic_message(
                         level=DiagnosticStatus.OK,
-                        name="[SLAM] Controller new state",
+                        name="[SLAM Controller] new state",
                         message=f"{self.state}",
                     )
                 )
