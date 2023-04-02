@@ -19,6 +19,7 @@ cantools==37.1.0
 # Dev tools
 black
 isort
+pynput
 mypy
 pytest
 autoflake
