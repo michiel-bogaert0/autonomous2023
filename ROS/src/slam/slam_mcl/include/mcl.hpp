@@ -19,6 +19,8 @@
 #include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
 #include <ugr_msgs/ObservationWithCovariance.h>
 
+#include "node_fixture/node_fixture.hpp"
+
 using namespace std;
 
 #define LANDMARK_CLASS_COUNT 4
@@ -95,6 +97,9 @@ namespace slam
 
     // Publishers
     ros::Publisher odomPublisher;
+
+    // Diagnostic Publisher
+    std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
 
     // TF2
     tf2_ros::Buffer tfBuffer;

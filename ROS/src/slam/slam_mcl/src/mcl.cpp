@@ -64,6 +64,8 @@ namespace slam
 
     this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
 
+    this->diagPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(new node_fixture::DiagnosticPublisher(n, "SLAM MCL"));
+
     obs_sub.subscribe(n, "/input/observations", 1);
     tf2_filter.registerCallback(boost::bind(&MCL::handleObservations, this, _1));
 
@@ -114,6 +116,9 @@ namespace slam
       this->prev_state[2] = yaw;
     }
     ROS_INFO("MCL has started!");
+    diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                     "Status",
+                                     "Started.");
   }
 
   /**
@@ -250,8 +255,15 @@ namespace slam
 
     if (_map.size() == 0)
     {
+      diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+                                     "Map size",
+                                     "0");
       return;
     }
+
+    diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                     "Map size",
+                                     std::to_string(_map.size()));
 
     for (auto observation : observations.observations)
     {
@@ -384,6 +396,9 @@ namespace slam
     {
       // Reset
       ROS_WARN("Time went backwards! Resetting MCL...");
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+                                             "Status",
+                                             "MCL reset (time went backwards)!");
 
       this->particles.clear();
       for (int i = 0; i < this->particle_count; i++)
@@ -461,10 +476,16 @@ namespace slam
     try
     {
       car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, ros::Time(0), ros::Duration(0.1));
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                             "car_pose transform",
+                                             "Transform success!");
     }
     catch (const exception e)
     {
       ROS_ERROR("car_pose transform failed: %s", e.what());
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::ERROR,
+                                             "car_pose transform",
+                                             "Transform failed!");
       return;
     }
     const tf2::Quaternion quat(
@@ -575,6 +596,9 @@ namespace slam
       if (abs(particle.pose()(2) - particle.prevyaw()) > yaw_unwrap_threshold)
         // Print corrected yaw
         ROS_DEBUG_STREAM("Corrected yaw: " << curYaw);
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                               "Yaw correction",
+                                               "Corrected yaw: " + std::to_string(curYaw));
 
       x += particle.pose()(0) * w;
       y += particle.pose()(1) * w;
