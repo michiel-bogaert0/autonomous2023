@@ -1,9 +1,8 @@
 #include <ros/ros.h>
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "mcl.hpp"
 
 /**
- * FastSLAM 1.0 wrapper
+ * MCL wrapper
  *
  */
 int main(int argc, char **argv)
