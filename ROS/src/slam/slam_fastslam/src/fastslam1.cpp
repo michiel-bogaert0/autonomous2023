@@ -548,7 +548,9 @@ namespace slam
     float y = 0.0;
     float yaw = 0.0;
     float maxW = -10000.0;
-    for (int i = 0; i < this->particles.size(); i++)
+
+    // Skip the first particle due to weird bug
+    for (int i = 1; i < this->particles.size(); i++)
     {
 
       Particle &particle = this->particles[i];
