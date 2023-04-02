@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "fastslam1.hpp"
+#include "node_fixture/node_fixture.hpp"
 
 /**
  * FastSLAM 1.0 wrapper
@@ -21,6 +22,11 @@ int main(int argc, char **argv)
   slam::FastSLAM1 fastslam(n);
 
   ROS_INFO("FastSLAM1.0 running in %s mode!", doSynchronous ? "synchronous" : "asynchronous");
+  node_fixture::DiagnosticPublisher diagPublisher(n, "SLAM FastSLAM1.0");
+  diagPublisher.publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                  "Status",
+                                  "running");
+
 
   // Spin the node
   while (ros::ok()) {
