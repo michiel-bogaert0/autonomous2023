@@ -244,6 +244,7 @@ class AutonomousMission(str, enum.Enum):
     ACCELERATION = "acceleration"
     TRACKDRIVE = "trackdrive"
     EBSTEST = "emergencybraketest"
+    INPSPECTION = "inspection"
     SKIDPAD = "skidpad"
     
 # States of global state machine

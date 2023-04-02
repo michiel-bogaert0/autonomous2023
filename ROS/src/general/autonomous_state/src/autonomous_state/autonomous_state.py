@@ -48,54 +48,51 @@ class AutonomousController:
             {
                 "TS": carStateEnum.OFF,
                 "R2D": carStateEnum.OFF,
-                "SA": carStateEnum.UNAVAILABLE,
-                "ASB": carStateEnum.UNAVAILABLE,
-                "EBS": carStateEnum.UNAVAILABLE,
+                "ASB": carStateEnum.OFF,
+                "EBS": carStateEnum.OFF,
                 "ASSI": carStateEnum.OFF,
             }
         )
-        
-        self.t = rospy.Time().to_sec()
-        self.odom_msg : Odometry = None
+
         self.mission_finished = False
+        self.vehicle_stopped = False
 
         while not rospy.is_shutdown():
             self.main()
-            rospy.sleep(0.01)
+            self.car.update(self.state)
+            rospy.sleep(0.1)
 
     def main(self):
+        """
+        Main function to be executed in a loop.
+        
+        Follows flowchart in section T14.10 and related rules (T14/T15)
+        
+        - https://www.formulastudent.de/fileadmin/user_upload/all/2023/rules/FS-Rules_2023_v1.1.pdf
+        - https://www.formulastudent.de/fileadmin/user_upload/all/2023/important_docs/FSG23_AS_Beginners_Guide_v1.1.pdf
+        """
 
+        # Gets car state as reported by our helper class (can be simulated or a specific car such as Peggy)
         ccs = self.car.get_state()
 
-        # Follows flowchart in section T14.10 and related rules (T14/T15)
-        
         if ccs["EBS"] == carStateEnum.ACTIVATED:
 
-            if self.mission_finished and abs(self.odom_msg.twist.twist.linear.x) < 0.05:
-                
+            if self.mission_finished and self.vehicle_stopped:
                 self.change_state(AutonomousStatesEnum.ASFINISHED)
-
             else:
-
                 self.change_state(AutonomousStatesEnum.ASEMERGENCY)
 
-        else:
+        elif ccs["EBS"] == carStateEnum.ON:
 
-            if rosparam.has_param("/mission") and ccs["ASMS"] == carStateEnum.ON and ccs["ASB"] != carStateEnum.UNAVAILABLE and ccs["TS"] == carStateEnum.ON:
-
-                if ccs["R2D"] == carStateEnum.ACTIVATED and self.state == AutonomousStatesEnum.ASREADY and rospy.Time().to_sec() - self.t > 5.1:
+            if rosparam.has_param("/mission") and ccs["ASMS"] == carStateEnum.ON and (ccs["ASB"] == carStateEnum.ON or ccs["ASB"] == carStateEnum.ACTIVATED) and ccs["TS"] == carStateEnum.ON:
+                if ccs["R2D"] == carStateEnum.ACTIVATED:
 
                     self.change_state(AutonomousStatesEnum.ASDRIVE)
 
                 else:
 
-                    if ccs["ASB"] == carStateEnum.ENGAGED:
-
-                        if self.state != AutonomousStatesEnum.ASREADY:
-                            self.t = rospy.Time().to_sec()
-
+                    if ccs["ASB"] == carStateEnum.ACTIVATED:
                         self.change_state(AutonomousStatesEnum.ASREADY)
-
                     else:
                         self.change_state(AutonomousStatesEnum.ASOFF)
 
@@ -107,7 +104,7 @@ class AutonomousController:
             odom: the odometry message containing speed information
         """
 
-        self.odom_msg = odom
+        self.vehicle_stopped = abs(odom.twist.twist.linear.x) < 0.05
 
     def change_state(self, new_state: AutonomousStatesEnum):
         """

@@ -1,19 +1,21 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 
+"""
+Explanation of system states (hierarchical):
+
+- OFF: the system is verified to be off
+- ON: the system is verified to be on
+- ACTIVATED: the system is verified to be explicitly activated
+
+- UNKNOWN: status unkown
+"""
+
 class carStateEnum(Enum):
     OFF = 0
     ON = 1
-    AVAILABLE = 2
-    UNAVAILABLE = 3
-    ENGAGED = 4
-    ARMED = 5
-    ACTIVATED = 6,
-    YELLOW_CONTINUOUS = 7,
-    YELLOW_FLASH = 8,
-    BLUE_CONTINUOUS = 9,
-    BLUE_FLASH = 10,
-    DONT_CARE = 11,
+    ACTIVATED = 2,
+    UNKOWN = 3,
 
 class CarState(ABC):
     
@@ -36,7 +38,7 @@ class CarState(ABC):
         pass
     
     @abstractmethod
-    def get_state():
+    def get_state(self):
         """
         Returns:
             object with the (physical) state of the car systems,
@@ -45,5 +47,5 @@ class CarState(ABC):
         pass
 
     @abstractmethod
-    def set_state(new_state):
+    def update(self, state):
         pass
