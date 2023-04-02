@@ -16,6 +16,8 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include <nav_msgs/Path.h>
 
+#include "node_fixture/node_fixture.hpp"
+
 using namespace std;
 
 namespace slam
@@ -77,6 +79,9 @@ namespace slam
       // ros::Publisher localPublisher;
       ros::Publisher odomPublisher;
       ros::Publisher particlePosePublisher;
+
+      // Diagnostic publisher
+      std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
 
       // Set Map Service Client
       ros::ServiceClient setmap_srv_client;
