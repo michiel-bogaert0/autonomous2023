@@ -26,7 +26,6 @@
         <param name= "minimal_height_cone" value = "0.07"/>
         <param name= "cone_shape_factor" value = "0.4"/>
         <param name= "cone_height_width_factor" value = "0.7"/>
-        <param name= "cone_reconstruction_treshold" value= "0.10"/>
 
         <param name= "vis_cones" value = "false"/>
         <param name= "big_box" value = "true"/>

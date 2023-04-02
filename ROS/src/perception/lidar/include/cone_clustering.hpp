@@ -39,7 +39,7 @@ private:
 
   std::string clustering_method_; // Default: euclidian, others: string
   double cluster_tolerance_;      // The cone clustering tolerance (m)
-  double cone_reconstruction_treshold_; // threshold to determind which ground points are re-added to the clusters
+  bool use_sort_;                 // Use a sort at the beginning of clustering
   double
       min_distance_factor_; // distance around the cone that contains no
                             // other cones as a factor to the width of the cone
@@ -48,8 +48,7 @@ private:
   euclidianClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
                       const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground);
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
-  stringClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
-                  const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground);
+  stringClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud);
   float arctan(float x, float y);
 
   // The colors: https://sashamaps.net/docs/resources/20-colors/
