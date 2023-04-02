@@ -264,7 +264,7 @@ namespace slam
       // Reset
       ROS_WARN("Time went backwards! Resetting fastslam...");
       this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
-                                             "Status",
+                                             "Backwards time",
                                              "Fastslam reset (time went backwards)!");
 
       this->particles.clear();

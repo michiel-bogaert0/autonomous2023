@@ -397,7 +397,7 @@ namespace slam
       // Reset
       ROS_WARN("Time went backwards! Resetting MCL...");
       this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
-                                             "Status",
+                                             "Backwards time",
                                              "MCL reset (time went backwards)!");
 
       this->particles.clear();
