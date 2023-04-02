@@ -48,6 +48,7 @@ class PerceptionSimulator(StageSimulator):
         self.gt_base_link_frame = rospy.get_param("~gt_base_link_frame", "ugr/gt_base_link")
         self.viewing_distance = rospy.get_param("~viewing_distance", 15.0) ** 2
         self.fov = np.deg2rad(rospy.get_param("~fov", 90))
+        self.delay = rospy.get_param("~delay", 0.0)
         self.add_noise = rospy.get_param("~add_noise", True)
         self.cone_noise = rospy.get_param("~cone_noise", 0.0 / 20) # Noise per meter distance. Gets scaled with range
 
@@ -79,13 +80,16 @@ class PerceptionSimulator(StageSimulator):
         if not self.started:
             return
 
-        # Fetch GT position of car
-        transform: TransformStamped = self.tf_buffer.lookup_transform(
-            self.world_frame,
-            self.gt_base_link_frame,
-            rospy.Time(0),
-            rospy.Duration(1)
-        )
+        try: 
+            # Fetch GT position of car
+            transform: TransformStamped = self.tf_buffer.lookup_transform(
+                self.world_frame,
+                self.gt_base_link_frame,
+                rospy.Time.now() - rospy.Duration(self.delay),
+                rospy.Duration(1)
+            )
+        except:
+            return
 
         pos = transform.transform.translation
         orient: Quaternion = transform.transform.rotation
