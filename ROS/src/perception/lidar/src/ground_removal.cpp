@@ -40,7 +40,8 @@ void GroundRemoval::groundRemoval(
   if (ground_removal_method_ == "zermas") {
     return GroundRemoval::groundRemovalZermas(cloud_in, notground_points,
                                               ground_points);
-  } else {
+  } 
+  else {
     return GroundRemoval::groundRemovalBins(cloud_in, notground_points,
                                             ground_points);
   }

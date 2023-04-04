@@ -160,11 +160,8 @@ ConeClustering::stringClustering(
       pcl::PointXYZINormal rightmost = cluster_rightmost[cluster_id];
 
       // This distance should be calculated using max(delta_azi, delta_r)
-      // float r_rightmost = hypot3d(rightmost.x, rightmost.y, rightmost.z);
-      // float delta_r = std::abs(r_point - r_rightmost);
       float delta_arc = std::abs(std::atan2(point.x, point.y) -
                                  atan2(rightmost.x, rightmost.y));
-      // float dist = std::max(delta_r, delta_arc);
       float dist = hypot3d(point.x - rightmost.x, point.y- rightmost.y, 0);
 
       // A cone is max 285mm wide, check whether this point is within that

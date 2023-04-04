@@ -67,15 +67,15 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
       new pcl::PointCloud<pcl::PointXYZINormal>());
   pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points(
       new pcl::PointCloud<pcl::PointXYZINormal>());
+
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   ground_removal_.groundRemoval(preprocessed_pc, notground_points,
                                 ground_points);
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
   publishDiagnostic(OK, "[perception] ground removal points",
                     "#points: " + std::to_string(notground_points->size()));
 
-  sensor_msgs::PointCloud2 ground_msg = ground_removal_.publishColoredGround(*notground_points,msg);
-  groundColoredPublisher_.publish(ground_msg);
   double time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
           .count();
@@ -88,6 +88,11 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   groundremoval_msg.header.frame_id = msg.header.frame_id;
   groundremoval_msg.header.stamp = msg.header.stamp;
   groundRemovalLidarPublisher_.publish(groundremoval_msg);
+
+  //publish colored pointcloud to check order points
+  sensor_msgs::PointCloud2 ground_msg = ground_removal_.publishColoredGround(*notground_points,msg);
+  groundColoredPublisher_.publish(ground_msg);
+
 
   // Cone clustering
   sensor_msgs::PointCloud cluster;
@@ -105,17 +110,6 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
                     "time needed: " + std::to_string(time_round));
 
   if (color_clusters_) {
-    // std::ofstream myfile;
-    // myfile.open ("/home/lomeg/clusters.csv");
-    // int i = 0;
-    // for(pcl::PointCloud<pcl::PointXYZINormal> cluster: clusters){
-    //   for(pcl::PointXYZINormal po: cluster){
-    //     myfile << i << ";" << po.x << ";" << po.y << ";" << po.z << std::endl;
-    //   }
-    //   i++;
-    // }
-    // myfile.close();
-    // exit(0);
     clustersColored = cone_clustering_.clustersColoredMessage(clusters);
     clustersColored.header.frame_id = msg.header.frame_id;
     clustersColored.header.stamp = msg.header.stamp;
