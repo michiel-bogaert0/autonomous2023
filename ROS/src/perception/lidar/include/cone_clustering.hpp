@@ -39,6 +39,7 @@ private:
 
   std::string clustering_method_;       // Default: euclidian, others: string
   double cluster_tolerance_;            // The cone clustering tolerance (m)
+  double  max_arc_cluster_;             //maximal arc between current point and cluster before the cluster becomes archived
   double cone_reconstruction_treshold_; // threshold to determind which ground
                                         // points are re-added to the clusters
   double
