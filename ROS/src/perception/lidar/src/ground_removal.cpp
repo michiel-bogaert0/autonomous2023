@@ -40,8 +40,7 @@ void GroundRemoval::groundRemoval(
   if (ground_removal_method_ == "zermas") {
     return GroundRemoval::groundRemovalZermas(cloud_in, notground_points,
                                               ground_points);
-  } 
-  else {
+  } else {
     return GroundRemoval::groundRemovalBins(cloud_in, notground_points,
                                             ground_points);
   }
@@ -306,7 +305,7 @@ void GroundRemoval::process_bucket(
     PositionEnum position,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points) {
-    
+
   pcl::PointCloud<pcl::PointXYZINormal> ng_points;
   for (uint16_t p = 0; p < bucket.points.size(); p++) {
     double floor =
@@ -326,7 +325,7 @@ void GroundRemoval::process_bucket(
     }
   }
   std::sort(ng_points.begin(), ng_points.end(), GroundRemoval::leftrightsort);
-  for (pcl::PointXYZINormal point : ng_points){
+  for (pcl::PointXYZINormal point : ng_points) {
     notground_points->push_back(point);
   }
 }
@@ -368,17 +367,18 @@ double GroundRemoval::calculate_ground(pcl::PointXYZ prev_centroid,
 }
 
 /**
- * @brief Colors the pointcloud in from first point to last point 
+ * @brief Colors the pointcloud in from first point to last point
  * with increasing luminance values.
  * This makes it easier to see in which order points arrive at clustering.
  */
-sensor_msgs::PointCloud2 GroundRemoval::publishColoredGround(pcl::PointCloud<pcl::PointXYZINormal> points,
-                                                              const sensor_msgs::PointCloud2 &msg){
-  int i= 0; 
+sensor_msgs::PointCloud2 GroundRemoval::publishColoredGround(
+    pcl::PointCloud<pcl::PointXYZINormal> points,
+    const sensor_msgs::PointCloud2 &msg) {
+  int i = 0;
   pcl::PointCloud<pcl::PointXYZRGB> new_points;
-        // color the points of the cluster
+  // color the points of the cluster
   for (pcl::PointXYZINormal point : points) {
-    int intens = int(i++/factor_color_) % 256;
+    int intens = int(i++ / factor_color_) % 256;
     pcl::PointXYZRGB new_point;
     new_point.x = point.x;
     new_point.y = point.y;

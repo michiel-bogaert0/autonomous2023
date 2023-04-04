@@ -12,7 +12,8 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
   n.param<std::string>("clustering_method", clustering_method_, "string");
   n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
-  n.param<double>("cone_reconstruction_treshold", cone_reconstruction_treshold_, 0.2);
+  n.param<double>("cone_reconstruction_treshold", cone_reconstruction_treshold_,
+                  0.2);
 }
 
 /**
@@ -24,8 +25,7 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
  */
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
-    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) 
-{
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> cluster_msg;
   if (clustering_method_ == "string") {
     cluster_msg = ConeClustering::stringClustering(cloud, ground);
@@ -37,15 +37,14 @@ std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
 }
 
 /**
- * @brief Clusters the cones in the final filtered point cloud and returns a 
+ * @brief Clusters the cones in the final filtered point cloud and returns a
  * vector containing the different clusters
  *
  */
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
 ConeClustering::euclidianClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
-    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) 
-{
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
 
   // Create a PC and channel for the cone colour
   sensor_msgs::PointCloud cluster_msg;
@@ -117,11 +116,6 @@ ConeClustering::euclidianClustering(
   return clusters;
 }
 
-
-
-
-
-
 /**
  * @brief Clusters the cones in the final filtered point cloud and returns a
  * vector containing the different clusters
@@ -134,12 +128,12 @@ ConeClustering::euclidianClustering(
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
 ConeClustering::stringClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
-    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) 
-{
-  
-  //construct clusters for further use
+    const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
+
+  // construct clusters for further use
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
-  std::vector<pcl::PointXYZINormal> cluster_rightmost; // The rightmost point in each cluster
+  std::vector<pcl::PointXYZINormal>
+      cluster_rightmost; // The rightmost point in each cluster
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> finished_clusters;
 
   // Iterate over all points, up and down, left to right (elevation & azimuth)
@@ -162,7 +156,7 @@ ConeClustering::stringClustering(
       // This distance should be calculated using max(delta_azi, delta_r)
       float delta_arc = std::abs(std::atan2(point.x, point.y) -
                                  atan2(rightmost.x, rightmost.y));
-      float dist = hypot3d(point.x - rightmost.x, point.y- rightmost.y, 0);
+      float dist = hypot3d(point.x - rightmost.x, point.y - rightmost.y, 0);
 
       // A cone is max 285mm wide, check whether this point is within that
       // distance from the rightmost point in each cluster
@@ -175,9 +169,9 @@ ConeClustering::stringClustering(
         // Check whether this point is the rightmost point in the cluster
         if (point.y > cluster_rightmost[cluster_id].y) {
           cluster_rightmost[cluster_id] = point;
-        }        
+        }
         clusters_to_keep.push_back(cluster_id);
-        
+
       }
       // filter other clusters
       else {
@@ -220,11 +214,10 @@ ConeClustering::stringClustering(
     clusters.push_back(cluster);
   }
 
-
   // determine centroid of each cluster to reduced
   // duplicate calculations
   std::vector<pcl::PointXYZ> cluster_centroids;
-  for(pcl::PointCloud<pcl::PointXYZINormal> cluster: clusters){
+  for (pcl::PointCloud<pcl::PointXYZINormal> cluster : clusters) {
     // Compute centroid of each cluster
     Eigen::Vector4f centroid;
     pcl::compute3DCentroid(cluster, centroid);
