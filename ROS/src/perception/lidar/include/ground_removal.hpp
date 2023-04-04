@@ -32,7 +32,7 @@ public:
   groundRemoval(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
                 pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
                 pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
-  sensor_msgs::PointCloud2 publishColoredGround(pcl::PointCloud<pcl::PointXYZINormal> points);
+  sensor_msgs::PointCloud2 publishColoredGround(pcl::PointCloud<pcl::PointXYZINormal> points, const sensor_msgs::PointCloud2 &msg);
 
 private:
   ros::NodeHandle &n_;
@@ -82,6 +82,12 @@ private:
                  pcl::PointXYZ next_centroid, PositionEnum position,
                  pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
                  pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
+
+  struct {
+  bool operator()(pcl::PointXYZINormal a, pcl::PointXYZINormal b) const {
+    return a.y > b.y;
+  }
+} leftrightsort;
 };
 } // namespace ns_lidar
 

@@ -160,13 +160,12 @@ ConeClustering::stringClustering(
       pcl::PointXYZINormal rightmost = cluster_rightmost[cluster_id];
 
       // This distance should be calculated using max(delta_azi, delta_r)
-      float r_point = hypot3d(point.x, point.y, point.z);
-      float r_rightmost = hypot3d(rightmost.x, rightmost.y, rightmost.z);
-      float delta_r = std::abs(r_point - r_rightmost);
+      // float r_rightmost = hypot3d(rightmost.x, rightmost.y, rightmost.z);
+      // float delta_r = std::abs(r_point - r_rightmost);
       float delta_arc = std::abs(std::atan2(point.x, point.y) -
-                                 atan2(rightmost.x, rightmost.y)) *
-                        r_point;
-      float dist = std::max(delta_r, delta_arc);
+                                 atan2(rightmost.x, rightmost.y));
+      // float dist = std::max(delta_r, delta_arc);
+      float dist = hypot3d(point.x - rightmost.x, point.y- rightmost.y, 0);
 
       // A cone is max 285mm wide, check whether this point is within that
       // distance from the rightmost point in each cluster
@@ -179,27 +178,14 @@ ConeClustering::stringClustering(
         // Check whether this point is the rightmost point in the cluster
         if (point.y > cluster_rightmost[cluster_id].y) {
           cluster_rightmost[cluster_id] = point;
-        }
-
-        // Everytime a cluster is updated, check whether it can still be a cone
-        Eigen::Vector4f min;
-        Eigen::Vector4f max;
-        pcl::getMinMax3D(clusters[cluster_id], min, max);
-
-        float bound_x = std::fabs(max[0] - min[0]);
-        float bound_y = std::fabs(max[1] - min[1]);
-        float bound_z = std::fabs(max[2] - min[2]);
-
-        // Filter based on the shape of cones
-        if (bound_x < 1 && bound_y < 1 && bound_z < 0.6) {
-          // This cluster can still be a cone
-          clusters_to_keep.push_back(cluster_id);
-        }
+        }        
+        clusters_to_keep.push_back(cluster_id);
+        
       }
       // filter other clusters
       else {
         // cluster to far to the left to be considered when adding new points
-        if (rightmost.y + WIDTH_BIG_CONE * min_distance_factor_ < point.y) {
+        if (delta_arc > 0.3) {
           finished_clusters.push_back(clusters[cluster_id]);
 
           // cluster still needs to be considered
@@ -208,7 +194,6 @@ ConeClustering::stringClustering(
         }
       }
     }
-
     // Remove clusters that cannot represent a cone
     std::vector<pcl::PointCloud<pcl::PointXYZINormal>> new_clusters;
     std::vector<pcl::PointXYZINormal> new_cluster_rightmost;

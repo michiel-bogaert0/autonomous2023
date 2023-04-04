@@ -305,6 +305,8 @@ void GroundRemoval::process_bucket(
     PositionEnum position,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points) {
+    
+  pcl::PointCloud<pcl::PointXYZINormal> ng_points;
   for (uint16_t p = 0; p < bucket.points.size(); p++) {
     double floor =
         use_slope_ ? calculate_ground(prev_centroid, current_centroid,
@@ -319,8 +321,12 @@ void GroundRemoval::process_bucket(
     if (point.z - floor < th_floor_) {
       ground_points->push_back(point);
     } else {
-      notground_points->push_back(point);
+      ng_points.push_back(point);
     }
+  }
+  std::sort(ng_points.begin(), ng_points.end(), GroundRemoval::leftrightsort);
+  for (pcl::PointXYZINormal point : ng_points){
+    notground_points->push_back(point);
   }
 }
 
@@ -365,7 +371,8 @@ double GroundRemoval::calculate_ground(pcl::PointXYZ prev_centroid,
  * with increasing luminance values.
  * This makes it easier to see in which order points arrive at clustering.
  */
-sensor_msgs::PointCloud2 GroundRemoval::publishColoredGround(pcl::PointCloud<pcl::PointXYZINormal> points){
+sensor_msgs::PointCloud2 GroundRemoval::publishColoredGround(pcl::PointCloud<pcl::PointXYZINormal> points,
+                                                              const sensor_msgs::PointCloud2 &msg){
   int i= 0; 
   pcl::PointCloud<pcl::PointXYZRGB> new_points;
         // color the points of the cluster
@@ -383,6 +390,8 @@ sensor_msgs::PointCloud2 GroundRemoval::publishColoredGround(pcl::PointCloud<pcl
 
   sensor_msgs::PointCloud2 ground_colored_msg;
   pcl::toROSMsg(new_points, ground_colored_msg);
+  ground_colored_msg.header.frame_id = msg.header.frame_id;
+  ground_colored_msg.header.stamp = msg.header.stamp;
   return ground_colored_msg;
 }
 

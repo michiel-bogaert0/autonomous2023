@@ -74,7 +74,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   publishDiagnostic(OK, "[perception] ground removal points",
                     "#points: " + std::to_string(notground_points->size()));
 
-  sensor_msgs::PointCloud2 ground_msg = ground_removal_.publishColoredGround(*notground_points);
+  sensor_msgs::PointCloud2 ground_msg = ground_removal_.publishColoredGround(*notground_points,msg);
   groundColoredPublisher_.publish(ground_msg);
   double time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
@@ -105,6 +105,17 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
                     "time needed: " + std::to_string(time_round));
 
   if (color_clusters_) {
+    // std::ofstream myfile;
+    // myfile.open ("/home/lomeg/clusters.csv");
+    // int i = 0;
+    // for(pcl::PointCloud<pcl::PointXYZINormal> cluster: clusters){
+    //   for(pcl::PointXYZINormal po: cluster){
+    //     myfile << i << ";" << po.x << ";" << po.y << ";" << po.z << std::endl;
+    //   }
+    //   i++;
+    // }
+    // myfile.close();
+    // exit(0);
     clustersColored = cone_clustering_.clustersColoredMessage(clusters);
     clustersColored.header.frame_id = msg.header.frame_id;
     clustersColored.header.stamp = msg.header.stamp;
