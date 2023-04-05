@@ -3,6 +3,7 @@ import rospy
 from can_msgs.msg import Frame
 from can.interfaces.serial.serial_can import SerialBus
 from can import Message
+from node_fixture import serialcan_to_roscan, roscan_to_serialcan
 
 
 class CanBridge:
@@ -32,14 +33,7 @@ class CanBridge:
           data: the Frame that needs to be sent
         """
 
-        can_message = Message(
-            timestamp=data.header.stamp.to_sec(),
-            extended_id=data.is_extended,
-            is_error_frame=data.is_error,
-            dlc=data.dlc,
-            arbitration_id=data.id,
-            data=list(data.data),
-        )
+        can_message = roscan_to_serialcan(data)
         self.can_bus.send(can_message)
 
     def run(self):
@@ -50,13 +44,7 @@ class CanBridge:
 
         while not rospy.is_shutdown():
             can_message = self.can_bus.recv()
-            ros_message = Frame()
-            ros_message.header.stamp = rospy.Time.from_sec(can_message.timestamp)
-            ros_message.id = can_message.arbitration_id
-            ros_message.data = bytearray(can_message.data)
-            ros_message.dlc = can_message.dlc
-            ros_message.is_error = can_message.is_error_frame
-            ros_message.is_extended = can_message.is_extended_id
+            ros_message = serialcan_to_roscan(can_message)
 
             self.can_publisher.publish(ros_message)
 

@@ -7,8 +7,6 @@ from ugr_msgs.msg import State
 from node_launcher import NodeLauncher
 from nav_msgs.msg import Odometry
 from node_fixture import (
-    AutonomousMission,
-    SLAMStatesEnum,
     AutonomousStatesEnum,
     StateMachineScopeEnum,
 )
