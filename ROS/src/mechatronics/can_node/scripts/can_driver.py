@@ -24,7 +24,7 @@ class CanBridge:
 
         self.run()
 
-    def ros_can_callback(self, data):
+    def ros_can_callback(self, data: Frame):
         """
         Callback to handle CAN messages that need to be written to our CAN bus
 
@@ -33,6 +33,7 @@ class CanBridge:
         """
 
         can_message = Message(
+            timestamp=data.header.stamp.to_sec(),
             extended_id=data.is_extended,
             is_error_frame=data.is_error,
             dlc=data.dlc,
@@ -50,6 +51,7 @@ class CanBridge:
         while not rospy.is_shutdown():
             can_message = self.can_bus.recv()
             ros_message = Frame()
+            ros_message.header.stamp = rospy.Time.from_sec(can_message.timestamp)
             ros_message.id = can_message.arbitration_id
             ros_message.data = bytearray(can_message.data)
             ros_message.dlc = can_message.dlc
