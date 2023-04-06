@@ -37,6 +37,7 @@ COPY /scripts scripts
 COPY /AirSim AirSim
 COPY /settings.json settings.json
 COPY requirements.txt requirements.txt
+COPY requirements_pc.txt requirements_pc.txt
 
 RUN bash scripts/docker/init.sh
 
@@ -48,5 +49,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES \
 
 EXPOSE 11311
 EXPOSE 9090
+EXPOSE 7502/udp
+EXPOSE 7503/udp
 
 CMD /bin/zsh

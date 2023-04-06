@@ -90,8 +90,6 @@ class PegasusState(CarState):
 
         # Teensy
         node_id = frame.id >> 2
-        # print(frame.id)
-        self.state["ASMS"] = carStateEnum.ON
         if node_id == 0xE0:
             cmd_id = frame.id & 0b11111
 
@@ -101,9 +99,7 @@ class PegasusState(CarState):
 
             # ASMS message Teensy
             if cmd_id == 0x2:
-                self.state["ASMS"] = frame.data[0]
-        
-        self.state["ASMS"] = carStateEnum.ON
+                self.state["ASMS"] = carStateEnum.ON if frame.data[0] == 0 else carStateEnum.ON # Is inversed
 
     def update(self, state: AutonomousStatesEnum):
 
@@ -195,7 +191,7 @@ class PegasusState(CarState):
 
         # R2D
         if self.res_go_signal and t - self.as_ready_time > 5.0:
-            self.state["R2D"] = carStateEnum.ON
+            self.state["R2D"] = carStateEnum.ACTIVATED
         elif self.as_state != AutonomousStatesEnum.ASDRIVE:
             self.state["R2D"] = carStateEnum.OFF
 
@@ -216,7 +212,7 @@ class PegasusState(CarState):
         # EBS
         self.state["EBS"] = (
             carStateEnum.ACTIVATED
-            if self.res_estop_signal or t - self.teensy_hb < 0.2
+            if self.res_estop_signal or t - self.teensy_hb > 0.2
             else carStateEnum.ON
         )
 

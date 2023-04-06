@@ -8,6 +8,7 @@ from nav_msgs.msg import Odometry
 from node_fixture import (
     AutonomousStatesEnum,
     StateMachineScopeEnum,
+    SLAMStatesEnum
 )
 import rosparam
 
@@ -51,7 +52,7 @@ class AutonomousController:
         )
 
         self.mission_finished = False
-        self.vehicle_stopped = False
+        self.vehicle_stopped = True
 
         self.change_state(AutonomousStatesEnum.ASOFF)
         while not rospy.is_shutdown():
@@ -92,6 +93,8 @@ class AutonomousController:
                         self.change_state(AutonomousStatesEnum.ASREADY)
                     else:
                         self.change_state(AutonomousStatesEnum.ASOFF)
+            else:
+                self.change_state(AutonomousStatesEnum.ASOFF)
 
     def handle_odom(self, odom: Odometry):
         """
@@ -137,7 +140,7 @@ class AutonomousController:
             also do something
             """
 
-            self.mission_finished = self.state == AutonomousStatesEnum.ASDRIVE
+            self.mission_finished = state.cur_state == SLAMStatesEnum.FINISHED
 
         elif state.scope == StateMachineScopeEnum.AUTONOMOUS:
             return

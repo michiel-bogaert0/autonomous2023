@@ -25,10 +25,29 @@ services:
       - "ROS_MASTER_URI=http://roscore:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
-    runtime: nvidia
+    # runtime: nvidia
     restart: always
     tty: true
     entrypoint: /bin/zsh -c 'source ~/.zshrc && rosrun rviz rviz -d ~/autonomous2023/ROS/rviz/ugr.rviz'
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - "./:/home/ugr/autonomous2023/:rw"
+  bridge:
+    image: ugr-base
+    networks:
+      - ros
+    ports:
+      - "9090:9090"
+    depends_on:
+      - roscore
+    environment:
+      - "ROS_MASTER_URI=http://roscore:11311"
+      - "DISPLAY=$DISPLAY"
+      - "QT_X11_NO_MITSHM=1"
+    # runtime: nvidia
+    restart: always
+    tty: true
+    entrypoint: /bin/zsh -c 'source ~/.zshrc && roslaunch rosbridge_server rosbridge_websocket.launch'
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - "./:/home/ugr/autonomous2023/:rw"
@@ -49,13 +68,17 @@ services:
       - "ROS_MASTER_URI=http://roscore:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
-    runtime: nvidia
+    # runtime: nvidia
     restart: always
     tty: true
     entrypoint: /bin/zsh
+    ports:
+      - "7502:7502/udp"
+      - "7503:7503/udp"
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - "./:/home/ugr/autonomous2023/:rw"
+      - "./../autonomous2023_binaries:/home/ugr/autonomous2023_binaries/:rw"
       - /dev:/dev
   prod-runner:
     image: ugr-base
@@ -68,11 +91,12 @@ services:
       - "ROS_MASTER_URI=http://roscore:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
-    runtime: nvidia
+    # runtime: nvidia
     restart: always
     tty: true
     entrypoint: /bin/zsh -c "source ~/.zshrc && roslaunch /home/ugr/autonomous2023/ROS/launch/run.launch"
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - "./:/home/ugr/autonomous2023/:rw"
+      - "./../autonomous2023_binaries:/home/ugr/autonomous2023_binaries/:rw"
       - /dev:/dev
