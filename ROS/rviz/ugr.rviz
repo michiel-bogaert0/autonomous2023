@@ -166,6 +166,40 @@ Visualization Manager:
           Frame Timeout: 15
           Frames:
             All Enabled: true
+            os_imu:
+              Value: true
+            os_lidar:
+              Value: true
+            os_sensor:
+              Value: true
+            ugr/car_base_link:
+              Value: true
+            ugr/car_base_link/axis0:
+              Value: true
+            ugr/car_base_link/axis1:
+              Value: true
+            ugr/car_base_link/cam0:
+              Value: true
+            ugr/car_base_link/gps0:
+              Value: true
+            ugr/car_base_link/gps1:
+              Value: true
+            ugr/car_base_link/gps2:
+              Value: true
+            ugr/car_base_link/imu0:
+              Value: true
+            ugr/car_base_link/imu1:
+              Value: true
+            ugr/car_base_link/lidar0:
+              Value: true
+            ugr/car_odom:
+              Value: true
+            ugr/gt_base_link:
+              Value: true
+            ugr/map:
+              Value: true
+            ugr/slam_base_link:
+              Value: true
           Marker Alpha: 1
           Marker Scale: 1
           Name: TF
@@ -173,7 +207,35 @@ Visualization Manager:
           Show Axes: true
           Show Names: false
           Tree:
-            {}
+            ugr/map:
+              ugr/car_odom:
+                ugr/car_base_link:
+                  ugr/car_base_link/axis0:
+                    {}
+                  ugr/car_base_link/axis1:
+                    {}
+                  ugr/car_base_link/cam0:
+                    {}
+                  ugr/car_base_link/gps0:
+                    {}
+                  ugr/car_base_link/gps1:
+                    {}
+                  ugr/car_base_link/gps2:
+                    {}
+                  ugr/car_base_link/imu0:
+                    {}
+                  ugr/car_base_link/imu1:
+                    {}
+                  ugr/car_base_link/lidar0:
+                    os_sensor:
+                      os_imu:
+                        {}
+                      os_lidar:
+                        {}
+                ugr/slam_base_link:
+                  {}
+              ugr/gt_base_link:
+                {}
           Update Interval: 0
           Value: true
         - Alpha: 1
