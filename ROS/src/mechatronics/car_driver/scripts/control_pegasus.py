@@ -90,7 +90,7 @@ class PegasusController:
         """
 
         steering = int(steering * self.steer_max_step)
-        id = CAN_NODE_ID << 5 | CAN_STEER_ID
+        id = CAN_NODE_ID << 2 | CAN_STEER_ID
 
         msg = Frame()
         msg.id = id
@@ -118,7 +118,7 @@ class PegasusController:
         self.bus.publish(msg)  # Right
 
         msg.id = 2 << 5 | 0x00D
-        self.bus.send(msg)  # Left
+        self.bus.publish(msg)  # Left
 
     def set_odrive_velocity(self, vel: float, axis: int) -> None:
         """Publishes a drive command with a given velocity to the ODrive

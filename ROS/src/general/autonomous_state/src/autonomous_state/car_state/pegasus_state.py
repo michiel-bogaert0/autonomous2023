@@ -1,9 +1,10 @@
 import rospy
 from can_msgs.msg import Frame
 from car_state import carStateEnum, CarState
-from node_fixture import AutonomousStatesEnum, AutonomousMission
+from node_fixture import AutonomousStatesEnum, AutonomousMission, serialcan_to_roscan
 import can
 import rosparam
+import time
 
 class PegasusState(CarState):
 
@@ -16,7 +17,7 @@ class PegasusState(CarState):
 
     def __init__(self) -> None:
 
-        rospy.Subscriber("/input/can", Frame, self.handle_can)
+        rospy.Subscriber("/ugr/car/can/rx", Frame, self.handle_can)
 
         self.res_go_signal = False
         self.res_estop_signal = False
@@ -34,13 +35,11 @@ class PegasusState(CarState):
             "EBS": carStateEnum.UNKOWN,
         }
 
-        self.bus = can.interface.Bus(
-            bustype="socketcan",
-            channel=rospy.get_param("~interface", "can0"),
-            bitrate=rospy.get_param("~baudrate", 250000),
-        )
+        self.bus = rospy.Publisher("/ugr/car/can/tx", Frame, queue_size=10)
 
         self.as_state = AutonomousStatesEnum.ASOFF
+
+        time.sleep(1)
 
     def handle_can(self, frame: Frame):
         """
@@ -87,20 +86,24 @@ class PegasusState(CarState):
         # RES
         if frame.id == 0x191:
             self.res_go_signal = (frame.data[0] & 0b0000100) >> 2
-            self.res_estop_signal = frame.data[0] & 0b0000001
+            self.res_estop_signal = not (frame.data[0] & 0b0000001)
 
         # Teensy
-        node_id = frame.id >> 5
+        node_id = frame.id >> 2
+        # print(frame.id)
+        self.state["ASMS"] = carStateEnum.ON
         if node_id == 0xE0:
             cmd_id = frame.id & 0b11111
 
             # Heartbeat message Teensy
-            if cmd_id == 0x4:
+            if cmd_id == 0x0:
                 self.teensy_hb = rospy.Time.now().to_sec()
 
             # ASMS message Teensy
-            if cmd_id == 0x5:
+            if cmd_id == 0x2:
                 self.state["ASMS"] = frame.data[0]
+        
+        self.state["ASMS"] = carStateEnum.ON
 
     def update(self, state: AutonomousStatesEnum):
 
@@ -154,7 +157,7 @@ class PegasusState(CarState):
         # Bits 5 - 7
         bits = 0
         mission = (
-            rosparam.get_param("/mission") if rosparam.has_param("/mission") else ""
+            rosparam.get_param("/mission") if rospy.has_param("/mission") else ""
         )
 
         if mission == AutonomousMission.ACCELERATION:
@@ -179,7 +182,7 @@ class PegasusState(CarState):
             data=data,
             is_extended_id=False,
         )
-        self.bus.send(canmsg)
+        self.bus.publish(serialcan_to_roscan(canmsg))
 
     def get_state(self):
         """
@@ -203,7 +206,7 @@ class PegasusState(CarState):
         self.state["ASB"] = (
             (
                 carStateEnum.ACTIVATED
-                if self.as_state == AutonomousStatesEnum.ASOFF
+                if self.state["R2D"] == carStateEnum.OFF
                 else carStateEnum.ON
             )
             if t - self.odrive_hb < 0.2

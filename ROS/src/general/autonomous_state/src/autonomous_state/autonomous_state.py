@@ -4,7 +4,6 @@ from enum import Enum
 from std_msgs.msg import UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
-from node_launcher import NodeLauncher
 from nav_msgs.msg import Odometry
 from node_fixture import (
     AutonomousStatesEnum,
@@ -26,11 +25,10 @@ class AutonomousController:
         """
         rospy.init_node("as_controller")
 
-        self.state = AutonomousStatesEnum.ASOFF
+        self.state = ""
 
         rospy.Subscriber("/state", State, self.handle_external_state_change)
-        rospy.Subscriber("/input/can", UInt16, self.handle_can)
-        rospy.Subscriver("/input/odom", Odometry, self.handle_odom)
+        rospy.Subscriber("/input/odom", Odometry, self.handle_odom)
 
         self.state_publisher = rospy.Publisher("/state", State, queue_size=10)
 
@@ -42,7 +40,7 @@ class AutonomousController:
             raise f"Unkown model! (model given was: '{self.car_name}')"
 
         # Setup
-        self.car.set_state(
+        self.car.update(
             {
                 "TS": carStateEnum.OFF,
                 "R2D": carStateEnum.OFF,
@@ -55,10 +53,11 @@ class AutonomousController:
         self.mission_finished = False
         self.vehicle_stopped = False
 
+        self.change_state(AutonomousStatesEnum.ASOFF)
         while not rospy.is_shutdown():
             self.main()
             self.car.update(self.state)
-            rospy.sleep(0.1)
+            rospy.sleep(0.05)
 
     def main(self):
         """
@@ -82,7 +81,7 @@ class AutonomousController:
 
         elif ccs["EBS"] == carStateEnum.ON:
 
-            if rosparam.has_param("/mission") and ccs["ASMS"] == carStateEnum.ON and (ccs["ASB"] == carStateEnum.ON or ccs["ASB"] == carStateEnum.ACTIVATED) and ccs["TS"] == carStateEnum.ON:
+            if rospy.has_param("/mission") and ccs["ASMS"] == carStateEnum.ON and (ccs["ASB"] == carStateEnum.ON or ccs["ASB"] == carStateEnum.ACTIVATED) and ccs["TS"] == carStateEnum.ON:
                 if ccs["R2D"] == carStateEnum.ACTIVATED:
 
                     self.change_state(AutonomousStatesEnum.ASDRIVE)
