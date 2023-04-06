@@ -2,6 +2,10 @@
 
   <arg name="gt_map_topic" default="ugr/car/map/gt" />
   <arg name="filename"/>
+  <arg name="mission"/>
+
+  <!-- Controller -->
+  <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true"/>
 
   <!-- Car simulator-->
 
@@ -22,7 +26,7 @@
     <param name="viewing_distance" value="15"/>
     <param name="fov" value="90"/>
     <param name="add_noise" value="true"/>
-    <param name="cone_noise" value="0.01"/>
+    <param name="cone_noise" value="0.002"/>
 
     <remap from="/output/observations" to="/ugr/car/observations/lidar" />
     <remap from="/input/track" to="$(arg gt_map_topic)" />

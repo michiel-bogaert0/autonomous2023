@@ -11,11 +11,11 @@
   <arg name="max_half_angle" default="1.5"/>
   <arg name="expected_range" default="15"/>
   <arg name="expected_half_angle" default="1.5"/>
-  <arg name="observe_dt" default="0.0"/>
+  <arg name="observe_dt" default="0.1"/>
 
   <arg name="yaw_unwrap_threshold" default="4.0"/>
 
-  <arg name="acceptance_score" default="5.0"/>
+  <arg name="acceptance_score" default="1.0"/>
   <arg name="penalty_score" default="-0.4"/>
   <arg name="discard_score" default="-100.0"/>
 
@@ -37,8 +37,8 @@
     <param name="yaw_unwrap_threshold" value="$(arg yaw_unwrap_threshold)" />
     <param name="synchronous" value="false"/>
 
-    <rosparam param="measurement_covariance">[0.3, 0.0, 0.0, 0.05]</rosparam>
-    <rosparam param="input_noise">[0.1, 0.0, 0.0, 0.05]</rosparam>
+    <rosparam param="measurement_covariance">[0.3, 0.0, 0.0, 0.01]</rosparam>
+    <rosparam param="input_noise">[4, 0.0, 0.0, 1]</rosparam>
     <param name="acceptance_score" value="$(arg acceptance_score)" />
     <param name="penalty_score" value="$(arg penalty_score)" />
     <param name="discard_score" value="$(arg discard_score)" />

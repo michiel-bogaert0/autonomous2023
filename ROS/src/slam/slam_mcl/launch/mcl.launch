@@ -32,7 +32,7 @@
     <rosparam param="input_noise">[0.2, 0.0, 0.0, 0.1]</rosparam>
     # Input/output remapping
     <remap from="/input/observations" to="ugr/car/observations/lidar" />
-    <remap from="/input/map" to="ugr/car/map/fastslam/global" />
+    <remap from="/input/map" to="ugr/car/map/gt" />
 
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/mcl" />
   </node>

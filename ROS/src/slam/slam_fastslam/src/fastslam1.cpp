@@ -86,6 +86,8 @@ namespace slam
     obs_sub.subscribe(n, "/input/observations", 1);
     tf2_filter.registerCallback(boost::bind(&FastSLAM1::handleObservations, this, _1));
 
+    this->prev_predict_time = chrono::steady_clock::now();
+
     vector<double> QAsVector;
     vector<double> RAsVector;
 
@@ -112,7 +114,7 @@ namespace slam
     this->R(1, 1) = pow(RAsVector[3], 2);
   }
 
-  void FastSLAM1::predict(Particle &particle, double dDist, double dYaw)
+  void FastSLAM1::predict(Particle &particle, double dDist, double dYaw, double dt)
   {
 
     // Add noise
@@ -120,7 +122,8 @@ namespace slam
     A(0) = dDist;
     A(1) = dYaw;
     VectorXf VG(2);
-    VG = multivariate_gauss(A, this->Q, 1);
+    MatrixXf Q = this->Q * dt;
+    VG = multivariate_gauss(A, Q, 1);
     dDist = VG(0);
     dYaw = VG(1);
 
@@ -360,7 +363,7 @@ namespace slam
     geometry_msgs::TransformStamped car_pose;
     try
     {
-      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, transformed_obs.header.stamp, ros::Duration(0.1));
+      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, ros::Time(0), ros::Duration(0.1));
     }
     catch (const exception e)
     {
@@ -415,7 +418,10 @@ namespace slam
         Particle &particle = particles[j];
 
         //---- Predict step -----//
-        this->predict(particle, dDist, dYaw);
+        chrono::steady_clock::time_point time = chrono::steady_clock::now();
+        double dt = std::chrono::duration_cast<std::chrono::duration<double>>(time - this->prev_predict_time).count();
+        this->prev_predict_time = chrono::steady_clock::now();
+        this->predict(particle, dDist, dYaw, dt);
 
         //---- Observe step ----//
 
@@ -500,7 +506,10 @@ namespace slam
         Particle &particle = particles[j];
 
         //---- Predict step -----//
-        this->predict(particle, dDist, dYaw);
+        chrono::steady_clock::time_point time = chrono::steady_clock::now();
+        double dt = std::chrono::duration_cast<std::chrono::duration<double>>(time - this->prev_predict_time).count();
+        this->prev_predict_time = chrono::steady_clock::now();
+        this->predict(particle, dDist, dYaw, dt);
       }
     }
 
@@ -539,7 +548,9 @@ namespace slam
     float y = 0.0;
     float yaw = 0.0;
     float maxW = -10000.0;
-    for (int i = 0; i < this->particles.size(); i++)
+
+    // Skip the first particle due to weird bug
+    for (int i = 1; i < this->particles.size(); i++)
     {
 
       Particle &particle = this->particles[i];
