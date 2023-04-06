@@ -1,5 +1,5 @@
 #!/bin/bash
-R="1-4"
+R="1-1"
 L="1-2"
 
 # echo USB Devices:
@@ -10,9 +10,9 @@ do
 cd -P /sys/class/tty/$usb/device
 path=$(pwd)
 if [[ $path =~ $R ]]; then
-  echo Right: $usb
+  echo "Right (moving rover): $usb"
 fi
 if [[ $path =~ $L ]]; then
-  echo Left: $usb
+  echo "Left (fixed rover): $usb"
 fi
 done
