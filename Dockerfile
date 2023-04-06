@@ -38,8 +38,10 @@ COPY /AirSim AirSim
 COPY /settings.json settings.json
 COPY requirements.txt requirements.txt
 COPY requirements_pc.txt requirements_pc.txt
+COPY ./../autonomous2023_binaries/modules/neoapi-1.2.1-cp38-cp38-linux_x86_64.whl neoapi-1.2.1-cp38-cp38-linux_x86_64.whl
 
 RUN bash scripts/docker/init.sh
+RUN python3 -m pip install /home/ugr/neoapi-1.2.1-cp38-cp38-linux_x86_64.whl
 
 # nvidia-container-runtime
 ENV NVIDIA_VISIBLE_DEVICES \

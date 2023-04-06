@@ -1,12 +1,7 @@
-networks:
-  ros:
-    driver: bridge
-
 services:
   roscore:
     image: ugr-base
-    networks:
-      - ros
+    network_mode: "host"
     restart: always
     tty: true
     build: .
@@ -17,12 +12,11 @@ services:
       - "./:/home/ugr/autonomous2023/:rw"
   rviz:
     image: ugr-base
-    networks:
-      - ros
+    network_mode: "host"
     depends_on:
       - roscore
     environment:
-      - "ROS_MASTER_URI=http://roscore:11311"
+      - "ROS_MASTER_URI=http://localhost:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
     # runtime: nvidia
@@ -34,14 +28,13 @@ services:
       - "./:/home/ugr/autonomous2023/:rw"
   bridge:
     image: ugr-base
-    networks:
-      - ros
+    network_mode: "host"
     ports:
       - "9090:9090"
     depends_on:
       - roscore
     environment:
-      - "ROS_MASTER_URI=http://roscore:11311"
+      - "ROS_MASTER_URI=http://localhost:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
     # runtime: nvidia
@@ -60,12 +53,11 @@ services:
   dev-runner:
     image: ugr-base
     privileged: true
-    networks:
-      - ros
+    network_mode: "host"
     depends_on:
       - roscore
     environment:
-      - "ROS_MASTER_URI=http://roscore:11311"
+      - "ROS_MASTER_URI=http://localhost:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
     # runtime: nvidia
@@ -83,12 +75,11 @@ services:
   prod-runner:
     image: ugr-base
     privileged: true
-    networks:
-      - ros
+    network_mode: "host"
     depends_on:
       - roscore
     environment:
-      - "ROS_MASTER_URI=http://roscore:11311"
+      - "ROS_MASTER_URI=http://localhost:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
     # runtime: nvidia
