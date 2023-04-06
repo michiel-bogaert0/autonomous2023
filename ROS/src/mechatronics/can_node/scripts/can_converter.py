@@ -14,7 +14,13 @@ RES_ACTIVATION_MSG = Frame(
 
 class CanConverter:
     def __init__(self):
+        # Activate the RES signals
+        self.res_activated = False
+
         rospy.init_node("can_converter")
+
+        self.last_send_time = rospy.get_time()
+        
 
         self.diagnostics = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
 
@@ -23,24 +29,18 @@ class CanConverter:
         # The first element is the front IMU, the second is the rear IMU
         self.IMU_IDS = [0xE2, 0xE3]
 
-        # create a can subscriber
-        rospy.Subscriber("/input/can", Frame, self.listen_on_can)
-        self.bus = rospy.Publisher("/output/can", Frame, queue_size=10)
-
         # Create the right converters
         self.odrive = OdriveConverter()
         self.imu = ImuConverter()
 
-        # Activate the RES signals
-        self.res_activated = False
-        self.last_send_time = rospy.get_time()
+        # create a can subscriber
+        rospy.Subscriber("/input/can", Frame, self.listen_on_can)
+        self.bus = rospy.Publisher("/output/can", Frame, queue_size=10)
+
 
         self.bus.publish(RES_ACTIVATION_MSG)
 
-        try:
-            self.listen_on_can()
-        except rospy.ROSInterruptException:
-            pass
+        rospy.spin()
 
     def listen_on_can(self, can_msg) -> None:
         """

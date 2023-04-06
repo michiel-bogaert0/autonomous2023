@@ -40,6 +40,7 @@ services:
       - "./:/home/ugr/autonomous2023/:rw"
   dev-runner:
     image: ugr-base
+    privileged: true
     networks:
       - ros
     depends_on:
@@ -55,8 +56,10 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - "./:/home/ugr/autonomous2023/:rw"
+      - /dev:/dev
   prod-runner:
     image: ugr-base
+    privileged: true
     networks:
       - ros
     depends_on:
@@ -72,3 +75,4 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - "./:/home/ugr/autonomous2023/:rw"
+      - /dev:/dev
