@@ -1,0 +1,93 @@
+services:
+  roscore:
+    image: ugr-base
+    network_mode: "host"
+    restart: always
+    tty: true
+    build: .
+    entrypoint: zsh -c 'source ~/.zshrc && roscore'
+    ports:  
+      - "11311:11311"
+    volumes:
+      - "./:/home/ugr/autonomous2023/:rw"
+  rviz:
+    image: ugr-base
+    network_mode: "host"
+    depends_on:
+      - roscore
+    environment:
+      - "ROS_MASTER_URI=http://localhost:11311"
+      - "DISPLAY=$DISPLAY"
+      - "QT_X11_NO_MITSHM=1"
+    # runtime: nvidia
+    restart: always
+    tty: true
+    entrypoint: /bin/zsh -c 'source ~/.zshrc && rosrun rviz rviz -d ~/autonomous2023/ROS/rviz/ugr.rviz'
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - "./:/home/ugr/autonomous2023/:rw"
+  bridge:
+    image: ugr-base
+    network_mode: "host"
+    ports:
+      - "9090:9090"
+    depends_on:
+      - roscore
+    environment:
+      - "ROS_MASTER_URI=http://localhost:11311"
+      - "DISPLAY=$DISPLAY"
+      - "QT_X11_NO_MITSHM=1"
+    # runtime: nvidia
+    restart: always
+    tty: true
+    entrypoint: /bin/zsh -c 'source ~/.zshrc && roslaunch rosbridge_server rosbridge_websocket.launch'
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - "./:/home/ugr/autonomous2023/:rw"
+  builder:
+    image: ugr-base
+    tty: true
+    entrypoint: /bin/zsh -c 'source ~/.zshrc && cd ~/autonomous2023/ROS && catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build'
+    volumes:
+      - "./:/home/ugr/autonomous2023/:rw"
+  dev-runner:
+    image: ugr-base
+    privileged: true
+    network_mode: "host"
+    depends_on:
+      - roscore
+    environment:
+      - "ROS_MASTER_URI=http://localhost:11311"
+      - "DISPLAY=$DISPLAY"
+      - "QT_X11_NO_MITSHM=1"
+    # runtime: nvidia
+    restart: always
+    tty: true
+    entrypoint: /bin/zsh
+    ports:
+      - "7502:7502/udp"
+      - "7503:7503/udp"
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - "./:/home/ugr/autonomous2023/:rw"
+      - "./../autonomous2023_binaries:/home/ugr/autonomous2023_binaries/:rw"
+      - /dev:/dev
+  prod-runner:
+    image: ugr-base
+    privileged: true
+    network_mode: "host"
+    depends_on:
+      - roscore
+    environment:
+      - "ROS_MASTER_URI=http://localhost:11311"
+      - "DISPLAY=$DISPLAY"
+      - "QT_X11_NO_MITSHM=1"
+    # runtime: nvidia
+    restart: always
+    tty: true
+    entrypoint: /bin/zsh -c "source ~/.zshrc && roslaunch /home/ugr/autonomous2023/ROS/launch/run.launch"
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - "./:/home/ugr/autonomous2023/:rw"
+      - "./../autonomous2023_binaries:/home/ugr/autonomous2023_binaries/:rw"
+      - /dev:/dev

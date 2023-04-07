@@ -18,4 +18,8 @@
 
     <!-- ? Pathplanning  -->
     <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true"></include>
+
+    <include file="$(find pid_car_control)/launch/control.launch">
+        <arg name="reference_frame" default="ugr/car_odom"/>
+    </include>
 </launch>

@@ -95,7 +95,7 @@ namespace slam
 
       void publishOutput(ros::Time);
 
-      void predict(Particle &particle, double dDist, double dYaw);
+      void predict(Particle &particle, double dDist, double dYaw, double dt);
 
       void build_associations(Particle &, ugr_msgs::ObservationWithCovarianceArrayStamped &, vector<VectorXf> &, vector<VectorXf> &, vector<int> &, vector<int>&, vector<int>&);
 
@@ -111,6 +111,7 @@ namespace slam
       array<double, 3> prev_state; // x, y, yaw
 
       chrono::steady_clock::time_point  prev_time;
+      chrono::steady_clock::time_point  prev_predict_time;
 
       vector<Particle> particles; 
 
