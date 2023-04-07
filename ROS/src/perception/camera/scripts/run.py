@@ -58,7 +58,7 @@ class PerceptionNode:
 
         # Setup node and spin
         self.cone_detector = ConeDetector(
-            self.device, self.tensorrt, self.detection_height_threshold
+            self.device, self.detection_height_threshold
         )
 
         self.diagnostics.publish(
@@ -82,9 +82,10 @@ class PerceptionNode:
 
         img = self.ros_img_to_np(ros_image)
 
-        # Nx4 array of cones: category, X, Y, Z
-        cones = self.cone_detector.process_image(img)
+        print(self.cone_detector)
 
+        # Nx4 array of cones: category, X, Y, Z
+        cones = self.cone_detector.find_cones(img)
         msg = self.create_observation_msg(cones, ros_image.header)
 
         self.pub_cone_locations.publish(msg)

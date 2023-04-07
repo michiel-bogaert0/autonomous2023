@@ -60,7 +60,7 @@ services:
       - "ROS_MASTER_URI=http://localhost:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
-    # runtime: nvidia
+    runtime: nvidia
     restart: always
     tty: true
     entrypoint: /bin/zsh

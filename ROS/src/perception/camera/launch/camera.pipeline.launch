@@ -1,7 +1,0 @@
-<launch>
-    <include file="$(find camera)/launch/camera.sensor.launch">
-        <arg name="type" value="camera" />
-    </include>
-
-    <include file="$(find camera)/launch/camera.cone_detector.launch" pass_all_args="true"/>
-</launch>
