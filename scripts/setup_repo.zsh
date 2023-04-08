@@ -19,7 +19,7 @@ sudo apt install -y \
     python3-opencv
 
 # Install the python requirements
-pip install -r requirements_pc.txt
+pip install -r requirements.txt
 
 # Install ROS requirements
 sudo apt-get install -y ros-noetic-tf2-geometry-msgs \
