@@ -26,7 +26,7 @@ class Controller:
         rospy.Subscriber("/state", State, self.handle_state_change)
         rospy.Subscriber("/input/loopclosure", UInt16, self.lapFinished)
 
-        self.state_publisher = rospy.Publisher("/state", State, queue_size=10)
+        self.state_publisher = rospy.Publisher("/state", State, queue_size=10, latch=True)
 
         while not rospy.is_shutdown():
             self.launcher.run()

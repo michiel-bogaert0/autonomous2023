@@ -24,7 +24,7 @@ class AutonomousController:
         rospy.Subscriber("/state", State, self.handle_external_state_change)
         rospy.Subscriber("/input/odom", Odometry, self.handle_odom)
 
-        self.state_publisher = rospy.Publisher("/state", State, queue_size=10)
+        self.state_publisher = rospy.Publisher("/state", State, queue_size=10, latch=True)
         self.diagnostics_publisher = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
 
         self.car_name = rospy.get_param("~model", "pegasus")
