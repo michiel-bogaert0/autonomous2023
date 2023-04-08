@@ -19,7 +19,14 @@ services:
       - "ROS_MASTER_URI=http://localhost:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
-    # runtime: nvidia
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     restart: always
     tty: true
     entrypoint: /bin/zsh -c 'source ~/.zshrc && rosrun rviz rviz -d ~/autonomous2023/ROS/rviz/ugr.rviz'
@@ -37,7 +44,6 @@ services:
       - "ROS_MASTER_URI=http://localhost:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
-    # runtime: nvidia
     restart: always
     tty: true
     entrypoint: /bin/zsh -c 'source ~/.zshrc && roslaunch rosbridge_server rosbridge_websocket.launch'
@@ -60,7 +66,14 @@ services:
       - "ROS_MASTER_URI=http://localhost:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
-    # runtime: nvidia
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     restart: always
     tty: true
     entrypoint: /bin/zsh
@@ -82,7 +95,14 @@ services:
       - "ROS_MASTER_URI=http://localhost:11311"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
-    # runtime: nvidia
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     restart: always
     tty: true
     entrypoint: /bin/zsh -c "source ~/.zshrc && roslaunch /home/ugr/autonomous2023/ROS/launch/run.launch"
