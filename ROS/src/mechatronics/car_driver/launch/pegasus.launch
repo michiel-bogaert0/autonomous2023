@@ -1,0 +1,11 @@
+<launch>
+
+    <node pkg="car_driver" type="control_pegasus.py" name="control_pegasus" output="screen" respawn="true">
+
+      <param name="odrive_dbc" value="$(find can_node)/odrive.dbc" />
+
+      <remap from="/input/path" to="/pathplanning/path" />
+      <remap from="/input/control_command" to="/control/control_command" />
+      <remap from="/output/can" to="/ugr/car/can/tx" />
+  </node>
+</launch>
