@@ -15,8 +15,8 @@ Explanation of system states (hierarchical):
 class carStateEnum(Enum):
     OFF = 0
     ON = 1
-    ACTIVATED = (2,)
-    UNKOWN = (3,)
+    ACTIVATED = 2
+    UNKOWN = 3
 
 
 class CarState(ABC):
