@@ -1,12 +1,9 @@
 #! /usr/bin/python3
 import rospy
-from enum import Enum
-from std_msgs.msg import UInt16
-from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 from nav_msgs.msg import Odometry
-from node_fixture import AutonomousStatesEnum, StateMachineScopeEnum, SLAMStatesEnum
-import rosparam
+from node_fixture import AutonomousStatesEnum, StateMachineScopeEnum, SLAMStatesEnum, create_diagnostic_message, DiagnosticStatusEnum
+from diagnostic_msgs.msg import DiagnosticArray
 
 from car_state import *
 
@@ -28,6 +25,7 @@ class AutonomousController:
         rospy.Subscriber("/input/odom", Odometry, self.handle_odom)
 
         self.state_publisher = rospy.Publisher("/state", State, queue_size=10)
+        self.diagnostics_publisher = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
 
         self.car_name = rospy.get_param("~model", "pegasus")
 
@@ -36,23 +34,16 @@ class AutonomousController:
         else:
             raise f"Unkown model! (model given was: '{self.car_name}')"
 
-        # Setup
-        self.car.update(
-            {
-                "TS": carStateEnum.OFF,
-                "R2D": carStateEnum.OFF,
-                "ASB": carStateEnum.OFF,
-                "EBS": carStateEnum.OFF,
-                "ASSI": carStateEnum.OFF,
-            }
-        )
-
         self.mission_finished = False
         self.vehicle_stopped = True
 
+        # Setup
         self.change_state(AutonomousStatesEnum.ASOFF)
+        self.car.update(self.state)
+
         while not rospy.is_shutdown():
             self.main()
+
             self.car.update(self.state)
             rospy.sleep(0.05)
 
@@ -68,6 +59,8 @@ class AutonomousController:
 
         # Gets car state as reported by our helper class (can be simulated or a specific car such as Peggy)
         ccs = self.car.get_state()
+
+        self.diagnostics_publisher.publish(create_diagnostic_message(DiagnosticStatusEnum.OK, "[AS state] car state", str(ccs)))
 
         if ccs["EBS"] == carStateEnum.ACTIVATED:
 
