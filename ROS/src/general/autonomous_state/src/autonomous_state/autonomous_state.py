@@ -31,6 +31,8 @@ class AutonomousController:
 
         if self.car_name == "pegasus":
             self.car = PegasusState()
+        elif self.car_name == "simulation":
+            self.car = SimulationState()
         else:
             raise f"Unkown model! (model given was: '{self.car_name}')"
 
