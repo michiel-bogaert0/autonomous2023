@@ -3,6 +3,7 @@ import rospy
 from car_state import carStateEnum, CarState
 from node_fixture import AutonomousStatesEnum
 
+
 class SimulationState(CarState):
 
     """
@@ -56,8 +57,8 @@ class SimulationState(CarState):
             if self.as_state == AutonomousStatesEnum.ASOFF
             else carStateEnum.ON
         )
-        
-        #ASMS
+
+        # ASMS
         self.as_state["ASMS"] = carStateEnum.ON
 
         # EBS

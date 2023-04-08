@@ -11,14 +11,16 @@ Explanation of system states (hierarchical):
 - UNKNOWN: status unkown
 """
 
+
 class carStateEnum(Enum):
     OFF = 0
     ON = 1
-    ACTIVATED = 2,
-    UNKOWN = 3,
+    ACTIVATED = (2,)
+    UNKOWN = (3,)
+
 
 class CarState(ABC):
-    
+
     """
     Autonomous systems:
 
@@ -36,7 +38,7 @@ class CarState(ABC):
 
     def __init__(self) -> None:
         pass
-    
+
     @abstractmethod
     def get_state(self):
         """

@@ -5,11 +5,7 @@ from std_msgs.msg import UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 from nav_msgs.msg import Odometry
-from node_fixture import (
-    AutonomousStatesEnum,
-    StateMachineScopeEnum,
-    SLAMStatesEnum
-)
+from node_fixture import AutonomousStatesEnum, StateMachineScopeEnum, SLAMStatesEnum
 import rosparam
 
 from car_state import *
@@ -63,9 +59,9 @@ class AutonomousController:
     def main(self):
         """
         Main function to be executed in a loop.
-        
+
         Follows flowchart in section T14.10 and related rules (T14/T15)
-        
+
         - https://www.formulastudent.de/fileadmin/user_upload/all/2023/rules/FS-Rules_2023_v1.1.pdf
         - https://www.formulastudent.de/fileadmin/user_upload/all/2023/important_docs/FSG23_AS_Beginners_Guide_v1.1.pdf
         """
@@ -82,7 +78,15 @@ class AutonomousController:
 
         elif ccs["EBS"] == carStateEnum.ON:
 
-            if rospy.has_param("/mission") and ccs["ASMS"] == carStateEnum.ON and (ccs["ASB"] == carStateEnum.ON or ccs["ASB"] == carStateEnum.ACTIVATED) and ccs["TS"] == carStateEnum.ON:
+            if (
+                rospy.has_param("/mission")
+                and ccs["ASMS"] == carStateEnum.ON
+                and (
+                    ccs["ASB"] == carStateEnum.ON
+                    or ccs["ASB"] == carStateEnum.ACTIVATED
+                )
+                and ccs["TS"] == carStateEnum.ON
+            ):
                 if ccs["R2D"] == carStateEnum.ACTIVATED:
 
                     self.change_state(AutonomousStatesEnum.ASDRIVE)
@@ -144,5 +148,6 @@ class AutonomousController:
 
         elif state.scope == StateMachineScopeEnum.AUTONOMOUS:
             return
+
 
 node = AutonomousController()

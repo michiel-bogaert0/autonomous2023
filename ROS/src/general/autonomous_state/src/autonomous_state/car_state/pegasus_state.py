@@ -6,6 +6,7 @@ import can
 import rosparam
 import time
 
+
 class PegasusState(CarState):
 
     """
@@ -99,7 +100,9 @@ class PegasusState(CarState):
 
             # ASMS message Teensy
             if cmd_id == 0x2:
-                self.state["ASMS"] = carStateEnum.ON if frame.data[0] == 0 else carStateEnum.ON # Is inversed
+                self.state["ASMS"] = (
+                    carStateEnum.ON if frame.data[0] == 0 else carStateEnum.ON
+                )  # Is inversed
 
     def update(self, state: AutonomousStatesEnum):
 
@@ -152,9 +155,7 @@ class PegasusState(CarState):
 
         # Bits 5 - 7
         bits = 0
-        mission = (
-            rosparam.get_param("/mission") if rospy.has_param("/mission") else ""
-        )
+        mission = rosparam.get_param("/mission") if rospy.has_param("/mission") else ""
 
         if mission == AutonomousMission.ACCELERATION:
             bits = 1

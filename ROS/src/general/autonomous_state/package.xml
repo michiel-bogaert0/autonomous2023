@@ -2,9 +2,9 @@
 <package format="2">
   <name>autonomous_state</name>
   <version>0.0.0</version>
-  <description>The node_fixture package</description>
+  <description>The autonomous_state package</description>
 
-  <maintainer email="gilles@todo.todo">gilles</maintainer>
+  <maintainer email="lowiek.vandenstockt@ugentracing.be">Lowiek Van den Stockt</maintainer>
 
   <license>TODO</license>
 
