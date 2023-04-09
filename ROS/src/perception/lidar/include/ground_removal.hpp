@@ -4,9 +4,9 @@
 #include <Eigen/Dense>
 #include <pcl/common/common.h>
 #include <pcl/common/transforms.h>
-#include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
 
 namespace ns_lidar {
 
@@ -32,7 +32,9 @@ public:
   groundRemoval(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
                 pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
                 pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
-  sensor_msgs::PointCloud2 publishColoredGround(pcl::PointCloud<pcl::PointXYZINormal> points);
+  sensor_msgs::PointCloud2
+  publishColoredGround(pcl::PointCloud<pcl::PointXYZINormal> points,
+                       const sensor_msgs::PointCloud2 &msg);
 
 private:
   ros::NodeHandle &n_;
@@ -55,7 +57,7 @@ private:
   double big_radial_bucket_length_;    // length of big buckets
   bool use_slope_;                     // Is the slope used for GR or not
 
-  int factor_color_; //number of consecutive points that get the same color
+  int factor_color_; // number of consecutive points that get the same color
 
   void groundRemovalZermas(
       const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
@@ -82,6 +84,12 @@ private:
                  pcl::PointXYZ next_centroid, PositionEnum position,
                  pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points,
                  pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points);
+
+  struct {
+    bool operator()(pcl::PointXYZINormal a, pcl::PointXYZINormal b) const {
+      return a.y > b.y;
+    }
+  } leftrightsort;
 };
 } // namespace ns_lidar
 
