@@ -22,7 +22,7 @@ class analyze_while_running(ROSNode):
     align_num_frames=-1
     
     def __init__(self):
-        super().__init__("analyser")
+        super().__init__("slam_trajectory_evaluation")
         self.odomData = []
         self.gpsData = []
         self.previousData = []
@@ -35,7 +35,7 @@ class analyze_while_running(ROSNode):
         # create dir to store the info of the run
         # we remove the last 4 characters 
         rospack = rospkg.RosPack()
-        self.dirpath = rospack.get_path('rpg_trajectory_evaluation') + '/data-error-correction/'
+        self.dirpath = rospack.get_path('slam_trajectory_evaluation') + '/data-error-correction/'
 
         if not os.path.exists(self.dirpath):
             os.makedirs(self.dirpath)

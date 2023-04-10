@@ -1,7 +1,7 @@
 <launch>
     <node 
-        pkg="rpg_trajectory_evaluation" 
-        name="rpg_trajectory_evaluation"
+        pkg="slam_trajectory_evaluation" 
+        name="slam_trajectory_evaluation"
         output="screen" type="analyze_while_running.py">
         
         <param name="clustering/results_dir" value="../TestDataResult" />
@@ -10,6 +10,4 @@
         <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
 
     </node>
-    <!-- ? Lap counter -->
-    <include file="$(find slam_loopclosure)/launch/loopclosure.launch" pass_all_args="true" />
 </launch>
