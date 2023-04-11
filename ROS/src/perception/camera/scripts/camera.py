@@ -10,6 +10,10 @@ import rospy
 from publisher_abstract.publisher import PublishNode
 
 
+import os
+from pathlib import Path
+
+
 class CameraNode(PublishNode):
     def __init__(self):
         super().__init__("camera")

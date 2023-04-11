@@ -27,4 +27,6 @@ if [[ $path =~ $L ]]; then
 fi
 done
 
+bash /home/ugentracing/autonomous2023/scripts/id_gpses.bash
+
 exit 0

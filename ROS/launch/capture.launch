@@ -1,72 +1,17 @@
 <launch>
     <!-- ! Sensor capture files -->
 
-    <!-- ? GPS -->
-
-    <!-- <node pkg="pepwave_gps" type="gps.py" name="publish_gps" output="screen">
-        <param name="ip_address" value="192.168.50.1" />
-        <param name="port" value="60660" />
-        <param name="gps_frame" value="ugr/car_base_link/gps2" />
-        <param name="use_gps_time" value="False" />
-
-        <remap from="/output/gps" to="/ugr/car/sensors/gps2" />
-    </node> -->
-
-
-    <!-- USB-C (gsp vanboven) is links -->
-    <!-- USB A (gps vanonder) is rechts -->
-
-    <!-- ! RIGHT: 0 -->
-    <!-- <node pkg="ublox_gps" type="ntripclient" name="ntripclient_right" output="screen">
-        <param name="server" value="euref-ip.be" />
-        <param name="mountpoint" value="BRUX00BEL0" />
-        <param name="port" value="2101" />
-        <param name="user" value="UGentRacing" />
-        <param name="password" value="UGentRacing" />
-        <param name="baudrate" value="460800" />
-        <param name="device" value="/dev/ttyUSB0" />
-    </node>
-    <node pkg="nmea_navsat_driver" output="log" type="nmea_serial_driver" name="nmea_publisher_right">
-        <param name="port" value="/dev/ttyUSB0"></param>
-        <param name="baud" value="460800"></param>
-
-        <param name="frame_id" value="ugr/car_base_link/gps0" />
-        <remap from="/fix" to="/ugr/car/sensors/gps0" />
-        <remap from="/vel" to="/ugr/car/sensors/gps0/vel" />
-    </node> -->
-
-    <!-- ! LEFT -->
-<!-- 
-    <node pkg="ublox_gps" type="ntripclient" name="ntripclient_left" output="screen">
-        <param name="server" value="euref-ip.be" />
-        <param name="mountpoint" value="BRUX00BEL0" />
-        <param name="port" value="2101" />
-        <param name="user" value="UGentRacing" />
-        <param name="password" value="UGentRacing" />
-        <param name="baudrate" value="460800" />
-        <param name="device" value="/dev/ttyUSB1" />
-    </node>
-    <node pkg="nmea_navsat_driver" output="log" type="nmea_serial_driver" name="nmea_publisher_left">
-        <param name="port" value="/dev/ttyUSB1"></param>
-        <param name="baud" value="460800"></param>
-
-        <param name="frame_id" value="ugr/car_base_link/gps1" />
-        <remap from="/fix" to="/ugr/car/sensors/gps1" />
-        <remap from="/vel" to="/ugr/car/sensors/gps1/vel" />
-    </node> -->
-
-    <!-- ? Heading estimation -->
-<!-- 
-    <include file="$(find ublox_gps)/launch/estimate_heading.launch">
-        <arg name="rate" default="20" />
-        <arg name="max_time_deviation" default="0.01" />
-        <arg name="base_link_frame" default="ugr/car_base_link" />
-    </include>  -->
 
     <!-- ? Perception -->
     <include file="$(env HOME)/autonomous2023/ROS/src/perception/launch/perception.launch">
         <arg name="type" value="camera"/>
     </include>
+    <include file="$(find ublox_gps)/launch/gps.launch"/>
+
+    <!-- ? Lidar -->
+
+    <!-- <include file="$(find ouster_ros)/launch/sensor.launch">
+    </include> -->
 
     <!-- ? CAN -->
     <include file="$(find can_node)/launch/can_node.launch">
