@@ -4,6 +4,12 @@
 FROM nvidia/cuda:11.7.0-runtime-ubuntu20.04 AS ugr-base
 
 #
+# Install torch and torchvision
+#
+RUN pip install torch
+RUN pip install torchvision
+
+#
 # Initial dependencies
 #
 
