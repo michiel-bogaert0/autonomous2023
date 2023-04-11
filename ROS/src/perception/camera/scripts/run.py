@@ -106,7 +106,7 @@ class PerceptionNode:
 
         # Nx4 array of cones: category, X, Y, Z
         yolo_detections = self.cone_detector.find_cones(img)
-        yolo_latency = 1000 * np.sum(list(yolo_detections.speed.values()))
+        yolo_latency = np.sum(list(yolo_detections.speed.values()))
 
         image_tensor = torch.tensor(img).to(self.device)
 
