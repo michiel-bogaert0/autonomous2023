@@ -73,9 +73,7 @@
     </include>
 
     <!-- Camera -->
-    <!-- <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries" />
-
-    <include file="$(find camera)/launch/perception.camera.publisher.launch">
+    <include file="$(find camera)/launch/pipeline.launch">
         <arg name="type" value="camera"/>
-    </include> -->
+    </include>
 </launch>
