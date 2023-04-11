@@ -3,10 +3,10 @@ A perception publisher should have the following structure:
 option 1: with a predefined rate and a publish function -> call the publish_image_data function 
 option 2: subscribes to a topic that publishes raw data -> start the child rosnode (by calling node.start())
 """
+import sys
 from abc import ABC, abstractmethod
 from typing import Any
 
-import sys
 import numpy as np
 import rospy
 from node_fixture.node_fixture import AddSubscriber, ROSNode

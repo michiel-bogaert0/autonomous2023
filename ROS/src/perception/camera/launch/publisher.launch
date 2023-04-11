@@ -1,6 +1,8 @@
 <launch>
     <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries"/>
-    <arg name="type" default="dummy"/>
+    <!-- Set the default publisher to camera -->
+    <arg name="type" default="camera"/>
+
     <group ns="dummy0" if="$(eval arg('type') =='dummy')">
         <node pkg="camera" type="dummy.py" name="dummy_publisher" output="screen">
             <param name="rate" value="10"/>

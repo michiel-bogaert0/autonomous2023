@@ -5,10 +5,9 @@ import albumentations as A
 import numpy as np
 import pytorch_lightning as pl
 import torch
-from torch.utils.data import DataLoader
-
 from keypoint_detection.data.augmentations import MultiChannelKeypointsCompose
 from keypoint_detection.data.coco_dataset import COCOKeypointsDataset
+from torch.utils.data import DataLoader
 
 
 class KeypointsDataModule(pl.LightningDataModule):
@@ -79,11 +78,9 @@ class KeypointsDataModule(pl.LightningDataModule):
                     A.Resize(int(sizes[0]), int(sizes[1])),
                 ]
             )
-        
+
         self.train_dataset = COCOKeypointsDataset(
-            json_dataset_path,
-            keypoint_channel_configuration,
-            **kwargs
+            json_dataset_path, keypoint_channel_configuration, **kwargs
         )
 
         if augment_train:
@@ -105,7 +102,7 @@ class KeypointsDataModule(pl.LightningDataModule):
                 augmentations.append(A.Resize(int(sizes[0]), int(sizes[1])))
 
             resize_tf = MultiChannelKeypointsCompose(augmentations)
-            
+
         self.train_dataset.transform = resize_tf
 
         self.validation_dataset = None

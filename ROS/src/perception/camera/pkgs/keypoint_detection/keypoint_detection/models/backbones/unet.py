@@ -3,7 +3,6 @@ import math
 
 import torch
 import torch.nn as nn
-
 from keypoint_detection.models.backbones.base_backbone import Backbone
 from keypoint_detection.models.backbones.s3k import ResNetBlock
 

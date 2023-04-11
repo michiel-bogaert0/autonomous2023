@@ -3,14 +3,14 @@ from typing import List, Tuple
 
 import pytorch_lightning as pl
 import wandb
-from pytorch_lightning.loggers import WandbLogger
-from pytorch_lightning.trainer.trainer import Trainer
-
 from keypoint_detection.data.datamodule import KeypointsDataModule
-from keypoint_detection.models.backbones.backbone_factory import BackboneFactory
+from keypoint_detection.models.backbones.backbone_factory import \
+    BackboneFactory
 from keypoint_detection.models.detector import KeypointDetector
 from keypoint_detection.train.utils import create_pl_trainer
 from keypoint_detection.utils.path import get_wandb_log_dir_path
+from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.trainer.trainer import Trainer
 
 
 def add_system_args(parent_parser: ArgumentParser) -> ArgumentParser:

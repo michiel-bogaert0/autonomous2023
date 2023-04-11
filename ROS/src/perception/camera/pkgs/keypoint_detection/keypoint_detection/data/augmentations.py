@@ -2,7 +2,6 @@ import typing
 from typing import List
 
 import albumentations as A
-
 from keypoint_detection.types import IMG_KEYPOINTS_TYPE, KEYPOINT_TYPE
 
 

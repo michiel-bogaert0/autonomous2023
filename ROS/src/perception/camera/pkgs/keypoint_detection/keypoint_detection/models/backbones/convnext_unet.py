@@ -3,29 +3,7 @@
 import timm
 import torch
 import torch.nn as nn
-
 from keypoint_detection.models.backbones.base_backbone import Backbone
-
-from functools import reduce
-from operator import __add__
-
-
-# Needed since ONNX conversion does not support the default Conv2D with `same` padding
-class Conv2dSamePadding(nn.Conv2d):
-    def __init__(self, *args, **kwargs):
-        super(Conv2dSamePadding, self).__init__(*args, **kwargs)
-        self.zero_pad_2d = nn.ZeroPad2d(
-            reduce(
-                __add__,
-                [
-                    (k // 2 + (k - 2 * (k // 2)) - 1, k // 2)
-                    for k in self.kernel_size[::-1]
-                ],
-            )
-        )
-
-    def forward(self, input):
-        return self._conv_forward(self.zero_pad_2d(input), self.weight, self.bias)
 
 
 class UpSamplingBlock(nn.Module):
@@ -46,17 +24,19 @@ class UpSamplingBlock(nn.Module):
     def __init__(self, n_channels_in, n_skip_channels_in, n_channels_out, kernel_size):
         super().__init__()
         self.upsample = nn.UpsamplingBilinear2d(scale_factor=2)
-        self.conv_reduce = Conv2dSamePadding(
+        self.conv_reduce = nn.Conv2d(
             in_channels=n_channels_in,
             out_channels=n_skip_channels_in,
             kernel_size=1,
             bias=False,
+            padding="same",
         )
-        self.conv = Conv2dSamePadding(
+        self.conv = nn.Conv2d(
             in_channels=n_skip_channels_in * 2,
             out_channels=n_channels_out,
             kernel_size=kernel_size,
             bias=False,
+            padding="same",
         )
         self.norm = nn.BatchNorm2d(n_channels_out)
         self.relu = nn.ReLU()
@@ -72,18 +52,34 @@ class UpSamplingBlock(nn.Module):
         return x
 
 
-class MobileNet(Backbone):
+class ConvNeXtUnet(Backbone):
     """
-    Pretrained MobileNetV2
+    Pretrained ConvNeXt as Encoder for the U-Net.
+
+    the outputs of the 3 intermediate CovNext stages are used for skip connections.
+    The output of res4 is considered as the bottleneck and has a 32x resolution reduction!
+
+    femto -> 3M params
+    nano -> 17M params (but only twice as slow)
+
+
+                                        (head)
+    stem                              final_up (bilinear 4x)
+        res1         --->   1/4      decode3
+            res2     --->   1/8    decode2
+                res3 --->   1/16  decode1
+                    res4 ---1/32----|
     """
 
     def __init__(self, **kwargs):
         super().__init__()
+        # todo: make desired convnext encoder configurable
         self.encoder = timm.create_model(
-            "mobilenetv2_100", pretrained=True, features_only=True
+            "convnext_femto", features_only=True, pretrained=True
         )
+
         self.decoder_blocks = nn.ModuleList()
-        for i in range(1, len(self.encoder.feature_info.info)):
+        for i in range(1, 4):
             channels_in, skip_channels_in = (
                 self.encoder.feature_info.info[-i]["num_chs"],
                 self.encoder.feature_info.info[-i - 1]["num_chs"],
@@ -92,11 +88,11 @@ class MobileNet(Backbone):
             self.decoder_blocks.append(block)
 
         self.final_upsampling_block = nn.Sequential(
-            nn.UpsamplingBilinear2d(scale_factor=2),
-            Conv2dSamePadding(skip_channels_in, skip_channels_in, 3),
+            nn.UpsamplingBilinear2d(scale_factor=4),
+            nn.Conv2d(skip_channels_in, skip_channels_in, 3, padding="same"),
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x):
         # print('forward')
         # print(x.shape)
         features = self.encoder(x)

@@ -1,28 +1,21 @@
 import argparse
+from functools import reduce
+from operator import __add__
 from typing import Any, Dict, List
 
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import wandb
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-
 from keypoint_detection.models.backbones.base_backbone import Backbone
-from keypoint_detection.models.metrics import (
-    DetectedKeypoint,
-    Keypoint,
-    KeypointAPMetrics,
-)
-from keypoint_detection.utils.heatmap import (
-    BCE_loss,
-    compute_keypoint_probability,
-    create_heatmap_batch,
-    get_keypoints_from_heatmap,
-)
+from keypoint_detection.models.metrics import (DetectedKeypoint, Keypoint,
+                                               KeypointAPMetrics)
+from keypoint_detection.utils.heatmap import (BCE_loss,
+                                              compute_keypoint_probability,
+                                              create_heatmap_batch,
+                                              get_keypoints_from_heatmap)
 from keypoint_detection.utils.visualization import visualize_predictions
-
-from functools import reduce
-from operator import __add__
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class Conv2dSamePadding(nn.Conv2d):

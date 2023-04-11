@@ -3,12 +3,9 @@ from typing import List
 
 import torch
 import torchvision
+from keypoint_detection.utils.heatmap import (generate_channel_heatmap,
+                                              get_keypoints_from_heatmap)
 from matplotlib import cm
-
-from keypoint_detection.utils.heatmap import (
-    generate_channel_heatmap,
-    get_keypoints_from_heatmap,
-)
 
 
 def overlay_image_with_heatmap(
@@ -94,11 +91,10 @@ def visualize_predictions(
 if __name__ == "__main__":
     """Script to visualize dataset"""
     import matplotlib.pyplot as plt
-    from torch.utils.data import DataLoader
-
     from keypoint_detection.data.coco_dataset import COCOKeypointsDataset
     from keypoint_detection.train.train import parse_channel_configuration
     from keypoint_detection.utils.heatmap import create_heatmap_batch
+    from torch.utils.data import DataLoader
 
     parser = ArgumentParser()
     parser.add_argument("json_dataset_path")

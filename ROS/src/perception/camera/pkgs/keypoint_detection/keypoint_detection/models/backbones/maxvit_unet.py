@@ -1,10 +1,9 @@
 import timm
 import torch
 import torch.nn as nn
-from torchvision.models.feature_extraction import create_feature_extractor
-
 from keypoint_detection.models.backbones.base_backbone import Backbone
 from keypoint_detection.models.backbones.convnext_unet import UpSamplingBlock
+from torchvision.models.feature_extraction import create_feature_extractor
 
 
 class MaxVitUnet(Backbone):

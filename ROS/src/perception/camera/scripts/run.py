@@ -1,20 +1,22 @@
 #! /usr/bin/python3
 
-import rospy
-from ugr_msgs.msg import (
-    ObservationWithCovarianceArrayStamped,
-    ObservationWithCovariance,
-    Observation,
-)
-from geometry_msgs.msg import Point
 from typing import List
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-from sensor_msgs.msg import Image
-from node_fixture.node_fixture import create_diagnostic_message
-import torch
-from cone_detector import ConeDetector
+
 import numpy as np
 import numpy.typing as npt
+import rospy
+import torch
+from cone_detector import ConeDetector
+import os
+from pathlib import Path
+
+from keypoint_detector import KeypointDetector
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+from geometry_msgs.msg import Point
+from node_fixture.node_fixture import create_diagnostic_message
+from sensor_msgs.msg import Image
+from ugr_msgs.msg import (Observation, ObservationWithCovariance,
+                          ObservationWithCovarianceArrayStamped)
 
 
 class PerceptionNode:
@@ -56,10 +58,23 @@ class PerceptionNode:
             "~detection_height_threshold", 25
         )
 
-        # Setup node and spin
-        self.cone_detector = ConeDetector(
-            self.device, self.detection_height_threshold
+        self.cone_detector = None
+        self.cone_detector = ConeDetector(self.device, self.detection_height_threshold)
+
+        keypoint_model_path = (
+            Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "keypoint_detector.pt"
         )
+        self.keypoint_model = KeypointDetector(
+            keypoint_model_path, self.detection_height_threshold, self.device
+        )
+
+        # Camera settings
+        self.focal_length = 8
+        self.camera_matrix = np.load(
+            Path(os.getenv("BINARY_LOCATION")) / "pnp" / "camera_calibration_baumer.npz"
+        )["camera_matrix"]
+        self.sensor_height = 5.76
+        self.image_height = 1200
 
         self.diagnostics.publish(
             create_diagnostic_message(
@@ -80,18 +95,67 @@ class PerceptionNode:
             ros_image: The input image as ROS message
         """
 
+        # Wait for the cone detector to initialise
+        if self.cone_detector is None:
+            return
+
         img = self.ros_img_to_np(ros_image)
 
-        print(self.cone_detector)
-
         # Nx4 array of cones: category, X, Y, Z
-        cones = self.cone_detector.find_cones(img)
+        yolo_detections = self.cone_detector.find_cones(img)
+
+        image_tensor = torch.tensor(img).to(self.device)
+        categories, heights, bottoms = self.keypoint_model.predict(
+            image_tensor, yolo_detections.boxes
+        )
+
+        cones = self.height_to_pos(categories, heights, bottoms)
+
         msg = self.create_observation_msg(cones, ros_image.header)
 
         self.pub_cone_locations.publish(msg)
 
+    def height_to_pos(
+        self, categories: torch.Tensor, heights: torch.Tensor, bottoms: torch.Tensor
+    ) -> npt.ArrayLike:
+        """Converts a tensor of cone heights and bottom keypoints to an array of locations
+
+        Returns:
+            a Nx4 array of category, X, Y, Z
+        """
+        N = len(categories)
+        gt_height = np.full(N, 0.305)
+        gt_height[categories == 2] = 0.5
+
+        gt_ring_height = np.full(N, 0.0275)
+        gt_ring_height[categories == 2] = 0.032
+
+        gt_ring_radius = np.full(N, 0.153 / 2)
+        gt_ring_radius[categories == 2] = 0.196 / 2
+
+        depths = (
+            (gt_height - gt_ring_height)
+            * self.focal_length
+            / (self.sensor_height * heights / self.image_height)
+        )
+
+        return np.vstack(
+            [
+                categories,
+                depths,
+                -depths
+                * (bottoms[:, 0] - self.camera_matrix[0, 2])
+                / self.camera_matrix[0, 0]
+                - gt_ring_radius,
+                -depths
+                * (bottoms[:, 1] - self.camera_matrix[1, 2])
+                / self.camera_matrix[1, 1]
+                - gt_ring_height,
+            ]
+        ).T
+
     def create_observation_msg(
-        cones: npt.ArrayLike, header
+        self, cones: npt.ArrayLike, header
     ) -> ObservationWithCovarianceArrayStamped:
         """Given an array of cone locations and a message header, create an observation message
 

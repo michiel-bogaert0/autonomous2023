@@ -3,11 +3,10 @@ from typing import Optional, Tuple
 
 import pytorch_lightning as pl
 import torch
+from keypoint_detection.utils.path import get_artifact_dir_path
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
-
-from keypoint_detection.utils.path import get_artifact_dir_path
 
 
 class RelativeEarlyStopping(EarlyStopping):

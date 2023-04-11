@@ -1,9 +1,8 @@
 import os
 
 import torch
-from torchvision.transforms import ToTensor
-
 from keypoint_detection.data.imageloader import ImageDataset
+from torchvision.transforms import ToTensor
 
 
 class UnlabeledKeypointsDataset(ImageDataset):

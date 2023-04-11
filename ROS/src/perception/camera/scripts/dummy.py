@@ -27,7 +27,6 @@ class DummyCamNode(PublishNode):
         self.cap = cv.VideoCapture(str(self.path))
 
     def process_data(self) -> Image:
-
         """
         reads the frames from the mp4 file
 

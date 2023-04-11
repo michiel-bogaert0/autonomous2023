@@ -2,7 +2,6 @@
 """
 import torch
 import torch.nn as nn
-
 from keypoint_detection.models.backbones.base_backbone import Backbone
 
 

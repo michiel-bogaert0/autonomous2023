@@ -1,13 +1,12 @@
 """A Unet-like backbone that uses a (relatively) small imagenet-pretrained ConvNeXt model from timm as encoder.
 """
+from functools import reduce
+from operator import __add__
+
 import timm
 import torch
 import torch.nn as nn
-
 from keypoint_detection.models.backbones.base_backbone import Backbone
-
-from functools import reduce
-from operator import __add__
 
 
 # Needed since ONNX conversion does not support the default Conv2D with `same` padding
@@ -72,15 +71,15 @@ class UpSamplingBlock(nn.Module):
         return x
 
 
-class MobileNetV3(Backbone):
+class MobileNet(Backbone):
     """
-    Pretrained MobileNetV3
+    Pretrained MobileNetV2
     """
 
     def __init__(self, **kwargs):
         super().__init__()
         self.encoder = timm.create_model(
-            "mobilenetv3_large_100", pretrained=True, features_only=True
+            "mobilenetv2_100", pretrained=True, features_only=True
         )
         self.decoder_blocks = nn.ModuleList()
         for i in range(1, len(self.encoder.feature_info.info)):
@@ -97,12 +96,16 @@ class MobileNetV3(Backbone):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # print('forward')
+        # print(x.shape)
         features = self.encoder(x)
 
         x = features.pop()
         for block in self.decoder_blocks:
             x = block(x, features.pop())
+        # print(x.shape)
         x = self.final_upsampling_block(x)
+        # print(x.shape)
 
         return x
 
