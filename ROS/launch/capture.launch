@@ -3,21 +3,21 @@
 
     <!-- ? GPS -->
 
-    <node pkg="pepwave_gps" type="gps.py" name="publish_gps" output="screen">
+    <!-- <node pkg="pepwave_gps" type="gps.py" name="publish_gps" output="screen">
         <param name="ip_address" value="192.168.50.1" />
         <param name="port" value="60660" />
         <param name="gps_frame" value="ugr/car_base_link/gps2" />
         <param name="use_gps_time" value="False" />
 
         <remap from="/output/gps" to="/ugr/car/sensors/gps2" />
-    </node>
+    </node> -->
 
 
     <!-- USB-C (gsp vanboven) is links -->
     <!-- USB A (gps vanonder) is rechts -->
 
     <!-- ! RIGHT: 0 -->
-    <node pkg="ublox_gps" type="ntripclient" name="ntripclient_right" output="screen">
+    <!-- <node pkg="ublox_gps" type="ntripclient" name="ntripclient_right" output="screen">
         <param name="server" value="euref-ip.be" />
         <param name="mountpoint" value="BRUX00BEL0" />
         <param name="port" value="2101" />
@@ -33,10 +33,10 @@
         <param name="frame_id" value="ugr/car_base_link/gps0" />
         <remap from="/fix" to="/ugr/car/sensors/gps0" />
         <remap from="/vel" to="/ugr/car/sensors/gps0/vel" />
-    </node>
+    </node> -->
 
     <!-- ! LEFT -->
-
+<!-- 
     <node pkg="ublox_gps" type="ntripclient" name="ntripclient_left" output="screen">
         <param name="server" value="euref-ip.be" />
         <param name="mountpoint" value="BRUX00BEL0" />
@@ -53,15 +53,15 @@
         <param name="frame_id" value="ugr/car_base_link/gps1" />
         <remap from="/fix" to="/ugr/car/sensors/gps1" />
         <remap from="/vel" to="/ugr/car/sensors/gps1/vel" />
-    </node>
+    </node> -->
 
     <!-- ? Heading estimation -->
-
+<!-- 
     <include file="$(find ublox_gps)/launch/estimate_heading.launch">
         <arg name="rate" default="20" />
         <arg name="max_time_deviation" default="0.01" />
         <arg name="base_link_frame" default="ugr/car_base_link" />
-    </include> 
+    </include>  -->
 
     <!-- ? Lidar -->
 
@@ -69,13 +69,13 @@
     </include>
 
     <!-- ? CAN -->
-    <include file="$(find can_node)/launch/can_converter.launch">
+    <include file="$(find can_node)/launch/can_node.launch">
     </include>
 
     <!-- Camera -->
-    <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries" />
+    <!-- <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries" />
 
     <include file="$(find camera)/launch/perception.camera.publisher.launch">
         <arg name="type" value="camera"/>
-    </include>
+    </include> -->
 </launch>

@@ -46,7 +46,7 @@ namespace slam
   MCL::MCL(ros::NodeHandle &n) : tfListener(tfBuffer),
                                  n(n),
                                  base_link_frame(n.param<string>("base_link_frame", "ugr/car_base_link")),
-                                 slam_world_frame(n.param<string>("slam_world_frame", "ugr/slam_odom")),
+                                 slam_base_link_frame(n.param<string>("slam_base_link_frame", "ugr/slam_base_link")),
                                  world_frame(n.param<string>("world_frame", "ugr/car_odom")),
                                  particle_count(n.param<int>("particle_count", 100)),
                                  effective_particle_count(n.param<int>("effective_particle_count", 75)),
@@ -634,8 +634,8 @@ namespace slam
     nav_msgs::Odometry odom;
 
     odom.header.stamp = ros::Time::now();
-    odom.header.frame_id = this->slam_world_frame;
-    odom.child_frame_id = this->base_link_frame;
+    odom.header.frame_id = this->world_frame;
+    odom.child_frame_id = this->slam_base_link_frame;
 
     odom.pose.pose.position.x = pose(0);
     odom.pose.pose.position.y = pose(1);
@@ -650,27 +650,20 @@ namespace slam
 
     odom.pose.covariance = poseCovariance;
 
-    // TF Transformation
-    // This uses the 'inversed frame' principle
-    // So the new slam_world_frame is a child of base_link_frame and then the inverse transform is published
     tf2::Transform transform(quat, tf2::Vector3(pose(0), pose(1), 0));
-    tf2::Transform invTransform = transform.inverse();
-
-    tf2::Quaternion invQuat = invTransform.getRotation();
-    tf2::Vector3 invTranslation = invTransform.getOrigin();
 
     geometry_msgs::TransformStamped transformMsg;
-    transformMsg.header.frame_id = this->base_link_frame;
+    transformMsg.header.frame_id = this->world_frame;
     transformMsg.header.stamp = ros::Time::now();
-    transformMsg.child_frame_id = this->slam_world_frame;
+    transformMsg.child_frame_id = this->slam_base_link_frame;
 
-    transformMsg.transform.translation.x = invTranslation.x();
-    transformMsg.transform.translation.y = invTranslation.y();
+    transformMsg.transform.translation.x = pose(0);
+    transformMsg.transform.translation.y = pose(1);
 
-    transformMsg.transform.rotation.x = invQuat.getX();
-    transformMsg.transform.rotation.y = invQuat.getY();
-    transformMsg.transform.rotation.z = invQuat.getZ();
-    transformMsg.transform.rotation.w = invQuat.getW();
+    transformMsg.transform.rotation.x = quat.getX();
+    transformMsg.transform.rotation.y = quat.getY();
+    transformMsg.transform.rotation.z = quat.getZ();
+    transformMsg.transform.rotation.w = quat.getW();
 
     static tf2_ros::TransformBroadcaster br;
     br.sendTransform(transformMsg);

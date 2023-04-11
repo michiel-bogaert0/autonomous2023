@@ -1,15 +1,14 @@
 <launch>
     <node pkg="can_node" type="can_converter.py" name="can_converter" output="screen">
         <param name="res_send_interval" value="0.1" />
-        <param name="interface" value="can0" />
-        <param name="baudrate" value="250000" />
         
         <param name="odrive_dbc" value="$(find can_node)/odrive.dbc" />
 
         <param name="imu0/frame" value="ugr/car_base_link/imu0" />
         <param name="imu1/frame" value="ugr/car_base_link/imu1" />
 
-        <remap from="/output/can" to="/mechatronics/can_messages" />
+        <remap from="/input/can" to="/ugr/car/can/rx" />
+        <remap from="/output/can" to="/ugr/car/can/tx" />
 
         <!-- Encoder 0: right -->
         <!-- Encoder 1: left -->
@@ -24,9 +23,13 @@
         <remap from="/output/imu1/angular_rate" to="/ugr/car/sensors/imu1/angular_rate" />
         <remap from="/output/imu0/acc" to="/ugr/car/sensors/imu0/acc" />
         <remap from="/output/imu1/acc" to="/ugr/car/sensors/imu1/acc" />
+    </node>
 
-        <remap from="/output/start" to="/control/start" />
-        <remap from="/output/stop" to="/control/stop" />
-        <remap from="/output/reset" to="/control/reset" />
+    <node pkg="can_node" type="can_driver.py" name="can_driver" output="screen">
+        
+        <param name="can_interface" value="/dev/ttyACM0" />
+
+        <remap from="/input/can" to="/ugr/car/can/tx" />
+        <remap from="/output/can" to="/ugr/car/can/rx" />
     </node>
 </launch>

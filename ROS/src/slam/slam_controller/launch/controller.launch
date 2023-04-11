@@ -1,5 +1,9 @@
 <launch>
 
+  <arg name="mission" />
+
+  <param name="/mission" value="$(arg mission)" />
+
   <!-- ? Controller -->
   <node name="slam_controller" pkg="slam_controller" type="controller.py" output="screen">
     <remap from="/input/loopclosure" to="/ugr/car/loopclosure" />

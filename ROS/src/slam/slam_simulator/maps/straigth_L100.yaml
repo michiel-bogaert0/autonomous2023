@@ -1,0 +1,457 @@
+header: 
+  seq: 0
+  stamp: 
+    secs: 0
+    nsecs:         0
+  frame_id: "ugr/map"
+observations: 
+  - 
+    observation: 
+      location: 
+        x: 0
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 4
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 8
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 12
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 16
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 20
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 24
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 28
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 32
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 36
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 40
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 44
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 48
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 52
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 56
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 60
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 64
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 68
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 72
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 76
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 80
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 84
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 88
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 92
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 96
+        y: 1.5
+        z: 0
+      observation_class: 0
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 0
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 4
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 8
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 12
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 16
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 20
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 24
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 28
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 32
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 36
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 40
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 44
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 48
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 52
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 56
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 60
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 64
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 68
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 72
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 76
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 80
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 84
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 88
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 92
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - 
+    observation: 
+      location: 
+        x: 96
+        y: -1.5
+        z: 0
+      observation_class: 1
+      belief: 1
+    covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

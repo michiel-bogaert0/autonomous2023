@@ -42,12 +42,12 @@ namespace slam
         std::string world_frame;
 
         Point startPosition = Point();
-        float maxDistanceSquare = 1.f;
+        float maxDistanceSquare = 4.f;
         double latestTime;
         bool doNotCheckDistance = false;
         bool checkDistanceGoingUpWhenInRange = false;
         Point directionWhenGoingInRange = Point();
-        float minDistanceForClose = 0.5f;
+        float minDistanceForClose = 2.0f;
         int amountOfLaps = 0;
     };
 }

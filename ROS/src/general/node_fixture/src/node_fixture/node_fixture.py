@@ -20,7 +20,8 @@ from std_msgs.msg import String
 from tf2_kdl import transform_to_kdl
 from ugr_msgs.msg import (Map, ObservationWithCovariance,
                           ObservationWithCovarianceArrayStamped)
-
+from can_msgs.msg import Frame
+import can
 
 class AddSubscriber:
     functions_to_subscribe = {}
@@ -194,13 +195,6 @@ class ROSNode:
                 buff_size=buff_size,
             )
 
-    @AddSubscriber(topic="state")
-    def state_callback(self, data: String):
-        self.state_update(str(data))
-
-    def state_update(self, new_state: str):
-        pass
-
     def get_publisher(self, topic: str, msg_type: Type):
         key = (topic, msg_type)
         if key not in self.publishers:
@@ -229,6 +223,41 @@ class ROSNode:
         """
         return int(rosstamp.__str__()) / 10**9
 
+##
+## See https://ugentracing.sharepoint.com/sites/UGRWiki/SitePages/State-machine-conventions.aspx
+##
+
+# All scopes of state machines in autonomous
+class StateMachineScopeEnum(str, enum.Enum):
+    AUTONOMOUS = "autonomous"
+    SLAM = "slam"
+
+# States of SLAM state machine
+class SLAMStatesEnum(str, enum.Enum):
+    IDLE = "idle"
+    EXPLORATION = "exploration"
+    RACING = "racing"
+    FINISHED = "finished"
+
+# Autonomous missions
+class AutonomousMission(str, enum.Enum):
+    MANUAL = "manual"
+    AUTOCROSS = "autocross"
+    ACCELERATION = "acceleration"
+    TRACKDRIVE = "trackdrive"
+    EBSTEST = "emergencybraketest"
+    INPSPECTION = "inspection"
+    SKIDPAD = "skidpad"
+    
+# States of global state machine
+class AutonomousStatesEnum(str, enum.Enum):
+    ASDRIVE = "asdrive"
+    ASREADY = "asready"
+    MANUAL = "manual"
+    ASOFF = "asoff"
+    ASEMERGENCY = "asemergency"
+    ASFINISHING = "asfinishing"
+    ASFINISHED = "asfinished"
 
 class DiagnosticStatusEnum(enum.Enum):
     OK = 0
@@ -236,6 +265,37 @@ class DiagnosticStatusEnum(enum.Enum):
     ERROR = 2
     STALE = 3
 
+"""
+Helper functions for CAN
+"""
+def roscan_to_serialcan(data: Frame) -> can.Message:
+    can_message = can.Message(
+        timestamp=data.header.stamp.to_sec(),
+        is_error_frame=data.is_error,
+        dlc=len(data.data),
+        arbitration_id=data.id,
+        data=list(data.data),
+    )
+    return can_message
+
+def build_simplified_serialcan(id, data) -> can.Message:
+    can_message = can.Message(
+        arbitration_id=id,
+        data=list(data),
+        dlc=len(data)
+    )
+    return can_message
+
+def serialcan_to_roscan(can_message: can.Message) -> Frame:
+    ros_message = Frame()
+    ros_message.header.stamp = rospy.Time.from_sec(can_message.timestamp)
+    ros_message.id = can_message.arbitration_id
+    ros_message.data = bytearray(can_message.data)
+    ros_message.dlc = can_message.dlc
+    ros_message.is_error = can_message.is_error_frame
+    ros_message.is_extended = can_message.is_extended_id
+
+    return ros_message
 
 def create_diagnostic_message(
     level: DiagnosticStatusEnum,

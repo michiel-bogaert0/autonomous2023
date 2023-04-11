@@ -1,10 +1,9 @@
-import can
 import rospy
 import tf_conversions
 import numpy as np
 from geometry_msgs.msg import Vector3, Quaternion
 from sensor_msgs.msg import Imu
-
+from can_msgs.msg import Frame
 
 class ImuConverter:
     def __init__(self):
@@ -49,7 +48,7 @@ class ImuConverter:
             "~imu1/frame", "ugr/car_base_link/imu1"
         )
 
-    def handle_imu_msg(self, msg: can.Message, is_front: bool) -> None:
+    def handle_imu_msg(self, msg: Frame, is_front: bool) -> None:
         """Publishes an IMU message to the correct ROS topic
 
         Args:
@@ -60,7 +59,7 @@ class ImuConverter:
 
         latency = msg.data[7]
         ts_corrected = rospy.Time.from_sec(
-            msg.timestamp - 0.0025 if latency == 5 else msg.timestamp
+            msg.header.stamp.to_sec() - 0.0025 if latency == 5 else msg.header.stamp.to_sec()
         )  # 2.5 ms latency according to the datasheet
         imu_msg.header.stamp = ts_corrected
         imu_msg.header.frame_id = (
@@ -70,7 +69,7 @@ class ImuConverter:
         # Decode the ID to figure out the type of message
         # We need the middle 4*8 bits of the ID to determine the type of message
         # IMU reports deg, while ROS expects rad
-        cmd_id = (msg.arbitration_id & 0x00FFFF00) >> 8
+        cmd_id = (msg.id & 0x00FFFF00) >> 8
         if cmd_id == 0xF029:
             # Pitch and roll
             pitch_raw = (msg.data[2] << 16) + (msg.data[1] << 8) + msg.data[0]
