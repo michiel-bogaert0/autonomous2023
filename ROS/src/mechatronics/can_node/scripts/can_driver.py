@@ -34,7 +34,6 @@ class CanBridge:
         """
 
         can_message = roscan_to_serialcan(data)
-        print(can_message)
         self.can_bus.send(can_message)
 
     def run(self):

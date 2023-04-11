@@ -75,10 +75,6 @@ class CanConverter:
                     )
                 )
                 self.odrive.handle_power_msg(can_msg, cmd_id)
-                print("power")
-            else:
-                print(cmd_id)
-            
         imu_id = can_msg.id & 0xFF
         if imu_id in self.IMU_IDS:
             status = can_msg.data[6]
