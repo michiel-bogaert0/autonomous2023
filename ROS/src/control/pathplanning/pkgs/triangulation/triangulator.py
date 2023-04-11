@@ -165,7 +165,6 @@ class Triangulator:
 
         # Get the least-cost path
         index = np.argmin(total_cost)
-        paths = np.array(paths)
 
         return paths[index]
 
