@@ -59,7 +59,6 @@ class TriangulationPaths:
             parent = queue.pop(0)
 
             # Get the closest center points to this element that are within 8m
-
             next_nodes = utils.sort_closest_to(center_points, (parent.x, parent.y), 8)
 
             # A list of all the abs_angle_change to nodes seen thus far
