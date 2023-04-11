@@ -169,6 +169,8 @@ class PegasusState(CarState):
             bits = 5
         elif mission == AutonomousMission.AUTOCROSS:
             bits = 6
+        elif mission == AutonomousMission.MANUAL:
+            bits = 7
 
         data[0] |= bits << 5
 
