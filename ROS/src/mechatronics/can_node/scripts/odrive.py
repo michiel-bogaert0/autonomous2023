@@ -37,8 +37,6 @@ class OdriveConverter:
         if bus is not None:
             self.bus = bus
 
-        self.t = rospy.Time.now().to_sec()
-
 
     def handle_power_msg(
         self, msg: Frame, cmd_id: int
