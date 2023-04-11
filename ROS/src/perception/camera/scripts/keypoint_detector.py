@@ -4,12 +4,10 @@ import numpy as np
 import numpy.typing as npt
 import torch
 import torchvision.transforms as T
-from keypoint_detection.keypoint_detection.utils.heatmap import (
-    get_keypoints_from_heatmap,
-)
-from keypoint_detection.keypoint_detection.utils.load_checkpoints import (
-    load_from_checkpoint,
-)
+from keypoint_detection.keypoint_detection.utils.heatmap import \
+    get_keypoints_from_heatmap
+from keypoint_detection.keypoint_detection.utils.load_checkpoints import \
+    load_from_checkpoint
 
 
 class KeypointDetector:
@@ -68,8 +66,10 @@ class KeypointDetector:
             if bbox_kpts[2] - bbox_kpts[0] < self.detection_height_threshold / 4:
                 # Detection not wide enough
                 continue
-            
-            resized_image = image[:, bbox_kpts[1] : bbox_kpts[3], bbox_kpts[0] : bbox_kpts[2]]
+
+            resized_image = image[
+                :, bbox_kpts[1] : bbox_kpts[3], bbox_kpts[0] : bbox_kpts[2]
+            ]
             original_size = resized_image.shape[1:]
             resized_image = self.image_resizer(resized_image)
             # Batch all detected cones
@@ -98,7 +98,6 @@ class KeypointDetector:
                 bottom = bottom[left_idx, :]
             else:
                 bottom = bottom[0]
-            
 
             # Rescale
             bottom[0] = (
@@ -125,9 +124,9 @@ class KeypointDetector:
             else:
                 if len(top) > 1:
                     raise NotImplementedError("Cannot handle multiple top keypoints")
-                
+
                 top = top[0]
-                
+
                 # Rescale
                 top[0] = (
                     top[0] * cone_original_sizes[i][1] / self.keypoint_image_size[1]
@@ -143,5 +142,5 @@ class KeypointDetector:
             final_cone_categories.append(prelim_cone_categories[i])
 
         cone_heights = bottoms[:, 1] - tops[:, 1]
-        
+
         return torch.tensor(final_cone_categories), cone_heights, bottoms

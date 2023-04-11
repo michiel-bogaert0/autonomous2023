@@ -1,5 +1,7 @@
 #! /usr/bin/python3
 
+import os
+from pathlib import Path
 from typing import List
 
 import numpy as np
@@ -7,12 +9,9 @@ import numpy.typing as npt
 import rospy
 import torch
 from cone_detector import ConeDetector
-import os
-from pathlib import Path
-
-from keypoint_detector import KeypointDetector
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from geometry_msgs.msg import Point
+from keypoint_detector import KeypointDetector
 from node_fixture.node_fixture import create_diagnostic_message
 from sensor_msgs.msg import Image
 from ugr_msgs.msg import (Observation, ObservationWithCovariance,
