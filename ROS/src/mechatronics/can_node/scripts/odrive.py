@@ -1,9 +1,11 @@
 import cantools
+from can import Message
 import numpy as np
 import rospy
 from geometry_msgs.msg import Twist, TwistWithCovariance, TwistWithCovarianceStamped
 from can_msgs.msg import Frame
 from sensor_msgs.msg import BatteryState
+from node_fixture import serialcan_to_roscan
 
 class OdriveConverter:
     def __init__(self, bus=None):
@@ -34,6 +36,8 @@ class OdriveConverter:
 
         if bus is not None:
             self.bus = bus
+
+        self.t = rospy.Time.now().to_sec()
 
 
     def handle_power_msg(
@@ -88,3 +92,12 @@ class OdriveConverter:
             self.vel_right.publish(twist_msg)
         elif axis_id == 2:
             self.vel_left.publish(twist_msg)
+
+        if rospy.Time.now().to_sec() - self.t > 0.1:
+            print("OK")
+            vbus_msg = self.odrive_db.get_message_by_name("Get_Vbus_Voltage")
+            data = vbus_msg.encode({"Vbus_Voltage": 24})
+            can_msg = Message(arbitration_id=(1 << 5) | vbus_msg.frame_id, data=data, is_remote_frame=True)
+            # print(can_msg)
+            self.bus.publish(serialcan_to_roscan(can_msg))
+    

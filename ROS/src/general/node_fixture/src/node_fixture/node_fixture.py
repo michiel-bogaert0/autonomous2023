@@ -272,6 +272,7 @@ def roscan_to_serialcan(data: Frame) -> can.Message:
     can_message = can.Message(
         timestamp=data.header.stamp.to_sec(),
         is_error_frame=data.is_error,
+        is_remote_frame=data.is_rtr,
         dlc=len(data.data),
         arbitration_id=data.id,
         data=list(data.data),
@@ -293,6 +294,7 @@ def serialcan_to_roscan(can_message: can.Message) -> Frame:
     ros_message.data = bytearray(can_message.data)
     ros_message.dlc = can_message.dlc
     ros_message.is_error = can_message.is_error_frame
+    ros_message.is_rtr = can_message.is_remote_frame
     ros_message.is_extended = can_message.is_extended_id
 
     return ros_message

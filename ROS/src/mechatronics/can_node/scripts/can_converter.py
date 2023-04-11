@@ -29,14 +29,14 @@ class CanConverter:
         # The first element is the front IMU, the second is the rear IMU
         self.IMU_IDS = [0xE2, 0xE3]
 
+        self.bus = rospy.Publisher("/output/can", Frame, queue_size=10)
+
         # Create the right converters
-        self.odrive = OdriveConverter()
+        self.odrive = OdriveConverter(self.bus)
         self.imu = ImuConverter()
 
         # create a can subscriber
         rospy.Subscriber("/input/can", Frame, self.listen_on_can)
-        self.bus = rospy.Publisher("/output/can", Frame, queue_size=10)
-
 
         self.bus.publish(RES_ACTIVATION_MSG)
 
@@ -75,6 +75,9 @@ class CanConverter:
                     )
                 )
                 self.odrive.handle_power_msg(can_msg, cmd_id)
+                print("power")
+            else:
+                print(cmd_id)
             
         imu_id = can_msg.id & 0xFF
         if imu_id in self.IMU_IDS:
