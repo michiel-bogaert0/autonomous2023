@@ -11,6 +11,7 @@
             <param name="max_angle_change" value="0.7" />
             <param name="max_path_distance" value="10" />
             <param name="safety_dist" value="0.3" />
+            <param name="center_points_range" value="8" />
             
             <remap from="/input/local_map" to="/ugr/car/map/fastslam/local"/>
             <remap from="/output/path" to="/pathplanning/path"/>
