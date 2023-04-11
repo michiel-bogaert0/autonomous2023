@@ -83,7 +83,11 @@ class KeypointDetector:
         tops, bottoms = torch.empty((0, 2)), torch.empty((0, 2))
         final_cone_categories = []
         for i, pred in enumerate(predicted_keypoints):
-            bottom = torch.tensor(get_keypoints_from_heatmap(pred[1], 2))
+            bottom = torch.tensor(
+                get_keypoints_from_heatmap(
+                    pred[1], min_keypoint_pixel_distance=2, max_keypoints=2
+                )
+            )
 
             if len(bottom) == 0:
                 # Without a bottom keypoint, we can't do anything
