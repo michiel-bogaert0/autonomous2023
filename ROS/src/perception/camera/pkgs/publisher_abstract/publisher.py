@@ -19,7 +19,7 @@ class PublishNode(ROSNode, ABC):
         super().__init__(name, False)
         self.rate = rospy.Rate(rospy.get_param("~rate", 10))
         self.frame = (
-            f"ugr/car_base_link/sensors/{rospy.get_param('~sensor_name','cam0')}"
+            f"ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
         )
 
     @abstractmethod
