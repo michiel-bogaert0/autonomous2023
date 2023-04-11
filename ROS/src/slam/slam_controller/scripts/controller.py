@@ -6,8 +6,13 @@ from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from node_launcher import NodeLauncher
-from node_fixture.node_fixture import AutonomousMission, SLAMStatesEnum, AutonomousStatesEnum, StateMachineScopeEnum, create_diagnostic_message
-
+from node_fixture.node_fixture import (
+    AutonomousMission,
+    SLAMStatesEnum,
+    AutonomousStatesEnum,
+    StateMachineScopeEnum,
+    create_diagnostic_message,
+)
 
 
 class Controller:
@@ -26,9 +31,13 @@ class Controller:
 
         rospy.Subscriber("/state", State, self.handle_state_change)
         rospy.Subscriber("/input/loopclosure", UInt16, self.lapFinished)
-        
-        self.state_publisher = rospy.Publisher("/state", State, queue_size=10, latch=True)
-        self.diagnostics = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
+
+        self.state_publisher = rospy.Publisher(
+            "/state", State, queue_size=10, latch=True
+        )
+        self.diagnostics = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
 
         while not rospy.is_shutdown():
             self.launcher.run()
@@ -45,12 +54,10 @@ class Controller:
         new_state = self.state
 
         if state.scope == StateMachineScopeEnum.AUTONOMOUS:
-
             if (
                 self.state == SLAMStatesEnum.IDLE
                 or self.state == SLAMStatesEnum.FINISHED
             ) and state.cur_state == AutonomousStatesEnum.ASDRIVE:
-
                 if rospy.has_param("/mission"):
                     # Go to state depending on mission
                     self.mission = rospy.get_param("/mission")
@@ -64,12 +71,12 @@ class Controller:
                     else:
                         new_state = SLAMStatesEnum.EXPLORATION
                         self.target_lap_count = 1
- 
+
                     # Launch nodes
                     self.launcher.launch_node(
                         "slam_controller", f"launch/{self.mission}_{new_state}.launch"
                     )
-                    
+
                     # Publish mission
                     self.diagnostics.publish(
                         create_diagnostic_message(
@@ -88,7 +95,11 @@ class Controller:
             return
 
         self.state_publisher.publish(
-            StateState(scope=StateMachineScopeEnum.SLAM, prev_state=self.state, cur_state=new_state)
+            State(
+                scope=StateMachineScopeEnum.SLAM,
+                prev_state=self.state,
+                cur_state=new_state,
+            )
         )
         self.diagnostics.publish(
             create_diagnostic_message(
@@ -108,20 +119,11 @@ class Controller:
         """
 
         if self.target_lap_count == laps.data:
-
             new_state = self.state
 
             if self.state == SLAMStatesEnum.EXPLORATION:
-
                 if self.mission == AutonomousMission.TRACKDRIVE:
                     new_state = SLAMStatesEnum.RACING
-                    self.diagnostics.publish(
-                        create_diagnostic_message(
-                            level=DiagnosticStatus.OK,
-                            name="[SLAM Controller] new state",
-                            message=f"{new_state}",
-                        )
-                    )
 
                     self.target_lap_count = 10
 
@@ -131,31 +133,27 @@ class Controller:
                     )
                 else:
                     new_state = SLAMStatesEnum.FINISHED
-                    # Publish diagnostic finished state
-                    self.diagnostics.publish(
-                        create_diagnostic_message(
-                            level=DiagnosticStatus.OK,
-                            name="[SLAM Controller] new state",
-                            message=f"{new_state}",
-                        )
-                    )
                     self.launcher.shutdown()
             else:
                 new_state = SLAMStatesEnum.FINISHED
-                # Publish diagnostic finished state
-                self.diagnostics.publish(
-                    create_diagnostic_message(
-                        level=DiagnosticStatus.OK,
-                        name="[SLAM Controller] new state",
-                        message=f"{new_state}",
-                    )
-                )
                 self.launcher.shutdown()
 
             self.state_publisher.publish(
-                State(scope=StateMachineScopeEnum.SLAM, prev_state=self.state, cur_state=new_state)
+                State(
+                    scope=StateMachineScopeEnum.SLAM,
+                    prev_state=self.state,
+                    cur_state=new_state,
+                )
             )
             self.state = new_state
+            # Publish diagnostic finished state
+            self.diagnostics.publish(
+                create_diagnostic_message(
+                    level=DiagnosticStatus.OK,
+                    name="[SLAM Controller] new state",
+                    message=f"{new_state}",
+                )
+            )
 
 
 node = Controller()
