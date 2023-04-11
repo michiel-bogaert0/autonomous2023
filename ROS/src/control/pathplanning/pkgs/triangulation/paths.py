@@ -145,7 +145,7 @@ class TriangulationPaths:
         # also the length of each part of a path should not change much
         node_distances = np.array([point.distance for point in branch])
         distance = np.sum(node_distances)
-        length_cost = 1 / distance + 1/len(node_distances) *200
+        length_cost = 1/distance + 1/len(node_distances) * 200
 
         sorted_cones = utils.sort_closest_to(cones, (0,0), 8)
         blue_sorted = sorted_cones[sorted_cones[:,2] == 0]
@@ -156,7 +156,6 @@ class TriangulationPaths:
             if np.isclose(center_point[0], point.x) and np.isclose(
                         center_point[1], point.y
                     ):
-                print("close")
                 length_cost /= 100000
                 angle_cost /= 100000
 
