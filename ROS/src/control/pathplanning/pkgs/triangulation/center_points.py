@@ -49,6 +49,10 @@ def get_center_points(
     unique, counts = np.unique(flattened_center_points, axis=0, return_counts=True)
     duplicated_centers = unique[counts > 1]
 
+    # Add closest center in front of you as this one will not be duplicated
+    closest_centers = utils.sort_closest_to(unique, (0,0), 50)
+    duplicated_centers = np.append(duplicated_centers, [closest_centers[0]], axis=0)
+
     return center_points, duplicated_centers, triangles
 
 
