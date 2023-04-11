@@ -6,6 +6,7 @@ FROM nvidia/cuda:11.7.0-runtime-ubuntu20.04 AS ugr-base
 #
 # Install torch and torchvision
 #
+RUN apt-get update && apt-get -y install --no-install-recommends python3 python3-pip
 RUN pip install torch
 RUN pip install torchvision
 
@@ -24,8 +25,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     tzdata \
     keyboard-configuration \
     git \ 
-    python3 \
-    python3-pip \
     wget \
     rsync \
     unzip \
