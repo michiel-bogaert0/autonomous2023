@@ -62,7 +62,7 @@ class AutonomousController:
         # Gets car state as reported by our helper class (can be simulated or a specific car such as Peggy)
         ccs = self.car.get_state()
 
-        self.diagnostics_publisher.publish(create_diagnostic_message(DiagnosticStatusEnum.OK, "[AS state] car state", str(ccs)))
+        self.diagnostics_publisher.publish(create_diagnostic_message(DiagnosticStatusEnum.OK, "[GNRL] STATE: Car state", str(ccs)))
 
         if ccs["EBS"] == carStateEnum.ACTIVATED:
 
