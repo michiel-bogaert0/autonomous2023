@@ -78,7 +78,7 @@ class PerceptionNode:
         self.diagnostics.publish(
             create_diagnostic_message(
                 level=DiagnosticStatus.OK,
-                name="perception camera node",
+                name="[PERC] Camera",
                 message=f"CUDA device used: {self.device}",
             )
         )
