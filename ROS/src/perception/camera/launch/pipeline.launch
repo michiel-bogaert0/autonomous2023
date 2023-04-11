@@ -5,13 +5,4 @@
     <include file="$(find camera)/launch/publisher.launch" pass_all_args="true" />
 
     <include file="$(find camera)/launch/cone_detector.launch" pass_all_args="true"/>
-
-    <node pkg="slam_vis" output="screen" type="vis_obs.py" name="camera_visualiser">
-        <param name="namespace" value="perception/car" />
-        <param name="use_covariance" value="true" />
-        <param name="use_cones" value="false" />
-
-        <remap from="/input/vis" to="/ugr/car/observations/camera" />
-        <remap from="/output/vis" to="/vis/perception" />
-    </node>
 </launch>

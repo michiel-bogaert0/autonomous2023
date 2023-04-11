@@ -63,17 +63,12 @@
         <arg name="base_link_frame" default="ugr/car_base_link" />
     </include>  -->
 
-    <!-- ? Lidar -->
-
-    <include file="$(find ouster_ros)/launch/sensor.launch">
+    <!-- ? Perception -->
+    <include file="$(env HOME)/autonomous2023/ROS/src/perception/launch/perception.launch">
+        <arg name="type" value="camera"/>
     </include>
 
     <!-- ? CAN -->
     <include file="$(find can_node)/launch/can_node.launch">
-    </include>
-
-    <!-- Camera -->
-    <include file="$(find camera)/launch/pipeline.launch">
-        <arg name="type" value="camera"/>
     </include>
 </launch>

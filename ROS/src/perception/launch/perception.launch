@@ -1,6 +1,7 @@
 <launch>
     <!-- Camera node -->
-    <include file="$(find camera)/launch/camera.pipeline.launch" pass_all_args="true"/>
+    <arg name="type" default="camera"/>
+    <include file="$(find camera)/launch/pipeline.launch" pass_all_args="true"/>
 
     <!-- LiDAR node -->
     <include file="$(find lidar)/launch/lidar.launch" pass_all_args="true"/>
