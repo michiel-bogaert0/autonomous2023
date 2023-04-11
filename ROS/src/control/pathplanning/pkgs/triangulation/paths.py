@@ -34,7 +34,7 @@ class TriangulationPaths:
         triangulation_centers: np.ndarray,
         center_points: np.ndarray,
         cones: np.ndarray,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Get/generate all possible paths
 
         Args:
