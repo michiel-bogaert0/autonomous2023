@@ -35,7 +35,7 @@ class PegasusController:
         self.bus = rospy.Publisher("/output/can", Frame, queue_size=10)
 
         # Parameters
-        self.max_velocity = rospy.get_param("~max_velocity", 3) / (
+        self.max_velocity = rospy.get_param("~max_velocity", 1) / (
             pi * 8 * 2.54 / 100
         )  # Default is in rev/s, but launch file param must be in m/s
         self.steer_max_step = rospy.get_param("~steer_max_step", 1600)
