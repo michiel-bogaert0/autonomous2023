@@ -4,13 +4,22 @@ from conans import ConanFile, CMake, tools
 
 from pprint import pformat
 
+
 class OusterSDKConan(ConanFile):
     name = "ouster_sdk"
     license = "BSD 3-Clause License"
     author = "Ouster, Inc."
     url = "https://github.com/ouster-lidar/ouster_example"
     description = "Ouster SDK - tools for working with Ouster Lidars"
-    topics = ("lidar", "driver", "hardware", "point cloud", "3d", "robotics", "automotive")
+    topics = (
+        "lidar",
+        "driver",
+        "hardware",
+        "point cloud",
+        "3d",
+        "robotics",
+        "automotive",
+    )
     settings = "os", "compiler", "build_type", "arch"
 
     options = {
@@ -42,7 +51,7 @@ class OusterSDKConan(ConanFile):
         "CMakeSettings.json",
         "LICENSE",
         "LICENSE-bin",
-        "README.rst"
+        "README.rst",
     ]
 
     # https://docs.conan.io/en/1.51/howtos/capture_version.html#how-to-capture-package-version-from-text-or-build-files
@@ -75,12 +84,14 @@ class OusterSDKConan(ConanFile):
         cmake = CMake(self)
         cmake.definitions["BUILD_VIZ"] = self.options.build_viz
         cmake.definitions["BUILD_PCAP"] = self.options.build_pcap
-        cmake.definitions["USE_EIGEN_MAX_ALIGN_BYTES_32"] = self.options.eigen_max_align_bytes
+        cmake.definitions[
+            "USE_EIGEN_MAX_ALIGN_BYTES_32"
+        ] = self.options.eigen_max_align_bytes
         # alt way, but we use CMAKE_TOOLCHAIN_FILE in other pipeline so avoid overwrite
         # cmake.definitions["CMAKE_TOOLCHAIN_FILE"] = os.path.join(self.build_folder, "conan_paths.cmake")
-        cmake.definitions[
-            "CMAKE_PROJECT_ouster_example_INCLUDE"] = os.path.join(
-                self.build_folder, "conan_paths.cmake")
+        cmake.definitions["CMAKE_PROJECT_ouster_example_INCLUDE"] = os.path.join(
+            self.build_folder, "conan_paths.cmake"
+        )
         cmake.definitions["BUILD_SHARED_LIBS"] = True if self.options.shared else False
         cmake.definitions["CMAKE_POSITION_INDEPENDENT_CODE"] = (
             True if "fPIC" in self.options and self.options.fPIC else False
@@ -105,10 +116,7 @@ class OusterSDKConan(ConanFile):
 
     def package_info(self):
         self.cpp_info.libs = tools.collect_libs(self)
-        self.cpp_info.includedirs = [
-            "include",
-            "include/optional-lite"
-        ]
+        self.cpp_info.includedirs = ["include", "include/optional-lite"]
         self.cpp_info.build_modules["cmake_find_package"].append(
             "lib/cmake/OusterSDK/OusterSDKConfig.cmake"
         )

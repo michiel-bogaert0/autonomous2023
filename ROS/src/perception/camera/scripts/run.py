@@ -7,6 +7,7 @@ from typing import List
 import numpy as np
 import numpy.typing as npt
 import rospy
+import time
 import torch
 from cone_detector import ConeDetector
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
@@ -14,8 +15,11 @@ from geometry_msgs.msg import Point
 from keypoint_detector import KeypointDetector
 from node_fixture.node_fixture import create_diagnostic_message
 from sensor_msgs.msg import Image
-from ugr_msgs.msg import (Observation, ObservationWithCovariance,
-                          ObservationWithCovarianceArrayStamped)
+from ugr_msgs.msg import (
+    Observation,
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+)
 
 
 class PerceptionNode:
@@ -79,7 +83,7 @@ class PerceptionNode:
             create_diagnostic_message(
                 level=DiagnosticStatus.OK,
                 name="perception camera node",
-                message=f"CUDA device used: {self.device}",
+                message=f"Device used: {self.device}",
             )
         )
 
@@ -102,15 +106,31 @@ class PerceptionNode:
 
         # Nx4 array of cones: category, X, Y, Z
         yolo_detections = self.cone_detector.find_cones(img)
+        yolo_latency = 1000 * np.sum(list(yolo_detections.speed.values()))
 
         image_tensor = torch.tensor(img).to(self.device)
+
+        timer_start = time.perf_counter()
         categories, heights, bottoms = self.keypoint_detector.predict(
             image_tensor, yolo_detections.boxes
         )
+        timer_end = time.perf_counter()
+        keypoint_latency = 1000 * (timer_end - timer_start)
 
+        timer_start = time.perf_counter()
         cones = self.height_to_pos(categories, heights, bottoms)
+        timer_end = time.perf_counter()
+        cone_height_latency = 1000 * (timer_end - timer_start)
 
         msg = self.create_observation_msg(cones, ros_image.header)
+
+        self.diagnostics.publish(
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="perception camera node",
+                message=f"{yolo_latency:.0f} - {keypoint_latency:.0f} - {cone_height_latency:.0f} ms",
+            )
+        )
 
         self.pub_cone_locations.publish(msg)
 
