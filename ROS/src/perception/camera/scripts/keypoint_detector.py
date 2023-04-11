@@ -4,9 +4,9 @@ import numpy as np
 import numpy.typing as npt
 import torch
 import torchvision.transforms as T
-from keypoint_detection.keypoint_detection.utils.heatmap import \
+from keypoint_detection.utils.heatmap import \
     get_keypoints_from_heatmap
-from keypoint_detection.keypoint_detection.utils.load_checkpoints import \
+from keypoint_detection.utils.load_checkpoints import \
     load_from_checkpoint
 
 
