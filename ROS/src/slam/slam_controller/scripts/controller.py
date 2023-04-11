@@ -40,7 +40,20 @@ class Controller:
         )
 
         while not rospy.is_shutdown():
-            self.launcher.run()
+            
+            try:
+                self.launcher.run()
+                self.diagnostics_publisher.publish(
+                    create_diagnostic_message(
+                        DiagnosticStatus.OK, "[SLAM] Node launching", ""
+                    )
+                )
+            except Exception as e:
+                self.diagnostics_publisher.publish(
+                    create_diagnostic_message(
+                        DiagnosticStatus.ERROR, "[SLAM] Node launching", str(e)
+                    )
+                )
             self.update()
 
             rospy.sleep(0.1)
