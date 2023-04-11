@@ -60,7 +60,7 @@ class CameraNode(PublishNode):
 
     def process_data(self):
         """
-        reads the frames from the mp4 file
+        reads the frames from the camera
 
         returns:
             Ros Image to be published
