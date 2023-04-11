@@ -12,6 +12,17 @@ torch>=0.10
 torchvision>=0.11
 scikit-image
 ultralytics
+onnx>=1.13.0
+pytorch-lightning==1.9.4
+torchmetrics>=0.7
+timm>=0.6.11
+scikit-learn>=1.2.2
+tqdm
+albumentations
+matplotlib>=3.6.2
+xmltodict
+pydantic
+wandb<=0.13.4
 
 # Jetson CAN
 python-can==4.0.0

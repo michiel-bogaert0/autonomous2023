@@ -63,7 +63,7 @@ class PerceptionNode:
         keypoint_model_path = (
             Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "keypoint_detector.pt"
         )
-        self.keypoint_model = KeypointDetector(
+        self.keypoint_detector = KeypointDetector(
             keypoint_model_path, self.detection_height_threshold, self.device
         )
 
@@ -95,7 +95,7 @@ class PerceptionNode:
         """
 
         # Wait for the cone detector to initialise
-        if self.cone_detector is None:
+        if self.cone_detector is None or self.keypoint_detector is None:
             return
 
         img = self.ros_img_to_np(ros_image)
@@ -104,7 +104,7 @@ class PerceptionNode:
         yolo_detections = self.cone_detector.find_cones(img)
 
         image_tensor = torch.tensor(img).to(self.device)
-        categories, heights, bottoms = self.keypoint_model.predict(
+        categories, heights, bottoms = self.keypoint_detector.predict(
             image_tensor, yolo_detections.boxes
         )
 
