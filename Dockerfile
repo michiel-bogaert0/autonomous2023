@@ -91,8 +91,8 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
-RUN wget -O neoapi-1.2.1-cp38-cp38-linux_x86_64.whl https://github.com/UgentRacing/autonomous_public_binaries/blob/main/modules/neoapi-1.2.1-cp38-cp38-linux_x86_64.whl?raw=true
-RUN python3 -m pip install neoapi-1.2.1-cp38-cp38-linux_x86_64.whl
+RUN wget https://github.com/UgentRacing/autonomous_public_binaries/blob/main/modules/neoapi-1.2.1-cp38-cp38-linux_x86_64.whl?raw=true
+RUN python3 -m pip install /home/ugr/neoapi-1.2.1-cp38-cp38-linux_x86_64.whl
 
 # Handy commands
 RUN echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.zshrc && \

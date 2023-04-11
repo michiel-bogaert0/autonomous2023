@@ -10,16 +10,19 @@ services:
       - "11311:11311"
     volumes:
       - "./:/home/ugr/autonomous2023/:rw"
+    environment:
+      - ROS_HOSTNAME=$ROS_HOSTNAME
   rviz:
     image: ugr-base
     network_mode: "host"
     depends_on:
       - roscore
     environment:
-      - "ROS_MASTER_URI=http://localhost:11311"
+      - "ROS_MASTER_URI=$ROS_MASTER_URI"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
-    # runtime: nvidia
+      - ROS_HOSTNAME=$ROS_HOSTNAME
+    runtime: nvidia
     restart: always
     tty: true
     entrypoint: /bin/zsh -c 'source ~/.zshrc && rosrun rviz rviz -d ~/autonomous2023/ROS/rviz/ugr.rviz'
@@ -34,10 +37,11 @@ services:
     depends_on:
       - roscore
     environment:
-      - "ROS_MASTER_URI=http://localhost:11311"
+      - "ROS_MASTER_URI=$ROS_MASTER_URI"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
-    # runtime: nvidia
+      - ROS_HOSTNAME=$ROS_HOSTNAME
+    runtime: nvidia
     restart: always
     tty: true
     entrypoint: /bin/zsh -c 'source ~/.zshrc && roslaunch rosbridge_server rosbridge_websocket.launch'
@@ -50,6 +54,8 @@ services:
     entrypoint: /bin/zsh -c 'source ~/.zshrc && cd ~/autonomous2023/ROS && catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build'
     volumes:
       - "./:/home/ugr/autonomous2023/:rw"
+    environment:
+      - ROS_HOSTNAME=$ROS_HOSTNAME
   dev-runner:
     image: ugr-base
     privileged: true
@@ -57,9 +63,10 @@ services:
     depends_on:
       - roscore
     environment:
-      - "ROS_MASTER_URI=http://localhost:11311"
+      - "ROS_MASTER_URI=$ROS_MASTER_URI"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
+      - ROS_HOSTNAME=$ROS_HOSTNAME
     runtime: nvidia
     deploy:
       resources:
@@ -86,10 +93,11 @@ services:
     depends_on:
       - roscore
     environment:
-      - "ROS_MASTER_URI=http://localhost:11311"
+      - ROS_HOSTNAME=$ROS_HOSTNAME
+      - "ROS_MASTER_URI=$ROS_MASTER_URI"
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
-    # runtime: nvidia
+    runtime: nvidia
     restart: always
     tty: true
     entrypoint: /bin/zsh -c "source ~/.zshrc && roslaunch /home/ugr/autonomous2023/ROS/launch/run.launch"
