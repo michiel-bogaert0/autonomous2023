@@ -117,10 +117,7 @@ class PerceptionNode:
         timer_end = time.perf_counter()
         keypoint_latency = 1000 * (timer_end - timer_start)
 
-        timer_start = time.perf_counter()
         cones = self.height_to_pos(categories, heights, bottoms)
-        timer_end = time.perf_counter()
-        cone_height_latency = 1000 * (timer_end - timer_start)
 
         msg = self.create_observation_msg(cones, ros_image.header)
 
