@@ -1,8 +1,8 @@
 #include "lidar.hpp"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include <chrono>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 // Constructor
 namespace ns_lidar {
@@ -67,15 +67,15 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
       new pcl::PointCloud<pcl::PointXYZINormal>());
   pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points(
       new pcl::PointCloud<pcl::PointXYZINormal>());
+
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   ground_removal_.groundRemoval(preprocessed_pc, notground_points,
                                 ground_points);
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
   publishDiagnostic(OK, "[perception] ground removal points",
                     "#points: " + std::to_string(notground_points->size()));
 
-  sensor_msgs::PointCloud2 ground_msg = ground_removal_.publishColoredGround(*notground_points);
-  groundColoredPublisher_.publish(ground_msg);
   double time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
           .count();
@@ -88,6 +88,11 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   groundremoval_msg.header.frame_id = msg.header.frame_id;
   groundremoval_msg.header.stamp = msg.header.stamp;
   groundRemovalLidarPublisher_.publish(groundremoval_msg);
+
+  // publish colored pointcloud to check order points
+  sensor_msgs::PointCloud2 ground_msg =
+      ground_removal_.publishColoredGround(*notground_points, msg);
+  groundColoredPublisher_.publish(ground_msg);
 
   // Cone clustering
   sensor_msgs::PointCloud cluster;
@@ -137,7 +142,7 @@ void Lidar::preprocessing(
     pcl::PointCloud<pcl::PointXYZI>::Ptr &preprocessed_pc) {
   // Clean up the points belonging to the car and noise in the sky
   for (auto &iter : raw.points) {
-    // Remove points closer than 1m, higher than 0.5m or further than 20m 
+    // Remove points closer than 1m, higher than 0.5m or further than 20m
     // and points outside the frame of Pegasus
     if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
         std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||

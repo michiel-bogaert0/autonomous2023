@@ -1,16 +1,9 @@
 #! /usr/bin/python3
 import rospy
-from enum import Enum
-from std_msgs.msg import UInt16
-from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 from nav_msgs.msg import Odometry
-from node_fixture import (
-    AutonomousStatesEnum,
-    StateMachineScopeEnum,
-    SLAMStatesEnum
-)
-import rosparam
+from node_fixture import AutonomousStatesEnum, StateMachineScopeEnum, SLAMStatesEnum, create_diagnostic_message, DiagnosticStatusEnum
+from diagnostic_msgs.msg import DiagnosticArray
 
 from car_state import *
 
@@ -31,47 +24,45 @@ class AutonomousController:
         rospy.Subscriber("/state", State, self.handle_external_state_change)
         rospy.Subscriber("/input/odom", Odometry, self.handle_odom)
 
-        self.state_publisher = rospy.Publisher("/state", State, queue_size=10)
+        self.state_publisher = rospy.Publisher("/state", State, queue_size=10, latch=True)
+        self.diagnostics_publisher = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
 
         self.car_name = rospy.get_param("~model", "pegasus")
 
         if self.car_name == "pegasus":
             self.car = PegasusState()
+        elif self.car_name == "simulation":
+            self.car = SimulationState()
         else:
             raise f"Unkown model! (model given was: '{self.car_name}')"
-
-        # Setup
-        self.car.update(
-            {
-                "TS": carStateEnum.OFF,
-                "R2D": carStateEnum.OFF,
-                "ASB": carStateEnum.OFF,
-                "EBS": carStateEnum.OFF,
-                "ASSI": carStateEnum.OFF,
-            }
-        )
 
         self.mission_finished = False
         self.vehicle_stopped = True
 
+        # Setup
         self.change_state(AutonomousStatesEnum.ASOFF)
+        self.car.update(self.state)
+
         while not rospy.is_shutdown():
             self.main()
+
             self.car.update(self.state)
             rospy.sleep(0.05)
 
     def main(self):
         """
         Main function to be executed in a loop.
-        
+
         Follows flowchart in section T14.10 and related rules (T14/T15)
-        
+
         - https://www.formulastudent.de/fileadmin/user_upload/all/2023/rules/FS-Rules_2023_v1.1.pdf
         - https://www.formulastudent.de/fileadmin/user_upload/all/2023/important_docs/FSG23_AS_Beginners_Guide_v1.1.pdf
         """
 
         # Gets car state as reported by our helper class (can be simulated or a specific car such as Peggy)
         ccs = self.car.get_state()
+
+        self.diagnostics_publisher.publish(create_diagnostic_message(DiagnosticStatusEnum.OK, "[AS state] car state", str(ccs)))
 
         if ccs["EBS"] == carStateEnum.ACTIVATED:
 
@@ -82,7 +73,15 @@ class AutonomousController:
 
         elif ccs["EBS"] == carStateEnum.ON:
 
-            if rospy.has_param("/mission") and ccs["ASMS"] == carStateEnum.ON and (ccs["ASB"] == carStateEnum.ON or ccs["ASB"] == carStateEnum.ACTIVATED) and ccs["TS"] == carStateEnum.ON:
+            if (
+                rospy.has_param("/mission")
+                and ccs["ASMS"] == carStateEnum.ON
+                and (
+                    ccs["ASB"] == carStateEnum.ON
+                    or ccs["ASB"] == carStateEnum.ACTIVATED
+                )
+                and ccs["TS"] == carStateEnum.ON
+            ):
                 if ccs["R2D"] == carStateEnum.ACTIVATED:
 
                     self.change_state(AutonomousStatesEnum.ASDRIVE)
@@ -144,5 +143,6 @@ class AutonomousController:
 
         elif state.scope == StateMachineScopeEnum.AUTONOMOUS:
             return
+
 
 node = AutonomousController()

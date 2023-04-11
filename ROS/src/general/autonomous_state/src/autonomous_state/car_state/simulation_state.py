@@ -3,10 +3,15 @@ import rospy
 from car_state import carStateEnum, CarState
 from node_fixture import AutonomousStatesEnum
 
+
 class SimulationState(CarState):
 
     """
     Example implementation for simulation
+
+    Everything is just OK, no emergencies can be initiated
+    The car will auto transition from ASReady to ASDrive after being
+    5 seconds in R2D
     """
 
     def __init__(self) -> None:
@@ -45,7 +50,7 @@ class SimulationState(CarState):
 
         # R2D
         if t - self.as_ready_time > 5.0:
-            self.state["R2D"] = carStateEnum.ON
+            self.state["R2D"] = carStateEnum.ACTIVATED
         elif self.as_state != AutonomousStatesEnum.ASDRIVE:
             self.state["R2D"] = carStateEnum.OFF
 
@@ -53,11 +58,11 @@ class SimulationState(CarState):
         self.state["TS"] = carStateEnum.ON
         self.state["ASB"] = (
             carStateEnum.ACTIVATED
-            if self.as_state == AutonomousStatesEnum.ASOFF
+            if self.state["R2D"] == carStateEnum.OFF
             else carStateEnum.ON
         )
-        
-        #ASMS
+
+        # ASMS
         self.as_state["ASMS"] = carStateEnum.ON
 
         # EBS

@@ -6,6 +6,7 @@ import can
 import rosparam
 import time
 
+
 class PegasusState(CarState):
 
     """
@@ -13,6 +14,33 @@ class PegasusState(CarState):
 
     Note: Not everything is monitored in Pegasus.
     When this is the case, it is clearly documented
+
+    TS:
+        We consider the TS to be 'on' if the ODrive sends heartbeat messages
+
+    ASB:
+        We don't have actual brakes, so the ASB is considered to be 'on' or 'activated' when
+        the ODrive sends heartbeat messages
+
+        If we receive odrive heartbeat, ASB is 'activated' if AS state is 'ASOff', else it is 'on'.
+
+    ASMS:
+        The switch in the back. The Teensy reports the status of the switch
+
+    R2D: (T 14.9.3)
+        Is only set to 'on' when AS is at least 5 seconds in ASReady and
+        the RES reports 'Go' being pressed
+
+    EBS:
+        If we do not receive heartbeats from the teensy, that means that the power
+        has been cut off from the AS controllers. This automatically means EBS has been triggered
+
+        If the E-stop of the RES has been triggered, the power will be cut, which also means the EBS
+        has been triggered.
+
+        Triggering EBS from within the AS is not possible in Pegasus.
+
+        Disabling the EBS ('off') is also not possible. EBS is either 'on' (armed) or 'activated'
     """
 
     def __init__(self) -> None:
@@ -45,33 +73,6 @@ class PegasusState(CarState):
         """
         Handles incoming CAN message, but as a subscriber callback
         This way, we can put all HW/SW interfacing code in a single CAN driver.
-
-        TS:
-            We consider the TS to be 'on' if the ODrive sends heartbeat messages
-
-        ASB:
-            We don't have actual brakes, so the ASB is considered to be 'on' or 'activated' when
-            the ODrive sends heartbeat messages
-
-            If we receive odrive heartbeat, ASB is 'activated' if AS state is 'ASOff', else it is 'on'.
-
-        ASMS:
-            The switch in the back. The Teensy reports the status of the switch
-
-        R2D: (T 14.9.3)
-            Is only set to 'on' when AS is at least 5 seconds in ASReady and
-            the RES reports 'Go' being pressed
-
-        EBS:
-            If we do not receive heartbeats from the teensy, that means that the power
-            has been cut off from the AS controllers. This automatically means EBS has been triggered
-
-            If the E-stop of the RES has been triggered, the power will be cut, which also means the EBS
-            has been triggered.
-
-            Triggering EBS from within the AS is not possible in Pegasus.
-
-            Disabling the EBS ('off') is also not possible. EBS is either 'on' (armed) or 'activated'
         """
 
         # ODrive
@@ -99,7 +100,9 @@ class PegasusState(CarState):
 
             # ASMS message Teensy
             if cmd_id == 0x2:
-                self.state["ASMS"] = carStateEnum.ON if frame.data[0] == 0 else carStateEnum.ON # Is inversed
+                self.state["ASMS"] = (
+                    carStateEnum.ON if frame.data[0] == 0 else carStateEnum.ON
+                )  # Is inversed
 
     def update(self, state: AutonomousStatesEnum):
 
@@ -152,9 +155,7 @@ class PegasusState(CarState):
 
         # Bits 5 - 7
         bits = 0
-        mission = (
-            rosparam.get_param("/mission") if rospy.has_param("/mission") else ""
-        )
+        mission = rosparam.get_param("/mission") if rospy.has_param("/mission") else ""
 
         if mission == AutonomousMission.ACCELERATION:
             bits = 1
