@@ -1,8 +1,9 @@
 #! /usr/bin/python3
 import os
 from pathlib import Path
-
 import numpy as np
+import numpy.typing as npt
+import torch
 from ultralytics import YOLO
 
 
@@ -15,12 +16,15 @@ class ConeDetector:
 
         # YOLOv8 settings
         self.yolo_model = YOLO(yolo_model_path)
-        self.cone_image_margin = 5
-        
-        
-        # self.keypoint_model = 
+        self.keypoint_model = KeypointDetector(keypoint_model_path, detection_height_threshold)
 
-    def find_cones(self, image: np.ndarray):
+        # Camera settings
+        self.focal_length = 8
+        self.camera_matrix = np.load(Path(os.getenv("BINARY_LOCATION")) / "pnp" / "camera_calibration_baumer.npz")["camera_matrix"]
+        self.sensor_height = 5.76
+        self.image_height = 1200
+
+    def find_cones(self, image: npt.ArrayLike):
         """
         Runs the cone position estimation pipeline on an image
 
@@ -29,20 +33,40 @@ class ConeDetector:
         Returns:
             An Nx4 array of cones: category, X, Y, Z
         """
-        yolo_detections = self.yolo_model.predict(image, device="0")[0]
+        yolo_detections = self.yolo_model.predict(image, device=self.device)[0]
         print(np.sum(list(yolo_detections.speed.values())))
 
-        cones = np.empty((0, 4))
-        for bbox in yolo_detections.boxes:
-            category = bbox.cls.int().detach().cpu().item()
-            cone_confidence = bbox.conf.detach().cpu().item()
-            bbox_kpts = [round(x) for x in bbox.xyxy[0].detach().cpu().numpy()]
-            bbox_kpts[0] = max(0, bbox_kpts[0] - self.cone_image_margin)
-            bbox_kpts[1] = max(0, bbox_kpts[1] - self.cone_image_margin)
+        image_tensor = yolo_detections.orig_img
+        categories, heights, bottoms = self.keypoint_model.predict(image_tensor, yolo_detections.boxes)
+        
+        cones = self.height_to_pos(categories, heights, bottoms)
+            
+        return cones
+    
+    def height_to_pos(self, categories: torch.Tensor, heights: torch.Tensor, bottoms: torch.Tensor) -> npt.ArrayLike:
+        """Converts a tensor of cone heights and bottom keypoints to an array of locations
+        
+        Returns:
+            a Nx4 array of category, X, Y, Z
+        """
+        N = len(categories)
+        gt_height = torch.full(N, 0.305)
+        gt_height[categories == 2] = 0.5
 
-            print(category)
-        print("---")
+        gt_ring_height = torch.full(N, 0.0275)
+        gt_ring_height[categories == 2] = 0.032
 
-        return np.array([
-            [1, 5, 0.1, -0.3],
-        ])
+        gt_ring_radius = torch.full(N, 0.153 / 2)
+        gt_ring_radius[categories == 2] = 0.196 / 2
+
+        depths = (gt_height - gt_ring_height) * self.focal_length / (self.sensor_height * heights / self.image_height)
+
+        return torch.vstack(
+            [
+                depths,
+                -depths * (bottoms[:, 0] - self.camera_matrix[0, 2]) / self.camera_matrix[0, 0]
+                - gt_ring_radius,
+                -depths * (bottoms[:, 1] - self.camera_matrix[1, 2]) / self.camera_matrix[1, 1]
+                - gt_ring_height,
+            ]
+        ).T
