@@ -1,14 +1,13 @@
 #! /usr/bin/python3.8
 
+import os
+from pathlib import Path
+
 import cv2 as cv
 import neoapi
 import numpy as np
 import rospy
 from publisher_abstract.publisher import PublishNode
-
-
-import os
-from pathlib import Path
 
 
 class CameraNode(PublishNode):
@@ -70,7 +69,7 @@ class CameraNode(PublishNode):
         image = self.camera.GetImage()
 
         if not image.IsEmpty():
-            img = image.GetNPArray()[..., ::-1]  # BGR to RGB
+            img = image.GetNPArray()
 
             img = cv.undistort(
                 img,
@@ -80,6 +79,8 @@ class CameraNode(PublishNode):
                 self.optimal_camera_matrix,
             )
 
+            # Convert image from BGR to RGB
+            img = img[..., ::-1]
             ros_img = self.np_to_ros_image(img)
 
             return ros_img
