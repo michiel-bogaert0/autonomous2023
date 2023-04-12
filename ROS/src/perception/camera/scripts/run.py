@@ -198,7 +198,6 @@ class PerceptionNode:
 
         return img
 
-
 if __name__ == "__main__":
     try:
         pn = PerceptionNode()
