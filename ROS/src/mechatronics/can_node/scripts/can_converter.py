@@ -60,7 +60,7 @@ class CanConverter:
                 self.diagnostics.publish(
                     create_diagnostic_message(
                         level=DiagnosticStatus.OK,
-                        name="[Mechatronics] CAN converter (ODrive)",
+                        name="[MECH] CAN: ODrive",
                         message="ODrive message received.",
                     )
                 )
@@ -70,7 +70,7 @@ class CanConverter:
                 self.diagnostics.publish(
                     create_diagnostic_message(
                         level=DiagnosticStatus.OK,
-                        name="[Mechatronics] CAN converter (ODrive)",
+                        name="[MECH] CAN: ODrive",
                         message="ODrive power message received.",
                     )
                 )
@@ -87,7 +87,7 @@ class CanConverter:
                 self.diagnostics.publish(
                     create_diagnostic_message(
                         level=DiagnosticStatus.WARN,
-                        name=f"[Mechatronics] CAN converter (IMU [{imu_id}])",
+                        name=f"[MECH] CAN: IMU [{imu_id}]",
                         message="IMU generated faulty message.",
                     )
                 )
@@ -95,7 +95,7 @@ class CanConverter:
             self.diagnostics.publish(
                     create_diagnostic_message(
                         level=DiagnosticStatus.OK,
-                        name=f"[Mechatronics] CAN converter (IMU [{imu_id}])",
+                        name=f"[MECH] CAN: IMU [{imu_id}]",
                         message="IMU operational.",
                     )
                 )
@@ -105,7 +105,7 @@ class CanConverter:
             self.diagnostics.publish(
                     create_diagnostic_message(
                         level=DiagnosticStatus.OK,
-                        name="[Mechatronics] CAN converter (RES)",
+                        name="[MECH] CAN: RES",
                         message="RES activated.",
                     )
                 )

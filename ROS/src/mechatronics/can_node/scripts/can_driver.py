@@ -2,8 +2,8 @@
 import rospy
 from can_msgs.msg import Frame
 from can.interfaces.serial.serial_can import SerialBus
-from node_fixture import serialcan_to_roscan, roscan_to_serialcan, create_diagnostic_message, DiagnosticStatusEnum
-from diagnostic_msgs.msg import DiagnosticArray
+from node_fixture import serialcan_to_roscan, roscan_to_serialcan, create_diagnostic_message
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 
 class CanBridge:
     def __init__(self):
@@ -47,7 +47,7 @@ class CanBridge:
             ros_message = serialcan_to_roscan(can_message)
 
             if not received_first_msg:
-                self.diagnostics_pub.publish(create_diagnostic_message(DiagnosticStatusEnum.OK, "can_driver", "Received first CAN message"))
+                self.diagnostics_pub.publish(create_diagnostic_message(DiagnosticStatus.OK, "[MECH] CAN: Driver", "Received first CAN message"))
                 received_first_msg = True
 
             self.can_publisher.publish(ros_message)

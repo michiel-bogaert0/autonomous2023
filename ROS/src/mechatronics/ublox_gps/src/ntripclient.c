@@ -595,6 +595,10 @@ int ntripclient_main(int argc, char **argv)
     int sleeptime = 0;
     if(args.serdevice)
     {
+      fprintf(stdout, "Sleeping before starting...");
+      // sleep(1000);
+      fprintf(stdout, "Starting ntrip client...");
+
       const char *e = SerialInit(&sx, args.serdevice, args.baud,
       args.stopbits, args.protocol, args.parity, args.databits, 1);
       if(e)
@@ -630,7 +634,9 @@ int ntripclient_main(int argc, char **argv)
 #ifdef WINDOWSVERSION
         Sleep(sleeptime*1000);
 #else
+        // fprintf(stdout, "Sleeping before starting...");
         sleep(sleeptime);
+        // fprintf(stdout, "Starting ntrip client...");
 #endif
         sleeptime += 2;
       }
