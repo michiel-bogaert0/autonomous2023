@@ -8,11 +8,6 @@
     </include>
     <include file="$(find ublox_gps)/launch/gps.launch"/>
 
-    <!-- ? Lidar -->
-
-    <!-- <include file="$(find ouster_ros)/launch/sensor.launch">
-    </include> -->
-
     <!-- ? CAN -->
     <include file="$(find can_node)/launch/can_node.launch">
     </include>
