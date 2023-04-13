@@ -79,7 +79,7 @@ class Triangulator:
 
         # Perform triangulation and get the (useful) center points
         triangulation_centers, center_points, triangles = get_center_points(
-            position_cones, self.triangulation_min_var, self.triangulation_var_threshold
+            position_cones, self.triangulation_min_var, self.triangulation_var_threshold, self.sorting_range
         )
 
         # Try to get rid of false positive

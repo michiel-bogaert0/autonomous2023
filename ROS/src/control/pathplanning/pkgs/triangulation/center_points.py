@@ -8,6 +8,7 @@ def get_center_points(
     position_cones: np.ndarray,
     triangulation_min_var: float,
     triangulation_var_threshold: float,
+    sorting_range: float,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Get center points of the edges of the triangles
 
@@ -50,7 +51,7 @@ def get_center_points(
     duplicated_centers = unique[counts > 1]
 
     # Add closest center in front of you as this one will not be duplicated
-    closest_centers = utils.sort_closest_to(unique, (0,0), 50)
+    closest_centers = utils.sort_closest_to(unique, (0,0), sorting_range)
     duplicated_centers = np.append(duplicated_centers, [closest_centers[0]], axis=0)
 
     return center_points, duplicated_centers, triangles
