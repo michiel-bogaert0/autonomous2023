@@ -66,9 +66,9 @@ class PathPlanning():
         self.params["max_path_distance"] = rospy.get_param(
             "~max_path_distance", 6
         )
-        # The lookahead distance for getting center points to make a path
-        self.params["center_points_range"] = rospy.get_param(
-           "~center_points_range", 8 
+        # The lookahead distance for sorting points
+        self.params["sorting_range"] = rospy.get_param(
+           "~sorting_range", 8 
         )
 
         
@@ -130,7 +130,7 @@ class PathPlanning():
                 self.params["max_angle_change"],
                 self.params["max_path_distance"],
                 self.params["safety_dist"],
-                self.params["center_points_range"],
+                self.params["sorting_range"],
                 vis_points=self.vis_points,
                 vis_lines=self.vis_lines,
                 vis_namespace=self.params["vis_namespace"],

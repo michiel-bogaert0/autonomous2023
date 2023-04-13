@@ -18,7 +18,7 @@ class Triangulator:
         max_angle_change: float,
         max_path_distance: float,
         safety_dist: float,
-        center_points_range: float,
+        sorting_range: float,
         vis_points: rospy.Publisher=None,
         vis_lines: rospy.Publisher=None,
         vis_namespace: str="pathplanning_vis",
@@ -47,7 +47,7 @@ class Triangulator:
         self.max_path_distance = max_path_distance
         self.safety_dist = safety_dist
         self.safety_dist_squared = safety_dist**2
-        self.center_points_range = center_points_range
+        self.sorting_range = sorting_range
 
         # `vis` is only enabled if both point and line visualisation are passed through
         self.vis = vis_points is not None and vis_lines is not None
@@ -112,7 +112,7 @@ class Triangulator:
             self.visualise_triangles(triangles, header)
 
         _, leaves = self.triangulation_paths.get_all_paths(
-            triangulation_centers, center_points, cones[:, :-1], self.center_points_range
+            triangulation_centers, center_points, cones[:, :-1], self.sorting_range
         )
         if leaves is None:
             return None
@@ -154,7 +154,7 @@ class Triangulator:
             (
                 angle_cost,
                 length_cost,
-            ) = self.triangulation_paths.get_cost_branch(path, cones)
+            ) = self.triangulation_paths.get_cost_branch(path, cones, self.sorting_range)
             costs[i] = [
                 angle_cost,
                 length_cost,

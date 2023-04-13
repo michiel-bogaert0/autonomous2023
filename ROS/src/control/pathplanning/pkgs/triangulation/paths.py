@@ -34,7 +34,7 @@ class TriangulationPaths:
         triangulation_centers: np.ndarray,
         center_points: np.ndarray,
         cones: np.ndarray,
-        center_points_range: float,
+        sorting_range: float,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Get/generate all possible paths
 
@@ -59,8 +59,8 @@ class TriangulationPaths:
             # Get the next element from the queue
             parent = queue.pop(0)
 
-            # Get the closest center points to this element that are within center_points_range
-            next_nodes = utils.sort_closest_to(center_points, (parent.x, parent.y), center_points_range)
+            # Get the closest center points to this element that are within sorting_range
+            next_nodes = utils.sort_closest_to(center_points, (parent.x, parent.y), sorting_range)
 
             # A list of all the abs_angle_change to nodes seen thus far
             angles_added = None
@@ -127,7 +127,7 @@ class TriangulationPaths:
         return root_node, leaves + queue
 
     def get_cost_branch(
-        self, branch: np.ndarray, cones: np.ndarray
+        self, branch: np.ndarray, cones: np.ndarray, sorting_range: float,
     ) -> Tuple[float, float]:
         """Get cost of branch.
 
@@ -143,21 +143,24 @@ class TriangulationPaths:
         angle_cost = np.var(angle_changes)
 
         # longer paths usually work better as they make use of more center points
-        # also the length of each part of a path should not change much
+        # having many segments along a path is usually a good path
         node_distances = np.array([point.distance for point in branch])
         distance = np.sum(node_distances)
-        length_cost = 1/distance + 1/len(node_distances) * 200
+        length_cost = 1/distance + 1/len(node_distances) * 10 
 
-        sorted_cones = utils.sort_closest_to(cones, (0,0), 8)
+        # get array of blue cones and array of yellow cones sorted by distance
+        sorted_cones = utils.sort_closest_to(cones, (0,0), sorting_range)
         blue_sorted = sorted_cones[sorted_cones[:,2] == 0]
         yellow_sorted = sorted_cones[sorted_cones[:,2] == 1]
         
+        # get center between closest blue cone and closest yellow cone
         center_point = ((blue_sorted[0][0]+yellow_sorted[0][0])/2, (blue_sorted[0][1]+yellow_sorted[0][1])/2)
         for point in branch:
             if np.isclose(center_point[0], point.x) and np.isclose(
-                        center_point[1], point.y
-                    ):
-                length_cost /= 100000
-                angle_cost /= 100000
+                        center_point[1], point.y 
+                    ): 
+                #if any point of the path is close to this center point, reduce cost
+                length_cost /= 100
+                angle_cost /= 100
 
         return angle_cost, length_cost
