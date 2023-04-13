@@ -43,6 +43,7 @@ class TriangulationPaths:
             center_points: center points of the edges of the triangles that were duplicated,
                 probably forming the center line
             cones: cones
+            sorting_range: The lookahead distance for sorting points
 
         Returns:
         tuple of root node and leaves of paths
@@ -134,6 +135,7 @@ class TriangulationPaths:
         Args:
             branch: branch to calculate cost for
             cones: cones
+            sorting_range: The lookahead distance for sorting points
 
         Returns:
         tuple of angle_cost, color_cost, width_cost, spacing_cost, length_cost

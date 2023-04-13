@@ -35,6 +35,7 @@ class Triangulator:
             max_angle_change: Maximum angle change in path
             max_path_distance: Maximum distance between nodes in the planned path
             safety_dist: Safety distance from objects
+            sorting_range: The lookahead distance for sorting points
             vis_points: (optional) rostopic for publishing MarkerArrays
             vis_lines: (optional) rostopic for publishing PoseArrays
             vis_namespace: (optional) namespace for publishing markers

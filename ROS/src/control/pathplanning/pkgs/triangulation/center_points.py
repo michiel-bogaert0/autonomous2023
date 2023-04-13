@@ -19,6 +19,7 @@ def get_center_points(
         triangulation_min_var: the minimum variance each allowed set of triangle edge lengths can always have.
             So it's the minimal maximum variance
         triangulation_var_threshold: Factor multiplied to the median of the variance of triangle lengths in order to filter bad triangles
+        sorting_range: The lookahead distance for sorting points
 
     Returns:
         Tuple of center_points, duplicated_centers, triangles
