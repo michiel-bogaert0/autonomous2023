@@ -17,6 +17,7 @@ from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 import time
 from nav_msgs.msg import Odometry
 import utm
+import socket
 
 class ParseUblox(ROSNode):
     def __init__(self):
@@ -40,6 +41,7 @@ class ParseUblox(ROSNode):
         self.use_serial = rospy.get_param("~is_serial", True)
         self.frame_id = rospy.get_param("~gps_frame_id", "ugr/car_base_link/gps0")
         self.fixed_only_mode = rospy.get_param("~fixed_only_mode", False)
+        self.use_ntrip = rospy.get_param("~use_ntrip", False)
 
         self.started = False
 
@@ -49,6 +51,16 @@ class ParseUblox(ROSNode):
         else:
             self.source = open(self.source_name, "br")
 
+        if self.use_ntrip:
+            SERVER_ADDRESS = ('192.168.50.36', 50010)
+
+            # Create a TCP/IP socket
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+            # Connect the socket to the server address and port
+            self.sock.connect(SERVER_ADDRESS)
+            print('Connecting to {} port {}'.format(*SERVER_ADDRESS))
+
         # Parser
         self.parser = Parser([NAV_CLS, ACK_CLS])
 
@@ -56,6 +68,15 @@ class ParseUblox(ROSNode):
 
         while not rospy.is_shutdown():
             self.parse()
+
+            if self.use_ntrip:
+                data = self.sock.recv(1024)
+                self.publish("/diagnostics", create_diagnostic_message(
+                    level=DiagnosticStatus.OK,
+                    name=f"[GPS {self.source_name}] NTRIP data received length",
+                    message=f"{len(data)}",
+                ))
+                self.source.write(data)
 
         self.source.close()
 
