@@ -123,17 +123,28 @@ class KeypointDetector:
                 )
             else:
                 if len(top) > 1:
-                    raise NotImplementedError("Cannot handle multiple top keypoints")
-
-                top = top[0]
+                    # Multiple tops were found,
+                    #   take the one closest to the top-center of the bbox
+                    top_estimate = torch.tensor(
+                        (
+                            self.cone_image_margin + self.keypoint_image_size[0] / 2,
+                            self.cone_image_margin,
+                        )
+                    )
+                    errors = top - top_estimate
+                    dist = errors.pow(2).sum(dim=1)
+                    
+                    top = top[torch.argmin(dist), :]
+                else:
+                    top = top[0]
 
                 # Rescale
                 top[0] = (
-                    top[0] * cone_original_sizes[i][1] / self.keypoint_image_size[1]
+                    top[0] * cone_original_sizes[i][1] / IMAGE_SIZE[1]
                     + cone_bbox_corners[i][0]
                 )
                 top[1] = (
-                    top[1] * cone_original_sizes[i][0] / self.keypoint_image_size[0]
+                    top[1] * cone_original_sizes[i][0] / IMAGE_SIZE[0]
                     + cone_bbox_corners[i][1]
                 )
 
