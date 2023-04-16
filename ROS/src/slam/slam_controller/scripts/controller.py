@@ -4,6 +4,7 @@ from enum import Enum
 from std_msgs.msg import UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from node_launcher import NodeLauncher
 from node_fixture.node_fixture import (
     AutonomousMission,
@@ -12,6 +13,7 @@ from node_fixture.node_fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
+
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 
 
@@ -127,7 +129,7 @@ class Controller:
         """
         Actually changes state of this machine and publishes change
 
-        Ags:
+        Args:
             new_state: state to switch to.
         """
 

@@ -12,6 +12,11 @@ int main(int argc, char **argv)
 
     slam::LoopClosure loopClosure(n);
 
+    node_fixture::DiagnosticPublisher diagPublisher(n, "SLAM LC");
+    diagPublisher.publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                    "Status",
+                                    "running");
+
     while (ros::ok())
     {
         // Keep the node alive
