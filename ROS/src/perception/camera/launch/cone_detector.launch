@@ -1,0 +1,14 @@
+<launch>
+    <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries"/>
+
+    <node pkg="camera" type="run.py" name="perception_camera" output="screen">
+        <param name="cuda" value="True" />
+        <param name="tensorrt" value="False"/>
+        <param name="detection_height_threshold" value="25" />
+        <param name="rate" value="10" />
+        <param name="vis" value="False" />
+        <remap from="/output/image_annotated" to="/ugr/car/perception/camera/image_annotated" />
+        <remap from="/output/update" to="/ugr/car/observations/camera" />
+        <remap from="/input/image" to="/ugr/car/sensors/cam0" />
+    </node>
+</launch>

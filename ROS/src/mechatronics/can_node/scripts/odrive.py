@@ -1,9 +1,11 @@
 import cantools
+from can import Message
 import numpy as np
 import rospy
 from geometry_msgs.msg import Twist, TwistWithCovariance, TwistWithCovarianceStamped
 from can_msgs.msg import Frame
 from sensor_msgs.msg import BatteryState
+from node_fixture import serialcan_to_roscan
 
 class OdriveConverter:
     def __init__(self, bus=None):
@@ -43,8 +45,8 @@ class OdriveConverter:
         voltage = can_msg["Vbus_Voltage"]
 
         # Interpolate using values from this site (seems to match quite well) https://blog.ampow.com/lipo-voltage-chart/
-        x = [25.2, 24.9, 24.67, 24.49, 24.14, 23.9, 23.72, 23.48, 23.25, 23.13, 23.01, 22.89, 22.77, 22.72, 22.6, 22.48, 22.36, 22.24, 22.12, 21.65, 19.64]
-        y = [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0]
+        x =[19.64, 21.65, 22.12, 22.24, 22.36, 22.48, 22.6, 22.72, 22.77, 22.89, 23.01, 23.13, 23.25, 23.48, 23.72, 23.9, 24.14, 24.49, 24.67, 24.9, 25.2]
+        y = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
 
         percentage = min(max(np.interp(voltage, x, y) / 100, 0.0), 1.0)
 

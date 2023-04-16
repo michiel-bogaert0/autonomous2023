@@ -4,6 +4,13 @@
 FROM nvidia/cuda:11.7.0-runtime-ubuntu20.04 AS ugr-base
 
 #
+# Install torch and torchvision
+#
+RUN apt-get update && apt-get -y install --no-install-recommends python3 python3-pip
+RUN pip install torch==2.0.0
+RUN pip install torchvision==0.15.1
+
+#
 # Initial dependencies
 #
 
@@ -18,8 +25,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     tzdata \
     keyboard-configuration \
     git \ 
-    python3 \
-    python3-pip \
     wget \
     rsync \
     unzip \
@@ -91,8 +96,8 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
-RUN wget https://github.com/UgentRacing/autonomous_public_binaries/blob/main/modules/neoapi-1.2.1-cp38-cp38-linux_x86_64.whl?raw=true
-RUN python3 -m pip install /home/ugr/neoapi-1.2.1-cp38-cp38-linux_x86_64.whl
+RUN wget -O neoapi-1.2.1-cp38-cp38-linux_x86_64.whl https://github.com/UgentRacing/autonomous_public_binaries/blob/main/modules/neoapi-1.2.1-cp38-cp38-linux_x86_64.whl?raw=true
+RUN python3 -m pip install neoapi-1.2.1-cp38-cp38-linux_x86_64.whl
 
 # Handy commands
 RUN echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.zshrc && \
@@ -100,7 +105,8 @@ RUN echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.zshrc && \
     echo "source ~/autonomous2023/ROS/devel/setup.zsh" >> ~/.zshrc && \
     echo "alias sdev=\"source ~/autonomous2023/ROS/devel/setup.zsh\"" >> ~/.zshrc && \
     echo "alias ugr=\"cd ~/autonomous2023/ROS/\"" >> ~/.zshrc && \
-    echo "alias cbuild='catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release'" >> ~/.zshrc
+    echo "alias cbuild='catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release'" >> ~/.zshrc && \ 
+    echo "source /home/ugr/autonomous2023/env-vars.sh"
 
 # nvidia-container-runtime
 ENV NVIDIA_VISIBLE_DEVICES \

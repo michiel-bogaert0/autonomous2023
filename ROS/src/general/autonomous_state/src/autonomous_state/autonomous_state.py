@@ -2,8 +2,8 @@
 import rospy
 from ugr_msgs.msg import State
 from nav_msgs.msg import Odometry
-from node_fixture import AutonomousStatesEnum, StateMachineScopeEnum, SLAMStatesEnum, create_diagnostic_message, DiagnosticStatusEnum
-from diagnostic_msgs.msg import DiagnosticArray
+from node_fixture import AutonomousStatesEnum, StateMachineScopeEnum, SLAMStatesEnum, create_diagnostic_message
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 
 from car_state import *
 
@@ -62,7 +62,8 @@ class AutonomousController:
         # Gets car state as reported by our helper class (can be simulated or a specific car such as Peggy)
         ccs = self.car.get_state()
 
-        self.diagnostics_publisher.publish(create_diagnostic_message(DiagnosticStatusEnum.OK, "[AS state] car state", str(ccs)))
+        self.diagnostics_publisher.publish(create_diagnostic_message(DiagnosticStatus.ERROR if self.state == AutonomousStatesEnum.ASEMERGENCY else DiagnosticStatus.OK, "[GNRL] STATE: AS state", str(self.state)))
+        self.diagnostics_publisher.publish(create_diagnostic_message(DiagnosticStatus.OK, "[GNRL] STATE: Car state", str(ccs)))
 
         if ccs["EBS"] == carStateEnum.ACTIVATED:
 

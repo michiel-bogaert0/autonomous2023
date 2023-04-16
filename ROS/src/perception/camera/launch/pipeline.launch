@@ -1,0 +1,8 @@
+<launch>
+    <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries"/>
+    <arg name="type" default="camera"/>
+
+    <include file="$(find camera)/launch/publisher.launch" pass_all_args="true" />
+
+    <include file="$(find camera)/launch/cone_detector.launch" pass_all_args="true"/>
+</launch>

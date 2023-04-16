@@ -2,15 +2,31 @@
 empy
 catkin_pkg
 rospkg
-cython
-scipy
-numpy
 pybind11[global]
 
+# SLAM
+utm
+ubxtranslator
+
 # Perception
-seaborn
+# Minimum Numpy version of 1.20.0 for better typing support
+numpy>=1.20.0
+opencv-python-headless
+torch>=0.10
+torchvision>=0.11
+scikit-image
+ultralytics
+onnx>=1.13.0
+pytorch-lightning==1.9.4
+torchmetrics>=0.7
+timm>=0.6.11
+scikit-learn>=1.2.2
 tqdm
-cython
+albumentations
+matplotlib>=3.6.2
+xmltodict
+pydantic
+wandb<=0.13.4
 
 # Jetson CAN
 python-can==4.0.0

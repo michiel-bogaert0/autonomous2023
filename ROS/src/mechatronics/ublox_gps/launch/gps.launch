@@ -1,25 +1,37 @@
 <launch>
-    <arg name="server" />
-    <arg name="mountpoint" />
 
-    <arg name="port" default="2101" />
-    <arg name="user" default="" />
-    <arg name="password" default="" />
-    <arg name="baudrate" default="460800" />
-    <arg name="device" default="/dev/ttyUSB0" />
+    <!-- Fixed base -->
 
-    <node pkg="ublox_gps" type="ntripclient" name="ntripclient" output="screen">
-        <param name="server" value="$(arg server)" />
-        <param name="mountpoint" value="$(arg mountpoint)" />
-        <param name="port" value="$(arg port)" />
-        <param name="user" value="$(arg user)" />
-        <param name="password" value="$(arg password)" />
-        <param name="baudrate" value="$(arg baudrate)" />
-        <param name="device" value="$(arg device)" />
+    <node pkg="ublox_gps" type="ntripclient" name="ntripclient_gps1" output="screen">
+        <param name="server" value="192.168.50.36" />
+        <param name="mountpoint" value="UGR" />
+        <param name="port" value="2101" />
+        <param name="user" value="UGentRacing" />
+        <param name="password" value="UGentRacing" />
+        <param name="baudrate" value="460800" />
+        <param name="device" value="/dev/ttybase" />
     </node>
 
-    <node pkg="nmea_navsat_driver" output="screen" type="nmea_serial_driver" name="nmea_publisher">
-        <param name="port" value="$(arg device)"></param>
-        <param name="baud" value="$(arg baudrate)"></param>
+    <node pkg="ublox_gps" type="parse_ublox.py" name="parse_ublox_gps1" output="screen">
+        <param name="source" value="$(env FIXED_ROVER_USB)" />
+        <param name="baud" value="460800"/>
+        <param name="gps_frame_id" value="ugr/car_base_link/gps1"/>
+
+        <remap from="/output/pvt/fix" to="/ugr/car/sensors/gps1/pvt/fix"/>
+        <remap from="/output/pvt/odom" to="/ugr/car/sensors/gps1/pvt/odom"/>
+        <remap from="/output/relposned/odom" to="/ugr/car/sensors/gps1/relposned/odom"/>
     </node>
+
+    <!-- Moving rover -->
+
+    <node pkg="ublox_gps" type="parse_ublox.py" name="parse_ublox_gps0" output="screen">
+        <param name="source" value="$(env MOVING_ROVER_USB)" />
+        <param name="baud" value="460800"/>
+        <param name="gps_frame_id" value="ugr/car_base_link/gps0"/>
+
+        <remap from="/output/pvt/fix" to="/ugr/car/sensors/gps0/pvt/fix"/>
+        <remap from="/output/pvt/odom" to="/ugr/car/sensors/gps0/pvt/odom"/>
+        <remap from="/output/relposned/odom" to="/ugr/car/sensors/gps0/relposned/odom"/>
+    </node>
+
 </launch>

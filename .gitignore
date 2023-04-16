@@ -29,3 +29,5 @@ AirSim/
 
 # Calibration
 tools/camera_calibration/**/*.jpg
+
+env-vars.sh

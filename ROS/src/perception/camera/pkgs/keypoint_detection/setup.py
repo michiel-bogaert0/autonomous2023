@@ -1,13 +1,13 @@
-from distutils.core import setup
+from setuptools import setup
 
-from catkin_pkg.python_setup import generate_distutils_setup
-
-d = generate_distutils_setup(
-    packages=[
-        "keypoint_detection",
-        "publisher_abstract",
-    ],
-    package_dir={"": "pkgs"},
+setup(
+    name="keypoint_detection",
+    author="Thomas Lips",
+    author_email="thomas.lips@ugent.be",
+    version="1.0",
+    description="Pytorch Models, Modules etc for keypoint detection",
+    url="https://github.com/tlpss/keypoint-detection",
+    packages=["keypoint_detection"],
     install_requires=[
         "torch>=0.10",
         "onnx>=1.13.0",
@@ -29,4 +29,3 @@ d = generate_distutils_setup(
         "plotly",
     ],
 )
-setup(**d)
