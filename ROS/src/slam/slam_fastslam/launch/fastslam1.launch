@@ -50,7 +50,8 @@
 
     # Input/output remapping
     <remap from="/input/observations" to="ugr/car/observations/lidar" />
+
     <remap from="/output/observations" to="/ugr/car/observations/fastslam" />
-    <remap from="/output/odom" to="/ugr/car/odometry/filtered/fastslam" />
+    <remap from="/output/odom" to="/ugr/car/odgometry/filtered/fastslam" />
   </node>
 </launch>
