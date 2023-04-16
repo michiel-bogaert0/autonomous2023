@@ -16,6 +16,8 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include <nav_msgs/Path.h>
 
+#include "node_fixture/node_fixture.hpp"
+
 using namespace std;
 
 namespace slam
@@ -78,6 +80,9 @@ namespace slam
       ros::Publisher odomPublisher;
       ros::Publisher particlePosePublisher;
 
+      // Diagnostic publisher
+      std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
+
       // Set Map Service Client
       ros::ServiceClient setmap_srv_client;
       string globalmap_namespace;
@@ -95,7 +100,7 @@ namespace slam
 
       void publishOutput(ros::Time);
 
-      void predict(Particle &particle, double dDist, double dYaw);
+      void predict(Particle &particle, double dDist, double dYaw, double dt);
 
       void build_associations(Particle &, ugr_msgs::ObservationWithCovarianceArrayStamped &, vector<VectorXf> &, vector<VectorXf> &, vector<int> &, vector<int>&, vector<int>&);
 
@@ -111,6 +116,7 @@ namespace slam
       array<double, 3> prev_state; // x, y, yaw
 
       chrono::steady_clock::time_point  prev_time;
+      chrono::steady_clock::time_point  prev_predict_time;
 
       vector<Particle> particles; 
 

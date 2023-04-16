@@ -2,7 +2,12 @@
 from abc import ABC, abstractmethod
 
 import rospy
-from node_fixture.node_fixture import ROSNode
+from node_fixture.node_fixture import (
+    ROSNode,
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
 
 
 class StageSimulator(ROSNode, ABC):
@@ -20,6 +25,19 @@ class StageSimulator(ROSNode, ABC):
         self.timer = rospy.Timer(
             rospy.Duration(1 / self.publish_rate),
             self.simulate,
+        )
+
+        # Diagnostics Publisher
+        self.diagnostics = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
+
+        self.diagnostics.publish(
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="[SLAM SIM] Stage Simulator Status",
+                message="Started.",
+            )
         )
 
     def get_namespace(self, path: str) -> str:

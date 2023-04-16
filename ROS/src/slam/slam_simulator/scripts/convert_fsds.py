@@ -8,13 +8,18 @@ import tf
 from fs_msgs.msg import Track
 from geometry_msgs.msg import TwistStamped, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import AddSubscriber, ROSNode
+from node_fixture.node_fixture import (
+    AddSubscriber,
+    ROSNode,
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
 from sensor_msgs.msg import Imu, NavSatFix
 
 
 class Convert(ROSNode):
     def __init__(self):
-
         super().__init__("converter")
 
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
@@ -31,11 +36,22 @@ class Convert(ROSNode):
 
         self.br = tf.TransformBroadcaster()
 
+        # Diagnostics Publisher
+        self.diagnostics = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
+
         print("Convert FSDS Started!")
+        self.diagnostics.publish(
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="[SLAM SIM] FSDS Convert Status",
+                message="Started.",
+            )
+        )
 
     @AddSubscriber("/input/gss")
     def convertGSS(self, msg: TwistStamped):
-
         covariance = np.diag([0.1, 0.1, 0, 0, 0, 0])
 
         new_msg = TwistWithCovarianceStamped()

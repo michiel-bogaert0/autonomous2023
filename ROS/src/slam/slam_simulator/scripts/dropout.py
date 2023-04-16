@@ -4,7 +4,13 @@ from functools import partial
 from time import time_ns
 
 import rospy
-from node_fixture.node_fixture import AddSubscriber, ROSNode
+from node_fixture.node_fixture import (
+    AddSubscriber,
+    ROSNode,
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
 
 from slam_simulator.srv import Dropout, DropoutRequest, DropoutResponse
 
@@ -30,10 +36,15 @@ class DropoutNode(ROSNode):
 
         # Due to the dynamic behaviour of this node the AddSubscriber calls need to be done manually
         # It also couples the output so that it knows to what it should publish the message
-        for (input, output) in zip(self.inputs, self.outputs):
+        for input, output in zip(self.inputs, self.outputs):
             AddSubscriber(input)(partial(self.handle_message, output))
 
         self.add_subscribers()
+
+        # Diagnostics Publisher
+        self.diagnostics = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
 
         # Service that allows disabling / enabling topic
         rospy.Service(
@@ -45,6 +56,13 @@ class DropoutNode(ROSNode):
         self.enabled = True
 
         rospy.loginfo(f"Dropout simulation node '{self.name}' started!")
+        self.diagnostics.publish(
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="[SLAM SIM] Dropout Status",
+                message="Started.",
+            )
+        )
 
     # '_' is actually just a side-effect of manually registering this subscriber instead of using the decorator
     def handle_message(self, output, _, msg):
@@ -66,6 +84,13 @@ class DropoutNode(ROSNode):
         self.enabled = req.enable
         rospy.loginfo(
             f"[{self.name}]> Dropout simulation node status: enabled={self.enabled}"
+        )
+        self.diagnostics.publish(
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="[SLAM SIM] Dropout Status",
+                message=f"{'Enabled' if self.enabled else 'Disabled'}.",
+            )
         )
         return DropoutResponse()
 

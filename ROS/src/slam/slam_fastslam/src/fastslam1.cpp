@@ -83,8 +83,12 @@ namespace slam
     this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
     this->particlePosePublisher = n.advertise<geometry_msgs::PoseArray>("/output/particles", 5);
 
+    this->diagPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(new node_fixture::DiagnosticPublisher(n, "SLAM FastSLAM1.0"));
+
     obs_sub.subscribe(n, "/input/observations", 1);
     tf2_filter.registerCallback(boost::bind(&FastSLAM1::handleObservations, this, _1));
+
+    this->prev_predict_time = chrono::steady_clock::now();
 
     vector<double> QAsVector;
     vector<double> RAsVector;
@@ -112,7 +116,7 @@ namespace slam
     this->R(1, 1) = pow(RAsVector[3], 2);
   }
 
-  void FastSLAM1::predict(Particle &particle, double dDist, double dYaw)
+  void FastSLAM1::predict(Particle &particle, double dDist, double dYaw, double dt)
   {
 
     // Add noise
@@ -120,7 +124,8 @@ namespace slam
     A(0) = dDist;
     A(1) = dYaw;
     VectorXf VG(2);
-    VG = multivariate_gauss(A, this->Q, 1);
+    MatrixXf Q = this->Q * dt;
+    VG = multivariate_gauss(A, Q, 1);
     dDist = VG(0);
     dYaw = VG(1);
 
@@ -261,6 +266,9 @@ namespace slam
     {
       // Reset
       ROS_WARN("Time went backwards! Resetting fastslam...");
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+                                             "Backwards time",
+                                             "Fastslam reset (time went backwards)!");
 
       this->particles.clear();
       for (int i = 0; i < this->particle_count; i++)
@@ -331,11 +339,17 @@ namespace slam
       try
       {
         transformed_ob.observation.location = this->tfBuffer.transform<geometry_msgs::PointStamped>(locStamped, this->base_link_frame, transformed_obs.header.stamp, this->world_frame, ros::Duration(0.1)).point;
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                               "Observation transform",
+                                               "Static transform and time transform success!");
       }
       catch (const exception e)
 
       {
         ROS_ERROR("Observation static transform (and perhaps time transform) failed: %s", e.what());
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::ERROR,
+                                               "Observation transform",
+                                               "Static transform (and perhaps time transform) failed!");
         return;
       }
 
@@ -360,11 +374,17 @@ namespace slam
     geometry_msgs::TransformStamped car_pose;
     try
     {
-      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, transformed_obs.header.stamp, ros::Duration(0.1));
+      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, ros::Time(0), ros::Duration(0.1));
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                             "car_pose transform",
+                                             "success");
     }
     catch (const exception e)
     {
       ROS_ERROR("car_pose transform failed: %s", e.what());
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::ERROR,
+                                             "car_pose transform",
+                                             "failed");
       return;
     }
     const tf2::Quaternion quat(
@@ -403,6 +423,9 @@ namespace slam
 
     time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
     ROS_INFO("Observations preparation took: %f s", time_round);
+    this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                             "Observations preparation",
+                                             "Time: " + std::to_string(time_round) + " s");
 
     if (doObserve)
     {
@@ -415,7 +438,10 @@ namespace slam
         Particle &particle = particles[j];
 
         //---- Predict step -----//
-        this->predict(particle, dDist, dYaw);
+        chrono::steady_clock::time_point time = chrono::steady_clock::now();
+        double dt = std::chrono::duration_cast<std::chrono::duration<double>>(time - this->prev_predict_time).count();
+        this->prev_predict_time = chrono::steady_clock::now();
+        this->predict(particle, dDist, dYaw, dt);
 
         //---- Observe step ----//
 
@@ -462,6 +488,11 @@ namespace slam
 
       time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
       ROS_INFO("FastSLAM1.0 took: %f s. That is %f s per particle", time_round, time_round / this->particles.size());
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                             "FastSLAM1.0 algorithm",
+                                             "Time: " + std::to_string(time_round) + " s ; " +
+                                             "#Particles: " + std::to_string(this->particles.size()) + " ; " +
+                                             "Seconds per particle: " + std::to_string(time_round / this->particles.size()));
 
       t1 = std::chrono::steady_clock::now();
       // Check which cones should have been seen but were not and lower their score
@@ -492,6 +523,11 @@ namespace slam
 
       time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
       ROS_INFO("FP Filter took %f s. That is %f s per particle", time_round, time_round / this->particles.size());
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                             "FP Filter",
+                                             "Time: " + std::to_string(time_round) + " s ; " +
+                                             "#Particles: " + std::to_string(this->particles.size()) + " ; " +
+                                             "Seconds per particle: " + std::to_string(time_round / this->particles.size()));
     }
     else
     {
@@ -500,7 +536,10 @@ namespace slam
         Particle &particle = particles[j];
 
         //---- Predict step -----//
-        this->predict(particle, dDist, dYaw);
+        chrono::steady_clock::time_point time = chrono::steady_clock::now();
+        double dt = std::chrono::duration_cast<std::chrono::duration<double>>(time - this->prev_predict_time).count();
+        this->prev_predict_time = chrono::steady_clock::now();
+        this->predict(particle, dDist, dYaw, dt);
       }
     }
 
@@ -539,7 +578,9 @@ namespace slam
     float y = 0.0;
     float yaw = 0.0;
     float maxW = -10000.0;
-    for (int i = 0; i < this->particles.size(); i++)
+
+    // Skip the first particle due to weird bug
+    for (int i = 1; i < this->particles.size(); i++)
     {
 
       Particle &particle = this->particles[i];
@@ -579,6 +620,9 @@ namespace slam
       if (abs(particle.xv()(2) - particle.prevyaw()) > yaw_unwrap_threshold)
         // Print corrected yaw
         ROS_DEBUG_STREAM("Corrected yaw: " << curYaw);
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                               "Yaw correction",
+                                               "Corrected yaw: " + std::to_string(curYaw));
 
       x += particle.xv()(0) * w;
       y += particle.xv()(1) * w;
@@ -714,10 +758,18 @@ namespace slam
 
     time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
     ROS_INFO("Output averaging took %f s. That is %f s per particle", time_round, time_round / this->particles.size());
+    this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                           "Output averaging",
+                                           "Time: " + std::to_string(time_round) + " s ; " +
+                                           "#Particles: " + std::to_string(this->particles.size()) + " ; " +
+                                           "Seconds per particle: " + std::to_string(time_round / this->particles.size()));
 
     t1 = std::chrono::steady_clock::now();
 
     ROS_INFO("Number of landmarks (total): %d", lmMeans.size());
+    this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                           "Total landmarks",
+                                           "#landmarks: " + std::to_string(lmMeans.size()));
 
     // Get the landmarks that have a high enough score
     vector<VectorXf> filteredLandmarks;
@@ -737,6 +789,9 @@ namespace slam
     }
 
     ROS_INFO("Number of actual landmarks: %d", filteredLandmarks.size());
+    this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                           "Actual landmarks",
+                                           "#landmarks: " + std::to_string(filteredLandmarks.size()));
 
     // Create the observation_msgs things
     ugr_msgs::ObservationWithCovarianceArrayStamped global;
@@ -830,6 +885,9 @@ namespace slam
     odom.pose.covariance = poseCovariance;
 
     if(this->setmap_srv_client.exists()) {
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                             "SetMap service call",
+                                             "exists");
       // Initialize global request
       slam_controller::SetMap global_srv;
       global_srv.request.map = global;
@@ -838,6 +896,13 @@ namespace slam
       // Set global map with Service
       if (!this->setmap_srv_client.call(global_srv)) {
         ROS_WARN("Global map service call failed!");
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+                                               "Global map service call",
+                                               "failed");
+      } else {
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                               "Global map service call",
+                                               "success");
       }
       
       // Initialize local request
@@ -848,9 +913,19 @@ namespace slam
       // Set local map with Service
       if (!this->setmap_srv_client.call(local_srv)) {
         ROS_WARN("Local map service call failed!");
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+                                               "Local map service call",
+                                               "failed");
+      } else {
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                               "Local map service call",
+                                               "success");
       }
     } else {
       ROS_WARN("SetMap service call does not exist (yet)!");
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+                                             "SetMap service call",
+                                             "Does not exist!");
     }
 
     // Publish odometry
@@ -881,5 +956,8 @@ namespace slam
 
     time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
     ROS_INFO("Output publishing took %f s.", time_round);
+    this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                           "Output Publishing",
+                                           "Time: " + std::to_string(time_round) + " s");
   }
 }

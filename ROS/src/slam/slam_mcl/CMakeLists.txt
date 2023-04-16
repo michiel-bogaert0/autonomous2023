@@ -12,11 +12,12 @@ find_package(catkin REQUIRED COMPONENTS
   tf_service
   tf2_geometry_msgs
   tf2_ros
+  node_fixture
 )
 find_package(Boost REQUIRED)
 
 catkin_package(
-  CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf2 tf2_ros
+  CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf2 tf2_ros node_fixture
 )
 
 include_directories(
@@ -27,6 +28,8 @@ include_directories(
 )
 
 include_directories( /usr/include/eigen3 )
+
+link_directories(${CATKIN_DEVEL_PREFIX}/lib})
 
 if (CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -O3")

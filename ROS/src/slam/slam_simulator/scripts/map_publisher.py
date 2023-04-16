@@ -5,11 +5,15 @@ import rospy
 import yaml
 from genpy.message import fill_message_args
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
+from node_fixture.node_fixture import (
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
 
 
-class MapPublisher():
+class MapPublisher:
     def __init__(self):
-
         rospy.init_node("slam_simulator_map_publisher")
 
         self.map = rospy.get_param(
@@ -23,22 +27,34 @@ class MapPublisher():
             latch=True,
         )
 
+        # Diagnostics Publisher
+        self.diagnostics = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
+
         try:
             self.publish_map()
         except:
             rospy.logerr(
-                f"Error publishing map. Make sure that the file '{self.map}' exists, is readable and is valid YAML!")
+                f"Error publishing map. Make sure that the file '{self.map}' exists, is readable and is valid YAML!"
+            )
+            self.diagnostics.publish(
+                create_diagnostic_message(
+                    level=DiagnosticStatus.ERROR,
+                    name="[SLAM SIM] Map Publisher Status",
+                    message="Error publishing map.",
+                )
+            )
 
         rospy.spin()
 
     def publish_map(self):
-
         # Try to parse YAML
         ros_map = ObservationWithCovarianceArrayStamped()
-        with open(self.map, 'r') as file:
+        with open(self.map, "r") as file:
             map = yaml.safe_load(file)
             fill_message_args(ros_map, map)
-        
+
             self.map_publisher.publish(ros_map)
 
 

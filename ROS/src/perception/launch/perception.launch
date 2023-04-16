@@ -1,23 +1,10 @@
 <launch>
-    <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries"/>
+    <!-- Camera node -->
+    <arg name="type" default="camera"/>
+    <include file="$(find camera)/launch/pipeline.launch" pass_all_args="true"/>
 
-    <node pkg="camera" type="run.py" name="perception_camera" output="screen">
-        <param name="cuda" value="True" />
-        <param name="tensorrt" value="False"/>
-        <param name="detection_height_threshold" value="30" />
-        <param name="rate" value="10" />
-        <remap from="/output/cone_keypoints" to="/ugr/car/perception/camera/keypoints" />
-        <remap from="/output/update" to="/ugr/car/observations/camera" />
-        <remap from="/input/image" to="/ugr/car/sensors/cam0" />
-
-
-    </node>
-
+    <!-- LiDAR node -->
     <include file="$(find lidar)/launch/lidar.launch" pass_all_args="true"/>
-
-    <!-- static transform for visualisation and fusion purposes -->
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_lidar0" args="0.0 0 0.37 0 0 0 1 ugr/car_base_link/sensors/cam0 os_sensor" />
-
 
     <!-- visualisation for camera observations -->
     <node pkg="slam_vis" output="screen" type="vis_obs.py" name="camera_visualiser">
@@ -38,9 +25,4 @@
             <remap from="/input/vis" to="/ugr/car/observations/lidar" />
             <remap from="/output/vis" to="/vis/perception" />
     </node>
-
-   
-
-    
-
 </launch>

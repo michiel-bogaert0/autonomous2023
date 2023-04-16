@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 import copy
-from statistics import covariance
 
 import numpy as np
 import rospy
 from fs_msgs.msg import Track
 from geometry_msgs.msg import Point, Quaternion, TransformStamped
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import AddSubscriber, DataLatch, ROSNode
+from node_fixture.node_fixture import (
+    AddSubscriber,
+    DataLatch,
+    ROSNode,
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
 from StageSimulator import StageSimulator
 from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import (
@@ -37,6 +43,8 @@ class PerceptionSimulator(StageSimulator):
         self.datalatch.create("cones", 1)
         self.datalatch.create("odom", 400)
 
+        self.started = False
+
         super().__init__("perception")
 
         self.tf_buffer = tf.Buffer()
@@ -47,8 +55,23 @@ class PerceptionSimulator(StageSimulator):
         self.gt_base_link_frame = rospy.get_param("~gt_base_link_frame", "ugr/gt_base_link")
         self.viewing_distance = rospy.get_param("~viewing_distance", 15.0) ** 2
         self.fov = np.deg2rad(rospy.get_param("~fov", 90))
+        self.delay = rospy.get_param("~delay", 0.0)
         self.add_noise = rospy.get_param("~add_noise", True)
-        self.cone_noise = rospy.get_param("~cone_noise", 0.2 / 20) # Noise per meter distance. Gets scaled with range
+        self.cone_noise = rospy.get_param("~cone_noise", 0.0 / 20) # Noise per meter distance. Gets scaled with range
+
+        # Diagnostics Publisher
+        self.diagnostics = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
+
+        # Publish Started Diagnostic
+        self.diagnostics.publish(
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="[SLAM SIM] Perception Status",
+                message="Started.",
+            )
+        )
 
     @AddSubscriber("/input/track")
     def track_update(self, track: ObservationWithCovarianceArrayStamped):
@@ -67,19 +90,27 @@ class PerceptionSimulator(StageSimulator):
         cones = np.array(cones)
         self.datalatch.set("cones", cones)
 
+        self.started = True
+
     def simulate(self, _):
         """
         This function gets executed at a specific frequency. Basically publishes the 'visible' cones as observations
         Those observations are relative to the base_link frame
         """
 
-        # Fetch GT position of car
-        transform: TransformStamped = self.tf_buffer.lookup_transform(
-            self.world_frame,
-            self.gt_base_link_frame,
-            rospy.Time(0),
-            rospy.Duration(1)
-        )
+        if not self.started:
+            return
+
+        try: 
+            # Fetch GT position of car
+            transform: TransformStamped = self.tf_buffer.lookup_transform(
+                self.world_frame,
+                self.gt_base_link_frame,
+                rospy.Time.now() - rospy.Duration(self.delay),
+                rospy.Duration(1)
+            )
+        except:
+            return
 
         pos = transform.transform.translation
         orient: Quaternion = transform.transform.rotation
@@ -88,6 +119,7 @@ class PerceptionSimulator(StageSimulator):
         )
 
         new_cones = copy.deepcopy(self.datalatch.get("cones"))
+        
         new_cones[:, :-2] = PerceptionSimulator.apply_transformation(
             new_cones[:, :-2], [pos.x, pos.y], yaw, True
         )

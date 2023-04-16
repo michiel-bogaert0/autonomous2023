@@ -1,8 +1,10 @@
 #include "loopclosure.hpp"
 #include "std_msgs/UInt16.h"
+#include "diagnostic_msgs/DiagnosticArray.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2_ros/buffer.h"
 #include <tf2_ros/transform_listener.h>
+#include "node_fixture/node_fixture.hpp"
 
 namespace slam
 {
@@ -11,6 +13,7 @@ namespace slam
                                                    base_link_frame(n.param<std::string>("base_link_frame", "ugr/car_base_link")),
                                                    world_frame(n.param<std::string>("world_frame", "ugr/slam_map"))
     {
+        diagnosticPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(new node_fixture::DiagnosticPublisher(n, "SLAM LC"));
         loopClosedPublisher = n.advertise<std_msgs::UInt16>("/output/loopClosure", 5, true);
         reset_service = n.advertiseService("/reset_closure", &slam::LoopClosure::handleResetClosureService, this);
 
@@ -129,6 +132,8 @@ namespace slam
         std_msgs::UInt16 msg1;
         msg1.data = amountOfLaps;
         loopClosedPublisher.publish(msg1);
+        diagnosticPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK, "Loop Closure count",
+                                "#laps: " + std::to_string(amountOfLaps));
     }
 
     bool LoopClosure::handleResetClosureService(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response)
@@ -136,4 +141,5 @@ namespace slam
         this->ResetClosure();
         return true;
     }
+
 }

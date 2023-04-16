@@ -7,12 +7,14 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   std_srvs
   geometry_msgs
+  diagnostic_msgs
+  node_fixture
 )
 find_package(Boost REQUIRED)
 
 catkin_package(
 
-  CATKIN_DEPENDS geometry_msgs roscpp std_srvs tf2 nav_msgs tf2_ros
+  CATKIN_DEPENDS geometry_msgs roscpp std_srvs tf2 nav_msgs tf2_ros diagnostic_msgs node_fixture
 
 )
 
@@ -21,6 +23,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${roscpp_INCLUDE_DIRS}
 )
+
+link_directories(${CATKIN_DEVEL_PREFIX}/lib)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -O3")

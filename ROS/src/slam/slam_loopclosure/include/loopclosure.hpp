@@ -5,6 +5,7 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2_ros/buffer.h"
 #include <tf2_ros/transform_listener.h>
+#include "node_fixture/node_fixture.hpp"
 
 namespace slam
 {
@@ -34,6 +35,8 @@ namespace slam
 
         ros::Publisher loopClosedPublisher;
         ros::ServiceServer reset_service;
+
+        std::unique_ptr<node_fixture::DiagnosticPublisher> diagnosticPublisher;
 
         std::string base_link_frame;
         std::string world_frame;
