@@ -140,11 +140,11 @@ class KeypointDetector:
 
                 # Rescale
                 top[0] = (
-                    top[0] * cone_original_sizes[i][1] / IMAGE_SIZE[1]
+                    top[0] * cone_original_sizes[i][1] / self.keypoint_image_size[1]
                     + cone_bbox_corners[i][0]
                 )
                 top[1] = (
-                    top[1] * cone_original_sizes[i][0] / IMAGE_SIZE[0]
+                    top[1] * cone_original_sizes[i][0] / self.keypoint_image_size[0]
                     + cone_bbox_corners[i][1]
                 )
 
