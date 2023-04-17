@@ -18,6 +18,7 @@ class Triangulator:
         max_angle_change: float,
         max_path_distance: float,
         safety_dist: float,
+        sorting_range: float,
         vis_points: rospy.Publisher=None,
         vis_lines: rospy.Publisher=None,
         vis_namespace: str="pathplanning_vis",
@@ -34,6 +35,7 @@ class Triangulator:
             max_angle_change: Maximum angle change in path
             max_path_distance: Maximum distance between nodes in the planned path
             safety_dist: Safety distance from objects
+            sorting_range: The lookahead distance for sorting points
             vis_points: (optional) rostopic for publishing MarkerArrays
             vis_lines: (optional) rostopic for publishing PoseArrays
             vis_namespace: (optional) namespace for publishing markers
@@ -46,6 +48,7 @@ class Triangulator:
         self.max_path_distance = max_path_distance
         self.safety_dist = safety_dist
         self.safety_dist_squared = safety_dist**2
+        self.sorting_range = sorting_range
 
         # `vis` is only enabled if both point and line visualisation are passed through
         self.vis = vis_points is not None and vis_lines is not None
@@ -77,7 +80,7 @@ class Triangulator:
 
         # Perform triangulation and get the (useful) center points
         triangulation_centers, center_points, triangles = get_center_points(
-            position_cones, self.triangulation_min_var, self.triangulation_var_threshold
+            position_cones, self.triangulation_min_var, self.triangulation_var_threshold, self.sorting_range
         )
 
         # Try to get rid of false positive
@@ -110,7 +113,7 @@ class Triangulator:
             self.visualise_triangles(triangles, header)
 
         _, leaves = self.triangulation_paths.get_all_paths(
-            triangulation_centers, center_points, cones[:, :-1]
+            triangulation_centers, center_points, cones[:, :-1], self.sorting_range
         )
         if leaves is None:
             return None
@@ -152,7 +155,7 @@ class Triangulator:
             (
                 angle_cost,
                 length_cost,
-            ) = self.triangulation_paths.get_cost_branch(path, cones)
+            ) = self.triangulation_paths.get_cost_branch(path, cones, self.sorting_range)
             costs[i] = [
                 angle_cost,
                 length_cost,
@@ -165,7 +168,6 @@ class Triangulator:
 
         # Get the least-cost path
         index = np.argmin(total_cost)
-        paths = np.array(paths)
 
         return paths[index]
 

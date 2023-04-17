@@ -63,7 +63,14 @@ class PathPlanning():
             "~triangulation_var_threshold", 1.2
         )
         # Maximum distance between nodes in the planned path (paths with nodes further than this will be pruned prematurely)
-        self.params["max_path_distance"] = rospy.get_param("~max_path_distance", 6)
+        self.params["max_path_distance"] = rospy.get_param(
+            "~max_path_distance", 6
+        )
+        # The lookahead distance for sorting points
+        self.params["sorting_range"] = rospy.get_param(
+           "~sorting_range", 8 
+        )
+
         
         # Extra parameters for RRT
         # The distance by which the car drives every update
@@ -123,6 +130,7 @@ class PathPlanning():
                 self.params["max_angle_change"],
                 self.params["max_path_distance"],
                 self.params["safety_dist"],
+                self.params["sorting_range"],
                 vis_points=self.vis_points,
                 vis_lines=self.vis_lines,
                 vis_namespace=self.params["vis_namespace"],

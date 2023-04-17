@@ -8,6 +8,7 @@ def get_center_points(
     position_cones: np.ndarray,
     triangulation_min_var: float,
     triangulation_var_threshold: float,
+    sorting_range: float,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Get center points of the edges of the triangles
 
@@ -18,6 +19,7 @@ def get_center_points(
         triangulation_min_var: the minimum variance each allowed set of triangle edge lengths can always have.
             So it's the minimal maximum variance
         triangulation_var_threshold: Factor multiplied to the median of the variance of triangle lengths in order to filter bad triangles
+        sorting_range: The lookahead distance for sorting points
 
     Returns:
         Tuple of center_points, duplicated_centers, triangles
@@ -48,6 +50,10 @@ def get_center_points(
     # These duplicated centers should form the raceline (with some odd exceptions that can be filtered out using the tree filtering strategy)
     unique, counts = np.unique(flattened_center_points, axis=0, return_counts=True)
     duplicated_centers = unique[counts > 1]
+
+    # Add closest center in front of you as this one will not be duplicated
+    closest_centers = utils.sort_closest_to(unique, (0,0), sorting_range)
+    duplicated_centers = np.append(duplicated_centers, [closest_centers[0]], axis=0)
 
     return center_points, duplicated_centers, triangles
 
