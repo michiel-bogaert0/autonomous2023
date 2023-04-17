@@ -15,6 +15,7 @@ from std_msgs.msg import UInt16
 from node_fixture.node_fixture import ROSNode, SLAMStatesEnum
 from nav_msgs.msg import Odometry
 from ugr_msgs.msg import State
+from std_msgs.msg import Empty
 
 import datetime
 
@@ -26,11 +27,14 @@ class analyze_while_running(ROSNode):
         self.odomData = []
         self.gpsData = []
         self.previousData = []
+        self.alignmentType = "sim3"
 
+        self.alignmentType = rospy.get_param("~alignmentType")
         self.subOdo = rospy.Subscriber("/input/odometry",Odometry,self.addDataOdom)
         self.subGps = rospy.Subscriber("/input/gps",Odometry,self.addDataGps)
         self.subLoopClosure = rospy.Subscriber("/output/loopClosure",UInt16,self.loopIsClosed)
         self.stateChange = rospy.Subscriber("/state",State,self.stateChanged)
+        self.resetTrajectory = rospy.Service("/reset_trajectory_evaluation", Empty, self.resetTrajectoryEvaluation)
         
         # create dir to store the info of the run
         # we remove the last 4 characters 
@@ -40,11 +44,17 @@ class analyze_while_running(ROSNode):
         if not os.path.exists(self.dirpath):
             os.makedirs(self.dirpath)
 
+    def resetTrajectoryEvaluation(self, msg:Empty):
+        self.odomData = []
+        self.gpsData = []
+        self.previousData = []
+        
+        return
+
     def addDataOdom(self, msg: Odometry):
         """
         setting the previous data from odom to add until the gps data has been recieved
         """
-        rospy.loginfo("Test")
         self.previousData = [rospy.get_time(),
             msg.pose.pose.position.x,msg.pose.pose.position.y,msg.pose.pose.position.z,
             msg.pose.pose.orientation.x,msg.pose.pose.orientation.y,msg.pose.pose.orientation.z, msg.pose.pose.orientation.w
@@ -68,7 +78,6 @@ class analyze_while_running(ROSNode):
         when finishing up a lap we start getting information 
         this is temporary until the statmachine works
         """
-        rospy.loginfo("Test")
         self.analyze_trail()
 
     def stateChanged(self, state:State):
@@ -89,7 +98,7 @@ class analyze_while_running(ROSNode):
         stamps_gt = [float(v[0]) for v in self.gpsData]
         stamps_est = [float(v[0]) for v in self.odomData]
         
-        self.traj = Trajectory(load_data=False)
+        self.traj = Trajectory(load_data=False, align_type=self.alignmentType)
         self.traj.align_trajectory_with_data(data_gt, data_est, stamps_gt, stamps_est)
         # compute the absolute error
         self.traj.compute_absolute_error()
