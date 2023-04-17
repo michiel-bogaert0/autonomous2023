@@ -4,10 +4,14 @@
         name="slam_trajectory_evaluation"
         output="screen" type="analyze_while_running.py">
         
-        <param name="clustering/results_dir" value="../TestDataResult" />
+        <param name="alignmentType" value="sim3"/>
+
         <remap from="/input/odometry" to="/ugr/car/odometry/filtered/odom"/>
         <remap from="/input/gps" to="/ugr/car/odometry/filtered/gps"/>
         <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
 
+        <!-- services evaluation -->
+        <remap from="/reset" to="ugr/car/evaluation/reset"/>
+        <remap from="/run_evaluation" to="ugr/car/evaluation/run"/>
     </node>
 </launch>

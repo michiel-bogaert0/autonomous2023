@@ -15,8 +15,7 @@ from std_msgs.msg import UInt16
 from node_fixture.node_fixture import ROSNode, SLAMStatesEnum
 from nav_msgs.msg import Odometry
 from ugr_msgs.msg import State
-from std_msgs.msg import Empty
-
+from std_srvs.srv import Empty, EmptyResponse
 import datetime
 
 class analyze_while_running(ROSNode):
@@ -27,15 +26,17 @@ class analyze_while_running(ROSNode):
         self.odomData = []
         self.gpsData = []
         self.previousData = []
-        self.alignmentType = "sim3"
 
         self.alignmentType = rospy.get_param("~alignmentType")
+        if self.alignmentType == "":
+            self.alignmentType = "sim3"
+        
         self.subOdo = rospy.Subscriber("/input/odometry",Odometry,self.addDataOdom)
         self.subGps = rospy.Subscriber("/input/gps",Odometry,self.addDataGps)
         self.subLoopClosure = rospy.Subscriber("/output/loopClosure",UInt16,self.loopIsClosed)
         self.stateChange = rospy.Subscriber("/state",State,self.stateChanged)
-        self.resetTrajectory = rospy.Service("/reset_trajectory_evaluation", Empty, self.resetTrajectoryEvaluation)
-        
+        self.resetTrajectory = rospy.Service("/reset", Empty, self.resetTrajectoryEvaluation)
+        self.runEvaluation = rospy.Service("/run_evaluation", Empty, self.run_trajectoryEvaluation)
         # create dir to store the info of the run
         # we remove the last 4 characters 
         rospack = rospkg.RosPack()
@@ -44,12 +45,22 @@ class analyze_while_running(ROSNode):
         if not os.path.exists(self.dirpath):
             os.makedirs(self.dirpath)
 
+    def run_trajectoryEvaluation(self, msg:Empty):
+        """
+        analyse the trajectoryEvaluation
+        """
+        if len(self.odomData) > 1 and len(self.gpsData) > 1:
+            self.analyze_trail()
+        return EmptyResponse()
+
     def resetTrajectoryEvaluation(self, msg:Empty):
+        """
+        reset the trajectoryEvaluation
+        """
         self.odomData = []
         self.gpsData = []
         self.previousData = []
-        
-        return
+        return EmptyResponse()
 
     def addDataOdom(self, msg: Odometry):
         """
@@ -63,7 +74,6 @@ class analyze_while_running(ROSNode):
     def addDataGps(self, msg: Odometry):
         """
             adding the gpsdata as path the same from odomdata as a path
-            
         """
         #to make sure that the position is nog 0.0
         if len(self.previousData) > 0 and not (msg.pose.pose.position.x == 0.0 and msg.pose.pose.position.y == 0.0 and msg.pose.pose.position.z == 0.0):   
