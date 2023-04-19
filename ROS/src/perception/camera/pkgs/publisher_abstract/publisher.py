@@ -80,12 +80,14 @@ class PublishNode(ROSNode, ABC):
         if self.rate is not None:
             while not rospy.is_shutdown():
                 data = self.process_data()
-                info = self.get_camera_info()
+
                 if data is not None:
                     data.header = self.create_header()
                     self.publish("/input/image", data)
-                    info.header = self.create_header()
-                    self.publish("/input/info", info)
+                    info = self.get_camera_info()
+                    if info is not None:
+                        info.header = self.create_header()
+                        self.publish("/input/info", info)
 
                 self.rate.sleep()
 
