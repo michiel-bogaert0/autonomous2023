@@ -8,16 +8,26 @@ import neoapi
 import numpy as np
 import rospy
 from publisher_abstract.publisher import PublishNode
-
-
-import os
-from pathlib import Path
+from sensor_msgs.msg import CameraInfo
 
 
 class CameraNode(PublishNode):
     def __init__(self):
         super().__init__("camera")
+        self.use_raw = rospy.get_param("~use_raw", True)
         self.setup_camera()
+
+    def get_camera_info(self):
+        msg = CameraInfo()
+        if self.use_raw:
+            msg.D = self.distortion_matrix.flatten().tolist()
+
+            msg.K = self.camera_matrix.flatten().tolist()
+
+        else:
+            msg.D = [0.0, 0.0, 0.0, 0.0, 0.0]
+            msg.K = self.optimal_camera_matrix.flatten().tolist()
+        return msg
 
     def setup_camera(self) -> None:
         """Sets up the Baumer camera with the right settings
@@ -74,14 +84,14 @@ class CameraNode(PublishNode):
 
         if not image.IsEmpty():
             img = image.GetNPArray()
-
-            img = cv.undistort(
-                img,
-                self.camera_matrix,
-                self.distortion_matrix,
-                None,
-                self.optimal_camera_matrix,
-            )
+            if not self.use_raw:
+                img = cv.undistort(
+                    img,
+                    self.camera_matrix,
+                    self.distortion_matrix,
+                    None,
+                    self.optimal_camera_matrix,
+                )
 
             # Convert image from BGR to RGB
             img = img[..., ::-1]
