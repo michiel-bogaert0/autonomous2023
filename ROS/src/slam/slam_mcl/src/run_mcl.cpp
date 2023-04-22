@@ -1,9 +1,8 @@
 #include <ros/ros.h>
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "mcl.hpp"
 
 /**
- * FastSLAM 1.0 wrapper
+ * MCL wrapper
  *
  */
 int main(int argc, char **argv)
@@ -17,6 +16,11 @@ int main(int argc, char **argv)
 
   float targetRate = n.param<float>("target_rate", 50.0);
   ros::Rate loop_rate(targetRate);
+
+  node_fixture::DiagnosticPublisher diagPublisher(n, "SLAM MCL");
+  diagPublisher.publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                  "Status",
+                                  "running");
 
   while (ros::ok())
   {

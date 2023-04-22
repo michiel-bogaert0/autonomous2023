@@ -6,7 +6,7 @@ import tf2_ros as tf
 from clustering.clustering import Clustering
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point, TransformStamped
-from node_fixture.node_fixture import AddSubscriber, ROSNode
+from node_fixture.node_fixture import AddSubscriber, ROSNode, DiagnosticArray, DiagnosticStatus, create_diagnostic_message
 from rosgraph_msgs.msg import Clock
 from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import (
@@ -93,12 +93,22 @@ class ClusterMapping(ROSNode):
 
         self.add_subscribers()
 
+        # Diagnostics Publisher
+        self.diagnostics = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
+
         # Helpers
         self.previous_clustering_time = rospy.Time.now().to_sec()
         self.cleared_vis = 0
 
         self.initialized = True
         rospy.loginfo(f"Clustering mapping node initialized!")
+        self.diagnostics.publish(
+                    create_diagnostic_message(
+                        level=DiagnosticStatus.OK,
+                        name="[SLAM CM] Status",
+                        message="Initialized.",
+                    )
+                )
 
     def handle_reset_srv_request(self, req: ResetRequest):
         """
@@ -114,6 +124,13 @@ class ClusterMapping(ROSNode):
         rospy.logwarn("Received reset request")
 
         self.reset()
+        self.diagnostics.publish(
+                    create_diagnostic_message(
+                        level=DiagnosticStatus.OK,
+                        name="[SLAM CM] Reset",
+                        message="FastMapping reset.",
+                    )
+                )
 
         return ResetResponse()
 
@@ -136,6 +153,13 @@ class ClusterMapping(ROSNode):
             rospy.logwarn(
                 f"A backwards jump in time of {self.current_clock - clock.clock.to_sec()} has been detected. Resetting the clusterer..."
             )
+            self.diagnostics.publish(
+                    create_diagnostic_message(
+                        level=DiagnosticStatus.WARN,
+                        name="[SLAM CM] Backwards time",
+                        message="FastMapping reset.",
+                    )
+                )
 
             self.reset()
 

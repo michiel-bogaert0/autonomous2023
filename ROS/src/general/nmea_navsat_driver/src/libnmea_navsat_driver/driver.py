@@ -255,7 +255,7 @@ class RosNMEADriver(object):
             self.diagnostics_pub.publish(
                     create_diagnostic_message(
                         level=DiagnosticStatus.WARN if fix_type != 4 else DiagnosticStatus.OK,
-                        name=f"[GPS] GPS Status (GPS {self.gps_name})",
+                        name=f"[SLAM] GPS: Status [{self.gps_name}]",
                         message=f"Status: {self.gps_qualities_diagnostics[fix_type]}",
                     )
                 )
@@ -314,7 +314,7 @@ class RosNMEADriver(object):
                 self.diagnostics.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.WARN if fix_type != 4 else DiagnosticStatus.OK,
-                            name=f"[GPS] GPS Status (GPS {self.gps_name})",
+                            name=f"[SLAM] GPS: Status [{self.gps_name}]",
                             message=f"Status: {self.gps_qualities_diagnostics[fix_type]}",
                         )
                     )

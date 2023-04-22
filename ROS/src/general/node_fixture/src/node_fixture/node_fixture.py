@@ -259,12 +259,6 @@ class AutonomousStatesEnum(str, enum.Enum):
     ASFINISHING = "asfinishing"
     ASFINISHED = "asfinished"
 
-class DiagnosticStatusEnum(enum.Enum):
-    OK = 0
-    WARN = 1
-    ERROR = 2
-    STALE = 3
-
 """
 Helper functions for CAN
 """
@@ -300,7 +294,7 @@ def serialcan_to_roscan(can_message: can.Message) -> Frame:
     return ros_message
 
 def create_diagnostic_message(
-    level: DiagnosticStatusEnum,
+    level: DiagnosticStatus,
     name: String,
     message: String,
 ) -> DiagnosticArray:

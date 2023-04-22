@@ -6,7 +6,14 @@ import rospy
 from fs_msgs.msg import Track
 from geometry_msgs.msg import Point, Quaternion, TransformStamped
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import AddSubscriber, DataLatch, ROSNode
+from node_fixture.node_fixture import (
+    AddSubscriber,
+    DataLatch,
+    ROSNode,
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
 from StageSimulator import StageSimulator
 from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import (
@@ -51,6 +58,20 @@ class PerceptionSimulator(StageSimulator):
         self.delay = rospy.get_param("~delay", 0.0)
         self.add_noise = rospy.get_param("~add_noise", True)
         self.cone_noise = rospy.get_param("~cone_noise", 0.0 / 20) # Noise per meter distance. Gets scaled with range
+
+        # Diagnostics Publisher
+        self.diagnostics = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
+
+        # Publish Started Diagnostic
+        self.diagnostics.publish(
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="[SLAM SIM] Perception Status",
+                message="Started.",
+            )
+        )
 
     @AddSubscriber("/input/track")
     def track_update(self, track: ObservationWithCovarianceArrayStamped):

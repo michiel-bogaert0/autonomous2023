@@ -10,8 +10,10 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <export>
+  <build_depend>roscpp</build_depend>
+  <build_depend>diagnostic_msgs</build_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>diagnostic_msgs</exec_depend>
 
-
-  </export>
+  <export></export>
 </package>

@@ -10,7 +10,7 @@ from typing import Any
 import numpy as np
 import rospy
 from node_fixture.node_fixture import AddSubscriber, ROSNode
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import Header
 
 
@@ -21,6 +21,15 @@ class PublishNode(ROSNode, ABC):
         self.frame = (
             f"ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
         )
+
+    @abstractmethod
+    def get_camera_info(self) -> CameraInfo:
+        """
+         any child of this class should have a get_camera_info function
+
+        returns:
+            a ros camera info message (header not required)
+        """
 
     @abstractmethod
     def process_data(self) -> Image:
@@ -75,6 +84,10 @@ class PublishNode(ROSNode, ABC):
                 if data is not None:
                     data.header = self.create_header()
                     self.publish("/input/image", data)
+                    info = self.get_camera_info()
+                    if info is not None:
+                        info.header = self.create_header()
+                        self.publish("/input/info", info)
 
                 self.rate.sleep()
 
