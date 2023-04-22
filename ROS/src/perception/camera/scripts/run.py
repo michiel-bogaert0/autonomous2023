@@ -1,13 +1,13 @@
 #! /usr/bin/python3
 
 import os
+import time
 from pathlib import Path
 from typing import List
 
 import numpy as np
 import numpy.typing as npt
 import rospy
-import time
 import torch
 from cone_detector import ConeDetector
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
@@ -61,12 +61,18 @@ class PerceptionNode:
             "~detection_height_threshold", 25
         )
 
+        yolo_model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolov8.pt"
         self.cone_detector = None
-        self.cone_detector = ConeDetector(self.device, self.detection_height_threshold)
+        self.cone_detector = ConeDetector(
+            yolo_model_path, self.device, self.detection_height_threshold
+        )
 
         keypoint_model_path = (
-            Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "keypoint_detector.pt"
+            Path(os.getenv("BINARY_LOCATION"))
+            / "nn_models"
+            / "efficientnet.pt"  # "mobilenetv3.pt"
         )
+        self.keypoint_detector = None
         self.keypoint_detector = KeypointDetector(
             keypoint_model_path, self.detection_height_threshold, self.device
         )
@@ -97,35 +103,46 @@ class PerceptionNode:
             image: The input image as numpy array
             ros_image: The input image as ROS message
         """
-
         # Wait for the cone detector to initialise
         if self.cone_detector is None or self.keypoint_detector is None:
             return
 
-        img = self.ros_img_to_np(ros_image)
-
-        # Nx4 array of cones: category, X, Y, Z
-        yolo_detections = self.cone_detector.find_cones(img)
-        yolo_latency = np.sum(list(yolo_detections.speed.values()))
-
-        image_tensor = torch.tensor(img).to(self.device)
+        image = self.ros_img_to_np(ros_image)
 
         timer_start = time.perf_counter()
-        categories, heights, bottoms = self.keypoint_detector.predict(
-            image_tensor, yolo_detections.boxes
+        image_tensor = torch.from_numpy(image).to(self.device).permute(2, 0, 1)
+        timer_end = time.perf_counter()
+        tensor_latency = 1000 * (timer_end - timer_start)
+
+        timer_start = time.perf_counter()
+        # The image should be 3xHxW
+        # Nx4 array of cones: category, X, Y, Z
+        bboxes = self.cone_detector.find_cones(image_tensor)
+        timer_end = time.perf_counter()
+        yolo_latency = 1000 * (timer_end - timer_start)
+
+        timer_start = time.perf_counter()
+        valid_cones, heights, bottoms = self.keypoint_detector.predict(
+            image_tensor, bboxes
         )
         timer_end = time.perf_counter()
         keypoint_latency = 1000 * (timer_end - timer_start)
 
+        categories = bboxes[valid_cones, -1]
+        confidences = bboxes[valid_cones, -2]
+
+        timer_start = time.perf_counter()
         cones = self.height_to_pos(categories, heights, bottoms)
+        timer_end = time.perf_counter()
+        cone_height_latency = 1000 * (timer_end - timer_start)
 
         msg = self.create_observation_msg(cones, ros_image.header)
 
         self.diagnostics.publish(
             create_diagnostic_message(
                 level=DiagnosticStatus.OK,
-                name="perception camera node",
-                message=f"{yolo_latency:.0f} - {keypoint_latency:.0f} - {cone_height_latency:.0f} ms",
+                name="[PERC] Pipeline latency",
+                message=f"[{tensor_latency + yolo_latency + keypoint_latency + cone_height_latency:.0f}] {tensor_latency:.0f} - {yolo_latency:.0f} - {keypoint_latency:.0f} - {cone_height_latency:.0f} ms",
             )
         )
 
@@ -214,6 +231,7 @@ class PerceptionNode:
         )
 
         return img
+
 
 if __name__ == "__main__":
     try:

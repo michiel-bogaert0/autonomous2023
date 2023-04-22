@@ -5,6 +5,7 @@
     <arg name="reference_frame" default="ugr/car_odom" />
     <arg name="use_sim_time" default="false" />
     <arg name="pathplanning_type" default="triangulation" />
+    <arg name="mission" default="trackdrive" />
 
     <param name="use_sim_time" value="$(arg use_sim_time)" />
     <param name="iteration" value="$(arg iteration)" />

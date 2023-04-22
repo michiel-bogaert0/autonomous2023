@@ -14,7 +14,7 @@ from sensor_msgs.msg import CameraInfo
 class CameraNode(PublishNode):
     def __init__(self):
         super().__init__("camera")
-        self.use_raw = rospy.get_param("~use_raw", True)
+        self.use_raw = rospy.get_param("~use_raw", False)
         self.setup_camera()
 
     def get_camera_info(self):
@@ -84,6 +84,7 @@ class CameraNode(PublishNode):
 
         if not image.IsEmpty():
             img = image.GetNPArray()
+
             if not self.use_raw:
                 img = cv.undistort(
                     img,
