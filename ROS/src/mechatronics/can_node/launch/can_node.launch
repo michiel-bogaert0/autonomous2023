@@ -1,28 +1,5 @@
 <launch>
 
-    <arg name="car" default="pegasus_v2"/>
-
-    <group if="$(eval arg('car') == 'pegasus_v1')">
-
-        <node pkg="tf" type="static_transform_publisher" name="ugr_axis0" args="-0.36 0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis0 10" />
-        <node pkg="tf" type="static_transform_publisher" name="ugr_axis1" args="-0.36 -0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis1 10" />
-
-        <node pkg="tf" type="static_transform_publisher" name="ugr_imu0" args="-0.26 0 0.35 1 0 0 0 ugr/car_base_link ugr/car_base_link/imu0 10" />
-        <node pkg="tf" type="static_transform_publisher" name="ugr_imu1" args="-0.26 0 0.37 1 0 0 0 ugr/car_base_link ugr/car_base_link/imu1 10" />
-
-    </group>
-
-    <group if="$(eval arg('car') == 'pegasus_v2')">
-
-        <node pkg="tf" type="static_transform_publisher" name="ugr_axis0" args="-0.36 0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis0 10" />
-        <node pkg="tf" type="static_transform_publisher" name="ugr_axis1" args="-0.36 -0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis1 10" />
-
-        <node pkg="tf" type="static_transform_publisher" name="ugr_imu0" args="-0.26 0 0.35 1 0 0 0 ugr/car_base_link ugr/car_base_link/imu0 10" />
-        <node pkg="tf" type="static_transform_publisher" name="ugr_imu1" args="-0.26 0 0.37 0 0 0 1 ugr/car_base_link ugr/car_base_link/imu1 10" />
-
-    </group>
-
-
     <node pkg="can_node" type="can_converter.py" name="can_converter" output="screen">
         <param name="res_send_interval" value="0.1" />
         
