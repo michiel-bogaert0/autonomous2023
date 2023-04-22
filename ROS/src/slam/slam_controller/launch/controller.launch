@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="mission" />
+  <arg name="mission" default="" />
 
   <param name="/mission" value="$(arg mission)" />
 

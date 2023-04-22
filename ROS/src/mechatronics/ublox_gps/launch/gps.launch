@@ -1,5 +1,12 @@
 <launch>
 
+    <arg name="car"/>
+
+    <group if="$(eval arg('car') == 'pegasus')">
+        <node pkg="tf" type="static_transform_publisher" name="ugr_gps_ublox_right" args="0.06 -0.36 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps0 10" />
+        <node pkg="tf" type="static_transform_publisher" name="ugr_gps_ublox_left" args="0.06 0.36 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps1 10" />
+    </group>
+
     <!-- Fixed base -->
 
     <node pkg="ublox_gps" type="ntripclient" name="ntripclient_gps1" output="screen">
@@ -16,6 +23,7 @@
         <param name="source" value="$(env FIXED_ROVER_USB)" />
         <param name="baud" value="460800"/>
         <param name="gps_frame_id" value="ugr/car_base_link/gps1"/>
+        <param name="use_ntrip" value="true"/>
 
         <remap from="/output/pvt/fix" to="/ugr/car/sensors/gps1/pvt/fix"/>
         <remap from="/output/pvt/odom" to="/ugr/car/sensors/gps1/pvt/odom"/>
@@ -33,5 +41,39 @@
         <remap from="/output/pvt/odom" to="/ugr/car/sensors/gps0/pvt/odom"/>
         <remap from="/output/relposned/odom" to="/ugr/car/sensors/gps0/relposned/odom"/>
     </node>
+
+    <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node_gps1" respawn="true" output="screen">
+
+        <param name="magnetic_declination_radians" value="0.032" />
+        <param name="yaw_offset" value="0" />
+        <param name="zero_altitude" value="true" />
+        <param name="frequency" value="20" />
+
+        <param name="publish_filtered_gps" value="true" />
+
+        <remap from="odometry/filtered" to="ugr/car/odometry/filtered/odom" />
+        <remap from="imu/data" to="/ugr/car/sensors/heading" />
+        <remap from="gps/fix" to="/ugr/car/sensors/gps1/pvt/fix" />
+
+        <remap from="gps/filtered" to="ugr/car/odometry/filtered/odom/asnavsatfix1"/>
+        <remap from="odometry/gps" to="ugr/car/sensors/gps1/transformed" />
+      </node>
+
+      <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transformdsadsa_node_gps0" respawn="true" output="screen">
+
+        <param name="magnetic_declination_radians" value="0.032" />
+        <param name="yaw_offset" value="0" />
+        <param name="zero_altitude" value="true" />
+        <param name="frequency" value="20" />
+
+        <param name="publish_filtered_gps" value="true" />
+
+        <remap from="odometry/filtered" to="ugr/car/odometry/filtered/odom" />
+        <remap from="imu/data" to="/ugr/car/sensors/heading" />
+        <remap from="gps/fix" to="/ugr/car/sensors/gps0/pvt/fix" />
+
+        <remap from="gps/filtered" to="ugr/car/odometry/filtered/odom/asnavsatfix0"/>
+        <remap from="odometry/gps" to="ugr/car/sensors/gps0/transformed" />
+      </node>
 
 </launch>

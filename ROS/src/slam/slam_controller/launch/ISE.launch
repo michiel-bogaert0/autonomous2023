@@ -2,32 +2,35 @@
   <!-- ? Coordinate transformations -->
 
   <arg name="iteration" default="2" />
+  <arg name="car" />
 
-  <group>
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_axis0" args="-0.36 0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis0" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_axis1" args="-0.36 -0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis1" />
+  <!-- <group if="$(eval arg('car') == 'pegasus')"> -->
+  <!-- <node pkg="tf" type="static_transform_publisher" name="ugr_map_odom"
+    args="0 0 0 0 0 0 ugr/map ugr/car_odom 10" /> -->
 
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_lidar0" args="0.0 0 0.37 0 0 0 1 ugr/car_base_link ugr/car_base_link/lidar0" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_ouster_sensor" args="0 0 0 0 0 0 1 ugr/car_base_link/lidar0 os_sensor" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_ouster_imu" args="0 0 0 0 0 0 1 os_sensor os_imu" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_ouster_lidar" args="0 0 0 0 0 1 0 os_sensor os_lidar" />
+  <node pkg="tf" type="static_transform_publisher" name="ugr_axis0"
+    args="-0.36 0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis0 10" />
+  <node pkg="tf" type="static_transform_publisher" name="ugr_axis1"
+    args="-0.36 -0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis1 10" />
 
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_cam0" args="0.06 0 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/cam0" />
+  <node pkg="tf" type="static_transform_publisher" name="ugr_imu0"
+    args="-0.26 0 0.35 1 0 0 0 ugr/car_base_link ugr/car_base_link/imu0 10" />
+  <node pkg="tf" type="static_transform_publisher" name="ugr_imu1"
+    args="-0.26 0 0.37 1 0 0 0 ugr/car_base_link ugr/car_base_link/imu1 10" />
+  <!-- </group> -->
 
-    <!-- imu0: front, imu1: back -->
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_gps_ublox_right" args="0.06 -0.36 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps0" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_gps_ublox_left" args="0.06 0.36 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps1" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_gps_pepwave" args="0.06 -0.25 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps2" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_imu0" args="0.34 0 0 1 0 0 0 ugr/car_base_link ugr/car_base_link/imu0" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_imu1" args="-0.26 0 0.37 0 0 0 1 ugr/car_base_link ugr/car_base_link/imu1" />
+  <node pkg="slam_controller" type="frame_changer.py" name="odom_odometry_in_map_frame">
 
-    <node pkg="tf" type="static_transform_publisher" name="ugr_map_odom" args="0 0 0 0 0 0 ugr/map ugr/car_odom 10" />
-  </group>
-
+    <param name="frame_id" value="ugr/map"/>
+  
+    <remap from="input/odom" to="/ugr/car/odometry/filtered/odom" />
+    <remap from="output/odom" to="/ugr/car/odometry/filtered/odom/inmap" />
+  </node>
 
   <!-- ? State Estimation -->
 
-  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_node_odom_car_$(arg iteration)" respawn="true">
+  <node pkg="robot_localization" type="ekf_localization_node"
+    name="ekf_localization_node_odom_car_$(arg iteration)" respawn="true">
 
     <!-- Fusing continous (drifting) data, so world_frame must be odom -->
     <param name="world_frame" value="ugr/car_odom" />
@@ -43,58 +46,148 @@
     <!-- Angular rate -->
     <param name="imu0" value="/ugr/car/sensors/imu0/angular_rate" />
     <rosparam param="imu0_config">[false, false, false,
-                                     false, false, false,
-                                     false, false, false,
-                                     false, false, true,
-                                     false, false, false]</rosparam>
+      false, false, false,
+      false, false, false,
+      false, false, true,
+      false, false, false]</rosparam>
     <param name="imu0_differential" value="false" />
     <param name="imu0_relative" value="true" />
 
     <param name="imu1" value="/ugr/car/sensors/imu1/angular_rate" />
     <rosparam param="imu1_config">[false, false, false,
-                                     false, false, false,
-                                     false, false, false,
-                                     false, false, true,
-                                     false, false, false]</rosparam>
+      false, false, false,
+      false, false, false,
+      false, false, true,
+      false, false, false]</rosparam>
     <param name="imu1_differential" value="false" />
     <param name="imu1_relative" value="true" />
 
     <param name="imu2" value="/ugr/car/sensors/imu2" />
     <rosparam param="imu2_config">[false, false, false,
-                                     false, false, false,
-                                     false, false, false,
-                                     false, false, true,
-                                     false, false, false]</rosparam>
+      false, false, false,
+      false, false, false,
+      false, false, true,
+      false, false, false]</rosparam>
     <param name="imu2_differential" value="false" />
     <param name="imu2_relative" value="true" />
 
     <param name="imu3" value="/ugr/car/sensors/imu0" />
     <rosparam param="imu3_config">[false, false, false,
-                                     false, false, false,
-                                     false, false, false,
-                                     false, false, true,
-                                     false, false, false]</rosparam>
+      false, false, false,
+      false, false, false,
+      false, false, true,
+      false, false, false]</rosparam>
     <param name="imu3_differential" value="false" />
     <param name="imu3_relative" value="true" />
 
     <!-- Wheel encoders -->
     <param name="twist0" value="ugr/car/sensors/encoder0" />
     <rosparam param="twist0_config">
-          [false, false, false,
-           false, false, false,
-           true, false, false,
-           false, false, false,
-           false, false, false]</rosparam>
+      [false, false, false,
+      false, false, false,
+      true, false, false,
+      false, false, false,
+      false, false, false]</rosparam>
     <param name="twist1" value="ugr/car/sensors/encoder1" />
     <rosparam param="twist1_config">
-          [false, false, false,
-           false, false, false,
-           true, false, false,
-           false, false, false,
-           false, false, false]</rosparam>
+      [false, false, false,
+      false, false, false,
+      true, false, false,
+      false, false, false,
+      false, false, false]</rosparam>
 
     <!-- Remap the output -->
     <remap from="odometry/filtered" to="ugr/car/odometry/filtered/odom" />
+
+  </node>
+
+  <node pkg="robot_localization" type="ekf_localization_node"
+    name="ekf_localization_node_map_car_$(arg iteration)" respawn="true">
+
+    <!-- Fusing continous (drifting) data, so world_frame must be odom -->
+    <param name="world_frame" value="ugr/map" />
+    <param name="map_frame" value="ugr/map" />
+    <param name="odom_frame" value="ugr/car_odom" />
+    <param name="base_link_frame" value="ugr/car_base_link" />
+    <param name="frequency" value="60" />
+    <param name="sensor_timeout" value="0.05" />
+
+    <param name="two_d_mode" value="true" />
+    <param name="reset_on_time_jump" value="true" />
+
+    <!-- Angular rate -->
+    <param name="imu0" value="/ugr/car/sensors/imu0/angular_rate" />
+    <rosparam param="imu0_config">[false, false, false,
+      false, false, false,
+      false, false, false,
+      false, false, true,
+      false, false, false]</rosparam>
+    <param name="imu0_differential" value="false" />
+    <param name="imu0_relative" value="true" />
+
+    <param name="imu1" value="/ugr/car/sensors/imu1/angular_rate" />
+    <rosparam param="imu1_config">[false, false, false,
+      false, false, false,
+      false, false, false,
+      false, false, true,
+      false, false, false]</rosparam>
+    <param name="imu1_differential" value="false" />
+    <param name="imu1_relative" value="true" />
+
+    <param name="imu2" value="/ugr/car/sensors/imu2" />
+    <rosparam param="imu2_config">[false, false, false,
+      false, false, false,
+      false, false, false,
+      false, false, true,
+      false, false, false]</rosparam>
+    <param name="imu2_differential" value="false" />
+    <param name="imu2_relative" value="true" />
+
+    <param name="imu3" value="/ugr/car/sensors/imu0" />
+    <rosparam param="imu3_config">[false, false, false,
+      false, false, false,
+      false, false, false,
+      false, false, true,
+      false, false, false]</rosparam>
+    <param name="imu3_differential" value="false" />
+    <param name="imu3_relative" value="true" />
+
+ 
+    <param name="twist0" value="ugr/car/sensors/encoder0" />
+    <rosparam param="twist0_config">
+      [false, false, false,
+      false, false, false,
+      true, false, false,
+      false, false, false,
+      false, false, false]</rosparam>
+    <param name="twist1" value="ugr/car/sensors/encoder1" />
+    <rosparam param="twist1_config">
+      [false, false, false,
+      false, false, false,
+      true, false, false,
+      false, false, false,
+      false, false, false]</rosparam>
+
+    <param name="odom0" value="ugr/car/odometry/filtered/fastslam" />
+    <param name="odom0_differential" value="false" />
+    <rosparam param="odom0_config">
+      [true, true, false,
+      false, false, true,
+      false, false, false,
+      false, false, false,
+      false, false, false]</rosparam>
+
+    <param name="odom1" value="ugr/car/odometry/filtered/mcl" />
+    <param name="odom1_differential" value="false" />
+    <rosparam param="odom1_config">
+      [true, true, false,
+      false, false, true,
+      false, false, false,
+      false, false, false,
+      false, false, false]</rosparam>
+
+    <!-- Remap the output -->
+    <remap from="odometry/filtered" to="ugr/car/odometry/filtered/map" />
 
   </node>
 

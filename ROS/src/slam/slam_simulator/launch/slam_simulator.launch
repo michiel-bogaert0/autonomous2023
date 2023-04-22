@@ -11,6 +11,8 @@
 
   <node name="car_simulator" pkg="slam_simulator" output="screen" type="car.py">
 
+    <param name="odom_frame" value="ugr/car_odom"/>
+
     <remap from="/output/gt_odometry" to="/ugr/gt/odometry/filtered" />
     <remap from="/output/encoder0" to="/ugr/car/sensors/encoder0" />
     <remap from="/output/imu0" to="/ugr/car/sensors/imu0" />
