@@ -49,6 +49,7 @@ namespace slam
                                              base_link_frame(n.param<string>("base_link_frame", "ugr/car_base_link")),
                                              slam_base_link_frame(n.param<string>("slam_base_link_frame", "ugr/slam_base_link")),
                                              world_frame(n.param<string>("world_frame", "ugr/car_odom")),
+                                             map_frame(n.param<string>("map_frame", "ugr/map")),
                                              particle_count(n.param<int>("particle_count", 100)),
                                              post_clustering(n.param<bool>("post_clustering", false)),
                                              doSynchronous(n.param<bool>("synchronous", true)),
@@ -648,7 +649,7 @@ namespace slam
 
     // Publish particles as PoseArray
     geometry_msgs::PoseArray particlePoses;
-    particlePoses.header.frame_id = this->world_frame;
+    particlePoses.header.frame_id = this->map_frame;
     for (int i = 0; i < this->particles.size(); i++)
     {
       geometry_msgs::Pose particlePose;
@@ -796,7 +797,7 @@ namespace slam
     // Create the observation_msgs things
     ugr_msgs::ObservationWithCovarianceArrayStamped global;
     ugr_msgs::ObservationWithCovarianceArrayStamped local;
-    global.header.frame_id = this->world_frame;
+    global.header.frame_id = this->map_frame;
     global.header.stamp = lookupTime;
     local.header.frame_id = this->slam_base_link_frame;
     local.header.stamp = lookupTime;
@@ -864,11 +865,11 @@ namespace slam
     }
 
     // Odometry message (for correction of state estimation)
-    // So from world_frame to base_link_frame
+    // So from map_frame to base_link_frame
     nav_msgs::Odometry odom;
 
     odom.header.stamp = lookupTime;
-    odom.header.frame_id = this->world_frame;
+    odom.header.frame_id = this->map_frame;
     odom.child_frame_id = this->slam_base_link_frame;
 
     odom.pose.pose.position.x = pose(0);
@@ -932,12 +933,10 @@ namespace slam
     this->odomPublisher.publish(odom);
 
     // TF Transformation
-    // This uses the 'inversed frame' principle
-    // So the new slam_world_frame is a child of base_link_frame and then the inverse transform is published
     tf2::Transform transform(quat, tf2::Vector3(pose(0), pose(1), 0));
 
     geometry_msgs::TransformStamped transformMsg;
-    transformMsg.header.frame_id = this->world_frame;
+    transformMsg.header.frame_id = this->map_frame;
     transformMsg.header.stamp = ros::Time::now();
     transformMsg.child_frame_id = this->slam_base_link_frame;
 
