@@ -325,7 +325,7 @@ namespace slam
     }
     else
     {
-      transformed_obs.header.stamp = ros::Time::now();
+      transformed_obs.header.stamp = ros::Time(0);
     }
 
     for (auto observation : this->observations.observations)
@@ -423,7 +423,7 @@ namespace slam
     t2 = std::chrono::steady_clock::now();
 
     time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-    ROS_INFO("Observations preparation took: %f s", time_round);
+    ROS_INFO("Observations (nr: %d) preparation took: %f s", this->observations.observations.size(), time_round);
     this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                              "Observations preparation",
                                              "Time: " + std::to_string(time_round) + " s");
