@@ -26,7 +26,6 @@
 
     <!-- GPS -->
     <include file="$(find ublox_gps)/launch/gps.launch" pass_all_args="true" />
-    <include file="$(find ublox_gps)/launch/estimate_heading.launch" pass_all_args="true" />
 
     <!-- CAN-enabled sensors -->
 

@@ -2,16 +2,6 @@
 
     <!-- Fixed base -->
 
-    <node pkg="ublox_gps" type="ntripclient" name="ntripclient_gps1" output="screen">
-        <param name="server" value="192.168.50.36" />
-        <param name="mountpoint" value="UGR" />
-        <param name="port" value="2101" />
-        <param name="user" value="UGentRacing" />
-        <param name="password" value="UGentRacing" />
-        <param name="baudrate" value="460800" />
-        <param name="device" value="/dev/ttybase" />
-    </node>
-
     <node pkg="ublox_gps" type="parse_ublox.py" name="parse_ublox_gps1" output="screen">
         <param name="source" value="$(env FIXED_ROVER_USB)" />
         <param name="baud" value="460800"/>
@@ -35,6 +25,13 @@
         <remap from="/output/relposned/odom" to="/ugr/car/sensors/gps0/relposned/odom"/>
     </node>
 
+    <!-- Heading estimation -->
+    <include file="$(find ublox_gps)/launch/estimate_heading.launch" pass_all_args="true" />
+
+    <!-- This node is used to do to two things in order to make comparisons easier. 
+            1. Convert the local odometry to a NavSatFix
+            2. Transform the GPS NavSatFix into the local frame.
+    -->
     <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node_gps1" respawn="true" output="screen">
 
         <param name="magnetic_declination_radians" value="0.032" />
@@ -52,7 +49,7 @@
         <remap from="odometry/gps" to="ugr/car/sensors/gps1/transformed" />
       </node>
 
-      <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transformdsadsa_node_gps0" respawn="true" output="screen">
+      <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node_gps0" respawn="true" output="screen">
 
         <param name="magnetic_declination_radians" value="0.032" />
         <param name="yaw_offset" value="0" />
