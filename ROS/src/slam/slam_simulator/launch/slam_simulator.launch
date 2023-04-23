@@ -4,9 +4,6 @@
   <arg name="filename"/>
   <arg name="mission"/>
 
-  <!-- Controller -->
-  <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true"/>
-
   <!-- Car simulator-->
 
   <node name="car_simulator" pkg="slam_simulator" output="screen" type="car.py">

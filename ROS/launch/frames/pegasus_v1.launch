@@ -11,10 +11,10 @@
   <node pkg="tf" type="static_transform_publisher" name="ugr_cam0"
     args="0.06 0 0.74 0 0 -0.0120034 0.999928 ugr/car_base_link ugr/car_base_link/cam0 10" />
 
-  <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_imu0"
-    args="0.34 0 0 1 0 0 0 ugr/car_base_link ugr/car_base_link/imu0" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="ugr_imu1"
-    args="-0.26 0 0.37 0 0 0 1 ugr/car_base_link ugr/car_base_link/imu1" />
+  <node pkg="tf" type="static_transform_publisher" name="ugr_imu0"
+    args="0.34 0 0 1 0 0 0 ugr/car_base_link ugr/car_base_link/imu0 10" />
+  <node pkg="tf" type="static_transform_publisher" name="ugr_imu1"
+    args="-0.26 0 0.37 0 0 0 1 ugr/car_base_link ugr/car_base_link/imu1 10" />
 
   <node pkg="tf" type="static_transform_publisher" name="ugr_axis0"
     args="-0.36 0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis0 10" />
