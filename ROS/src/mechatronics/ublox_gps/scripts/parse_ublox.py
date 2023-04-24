@@ -17,6 +17,7 @@ from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 import time
 from nav_msgs.msg import Odometry
 import utm
+import socket
 
 class ParseUblox(ROSNode):
     def __init__(self):
@@ -30,6 +31,9 @@ class ParseUblox(ROSNode):
             gps_frame_id: the frame to attach to the ROS messages. Should be the frame of the antenna
             fixed_only_mode: Set this to True to only publish messages that are free of any ambiguity. 
                              If False, it will publish those, but with an unvalid fix status (0)
+            use_ntrip: set to True if you want to stream RTCM data (via a socket based ntrip caster) to the device 
+            ntrip/source: If use_ntrip is True, this address is used to fetch RTCM data
+            ntrip/port: If use_ntrip is True, this port is used to fetch RTCM data
         """
 
         super().__init__("parse_ubx_msgs")
@@ -40,6 +44,9 @@ class ParseUblox(ROSNode):
         self.use_serial = rospy.get_param("~is_serial", True)
         self.frame_id = rospy.get_param("~gps_frame_id", "ugr/car_base_link/gps0")
         self.fixed_only_mode = rospy.get_param("~fixed_only_mode", False)
+        self.use_ntrip = rospy.get_param("~use_ntrip", False)
+        self.socket_addr = rospy.get_param("~ntrip/source", '192.168.50.36')
+        self.socket_port = rospy.get_param("~ntrip/port", 50010)
 
         self.started = False
 
@@ -49,6 +56,34 @@ class ParseUblox(ROSNode):
         else:
             self.source = open(self.source_name, "br")
 
+        if self.use_ntrip:
+
+            # Create a TCP/IP socket to receive the datastream
+            # Try to connect to it before moving on
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.setblocking(False)
+
+            sock_connected = False
+
+            while not sock_connected:
+
+                try:
+                    SERVER_ADDRESS = (rospy.get_param("~ntrip/source", '192.168.50.36'), rospy.get_param("~ntrip/port", 50010))
+
+                    # Connect the socket to the server address and port
+                    self.sock.connect(SERVER_ADDRESS)
+                    sock_connected = True
+
+                    rospy.loginfo('Connected to {} port {}'.format(*SERVER_ADDRESS))
+
+                except Exception as e:
+                    self.publish("/diagnostics", create_diagnostic_message(
+                        level=DiagnosticStatus.ERROR,
+                        name=f"[GPS {self.source_name}] NTRIP connection failed",
+                        message=str(e),
+                    ))
+                    time.sleep(1)
+
         # Parser
         self.parser = Parser([NAV_CLS, ACK_CLS])
 
@@ -57,6 +92,23 @@ class ParseUblox(ROSNode):
         while not rospy.is_shutdown():
             self.parse()
 
+            if self.use_ntrip:
+
+                try:
+                    data = self.sock.recv(1024)
+                    self.publish("/diagnostics", create_diagnostic_message(
+                        level=DiagnosticStatus.OK,
+                        name=f"[GPS {self.source_name}] NTRIP data received length",
+                        message=f"{len(data)}",
+                    ))
+                    self.source.write(data)
+                except Exception as e:
+                    self.publish("/diagnostics", create_diagnostic_message(
+                        level=DiagnosticStatus.WARN,
+                        name=f"[GPS {self.source_name}] Could not receive NTRIP data. Is the NTRIP caster still online?",
+                        message=str(e),
+                    ))
+        
         self.source.close()
 
     def parse(self):

@@ -106,7 +106,7 @@ RUN echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.zshrc && \
     echo "alias sdev=\"source ~/autonomous2023/ROS/devel/setup.zsh\"" >> ~/.zshrc && \
     echo "alias ugr=\"cd ~/autonomous2023/ROS/\"" >> ~/.zshrc && \
     echo "alias cbuild='catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release'" >> ~/.zshrc && \ 
-    echo "source /home/ugr/autonomous2023/env-vars.sh"
+    echo "source /home/ugr/autonomous2023/env-vars.sh" >> ~/.zshrc
 
 # nvidia-container-runtime
 ENV NVIDIA_VISIBLE_DEVICES \

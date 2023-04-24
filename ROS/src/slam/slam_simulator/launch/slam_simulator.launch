@@ -4,12 +4,11 @@
   <arg name="filename"/>
   <arg name="mission"/>
 
-  <!-- Controller -->
-  <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true"/>
-
   <!-- Car simulator-->
 
   <node name="car_simulator" pkg="slam_simulator" output="screen" type="car.py">
+
+    <param name="odom_frame" value="ugr/car_odom"/>
 
     <remap from="/output/gt_odometry" to="/ugr/gt/odometry/filtered" />
     <remap from="/output/encoder0" to="/ugr/car/sensors/encoder0" />

@@ -1,0 +1,7 @@
+<launch>
+
+  <include file="$(find slam_simulator)/launch/slam_simulator.launch" pass_all_args="true" />
+
+  <!-- TODO closed loop driver node (node still todo) -->
+
+</launch>
