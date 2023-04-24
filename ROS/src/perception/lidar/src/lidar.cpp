@@ -14,27 +14,32 @@ Lidar::Lidar(ros::NodeHandle &n)
   rawLidarSubscriber_ =
       n.subscribe("/ugr/car/sensors/lidar", 10, &Lidar::rawPcCallback, this);
 
+
+  n.param<bool>("publish_preprocessing", publish_preprocessing_, false);
+  n.param<bool>("publish_ground", publish_ground_, false);
+  n.param<bool>("publish_clusters", publish_clusters_, true);
   // Publish to the filtered and clustered lidar topic
-  preprocessedLidarPublisher_ =
+  if(publish_preprocessing_)
+    preprocessedLidarPublisher_ =
       n.advertise<sensor_msgs::PointCloud2>("perception/preprocessed_pc", 5);
-  groundRemovalLidarPublisher_ =
+  if(publish_ground_){
+    groundRemovalLidarPublisher_ =
       n.advertise<sensor_msgs::PointCloud2>("perception/groundremoval_pc", 5);
+    groundColoredPublisher_ =
+      n.advertise<sensor_msgs::PointCloud2>("/perception/ground_colored", 5);
+  }
+    
   clusteredLidarPublisher_ =
       n.advertise<sensor_msgs::PointCloud>("perception/clustered_pc", 5);
-  clustersColoredpublisher_ =
+  if(publish_clusters_)
+    clustersColoredpublisher_ =
       n.advertise<sensor_msgs::PointCloud2>("perception/clusters_colored", 5);
-  visPublisher_ =
-      n.advertise<visualization_msgs::MarkerArray>("perception/cones_lidar", 5);
+      
   conePublisher_ = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>(
       "perception/observations", 5);
   diagnosticPublisher_ =
       n.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 5);
-  groundColoredPublisher_ =
-      n.advertise<sensor_msgs::PointCloud2>("/perception/ground_colored", 5);
-
-  n.param<bool>("vis_cones", vis_cones_, true);
-  n.param<bool>("big_box", big_box_, false);
-  n.param<bool>("color_clusters", color_clusters_, true);
+  
 }
 
 /**
@@ -56,11 +61,13 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   publishDiagnostic(OK, "[perception] preprocessed points",
                     "#points: " + std::to_string(preprocessed_pc->size()));
 
-  sensor_msgs::PointCloud2 preprocessed_msg;
-  pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
-  preprocessed_msg.header.stamp = msg.header.stamp;
-  preprocessed_msg.header.frame_id = msg.header.frame_id;
-  preprocessedLidarPublisher_.publish(preprocessed_msg);
+  if(publish_preprocessing_){
+    sensor_msgs::PointCloud2 preprocessed_msg;
+    pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
+    preprocessed_msg.header.stamp = msg.header.stamp;
+    preprocessed_msg.header.frame_id = msg.header.frame_id;
+    preprocessedLidarPublisher_.publish(preprocessed_msg);
+  }
 
   // Ground plane removal
   pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points(
@@ -83,16 +90,19 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
                     "[perception] ground removal time",
                     "time needed: " + std::to_string(time_round));
 
-  sensor_msgs::PointCloud2 groundremoval_msg;
-  pcl::toROSMsg(*notground_points, groundremoval_msg);
-  groundremoval_msg.header.frame_id = msg.header.frame_id;
-  groundremoval_msg.header.stamp = msg.header.stamp;
-  groundRemovalLidarPublisher_.publish(groundremoval_msg);
+  if(publish_ground_){
+    sensor_msgs::PointCloud2 groundremoval_msg;
+    pcl::toROSMsg(*notground_points, groundremoval_msg);
+    groundremoval_msg.header.frame_id = msg.header.frame_id;
+    groundremoval_msg.header.stamp = msg.header.stamp;
+    groundRemovalLidarPublisher_.publish(groundremoval_msg);  
 
-  // publish colored pointcloud to check order points
-  sensor_msgs::PointCloud2 ground_msg =
+    // publish colored pointcloud to check order points
+    sensor_msgs::PointCloud2 ground_msg =
       ground_removal_.publishColoredGround(*notground_points, msg);
-  groundColoredPublisher_.publish(ground_msg);
+    groundColoredPublisher_.publish(ground_msg);
+  }
+  
 
   // Cone clustering
   sensor_msgs::PointCloud cluster;
@@ -109,7 +119,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   publishDiagnostic(time_round < 1 ? OK : WARN, "[perception] clustering time",
                     "time needed: " + std::to_string(time_round));
 
-  if (color_clusters_) {
+  if (publish_clusters_) {
     clustersColored = cone_clustering_.clustersColoredMessage(clusters);
     clustersColored.header.frame_id = msg.header.frame_id;
     clustersColored.header.stamp = msg.header.stamp;
@@ -123,7 +133,6 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
                     "#points: " + std::to_string(cluster.points.size()));
 
   // Create an array of markers to display in Foxglove
-  publishMarkers(cluster);
   publishObservations(cluster);
   publishDiagnostic(OK, "[perception] end processing", "pointcloud processed");
 }
@@ -187,75 +196,6 @@ void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
   }
 
   conePublisher_.publish(observations);
-}
-
-/**
- * @brief Publishes a MarkerArray for visualisation purposes
- *
- */
-void Lidar::publishMarkers(const sensor_msgs::PointCloud cones) {
-  visualization_msgs::MarkerArray markers;
-
-  int i = 0;
-  for (auto cone : cones.points) {
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = cones.header.frame_id;
-    marker.header.stamp = cones.header.stamp;
-    marker.ns = "cones";
-    marker.type = visualization_msgs::Marker::CUBE;
-    marker.action = visualization_msgs::Marker::ADD;
-    float color = cones.channels[0].values[i];
-    float x_size = cones.channels[1].values[i];
-    float y_size = cones.channels[2].values[i];
-    float z_size = cones.channels[3].values[i];
-    marker.id = i++;
-
-    marker.pose.position.x = cone.x;
-    marker.pose.position.y = cone.y;
-    marker.pose.position.z = cone.z;
-    marker.pose.orientation.x = 0.0;
-    marker.pose.orientation.y = 0.0;
-    marker.pose.orientation.z = 0.0;
-    marker.pose.orientation.w = 1.0;
-
-    marker.scale.x = big_box_ ? 0.5 : x_size; // 0.228; // in meters
-    marker.scale.y = big_box_ ? 0.5 : y_size; // 0.228;
-    marker.scale.z = big_box_ ? 0.5 : z_size; // 0.325;
-
-    if (color == 2) {
-      marker.color.r = 1;
-      marker.color.g = 0.5;
-      marker.color.b = 0;
-      marker.color.a = 1;
-    } else {
-      if (vis_cones_) {
-        marker.type = visualization_msgs::Marker::MESH_RESOURCE;
-        marker.mesh_use_embedded_materials = true;
-        marker.mesh_resource = color == 1 ? yellow_url_ : blue_url_;
-        marker.scale.x = 1;
-        marker.scale.y = 1;
-        marker.scale.z = 1;
-      } else {
-        marker.color.r = color;
-        marker.color.g = color;
-        marker.color.b = 1 - color;
-        marker.color.a = 1;
-      }
-    }
-
-    markers.markers.push_back(marker);
-  }
-
-  visualization_msgs::MarkerArray clear_cones;
-  visualization_msgs::Marker marker;
-  marker.header.frame_id = cones.header.frame_id;
-  marker.header.stamp = cones.header.stamp;
-  marker.ns = "cones";
-  marker.action = visualization_msgs::Marker::DELETEALL;
-  clear_cones.markers.push_back(marker);
-  visPublisher_.publish(clear_cones);
-
-  visPublisher_.publish(markers);
 }
 
 void Lidar::publishDiagnostic(DiagnosticStatusEnum status, std::string name,

@@ -29,10 +29,11 @@
         <param name= "cone_height_width_factor" value = "0.5"/>
         <param name= "cone_reconstruction_treshold" value= "0.10"/>
 
-        <param name= "vis_cones" value = "false"/>
-        <param name= "big_box" value = "true"/>
-        <param name= "color_clusters" value = "true"/>
+        <param name= "publish_preprocessing" value = "false"/>
+        <param name= "publish_ground" value = "false"/>
+        <param name= "publish_clusters" value = "false"/>
         <param name= "use_sort" value = "false"/>
+        
         <param name= "color_factor" value = "1"/>
  
         <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
@@ -43,5 +44,14 @@
         <remap from="lidar/perception/cones_lidar" to="ugr/vis/lidar/cones"/>
         <remap from="lidar/perception/clusters_colored" to="ugr/vis/lidar/clusters"/>
         <remap from="lidar/perception/ground_colored" to="ugr/vis/lidar/coloredground"/>
+    </node>
+
+    <node pkg="slam_vis" output="screen" type="vis_obs.py" name="lidar_visualiser">
+        <param name="namespace" value="perception/car" />
+        <param name="use_covariance" value="true" />
+        <param name="use_cones" value="true" />
+
+        <remap from="/input/vis" to="/ugr/car/observations/lidar" />
+        <remap from="/output/vis" to="/vis/perception/lidar" />
     </node>
 </launch>
