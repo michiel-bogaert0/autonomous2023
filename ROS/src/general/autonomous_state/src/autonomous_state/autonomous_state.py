@@ -4,6 +4,7 @@ from ugr_msgs.msg import State
 from nav_msgs.msg import Odometry
 from node_fixture import AutonomousStatesEnum, StateMachineScopeEnum, SLAMStatesEnum, create_diagnostic_message
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+from time import sleep
 
 from car_state import *
 
@@ -47,7 +48,7 @@ class AutonomousController:
             self.main()
 
             self.car.update(self.state)
-            rospy.sleep(0.05)
+            sleep(0.05)
 
     def main(self):
         """
@@ -75,7 +76,7 @@ class AutonomousController:
         elif ccs["EBS"] == carStateEnum.ON:
 
             if (
-                rospy.has_param("/mission")
+                rospy.has_param("/mission") and rospy.get_param("/mission") != ""
                 and ccs["ASMS"] == carStateEnum.ON
                 and (
                     ccs["ASB"] == carStateEnum.ON
@@ -140,7 +141,7 @@ class AutonomousController:
             also do something
             """
 
-            self.mission_finished = state.cur_state == SLAMStatesEnum.FINISHED
+            self.mission_finished = state.cur_state == SLAMStatesEnum.FINISHED or state.cur_state == SLAMStatesEnum.FINISHING
 
         elif state.scope == StateMachineScopeEnum.AUTONOMOUS:
             return

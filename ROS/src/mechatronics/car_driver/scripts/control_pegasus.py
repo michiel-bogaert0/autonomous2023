@@ -59,8 +59,8 @@ class PegasusController:
         # Only allowed to control if: AS Drive and SLAM not finished
         if state.scope == "autonomous":
             self.is_running = state.cur_state == AutonomousStatesEnum.ASDRIVE
-        elif state.scope == "slam":
-            self.is_running = state.cur_state != SLAMStatesEnum.FINISHED
+        elif state.scope == "slam" and self.is_running:
+            self.is_running = state.cur_state != SLAMStatesEnum.FINISHED or state.cur_state != SLAMStatesEnum.FINISHING
 
         # If not running, stop!
         if not self.is_running:

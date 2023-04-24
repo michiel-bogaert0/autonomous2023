@@ -1,5 +1,3 @@
-import rospy
-
 from car_state import carStateEnum, CarState
 from node_fixture import AutonomousStatesEnum
 
@@ -16,8 +14,6 @@ class SimulationState(CarState):
 
     def __init__(self) -> None:
 
-        self.as_ready_time = rospy.Time.now().to_sec()
-
         self.state = {
             "TS": carStateEnum.UNKOWN,
             "ASMS": carStateEnum.UNKOWN,
@@ -29,14 +25,6 @@ class SimulationState(CarState):
         self.as_state = AutonomousStatesEnum.ASOFF
 
     def update(self, state: AutonomousStatesEnum):
-
-        # On a state transition, start 5 second timeout
-        if (
-            state == AutonomousStatesEnum.ASREADY
-            and self.as_state != AutonomousStatesEnum.ASREADY
-        ):
-            self.as_ready_time = rospy.Time.now().to_sec()
-
         self.as_state = state
 
     def get_state(self):
@@ -46,10 +34,8 @@ class SimulationState(CarState):
             like EBS and ASSI. See general docs for info about this state
         """
 
-        t = rospy.Time.now().to_sec()
-
         # R2D
-        if t - self.as_ready_time > 5.0:
+        if self.as_state == AutonomousStatesEnum.ASREADY:
             self.state["R2D"] = carStateEnum.ACTIVATED
         elif self.as_state != AutonomousStatesEnum.ASDRIVE:
             self.state["R2D"] = carStateEnum.OFF
@@ -63,7 +49,7 @@ class SimulationState(CarState):
         )
 
         # ASMS
-        self.as_state["ASMS"] = carStateEnum.ON
+        self.state["ASMS"] = carStateEnum.ON
 
         # EBS
         self.state["EBS"] = carStateEnum.ON

@@ -237,6 +237,7 @@ class SLAMStatesEnum(str, enum.Enum):
     IDLE = "idle"
     EXPLORATION = "exploration"
     RACING = "racing"
+    FINISHING = "finishing"
     FINISHED = "finished"
 
 # Autonomous missions

@@ -4,7 +4,6 @@ from enum import Enum
 from std_msgs.msg import UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from node_launcher import NodeLauncher
 from node_fixture.node_fixture import (
     AutonomousMission,
@@ -13,9 +12,10 @@ from node_fixture.node_fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+from nav_msgs.msg import Odometry
 
+from time import sleep
 
 class Controller:
     def __init__(self) -> None:
@@ -58,7 +58,7 @@ class Controller:
                 )
             self.update()
 
-            rospy.sleep(0.1)
+            sleep(0.1)
 
     def update(self):
         """
@@ -68,7 +68,7 @@ class Controller:
         new_state = self.state
 
         if self.state == SLAMStatesEnum.IDLE or self.state == SLAMStatesEnum.FINISHED or (rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission):
-            if rospy.has_param("/mission"):
+            if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
                 # Go to state depending on mission
                 self.mission = rospy.get_param("/mission")
 
@@ -78,9 +78,20 @@ class Controller:
                 if self.mission == AutonomousMission.ACCELERATION:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
-                else:
-                    new_state = SLAMStatesEnum.EXPLORATION
+                elif self.mission == AutonomousMission.SKIDPAD:
+                    # TODO something special, but 
+                    # TODO for that loop closure 
+                    # TODO must be updated as well (in progress)
+                    new_state = SLAMStatesEnum.RACING
+                elif self.mission == AutonomousMission.AUTOCROSS:
                     self.target_lap_count = 1
+                    new_state = SLAMStatesEnum.EXPLORATION
+                elif self.mission == AutonomousMission.TRACKDRIVE:
+                    self.target_lap_count = 1
+                    new_state = SLAMStatesEnum.EXPLORATION
+                else:
+                    self.target_lap_count = -1
+                    new_state = SLAMStatesEnum.EXPLORATION
 
                 self.launcher.launch_node(
                     "slam_controller", f"launch/{self.mission}_{new_state}.launch"
@@ -89,6 +100,7 @@ class Controller:
                 self.launcher.shutdown()
         elif not rospy.has_param("/mission"):
             self.launcher.shutdown()
+            new_state = SLAMStatesEnum.IDLE
 
         self.change_state(new_state)
 
@@ -145,13 +157,17 @@ class Controller:
         )
         self.state = new_state
 
-        self.state_publisher.publish(
-            State(
-                scope=StateMachineScopeEnum.SLAM,
-                prev_state=self.state,
-                cur_state=new_state,
-            )
-        )
+    def handle_odom(self, odom: Odometry):
+        """
+        Just keeps track of latest odometry estimate
+
+        Args:
+            odom: the odometry message containing speed information
+        """
+
+        if abs(odom.twist.twist.linear.x) < 0.05 and self.state == SLAMStatesEnum.FINISHING:
+            self.change_state(SLAMStatesEnum.FINISHED)
+        
 
     def lapFinished(self, laps):
         """
@@ -175,9 +191,9 @@ class Controller:
                         "slam_controller", f"launch/{self.mission}_{new_state}.launch"
                     )
                 else:
-                    new_state = SLAMStatesEnum.FINISHED
+                    new_state = SLAMStatesEnum.FINISHING
             else:
-                new_state = SLAMStatesEnum.FINISHED
+                new_state = SLAMStatesEnum.FINISHING
 
             self.change_state(new_state)
 

@@ -43,6 +43,7 @@ namespace slam
       // ROS parameters
       string base_link_frame;
       string world_frame;
+      string map_frame;
       string slam_base_link_frame;
       bool post_clustering;
       int particle_count;
