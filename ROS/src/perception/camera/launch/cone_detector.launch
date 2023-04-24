@@ -19,6 +19,6 @@
         <param name="use_cones" value="false" />
 
         <remap from="/input/vis" to="/ugr/car/observations/camera" />
-        <remap from="/output/vis" to="/vis/perception" />
+        <remap from="/output/vis" to="/vis/perception/camera" />
     </node>
 </launch>
