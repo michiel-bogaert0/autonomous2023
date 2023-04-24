@@ -1,7 +1,0 @@
-<launch>
-
-    <include file="$(find car_driver)/launch/pegasus.launch">
-        <arg name="reference_frame" default="ugr/car_odom"/>
-    </include>
-
-</launch>

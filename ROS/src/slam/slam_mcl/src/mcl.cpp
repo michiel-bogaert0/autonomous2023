@@ -48,6 +48,7 @@ namespace slam
                                  base_link_frame(n.param<string>("base_link_frame", "ugr/car_base_link")),
                                  slam_base_link_frame(n.param<string>("slam_base_link_frame", "ugr/slam_base_link")),
                                  world_frame(n.param<string>("world_frame", "ugr/car_odom")),
+                                 map_frame(n.param<string>("map_frame", "ugr/map")),
                                  particle_count(n.param<int>("particle_count", 100)),
                                  effective_particle_count(n.param<int>("effective_particle_count", 75)),
                                  eps(n.param<double>("eps", 2.0)),
@@ -96,25 +97,54 @@ namespace slam
     // Try to fetch the initial position of the car using tf service
     tf_service::BufferClient buffer("/tf_service");
     buffer.waitForServer();
-
     // Use it like any other TF2 buffer.
     std::string errstr;
-    if (buffer.canTransform(this->world_frame, this->base_link_frame, ros::Time(0), ros::Duration(1), &errstr))
+
+    // For particle initial position
+    if (buffer.canTransform(this->map_frame, this->slam_base_link_frame, ros::Time(0), ros::Duration(1), &errstr))
     {
-      geometry_msgs::TransformStamped initial_car_pose = buffer.lookupTransform(this->world_frame, this->base_link_frame, ros::Time(0), ros::Duration(1));
+      geometry_msgs::TransformStamped initial_particle_pose = buffer.lookupTransform(this->map_frame, this->slam_base_link_frame, ros::Time(0), ros::Duration(1));
 
       const tf2::Quaternion quat(
-          initial_car_pose.transform.rotation.x,
-          initial_car_pose.transform.rotation.y,
-          initial_car_pose.transform.rotation.z,
-          initial_car_pose.transform.rotation.w);
+          initial_particle_pose.transform.rotation.x,
+          initial_particle_pose.transform.rotation.y,
+          initial_particle_pose.transform.rotation.z,
+          initial_particle_pose.transform.rotation.w);
 
-      double roll, pitch, yaw;
-      this->prev_state[0] = initial_car_pose.transform.translation.x;
-      this->prev_state[1] = initial_car_pose.transform.translation.y;
-      tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-      this->prev_state[2] = yaw;
+      for (int i = 0; i < this->particles.size(); i++)
+      {
+        Particle &particle = this->particles[i];
+
+        VectorXf xv = particle.pose();
+        xv(0) = initial_particle_pose.transform.translation.x;
+        xv(1) = initial_particle_pose.transform.translation.y;
+
+        double roll, pitch, yaw;
+        tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+        xv(2) = yaw;
+
+        particle.setPose(xv);
+      }
+
+      // For prev_state
+      if (buffer.canTransform(this->world_frame, this->base_link_frame, initial_particle_pose.header.stamp, ros::Duration(1), &errstr))
+      {
+        geometry_msgs::TransformStamped initial_car_pose = buffer.lookupTransform(this->world_frame, this->base_link_frame, initial_particle_pose.header.stamp, ros::Duration(1));
+
+        const tf2::Quaternion quat(
+            initial_car_pose.transform.rotation.x,
+            initial_car_pose.transform.rotation.y,
+            initial_car_pose.transform.rotation.z,
+            initial_car_pose.transform.rotation.w);
+
+        double roll, pitch, yaw;
+        this->prev_state[0] = initial_car_pose.transform.translation.x;
+        this->prev_state[1] = initial_car_pose.transform.translation.y;
+        tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+        this->prev_state[2] = yaw;
+      }
     }
+
     ROS_INFO("MCL has started!");
     diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                      "Status",
@@ -634,7 +664,7 @@ namespace slam
     nav_msgs::Odometry odom;
 
     odom.header.stamp = ros::Time::now();
-    odom.header.frame_id = this->world_frame;
+    odom.header.frame_id = this->map_frame;
     odom.child_frame_id = this->slam_base_link_frame;
 
     odom.pose.pose.position.x = pose(0);
@@ -653,7 +683,7 @@ namespace slam
     tf2::Transform transform(quat, tf2::Vector3(pose(0), pose(1), 0));
 
     geometry_msgs::TransformStamped transformMsg;
-    transformMsg.header.frame_id = this->world_frame;
+    transformMsg.header.frame_id = this->map_frame;
     transformMsg.header.stamp = ros::Time::now();
     transformMsg.child_frame_id = this->slam_base_link_frame;
 

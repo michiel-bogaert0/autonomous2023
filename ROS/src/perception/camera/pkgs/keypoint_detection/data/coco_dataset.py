@@ -7,9 +7,11 @@ from typing import List, Tuple
 
 import albumentations as A
 import torch
-from keypoint_detection.data.coco_parser import (CocoImage,
-                                                 CocoKeypointCategory,
-                                                 CocoKeypoints)
+from keypoint_detection.data.coco_parser import (
+    CocoImage,
+    CocoKeypointCategory,
+    CocoKeypoints,
+)
 from keypoint_detection.data.imageloader import ImageDataset, ImageLoader
 from keypoint_detection.types import COCO_KEYPOINT_TYPE, IMG_KEYPOINTS_TYPE
 from torchvision.transforms import ToTensor

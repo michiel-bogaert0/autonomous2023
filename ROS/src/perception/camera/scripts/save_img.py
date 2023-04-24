@@ -10,7 +10,6 @@ from std_msgs.msg import Empty
 from tools.tools import np_to_ros_image, ros_img_to_np
 
 
-
 class ImageSaver:
     def __init__(self):
         rospy.init_node("image_saver")

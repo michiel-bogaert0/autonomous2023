@@ -1,0 +1,8 @@
+<launch>
+    <!-- Camera node -->
+    <arg name="type" default="camera"/>
+    <include file="$(find camera)/launch/publisher.launch" pass_all_args="true"/>
+
+    <!-- LiDAR node -->
+    <include file="$(find ouster_ros)/launch/sensor.launch" pass_all_args="true"/>
+</launch>

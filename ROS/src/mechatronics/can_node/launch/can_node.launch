@@ -1,4 +1,5 @@
 <launch>
+
     <node pkg="can_node" type="can_converter.py" name="can_converter" output="screen">
         <param name="res_send_interval" value="0.1" />
         

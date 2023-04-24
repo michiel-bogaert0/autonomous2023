@@ -1,6 +1,6 @@
 import inspect
 from abc import ABC, abstractmethod
-from typing import Any, get_type_hints,List
+from typing import Any, get_type_hints, List
 
 
 class Aggregation(ABC):

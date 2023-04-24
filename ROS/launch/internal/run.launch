@@ -1,0 +1,18 @@
+<launch>
+
+  <arg name="frames" default="pegasus_v2"/>
+  <arg name="car" default="simulation"/>
+  <arg name="mission" default=""/>
+  <arg name="use_sim_time" default="false"/>
+
+  <param name="mission" value="$(arg mission)"/>
+  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+  
+  <include file="$(find autonomous_state)/../../../launch/frames/$(arg frames).launch" />
+
+  <include file="$(find autonomous_state)/../../../launch/internal/perception.launch" pass_all_args="true"/>
+  <include file="$(find autonomous_state)/../../../launch/internal/general.launch" pass_all_args="true"/>
+  <include file="$(find autonomous_state)/../../../launch/internal/slam.launch" pass_all_args="true"/>
+  <include file="$(find autonomous_state)/../../../launch/internal/control.launch" pass_all_args="true"/>
+
+</launch>

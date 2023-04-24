@@ -1,8 +1,19 @@
 <launch>
-     <!-- ? Ony need CAN from capture.launch -->
-    <include file="$(find can_node)/launch/can_converter.launch">
-    </include>
+  <arg name="car" default="simulation"/>
+  <arg name="mission" default=""/>
 
-    <include file="/home/ugentracing/autonomous2023/ROS/launch/process.launch" pass_all_args="true"/>
-    <include file="/home/ugentracing/autonomous2023/ROS/launch/control.launch" pass_all_args="true"/>
+  <param name="mission" value="$(arg mission)"/>
+
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="enable_sensors" value="false" />
+  <arg name="enable_can" value="true" />
+  <arg name="enable_drive" value="false" />
+
+  <include file="$(find autonomous_state)/../../../launch/internal/perception.launch" pass_all_args="true"/>
+  <include file="$(find autonomous_state)/../../../launch/internal/slam.launch" pass_all_args="true"/>
+  <include file="$(find autonomous_state)/../../../launch/internal/general.launch" pass_all_args="true"/>
+  <include file="$(find autonomous_state)/../../../launch/internal/control.launch" pass_all_args="true"/>
+
+  <include file="$(find autonomous_state)/../../../launch/external/pegasus.launch" pass_all_args="true"/>
 </launch>
