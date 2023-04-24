@@ -177,7 +177,7 @@ ConeClustering::stringClustering(
       // filter other clusters
       else {
         // cluster to far to the left to be considered when adding new points
-        if (delta_arc >  max_arc_cluster_) {
+        if (delta_arc > max_arc_cluster_) {
           finished_clusters.push_back(clusters[cluster_id]);
 
           // cluster still needs to be considered

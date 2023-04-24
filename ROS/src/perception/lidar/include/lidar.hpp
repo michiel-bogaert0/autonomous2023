@@ -37,9 +37,9 @@ private:
   ConeClustering cone_clustering_;
   GroundRemoval ground_removal_;
 
-  bool publish_preprocessing_;
-  bool publish_ground_;
-  bool publish_clusters_;// color the clusters and publish them
+  bool publish_preprocessing_; // publish the preprocessed pointcloud
+  bool publish_ground_;        // publish the debug ground pointclouds
+  bool publish_clusters_;      // color the clusters and publish them
   std::string blue_url_ = "https://storage.googleapis.com/"
                           "learnmakeshare_cdn_public/blue_cone_final.dae";
   std::string yellow_url_ = "https://storage.googleapis.com/"

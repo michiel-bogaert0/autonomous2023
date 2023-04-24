@@ -14,32 +14,30 @@ Lidar::Lidar(ros::NodeHandle &n)
   rawLidarSubscriber_ =
       n.subscribe("/ugr/car/sensors/lidar", 10, &Lidar::rawPcCallback, this);
 
-
   n.param<bool>("publish_preprocessing", publish_preprocessing_, false);
   n.param<bool>("publish_ground", publish_ground_, false);
   n.param<bool>("publish_clusters", publish_clusters_, true);
   // Publish to the filtered and clustered lidar topic
-  if(publish_preprocessing_)
+  if (publish_preprocessing_)
     preprocessedLidarPublisher_ =
-      n.advertise<sensor_msgs::PointCloud2>("perception/preprocessed_pc", 5);
-  if(publish_ground_){
+        n.advertise<sensor_msgs::PointCloud2>("perception/preprocessed_pc", 5);
+  if (publish_ground_) {
     groundRemovalLidarPublisher_ =
-      n.advertise<sensor_msgs::PointCloud2>("perception/groundremoval_pc", 5);
+        n.advertise<sensor_msgs::PointCloud2>("perception/groundremoval_pc", 5);
     groundColoredPublisher_ =
-      n.advertise<sensor_msgs::PointCloud2>("/perception/ground_colored", 5);
+        n.advertise<sensor_msgs::PointCloud2>("/perception/ground_colored", 5);
   }
-    
+
   clusteredLidarPublisher_ =
       n.advertise<sensor_msgs::PointCloud>("perception/clustered_pc", 5);
-  if(publish_clusters_)
+  if (publish_clusters_)
     clustersColoredpublisher_ =
-      n.advertise<sensor_msgs::PointCloud2>("perception/clusters_colored", 5);
-      
+        n.advertise<sensor_msgs::PointCloud2>("perception/clusters_colored", 5);
+
   conePublisher_ = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>(
       "perception/observations", 5);
   diagnosticPublisher_ =
       n.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 5);
-  
 }
 
 /**
@@ -61,7 +59,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   publishDiagnostic(OK, "[perception] preprocessed points",
                     "#points: " + std::to_string(preprocessed_pc->size()));
 
-  if(publish_preprocessing_){
+  if (publish_preprocessing_) {
     sensor_msgs::PointCloud2 preprocessed_msg;
     pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
     preprocessed_msg.header.stamp = msg.header.stamp;
@@ -90,19 +88,18 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
                     "[perception] ground removal time",
                     "time needed: " + std::to_string(time_round));
 
-  if(publish_ground_){
+  if (publish_ground_) {
     sensor_msgs::PointCloud2 groundremoval_msg;
     pcl::toROSMsg(*notground_points, groundremoval_msg);
     groundremoval_msg.header.frame_id = msg.header.frame_id;
     groundremoval_msg.header.stamp = msg.header.stamp;
-    groundRemovalLidarPublisher_.publish(groundremoval_msg);  
+    groundRemovalLidarPublisher_.publish(groundremoval_msg);
 
     // publish colored pointcloud to check order points
     sensor_msgs::PointCloud2 ground_msg =
-      ground_removal_.publishColoredGround(*notground_points, msg);
+        ground_removal_.publishColoredGround(*notground_points, msg);
     groundColoredPublisher_.publish(ground_msg);
   }
-  
 
   // Cone clustering
   sensor_msgs::PointCloud cluster;
