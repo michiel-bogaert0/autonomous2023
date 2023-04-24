@@ -1,0 +1,14 @@
+<launch>
+
+  <!-- Only put nodes here that are related to processing inside control -->
+  <!-- There should be NO hardware dependencies! -->
+
+  <!-- Pathplanning  -->
+  <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true"></include>
+
+  <!-- Control node (generates output commands) -->
+  <include file="$(find pid_car_control)/launch/control.launch" pass_all_args="true">
+    <arg name="reference_frame" default="ugr/car_odom" />
+  </include>
+
+</launch>

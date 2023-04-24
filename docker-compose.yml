@@ -1,5 +1,6 @@
 services:
   roscore:
+    container_name: roscore
     image: ugr-base
     network_mode: "host"
     restart: always
@@ -13,6 +14,7 @@ services:
     environment:
       - ROS_HOSTNAME=$ROS_HOSTNAME
   rviz:
+    container_name: rviz
     image: ugr-base
     network_mode: "host"
     depends_on:
@@ -29,11 +31,10 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - "./:/home/ugr/autonomous2023/:rw"
-  bridge:
+  dev:
+    container_name: dev
     image: ugr-base
     network_mode: "host"
-    ports:
-      - "9090:9090"
     depends_on:
       - roscore
     environment:
@@ -44,11 +45,15 @@ services:
     runtime: nvidia
     restart: always
     tty: true
-    entrypoint: /bin/zsh -c 'source ~/.zshrc && roslaunch rosbridge_server rosbridge_websocket.launch'
+    entrypoint: /bin/zsh # -c 'source ~/.zshrc' && /bin/zsh
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - "./:/home/ugr/autonomous2023/:rw"
+      - "./../rosbags:/home/ugr/rosbags/:rw"
+      - "./../autonomous2023_binaries:/home/ugr/autonomous2023_binaries/:rw"
+      - /dev:/dev
   builder:
+    container_name: builder
     image: ugr-base
     tty: true
     entrypoint: /bin/zsh -c 'source ~/.zshrc && cd ~/autonomous2023/ROS && catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build'
@@ -56,53 +61,12 @@ services:
       - "./:/home/ugr/autonomous2023/:rw"
     environment:
       - ROS_HOSTNAME=$ROS_HOSTNAME
-  dev-runner:
+  clean:
+    container_name: clean
     image: ugr-base
-    privileged: true
-    network_mode: "host"
-    depends_on:
-      - roscore
-    environment:
-      - "ROS_MASTER_URI=$ROS_MASTER_URI"
-      - "DISPLAY=$DISPLAY"
-      - "QT_X11_NO_MITSHM=1"
-      - ROS_HOSTNAME=$ROS_HOSTNAME
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    restart: always
     tty: true
-    entrypoint: /bin/zsh
-    ports:
-      - "7502:7502/udp"
-      - "7503:7503/udp"
+    entrypoint: /bin/zsh -c 'source ~/.zshrc && cd ~/autonomous2023/ROS && catkin clean'
     volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - "./:/home/ugr/autonomous2023/:rw"
-      - "./../autonomous2023_binaries:/home/ugr/autonomous2023_binaries/:rw"
-      - /dev:/dev
-  prod-runner:
-    image: ugr-base
-    privileged: true
-    network_mode: "host"
-    depends_on:
-      - roscore
     environment:
       - ROS_HOSTNAME=$ROS_HOSTNAME
-      - "ROS_MASTER_URI=$ROS_MASTER_URI"
-      - "DISPLAY=$DISPLAY"
-      - "QT_X11_NO_MITSHM=1"
-    runtime: nvidia
-    restart: always
-    tty: true
-    entrypoint: /bin/zsh -c "source ~/.zshrc && roslaunch /home/ugr/autonomous2023/ROS/launch/run.launch"
-    volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - "./:/home/ugr/autonomous2023/:rw"
-      - "./../autonomous2023_binaries:/home/ugr/autonomous2023_binaries/:rw"
-      - /dev:/dev

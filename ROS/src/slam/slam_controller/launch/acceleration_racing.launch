@@ -1,6 +1,8 @@
 <launch>
   
   <!-- ? FastSLAM -->
-  <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true" />
+  <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
+    <arg name="map_prefix" value="gt"/>
+  </include>
 
 </launch>
