@@ -808,9 +808,9 @@ int ntripclient_main(int argc, char **argv)
                   /* we don't expect message longer than 1513, so we cut the last
                     byte for security reasons to prevent buffer overrun */
                   rtpbuf[numbytes] = 0;
-                  if(true) // &&
-                  // (!strncmp(rtpbuf+12, "HTTP/1.1 200 OK\r\n", 17) ||
-                  // !strncmp(rtpbuf+12, "HTTP/1.0 200 OK\r\n", 17)))
+                  if(numbytes > 17+12 &&
+                  (!strncmp(rtpbuf+12, "HTTP/1.1 200 OK\r\n", 17) ||
+                  !strncmp(rtpbuf+12, "HTTP/1.0 200 OK\r\n", 17)))
                   {
                     const char *sessioncheck = "session: ";
                     const char *datacheck = "Content-Type: gnss/data\r\n";
