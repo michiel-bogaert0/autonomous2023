@@ -1,30 +1,34 @@
 from typing import Tuple
 
 import numpy as np
-import numpy.typing as npt
 import torch
 import torchvision.transforms as T
-from keypoint_detection.utils.heatmap import \
-    get_keypoints_from_heatmap
-from keypoint_detection.utils.load_checkpoints import \
-    load_from_checkpoint
+from keypoint_detection.utils.load_checkpoints import load_from_checkpoint
 
 
 class KeypointDetector:
-    def __init__(self, checkpoint_path, detection_height_threshold, device) -> None:
+    def __init__(self, keypoint_model_path, detection_height_threshold, device) -> None:
         """Initialise a keypoint detector"""
-        self.cone_image_margin = 5  # Padding that gets added to the top and left side before keypoint prediction
-        self.keypoint_image_size = np.array([128, 96])
+        self.cone_image_margin = 5  # Padding that gets added to the top and left side before keypoint predictio
+        self.keypoint_heatmap_threshold = 0.1  # The minimal heatmap intensity value that can be accepted as a keypointn
+        self.keypoint_image_size = np.array([128, 96], dtype=int)
         self.detection_height_threshold = detection_height_threshold
         self.image_resizer = T.Resize(
-            size=(int(self.keypoint_image_size[0]), int(self.keypoint_image_size[1]))
+            size=(self.keypoint_image_size[0], self.keypoint_image_size[1]),
+            antialias=False,
         )
 
         self.device = device
 
-        self.model = load_from_checkpoint(checkpoint_path)
+        self.model = load_from_checkpoint(str(keypoint_model_path))
         self.model = self.model.to(self.device)
         self.model.eval()
+
+        # Warm-up
+        print("Keypoint warm-up")
+        self.dummy_input = torch.rand(20, 3, *self.keypoint_image_size).to(self.device)
+        for _ in range(30):
+            self.model(self.dummy_input)
 
     def predict(
         self, image: torch.Tensor, bboxes
@@ -32,72 +36,50 @@ class KeypointDetector:
         """Given an image and YOLO bounding boxes, predict keypoints on each cone in the image
 
         Args:
-            image: tensor on the GPU (HxWx3)
-            bboxes: YOLOv8 'boxes' object
+            image: tensor on the GPU (3xHxW)
+            bboxes: array of bounding boxes
 
         Returns:
-            - cone categories
+            - cone validity mask
             - cone heights in pixels
             - bottom keypoint coordinates in pixels
         """
 
-        # The image should be 3xHxW
-        image = image.permute(2, 0, 1)
         # The image should also use pixel values between 0 and 1
         image = image.float() / 255
 
-        prelim_cone_categories = []
-        cone_original_sizes = []
-        cone_bbox_corners = []
-        cone_images = torch.empty((0, 3, *self.keypoint_image_size)).to(self.device)
-        for bbox in bboxes:
-            category = bbox.cls.int().detach().cpu().item()
+        valid_cones = np.ones(bboxes.shape[0], dtype=bool)
 
-            # Format:
-            #  Top-left: u, v
-            #  Bottom-right: u, v
-            bbox_kpts = [round(x) for x in bbox.xyxy[-1].detach().cpu().numpy()]
-            bbox_kpts[0] = max(0, bbox_kpts[0] - self.cone_image_margin)
-            bbox_kpts[1] = max(0, bbox_kpts[1] - self.cone_image_margin)
+        cone_original_sizes, cone_bbox_corners = np.empty((0, 2)), np.empty((0, 2))
+        cone_images = torch.empty((bboxes.shape[0], 3, *self.keypoint_image_size)).to(
+            self.device
+        )
+        for i in range(bboxes.shape[0]):
+            xyxy = bboxes[i, :4].astype(int)
+            cone_img = image[:, xyxy[1] : xyxy[3], xyxy[0] : xyxy[2]]
+            original_size = cone_img.shape[1:]
+            resized_image = self.image_resizer(cone_img)
 
-            if bbox_kpts[3] - bbox_kpts[1] < self.detection_height_threshold:
-                # Detection is not tall enough
-                continue
-            if bbox_kpts[2] - bbox_kpts[0] < self.detection_height_threshold / 4:
-                # Detection not wide enough
-                continue
-
-            resized_image = image[
-                :, bbox_kpts[1] : bbox_kpts[3], bbox_kpts[0] : bbox_kpts[2]
-            ]
-            original_size = resized_image.shape[1:]
-            resized_image = self.image_resizer(resized_image)
             # Batch all detected cones
-            prelim_cone_categories.append(category)
-            cone_original_sizes.append(original_size)
-            cone_bbox_corners.append((bbox_kpts[0], bbox_kpts[1]))
-            cone_images = torch.vstack((cone_images, resized_image.unsqueeze(0)))
+            cone_original_sizes = np.vstack((cone_original_sizes, original_size))
+            cone_bbox_corners = np.vstack((cone_bbox_corners, xyxy[:2]))
+            cone_images[i] = resized_image
 
         # Infer batched keypoints
-        with torch.no_grad():
+        with torch.inference_mode():
             predicted_keypoints = self.model(cone_images)
 
-        tops, bottoms = torch.empty((0, 2)), torch.empty((0, 2))
-        final_cone_categories = []
+        tops, bottoms = np.empty((0, 2)), np.empty((0, 2))
+        predicted_keypoints = predicted_keypoints.cpu().numpy()
         for i, pred in enumerate(predicted_keypoints):
-            bottom = torch.tensor(get_keypoints_from_heatmap(pred[1], 2))
+            bottom_idx = np.argmax(pred[1])
+            y, x = divmod(bottom_idx, self.keypoint_image_size[1])
+            bottom = np.array([x, y])
 
-            if len(bottom) == 0:
+            if pred[1][y, x] < self.keypoint_heatmap_threshold:
                 # Without a bottom keypoint, we can't do anything
+                valid_cones[i] = False
                 continue
-
-            if len(bottom) > 1:
-                # If there are multiple bottoms, take the left one
-                # The other one is probably the bottom right
-                left_idx = torch.argmin(bottom[:, 0])
-                bottom = bottom[left_idx, :]
-            else:
-                bottom = bottom[0]
 
             # Rescale
             bottom[0] = (
@@ -109,11 +91,13 @@ class KeypointDetector:
                 + cone_bbox_corners[i][1]
             )
 
-            top = torch.tensor(get_keypoints_from_heatmap(pred[0], 2))
+            top_idx = np.argmax(pred[0])
+            y, x = divmod(top_idx, self.keypoint_image_size[1])
+            top = np.array([x, y])
 
-            if len(top) == 0:
+            if pred[0][y, x] < self.keypoint_heatmap_threshold:
                 # If no top was detected, we use the estimate
-                top = torch.tensor(
+                top = np.array(
                     (
                         cone_bbox_corners[i][0]
                         + self.cone_image_margin
@@ -122,22 +106,6 @@ class KeypointDetector:
                     )
                 )
             else:
-                if len(top) > 1:
-                    # Multiple tops were found,
-                    #   take the one closest to the top-center of the bbox
-                    top_estimate = torch.tensor(
-                        (
-                            self.cone_image_margin + self.keypoint_image_size[0] / 2,
-                            self.cone_image_margin,
-                        )
-                    )
-                    errors = top - top_estimate
-                    dist = errors.pow(2).sum(dim=1)
-                    
-                    top = top[torch.argmin(dist), :]
-                else:
-                    top = top[0]
-
                 # Rescale
                 top[0] = (
                     top[0] * cone_original_sizes[i][1] / self.keypoint_image_size[1]
@@ -148,10 +116,9 @@ class KeypointDetector:
                     + cone_bbox_corners[i][1]
                 )
 
-            tops = torch.vstack((tops, top))
-            bottoms = torch.vstack((bottoms, bottom))
-            final_cone_categories.append(prelim_cone_categories[i])
+            tops = np.vstack((tops, top))
+            bottoms = np.vstack((bottoms, bottom))
 
         cone_heights = bottoms[:, 1] - tops[:, 1]
 
-        return torch.tensor(final_cone_categories), cone_heights, bottoms
+        return valid_cones, cone_heights, bottoms
