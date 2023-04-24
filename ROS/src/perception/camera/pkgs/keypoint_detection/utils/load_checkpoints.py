@@ -1,7 +1,8 @@
 from pathlib import Path
 
 import torch
-from keypoint_detection.models.backbones.backbone_factory import BackboneFactory
+from keypoint_detection.models.backbones.backbone_factory import \
+    BackboneFactory
 from keypoint_detection.models.detector import KeypointDetector
 
 

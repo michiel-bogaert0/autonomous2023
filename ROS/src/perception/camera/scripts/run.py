@@ -9,17 +9,14 @@ import numpy as np
 import numpy.typing as npt
 import rospy
 import torch
-from two_stage_model import TwoStageModel
-from three_stage_model import ThreeStageModel
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from geometry_msgs.msg import Point
 from node_fixture.node_fixture import create_diagnostic_message
 from sensor_msgs.msg import Image
-from ugr_msgs.msg import (
-    Observation,
-    ObservationWithCovariance,
-    ObservationWithCovarianceArrayStamped,
-)
+from three_stage_model import ThreeStageModel
+from two_stage_model import TwoStageModel
+from ugr_msgs.msg import (Observation, ObservationWithCovariance,
+                          ObservationWithCovarianceArrayStamped)
 
 
 class PerceptionNode:

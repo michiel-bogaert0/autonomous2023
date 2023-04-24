@@ -3,10 +3,8 @@ from typing import List
 
 import torch
 import torchvision
-from keypoint_detection.utils.heatmap import (
-    generate_channel_heatmap,
-    get_keypoints_from_heatmap,
-)
+from keypoint_detection.utils.heatmap import (generate_channel_heatmap,
+                                              get_keypoints_from_heatmap)
 from matplotlib import cm
 
 

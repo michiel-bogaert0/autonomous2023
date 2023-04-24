@@ -5,10 +5,8 @@ import timm
 import torch
 import torch.nn as nn
 from keypoint_detection.models.backbones.base_backbone import Backbone
-from keypoint_detection.models.backbones.mobilenetv3 import (
-    Conv2dSamePadding,
-    UpSamplingBlock,
-)
+from keypoint_detection.models.backbones.mobilenetv3 import (Conv2dSamePadding,
+                                                             UpSamplingBlock)
 
 
 class EfficientNet(Backbone):

@@ -4,7 +4,8 @@ from typing import List, Tuple
 import pytorch_lightning as pl
 import wandb
 from keypoint_detection.data.datamodule import KeypointsDataModule
-from keypoint_detection.models.backbones.backbone_factory import BackboneFactory
+from keypoint_detection.models.backbones.backbone_factory import \
+    BackboneFactory
 from keypoint_detection.models.detector import KeypointDetector
 from keypoint_detection.train.utils import create_pl_trainer
 from keypoint_detection.utils.path import get_wandb_log_dir_path

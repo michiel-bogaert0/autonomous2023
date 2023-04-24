@@ -9,7 +9,8 @@ import numpy as np
 import torch
 import torchvision.transforms as T
 from keypoint_detection.utils.heatmap import get_keypoints_from_heatmap
-from keypoint_detection.utils.load_checkpoints import get_model_from_wandb_checkpoint
+from keypoint_detection.utils.load_checkpoints import \
+    get_model_from_wandb_checkpoint
 from torchvision.io import read_image
 from tqdm import tqdm
 

@@ -1,9 +1,9 @@
+import time
+
 import cv2
 import numpy as np
 import numpy.typing as npt
 import torch
-import time
-
 from cone_detector import ConeDetector
 from keypoint_detector import KeypointDetector
 
