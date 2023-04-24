@@ -75,7 +75,7 @@ class KeypointDetector:
             bottom_idx = np.argmax(pred[1])
             y, x = divmod(bottom_idx, self.keypoint_image_size[1])
             bottom = np.array([x, y])
-            
+
             if pred[1][y, x] < self.keypoint_heatmap_threshold:
                 # Without a bottom keypoint, we can't do anything
                 valid_cones[i] = False

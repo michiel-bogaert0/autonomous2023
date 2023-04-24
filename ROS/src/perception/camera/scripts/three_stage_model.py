@@ -15,7 +15,7 @@ CAT_TO_COLOUR = {
 }
 
 
-class ThreeStageModel():
+class ThreeStageModel:
     def __init__(
         self,
         yolo_model_path,
@@ -43,36 +43,30 @@ class ThreeStageModel():
         # Camera settings
         self.camera_matrix = camera_matrix
 
-        # Timing info
-        self.starter, self.ender = torch.cuda.Event(
-            enable_timing=True
-        ), torch.cuda.Event(enable_timing=True)
-
     def predict(self, original_image: npt.ArrayLike):
-        
         latencies = []
 
         # The image should be 3xHxW and on the GPU
         start = time.perf_counter()
         image = torch.from_numpy(original_image).to(self.device).permute(2, 0, 1)
-        latencies.append(1000*(time.perf_counter() - start))
+        latencies.append(1000 * (time.perf_counter() - start))
 
         # Nx6 array of cones: xyxy, conf, cat
         start = time.perf_counter()
         bboxes = self.cone_detector.find_cones(image)
-        latencies.append(1000*(time.perf_counter() - start))
+        latencies.append(1000 * (time.perf_counter() - start))
 
-        # Predict keypoints        
+        # Predict keypoints
         start = time.perf_counter()
         valid_cones, heights, bottoms = self.keypoint_detector.predict(image, bboxes)
-        latencies.append(1000*(time.perf_counter() - start))
-        
+        latencies.append(1000 * (time.perf_counter() - start))
+
         # Find cone locations
         start = time.perf_counter()
         categories = bboxes[valid_cones, -1]
         confidences = bboxes[valid_cones, -2]
         cones = self.height_to_pos(categories, heights, bottoms)
-        latencies.append(1000*(time.perf_counter() - start))
+        latencies.append(1000 * (time.perf_counter() - start))
 
         return cones, confidences, latencies
 

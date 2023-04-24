@@ -9,8 +9,7 @@ import numpy as np
 import torch
 import torchvision.transforms as T
 from keypoint_detection.utils.heatmap import get_keypoints_from_heatmap
-from keypoint_detection.utils.load_checkpoints import \
-    get_model_from_wandb_checkpoint
+from keypoint_detection.utils.load_checkpoints import get_model_from_wandb_checkpoint
 from torchvision.io import read_image
 from tqdm import tqdm
 
@@ -22,7 +21,7 @@ CAT_TO_COLOUR = {
 }
 
 
-class TwoStageModel():
+class TwoStageModel:
     def __init__(
         self,
         model,
@@ -56,7 +55,7 @@ class TwoStageModel():
             self.image_encoding = None
 
         for _ in range(50):
-            result = self.model(self.dummy_input)
+            _ = self.model(self.dummy_input)
 
         # reset the timings
         self.warmup_timings = self.timings

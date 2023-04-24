@@ -1,7 +1,6 @@
 #! /usr/bin/python3
 
 import os
-import time
 from pathlib import Path
 from typing import List
 
@@ -15,8 +14,11 @@ from node_fixture.node_fixture import create_diagnostic_message
 from sensor_msgs.msg import Image
 from three_stage_model import ThreeStageModel
 from two_stage_model import TwoStageModel
-from ugr_msgs.msg import (Observation, ObservationWithCovariance,
-                          ObservationWithCovarianceArrayStamped)
+from ugr_msgs.msg import (
+    Observation,
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+)
 
 
 class PerceptionNode:
@@ -35,7 +37,9 @@ class PerceptionNode:
 
         self.visualise = rospy.get_param("~vis", False)
         if self.visualise:
-            raise NotImplementedError("Visualisation is not yet implemented, but code is ready")
+            raise NotImplementedError(
+                "Visualisation is not yet implemented, but code is ready"
+            )
             self.pub_image_annotated = rospy.Publisher(
                 "/output/image_annotated",
                 Image,
@@ -65,37 +69,41 @@ class PerceptionNode:
         # Model parameters
 
         # Maximum distance for keypoint matching (in pixels)
-        self.matching_threshold_px = rospy.get_param(
-            "~matching_threshold_px", 150
-        )
+        self.matching_threshold_px = rospy.get_param("~matching_threshold_px", 150)
         # The minimum height of a cone detection in px for it to be run through the keypoint detector
         self.detection_height_threshold = rospy.get_param(
             "~detection_height_threshold", 15
         )
         # Cones further than this are dropped during detection (in meters)
-        self.detection_max_distance = rospy.get_param(
-            "~detection_max_distance", 15
-        )
+        self.detection_max_distance = rospy.get_param("~detection_max_distance", 15)
 
-        self.use_two_stage = rospy.get_param(
-            "~use_two_stage", False
-        )
+        self.use_two_stage = rospy.get_param("~use_two_stage", False)
         self.keypoint_detector_model = rospy.get_param(
             "~keypoint_detector_model", "mobilenetv3_threestage.pt"
         )
 
         if self.use_two_stage and "threestage" in self.keypoint_detector_model:
-            rospy.logerr("You chose a three-stage keypoint detector but want to run in two-stage mode. Maybe check this:/")
+            rospy.logerr(
+                "You chose a three-stage keypoint detector but want to run in two-stage mode. Maybe check this:/"
+            )
 
         if not self.use_two_stage and "twostage" in self.keypoint_detector_model:
-            rospy.logerr("You chose a two-stage keypoint detector but want to run in three-stage mode. Maybe check this:/")
+            rospy.logerr(
+                "You chose a two-stage keypoint detector but want to run in three-stage mode. Maybe check this:/"
+            )
 
         yolo_model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolov8.pt"
-        keypoint_model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / self.keypoint_detector_model
+        keypoint_model_path = (
+            Path(os.getenv("BINARY_LOCATION"))
+            / "nn_models"
+            / self.keypoint_detector_model
+        )
         self.pipeline = None
 
         if self.use_two_stage:
-            raise NotImplementedError("TwoStage is not yet implemented, but code is ready")
+            raise NotImplementedError(
+                "TwoStage is not yet implemented, but code is ready"
+            )
             self.pipeline = TwoStageModel(
                 keypoint_model_path,
                 self.height_to_pos,
@@ -115,7 +123,6 @@ class PerceptionNode:
                 detection_max_distance=self.detection_max_distance,
                 device=self.device,
             )
-
 
         self.diagnostics.publish(
             create_diagnostic_message(
@@ -153,7 +160,7 @@ class PerceptionNode:
             create_diagnostic_message(
                 level=DiagnosticStatus.OK,
                 name="[PERC] Pipeline latency",
-                message= f"{timing_msg} ms",
+                message=f"{timing_msg} ms",
             )
         )
 
