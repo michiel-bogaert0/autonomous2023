@@ -3,7 +3,7 @@ from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, Particles
 from visualization_msgs.msg import Marker, MarkerArray
 
 
-class SlamVis:
+class ObsVis:
     def __init__(self, cones, colors=None) -> None:
         self.colors = (
             [[0, 0, 1], [1, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1], [0, 1, 1]]
@@ -14,6 +14,8 @@ class SlamVis:
         self.cones = cones
 
         self.id = 0
+
+        self.rgb_dict = {0: (0, 0, 1), 1: (1, 1, 0), 2: (1, 0, 0), 3: (1, 165 / 255, 0)}
 
     def delete_markerarray(self, namespace):
         """
@@ -112,6 +114,7 @@ class SlamVis:
         persist=False,
         use_cones=True,
         use_covariance=False,
+        scale=0.2,
     ):
         """
         Takes in an ObservationWithCovarianceArrayStamped message and produces the corresponding MarkerArary message
@@ -129,11 +132,9 @@ class SlamVis:
         """
 
         marker_array = MarkerArray()
-
         for i, obs_with_cov in enumerate(observations.observations):
 
             obs = obs_with_cov.observation
-            
             marker = Marker()
 
             marker.header = observations.header
@@ -150,22 +151,20 @@ class SlamVis:
             else:
                 marker.type = Marker.CYLINDER
                 if not use_covariance:
-                    marker.scale.x = 0.3
-                    marker.scale.y = 0.3
+                    marker.scale.x = scale
+                    marker.scale.y = scale
                     marker.scale.z = 0.02
                     marker.color.a = 1
                 else:
                     # if covariances are used, add the covariance to the scale of the cilinder
                     marker.scale.x = 0.3 + obs_with_cov.covariance[0]
                     marker.scale.y = 0.3 + obs_with_cov.covariance[3]
-                    marker.scale.z = 0.02
-
-                marker.color.r = 0 if obs.observation_class == 0 else 1
-                marker.color.g = 0 if obs.observation_class == 0 else 1
-                marker.color.b = 1 if obs.observation_class == 0 else 0
-                marker.color.a = 1 - obs_with_cov.covariance[8]
-
-            
+                    marker.scale.z = 0.02 if obs.observation_class != 2 else 0.2
+                    marker.color.a = 1 - obs_with_cov.covariance[8]
+                cone_colors = self.rgb_dict[obs.observation_class]
+                marker.color.r = cone_colors[0]
+                marker.color.g = cone_colors[1]
+                marker.color.b = cone_colors[2]
 
             marker.action = Marker.ADD
 

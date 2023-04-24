@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>slam_vis</name>
+  <name>observation_vis</name>
   <version>0.0.0</version>
   <description>The visualisation module of Localisation and Mapping</description>
 
