@@ -3,7 +3,7 @@
 
 
     <!-- ? Perception -->
-    <include file="$(env HOME)/autonomous2023/ROS/src/perception/launch/perception.launch">
+    <include file="$(env HOME)/autonomous2023/ROS/src/perception/launch/perception_capture.launch">
         <arg name="type" value="camera"/>
     </include>
     <include file="$(find ublox_gps)/launch/gps.launch"/>

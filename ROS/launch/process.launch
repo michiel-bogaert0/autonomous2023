@@ -11,8 +11,8 @@
     <param name="iteration" value="$(arg iteration)" />
 
 
-    <!-- ? Lidar -->
-    <include file="$(find lidar)/launch/lidar.launch" pass_all_args="true"></include>
+    <!-- ? Perception -->
+    <include file="$(env HOME)/autonomous2023/ROS/src/perception/launch/perception_process.launch" pass_all_args="true"></include>
 
     <!-- ? SLAM -->
     <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true"></include>

@@ -42,7 +42,7 @@ class ConeDetector:
         """
         yolo_img = self.resizer(image).unsqueeze(0)
         yolo_detections = self.yolo_model.predict(
-            yolo_img, conf=conf, device=self.device
+            yolo_img, conf=conf, device=self.device, verbose=False
         )[0]
 
         # Post-process detections

@@ -9,10 +9,10 @@ import numpy as np
 import numpy.typing as npt
 import rospy
 import torch
-from cone_detector import ConeDetector
+from two_stage_model import TwoStageModel
+from three_stage_model import ThreeStageModel
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from geometry_msgs.msg import Point
-from keypoint_detector import KeypointDetector
 from node_fixture.node_fixture import create_diagnostic_message
 from sensor_msgs.msg import Image
 from ugr_msgs.msg import (
@@ -38,6 +38,7 @@ class PerceptionNode:
 
         self.visualise = rospy.get_param("~vis", False)
         if self.visualise:
+            raise NotImplementedError("Visualisation is not yet implemented, but code is ready")
             self.pub_image_annotated = rospy.Publisher(
                 "/output/image_annotated",
                 Image,
@@ -50,40 +51,74 @@ class PerceptionNode:
 
         # Cone detection parameters
         self.rate = rospy.get_param("~rate", 10)
-        self.tensorrt = rospy.get_param("~tensorrt", True)
         self.device = (
             "cuda:0"
             if torch.cuda.is_available() and rospy.get_param("~cuda", True)
             else "cpu"
         )
-        # The minimum height of a cone detection in px for it to be run through the keypoint detector
-        self.detection_height_threshold = rospy.get_param(
-            "~detection_height_threshold", 25
-        )
-
-        yolo_model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolov8.pt"
-        self.cone_detector = None
-        self.cone_detector = ConeDetector(
-            yolo_model_path, self.device, self.detection_height_threshold
-        )
-
-        keypoint_model_path = (
-            Path(os.getenv("BINARY_LOCATION"))
-            / "nn_models"
-            / "efficientnet.pt"  # "mobilenetv3.pt"
-        )
-        self.keypoint_detector = None
-        self.keypoint_detector = KeypointDetector(
-            keypoint_model_path, self.detection_height_threshold, self.device
-        )
 
         # Camera settings
-        self.focal_length = 8
+        self.focal_length = 8  # in mm
         self.camera_matrix = np.load(
             Path(os.getenv("BINARY_LOCATION")) / "pnp" / "camera_calibration_baumer.npz"
         )["camera_matrix"]
-        self.sensor_height = 5.76
-        self.image_height = 1200
+        self.sensor_height = 5.76  # in mm
+        self.image_size = (1200, 1920)  # HxW
+
+        # Model parameters
+
+        # Maximum distance for keypoint matching (in pixels)
+        self.matching_threshold_px = rospy.get_param(
+            "~matching_threshold_px", 150
+        )
+        # The minimum height of a cone detection in px for it to be run through the keypoint detector
+        self.detection_height_threshold = rospy.get_param(
+            "~detection_height_threshold", 15
+        )
+        # Cones further than this are dropped during detection (in meters)
+        self.detection_max_distance = rospy.get_param(
+            "~detection_max_distance", 15
+        )
+
+        self.use_two_stage = rospy.get_param(
+            "~use_two_stage", False
+        )
+        self.keypoint_detector_model = rospy.get_param(
+            "~keypoint_detector_model", "mobilenetv3_threestage.pt"
+        )
+
+        if self.use_two_stage and "threestage" in self.keypoint_detector_model:
+            rospy.logerr("You chose a three-stage keypoint detector but want to run in two-stage mode. Maybe check this:/")
+
+        if not self.use_two_stage and "twostage" in self.keypoint_detector_model:
+            rospy.logerr("You chose a two-stage keypoint detector but want to run in three-stage mode. Maybe check this:/")
+
+        yolo_model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolov8.pt"
+        keypoint_model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / self.keypoint_detector_model
+        self.pipeline = None
+
+        if self.use_two_stage:
+            raise NotImplementedError("TwoStage is not yet implemented, but code is ready")
+            self.pipeline = TwoStageModel(
+                keypoint_model_path,
+                self.height_to_pos,
+                image_size=self.image_size,
+                matching_threshold_px=self.matching_threshold_px,
+                detection_height_threshold=self.detection_height_threshold,
+                detection_max_distance=self.detection_max_distance,
+                device=self.device,
+            )
+        else:
+            self.pipeline = ThreeStageModel(
+                yolo_model_path,
+                keypoint_model_path,
+                height_to_pos=self.height_to_pos,
+                camera_matrix=self.camera_matrix,
+                detection_height_threshold=self.detection_height_threshold,
+                detection_max_distance=self.detection_max_distance,
+                device=self.device,
+            )
+
 
         self.diagnostics.publish(
             create_diagnostic_message(
@@ -103,53 +138,32 @@ class PerceptionNode:
             image: The input image as numpy array
             ros_image: The input image as ROS message
         """
-        # Wait for the cone detector to initialise
-        if self.cone_detector is None or self.keypoint_detector is None:
+        # Wait for the pipeline to initialise
+        if self.pipeline is None:
             return
 
         image = self.ros_img_to_np(ros_image)
 
-        timer_start = time.perf_counter()
-        image_tensor = torch.from_numpy(image).to(self.device).permute(2, 0, 1)
-        timer_end = time.perf_counter()
-        tensor_latency = 1000 * (timer_end - timer_start)
-
-        timer_start = time.perf_counter()
-        # The image should be 3xHxW
-        # Nx4 array of cones: category, X, Y, Z
-        bboxes = self.cone_detector.find_cones(image_tensor)
-        timer_end = time.perf_counter()
-        yolo_latency = 1000 * (timer_end - timer_start)
-
-        timer_start = time.perf_counter()
-        valid_cones, heights, bottoms = self.keypoint_detector.predict(
-            image_tensor, bboxes
-        )
-        timer_end = time.perf_counter()
-        keypoint_latency = 1000 * (timer_end - timer_start)
-
-        categories = bboxes[valid_cones, -1]
-        confidences = bboxes[valid_cones, -2]
-
-        timer_start = time.perf_counter()
-        cones = self.height_to_pos(categories, heights, bottoms)
-        timer_end = time.perf_counter()
-        cone_height_latency = 1000 * (timer_end - timer_start)
+        # The image should be an RGB Opencv array of HxWx3
+        cones, cone_confidences, latencies = self.pipeline.predict(image)
 
         msg = self.create_observation_msg(cones, ros_image.header)
 
+        timing_msg = f"[{np.sum(latencies):.0f}]"
+        for t in latencies:
+            timing_msg += f" {t:.1f}"
         self.diagnostics.publish(
             create_diagnostic_message(
                 level=DiagnosticStatus.OK,
                 name="[PERC] Pipeline latency",
-                message=f"[{tensor_latency + yolo_latency + keypoint_latency + cone_height_latency:.0f}] {tensor_latency:.0f} - {yolo_latency:.0f} - {keypoint_latency:.0f} - {cone_height_latency:.0f} ms",
+                message= f"{timing_msg} ms",
             )
         )
 
         self.pub_cone_locations.publish(msg)
 
     def height_to_pos(
-        self, categories: torch.Tensor, heights: torch.Tensor, bottoms: torch.Tensor
+        self, categories: npt.ArrayLike, heights: npt.ArrayLike, bottoms: npt.ArrayLike
     ) -> npt.ArrayLike:
         """Converts a tensor of cone heights and bottom keypoints to an array of locations
 
@@ -169,7 +183,7 @@ class PerceptionNode:
         depths = (
             (gt_height - gt_ring_height)
             * self.focal_length
-            / (self.sensor_height * heights / self.image_height)
+            / (self.sensor_height * heights / self.image_size[0])
         )
 
         return np.vstack(

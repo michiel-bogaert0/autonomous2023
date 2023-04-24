@@ -1,17 +1,16 @@
 from typing import Tuple
 
 import numpy as np
-import numpy.typing as npt
 import torch
 import torchvision.transforms as T
-from keypoint_detection.utils.heatmap import get_keypoints_from_heatmap
 from keypoint_detection.utils.load_checkpoints import load_from_checkpoint
 
 
 class KeypointDetector:
     def __init__(self, keypoint_model_path, detection_height_threshold, device) -> None:
         """Initialise a keypoint detector"""
-        self.cone_image_margin = 5  # Padding that gets added to the top and left side before keypoint prediction
+        self.cone_image_margin = 5  # Padding that gets added to the top and left side before keypoint predictio
+        self.keypoint_heatmap_threshold = 0.1  # The minimal heatmap intensity value that can be accepted as a keypointn
         self.keypoint_image_size = np.array([128, 96], dtype=int)
         self.detection_height_threshold = detection_height_threshold
         self.image_resizer = T.Resize(
@@ -67,26 +66,20 @@ class KeypointDetector:
             cone_images[i] = resized_image
 
         # Infer batched keypoints
-        with torch.no_grad():
+        with torch.inference_mode():
             predicted_keypoints = self.model(cone_images)
 
         tops, bottoms = np.empty((0, 2)), np.empty((0, 2))
-        final_cone_categories = np.empty(0)
+        predicted_keypoints = predicted_keypoints.cpu().numpy()
         for i, pred in enumerate(predicted_keypoints):
-            bottom = np.array(get_keypoints_from_heatmap(pred[1], 2))
-
-            if len(bottom) == 0:
+            bottom_idx = np.argmax(pred[1])
+            y, x = divmod(bottom_idx, self.keypoint_image_size[1])
+            bottom = np.array([x, y])
+            
+            if pred[1][y, x] < self.keypoint_heatmap_threshold:
                 # Without a bottom keypoint, we can't do anything
                 valid_cones[i] = False
                 continue
-
-            if len(bottom) > 1:
-                # If there are multiple bottoms, take the left one
-                # The other one is probably the bottom right
-                left_idx = np.argmin(bottom[:, 0])
-                bottom = bottom[left_idx, :]
-            else:
-                bottom = bottom[0]
 
             # Rescale
             bottom[0] = (
@@ -98,9 +91,11 @@ class KeypointDetector:
                 + cone_bbox_corners[i][1]
             )
 
-            top = np.array(get_keypoints_from_heatmap(pred[0], 2))
+            top_idx = np.argmax(pred[0])
+            y, x = divmod(top_idx, self.keypoint_image_size[1])
+            top = np.array([x, y])
 
-            if len(top) == 0:
+            if pred[0][y, x] < self.keypoint_heatmap_threshold:
                 # If no top was detected, we use the estimate
                 top = np.array(
                     (
@@ -111,23 +106,6 @@ class KeypointDetector:
                     )
                 )
             else:
-                if len(top) > 1:
-                    # Multiple tops were found,
-                    #   take the one closest to the top-center of the bbox
-                    top_estimate = np.array(
-                        (
-                            self.cone_image_margin + self.keypoint_image_size[0] / 2,
-                            self.cone_image_margin,
-                        )
-                    )
-                    errors = top - top_estimate
-                    dist = np.sum(np.power(errors, 2), axis=1)
-                    print(errors, dist)
-
-                    top = top[np.argmin(dist), :]
-                else:
-                    top = top[0]
-
                 # Rescale
                 top[0] = (
                     top[0] * cone_original_sizes[i][1] / self.keypoint_image_size[1]
