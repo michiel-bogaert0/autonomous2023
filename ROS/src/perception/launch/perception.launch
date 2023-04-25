@@ -14,7 +14,7 @@
             <param name="scale" value="0.2"/>
 
             <remap from="/input/vis" to="/ugr/car/observations/camera" />
-            <remap from="/output/vis" to="/vis/perception" />
+            <remap from="/output/vis" to="/vis/camera" />
     </node>
 
     <!-- visualisation for lidar observations -->
@@ -25,6 +25,6 @@
             <param name="scale" value="0.2"/>
 
             <remap from="/input/vis" to="/ugr/car/observations/lidar" />
-            <remap from="/output/vis" to="/vis/perception" />
+            <remap from="/output/vis" to="/vis/lidar" />
     </node>
 </launch>
