@@ -12,7 +12,7 @@
     args="0.06 0 0.74 0 0 -0.0218149 0.999762 ugr/car_base_link ugr/car_base_link/cam0 10" />
 
   <node pkg="tf" type="static_transform_publisher" name="ugr_imu0"
-    args="-0.26 0 0.35 1 0 0 0 ugr/car_base_link ugr/car_base_link/imu0 10" />
+    args="-0.26 0 0.35 0 0 0 1 ugr/car_base_link ugr/car_base_link/imu0 10" />
   <node pkg="tf" type="static_transform_publisher" name="ugr_imu1"
     args="-0.26 0 0.37 1 0 0 0 ugr/car_base_link ugr/car_base_link/imu1 10" />
 

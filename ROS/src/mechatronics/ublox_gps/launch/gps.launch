@@ -1,12 +1,5 @@
 <launch>
 
-    <arg name="car" />
-
-    <group if="$(eval arg('car') == 'pegasus')">
-        <node pkg="tf" type="static_transform_publisher" name="ugr_gps_ublox_right" args="0.06 -0.36 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps0 10" />
-        <node pkg="tf" type="static_transform_publisher" name="ugr_gps_ublox_left" args="0.06 0.36 0.74 0 0 0 1 ugr/car_base_link ugr/car_base_link/gps1 10" />
-    </group>
-
     <!-- Fixed base -->
 
     <node pkg="ublox_gps" type="parse_ublox.py" name="parse_ublox_gps1" output="screen">
@@ -26,7 +19,6 @@
         <param name="source" value="$(env MOVING_ROVER_USB)" />
         <param name="baud" value="460800" />
         <param name="gps_frame_id" value="ugr/car_base_link/gps0" />
-        <param name="use_ntrip" value="true"/>
 
         <remap from="/output/pvt/fix" to="/ugr/car/sensors/gps0/pvt/fix" />
         <remap from="/output/pvt/odom" to="/ugr/car/sensors/gps0/pvt/odom" />

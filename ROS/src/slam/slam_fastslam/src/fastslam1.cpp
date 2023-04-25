@@ -325,7 +325,7 @@ namespace slam
     }
     else
     {
-      transformed_obs.header.stamp = ros::Time(0);
+      transformed_obs.header.stamp = ros::Time::now();
     }
 
     for (auto observation : this->observations.observations)
