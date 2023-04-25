@@ -4,11 +4,9 @@ import time
 import rospy
 from node_fixture.node_fixture import AddSubscriber, ROSNode
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
+from obs_vis import ObsVis
 
-from slam_vis import SlamVis
-
-
-class VisObs(ROSNode):
+class ObservationVisualiser(ROSNode):
     """
     This node visualises ugr_msgs/ObservationWithCovarianceArrayStamped (both local and global, doesn't matter)
     """
@@ -39,8 +37,9 @@ class VisObs(ROSNode):
 
         self.vis_namespace = rospy.get_param("~namespace", "slam_vis")
         self.vis_lifetime = rospy.get_param("~lifetime", 3)
+        self.scale = rospy.get_param("~scale")
 
-        self.vis_handler = SlamVis(
+        self.vis_handler = ObsVis(
             [self.blue_cone_model_url, self.yellow_cone_model_url]
         )
 
@@ -57,11 +56,17 @@ class VisObs(ROSNode):
         self.publish("/output/vis", empty_array)
 
         marker_array = self.vis_handler.observations_to_markerarray(
-            msg, self.vis_namespace, 0, False, self.use_cones, self.use_covariance
+            msg,
+            self.vis_namespace,
+            0,
+            False,
+            self.use_cones,
+            self.use_covariance,
+            self.scale,
         )
 
         self.publish("/output/vis", marker_array)
 
 
-node = VisObs()
+node = ObservationVisualiser()
 node.start()

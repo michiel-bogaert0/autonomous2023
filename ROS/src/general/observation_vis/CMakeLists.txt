@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(slam_vis)
+project(observation_vis)
 
 find_package(catkin REQUIRED rospy)
 

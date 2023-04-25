@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>slam_vis</name>
+  <name>observation_vis</name>
   <version>0.0.0</version>
-  <description>The visualisation module of Localisation and Mapping</description>
+  <description>A visualisation module for Observation messages</description>
 
-  <maintainer email="lowiek.vandenstockt@ugentracing.be">lowiek</maintainer>
+  <maintainer email="tristan.dhoedt@ugentracing.be">lowiek</maintainer>
 
   <license>TODO</license>
 
