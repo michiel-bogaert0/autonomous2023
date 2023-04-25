@@ -18,6 +18,7 @@ services:
     container_name: rviz
     image: ugr-base
     network_mode: "host"
+    privileged: true
     depends_on:
       - roscore
     environment:
