@@ -26,7 +26,6 @@
         <param name="source" value="$(env MOVING_ROVER_USB)" />
         <param name="baud" value="460800" />
         <param name="gps_frame_id" value="ugr/car_base_link/gps0" />
-        <param name="use_ntrip" value="true"/>
 
         <remap from="/output/pvt/fix" to="/ugr/car/sensors/gps0/pvt/fix" />
         <remap from="/output/pvt/odom" to="/ugr/car/sensors/gps0/pvt/odom" />
