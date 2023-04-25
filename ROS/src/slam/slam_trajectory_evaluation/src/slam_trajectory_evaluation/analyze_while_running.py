@@ -12,7 +12,7 @@ import os
 
 from trajectory import Trajectory
 from std_msgs.msg import UInt16
-from node_fixture.node_fixture import ROSNode, SLAMStatesEnum
+from node_fixture.node_fixture import ROSNode, SLAMStatesEnum, StateMachineScopeEnum
 from nav_msgs.msg import Odometry
 from ugr_msgs.msg import State
 from std_srvs.srv import Empty, EmptyResponse
@@ -92,10 +92,9 @@ class analyze_while_running(ROSNode):
 
     def stateChanged(self, state:State):
         """
-        TODO the code is there and normally will work, if it works remove the loopisClosed
         analyzes the trail if the round is finished
         """
-        if(state == SLAMStatesEnum.FINISHED):
+        if state.scope == StateMachineScopeEnum.SLAM and state.cur_state == SLAMStatesEnum.FINISHED:
             self.analyze_trail()
 
     def analyze_trail(self):
