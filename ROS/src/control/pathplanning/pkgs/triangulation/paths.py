@@ -34,7 +34,7 @@ class TriangulationPaths:
         triangulation_centers: np.ndarray,
         center_points: np.ndarray,
         cones: np.ndarray,
-        sorting_range: float,
+        range_front: float,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Get/generate all possible paths
 
@@ -43,7 +43,7 @@ class TriangulationPaths:
             center_points: center points of the edges of the triangles that were duplicated,
                 probably forming the center line
             cones: cones
-            sorting_range: The lookahead distance for sorting points
+            range_front: The lookahead distance for sorting points
 
         Returns:
         tuple of root node and leaves of paths
@@ -60,8 +60,8 @@ class TriangulationPaths:
             # Get the next element from the queue
             parent = queue.pop(0)
 
-            # Get the closest center points to this element that are within sorting_range
-            next_nodes = utils.sort_closest_to(center_points, (parent.x, parent.y), sorting_range)
+            # Get the closest center points to this element that are within range_front
+            next_nodes = utils.sort_closest_to(center_points, (parent.x, parent.y), range_front)
 
             # A list of all the abs_angle_change to nodes seen thus far
             angles_added = None
@@ -128,14 +128,14 @@ class TriangulationPaths:
         return root_node, leaves + queue
 
     def get_cost_branch(
-        self, branch: np.ndarray, cones: np.ndarray, sorting_range: float,
+        self, branch: np.ndarray, cones: np.ndarray, range_front: float,
     ) -> Tuple[float, float]:
         """Get cost of branch.
 
         Args:
             branch: branch to calculate cost for
             cones: cones
-            sorting_range: The lookahead distance for sorting points
+            range_front: The lookahead distance for sorting points
 
         Returns:
         tuple of angle_cost, color_cost, width_cost, spacing_cost, length_cost
@@ -151,7 +151,7 @@ class TriangulationPaths:
         length_cost = 1/distance + 1/len(node_distances) * 10 
 
         # get array of blue cones and array of yellow cones sorted by distance
-        sorted_cones = utils.sort_closest_to(cones, (0,0), sorting_range)
+        sorted_cones = utils.sort_closest_to(cones, (0,0), range_front)
         blue_sorted = sorted_cones[sorted_cones[:,2] == 0]
         yellow_sorted = sorted_cones[sorted_cones[:,2] == 1]
         
