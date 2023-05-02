@@ -46,12 +46,4 @@
         <remap from="lidar/perception/ground_colored" to="ugr/vis/lidar/coloredground"/>
     </node>
 
-    <node pkg="slam_vis" output="screen" type="vis_obs.py" name="lidar_visualiser">
-        <param name="namespace" value="perception/car" />
-        <param name="use_covariance" value="true" />
-        <param name="use_cones" value="true" />
-
-        <remap from="/input/vis" to="/ugr/car/observations/lidar" />
-        <remap from="/output/vis" to="/vis/perception/lidar" />
-    </node>
 </launch>
