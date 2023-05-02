@@ -87,10 +87,11 @@ class Triangulator:
 
         # We need at least 4 cones for Delaunay triangulation
         while len(position_cones) < 4:
-            rospy.loginfo("Not enough cones for triangulation. Trying again with a larger rectangle")
             tries = 0
             if tries >= 3:
                 return None
+            
+            rospy.loginfo("Not enough cones for triangulation. Trying again with a larger rectangle")
             
             # Make a larger rectangle to hopefully get more cones
             self.range_behind *= 2
