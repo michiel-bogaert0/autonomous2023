@@ -46,7 +46,11 @@ namespace slam
         }
 
         // calculate the vector from startpos to current pos
-        Point distanceVector = Point{(float)car_pose.transform.translation.x - startPosition.x, (float)car_pose.transform.translation.y - startPosition.y};
+        Point distanceVector = Point{
+            (float)car_pose.transform.translation.x - startPosition.x, 
+            (float)car_pose.transform.translation.y - startPosition.y, 
+            (float)car_pose.transform.translation.z - startPosition.z
+            };
         // when the currentpos is close enough to startpos (after racing the round)
         if (checkDistanceGoingUpWhenInRange)
         {
@@ -65,6 +69,7 @@ namespace slam
         {
             startPosition.x = car_pose.transform.translation.x;
             startPosition.y = car_pose.transform.translation.y;
+            startPosition.z = car_pose.transform.translation.z;
         }
         // calculate distance
         float currentDistanceSquare = DotProduct(distanceVector, distanceVector);
@@ -90,7 +95,7 @@ namespace slam
     }
     float LoopClosure::DotProduct(const Point &a, const Point &b)
     {
-        return a.x * b.x + a.y * b.y;
+        return a.x * b.x + a.y * b.y + a.z * b.z;
     }
     void LoopClosure::ResetLoop()
     {
@@ -116,6 +121,7 @@ namespace slam
         startPosition = slam::Point();
         startPosition.x = initial_car_pose.transform.translation.x;
         startPosition.y = initial_car_pose.transform.translation.y;
+        startPosition.z = initial_car_pose.transform.translation.z;
 
         doNotCheckDistance = false;
         checkDistanceGoingUpWhenInRange = false;
@@ -141,5 +147,8 @@ namespace slam
         this->ResetClosure();
         return true;
     }
-
+    void LoopClosure::UpdateFinishLine()
+    {
+        
+    }
 }

@@ -13,6 +13,7 @@ namespace slam
     {
         float x = FLT_MAX;
         float y = FLT_MAX;
+        float z = FLT_MAX;
     };
     class LoopClosure
     {
@@ -20,6 +21,7 @@ namespace slam
         LoopClosure(ros::NodeHandle &n);
 
         bool handleResetClosureService(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
+  
         void CheckWhenLoopIsClosed();
 
     private:
@@ -27,6 +29,8 @@ namespace slam
         float DotProduct(const Point &a, const Point &b);
         void ResetLoop();
         void publish();
+
+        void UpdateFinishLine();
 
         ros::NodeHandle &n;
 
