@@ -198,7 +198,9 @@ class PegasusState(CarState):
         t = time.perf_counter()
 
         # R2D
+        print(self.res_go_signal, t - self.as_ready_time)
         if self.res_go_signal and t - self.as_ready_time > 5.0:
+            print("R2f")
             self.state["R2D"] = carStateEnum.ACTIVATED
         elif self.as_state != AutonomousStatesEnum.ASDRIVE:
             self.state["R2D"] = carStateEnum.OFF
@@ -226,5 +228,7 @@ class PegasusState(CarState):
             if self.res_estop_signal or t - self.teensy_hb > 0.2
             else carStateEnum.ON
         )
+
+        print(self.state)
 
         return self.state
