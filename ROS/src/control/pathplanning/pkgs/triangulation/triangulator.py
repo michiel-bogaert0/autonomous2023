@@ -18,9 +18,7 @@ class Triangulator:
         max_angle_change: float,
         max_path_distance: float,
         safety_dist: float,
-        range_front: float,
-        range_behind: float,
-        range_sides: float,
+        sorting_range: float,
         vis_points: rospy.Publisher=None,
         vis_lines: rospy.Publisher=None,
         vis_namespace: str="pathplanning_vis",
@@ -37,9 +35,7 @@ class Triangulator:
             max_angle_change: Maximum angle change in path
             max_path_distance: Maximum distance between nodes in the planned path
             safety_dist: Safety distance from objects
-            range_front: The range in front of the car where cones should be kept
-            range_behind: The range behind the car where cones should be kept
-            range_sides: The range to the sides of the car where cones should be kept
+            sorting_range: The lookahead distance for sorting points
             vis_points: (optional) rostopic for publishing MarkerArrays
             vis_lines: (optional) rostopic for publishing PoseArrays
             vis_namespace: (optional) namespace for publishing markers
@@ -52,9 +48,7 @@ class Triangulator:
         self.max_path_distance = max_path_distance
         self.safety_dist = safety_dist
         self.safety_dist_squared = safety_dist**2
-        self.range_front = range_front
-        self.range_behind = range_behind
-        self.range_sides = range_sides
+        self.sorting_range = sorting_range
 
         # `vis` is only enabled if both point and line visualisation are passed through
         self.vis = vis_points is not None and vis_lines is not None
@@ -77,39 +71,16 @@ class Triangulator:
         Returns:
             path
         """
-        cones = cones[cones[:,2] <= 1] # Only keep blue and yellow cones as orange cones are irrelevant
         position_cones = cones[:, :-1]  # Extract the x and y positions
 
-        # Only keep cones within a rectangle around the car
-        position_cones = position_cones[position_cones[:,0] >= self.range_behind] 
-        position_cones = position_cones[abs(position_cones[:,1]) <= self.range_sides] 
-        position_cones = position_cones[position_cones[:,0] <= self.range_front]
-
         # We need at least 4 cones for Delaunay triangulation
-        while len(position_cones) < 4:
-            tries = 0
-            if tries >= 3:
-                return None
-            
-            rospy.loginfo("Not enough cones for triangulation. Trying again with a larger rectangle")
-            
-            # Make a larger rectangle to hopefully get more cones
-            self.range_behind *= 2
-            self.range_sides *= 2
-            self.range_front *= 2
-
-            position_cones = cones[:, :-1]  # Extract the x and y positions
-
-            # Only keep cones within a rectangle around the car
-            position_cones = position_cones[position_cones[:,0] >= self.range_behind] 
-            position_cones = position_cones[abs(position_cones[:,1]) <= self.range_sides] 
-            position_cones = position_cones[position_cones[:,0] <= self.range_front]
-
-            tries += 1
+        if len(position_cones) < 4:
+            print("Not enough cones for triangulation.")
+            return None
 
         # Perform triangulation and get the (useful) center points
         triangulation_centers, center_points, triangles = get_center_points(
-            position_cones, self.triangulation_min_var, self.triangulation_var_threshold, self.range_front
+            position_cones, self.triangulation_min_var, self.triangulation_var_threshold, self.sorting_range
         )
 
         # Try to get rid of false positive
@@ -139,9 +110,10 @@ class Triangulator:
                 (0, 1, 0, 1),
                 0.2,
             )
+            self.visualise_triangles(triangles, header)
 
         _, leaves = self.triangulation_paths.get_all_paths(
-            triangulation_centers, center_points, cones[:, :-1], self.range_front
+            triangulation_centers, center_points, cones[:, :-1], self.sorting_range
         )
         if leaves is None:
             return None
@@ -183,7 +155,7 @@ class Triangulator:
             (
                 angle_cost,
                 length_cost,
-            ) = self.triangulation_paths.get_cost_branch(path, cones, self.range_front)
+            ) = self.triangulation_paths.get_cost_branch(path, cones, self.sorting_range)
             costs[i] = [
                 angle_cost,
                 length_cost,
