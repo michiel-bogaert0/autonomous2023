@@ -87,11 +87,8 @@ class PegasusState(CarState):
 
         # RES
         if frame.id == 0x191:
-            print("test")
             self.res_go_signal = (frame.data[0] & 0b0000100) >> 2
             self.res_estop_signal = not (frame.data[0] & 0b0000001)
-
-            print(frame.data[0])
 
         # Teensy
         node_id = frame.id >> 2
@@ -101,7 +98,6 @@ class PegasusState(CarState):
             # Heartbeat message Teensy
             if cmd_id == 0x0:
                 self.teensy_hb = time.perf_counter()
-                print('teensy hb')
 
             # ASMS message Teensy
             if cmd_id == 0x2:
@@ -198,9 +194,7 @@ class PegasusState(CarState):
         t = time.perf_counter()
 
         # R2D
-        print(self.res_go_signal, t - self.as_ready_time)
         if self.res_go_signal and t - self.as_ready_time > 5.0:
-            print("R2f")
             self.state["R2D"] = carStateEnum.ACTIVATED
         elif self.as_state != AutonomousStatesEnum.ASDRIVE:
             self.state["R2D"] = carStateEnum.OFF
@@ -228,7 +222,5 @@ class PegasusState(CarState):
             if self.res_estop_signal or t - self.teensy_hb > 0.2
             else carStateEnum.ON
         )
-
-        print(self.state)
 
         return self.state

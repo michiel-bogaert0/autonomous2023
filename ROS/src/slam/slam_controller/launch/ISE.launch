@@ -28,7 +28,7 @@
     <param name="reset_on_time_jump" value="true" />
 
     <!-- Angular rate -->
-    <param name="imu0" value="/ugr/car/sensors/imu2" />
+    <param name="imu0" value="/ugr/car/sensors/imu0/angular_rate" />
     <rosparam param="imu0_config">[false, false, false,
       false, false, false,
       false, false, false,
@@ -37,7 +37,7 @@
     <param name="imu0_differential" value="false" />
     <param name="imu0_relative" value="true" />
 
-    <!-- <param name="imu1" value="/ugr/car/sensors/imu1/angular_rate" />
+    <param name="imu1" value="/ugr/car/sensors/imu1/angular_rate" />
     <rosparam param="imu1_config">[false, false, false,
       false, false, false,
       false, false, false,
@@ -62,7 +62,7 @@
       false, false, true,
       false, false, false]</rosparam>
     <param name="imu3_differential" value="false" />
-    <param name="imu3_relative" value="true" /> -->
+    <param name="imu3_relative" value="true" />
 
     <!-- Wheel encoders -->
     <param name="twist0" value="ugr/car/sensors/encoder0" />
@@ -100,7 +100,7 @@
     <param name="reset_on_time_jump" value="true" />
 
     <!-- Angular rate -->
-    <param name="imu0" value="/ugr/car/sensors/imu2" />
+    <param name="imu0" value="/ugr/car/sensors/imu0/angular_rate" />
     <rosparam param="imu0_config">[false, false, false,
       false, false, false,
       false, false, false,
@@ -109,7 +109,7 @@
     <param name="imu0_differential" value="false" />
     <param name="imu0_relative" value="true" />
 
-    <!-- <param name="imu1" value="/ugr/car/sensors/imu1/angular_rate" />
+    <param name="imu1" value="/ugr/car/sensors/imu1/angular_rate" />
     <rosparam param="imu1_config">[false, false, false,
       false, false, false,
       false, false, false,
@@ -134,7 +134,7 @@
       false, false, true,
       false, false, false]</rosparam>
     <param name="imu3_differential" value="false" />
-    <param name="imu3_relative" value="true" /> -->
+    <param name="imu3_relative" value="true" />
 
  
     <param name="twist0" value="ugr/car/sensors/encoder0" />

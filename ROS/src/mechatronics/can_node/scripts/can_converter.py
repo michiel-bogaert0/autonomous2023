@@ -8,7 +8,6 @@ from odrive import OdriveConverter
 from node_fixture.node_fixture import create_diagnostic_message
 
 
-
 class CanConverter:
     def __init__(self):
         # Activate the RES signals
