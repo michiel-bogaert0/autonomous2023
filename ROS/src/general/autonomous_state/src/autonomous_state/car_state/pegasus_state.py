@@ -74,7 +74,6 @@ class PegasusState(CarState):
         Handles incoming CAN message, but as a subscriber callback
         This way, we can put all HW/SW interfacing code in a single CAN driver.
         """
-        # print("CA")
 
         # ODrive
         axis_id = frame.id >> 5
