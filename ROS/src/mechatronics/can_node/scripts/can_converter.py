@@ -7,10 +7,6 @@ from imu import ImuConverter
 from odrive import OdriveConverter
 from node_fixture.node_fixture import create_diagnostic_message
 
-RES_ACTIVATION_MSG = Frame(
-    id=0x000,
-    data=[0x1, 0x11, 0, 0, 0, 0, 0, 0]
-)
 
 class CanConverter:
     def __init__(self):
@@ -37,8 +33,6 @@ class CanConverter:
 
         # create a can subscriber
         rospy.Subscriber("/input/can", Frame, self.listen_on_can)
-
-        self.bus.publish(RES_ACTIVATION_MSG)
 
         rospy.spin()
 
@@ -116,7 +110,6 @@ class CanConverter:
             and rospy.get_time() - self.last_send_time > self.res_send_interval
         ):
             self.last_send_time = rospy.get_time()
-            self.bus.publish(RES_ACTIVATION_MSG)
 
 
 if __name__ == "__main__":

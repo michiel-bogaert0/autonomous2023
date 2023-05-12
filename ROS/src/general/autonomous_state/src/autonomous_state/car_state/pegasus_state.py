@@ -50,10 +50,10 @@ class PegasusState(CarState):
         self.res_go_signal = False
         self.res_estop_signal = False
 
-        self.odrive_hb = rospy.Time.now().to_sec()
-        self.teensy_hb = rospy.Time.now().to_sec()
+        self.odrive_hb = time.perf_counter()
+        self.teensy_hb = time.perf_counter()
 
-        self.as_ready_time = rospy.Time.now().to_sec()
+        self.as_ready_time = time.perf_counter()
 
         self.state = {
             "TS": carStateEnum.UNKOWN,
@@ -82,7 +82,7 @@ class PegasusState(CarState):
 
             # Heartbeat message odrive
             if cmd_id == 1:
-                self.odrive_hb = rospy.Time.now().to_sec()
+                self.odrive_hb = time.perf_counter()
 
         # RES
         if frame.id == 0x191:
@@ -96,7 +96,7 @@ class PegasusState(CarState):
 
             # Heartbeat message Teensy
             if cmd_id == 0x0:
-                self.teensy_hb = rospy.Time.now().to_sec()
+                self.teensy_hb = time.perf_counter()
 
             # ASMS message Teensy
             if cmd_id == 0x2:
@@ -111,7 +111,7 @@ class PegasusState(CarState):
             state == AutonomousStatesEnum.ASREADY
             and self.as_state != AutonomousStatesEnum.ASREADY
         ):
-            self.as_ready_time = rospy.Time.now().to_sec()
+            self.as_ready_time = time.perf_counter()
 
         self.as_state = state
 
@@ -190,7 +190,7 @@ class PegasusState(CarState):
             like EBS and ASSI. See general docs for info about this state
         """
 
-        t = rospy.Time.now().to_sec()
+        t = time.perf_counter()
 
         # R2D
         if self.res_go_signal and t - self.as_ready_time > 5.0:
@@ -211,6 +211,9 @@ class PegasusState(CarState):
             if t - self.odrive_hb < 0.2
             else carStateEnum.OFF
         )
+
+        if t - self.odrive_hb > 0.2 or t - self.teensy_hb > 0.2:
+            self.state["ASMS"] = carStateEnum.UNKOWN
 
         # EBS
         self.state["EBS"] = (
