@@ -8,15 +8,34 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
   geometry_msgs
   diagnostic_msgs
+  message_generation
+  message_runtime
   node_fixture
 )
 find_package(Boost REQUIRED)
 
-catkin_package(
+add_service_files(FILES FinishPoint.srv)
 
-  CATKIN_DEPENDS geometry_msgs roscpp std_srvs tf2 nav_msgs tf2_ros diagnostic_msgs node_fixture
-
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
 )
+
+
+catkin_package(
+  CATKIN_DEPENDS 
+  geometry_msgs 
+  roscpp 
+  std_srvs 
+  tf2 
+  nav_msgs 
+  tf2_ros
+  diagnostic_msgs
+  node_fixture
+  message_runtime
+)
+
+
 
 include_directories(
   include
