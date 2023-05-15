@@ -1,6 +1,8 @@
 <launch>
 
-  <include file="$(find slam_simulator)/launch/slam_simulator.launch" pass_all_args="true" />
+  <include file="$(find slam_simulator)/launch/slam_simulator.launch" pass_all_args="true" >
+    <arg name="filename" value="circle_R15.yaml"/>
+  </include>
 
   <!-- TODO closed loop driver node (node still todo) -->
 

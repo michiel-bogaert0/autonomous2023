@@ -1,4 +1,12 @@
 <launch>
+
+    <include file="$(find slam_simulator)/launch/slam_simulator.launch" pass_all_args="true" ns="foo" >
+    <arg name="filename" value="circle_R15.yaml"/>
+  </include>
+  
+<include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
+    <arg name="map_prefix" value="gt"/>
+  </include>
     <node pkg="slam_loopclosure" output="screen" type="loopclosure" name="loopclosure">
         <param name="world_frame" value="ugr/map"/>
         

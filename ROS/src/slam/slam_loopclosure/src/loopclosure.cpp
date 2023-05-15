@@ -59,18 +59,20 @@ namespace slam
         distanceVectorToStart.x =(float)car_pose.transform.translation.x - finishPoint.x; 
         distanceVectorToStart.y =(float)car_pose.transform.translation.y - finishPoint.y; 
         distanceVectorToStart.z =(float)car_pose.transform.translation.z - finishPoint.z;
+
+        
         // when the currentpos is close enough to startpos (after racing the round)
         if (checkDistanceGoingUpWhenInRange)
         {
             // check if the car is in front of the startposition
             // determine if it is the target/finish or start
-            if(DotProduct(directionWhenGoinInRange, distanceVectorToStart) < 0 && !isLoopingTarget)
+            if(DotProduct(directionWhenGoingInRange, distanceVectorToStart) < 0 && !isLoopingTarget)
             {
                 amountOfLaps++;
                 this->publish();
                 ResetLoop();
             }
-            else if(DotProduct(directionWhenGoinInRange, distanceVectorToTarget) < 0)
+            else if(DotProduct(directionWhenGoingInRange, distanceVectorToTarget) < 0)
             {
                 amountOfLaps++;
                 isLoopingTarget = true;
@@ -95,13 +97,17 @@ namespace slam
                 finishPoint = startPosition;
         }
         // calculate distance
-       
+        float currentDistanceSquare = 0;
+        if(isLoopingTarget) currentDistanceSquare = DotProduct(distanceVectorToStart, distanceVectorToTarget);
+        else currentDistanceSquare = DotProduct(distanceVectorToStart, distanceVectorToStart);
+        //ROS_INFO("%f",currentDistanceSquare);
         // if the car is outside the outer range -> enable to check if the car is going towards the start position
         if (!doNotCheckDistance)
         { 
             float currentDistanceSquare = 0;
             if(isLoopingTarget) currentDistanceSquare = DotProduct(distanceVectorToStart, distanceVectorToTarget);
             else currentDistanceSquare = DotProduct(distanceVectorToStart, distanceVectorToStart);
+            ROS_INFO("%f",currentDistanceSquare);
             if (isinf(currentDistanceSquare))
                 return;
             if (maxDistanceSquare < currentDistanceSquare)
@@ -149,6 +155,9 @@ namespace slam
         startPosition.x = initial_car_pose.transform.translation.x;
         startPosition.y = initial_car_pose.transform.translation.y;
         startPosition.z = initial_car_pose.transform.translation.z;
+        ROS_INFO("%f", startPosition.x);
+        ROS_INFO("%f", startPosition.y);
+        ROS_INFO("%f", startPosition.z);
 
         doNotCheckDistance = false;
         checkDistanceGoingUpWhenInRange = false;
@@ -179,7 +188,7 @@ namespace slam
         this->finishPoint = request.point;
         return true;
     }
-    bool LoopClosure::handleAdjustTargetPoint(slam_loopclosure::FinishPoint::Request &request, std_srvs::Empty::Response &response);
+    bool LoopClosure::handleAdjustTargetPoint(slam_loopclosure::FinishPoint::Request &request, std_srvs::Empty::Response &response)
     {
         this->targetPoint = request.point;
         return true;

@@ -19,7 +19,7 @@
   <arg name="penalty_score" default="-0.4"/>
   <arg name="discard_score" default="-100.0"/>
 
-  <node pkg="slam_fastslam" output="screen" type="fastslam1" name="local_fastslam_car" respawn="False">
+  <node pkg="slam_fastslam"  type="fastslam1" name="local_fastslam_car" respawn="False">
     # Parameters
     <param name="world_frame" value="$(arg world_frame)" />
     <param name="base_link_frame" value="$(arg base_link_frame)" />
