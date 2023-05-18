@@ -1,69 +1,114 @@
 <launch>
 
-    <!-- Fixed base -->
+  <!-- Fixed base: parses ublox -->
 
-    <node pkg="ublox_gps" type="parse_ublox.py" name="parse_ublox_gps1" output="screen">
-        <param name="source" value="$(env FIXED_ROVER_USB)" />
-        <param name="baud" value="460800"/>
-        <param name="gps_frame_id" value="ugr/car_base_link/gps1"/>
-        <param name="use_ntrip" value="true"/>
+  <node pkg="ublox_gps" type="parse_ublox.py" name="parse_ublox_gps1" output="screen">
+    <param name="source" value="$(env FIXED_ROVER_USB)" />
+    <param name="baud" value="460800" />
+    <param name="gps_frame_id" value="ugr/car_base_link/gps1" />
+    <param name="use_ntrip" value="true" />
 
-        <remap from="/output/pvt/fix" to="/ugr/car/sensors/gps1/pvt/fix" />
-        <remap from="/output/pvt/odom" to="/ugr/car/sensors/gps1/pvt/odom" />
-        <remap from="/output/relposned/odom" to="/ugr/car/sensors/gps1/relposned/odom" />
-    </node>
+    <remap from="/output/pvt/fix" to="/ugr/car/sensors/gps1/pvt/fix" />
+    <remap from="/output/pvt/odom" to="/ugr/car/sensors/gps1/pvt/odom" />
+    <remap from="/output/relposned/odom" to="/ugr/car/sensors/gps1/relposned/odom" />
+  </node>
 
-    <!-- Moving rover -->
+  <!-- Moving rover: parses ublox -->
 
-    <node pkg="ublox_gps" type="parse_ublox.py" name="parse_ublox_gps0" output="screen">
-        <param name="source" value="$(env MOVING_ROVER_USB)" />
-        <param name="baud" value="460800" />
-        <param name="gps_frame_id" value="ugr/car_base_link/gps0" />
+  <node pkg="ublox_gps" type="parse_ublox.py" name="parse_ublox_gps0" output="screen">
+    <param name="source" value="$(env MOVING_ROVER_USB)" />
+    <param name="baud" value="460800" />
+    <param name="gps_frame_id" value="ugr/car_base_link/gps0" />
 
-        <remap from="/output/pvt/fix" to="/ugr/car/sensors/gps0/pvt/fix" />
-        <remap from="/output/pvt/odom" to="/ugr/car/sensors/gps0/pvt/odom" />
-        <remap from="/output/relposned/odom" to="/ugr/car/sensors/gps0/relposned/odom" />
-    </node>
+    <remap from="/output/pvt/fix" to="/ugr/car/sensors/gps0/pvt/fix" />
+    <remap from="/output/pvt/odom" to="/ugr/car/sensors/gps0/pvt/odom" />
+    <remap from="/output/relposned/odom" to="/ugr/car/sensors/gps0/relposned/odom" />
+  </node>
 
-    <!-- Heading estimation -->
-    <include file="$(find ublox_gps)/launch/estimate_heading.launch" pass_all_args="true" />
+  <!-- Heading estimation -->
+  <include file="$(find ublox_gps)/launch/estimate_heading.launch" pass_all_args="true" />
 
-    <!-- This node is used to do to two things in order to make comparisons easier. 
-            1. Convert the local odometry to a NavSatFix
-            2. Transform the GPS NavSatFix into the local frame.
-    -->
-    <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node_gps1" respawn="true" output="screen">
+  <!-- Transform the GPS NavSatFix into the local frame as Odometry. For both GPSs-->
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node_gps1"
+    respawn="true">
 
-        <param name="magnetic_declination_radians" value="0.032" />
-        <param name="yaw_offset" value="0" />
-        <param name="zero_altitude" value="true" />
-        <param name="frequency" value="20" />
+    <param name="magnetic_declination_radians" value="0.032" />
+    <param name="yaw_offset" value="0" />
+    <param name="zero_altitude" value="true" />
+    <param name="frequency" value="20" />
 
-        <param name="publish_filtered_gps" value="true" />
+    <param name="publish_filtered_gps" value="true" />
 
-        <remap from="odometry/filtered" to="ugr/car/odometry/filtered/odom" />
-        <remap from="imu/data" to="/ugr/car/sensors/heading" />
-        <remap from="gps/fix" to="/ugr/car/sensors/gps1/pvt/fix" />
+    <remap from="odometry/filtered" to="ugr/car/odometry/filtered/odom" />
+    <remap from="imu/data" to="/ugr/car/sensors/heading" />
+    <remap from="gps/fix" to="/ugr/car/sensors/gps1/pvt/fix" />
 
-        <remap from="gps/filtered" to="ugr/car/odometry/filtered/odom/asnavsatfix1"/>
-        <remap from="odometry/gps" to="ugr/car/sensors/gps1/transformed" />
-      </node>
+    <remap from="gps/filtered" to="ugr/car/odometry/filtered/odom/asnavsatfix1" />
+    <remap from="odometry/gps" to="ugr/car/sensors/gps1/transformed" />
+  </node>
 
-      <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node_gps0" respawn="true" output="screen">
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node_gps0"
+    respawn="true">
 
-        <param name="magnetic_declination_radians" value="0.032" />
-        <param name="yaw_offset" value="0" />
-        <param name="zero_altitude" value="true" />
-        <param name="frequency" value="20" />
+    <param name="magnetic_declination_radians" value="0.032" />
+    <param name="yaw_offset" value="0" />
+    <param name="zero_altitude" value="true" />
+    <param name="frequency" value="20" />
 
-        <param name="publish_filtered_gps" value="true" />
+    <param name="publish_filtered_gps" value="true" />
 
-        <remap from="odometry/filtered" to="ugr/car/odometry/filtered/odom" />
-        <remap from="imu/data" to="/ugr/car/sensors/heading" />
-        <remap from="gps/fix" to="/ugr/car/sensors/gps0/pvt/fix" />
+    <remap from="odometry/filtered" to="ugr/car/odometry/filtered/map" />
+    <remap from="imu/data" to="/ugr/car/sensors/heading" />
+    <remap from="gps/fix" to="/ugr/car/sensors/gps0/pvt/fix" />
 
-        <remap from="gps/filtered" to="ugr/car/odometry/filtered/odom/asnavsatfix0"/>
-        <remap from="odometry/gps" to="ugr/car/sensors/gps0/transformed" />
-      </node>
+    <remap from="gps/filtered" to="ugr/car/odometry/filtered/odom/asnavsatfix0" />
+    <remap from="odometry/gps" to="ugr/car/sensors/gps0/transformed" />
+  </node>
+
+
+  <!-- Fuses the GPS odometry of the fixed base with heading -->
+  <node pkg="robot_localization" type="ekf_localization_node"
+    name="ekf_localization_node_gps_$(arg iteration)" output="screen" respawn="true">
+
+    <param name="world_frame" value="ugr/map" />
+    <param name="map_frame" value="ugr/gps" />
+    <param name="odom_frame" value="ugr/map" />
+    <param name="base_link_frame" value="ugr/car_base_link" />
+    <param name="base_link_frame_output" value="ugr/gt_base_link" />
+    <param name="frequency" value="60" />
+    <param name="permit_corrected_publication" value="true" />
+    <param name="sensor_timeout" value="0.05" />
+
+    <!-- <param name="publish_tf" value="false"/> -->
+    <param name="two_d_mode" value="true" />
+    <param name="reset_on_time_jump" value="true" />
+    <param name="debug" value="true" />
+    <param name="print_diagnostics" value="true" />
+
+    <param name="odom0" value="ugr/car/sensors/gps1/transformed" />
+    <param name="odom0_differential" value="false" />
+    <param name="odom0_relative" value="true" />
+
+    <rosparam param="odom0_config">
+      [true, true, false,
+      false, false, false,
+      false, false, false,
+      false, false, false,
+      false, false, false]</rosparam>
+
+    <param name="imu0" value="ugr/car/sensors/heading" />
+    <param name="imu0_differential" value="false" />
+    <param name="imu0_relative" value="true" />
+
+    <rosparam param="imu0_config">
+      [false, false, false,
+      false, false, true,
+      false, false, false,
+      false, false, false,
+      false, false, false]</rosparam>
+
+    <remap from="odometry/filtered" to="ugr/car/odometry/filtered/gps" />
+
+  </node>
 
 </launch>
