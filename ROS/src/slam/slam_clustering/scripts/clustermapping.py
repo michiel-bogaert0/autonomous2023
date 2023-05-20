@@ -75,7 +75,7 @@ class ClusterMapping(ROSNode):
         rospy.Service("clustermapping/reset", Reset, self.handle_reset_srv_request)
 
         # It is done this way instead of using decorators because we need to dynamically inject the queue size
-        AddSubscriber("ugr/car/observations/lidar", self.observation_queue_size)(
+        AddSubscriber("/input/observations", self.observation_queue_size)(
             self.handle_observation_message
         )
 
