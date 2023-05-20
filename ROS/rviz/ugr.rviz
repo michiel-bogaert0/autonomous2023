@@ -6,15 +6,13 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Perception1/Observations1/Status1
         - /SLAM1
-        - /SLAM1/TF1
         - /SLAM1/TF1/Frames1
         - /SLAM1/TF1/Tree1
+        - /SLAM1/GT1
         - /SLAM1/MCL1/Shape1
         - /Control1/Path_alt1
-        - /Odometry1/Shape1
-        - /Odometry2/Shape1
-        - /ObservationWithCovarianceStamped1
       Splitter Ratio: 0.4057970941066742
     Tree Height: 950
   - Class: rviz/Selection
@@ -34,7 +32,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Lidar Raw
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz_plugin_tutorials/Teleop
@@ -98,7 +96,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -113,7 +111,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -173,6 +171,32 @@ Visualization Manager:
           Frame Timeout: 15
           Frames:
             All Enabled: true
+            os_imu:
+              Value: true
+            os_lidar:
+              Value: true
+            os_sensor:
+              Value: true
+            ugr/car_base_link:
+              Value: true
+            ugr/car_base_link/axis0:
+              Value: true
+            ugr/car_base_link/axis1:
+              Value: true
+            ugr/car_base_link/cam0:
+              Value: true
+            ugr/car_base_link/gps0:
+              Value: true
+            ugr/car_base_link/gps1:
+              Value: true
+            ugr/car_base_link/imu0:
+              Value: true
+            ugr/car_base_link/imu1:
+              Value: true
+            ugr/car_base_link/lidar0:
+              Value: true
+            ugr/car_odom:
+              Value: true
             ugr/gt_base_link:
               Value: true
             ugr/map:
@@ -185,6 +209,28 @@ Visualization Manager:
           Show Names: true
           Tree:
             ugr/map:
+              ugr/car_odom:
+                ugr/car_base_link:
+                  ugr/car_base_link/axis0:
+                    {}
+                  ugr/car_base_link/axis1:
+                    {}
+                  ugr/car_base_link/cam0:
+                    {}
+                  ugr/car_base_link/gps0:
+                    {}
+                  ugr/car_base_link/gps1:
+                    {}
+                  ugr/car_base_link/imu0:
+                    {}
+                  ugr/car_base_link/imu1:
+                    {}
+                  ugr/car_base_link/lidar0:
+                    os_sensor:
+                      os_imu:
+                        {}
+                      os_lidar:
+                        {}
               ugr/gt_base_link:
                 {}
           Update Interval: 0
@@ -199,7 +245,7 @@ Visualization Manager:
           Enabled: true
           Name: GT
           Queue Size: 10
-          Realistic: false
+          Realistic: true
           Topic: /ugr/car/map/gt
           Unreliable: false
           Value: true
@@ -323,7 +369,7 @@ Visualization Manager:
             Value: false
           Enabled: true
           Keep: 20
-          Name: GT
+          Name: GT (sim)
           Position Tolerance: 0.10000000149011612
           Queue Size: 10
           Shape:
@@ -372,6 +418,41 @@ Visualization Manager:
             Shaft Radius: 0.05000000074505806
             Value: Arrow
           Topic: /ugr/car/odometry/filtered/mcl
+          Unreliable: false
+          Value: true
+        - Angle Tolerance: 0.10000000149011612
+          Class: rviz/Odometry
+          Covariance:
+            Orientation:
+              Alpha: 0.5
+              Color: 255; 255; 127
+              Color Style: Unique
+              Frame: Local
+              Offset: 1
+              Scale: 1
+              Value: true
+            Position:
+              Alpha: 0.30000001192092896
+              Color: 204; 51; 204
+              Scale: 1
+              Value: true
+            Value: true
+          Enabled: true
+          Keep: 100
+          Name: GT (gps)
+          Position Tolerance: 0.10000000149011612
+          Queue Size: 10
+          Shape:
+            Alpha: 1
+            Axes Length: 1
+            Axes Radius: 0.10000000149011612
+            Color: 255; 0; 127
+            Head Length: 0.30000001192092896
+            Head Radius: 0.10000000149011612
+            Shaft Length: 1
+            Shaft Radius: 0.05000000074505806
+            Value: Arrow
+          Topic: /ugr/car/odometry/filtered/gps
           Unreliable: false
           Value: true
       Enabled: true
@@ -429,90 +510,6 @@ Visualization Manager:
           Value: true
       Enabled: false
       Name: Control
-    - Angle Tolerance: 0.10000000149011612
-      Class: rviz/Odometry
-      Covariance:
-        Orientation:
-          Alpha: 0.5
-          Color: 255; 255; 127
-          Color Style: Unique
-          Frame: Local
-          Offset: 1
-          Scale: 1
-          Value: true
-        Position:
-          Alpha: 0.30000001192092896
-          Color: 204; 51; 204
-          Scale: 1
-          Value: true
-        Value: true
-      Enabled: false
-      Keep: 100
-      Name: Odometry
-      Position Tolerance: 0.10000000149011612
-      Queue Size: 10
-      Shape:
-        Alpha: 1
-        Axes Length: 1
-        Axes Radius: 0.10000000149011612
-        Color: 255; 0; 127
-        Head Length: 0.30000001192092896
-        Head Radius: 0.10000000149011612
-        Shaft Length: 1
-        Shaft Radius: 0.05000000074505806
-        Value: Arrow
-      Topic: /ugr/car/sensors/gps1/transformed
-      Unreliable: false
-      Value: false
-    - Angle Tolerance: 0.10000000149011612
-      Class: rviz/Odometry
-      Covariance:
-        Orientation:
-          Alpha: 0.5
-          Color: 255; 255; 127
-          Color Style: Unique
-          Frame: Local
-          Offset: 1
-          Scale: 1
-          Value: true
-        Position:
-          Alpha: 0.30000001192092896
-          Color: 204; 51; 204
-          Scale: 1
-          Value: true
-        Value: false
-      Enabled: false
-      Keep: 100
-      Name: Odometry
-      Position Tolerance: 0.10000000149011612
-      Queue Size: 10
-      Shape:
-        Alpha: 1
-        Axes Length: 1
-        Axes Radius: 0.10000000149011612
-        Color: 255; 255; 0
-        Head Length: 0.30000001192092896
-        Head Radius: 0.10000000149011612
-        Shaft Length: 1
-        Shaft Radius: 0.05000000074505806
-        Value: Arrow
-      Topic: /ugr/car/odometry/filtered/gps
-      Unreliable: false
-      Value: false
-    - Alpha: 1
-      Class: rviz_observations_visualization/ObservationWithCovarianceStamped
-      Class 0 color: 0; 0; 255
-      Class 1 color: 255; 214; 0
-      Class 2 color: 255; 140; 0
-      Class 3 color: 255; 69; 0
-      Class 4 color: 0; 0; 0
-      Enabled: true
-      Name: ObservationWithCovarianceStamped
-      Queue Size: 10
-      Realistic: true
-      Topic: /output/map
-      Unreliable: false
-      Value: true
   Enabled: true
   Global Options:
     Background Color: 121; 121; 121
@@ -538,7 +535,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -0.02500029280781746
+      Angle: 0.04499971121549606
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -548,10 +545,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 26.33075523376465
+      Scale: 56.4442024230957
       Target Frame: <Fixed Frame>
-      X: -1.1514618396759033
-      Y: 14.558541297912598
+      X: 5.633322715759277
+      Y: 1.2446106672286987
     Saved: ~
 Window Geometry:
   Camera:
