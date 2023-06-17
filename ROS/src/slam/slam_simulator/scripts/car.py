@@ -13,6 +13,8 @@ from sensor_msgs.msg import Imu
 from tf.transformations import quaternion_from_euler
 import tf2_ros as tf2
 
+from fs_msgs.msg import ControlCommand
+
 import models
 
 class CarSimulator:
@@ -38,7 +40,11 @@ class CarSimulator:
         - Quantisation
 
         Args:
-            
+
+            > General
+
+            control_mode: {keys} if you want to control with arrow keys, {topic} if via intention topic instead    
+        
             > Frames: 
             
             world_frame: frame where GT is reported
@@ -83,6 +89,7 @@ class CarSimulator:
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.gt_base_link_frame = rospy.get_param("~gt_base_link_frame", "ugr/gt_base_link")
+        self.control_mode = rospy.get_param("~control_mode", "keys")
 
         self.gt_publish_rate = rospy.get_param("~publish_rates/gt", 200)
         self.encoder_publish_rate = rospy.get_param("~publish_rates/encoder", 30)
@@ -91,6 +98,8 @@ class CarSimulator:
         self.encoder_noise = rospy.get_param("~noise/encoder", [0, 0.05, 0.05])
         self.imu_acceleration_noise = rospy.get_param("~noise/imu_acceleration", [0.0, 0.1, 0.01])
         self.imu_angular_velocity_noise = rospy.get_param("~noise/imu_angular_velocity", [0, 0.1, 0.01])
+
+        self.external_intent = None
 
         self.model_name = rospy.get_param("~model", "bicycle")
 
@@ -106,6 +115,9 @@ class CarSimulator:
         self.listener = keyboard.Listener()
         self.listener.start()
         self.key_events = keyboard.Events()
+
+        # Subscribers
+        self.intent = rospy.Subscriber('/input/intent', ControlCommand, self.handle_external_intent, queue_size=1)
 
         # Publishers
         self.br = tf2.TransformBroadcaster()
@@ -144,7 +156,17 @@ class CarSimulator:
                 t0 = rospy.Time.now().to_sec()
                 while not rospy.is_shutdown():
                     self.key_events = events
-                    self.get_input()
+                    
+                    if self.control_mode == "topic" and self.external_intent is not None:
+                        self.driving_intention = self.external_intent[0]
+                        self.steering_intention = self.external_intent[1]
+                    elif self.control_mode == "keys":
+                        self.get_input()
+                    else:
+                        rospy.logwarn_throttle_identical(5, "Warning: didn't receive an intention yet!")
+                        t0 = rospy.Time.now().to_sec()
+                        continue
+
                     t1 = rospy.Time.now().to_sec()
                     self.car_state, self.sensors = self.model.update(t1 - t0, self.driving_intention, self.steering_intention)
                     t0 = t1
@@ -153,6 +175,9 @@ class CarSimulator:
             print(e)
         finally:
             pass
+
+    def handle_external_intent(self, msg: ControlCommand):
+        self.external_intent = [msg.throttle - msg.brake, msg.steering]
 
     def get_input(self):
         """
