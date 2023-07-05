@@ -1,0 +1,25 @@
+<launch>
+
+  <node pkg="slam_clustering" name="clustermapping" type="clustermapping.py" output="screen">
+    <param name="use_sim_time" value="false" />
+    <param name="base_link_frame" value="ugr/car_base_link" />
+    <param name="gt_link_frame" value="ugr/gt_base_link" />
+    <param name="world_frame" value="ugr/map" />
+    <param name="do_time_transform" value="true" />
+    <param name="observation_queue_size" value="1" />
+    <param name="max_landmark_range" value="400" />
+    <param name="clustering/eps" value="0.5" />
+    <param name="standing_still_delay" value="1.0" />
+    <param name="standing_still_threshold" value="0.002" />
+    <param name="clustering/min_samples" value="5" />
+    <param name="clustering/mode" value="global" />
+    <param name="clustering/expected_nr_of_landmarks" value="1000" />
+    <param name="clustering/rate" value="10" />
+
+    <remap from="/input/observations" to="ugr/car/observations/lidar"/> 
+
+    <remap from="/output/map" to="/ugr/car/map/gt" />
+    <remap from="/output/samples" to="/ugr/car/map/gt/samples" />
+    <remap from="/output/observations" to="/ugr/car/observations/gt" />
+  </node>
+</launch>
