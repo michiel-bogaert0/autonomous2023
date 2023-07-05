@@ -222,7 +222,7 @@
 
     <param name="publish_filtered_gps" value="true" />
 
-    <remap from="odometry/filtered" to="ugr/car/odometry/filtered/map" />
+    <remap from="odometry/filtered" to="ugr/car/odometry/filtered/odom" />
     <remap from="imu/data" to="/ugr/car/sensors/heading" />
     <remap from="gps/fix" to="/ugr/car/sensors/gps0/pvt/fix" />
 
