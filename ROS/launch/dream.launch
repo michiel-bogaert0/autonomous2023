@@ -8,7 +8,9 @@
 
   <arg name="enable_sensors" value="false" />
   <arg name="enable_can" value="true" />
-  <arg name="enable_drive" value="false" />
+  <arg name="enable_drive" value="true" />
+
+  <include file="$(find autonomous_state)/../../../launch/frames/pegasus_v2.launch" />
 
   <include file="$(find autonomous_state)/../../../launch/internal/perception.launch" pass_all_args="true"/>
   <include file="$(find autonomous_state)/../../../launch/internal/slam.launch" pass_all_args="true"/>

@@ -3,14 +3,14 @@
     <arg name="max_time_deviation" default="0.02" />
     <arg name="base_link_frame" default="ugr/car_base_link" />
 
-    <node pkg="ublox_gps" type="estimate_heading.py" name="estimate_heading" output="screen">
+    <node pkg="ublox_gps" type="estimate_heading.py" name="estimate_heading">
         <param name="rate" value="$(arg rate)" />
         <param name="max_time_deviation" value="$(arg max_time_deviation)" />
         <param name="base_link_frame" value="$(arg base_link_frame)" />
 
         # gps0 should be right, gps1 should be left
-        <remap from="/input/gps1" to="/ugr/car/sensors/gps1"/>
-        <remap from="/input/gps0" to="/ugr/car/sensors/gps0"/>
+        <remap from="/input/gps1" to="/ugr/car/sensors/gps1/pvt/fix"/>
+        <remap from="/input/gps0" to="/ugr/car/sensors/gps0/pvt/fix"/>
         <remap from="/input/gps1/vel" to="/ugr/car/sensors/gps1/vel"/>
         <remap from="/input/gps0/vel" to="/ugr/car/sensors/gps0/vel"/>
 

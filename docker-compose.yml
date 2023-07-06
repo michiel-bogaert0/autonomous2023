@@ -5,6 +5,7 @@ services:
     network_mode: "host"
     restart: always
     tty: true
+    privileged: true
     build: .
     entrypoint: zsh -c 'source ~/.zshrc && roscore'
     ports:  
@@ -17,6 +18,7 @@ services:
     container_name: rviz
     image: ugr-base
     network_mode: "host"
+    privileged: true
     depends_on:
       - roscore
     environment:
@@ -45,7 +47,8 @@ services:
     runtime: nvidia
     restart: always
     tty: true
-    entrypoint: /bin/zsh # -c 'source ~/.zshrc' && /bin/zsh
+    privileged: true
+    entrypoint: /bin/zsh #-c 'source ~/.zshrc' && /bin/zsh
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - "./:/home/ugr/autonomous2023/:rw"
