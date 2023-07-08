@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>ugr_urdf</name>
+  <name>pegasus_description</name>
   <version>0.0.0</version>
-  <description>The ugr_urdf package</description>
+  <description>The pegasus_description package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
