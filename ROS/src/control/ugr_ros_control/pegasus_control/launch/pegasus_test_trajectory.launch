@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- GDB functionality -->
+  <arg name="debug" default="false" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+
+  <group ns="pegasus">
+
+    <!-- Load hardware interface -->
+    <node name="test_trajectory" pkg="ugr_ros_control" type="test_trajectory"
+          output="screen" launch-prefix="$(arg launch_prefix)">
+      <param name="trajectory_controller" value="position_trajectory_controller"/>
+      <rosparam file="$(find ugr_ros_control)/pegasus_control/config/pegasus_controllers.yaml" command="load"/>
+    </node>
+
+  </group>
+
+</launch>

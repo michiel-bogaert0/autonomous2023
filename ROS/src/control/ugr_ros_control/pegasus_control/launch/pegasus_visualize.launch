@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Load example URDF -->
+  <param name="robot_description" command="$(find xacro)/xacro '$(find pegasus_description)/urdf/pegasus.xacro'" />
+    
+  <!-- Show in Rviz  -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find pegasus_description)/launch/pegasus.rviz"/>
+
+</launch>
+
