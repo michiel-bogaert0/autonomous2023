@@ -26,7 +26,6 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
-find_package(Gflags REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS
@@ -58,7 +57,6 @@ catkin_package(
 include_directories(
   include/
   ${catkin_INCLUDE_DIRS}
-  ${Gflags_INCLUDE_DIRS}
 )
 
 # Control loop
@@ -104,31 +102,31 @@ target_link_libraries(${PROJECT_NAME}_test_trajectory
 
 ## TOOLS ------------------------------------------------------
 
-# Tool for analyzing controller performance
-add_library(controller_to_csv src/tools/controller_to_csv.cpp)
-target_link_libraries(controller_to_csv
-  ${catkin_LIBRARIES}
-)
-add_executable(${PROJECT_NAME}_controller_to_csv_main src/tools/controller_to_csv_main.cpp)
-set_target_properties(${PROJECT_NAME}_controller_to_csv_main PROPERTIES OUTPUT_NAME controller_to_csv_main PREFIX "")
-target_link_libraries(${PROJECT_NAME}_controller_to_csv_main
-  controller_to_csv
-  ${Gflags_LIBRARIES}
-  ${catkin_LIBRARIES}
-)
+# # Tool for analyzing controller performance
+# add_library(controller_to_csv src/tools/controller_to_csv.cpp)
+# target_link_libraries(controller_to_csv
+#   ${catkin_LIBRARIES}
+# )
+# add_executable(${PROJECT_NAME}_controller_to_csv_main src/tools/controller_to_csv_main.cpp)
+# set_target_properties(${PROJECT_NAME}_controller_to_csv_main PROPERTIES OUTPUT_NAME controller_to_csv_main PREFIX "")
+# target_link_libraries(${PROJECT_NAME}_controller_to_csv_main
+#   controller_to_csv
+#   ${Gflags_LIBRARIES}
+#   ${catkin_LIBRARIES}
+# )
 
-# Tool for analyzing controller performance
-add_library(csv_to_controller src/tools/csv_to_controller.cpp)
-target_link_libraries(csv_to_controller
-  ${catkin_LIBRARIES}
-)
-add_executable(${PROJECT_NAME}_csv_to_controller_main src/tools/csv_to_controller_main.cpp)
-set_target_properties(${PROJECT_NAME}_csv_to_controller_main PROPERTIES OUTPUT_NAME csv_to_controller_main PREFIX "")
-target_link_libraries(${PROJECT_NAME}_csv_to_controller_main
-  csv_to_controller
-  ${Gflags_LIBRARIES}
-  ${catkin_LIBRARIES}
-)
+# # Tool for analyzing controller performance
+# add_library(csv_to_controller src/tools/csv_to_controller.cpp)
+# target_link_libraries(csv_to_controller
+#   ${catkin_LIBRARIES}
+# )
+# add_executable(${PROJECT_NAME}_csv_to_controller_main src/tools/csv_to_controller_main.cpp)
+# set_target_properties(${PROJECT_NAME}_csv_to_controller_main PROPERTIES OUTPUT_NAME csv_to_controller_main PREFIX "")
+# target_link_libraries(${PROJECT_NAME}_csv_to_controller_main
+#   csv_to_controller
+#   ${Gflags_LIBRARIES}
+#   ${catkin_LIBRARIES}
+# )
 
 # Tool for controlling a robot from keyboard
 add_executable(${PROJECT_NAME}_keyboard_teleop src/tools/keyboard_teleop.cpp)
@@ -143,8 +141,8 @@ add_subdirectory(pegasus_control)
 
 # Install libraries
 install(TARGETS
-    controller_to_csv
-    csv_to_controller
+    # controller_to_csv
+    # csv_to_controller
     generic_hw_control_loop
     generic_hw_interface
     sim_hw_interface
@@ -154,8 +152,8 @@ install(TARGETS
 
 # Install executables
 install(TARGETS
-    ${PROJECT_NAME}_controller_to_csv_main
-    ${PROJECT_NAME}_csv_to_controller_main
+    # ${PROJECT_NAME}_controller_to_csv_main
+    # ${PROJECT_NAME}_csv_to_controller_main
     ${PROJECT_NAME}_keyboard_teleop
     ${PROJECT_NAME}_sim_hw_main
     ${PROJECT_NAME}_test_trajectory

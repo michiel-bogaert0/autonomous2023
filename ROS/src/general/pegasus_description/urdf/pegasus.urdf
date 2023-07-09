@@ -69,13 +69,13 @@
     <child link="/ugr/car_base_link/imu1"/>
   </joint>
 
-  <joint name="axis0_joint" type="fixed">
+  <joint name="axis0_joint" type="continuous">
     <origin xyz="-0.36 0.34 0" rpy="0 0 0"/>
     <parent link="/ugr/car_base_link"/>
     <child link="/ugr/car_base_link/axis0"/>
   </joint>
 
-  <joint name="axis1_joint" type="fixed">
+  <joint name="axis1_joint" type="continuous">
     <origin xyz="-0.36 -0.34 0" rpy="0 0 0"/>
     <parent link="/ugr/car_base_link"/>
     <child link="/ugr/car_base_link/axis1"/>
