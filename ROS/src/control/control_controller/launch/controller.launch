@@ -1,0 +1,10 @@
+<launch>
+
+  <arg name="mission" default="" />
+
+  <param name="/mission" value="$(arg mission)" />
+
+  <!-- ? Controller -->
+  <node name="control_controller" pkg="control_controller" type="controller.py" output="screen" />
+
+</launch>
