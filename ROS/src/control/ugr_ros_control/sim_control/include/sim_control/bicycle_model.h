@@ -24,7 +24,7 @@ public:
   }
 
   float get_forward_velocity() {
-    return this->get_forward_velocity();
+    return this->v;
   }
 
   /**
@@ -39,8 +39,6 @@ public:
    *  (x, y, heading, forward vel, linear acceleration, angular acceleration)
   */
   std::tuple<float, float, float, float, float, float> update(float dt, float driving_intention, float steering_intention);
-
-private:
 
   // Internal state
   float a, ohm, v, delta, x, y, theta, omega;

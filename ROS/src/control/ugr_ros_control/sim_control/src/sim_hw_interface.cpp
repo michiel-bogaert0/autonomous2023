@@ -56,11 +56,13 @@ void SimHWInterface::init()
   ugr_ros_control::GenericHWInterface::init();
 
   // Now check if configured joints are actually there. Also remembe joint id
-  std::string drive_joint_name = nh_.param<std::string>("hardware_interface/joints_config/drive_joint", "axis0");
-  std::string steering_joint_name = nh_.param<std::string>("hardware_interface/joints_config/steering_joint", "axis_steering");
+  std::string drive_joint_name = nh_.param<std::string>("hardware_interface/drive_joint", "axis0");
+  std::string steering_joint_name = nh_.param<std::string>("hardware_interface/steering_joint", "axis_steering");
 
   drive_joint_id = std::find(joint_names_.begin(), joint_names_.end(), drive_joint_name) - joint_names_.begin();
   steering_joint_id = std::find(joint_names_.begin(), joint_names_.end(), steering_joint_name) - joint_names_.begin();
+
+  ROS_INFO_STREAM("Drive joint id: " << drive_joint_id << " Steering joint id: " << steering_joint_id);
 
   if (drive_joint_id >= joint_names_.size())
   {
@@ -73,6 +75,8 @@ void SimHWInterface::init()
     ROS_ERROR("Error: the parameter 'hardware_interface/joints_config/steering_joint' must be given");
     throw std::invalid_argument("hardware_interface/joints_config/steering_joint must be given");
   }
+
+  ROS_INFO_NAMED("sim_hw_interface", "SimHWInterface init'd.");
 }
 
 void SimHWInterface::read(ros::Duration& elapsed_time)

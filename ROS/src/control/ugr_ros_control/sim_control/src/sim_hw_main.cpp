@@ -38,6 +38,7 @@
 
 #include <ugr_ros_control/generic_hw_control_loop.h>
 #include <sim_control/sim_hw_interface.h>
+#include <ros/ros.h>
 
 int main(int argc, char** argv)
 {

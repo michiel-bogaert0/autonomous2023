@@ -8,7 +8,6 @@ BicycleModel::BicycleModel()
 {
 
   // nh = new ros::NodeHandle("~");
-  ros::NodeHandle n("~");
   // ros::NodeHandle nh(n,"bicycle_model");
 
   this->a = 0;
@@ -21,9 +20,9 @@ BicycleModel::BicycleModel()
   this->theta = 0;
   this->omega = 0;
 
-  this->alpha = n.param<float>("model/alpha", 0.1);
-  this->beta = n.param<float>("model/beta", 0.8);
-  this->wheelbase = n.param<float>("model/wheelbase", 1.0);
+  this->alpha = 0.1;//n.param<float>("model/alpha", 0.1);
+  this->beta = 0.8;//n.param<float>("model/beta", 0.8);
+  this->wheelbase = 1.0;//n.param<float>("model/wheelbase", 1.0);
 };
 
 void BicycleModel::reset()
@@ -62,7 +61,7 @@ std::tuple<float, float, float, float, float, float> BicycleModel::update(float 
   }
   else
   {
-    this->delta = 0.0;
+    this->ohm = steering_intention / fabs(steering_intention);
   }
 
   // First calculate new speed and delta. Limits are applied in the HW interface
