@@ -56,34 +56,30 @@ class Controller:
         Updates the internal state and launches or kills nodes if needed
         """
 
-        new_state = self.state
-
         if self.state == SLAMStatesEnum.IDLE or self.state == SLAMStatesEnum.FINISHED or (rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission):
             if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
                 # Go to state depending on mission
                 self.mission = rospy.get_param("/mission")
 
                 if self.mission == AutonomousMission.ACCELERATION:
-                    new_state = SLAMStatesEnum.RACING
+                    self.state = SLAMStatesEnum.RACING
                 elif self.mission == AutonomousMission.SKIDPAD:
-                    new_state = SLAMStatesEnum.RACING
+                    self.state = SLAMStatesEnum.RACING
                 elif self.mission == AutonomousMission.AUTOCROSS:
-                    new_state = SLAMStatesEnum.EXPLORATION
+                    self.state = SLAMStatesEnum.EXPLORATION
                 elif self.mission == AutonomousMission.TRACKDRIVE:
-                    new_state = SLAMStatesEnum.EXPLORATION
+                    self.state = SLAMStatesEnum.EXPLORATION
                 else:
-                    new_state = SLAMStatesEnum.EXPLORATION
+                    self.state = SLAMStatesEnum.EXPLORATION
 
                 self.launcher.launch_node(
-                    "control_controller", f"launch/{self.mission}_{new_state}.launch"
+                    "control_controller", f"launch/{self.mission}_{self.state}.launch"
                 )
             else:
                 self.launcher.shutdown()
         elif not rospy.has_param("/mission"):
             self.launcher.shutdown()
-            new_state = SLAMStatesEnum.IDLE
-
-        self.change_state(new_state)
+            self.state = SLAMStatesEnum.IDLE
 
     def handle_state_change(self, state: State):
         """
@@ -94,8 +90,8 @@ class Controller:
         """
 
         if state.scope == StateMachineScopeEnum.SLAM:
-            self.state = state.cure_state
-            
+            self.state = state.cur_state
+
             if self.state == SLAMStatesEnum.FINISHING:
                 #TODO: put velocity to 0 and steering to ??
                 print("finishing")
