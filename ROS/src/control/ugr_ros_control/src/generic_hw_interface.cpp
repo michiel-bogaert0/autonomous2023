@@ -90,23 +90,41 @@ void GenericHWInterface::init()
     joint_state_interface_.registerHandle(hardware_interface::JointStateHandle(
         joint_names_[joint_id], &joint_position_[joint_id], &joint_velocity_[joint_id], &joint_effort_[joint_id]));
 
+    // Fetch what interfaces should be enabled
+    std::vector<std::string> joint_interfaces;
+    rosparam_shortcuts::get(name_, nh_, "hardware_interface/joints_config/" + joint_names_[joint_id] + "/interfaces", joint_interfaces);
+
     // Add command interfaces to joints
-    // TODO: decide based on transmissions?
     hardware_interface::JointHandle joint_handle_position = hardware_interface::JointHandle(
         joint_state_interface_.getHandle(joint_names_[joint_id]), &joint_position_command_[joint_id]);
-    position_joint_interface_.registerHandle(joint_handle_position);
 
     hardware_interface::JointHandle joint_handle_velocity = hardware_interface::JointHandle(
         joint_state_interface_.getHandle(joint_names_[joint_id]), &joint_velocity_command_[joint_id]);
-    velocity_joint_interface_.registerHandle(joint_handle_velocity);
 
     hardware_interface::JointHandle joint_handle_effort = hardware_interface::JointHandle(
         joint_state_interface_.getHandle(joint_names_[joint_id]), &joint_effort_command_[joint_id]);
-    effort_joint_interface_.registerHandle(joint_handle_effort);
 
+    position_enabled = std::find(joint_interfaces.begin(), joint_interfaces.end(), "position") != joint_interfaces.end();
+    velocity_enabled = std::find(joint_interfaces.begin(), joint_interfaces.end(), "velocity") != joint_interfaces.end();
+    effort_enabled = std::find(joint_interfaces.begin(), joint_interfaces.end(), "effort") != joint_interfaces.end();
+
+    if (position_enabled)
+    {
+      position_joint_interface_.registerHandle(joint_handle_position);
+    }
+
+    if (velocity_enabled)
+    {
+      velocity_joint_interface_.registerHandle(joint_handle_velocity);
+    }
+
+    if (effort_enabled)
+    {
+      effort_joint_interface_.registerHandle(joint_handle_effort);
+    }
     // Load the joint limits
     registerJointLimits(joint_handle_position, joint_handle_velocity, joint_handle_effort, joint_id);
-  }  // end for each joint
+  }                                               // end for each joint
 
   registerInterface(&joint_state_interface_);     // From RobotHW base class.
   registerInterface(&position_joint_interface_);  // From RobotHW base class.
@@ -230,28 +248,48 @@ void GenericHWInterface::registerJointLimits(const hardware_interface::JointHand
   if (has_soft_limits)  // Use soft limits
   {
     ROS_DEBUG_STREAM_NAMED(name_, "Using soft saturation limits");
-    const joint_limits_interface::PositionJointSoftLimitsHandle soft_handle_position(joint_handle_position,
-                                                                                     joint_limits, soft_limits);
-    pos_jnt_soft_limits_.registerHandle(soft_handle_position);
-    const joint_limits_interface::VelocityJointSoftLimitsHandle soft_handle_velocity(joint_handle_velocity,
-                                                                                     joint_limits, soft_limits);
-    vel_jnt_soft_limits_.registerHandle(soft_handle_velocity);
-    const joint_limits_interface::EffortJointSoftLimitsHandle soft_handle_effort(joint_handle_effort, joint_limits,
-                                                                                 soft_limits);
-    eff_jnt_soft_limits_.registerHandle(soft_handle_effort);
+    if (position_enabled)
+    {
+      const joint_limits_interface::PositionJointSoftLimitsHandle soft_handle_position(joint_handle_position,
+                                                                                       joint_limits, soft_limits);
+      pos_jnt_soft_limits_.registerHandle(soft_handle_position);
+    }
+
+    if (velocity_enabled)
+    {
+      const joint_limits_interface::VelocityJointSoftLimitsHandle soft_handle_velocity(joint_handle_velocity,
+                                                                                       joint_limits, soft_limits);
+      vel_jnt_soft_limits_.registerHandle(soft_handle_velocity);
+    }
+
+    if (effort_enabled)
+    {
+      const joint_limits_interface::EffortJointSoftLimitsHandle soft_handle_effort(joint_handle_effort, joint_limits,
+                                                                                   soft_limits);
+      eff_jnt_soft_limits_.registerHandle(soft_handle_effort);
+    }
   }
   else  // Use saturation limits
   {
     ROS_DEBUG_STREAM_NAMED(name_, "Using saturation limits (not soft limits)");
 
-    const joint_limits_interface::PositionJointSaturationHandle sat_handle_position(joint_handle_position, joint_limits);
-    pos_jnt_sat_interface_.registerHandle(sat_handle_position);
-
-    const joint_limits_interface::VelocityJointSaturationHandle sat_handle_velocity(joint_handle_velocity, joint_limits);
-    vel_jnt_sat_interface_.registerHandle(sat_handle_velocity);
-
-    const joint_limits_interface::EffortJointSaturationHandle sat_handle_effort(joint_handle_effort, joint_limits);
-    eff_jnt_sat_interface_.registerHandle(sat_handle_effort);
+    if (position_enabled)
+    {
+      const joint_limits_interface::PositionJointSaturationHandle sat_handle_position(joint_handle_position,
+                                                                                      joint_limits);
+      pos_jnt_sat_interface_.registerHandle(sat_handle_position);
+    }
+    if (velocity_enabled)
+    {
+      const joint_limits_interface::VelocityJointSaturationHandle sat_handle_velocity(joint_handle_velocity,
+                                                                                      joint_limits);
+      vel_jnt_sat_interface_.registerHandle(sat_handle_velocity);
+    }
+    if (effort_enabled)
+    {
+      const joint_limits_interface::EffortJointSaturationHandle sat_handle_effort(joint_handle_effort, joint_limits);
+      eff_jnt_sat_interface_.registerHandle(sat_handle_effort);
+    }
   }
 }
 

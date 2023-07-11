@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>pegasus_control</name>
+  <name>sim_control</name>
   <version>0.0.1</version>
-  <description>Simple simulation interface and template for setting up a hardware interface for pegasus</description>
+  <description>Simple simulation interface and template for setting up a hardware interface for sim</description>
 
   <maintainer email="someone@someone.com">Someone</maintainer>
 

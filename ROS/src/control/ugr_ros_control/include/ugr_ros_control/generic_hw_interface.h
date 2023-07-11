@@ -187,6 +187,11 @@ protected:
   bool use_rosparam_joint_limits_;
   bool use_soft_limits_if_available_;
 
+  // Config helpers
+  bool position_enabled;
+  bool velocity_enabled;
+  bool effort_enabled;
+
   // States
   std::vector<double> joint_position_;
   std::vector<double> joint_velocity_;

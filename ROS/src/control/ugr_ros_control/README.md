@@ -4,7 +4,7 @@ Simple simulation interface and template for setting up a hardware interface for
 
  - Creating a hardware_interface for multiple joints for use with ros_control
  - Position Trajectory Controller
- - Control of 2 joints of the simple robot "Pegasus" pictured below
+ - Control of 2 joints of the simple robot "Sim" pictured below
  - Loading configurations with roslaunch and yaml files
  - Generating a random trajectory and sending it over an actionlib interface
  - Partial support of joint mode switching (needs to be improved)
@@ -40,7 +40,7 @@ See [YouTube](https://www.youtube.com/watch?v=Tpj2tx9uZ-o) for a very modest vid
 
 ## Install
 
-This package depends on [gazebo_ros_demos](https://github.com/ros-simulation/gazebo_ros_demos) for its ``pegasus_description`` package, but you must add it to your catkin workspace by source:
+This package depends on [gazebo_ros_demos](https://github.com/ros-simulation/gazebo_ros_demos) for its ``sim_description`` package, but you must add it to your catkin workspace by source:
 
     git clone https://github.com/ros-simulation/gazebo_ros_demos.git
 
@@ -50,17 +50,17 @@ Then, either install this package from source so you can develop off of it, or i
 
 ## Run Simulation Demo
 
-This package is setup to run the "Pegasus" two joint revolute-revolute robot demo. This "template package" is located in the ros_control_boilerplate as a subfolder that you can easily rename and reuse. To run its ros_control non-physics-based simulated hardware interface, run:
+This package is setup to run the "Sim" two joint revolute-revolute robot demo. This "template package" is located in the ros_control_boilerplate as a subfolder that you can easily rename and reuse. To run its ros_control non-physics-based simulated hardware interface, run:
 
-    roslaunch ros_control_boilerplate pegasus_simulation.launch
+    roslaunch ros_control_boilerplate sim_simulation.launch
 
 To visualize its published ``/tf`` coordinate transforms in Rviz run:
 
-    roslaunch ros_control_boilerplate pegasus_visualize.launch
+    roslaunch ros_control_boilerplate sim_visualize.launch
 
 To send a random, dummy trajectory to execute, run:
 
-    roslaunch ros_control_boilerplate pegasus_test_trajectory.launch
+    roslaunch ros_control_boilerplate sim_test_trajectory.launch
 
 ## Customize
 
@@ -75,10 +75,10 @@ function findreplacefilename() {
     find . -depth -name "*$1*" -exec bash -c 'for f; do base=${f##*/}; mv -- "$f" "${f%/*}/${base//'$1'/'$2'}"; done' _ {} +
 }
 
-findreplacefilename pegasus myrobot
-findreplace pegasus myrobot
-findreplace Pegasus MyRobot
-findreplace PEGASUS MYROBOT
+findreplacefilename sim myrobot
+findreplace sim myrobot
+findreplace Sim MyRobot
+findreplace SIM MYROBOT
 ```
 
 Then add the necessary code to communicate with your robot via USB/serial/ethernet/etc in the file ``myrobot_hw_interface.cpp``.

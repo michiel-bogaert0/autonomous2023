@@ -47,7 +47,6 @@ catkin_package(
   LIBRARIES
     generic_hw_control_loop
     generic_hw_interface
-    sim_hw_interface
 )
 
 ###########
@@ -75,23 +74,6 @@ target_link_libraries(generic_hw_interface
   ${catkin_LIBRARIES}
 )
 
-# Simulation Hardware Interface
-add_library(sim_hw_interface
-  src/sim_hw_interface.cpp
-)
-target_link_libraries(sim_hw_interface
-  generic_hw_interface
-  ${catkin_LIBRARIES}
-)
-
-# Main control executable
-add_executable(${PROJECT_NAME}_sim_hw_main src/sim_hw_main.cpp)
-set_target_properties(${PROJECT_NAME}_sim_hw_main PROPERTIES OUTPUT_NAME sim_hw_main PREFIX "")
-target_link_libraries(${PROJECT_NAME}_sim_hw_main
-  sim_hw_interface
-  generic_hw_control_loop
-  ${catkin_LIBRARIES}
-)
 
 # Test trajectory generator node
 add_executable(${PROJECT_NAME}_test_trajectory src/tools/test_trajectory.cpp)
@@ -135,7 +117,7 @@ target_link_libraries(${PROJECT_NAME}_keyboard_teleop
   ${catkin_LIBRARIES}
 )
 
-add_subdirectory(pegasus_control)
+add_subdirectory(sim_control)
 
 ## Install ------------------------------------------------------------
 
@@ -145,7 +127,6 @@ install(TARGETS
     # csv_to_controller
     generic_hw_control_loop
     generic_hw_interface
-    sim_hw_interface
   LIBRARY DESTINATION
     ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
@@ -155,7 +136,6 @@ install(TARGETS
     # ${PROJECT_NAME}_controller_to_csv_main
     # ${PROJECT_NAME}_csv_to_controller_main
     ${PROJECT_NAME}_keyboard_teleop
-    ${PROJECT_NAME}_sim_hw_main
     ${PROJECT_NAME}_test_trajectory
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

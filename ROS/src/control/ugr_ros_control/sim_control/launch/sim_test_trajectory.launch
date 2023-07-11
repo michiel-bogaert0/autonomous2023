@@ -6,13 +6,13 @@
   <arg unless="$(arg debug)" name="launch_prefix" value="" />
   <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
 
-  <group ns="pegasus">
+  <group ns="sim">
 
     <!-- Load hardware interface -->
     <node name="test_trajectory" pkg="ugr_ros_control" type="test_trajectory"
           output="screen" launch-prefix="$(arg launch_prefix)">
       <param name="trajectory_controller" value="position_trajectory_controller"/>
-      <rosparam file="$(find ugr_ros_control)/pegasus_control/config/pegasus_controllers.yaml" command="load"/>
+      <rosparam file="$(find ugr_ros_control)/sim_control/config/sim_controllers.yaml" command="load"/>
     </node>
 
   </group>

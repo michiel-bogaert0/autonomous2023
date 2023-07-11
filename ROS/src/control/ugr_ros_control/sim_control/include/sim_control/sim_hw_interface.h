@@ -33,30 +33,47 @@
  *********************************************************************/
 
 /* Author: Dave Coleman
-   Desc:   Example ros_control main() entry point for controlling robots in ROS
+   Desc:   Example ros_control hardware interface blank template for the Sim
+           For a more detailed simulation example, see sim_hw_interface.h
 */
 
-#include <ugr_ros_control/generic_hw_control_loop.h>
-#include <ugr_ros_control/sim_hw_interface.h>
+#ifndef SIM_CONTROL__SIM_HW_INTERFACE_H
+#define SIM_CONTROL__SIM_HW_INTERFACE_H
 
-int main(int argc, char** argv)
+#include <ugr_ros_control/generic_hw_interface.h>
+#include <sim_control/bicycle_model.h>
+#include <ros/ros.h>
+
+namespace sim_control
 {
-  ros::init(argc, argv, "sim_hw_interface");
-  ros::NodeHandle nh;
+/// \brief Hardware interface for a robot
+class SimHWInterface : public ugr_ros_control::GenericHWInterface
+{
+public:
+  /**
+   * \brief Constructor
+   * \param nh - Node handle for topics.
+   */
+  SimHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model = NULL);
 
-  // NOTE: We run the ROS loop in a separate thread as external calls such
-  // as service callbacks to load controllers can block the (main) control loop
-  ros::AsyncSpinner spinner(3);
-  spinner.start();
+  virtual void init();
 
-  // Create the hardware interface specific to your robot
-  std::shared_ptr<ugr_ros_control::SimHWInterface> sim_hw_interface(
-      new ugr_ros_control::SimHWInterface(nh));
-  sim_hw_interface->init();
+  /** \brief Read the state from the robot hardware. */
+  virtual void read(ros::Duration& elapsed_time);
 
-  // Start the control loop
-  ugr_ros_control::GenericHWControlLoop control_loop(nh, sim_hw_interface);
-  control_loop.run();  // Blocks until shutdown signal recieved
+  /** \brief Write the command to the robot hardware. */
+  virtual void write(ros::Duration& elapsed_time);
 
-  return 0;
-}
+  /** \brief Enforce limits for all values before writing */
+  virtual void enforceLimits(ros::Duration& period);
+
+private:
+  BicycleModel* model;
+  int drive_joint_id;
+  int steering_joint_id;
+
+};  // class
+
+}  // namespace sim_control
+
+#endif

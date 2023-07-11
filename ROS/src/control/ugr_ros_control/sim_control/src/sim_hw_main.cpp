@@ -33,38 +33,29 @@
  *********************************************************************/
 
 /* Author: Dave Coleman
-   Desc:   Example ros_control hardware interface blank template for the Pegasus
-           For a more detailed simulation example, see sim_hw_interface.h
+   Desc:   Example ros_control main() entry point for controlling robots in ROS
 */
 
-#ifndef PEGASUS_CONTROL__PEGASUS_HW_INTERFACE_H
-#define PEGASUS_CONTROL__PEGASUS_HW_INTERFACE_H
+#include <ugr_ros_control/generic_hw_control_loop.h>
+#include <sim_control/sim_hw_interface.h>
 
-#include <ugr_ros_control/generic_hw_interface.h>
-
-namespace pegasus_control
+int main(int argc, char** argv)
 {
-/// \brief Hardware interface for a robot
-class PegasusHWInterface : public ugr_ros_control::GenericHWInterface
-{
-public:
-  /**
-   * \brief Constructor
-   * \param nh - Node handle for topics.
-   */
-  PegasusHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model = NULL);
+  ros::init(argc, argv, "sim_hw_interface");
+  ros::NodeHandle nh;
 
-  /** \brief Read the state from the robot hardware. */
-  virtual void read(ros::Duration& elapsed_time);
+  // NOTE: We run the ROS loop in a separate thread as external calls such
+  // as service callbacks to load controllers can block the (main) control loop
+  ros::AsyncSpinner spinner(3);
+  spinner.start();
 
-  /** \brief Write the command to the robot hardware. */
-  virtual void write(ros::Duration& elapsed_time);
+  // Create the hardware interface specific to your robot
+  std::shared_ptr<sim_control::SimHWInterface> sim_hw_interface(new sim_control::SimHWInterface(nh));
+  sim_hw_interface->init();
 
-  /** \brief Enforce limits for all values before writing */
-  virtual void enforceLimits(ros::Duration& period);
+  // Start the control loop
+  ugr_ros_control::GenericHWControlLoop control_loop(nh, sim_hw_interface);
+  control_loop.run();  // Blocks until shutdown signal recieved
 
-};  // class
-
-}  // namespace pegasus_control
-
-#endif
+  return 0;
+}

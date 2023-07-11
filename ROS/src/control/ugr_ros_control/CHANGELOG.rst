@@ -40,7 +40,7 @@ Changelog for package ros_control_boilerplate
 * Merge pull request `#15 <https://github.com/PickNikRobotics/ros_control_boilerplate/issues/15>`_ from enricotoi/kinetic-devel
   Fixed a typo in the README.md
 * Fixed a typo in the README.md
-  pegasus_simulaton.launch -> pegasus_simulation.launch
+  sim_simulaton.launch -> sim_simulation.launch
 * Update README.md
 * Contributors: Dave Coleman, Lucas Walter, Mathias Lüdtke, Paul Bouchier, enrico toivinen, mohmad ayman
 
@@ -87,8 +87,8 @@ Changelog for package ros_control_boilerplate
 * Do not automatically call init()
 * Removed warning of joint limits for continous joints
 * Fix missing variable
-* Improved pegasus_control example package
-* Moved pegasus example code into subdirectory
+* Improved sim_control example package
+* Moved sim example code into subdirectory
 * Contributors: Dave Coleman
 
 0.1.4 (2015-12-07)

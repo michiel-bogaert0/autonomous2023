@@ -33,60 +33,71 @@
  *********************************************************************/
 
 /* Author: Dave Coleman
-   Desc:   Example ros_control hardware interface blank template for the Pegasus
+   Desc:   Example ros_control hardware interface blank template for the Sim
            For a more detailed simulation example, see sim_hw_interface.cpp
 */
 
-#include <pegasus_control/pegasus_hw_interface.h>
+#include <sim_control/sim_hw_interface.h>
+#include <tuple>
 
-namespace pegasus_control
+namespace sim_control
 {
-PegasusHWInterface::PegasusHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
+SimHWInterface::SimHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
   : ugr_ros_control::GenericHWInterface(nh, urdf_model)
 {
-  ROS_INFO_NAMED("pegasus_hw_interface", "PegasusHWInterface Ready.");
+  this->model = new BicycleModel();
+
+  ROS_INFO_NAMED("sim_hw_interface", "SimHWInterface Ready.");
 }
 
-void PegasusHWInterface::read(ros::Duration& elapsed_time)
+void SimHWInterface::init()
 {
-  // ----------------------------------------------------
-  // ----------------------------------------------------
-  // ----------------------------------------------------
-  //
-  // FILL IN YOUR READ COMMAND FROM USB/ETHERNET/ETHERCAT/SERIAL ETC HERE
-  //
-  // ----------------------------------------------------
-  // ----------------------------------------------------
-  // ----------------------------------------------------
+  // First do parent init
+  ugr_ros_control::GenericHWInterface::init();
+
+  // Now check if configured joints are actually there. Also remembe joint id
+  std::string drive_joint_name = nh_.param<std::string>("hardware_interface/joints_config/drive_joint", "axis0");
+  std::string steering_joint_name = nh_.param<std::string>("hardware_interface/joints_config/steering_joint", "axis_steering");
+
+  drive_joint_id = std::find(joint_names_.begin(), joint_names_.end(), drive_joint_name) - joint_names_.begin();
+  steering_joint_id = std::find(joint_names_.begin(), joint_names_.end(), steering_joint_name) - joint_names_.begin();
+
+  if (drive_joint_id >= joint_names_.size())
+  {
+    ROS_ERROR("Error: the parameter 'hardware_interface/joints_config/drive_joint' must be given");
+    throw std::invalid_argument("hardware_interface/joints_config/drive_joint must be given");
+  }
+
+  if (steering_joint_id >= joint_names_.size())
+  {
+    ROS_ERROR("Error: the parameter 'hardware_interface/joints_config/steering_joint' must be given");
+    throw std::invalid_argument("hardware_interface/joints_config/steering_joint must be given");
+  }
 }
 
-void PegasusHWInterface::write(ros::Duration& elapsed_time)
+void SimHWInterface::read(ros::Duration& elapsed_time)
+{
+  // Gets done in write because of simulation
+  // So empty function!
+}
+
+void SimHWInterface::write(ros::Duration& elapsed_time)
 {
   // Safety
   enforceLimits(elapsed_time);
 
-  // ----------------------------------------------------
-  // ----------------------------------------------------
-  // ----------------------------------------------------
-  //
-  // FILL IN YOUR WRITE COMMAND TO USB/ETHERNET/ETHERCAT/SERIAL ETC HERE
-  //
-  // FOR A EASY SIMULATION EXAMPLE, OR FOR CODE TO CALCULATE
-  // VELOCITY FROM POSITION WITH SMOOTHING, SEE
-  // sim_hw_interface.cpp IN THIS PACKAGE
-  //
-  // DUMMY PASS-THROUGH CODE
-  for (std::size_t joint_id = 0; joint_id < num_joints_; ++joint_id)
-    joint_position_[joint_id] += joint_position_command_[joint_id];
-  // END DUMMY CODE
-  //
-  // ----------------------------------------------------
-  // ----------------------------------------------------
-  // ----------------------------------------------------
+  // Feed to bicycle model
+  auto modelState = this->model->update(elapsed_time.toSec(), joint_effort_command_[drive_joint_id],
+                                       joint_effort_command_[steering_joint_id]);
+
+  // Write result back
+  joint_velocity_[drive_joint_id] = this->model->get_forward_velocity();
+  joint_position_[steering_joint_id] = this->model->get_steering_angle();
 }
 
-void PegasusHWInterface::enforceLimits(ros::Duration& period)
+void SimHWInterface::enforceLimits(ros::Duration& period)
 {
+  // TODO
   // ----------------------------------------------------
   // ----------------------------------------------------
   // ----------------------------------------------------
@@ -119,4 +130,4 @@ void PegasusHWInterface::enforceLimits(ros::Duration& period)
   // ----------------------------------------------------
 }
 
-}  // namespace pegasus_control
+}  // namespace sim_control
