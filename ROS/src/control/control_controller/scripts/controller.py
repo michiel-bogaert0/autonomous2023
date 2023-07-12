@@ -2,7 +2,7 @@
 import rospy
 from enum import Enum
 from ugr_msgs.msg import State
-from node_launcher import NodeLauncher
+from node_launcher.node_launcher import NodeLauncher
 from node_fixture.node_fixture import (
     AutonomousMission,
     SLAMStatesEnum,
