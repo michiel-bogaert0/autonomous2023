@@ -16,8 +16,10 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <build_depend>tf2_ros</build_depend>
   <build_depend>ugr_ros_control</build_depend>
 
+  <run_depend>tf2_ros</run_depend>
   <run_depend>ugr_ros_control</run_depend>
 
   <export>

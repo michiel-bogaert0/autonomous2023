@@ -75,7 +75,7 @@ public:
   virtual void enforceLimits(ros::Duration& period);
 
   void publish_gt(const ros::TimerEvent&);
-  void apply_noise_and_quantise(float& x, double* noise);
+  void apply_noise_and_quantise(float& x, std::vector<double> noise);
   void publish_encoder(const ros::TimerEvent&);
   void publish_imu(const ros::TimerEvent&);
 
@@ -87,7 +87,9 @@ private:
   ros::Publisher gt_pub, encoder_pub, imu_pub;
   tf2_ros::TransformBroadcaster br;
   std::string world_frame, gt_base_link_frame, base_link_frame;
-  double encoder_noise[3], imu_angular_velocity_noise[3], imu_acceleration_noise[3];
+  std::vector<double> encoder_noise, imu_angular_velocity_noise, imu_acceleration_noise;
+
+  ros::Timer gt_timer, imu_timer, encoder_timer;
 
 };  // class
 

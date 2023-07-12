@@ -20,9 +20,11 @@ BicycleModel::BicycleModel()
   this->theta = 0;
   this->omega = 0;
 
+  // TODO parameters
   this->alpha = 0.1;//n.param<float>("model/alpha", 0.1);
   this->beta = 0.8;//n.param<float>("model/beta", 0.8);
   this->wheelbase = 1.0;//n.param<float>("model/wheelbase", 1.0);
+  this->R = 1.0; //
 };
 
 void BicycleModel::reset()
@@ -44,7 +46,7 @@ void BicycleModel::stop()
 };
 
 std::tuple<float, float, float, float, float, float> BicycleModel::update(float dt, float driving_intention,
-                                                                          float steering_intention)
+                                                                          float steering_angle)
 {
   if (abs(driving_intention) < 0.001)
   {
@@ -55,18 +57,8 @@ std::tuple<float, float, float, float, float, float> BicycleModel::update(float 
     this->a = driving_intention / fabs(driving_intention);
   }
 
-  if (fabs(steering_intention) < 0.001)
-  {
-    this->ohm = fabs(this->delta) > 0.001 ? 0.0 - (this->delta / fabs(this->delta) * this->beta) : 0.0;
-  }
-  else
-  {
-    this->ohm = steering_intention / fabs(steering_intention);
-  }
-
-  // First calculate new speed and delta. Limits are applied in the HW interface
-  this->delta += dt * this->ohm;
-  this->v += dt * this->a;
+  this->delta = steering_angle;
+  this->v += dt * this->a * this->R;
 
   if (fabs(this->v) < 0.001)
   {

@@ -38,6 +38,7 @@
 */
 
 #include <sim_control/sim_hw_interface.h>
+#include <random>
 #include <tuple>
 
 namespace sim_control
@@ -52,8 +53,6 @@ SimHWInterface::SimHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
 
 void SimHWInterface::init()
 {
-
-  // TODO fix bugs enzo
 
   // First do parent init
   ugr_ros_control::GenericHWInterface::init();
@@ -71,18 +70,22 @@ void SimHWInterface::init()
   nh.param("publish_rates/encoder", encoder_publish_rate, 30.0);
   nh.param("publish_rates/imu", imu_publish_rate, 90.0);
 
-  nh.param("noise/encoder", encoder_noise, { 0, 0.05, 0.05 });
-  nh.param("noise/imu_acceleration", imu_acceleration_noise, { 0.0, 0.1, 0.01 });
-  nh.param("noise/imu_angular_velocity", imu_angular_velocity_noise, { 0, 0.1, 0.01 });
+  std::vector<double> encoder_noise_default = { 0, 0.05, 0.05 };
+  std::vector<double> imu_acceleration_noise_default =  { 0.0, 0.1, 0.01 };
+  std::vector<double> imu_angular_velocity_noise_default = { 0, 0.1, 0.01 };
+
+  nh.param("noise/encoder", encoder_noise, encoder_noise_default);
+  nh.param("noise/imu_acceleration", imu_acceleration_noise, imu_acceleration_noise_default);
+  nh.param("noise/imu_angular_velocity", imu_angular_velocity_noise, imu_angular_velocity_noise_default);
 
   this->gt_pub = nh.advertise<nav_msgs::Odometry>("/output/gt_odometry", 5);
   this->encoder_pub = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/encoder0", 5);
   this->imu_pub = nh.advertise<sensor_msgs::Imu>("/output/imu0", 5);
 
-  this->gt_timer = nh.createTimer(ros::Duration(1 / this->gt_publish_rate), &SimHWInterface::publish_gt, this);
+  this->gt_timer = nh.createTimer(ros::Duration(1 / gt_publish_rate), &SimHWInterface::publish_gt, this);
   this->encoder_timer =
-      nh.createTimer(ros::Duration(1 / this->encoder_publish_rate), &SimHWInterface::publish_encoder, this);
-  this->imu_timer = nh.createTimer(ros::Duration(1 / this->imu_publish_rate), &SimHWInterface::publish_imu, this);
+      nh.createTimer(ros::Duration(1 / encoder_publish_rate), &SimHWInterface::publish_encoder, this);
+  this->imu_timer = nh.createTimer(ros::Duration(1 / imu_publish_rate), &SimHWInterface::publish_imu, this);
 
   // Now check if configured joints are actually there. Also remembe joint id
   std::string drive_joint_name = nh_.param<std::string>("hardware_interface/drive_joint", "axis0");
@@ -121,10 +124,13 @@ void SimHWInterface::write(ros::Duration& elapsed_time)
 
   // Feed to bicycle model
   auto modelState = this->model->update(elapsed_time.toSec(), joint_effort_command_[drive_joint_id],
-                                       joint_effort_command_[steering_joint_id]);
+                                       joint_position_command_[steering_joint_id]);
 
   // Write result back
-  joint_velocity_[drive_joint_id] = this->model->get_forward_velocity();
+  joint_effort_[drive_joint_id] = joint_effort_command_[drive_joint_id];
+
+  joint_velocity_[drive_joint_id] = this->model->get_wheel_angular_velocity();
+
   joint_position_[steering_joint_id] = this->model->get_steering_angle();
 }
 
@@ -170,17 +176,20 @@ void SimHWInterface::publish_gt(const ros::TimerEvent&)
   odom.header.frame_id = this->world_frame;
   odom.child_frame_id = this->gt_base_link_frame;
 
-  odom.pose.pose.position.x = this->model.x;
-  odom.pose.pose.position.y = this->model.y;
+  auto state = this->model->get_car_state();
+
+  odom.pose.pose.position.x = std::get<0>(state);
+  odom.pose.pose.position.y = std::get<1>(state);
+
   tf2::Quaternion q;
-  q.setRPY(0, 0, this->theta);
+  q.setRPY(0, 0, std::get<2>(state));
   odom.pose.pose.orientation.x = q.x();
   odom.pose.pose.orientation.y = q.y();
   odom.pose.pose.orientation.z = q.z();
   odom.pose.pose.orientation.w = q.w();
 
-  odom.twist.twist.linear.x = this->v;
-  odom.twist.twist.angular.z = this->omega;
+  odom.twist.twist.linear.x = this->model->get_forward_velocity();
+  odom.twist.twist.angular.z = this->model->get_angular_velocity();
 
   this->gt_pub.publish(odom);
 
@@ -188,18 +197,19 @@ void SimHWInterface::publish_gt(const ros::TimerEvent&)
   t.header.stamp = ros::Time::now();
   t.header.frame_id = this->world_frame;
   t.child_frame_id = this->gt_base_link_frame;
-  t.transform.translation.x = this->x;
-  t.transform.translation.y = this->y;
+  t.transform.translation.x = std::get<0>(state);
+  t.transform.translation.y = std::get<1>(state);
   t.transform.translation.z = 0.0;
   t.transform.rotation.x = q.x();
   t.transform.rotation.y = q.y();
   t.transform.rotation.z = q.z();
   t.transform.rotation.w = q.w();
 
-  this->br.sendTransform(t);
+  static tf2_ros::TransformBroadcaster br;
+  br.sendTransform(t);
 }
 
-void SimHWInterface::apply_noise_and_quantise(float& x, double* noise)
+void SimHWInterface::apply_noise_and_quantise(float& x, std::vector<double> noise)
 {
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -213,7 +223,7 @@ void SimHWInterface::publish_encoder(const ros::TimerEvent&)
   geometry_msgs::TwistWithCovarianceStamped twist;
   twist.header.stamp = ros::Time::now();
   twist.header.frame_id = this->base_link_frame;
-  float noisy_v = this->v;
+  float noisy_v = this->model->get_forward_velocity();
   apply_noise_and_quantise(noisy_v, this->encoder_noise);
   twist.twist.twist.linear.x = noisy_v;
 
@@ -225,8 +235,8 @@ void SimHWInterface::publish_imu(const ros::TimerEvent&)
   sensor_msgs::Imu imu;
   imu.header.stamp = ros::Time::now();
   imu.header.frame_id = this->base_link_frame;
-  float noisy_omega = this->omega;
-  float noisy_a = this->a;
+  float noisy_omega = this->model->get_angular_velocity();
+  float noisy_a = this->model->get_acceleration();
   apply_noise_and_quantise(noisy_omega, this->imu_angular_velocity_noise);
   apply_noise_and_quantise(noisy_a, this->imu_acceleration_noise);
   imu.linear_acceleration.x = noisy_a;
