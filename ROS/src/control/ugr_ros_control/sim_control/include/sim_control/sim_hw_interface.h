@@ -44,6 +44,13 @@
 #include <sim_control/bicycle_model.h>
 #include <ros/ros.h>
 
+#include <nav_msgs/Odometry.h>
+#include <geometry_msgs/TwistWithCovarianceStamped.h>
+#include <sensor_msgs/Imu.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2/LinearMath/Quaternion.h>
+
+
 namespace sim_control
 {
 /// \brief Hardware interface for a robot
@@ -67,10 +74,20 @@ public:
   /** \brief Enforce limits for all values before writing */
   virtual void enforceLimits(ros::Duration& period);
 
+  void publish_gt(const ros::TimerEvent&);
+  void apply_noise_and_quantise(float& x, double* noise);
+  void publish_encoder(const ros::TimerEvent&);
+  void publish_imu(const ros::TimerEvent&);
+
 private:
   BicycleModel* model;
   int drive_joint_id;
   int steering_joint_id;
+
+  ros::Publisher gt_pub, encoder_pub, imu_pub;
+  tf2_ros::TransformBroadcaster br;
+  std::string world_frame, gt_base_link_frame, base_link_frame;
+  double encoder_noise[3], imu_angular_velocity_noise[3], imu_acceleration_noise[3];
 
 };  // class
 
