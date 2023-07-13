@@ -5,7 +5,7 @@
 #include <tuple>
 #include <ros/ros.h>
 
-BicycleModel::BicycleModel(double R, double L, double Lr, double mu) : R(R), L(L), Lr(Lr), mu(mu)
+BicycleModel::BicycleModel(double R, double L, double Lr, double mu, double DC) : R(R), L(L), Lr(Lr), mu(mu), DC(DC)
 {
   this->reset();
 };
@@ -46,15 +46,16 @@ void BicycleModel::update(double dt, double in_alpha, double in_phi)
   ang_vel += alpha * dt;  // Of WHEEL
   zeta += phi * dt;       // Of STEERING JOINT
 
-  ROS_INFO_STREAM("phi " << phi << " alpha " << alpha << " ang_vel " << ang_vel << " zeta " << zeta);
+  ROS_DEBUG_STREAM("phi " << phi << " alpha " << alpha << " ang_vel " << ang_vel << " zeta " << zeta);
 
-  double drag_acc = mu * pow(v, 2);
+  double drag_acc = DC * pow(v, 2);
+  double friction_acc = fabs(v) > 0.001 ? mu : 0.0;
 
-  a = alpha * R - drag_acc;
+  a = alpha * R - drag_acc - friction_acc;
 
-  v += a * dt;  // v of CoG (+ drag)
+  v += a * dt;  // v of CoG (+ drag + friction)
 
-  ROS_INFO_STREAM("v " << v << " a " << a << " dt " << dt << " drag acc " << drag_acc);
+  ROS_DEBUG_STREAM("v " << v << " a " << a << " dt " << dt << " drag acc " << drag_acc);
 
   // Outputs (and intermediates)
   double beta = atan(tan(zeta) / L * Lr);

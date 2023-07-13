@@ -75,6 +75,8 @@
     <origin xyz="-0.36 0.34 0" rpy="0 0 0" />
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/axis0" />
+
+    <limit effort="100.0" velocity="10.0" />
   </joint>
 
   <joint name="axis1" type="continuous">
@@ -83,10 +85,12 @@
     <child link="/ugr/car_base_link/axis1" />
   </joint>
 
-  <joint name="axis_steering" type="continuous">
+  <joint name="axis_steering" type="revolute">
     <origin xyz="0.36 0.0 0" rpy="0 0 0" /> <!-- Doesn't matter -->
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/axis_steering" />
+
+    <limit lower="-1.0" upper="1.0" effort="100.0" velocity="10.0" />
   </joint>
 
   <joint name="gps_ublox_right_joint" type="fixed">

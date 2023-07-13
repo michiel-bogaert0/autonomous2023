@@ -48,8 +48,8 @@ SimHWInterface::SimHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
 {
   ros::NodeHandle n("~");
 
-  this->model = new BicycleModel(n.param<double>("R", 1.0), n.param<double>("L", 1.0), n.param<double>("Lr", 0.5),
-                                 n.param<double>("mu", 0.8));
+  this->model = new BicycleModel(n.param<double>("R", 0.1), n.param<double>("L", 1.0), n.param<double>("Lr", 0.5),
+                                 n.param<double>("mu", 0.1), n.param<double>("DC", 0.8));
 
   ROS_INFO_NAMED("sim_hw_interface", "SimHWInterface Ready.");
 }
@@ -137,37 +137,8 @@ void SimHWInterface::write(ros::Duration& elapsed_time)
 
 void SimHWInterface::enforceLimits(ros::Duration& period)
 {
-  // TODO
-  // ----------------------------------------------------
-  // ----------------------------------------------------
-  // ----------------------------------------------------
-  //
-  // CHOOSE THE TYPE OF JOINT LIMITS INTERFACE YOU WANT TO USE
-  // YOU SHOULD ONLY NEED TO USE ONE SATURATION INTERFACE,
-  // DEPENDING ON YOUR CONTROL METHOD
-  //
-  // EXAMPLES:
-  //
-  // Saturation Limits ---------------------------
-  //
   // Enforces position and velocity
-  pos_jnt_sat_interface_.enforceLimits(period);
-  //
-  // Enforces velocity and acceleration limits
-  // vel_jnt_sat_interface_.enforceLimits(period);
-  //
-  // Enforces position, velocity, and effort
-  // eff_jnt_sat_interface_.enforceLimits(period);
-
-  // Soft limits ---------------------------------
-  //
-  // pos_jnt_soft_limits_.enforceLimits(period);
-  // vel_jnt_soft_limits_.enforceLimits(period);
-  // eff_jnt_soft_limits_.enforceLimits(period);
-  //
-  // ----------------------------------------------------
-  // ----------------------------------------------------
-  // ----------------------------------------------------
+  pos_jnt_sat_interface_.enforceLimits(period)
 }
 
 void SimHWInterface::publish_gt(const ros::TimerEvent&)

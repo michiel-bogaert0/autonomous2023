@@ -43,7 +43,7 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
-#include <std_msgs/Float64MultiArray.h>
+#include <std_msgs/Float64.h>
 
 #define KEYCODE_a 0x61
 #define KEYCODE_b 0x62
@@ -85,14 +85,17 @@ void quit(int sig)
 class TeleopJointsKeyboard
 {
 public:
-  TeleopJointsKeyboard() : has_recieved_joints_(false)
+  TeleopJointsKeyboard() : has_recieved_joints_(false), nh_("~")
   {
     std::cout << "init " << std::endl;
-    // TODO: make this robot agonistic
-    joints_sub_ = nh_.subscribe<sensor_msgs::JointState>("/iiwa_7_r800/joint_states", 1,
-                                                         &TeleopJointsKeyboard::stateCallback, this);
-    joints_pub_ = nh_.advertise<std_msgs::Float64MultiArray>("/iiwa_7_r800/joints_position_controller/command", 1);
-    cmd_.data.resize(7);
+    joints_sub_ =
+        nh_.subscribe<sensor_msgs::JointState>("/input/joint_states", 1, &TeleopJointsKeyboard::stateCallback, this);
+    drive_effort_pub_ = nh_.advertise<std_msgs::Float64>("/output/drive_effort", 1);
+    steering_position_pub_ = nh_.advertise<std_msgs::Float64>("/output/steering_position", 1);
+
+    delta = nh_.param<double>("delta", 0.5);
+    steer_cmd_.data = 0;
+    drive_cmd_.data = 0;
   }
 
   ~TeleopJointsKeyboard()
@@ -101,19 +104,11 @@ public:
 
   void stateCallback(const sensor_msgs::JointStateConstPtr& msg)
   {
-    if (msg->position.size() != 7)
+    if (msg->position.size() != 2)
     {
       ROS_ERROR_STREAM("Not enough joints!");
       exit(-1);
     }
-
-    // Copy latest joint positions to our output message
-    if (!has_recieved_joints_)
-      cmd_.data = msg->position;
-
-    // Debug
-    // std::copy(cmd_.data.begin(), cmd_.data.end(), std::ostream_iterator<double>(std::cout, " "));
-    // std::cout << std::endl;
 
     // Important safety feature
     has_recieved_joints_ = true;
@@ -122,7 +117,6 @@ public:
   void keyboardLoop()
   {
     char c;
-    bool dirty = false;
 
     // get the console in raw mode
     tcgetattr(kfd, &cooked);
@@ -135,16 +129,11 @@ public:
 
     puts("Reading from keyboard");
     puts("---------------------------");
-    puts("Use 'QA' to for joint 1");
-    puts("Use 'WS' to for joint 2");
-    puts("Use 'ED' to for joint 3");
-    puts("Use 'RF' to for joint 4");
-    puts("Use 'TG' to for joint 5");
-    puts("Use 'YH' to for joint 6");
-    puts("Use 'UJ' to for joint 7");
+    puts("Use 'W' for throttle");
+    puts("Use 'S' for braking");
+    puts("Use 'A' for steering left");
+    puts("Use 'D' for steering right");
     puts("ESC to end");
-
-    double delta_dist = 0.005;
 
     for (;;)
     {
@@ -155,56 +144,23 @@ public:
         exit(-1);
       }
 
-      dirty = true;
       switch (c)
       {
-        case KEYCODE_q:
-          cmd_.data[0] = cmd_.data[0] + delta_dist;  // radians
+        case KEYCODE_d:
+          steer_cmd_.data -= delta;
           break;
         case KEYCODE_a:
-          cmd_.data[0] = cmd_.data[0] - delta_dist;  // radians
+          steer_cmd_.data += delta;
           break;
-
         case KEYCODE_w:
-          cmd_.data[1] = cmd_.data[1] + delta_dist;  // radians
+          drive_cmd_.data += delta;
           break;
         case KEYCODE_s:
-          cmd_.data[1] = cmd_.data[1] - delta_dist;  // radians
+          drive_cmd_.data -= delta;
           break;
-
         case KEYCODE_e:
-          cmd_.data[2] = cmd_.data[2] + delta_dist;  // radians
-          break;
-        case KEYCODE_d:
-          cmd_.data[2] = cmd_.data[2] - delta_dist;  // radians
-          break;
-
-        case KEYCODE_r:
-          cmd_.data[3] = cmd_.data[3] + delta_dist;  // radians
-          break;
-        case KEYCODE_f:
-          cmd_.data[3] = cmd_.data[3] - delta_dist;  // radians
-          break;
-
-        case KEYCODE_t:
-          cmd_.data[4] = cmd_.data[4] + delta_dist;  // radians
-          break;
-        case KEYCODE_g:
-          cmd_.data[4] = cmd_.data[4] - delta_dist;  // radians
-          break;
-
-        case KEYCODE_y:
-          cmd_.data[5] = cmd_.data[5] + delta_dist;  // radians
-          break;
-        case KEYCODE_h:
-          cmd_.data[5] = cmd_.data[5] - delta_dist;  // radians
-          break;
-
-        case KEYCODE_u:
-          cmd_.data[6] = cmd_.data[6] + delta_dist;  // radians
-          break;
-        case KEYCODE_j:
-          cmd_.data[6] = cmd_.data[6] - delta_dist;  // radians
+          drive_cmd_.data = 0;
+          steer_cmd_.data = 0;
           break;
 
         case KEYCODE_ESCAPE:
@@ -215,32 +171,30 @@ public:
 
         default:
           std::cout << "CODE: " << c << std::endl;
-          dirty = false;
       }
 
       // Publish command
-      if (dirty)
+      // Important safety feature
+      if (!has_recieved_joints_)
       {
-        // Important safety feature
-        if (!has_recieved_joints_)
-        {
-          ROS_ERROR_STREAM_NAMED("joint_teleop", "Unable to send joint commands because robot state is invalid");
-        }
-        else
-        {
-          std::cout << ".";
-          joints_pub_.publish(cmd_);
-        }
+        ROS_ERROR_STREAM_NAMED("joint_teleop", "Unable to send joint commands because robot state is invalid");
+      }
+      else
+      {
+        std::cout << ".";
+        drive_effort_pub_.publish(drive_cmd_);
+        steering_position_pub_.publish(steer_cmd_);
       }
     }
   }
 
 private:
   ros::NodeHandle nh_;
-  ros::Publisher joints_pub_;
+  ros::Publisher drive_effort_pub_, steering_position_pub_;
   ros::Subscriber joints_sub_;
-  std_msgs::Float64MultiArray cmd_;
+  std_msgs::Float64 drive_cmd_, steer_cmd_;
   bool has_recieved_joints_;
+  double delta;
 };
 
 int main(int argc, char** argv)
