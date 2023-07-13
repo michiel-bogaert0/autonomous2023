@@ -12,7 +12,7 @@ public:
    * "https://thef1clan.com/2020/09/21/vehicle-dynamics-the-kinematic-bicycle-model/#:~:text=What%20is%20the%20kinematic%20bicycle,wheels%20and%201%20steering%20angle."
    * But with added simple model for acceleration (drive effort) -> velocity instead of velocity as input
    */
-  BicycleModel(double R, double L, double Lr, double mu);
+  BicycleModel(double R, double L, double Lr, double mu, double DC);
 
   /**
    * Resets the internal state of the simulator
@@ -95,7 +95,7 @@ public:
   double v, x, y, theta, zeta, omega, ang_vel, a = 0;
 
   // Variables
-  double R, L, Lr, mu;
+  double R, L, Lr, DC, mu;
 };
 
 #endif  // BICYCLEMODEL_H
