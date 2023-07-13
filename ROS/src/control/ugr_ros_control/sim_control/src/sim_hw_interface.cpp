@@ -46,14 +46,16 @@ namespace sim_control
 SimHWInterface::SimHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
   : ugr_ros_control::GenericHWInterface(nh, urdf_model)
 {
-  this->model = new BicycleModel();
+  ros::NodeHandle n("~");
+
+  this->model = new BicycleModel(n.param<double>("R", 1.0), n.param<double>("L", 1.0), n.param<double>("Lr", 0.5),
+                                 n.param<double>("mu", 0.8));
 
   ROS_INFO_NAMED("sim_hw_interface", "SimHWInterface Ready.");
 }
 
 void SimHWInterface::init()
 {
-
   // First do parent init
   ugr_ros_control::GenericHWInterface::init();
 
@@ -71,7 +73,7 @@ void SimHWInterface::init()
   nh.param("publish_rates/imu", imu_publish_rate, 90.0);
 
   std::vector<double> encoder_noise_default = { 0, 0.05, 0.05 };
-  std::vector<double> imu_acceleration_noise_default =  { 0.0, 0.1, 0.01 };
+  std::vector<double> imu_acceleration_noise_default = { 0.0, 0.1, 0.01 };
   std::vector<double> imu_angular_velocity_noise_default = { 0, 0.1, 0.01 };
 
   nh.param("noise/encoder", encoder_noise, encoder_noise_default);
@@ -83,8 +85,7 @@ void SimHWInterface::init()
   this->imu_pub = nh.advertise<sensor_msgs::Imu>("/output/imu0", 5);
 
   this->gt_timer = nh.createTimer(ros::Duration(1 / gt_publish_rate), &SimHWInterface::publish_gt, this);
-  this->encoder_timer =
-      nh.createTimer(ros::Duration(1 / encoder_publish_rate), &SimHWInterface::publish_encoder, this);
+  this->encoder_timer = nh.createTimer(ros::Duration(1 / encoder_publish_rate), &SimHWInterface::publish_encoder, this);
   this->imu_timer = nh.createTimer(ros::Duration(1 / imu_publish_rate), &SimHWInterface::publish_imu, this);
 
   // Now check if configured joints are actually there. Also remembe joint id
@@ -123,11 +124,11 @@ void SimHWInterface::write(ros::Duration& elapsed_time)
   enforceLimits(elapsed_time);
 
   // Feed to bicycle model
-  auto modelState = this->model->update(elapsed_time.toSec(), joint_effort_command_[drive_joint_id],
-                                       joint_position_command_[steering_joint_id]);
+  this->model->update(elapsed_time.toSec(), joint_effort_command_[drive_joint_id],
+                      joint_velocity_command_[steering_joint_id]);
 
   // Write result back
-  joint_effort_[drive_joint_id] = joint_effort_command_[drive_joint_id];
+  joint_effort_[drive_joint_id] = joint_effort_command_[drive_joint_id]; // Effort gets applied immediately (assumption)
 
   joint_velocity_[drive_joint_id] = this->model->get_wheel_angular_velocity();
 

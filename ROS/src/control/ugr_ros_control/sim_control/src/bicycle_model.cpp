@@ -3,28 +3,11 @@
 #include <rosparam_shortcuts/rosparam_shortcuts.h>
 #include <math.h>
 #include <tuple>
+#include <ros/ros.h>
 
-BicycleModel::BicycleModel()
+BicycleModel::BicycleModel(double R, double L, double Lr, double mu) : R(R), L(L), Lr(Lr), mu(mu)
 {
-
-  // nh = new ros::NodeHandle("~");
-  // ros::NodeHandle nh(n,"bicycle_model");
-
-  this->a = 0;
-  this->ohm = 0;
-  this->v = 0;
-  this->delta = 0;
-  this->omega = 0;
-  this->x = 0;
-  this->y = 0;
-  this->theta = 0;
-  this->omega = 0;
-
-  // TODO parameters
-  this->alpha = 0.1;//n.param<float>("model/alpha", 0.1);
-  this->beta = 0.8;//n.param<float>("model/beta", 0.8);
-  this->wheelbase = 1.0;//n.param<float>("model/wheelbase", 1.0);
-  this->R = 1.0; //
+  this->reset();
 };
 
 void BicycleModel::reset()
@@ -34,46 +17,53 @@ void BicycleModel::reset()
   this->x = 0;
   this->y = 0;
   this->theta = 0;
+  this->zeta = 0;
+  this->alpha = 0;
+  this->ang_vel = 0;
+  this->phi = 0;
+  this->omega = 0;
 };
 
 void BicycleModel::stop()
 {
   this->a = 0;
-  this->ohm = 0;
+  this->phi = 0;
   this->v = 0;
-  this->delta = 0;
-  this->omega = 0;
 };
 
-std::tuple<float, float, float, float, float, float> BicycleModel::update(float dt, float driving_intention,
-                                                                          float steering_angle)
+void BicycleModel::update(double dt, double in_alpha, double in_phi)
 {
-  if (abs(driving_intention) < 0.001)
-  {
-    this->a = fabs(this->v) > 0.001 ? 0.0 - (this->v / fabs(this->v) * this->alpha) : 0.0;
-  }
-  else
-  {
-    this->a = driving_intention / fabs(driving_intention);
+
+  if (fabs(dt) < 0.0001) {
+    return;
   }
 
-  this->delta = steering_angle;
-  this->v += dt * this->a * this->R;
+  // Inputs
+  phi = in_phi;
+  alpha = in_alpha;
 
-  if (fabs(this->v) < 0.001)
-  {
-    this->v = 0.0;
-  }
-  if (fabs(this->delta) < 0.001)
-  {
-    this->delta = 0.0;
-  }
+  // Angular velocity (of wheel) and steering angle
+  ang_vel += alpha * dt;  // Of WHEEL
+  zeta += phi * dt;       // Of STEERING JOINT
 
-  // Now position and theta (bicycle model)
-  this->x += this->v * dt * cos(this->theta);
-  this->y += this->v * dt * sin(this->theta);
-  this->omega = this->v * tan(this->delta) / this->wheelbase;
-  this->theta += dt * this->omega;
+  ROS_INFO_STREAM("phi " << phi << " alpha " << alpha << " ang_vel " << ang_vel << " zeta " << zeta);
 
-  return { this->x, this->y, this->theta, this->v, this->a, this->omega };
+  double drag_acc = mu * pow(v, 2);
+
+  a = alpha * R - drag_acc;
+
+  v += a * dt;  // v of CoG (+ drag)
+
+  ROS_INFO_STREAM("v " << v << " a " << a << " dt " << dt << " drag acc " << drag_acc);
+
+  // Outputs (and intermediates)
+  double beta = atan(tan(zeta) / L * Lr);
+
+  omega = v * tan(zeta) * cos(beta) / L;
+  theta += omega * dt;
+  double x_vel = v * cos(theta + beta);
+  double y_vel = v * sin(theta + beta);
+
+  x += x_vel * dt;
+  y += y_vel * dt;
 };

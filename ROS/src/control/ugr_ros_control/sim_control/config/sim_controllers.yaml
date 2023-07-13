@@ -32,13 +32,13 @@ joint_state_controller:
 steering_position_controller:
    type: position_controllers/JointPositionController
    joint: axis_steering
-   pid: {p: 100.0, i: 0.01, d: 10.0}
+   pid: {p: 1.0, i: 0.01, d: 10.0}
 
 # Velocity controller for drive
 drive_velocity_controller:
    type: effort_controllers/JointVelocityController
    joint: axis0
-   pid: {p: 100.0, i: 0.01, d: 10.0}
+   pid: {p: 1.0, i: 0.0, d: 0.0}
 
 drive_effort_controller:
    type: effort_controllers/JointEffortController
