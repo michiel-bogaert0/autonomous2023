@@ -138,7 +138,7 @@ void SimHWInterface::write(ros::Duration& elapsed_time)
 void SimHWInterface::enforceLimits(ros::Duration& period)
 {
   // Enforces position and velocity
-  pos_jnt_sat_interface_.enforceLimits(period)
+  pos_jnt_sat_interface_.enforceLimits(period);
 }
 
 void SimHWInterface::publish_gt(const ros::TimerEvent&)
