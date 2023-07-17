@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(pid_car_control)
+project(pure_pursuit)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp

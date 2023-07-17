@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>pid_car_control</name>
+  <name>pure_pursuit</name>
   <version>0.0.0</version>
-  <description>The pid_car_control package</description>
+  <description>The pure_pursuit package</description>
   <maintainer email="michiel@todo.todo">michiel</maintainer>
   <license>TODO</license>
   <buildtool_depend>catkin</buildtool_depend>
