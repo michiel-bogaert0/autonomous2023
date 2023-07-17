@@ -7,9 +7,10 @@ Panels:
         - /Global Options1
         - /Status1
         - /SLAM1
-        - /SLAM1/TF1
+        - /SLAM1/TF1/Status1
         - /SLAM1/TF1/Tree1
         - /SLAM1/GT1
+        - /SLAM1/GT (sim)1
         - /SLAM1/MCL1/Shape1
         - /Control1/Path_alt1
       Splitter Ratio: 0.4057970941066742
@@ -172,39 +173,13 @@ Visualization Manager:
           Frame Timeout: 15
           Frames:
             All Enabled: true
-            axis0:
-              Value: true
-            axis1:
-              Value: true
-            cam0:
-              Value: true
-            car_base_link:
-              Value: true
-            gps0:
-              Value: true
-            gps1:
-              Value: true
-            imu0:
-              Value: true
-            imu1:
-              Value: true
-            lidar0:
-              Value: true
-            os_imu:
-              Value: true
-            os_lidar:
-              Value: true
-            os_sensor:
-              Value: true
             ugr/car_base_link:
               Value: true
             ugr/car_base_link/axis0:
               Value: true
-            ugr/car_base_link/axis1:
+            ugr/car_base_link/axis_steering:
               Value: true
             ugr/car_base_link/cam0:
-              Value: true
-            ugr/car_base_link/car_base_link:
               Value: true
             ugr/car_base_link/gps0:
               Value: true
@@ -222,6 +197,14 @@ Visualization Manager:
               Value: true
             ugr/car_base_link/os_sensor:
               Value: true
+            ugr/car_odom:
+              Value: true
+            ugr/gt_base_link:
+              Value: true
+            ugr/map:
+              Value: true
+            ugr/slam_base_link:
+              Value: true
           Marker Alpha: 1
           Marker Scale: 1
           Name: TF
@@ -229,50 +212,33 @@ Visualization Manager:
           Show Axes: true
           Show Names: true
           Tree:
-            car_base_link:
-              axis0:
-                {}
-              axis1:
-                {}
-              cam0:
-                {}
-              gps0:
-                {}
-              gps1:
-                {}
-              imu0:
-                {}
-              imu1:
-                {}
-              lidar0:
-                os_sensor:
-                  os_imu:
+            ugr/map:
+              ugr/car_odom:
+                ugr/car_base_link:
+                  ugr/car_base_link/axis0:
                     {}
-                  os_lidar:
+                  ugr/car_base_link/axis_steering:
                     {}
-            ugr/car_base_link:
-              ugr/car_base_link/axis0:
-                {}
-              ugr/car_base_link/axis1:
-                {}
-              ugr/car_base_link/cam0:
-                {}
-              ugr/car_base_link/gps0:
-                {}
-              ugr/car_base_link/gps1:
-                {}
-              ugr/car_base_link/imu0:
-                {}
-              ugr/car_base_link/imu1:
-                {}
-              ugr/car_base_link/lidar0:
-                ugr/car_base_link/os_sensor:
-                  ugr/car_base_link/os_imu:
+                  ugr/car_base_link/cam0:
                     {}
-                  ugr/car_base_link/os_lidar:
+                  ugr/car_base_link/gps0:
                     {}
-            ugr/car_base_link/car_base_link:
-              {}
+                  ugr/car_base_link/gps1:
+                    {}
+                  ugr/car_base_link/imu0:
+                    {}
+                  ugr/car_base_link/imu1:
+                    {}
+                  ugr/car_base_link/lidar0:
+                    ugr/car_base_link/os_sensor:
+                      ugr/car_base_link/os_imu:
+                        {}
+                      ugr/car_base_link/os_lidar:
+                        {}
+              ugr/gt_base_link:
+                {}
+              ugr/slam_base_link:
+                {}
           Update Interval: 0
           Value: true
         - Alpha: 1
@@ -422,7 +388,7 @@ Visualization Manager:
             Shaft Length: 0.5
             Shaft Radius: 0.05000000074505806
             Value: Arrow
-          Topic: /ugr/gt/odometry/filtered
+          Topic: /ugr/car/odometry/filtered/gt
           Unreliable: false
           Value: true
         - Angle Tolerance: 0.10000000149011612
@@ -477,7 +443,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: true
-          Enabled: true
+          Enabled: false
           Keep: 100
           Name: GT (gps)
           Position Tolerance: 0.10000000149011612
@@ -494,7 +460,7 @@ Visualization Manager:
             Value: Arrow
           Topic: /ugr/car/odometry/filtered/gps
           Unreliable: false
-          Value: true
+          Value: false
       Enabled: true
       Name: SLAM
     - Class: rviz/Group
@@ -548,13 +514,13 @@ Visualization Manager:
           Topic: /pathplanning/path
           Unreliable: false
           Value: true
-      Enabled: false
+      Enabled: true
       Name: Control
   Enabled: true
   Global Options:
     Background Color: 121; 121; 121
     Default Light: true
-    Fixed Frame: ugr/car_base_link
+    Fixed Frame: ugr/map
     Frame Rate: 60
   Name: root
   Tools:
@@ -576,7 +542,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 13.008158683776855
+      Distance: 10.01563549041748
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -592,9 +558,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.495204895734787
+      Pitch: 0.33479732275009155
       Target Frame: <Fixed Frame>
-      Yaw: 4.39353084564209
+      Yaw: 3.65352725982666
     Saved: ~
 Window Geometry:
   Camera:
@@ -617,4 +583,4 @@ Window Geometry:
     collapsed: false
   Width: 1920
   X: 0
-  Y: 1107
+  Y: 27

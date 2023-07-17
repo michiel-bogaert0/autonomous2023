@@ -64,8 +64,6 @@ void SimHWInterface::init()
   nh.param("world_frame", world_frame, std::string("ugr/map"));
   nh.param("base_link_frame", base_link_frame, std::string("ugr/car_base_link"));
   nh.param("gt_base_link_frame", gt_base_link_frame, std::string("ugr/gt_base_link"));
-  std::string control_mode;
-  nh.param("control_mode", control_mode, std::string("keys"));
 
   double gt_publish_rate, encoder_publish_rate, imu_publish_rate;
   nh.param("publish_rates/gt", gt_publish_rate, 200.0);
@@ -115,7 +113,8 @@ void SimHWInterface::init()
 void SimHWInterface::read(ros::Duration& elapsed_time)
 {
   // Gets done in write because of simulation
-  // So empty function!
+  auto car_state = this->model->get_car_state();
+  ROS_DEBUG_STREAM("x: " << std::get<0>(car_state) << " y: " << std::get<1>(car_state) << " theta: " << std::get<2>(car_state) << " v: " << this->model->get_forward_velocity());
 }
 
 void SimHWInterface::write(ros::Duration& elapsed_time)

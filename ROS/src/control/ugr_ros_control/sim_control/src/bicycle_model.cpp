@@ -33,8 +33,8 @@ void BicycleModel::stop()
 
 void BicycleModel::update(double dt, double in_alpha, double in_phi)
 {
-
-  if (fabs(dt) < 0.0001) {
+  if (fabs(dt) < 0.0001)
+  {
     return;
   }
 
@@ -43,10 +43,7 @@ void BicycleModel::update(double dt, double in_alpha, double in_phi)
   alpha = in_alpha;
 
   // Angular velocity (of wheel) and steering angle
-  ang_vel += alpha * dt;  // Of WHEEL
   zeta += phi * dt;       // Of STEERING JOINT
-
-  ROS_DEBUG_STREAM("phi " << phi << " alpha " << alpha << " ang_vel " << ang_vel << " zeta " << zeta);
 
   double drag_acc = DC * pow(v, 2);
   double friction_acc = fabs(v) > 0.001 ? mu : 0.0;
@@ -54,7 +51,9 @@ void BicycleModel::update(double dt, double in_alpha, double in_phi)
   a = alpha * R - drag_acc - friction_acc;
 
   v += a * dt;  // v of CoG (+ drag + friction)
+  ang_vel = v / R;
 
+  ROS_DEBUG_STREAM("phi " << phi << " alpha " << alpha << " ang_vel " << ang_vel << " zeta " << zeta);
   ROS_DEBUG_STREAM("v " << v << " a " << a << " dt " << dt << " drag acc " << drag_acc);
 
   // Outputs (and intermediates)
