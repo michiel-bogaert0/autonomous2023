@@ -1,51 +1,45 @@
 #!/usr/bin/env python3
 import numpy as np
 import rospy
-from geometry_msgs.msg import (
-    PoseArray,
-    Point,
-    PoseStamped,
-    TransformStamped,
-    Quaternion,
-)
-from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import AddSubscriber, ROSNode
-from pid import PID
-from trajectory import Trajectory
-from std_msgs.msg import Header
+from geometry_msgs.msg import Point, PoseArray, PoseStamped, Quaternion
+
+from std_msgs.msg import Float64, Header
 from tf2_geometry_msgs import do_transform_pose
-import tf2_ros as tf
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
-from fs_msgs.msg import ControlCommand
+from tf.transformations import quaternion_from_euler
+from trajectory import Trajectory
 
 
-class PIDControlNode(ROSNode):
+class PurePursuit:
     def __init__(self):
-        super().__init__("pid_car_control")
 
-        self.tf_buffer = tf.Buffer()
-        self.tf_listener = tf.TransformListener(self.tf_buffer)
+        rospy.init_node("pure_pursuit_control")
 
-        # PID settings
-        Kp = rospy.get_param("~steering/Kp", 1.0)
-        Ki = rospy.get_param("~steering/Ki", 0.0)
-        Kd = rospy.get_param("~steering/Kd", 0.0)
-
-        self.max_steering_angle = rospy.get_param(
-            "~steering/max_steering_angle", 45
-        )  # in deg
-
-        self.steering_pid = PID(Kp, Ki, Kd, reset_rotation=True)
-
-        self.publish_rate = rospy.get_param("~publish_rate", 10.0)
-        self.speed_target = rospy.get_param("~speed/target", 3)
         self.min_speed = rospy.get_param("~speed/min", 0.3)
         self.min_corner_speed = rospy.get_param("~speed/min_corner_speed", 0.7)
+        self.wheelbase = rospy.get_param("~wheelbase", 0.1)
 
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
 
-        self.cmd = ControlCommand(steering=0.0, throttle=0.0, brake=1.0)
+        self.velocity_cmd = Float64(0.0)
+        self.steering_cmd = Float64(0.0)
+
+        # Publishers for the controllers
+        # Controllers themselves spawned in the state machines respective launch files
+
+        self.velocity_pub = rospy.Publisher(
+            "/sim/drive_velocity_controller/command", Float64, queue_size=10
+        )
+        self.steering_pub = rospy.Publisher(
+            "/sim/steering_position_controller/command", Float64, queue_size=10
+        )
+
+        self.debug_target_pub = rospy.Publisher("/output/target_point", PoseStamped, queue_size=10)
+
+        # Subscriber for path
+        self.path_sub = rospy.Subscriber(
+            "/input/path", PoseArray, self.getPathplanningUpdate
+        )
 
         self.current_angle = 0
         self.current_pos = [0, 0]
@@ -68,9 +62,8 @@ class PIDControlNode(ROSNode):
         self.path = None
 
         # Helpers
-        self.start_pid_sender()
+        self.start_sender()
 
-    @AddSubscriber("/input/path")
     def getPathplanningUpdate(self, msg: PoseArray):
         """
         Takes in a new exploration path coming from the mapping algorithm.
@@ -79,7 +72,13 @@ class PIDControlNode(ROSNode):
 
         self.path = msg
 
-    def start_pid_sender(self):
+    def symmetrically_bound_angle(self, angle, max_angle):
+        """
+        Helper function to bound {angle} to [-max_angle, max_angle]
+        """
+        return (angle + max_angle) % (2 * max_angle) - max_angle
+
+    def start_sender(self):
         """
         Start sending updates. If the data is too old, brake.
         """
@@ -87,8 +86,6 @@ class PIDControlNode(ROSNode):
         while not rospy.is_shutdown():
 
             try:
-
-                self.current_angle = [0, 0]
                 self.current_angle = 0
 
                 # Transform received message
@@ -121,66 +118,52 @@ class PIDControlNode(ROSNode):
                 if not success:
                     # BRAKE! We don't know where to drive to!
                     rospy.loginfo("No target point found!")
-                    self.cmd.brake = 0.0
-                    self.cmd.throttle = self.min_speed
-                    self.cmd.steering = 0.0
+                    self.velocity_cmd.data = self.min_speed
+                    self.steering_cmd.data = 0.0
                 else:
-                    # Go ahead and drive
-                    self.cmd.brake = 0.0
-                    self.cmd.throttle = max(1 - abs(self.cmd.steering), self.min_corner_speed)
 
-                    # Calculate angle
-                    self.set_angle = PID.pi_to_pi(
-                        np.arctan2(
-                            target_y - self.current_pos[1],
-                            target_x - self.current_pos[0],
-                        )
+                    # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
+                    R = (
+                        (target_x - self.current_pos[0]) ** 2
+                        + (target_y - self.current_pos[1]) ** 2
+                    ) / (2 * (target_y - self.current_pos[1]))
+                    self.steering_cmd.data = self.symmetrically_bound_angle(
+                        np.arctan2(1.0, R), np.pi / 2
+                    )
+                    rospy.loginfo(f"R: {R}, steering angle {self.steering_cmd.data}")
+
+                    # Go ahead and drive. But adjust speed in corners
+                    self.velocity_cmd.data = max(
+                        1 - abs(self.steering_cmd.data), self.min_corner_speed
                     )
 
-                    # PID step
-                    error_pid = self.steering_pid(self.current_angle - self.set_angle)
-                    rospy.loginfo(
-                        f"target: {target_x} - {target_y} from {self.current_pos}"
-                    )
-                    rospy.loginfo(
-                        f"Steering: {error_pid:.3f} from {PID.pi_to_pi(self.current_angle - self.set_angle):.3f} - c:{self.current_angle:.3f} - s:{self.set_angle:.3f}"
-                    )
-
+                    # Publish target for debugging and visualisation
                     msg = PoseStamped()
                     msg.header.frame_id = self.base_link_frame
                     msg.header.stamp = rospy.Time.now()
 
                     msg.pose.position = Point(target_x, target_y, 0)
-                    quat = quaternion_from_euler(
-                        0, 0, self.current_angle + self.set_angle
-                    )
+                    quat = quaternion_from_euler(0, 0, self.steering_cmd.data)
                     msg.pose.orientation = Quaternion(
                         quat[0], quat[1], quat[2], quat[3]
                     )
 
                     self.publish("/output/target_point", msg)
 
-                    # Remap PID to [-1, 1]
-                    error_pid = min(
-                        np.deg2rad(self.max_steering_angle),
-                        max(-np.deg2rad(self.max_steering_angle), error_pid),
-                    )
-                    old_range = np.deg2rad(self.max_steering_angle) * 2
-                    new_range = 2
-                    error_pid = (
-                        (error_pid + np.deg2rad(self.max_steering_angle))
-                        * new_range
-                        / old_range
-                    ) - 1
+                    # (x1 - 0) ** 2 + (y1 - y) ** 2 = y ** 2
+                    # x1 ** 2 + y1 ** 2 - 2 * y1 * y = 0
+                    # y =  (x1 ** 2 + y1 ** 2) / (2 * y1)
 
-                    self.cmd.steering = error_pid
+                # Publish to velocity and position steering controller
+                self.steering_pub.publish(self.steering_cmd)
 
-                self.publish("/output/control_command", self.cmd)
+                self.velocity_cmd.data /= self.wheelbase  # Velocity to angular velocity
+                self.velocity_pub.publish(self.velocity_cmd)
+
             except Exception as e:
-                rospy.logwarn(f"Control has caught an exception: {e}")
+                rospy.logwarn(f"PurePursuit has caught an exception: {e}")
 
             rate.sleep()
 
 
-node = PIDControlNode()
-node.start()
+node = PurePursuit()
