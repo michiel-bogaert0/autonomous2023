@@ -158,6 +158,7 @@ class CameraNode(PublishNode):
             # The image is too dim
             if self.gain == self.max_gain:
                 self.exposure += self.stepsize_exposure * self.exposure
+                self.exposure = min(self.exposure, self.max_exposure)
             else:
                 self.gain += self.stepsize_gain * self.gain
                 self.gain = min(self.gain, self.max_gain)
