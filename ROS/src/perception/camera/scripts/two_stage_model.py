@@ -123,7 +123,7 @@ class TwoStageModel:
 
          # The image should be on the GPU and 3xHxW 
         start = time.perf_counter()
-        image = torch.from_numpy(original_image).to(self.device)
+        image = torch.from_numpy(original_image).to(self.device).permute(2, 0, 1)
         latencies.append(1000 * (time.perf_counter() - start))
 
         # Detect keypoints

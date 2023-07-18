@@ -65,7 +65,7 @@ class ThreeStageModel:
 
         # The image should be 3xHxW and on the GPU
         start = time.perf_counter()
-        image = torch.from_numpy(original_image).to(self.device)
+        image = torch.from_numpy(original_image).to(self.device).permute(2, 0, 1)
         latencies.append(1000 * (time.perf_counter() - start))
 
         # Nx6 array of cones: xyxy, conf, cat
