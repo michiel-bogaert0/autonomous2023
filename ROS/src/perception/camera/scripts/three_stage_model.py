@@ -6,6 +6,7 @@ import numpy.typing as npt
 import torch
 from cone_detector import ConeDetector
 from keypoint_detector import KeypointDetector
+from ugr_msgs.msg import BoundingBox, BoundingBoxesStamped
 
 CAT_TO_COLOUR = {
     0: (255, 0, 0),
@@ -22,12 +23,14 @@ class ThreeStageModel:
         yolo_model_path,
         keypoint_model_path,
         height_to_pos,
+        pub_bounding_boxes,
         camera_matrix,
         detection_height_threshold=33,
         device="cuda:0",
         visualise=False,
     ):
         self.height_to_pos = height_to_pos
+        self.pub_bounding_boxes = pub_bounding_boxes
         self.detection_height_threshold = detection_height_threshold
         self.device = device
         self.use_vis = visualise
@@ -44,11 +47,12 @@ class ThreeStageModel:
         # Camera settings
         self.camera_matrix = camera_matrix
 
-    def predict(self, original_image: npt.ArrayLike):
+    def predict(self, original_image: npt.ArrayLike, header):
         """Given an image, pass it through the global keypoint detector, match the keypoints, and return the cones that were found.
         
         Args:
             original_image: the numpy image object of (H, W, 3)
+            header: the original ROS header of the image
         
         Returns:
             - an array of Nx4 containing (cone category, x, y, z)
@@ -61,13 +65,28 @@ class ThreeStageModel:
 
         # The image should be 3xHxW and on the GPU
         start = time.perf_counter()
-        image = torch.from_numpy(original_image).to(self.device).permute(2, 0, 1)
+        image = torch.from_numpy(original_image).to(self.device)
         latencies.append(1000 * (time.perf_counter() - start))
 
         # Nx6 array of cones: xyxy, conf, cat
         start = time.perf_counter()
         bboxes = self.cone_detector.find_cones(image)
         latencies.append(1000 * (time.perf_counter() - start))
+
+        bbox_msg = BoundingBoxesStamped()
+        bbox_msg.header = header
+
+        # type, score, left, top, width, height
+        print(bboxes[:, 5])
+        bbox_msg.bounding_boxes = [BoundingBox(
+            int(row[5]),
+            row[4],
+            row[0],
+            row[1],
+            row[2] - row[0],
+            row[3] - row[1],
+        ) for row in bboxes]
+        self.pub_bounding_boxes.publish(bbox_msg)
 
         # Predict keypoints
         start = time.perf_counter()

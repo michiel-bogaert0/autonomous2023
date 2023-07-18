@@ -20,6 +20,7 @@ from ugr_msgs.msg import (
     Observation,
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
+    BoundingBoxesStamped,
 )
 
 
@@ -111,10 +112,17 @@ class PerceptionNode:
                 visualise=self.visualise,
             )
         else:
+            # We only publish bboxes in 3-stage mode
+            self.pub_bounding_boxes = rospy.Publisher(
+                "/output/bounding_boxes",
+                BoundingBoxesStamped,
+                queue_size=10,
+            )
             self.pipeline = ThreeStageModel(
                 yolo_model_path,
                 keypoint_model_path,
                 height_to_pos=self.height_to_pos,
+                pub_bounding_boxes=self.pub_bounding_boxes,
                 camera_matrix=self.camera_matrix,
                 detection_height_threshold=self.detection_height_threshold,
                 device=self.device,
@@ -146,7 +154,10 @@ class PerceptionNode:
         image = self.ros_img_to_np(ros_image)
 
         # The image should be an RGB Opencv array of HxWx3
-        cones, latencies, vis_img = self.pipeline.predict(image)
+        if self.use_two_stage:
+            cones, latencies, vis_img = self.pipeline.predict(image)
+        else:
+            cones, latencies, vis_img = self.pipeline.predict(image, ros_image.header)
 
         # Publish the image
         msg = self.create_observation_msg(cones, ros_image.header)
