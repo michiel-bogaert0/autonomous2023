@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- GDB functionality -->
+  <arg name="debug" default="false" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+
+  <!-- Load Pegasus URDF -->
+  <param name="robot_description"
+    command="$(find xacro)/xacro '$(find pegasus_description)/urdf/pegasus.urdf'" />
+
+
+  <group ns="pegasus">
+
+
+    <!-- Load hardware interface -->
+    <node name="pegasus_hardware_interface" pkg="ugr_ros_control" type="pegasus_hw_main"
+      output="screen" launch-prefix="$(arg launch_prefix)">
+    </node>
+
+    <!-- Load controller settings -->
+    <rosparam file="$(find ugr_ros_control)/pegasus_control/config/pegasus_controllers.yaml" command="load" />
+
+    <!-- Load controller manager -->
+    <node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager"
+      respawn="false"
+      output="screen"
+      args="spawn joint_state_controller drive_velocity_controller steering_position_controller" />
+
+    <!-- Convert joint states to /tf tranforms -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+  </group>
+
+</launch>
