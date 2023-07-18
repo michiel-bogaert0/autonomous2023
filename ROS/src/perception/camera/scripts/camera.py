@@ -4,14 +4,14 @@ import os
 from pathlib import Path
 
 import cv2 as cv
-import yaml
 import neoapi
 import numpy as np
 import rospy
-from publisher_abstract.publisher import PublishNode
-from sensor_msgs.msg import CameraInfo
+import yaml
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from node_fixture.node_fixture import create_diagnostic_message
+from publisher_abstract.publisher import PublishNode
+from sensor_msgs.msg import CameraInfo
 
 
 class CameraNode(PublishNode):
