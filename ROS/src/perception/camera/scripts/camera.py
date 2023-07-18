@@ -64,11 +64,13 @@ class CameraNode(PublishNode):
         if self.use_raw:
             msg.D = self.distortion_matrix.flatten().tolist()
             msg.K = self.camera_matrix.flatten().tolist()
+            msg.R = np.eye(3).flatten().tolist()
             msg.P = np.hstack((self.camera_matrix, np.zeros(3, 1))).flatten().list()
 
         else:
             msg.D = [0.0, 0.0, 0.0, 0.0, 0.0]
             msg.K = self.optimal_camera_matrix.flatten().tolist()
+            msg.R = np.eye(3).flatten().tolist()
             msg.P = (
                 np.hstack((self.optimal_camera_matrix, np.zeros((3, 1))))
                 .flatten()
