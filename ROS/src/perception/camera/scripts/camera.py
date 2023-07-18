@@ -203,9 +203,6 @@ class CameraNode(PublishNode):
             img = img[..., ::-1]
             ros_img = self.np_to_ros_image(img)
 
-            # print("E: ", self.camera.f.ExposureTime.Get())
-            # print("G: ", self.camera.f.Gain.Get())
-            # print("B: ", img.mean())
             return ros_img
 
 
