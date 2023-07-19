@@ -24,7 +24,7 @@ class CameraNode(PublishNode):
 
         # Auto-brightness parameters
         self.target_brightness = rospy.get_param("~target_brightness", 70)
-        self.brightness_deadzone = rospy.get_param("~brightness_deadzone", 3)
+        self.brightness_deadzone = rospy.get_param("~brightness_deadzone", 5)
         self.max_exposure = rospy.get_param("~max_exposure", 300_000)
         self.min_gain = rospy.get_param("~min_gain", 1)
         self.max_gain = rospy.get_param("~max_gain", 10)
