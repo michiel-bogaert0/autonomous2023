@@ -1,13 +1,15 @@
 # Camera calibration
 ## How to use
 
- 1. Print a chessboard or charuco pattern and lay it on a flat surface. Charuco boards are preferred since they are more robust. 
+** This code does not work with OpenCV 4, Aruco is a mess right now on there **
+
+ 1. Print a chessboard or charuco pattern and lay it on a flat surface. Charuco boards are preferred since they are more robust. (**The Charuco is 5X5 by default!**) 
  2. Take about 15 pictures of that chessboard while changing the distance and the angle every time. Make sure the chessboard is clearly visible!
  3. Run `python3 camera_calibration {img} {size} {square_length} {marker_length} {out} {board_type}` where:
-	 1. **{img}** is a mask for all the .jpg images
+	 1. **{img}** is a mask for all the jpg/png images
 	 2. **{size}** is the grid size of the chessboard (wxh)
-	 3. **{square_length}** is the physical length of a side of a square from the chessboard
-	 4. **{marker_length}** is the physical length of a side of a marker inside a square. This is only relevant when using charuco boards. When using a chessboard pattern this value will be ignored. 
+	 3. **{square_length}** is the physical length of a side of a square from the chessboard (in mm)
+	 4. **{marker_length}** is the physical length of a side of a marker inside a square. This is only relevant when using charuco boards. When using a chessboard pattern this value will be ignored. (in mm)
 	 4. **{out}** is the .npz output file containing the distortion and camera calibration matrices. 
 	 5. **{board_type}** is the type of board used to calibrate the camera. Can be "chess" or "charuco"
 
