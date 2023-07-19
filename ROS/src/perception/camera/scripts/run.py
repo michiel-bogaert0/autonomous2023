@@ -92,7 +92,7 @@ class PerceptionNode:
                 "You chose a two-stage keypoint detector but want to run in three-stage mode. Maybe check this:/"
             )
 
-        yolo_model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolov8.pt"
+        yolo_model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolov8s.engine"
         keypoint_model_path = (
             Path(os.getenv("BINARY_LOCATION"))
             / "nn_models"
