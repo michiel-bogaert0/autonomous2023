@@ -66,7 +66,6 @@ RUN apt-get update && apt-get install -y ros-noetic-tf2-geometry-msgs \
     ros-noetic-nmea-navsat-driver \
     ros-noetic-rosbridge-suite \
     ros-noetic-catkin-virtualenv \
-    python3-catkin-tools \
     libyaml-cpp-dev \
     libcurl4-openssl-dev \
     python3-pcl \
