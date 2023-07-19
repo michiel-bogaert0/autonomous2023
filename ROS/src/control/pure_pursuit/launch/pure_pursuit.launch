@@ -1,9 +1,4 @@
 <launch>
-    <!-- ! Pure mapping: ugr/car_odom 
-         ! SLAM: ugr/slam_odom
-    -->
-    <arg name="reference_frame" default="ugr/car_odom"/>
-    
     <node pkg="pure_pursuit" type="run.py" name="pure_pursuit" output="screen" respawn="true">
 
         <param name="publish_rate" value="10" />
