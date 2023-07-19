@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import numpy as np
 import rospy
-from geometry_msgs.msg import Point, PoseArray, PoseStamped, Quaternion
+from geometry_msgs.msg import PoseArray, PoseStamped
 
 from std_msgs.msg import Float64, Header
 from tf2_geometry_msgs import do_transform_pose
-from tf.transformations import quaternion_from_euler
 from trajectory import Trajectory
 import tf2_ros as tf
+
 
 class PurePursuit:
     def __init__(self):
@@ -19,7 +19,7 @@ class PurePursuit:
 
         self.min_speed = rospy.get_param("~speed/min", 0.3)
         self.min_corner_speed = rospy.get_param("~speed/min_corner_speed", 0.7)
-        self.wheelbase = rospy.get_param("~wheelbase", 0.1)
+        self.wheelradius = rospy.get_param("~wheelradius", 0.1)
 
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
@@ -37,7 +37,9 @@ class PurePursuit:
             "/sim/steering_position_controller/command", Float64, queue_size=10
         )
 
-        self.debug_target_pub = rospy.Publisher("/output/target_point", PoseStamped, queue_size=10)
+        self.debug_target_pub = rospy.Publisher(
+            "/output/target_point", PoseStamped, queue_size=10
+        )
 
         # Subscriber for path
         self.path_sub = rospy.Subscriber(
@@ -139,35 +141,20 @@ class PurePursuit:
 
                     # Go ahead and drive. But adjust speed in corners
                     self.velocity_cmd.data = max(
-                        (1 - abs(self.steering_cmd.data)) * self.speed_target, self.min_corner_speed
+                        (1 - abs(self.steering_cmd.data)) * self.speed_target,
+                        self.min_corner_speed,
                     )
-
-                    # Publish target for debugging and visualisation
-                    msg = PoseStamped()
-                    msg.header.frame_id = self.base_link_frame
-                    msg.header.stamp = rospy.Time.now()
-
-                    msg.pose.position = Point(target_x, target_y, 0)
-                    quat = quaternion_from_euler(0, 0, self.steering_cmd.data)
-                    msg.pose.orientation = Quaternion(
-                        quat[0], quat[1], quat[2], quat[3]
-                    )
-
-                    # self.debug_target_pub.publish("/output/target_point", msg)
-
-                    # (x1 - 0) ** 2 + (y1 - y) ** 2 = y ** 2
-                    # x1 ** 2 + y1 ** 2 - 2 * y1 * y = 0
-                    # y =  (x1 ** 2 + y1 ** 2) / (2 * y1)
 
                 # Publish to velocity and position steering controller
                 self.steering_pub.publish(self.steering_cmd)
 
-                self.velocity_cmd.data /= self.wheelbase  # Velocity to angular velocity
+                self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
                 self.velocity_pub.publish(self.velocity_cmd)
 
             except Exception as e:
                 rospy.logwarn(f"PurePursuit has caught an exception: {e}")
                 import traceback
+
                 print(traceback.format_exc())
 
             rate.sleep()

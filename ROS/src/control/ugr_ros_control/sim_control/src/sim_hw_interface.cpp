@@ -112,9 +112,14 @@ void SimHWInterface::init()
 
 void SimHWInterface::read(ros::Duration& elapsed_time)
 {
-  // Gets done in write because of simulation
   auto car_state = this->model->get_car_state();
-  ROS_DEBUG_STREAM("x: " << std::get<0>(car_state) << " y: " << std::get<1>(car_state) << " theta: " << std::get<2>(car_state) << " v: " << this->model->get_forward_velocity());
+  ROS_DEBUG_STREAM("x: " << std::get<0>(car_state) << " y: " << std::get<1>(car_state)
+                         << " theta: " << std::get<2>(car_state) << " v: " << this->model->get_forward_velocity());
+
+  // Effort gets applied immediately (assumption)
+  joint_effort_[drive_joint_id] = joint_effort_command_[drive_joint_id];
+  joint_velocity_[drive_joint_id] = this->model->get_wheel_angular_velocity();
+  joint_position_[steering_joint_id] = this->model->get_steering_angle();
 }
 
 void SimHWInterface::write(ros::Duration& elapsed_time)
@@ -125,13 +130,6 @@ void SimHWInterface::write(ros::Duration& elapsed_time)
   // Feed to bicycle model
   this->model->update(elapsed_time.toSec(), joint_effort_command_[drive_joint_id],
                       joint_velocity_command_[steering_joint_id]);
-
-  // Write result back
-  joint_effort_[drive_joint_id] = joint_effort_command_[drive_joint_id]; // Effort gets applied immediately (assumption)
-
-  joint_velocity_[drive_joint_id] = this->model->get_wheel_angular_velocity();
-
-  joint_position_[steering_joint_id] = this->model->get_steering_angle();
 }
 
 void SimHWInterface::enforceLimits(ros::Duration& period)
