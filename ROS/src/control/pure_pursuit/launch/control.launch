@@ -7,7 +7,7 @@
     <node pkg="pure_pursuit" type="run.py" name="pure_pursuit" output="screen" respawn="true">
 
         <param name="publish_rate" value="10" />
-        <param name="speed/target" value="3" />
+        <param name="speed/target" value="1.8" />
 
         <param name="steering/Kp" value="1.0" />
         <param name="steering/Ki" value="0.0" />

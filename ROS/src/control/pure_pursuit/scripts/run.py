@@ -7,12 +7,15 @@ from std_msgs.msg import Float64, Header
 from tf2_geometry_msgs import do_transform_pose
 from tf.transformations import quaternion_from_euler
 from trajectory import Trajectory
-
+import tf2_ros as tf
 
 class PurePursuit:
     def __init__(self):
 
         rospy.init_node("pure_pursuit_control")
+
+        self.tf_buffer = tf.Buffer()
+        self.tf_listener = tf.TransformListener(self.tf_buffer)
 
         self.min_speed = rospy.get_param("~speed/min", 0.3)
         self.min_corner_speed = rospy.get_param("~speed/min_corner_speed", 0.7)
@@ -54,10 +57,12 @@ class PurePursuit:
             - t_step: the t step the alg takes when progressing through the underlying parametric equations 
                       Indirectly determines how many points are checked per segment. 
         """
-        minimal_distance = rospy.get_param("~trajectory/minimal_distance", 1)
+        minimal_distance = rospy.get_param("~trajectory/minimal_distance", 2)
         t_step = rospy.get_param("~trajectory/t_step", 0.05)
-        max_angle = rospy.get_param("~trajectory/max_angle", 1)
+        max_angle = rospy.get_param("~trajectory/max_angle", 1.5)
         self.trajectory = Trajectory(minimal_distance, t_step, max_angle)
+        self.publish_rate = rospy.get_param("~publish_rate", 10)
+        self.speed_target = rospy.get_param("~speed/target", 3.0)
 
         self.path = None
 
@@ -134,7 +139,7 @@ class PurePursuit:
 
                     # Go ahead and drive. But adjust speed in corners
                     self.velocity_cmd.data = max(
-                        1 - abs(self.steering_cmd.data), self.min_corner_speed
+                        (1 - abs(self.steering_cmd.data)) * self.speed_target, self.min_corner_speed
                     )
 
                     # Publish target for debugging and visualisation
@@ -148,7 +153,7 @@ class PurePursuit:
                         quat[0], quat[1], quat[2], quat[3]
                     )
 
-                    self.publish("/output/target_point", msg)
+                    # self.debug_target_pub.publish("/output/target_point", msg)
 
                     # (x1 - 0) ** 2 + (y1 - y) ** 2 = y ** 2
                     # x1 ** 2 + y1 ** 2 - 2 * y1 * y = 0
@@ -162,6 +167,8 @@ class PurePursuit:
 
             except Exception as e:
                 rospy.logwarn(f"PurePursuit has caught an exception: {e}")
+                import traceback
+                print(traceback.format_exc())
 
             rate.sleep()
 
