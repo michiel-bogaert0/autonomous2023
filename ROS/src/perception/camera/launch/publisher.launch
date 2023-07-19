@@ -16,7 +16,7 @@
             <param name="rate" value="50"/>
             <remap from="/input/image" to="/ugr/car/sensors/cam0/image" />
             <remap from="/input/info" to="/ugr/car/sensors/cam0/camera_info" />
-            <param name="use_raw" value="true"/>
+            <param name="use_raw" value="false"/>
         </node>
     </group>
 </launch>
