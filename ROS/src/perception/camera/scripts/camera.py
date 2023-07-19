@@ -9,7 +9,6 @@ import numpy as np
 import rospy
 import yaml
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-from node_fixture.node_fixture import create_diagnostic_message
 from publisher_abstract.publisher import PublishNode
 from sensor_msgs.msg import CameraInfo
 
@@ -49,12 +48,27 @@ class CameraNode(PublishNode):
         self.setup_camera()
 
         self.diagnostics.publish(
-            create_diagnostic_message(
+            self.create_diagnostic_message(
                 level=DiagnosticStatus.WARN,
-                name="[HW] Camera driver",
-                message=f"Brightness - Exp/Gain: INIT - {self.exposure}/{self.gain:.2f}",
+                brightness="INIT"
             )
         )
+
+    def create_diagnostic_message(
+            self,
+            level: DiagnosticStatus,
+            brightness: str,
+        ) -> DiagnosticArray:
+        diag_array = DiagnosticArray(
+            status=[
+            DiagnosticStatus(
+                level=level,
+                name="[HW] Camera driver",
+                message=f"Brightness: {brightness} - Exposure: {self.exposure:.0f} - Gain: {self.gain:.2f}",
+            )
+        ])
+
+        return diag_array
 
     def get_camera_info(self):
         msg = CameraInfo()
@@ -168,13 +182,13 @@ class CameraNode(PublishNode):
         self.camera.f.ExposureTime.Set(self.exposure)
         self.camera.f.Gain.Set(self.gain)
 
+
         self.diagnostics.publish(
-            create_diagnostic_message(
+            self.create_diagnostic_message(
                 level=DiagnosticStatus.WARN
                 if abs(err) > self.brightness_deadzone
                 else DiagnosticStatus.OK,
-                name="[HW] Camera driver",
-                message=f"Brightness - Exp/Gain: {perceived_brightness:.1f} - {self.exposure}/{self.gain:.2f}",
+                brightness=f"{perceived_brightness:.1f}"
             )
         )
 
