@@ -77,7 +77,6 @@ class ThreeStageModel:
         bbox_msg.header = header
 
         # type, score, left, top, width, height
-        print(bboxes[:, 5])
         bbox_msg.bounding_boxes = [BoundingBox(
             int(row[5]),
             row[4],
