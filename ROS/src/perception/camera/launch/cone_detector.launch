@@ -10,7 +10,7 @@
         <param name="vis" value="False" />
         <remap from="/output/image_annotated" to="/ugr/car/perception/camera/image_annotated" />
         <remap from="/output/update" to="/ugr/car/observations/camera" />
-        <remap from="/input/image" to="/ugr/car/sensors/cam0" />
+        <remap from="/input/image" to="/ugr/car/sensors/cam0/image" />
     </node>
 
 </launch>

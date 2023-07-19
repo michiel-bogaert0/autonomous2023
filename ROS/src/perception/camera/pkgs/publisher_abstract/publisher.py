@@ -18,7 +18,7 @@ class PublishNode(ROSNode, ABC):
     def __init__(self, name):
         super().__init__(name, False)
         self.rate = rospy.Rate(rospy.get_param("~rate", 10))
-        self.frame = f"ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
+        self.frame = f"/ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
 
     @abstractmethod
     def get_camera_info(self) -> CameraInfo:
