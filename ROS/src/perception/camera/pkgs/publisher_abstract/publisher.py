@@ -84,7 +84,7 @@ class PublishNode(ROSNode, ABC):
                     self.publish("/input/image", data)
                     info = self.get_camera_info()
                     if info is not None:
-                        info.header = self.create_header()
+                        info.header = data.header
                         self.publish("/input/info", info)
 
                 self.rate.sleep()
