@@ -41,6 +41,9 @@
 #include <random>
 #include <tuple>
 
+const int CAN_NODE_ID = 0xE0;
+const int CAN_STEER_ID = 0x3;
+
 namespace pegasus_control
 {
 PegasusHWInterface::PegasusHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
@@ -63,10 +66,11 @@ void PegasusHWInterface::init()
 
   nh.param("world_frame", world_frame, std::string("ugr/map"));
   nh.param("base_link_frame", base_link_frame, std::string("ugr/car_base_link"));
-  // nh.param("gt_base_link_frame", gt_base_link_frame, std::string("ugr/gt_base_link"));
 
-  ros::Subscriber sub = nh.subscribe("/input/velocity", 1, TODO);
-  ros::Subscriber sub = nh.subscribe("/input/steering", 1, TODO);
+  float steer_max_step;
+  nh.param("steer_max_step", steer_max_step, 1600);
+
+  ros::Publisher bus = nh.advertise<can_msgs::msg::Frame>("/output/can", 10);
 
   // Now check if configured joints are actually there. Also remember joint id
   std::string drive_joint_name = nh_.param<std::string>("hardware_interface/drive_joint", "axis0");
@@ -94,8 +98,8 @@ void PegasusHWInterface::init()
 
 void PegasusHWInterface::read(ros::Duration& elapsed_time)
 {
-  // get input from pure pursuit controller
-  
+  // get input
+
 
 }
 
@@ -104,7 +108,12 @@ void PegasusHWInterface::write(ros::Duration& elapsed_time)
   // Safety
   enforceLimits(elapsed_time);
 
-  // give output to actuators
+  // Open loop steering so just couple back
+  joint_position_[steering_joint_id] = joint_position_command_[steering_joint_id];
+  publish_steering_msg(joint_position_command_[steering_joint_id]);
+
+  publish_vel_msg(joint_velocity_command[drive_joint_id], 1);
+  publish_vel_msg(joint_velocity_command[drive_joint_id], 2);
 
 
 }
@@ -113,6 +122,51 @@ void PegasusHWInterface::enforceLimits(ros::Duration& period)
 {
   // Enforces position and velocity
   pos_jnt_sat_interface_.enforceLimits(period);
+}
+
+void PegasusHWInterface::publish_steering_msg(float steering)
+{
+  // Convert [-1, 1] to a steering range [-steer_max_step, steer_max_step]
+  steering = steering * steer_max_step;
+  int id = CAN_NODE_ID << 2 | CAN_STEER_ID;
+
+  cantools::odrive_set_input_steering_t* msg;
+
+  cantools::odrive_set_input_steering_init(msg);
+
+  &msg->input_steering = steering;  
+
+  uint8_t encoded_data[2];
+  cantools::odrive_set_input_vel_pack(encoded_data, msg, sizeof(encoded_data));
+  can_msgs::msg::Frame msg;
+  msg.id = id;
+  msg.data = encoded_data;
+  msg.dlc = encoded_data.size();
+
+  bus->publish(msg);
+}
+
+void PegasusHWInterface::publish_vel_msg(float vel, int axis)
+{
+  // axis = 1 is right, axis = 2 is left
+  cantools::odrive_set_input_vel_t* msg;
+
+  cantools::odrive_set_input_vel_init(msg);
+
+  &msg->input_vel = vel;
+  &msg->input_torque_ff = 0;
+
+  uint8_t encoded_data[8];
+  cantools::odrive_set_input_vel_pack(encoded_data, msg, sizeof(encoded_data));
+
+  int can_id = axis << 5 | 0x00D;
+
+  can_msgs::msg::Frame msg;
+  msg.id = can_id;
+  msg.data = encoded_data;
+  msg.dlc = encoded_data.size();
+
+  bus.publish(msg);
 }
 
 }  // namespace pegasus_control

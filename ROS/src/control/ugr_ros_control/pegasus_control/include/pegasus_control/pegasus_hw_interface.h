@@ -41,6 +41,7 @@
 #define PEGASUS_CONTROL__PEGASUS_HW_INTERFACE_H
 
 #include <ugr_ros_control/generic_hw_interface.h>
+#include <pegasus_control/cantools.h>
 #include <ros/ros.h>
 
 #include <nav_msgs/Odometry.h>
@@ -48,7 +49,6 @@
 #include <sensor_msgs/Imu.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
-
 
 namespace pegasus_control
 {
@@ -79,7 +79,6 @@ public:
   void publish_imu(const ros::TimerEvent&);
 
 private:
-//   BicycleModel* model;
   int drive_joint_id;
   int steering_joint_id;
 
