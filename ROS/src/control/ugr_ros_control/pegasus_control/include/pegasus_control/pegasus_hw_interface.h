@@ -45,8 +45,11 @@
 #include <ros/ros.h>
 
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/TwistWithCovariance.h>
 #include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <sensor_msgs/Imu.h>
+#include <can_msgs/Frame.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
 
@@ -73,21 +76,47 @@ public:
   /** \brief Enforce limits for all values before writing */
   virtual void enforceLimits(ros::Duration& period);
 
-  // void publish_gt(const ros::TimerEvent&);
-  // void apply_noise_and_quantise(float& x, std::vector<double> noise);
-  void publish_encoder(const ros::TimerEvent&);
-  void publish_imu(const ros::TimerEvent&);
+  /**
+   * \brief Check (in non-realtime) if given controllers could be started and stopped from the
+   * current state of the RobotHW
+   * with regard to necessary hardware interface switches. Start and stop list are disjoint.
+   * This is just a check, the actual switch is done in doSwitch()
+   */
+  virtual bool canSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
+                         const std::list<hardware_interface::ControllerInfo>& stop_list);
+
+  /**
+   * \brief Perform (in non-realtime) all necessary hardware interface switches in order to start
+   * and stop the given controllers.
+   * Start and stop list are disjoint. The feasability was checked in canSwitch() beforehand.
+   */
+  virtual void doSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
+                        const std::list<hardware_interface::ControllerInfo>& stop_list);
+
+  void handle_vel_msg(const can_msgs::Frame::ConstPtr& msg, uint32_t axis_id);
+
+  void publish_steering_msg(float steering);
+  void publish_vel_msg(float vel, int axis);
+  void can_callback(const can_msgs::Frame::ConstPtr& msg);
 
 private:
   int drive_joint_id;
   int steering_joint_id;
 
-  ros::Publisher gt_pub, encoder_pub, imu_pub;
-  tf2_ros::TransformBroadcaster br;
-  std::string world_frame, gt_base_link_frame, base_link_frame;
-  std::vector<double> encoder_noise, imu_angular_velocity_noise, imu_acceleration_noise;
+  std::string axis0_frame;
+  std::string axis1_frame;
 
-  ros::Timer gt_timer, imu_timer, encoder_timer;
+  float wheel_diameter;
+
+  int IMU_ids[2] = {0xE2, 0xE3};
+
+  ros::Publisher can_pub;
+  ros::Subscriber can_sub;
+  ros::Publisher vel_left_pub;
+  ros::Publisher vel_right_pub;
+  float steer_max_step;
+
+  float cur_velocity;
 
 };  // class
 

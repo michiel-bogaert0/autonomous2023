@@ -32,6 +32,7 @@
 
 #include "pegasus_control/cantools.h"
 
+namespace cantools{
 static inline uint8_t pack_left_shift_u8(
     uint8_t value,
     uint8_t shift,
@@ -112,6 +113,7 @@ static inline uint32_t unpack_right_shift_u32(
     return (uint32_t)((uint32_t)(value & mask) >> shift);
 }
 
+
 int odrive_set_input_steering_init(struct cantools::odrive_set_input_steering_t *msg_p)
 {
     if (msg_p == NULL) return -1;
@@ -178,3 +180,29 @@ int odrive_set_input_vel_pack(
     return (8);
 }
 
+int odrive_set_input_vel_unpack(
+    struct cantools::odrive_set_input_vel_t *dst_p,
+    const uint8_t *src_p,
+    size_t size)
+{
+    uint32_t input_torque_ff;
+    uint32_t input_vel;
+
+    if (size < 8u) {
+        return (-EINVAL);
+    }
+
+    input_vel = unpack_right_shift_u32(src_p[0], 0u, 0xffu);
+    input_vel |= unpack_left_shift_u32(src_p[1], 8u, 0xffu);
+    input_vel |= unpack_left_shift_u32(src_p[2], 16u, 0xffu);
+    input_vel |= unpack_left_shift_u32(src_p[3], 24u, 0xffu);
+    memcpy(&dst_p->input_vel, &input_vel, sizeof(dst_p->input_vel));
+    input_torque_ff = unpack_right_shift_u32(src_p[4], 0u, 0xffu);
+    input_torque_ff |= unpack_left_shift_u32(src_p[5], 8u, 0xffu);
+    input_torque_ff |= unpack_left_shift_u32(src_p[6], 16u, 0xffu);
+    input_torque_ff |= unpack_left_shift_u32(src_p[7], 24u, 0xffu);
+    memcpy(&dst_p->input_torque_ff, &input_torque_ff, sizeof(dst_p->input_torque_ff));
+
+    return (0);
+}
+}

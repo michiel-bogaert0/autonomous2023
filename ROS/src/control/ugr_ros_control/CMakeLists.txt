@@ -10,6 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(catkin REQUIRED COMPONENTS
   actionlib
+  can_msgs
   cmake_modules
   control_msgs
   control_toolbox
@@ -33,6 +34,7 @@ catkin_package(
     include
   CATKIN_DEPENDS
     actionlib
+    can_msgs
     control_msgs
     control_toolbox
     controller_manager
@@ -85,6 +87,7 @@ target_link_libraries(${PROJECT_NAME}_keyboard_teleop
 )
 
 add_subdirectory(sim_control)
+add_subdirectory(pegasus_control)
 
 ## Install ------------------------------------------------------------
 

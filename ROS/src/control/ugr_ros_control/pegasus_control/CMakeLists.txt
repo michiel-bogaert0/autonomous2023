@@ -5,6 +5,7 @@ include_directories(
 # Pegasus Hardware Interface
 add_library(pegasus_hw_interface
   src/pegasus_hw_interface.cpp
+  src/cantools.cpp
 )
 target_link_libraries(pegasus_hw_interface
   generic_hw_interface

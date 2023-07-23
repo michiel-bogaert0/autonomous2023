@@ -31,6 +31,10 @@
 #ifndef CANTOOLS_H
 #define CANTOOLS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -142,5 +146,9 @@ int odrive_set_input_steering_pack(
 int odrive_set_input_steering_init(struct odrive_set_input_steering_t *msg_p);
 
 } // namespace cantools
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
