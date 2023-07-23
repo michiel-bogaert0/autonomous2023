@@ -205,4 +205,37 @@ int odrive_set_input_vel_unpack(
 
     return (0);
 }
+
+int odrive_set_controller_mode_pack(
+    uint8_t *dst_p,
+    const struct cantools::odrive_set_controller_mode_t *src_p,
+    size_t size)
+{
+    if (size < 8u) {
+        return (-EINVAL);
+    }
+
+    memset(&dst_p[0], 0, 8);
+
+    dst_p[0] |= pack_left_shift_u32(src_p->control_mode, 0u, 0xffu);
+    dst_p[1] |= pack_right_shift_u32(src_p->control_mode, 8u, 0xffu);
+    dst_p[2] |= pack_right_shift_u32(src_p->control_mode, 16u, 0xffu);
+    dst_p[3] |= pack_right_shift_u32(src_p->control_mode, 24u, 0xffu);
+    dst_p[4] |= pack_left_shift_u32(src_p->input_mode, 0u, 0xffu);
+    dst_p[5] |= pack_right_shift_u32(src_p->input_mode, 8u, 0xffu);
+    dst_p[6] |= pack_right_shift_u32(src_p->input_mode, 16u, 0xffu);
+    dst_p[7] |= pack_right_shift_u32(src_p->input_mode, 24u, 0xffu);
+
+    return (8);
+}
+
+int odrive_set_controller_mode_init(struct odrive_set_controller_mode_t *msg_p)
+{
+    if (msg_p == NULL) return -1;
+
+    memset(msg_p, 0, sizeof(struct odrive_set_controller_mode_t));
+
+    return 0;
+}
+
 }

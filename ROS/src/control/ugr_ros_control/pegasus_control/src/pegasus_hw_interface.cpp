@@ -45,6 +45,9 @@
 const uint32_t CAN_NODE_ID = 0xE0;
 const uint32_t CAN_STEER_ID = 0x3;
 
+const uint32_t ODRIVE_VELOCITY_CONTROL_MODE = 2;
+const unint32_t ODRIVE_PASSTHROUGH_INPUT_MODE = 1;
+
 namespace pegasus_control
 {
 PegasusHWInterface::PegasusHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
@@ -113,7 +116,7 @@ void PegasusHWInterface::write(ros::Duration& elapsed_time)
   publish_steering_msg(joint_position_command_[steering_joint_id]);
 
   publish_vel_msg(joint_velocity_command_[drive_joint_id], 1);
-  publish_vel_msg(joint_velocity_command_[drive_joint_id], 2);
+  publish_vel_msg(-joint_velocity_command_[drive_joint_id], 2);
 }
 
 bool PegasusHWInterface::canSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
@@ -126,7 +129,35 @@ bool PegasusHWInterface::canSwitch(const std::list<hardware_interface::Controlle
 void PegasusHWInterface::doSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
                         const std::list<hardware_interface::ControllerInfo>& stop_list)
 {
-  // TODO
+  cantools::odrive_set_controller_mode_t* mode_msg;
+
+  cantools::odrive_set_controller_mode_init(mode_msg);
+
+  mode_msg->input_mode = ODRIVE_PASSTHROUGH_INPUT_MODE;
+  mode_msg->control_mode = ODRIVE_VELOCITY_CONTROL_MODE;  
+
+  uint8_t encoded_data[8];
+  cantools::odrive_set_controller_mode_pack(encoded_data, mode_msg, sizeof(encoded_data));
+
+  boost::array<unsigned char, 8> converted_data; // Different type needed for can msg
+  for (size_t i = 0; i < converted_data.size(); ++i) {
+      converted_data[i] = encoded_data[i];
+  }
+
+  can_msgs::Frame can_msg;
+  can_msg.data = converted_data;
+  can_msg.dlc = 8;
+
+  uint32_t can_id = 1 << 5 | 0x00D; // Right
+  can_msg.id = can_id;
+
+  can_pub.publish(can_msg);
+
+  can_id = 2 << 5 | 0x00D; // Left
+  can_msg.id = can_id;
+
+  can_pub.publish(can_msg);
+
 }
 
 void PegasusHWInterface::enforceLimits(ros::Duration& period)
@@ -137,7 +168,6 @@ void PegasusHWInterface::enforceLimits(ros::Duration& period)
 
 void PegasusHWInterface::can_callback(const can_msgs::Frame::ConstPtr& msg)
 {
-  //update state
   uint32_t axis_id = msg->id >> 5;
   if (axis_id == 1 || axis_id == 2){
     uint32_t cmd_id = msg->id & 0b11111;

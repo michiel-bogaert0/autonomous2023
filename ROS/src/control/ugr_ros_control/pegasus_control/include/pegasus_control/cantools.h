@@ -82,6 +82,27 @@ struct odrive_set_input_steering_t {
 };
 
 /**
+ * Signals in message Set_Controller_Mode.
+ *
+ * All signal values are as on the CAN bus.
+ */
+struct odrive_set_controller_mode_t {
+    /**
+     * Range: -
+     * Scale: 1
+     * Offset: 0
+     */
+    uint32_t control_mode;
+
+    /**
+     * Range: -
+     * Scale: 1
+     * Offset: 0
+     */
+    uint32_t input_mode;
+};
+
+/**
  * Pack message Set_Input_Vel.
  *
  * @param[out] dst_p Buffer to pack the message into.
@@ -144,6 +165,29 @@ int odrive_set_input_steering_pack(
  * @return zero(0) on success or (-1) in case of nullptr argument.
  */
 int odrive_set_input_steering_init(struct odrive_set_input_steering_t *msg_p);
+
+/**
+ * Pack message Set_Controller_Mode.
+ *
+ * @param[out] dst_p Buffer to pack the message into.
+ * @param[in] src_p Data to pack.
+ * @param[in] size Size of dst_p.
+ *
+ * @return Size of packed data, or negative error code.
+ */
+int odrive_set_controller_mode_pack(
+    uint8_t *dst_p,
+    const struct odrive_set_controller_mode_t *src_p,
+    size_t size);
+
+/**
+ * Init message fields to default values from Set_Controller_Mode.
+ *
+ * @param[in] msg_p Message to init.
+ *
+ * @return zero(0) on success or (-1) in case of nullptr argument.
+ */
+int odrive_set_controller_mode_init(struct odrive_set_controller_mode_t *msg_p);
 
 } // namespace cantools
 
