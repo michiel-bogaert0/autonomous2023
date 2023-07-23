@@ -1,7 +1,7 @@
 #
 # Base stage. Install repository dependencies
 #
-FROM nvidia/cuda:11.7.0-runtime-ubuntu20.04 AS ugr-base
+FROM nvidia/cuda:11.7.1-runtime-ubuntu20.04 AS ugr-base
 
 #
 # Install torch and torchvision

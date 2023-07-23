@@ -10,5 +10,7 @@
   <include file="$(find pure_pursuit)/launch/pure_pursuit.launch" pass_all_args="true">
     <arg name="reference_frame" default="ugr/car_odom" />
   </include>
+  <!-- Control controller -->
+  <include file="$(find control_controller)/launch/controller.launch" pass_all_args="true" />
 
 </launch>
