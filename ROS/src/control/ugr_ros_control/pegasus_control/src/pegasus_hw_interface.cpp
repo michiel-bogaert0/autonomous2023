@@ -46,7 +46,7 @@ const uint32_t CAN_NODE_ID = 0xE0;
 const uint32_t CAN_STEER_ID = 0x3;
 
 const uint32_t ODRIVE_VELOCITY_CONTROL_MODE = 2;
-const unint32_t ODRIVE_PASSTHROUGH_INPUT_MODE = 1;
+const uint32_t ODRIVE_PASSTHROUGH_INPUT_MODE = 1;
 
 namespace pegasus_control
 {
