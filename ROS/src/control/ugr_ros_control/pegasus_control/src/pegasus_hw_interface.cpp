@@ -129,15 +129,15 @@ bool PegasusHWInterface::canSwitch(const std::list<hardware_interface::Controlle
 void PegasusHWInterface::doSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
                         const std::list<hardware_interface::ControllerInfo>& stop_list)
 {
-  cantools::odrive_set_controller_mode_t* mode_msg;
+  cantools::odrive_set_controller_mode_t mode_msg;
 
-  cantools::odrive_set_controller_mode_init(mode_msg);
+  cantools::odrive_set_controller_mode_init(&mode_msg);
 
-  mode_msg->input_mode = ODRIVE_PASSTHROUGH_INPUT_MODE;
-  mode_msg->control_mode = ODRIVE_VELOCITY_CONTROL_MODE;  
+  mode_msg.input_mode = ODRIVE_PASSTHROUGH_INPUT_MODE;
+  mode_msg.control_mode = ODRIVE_VELOCITY_CONTROL_MODE;  
 
   uint8_t encoded_data[8];
-  cantools::odrive_set_controller_mode_pack(encoded_data, mode_msg, sizeof(encoded_data));
+  cantools::odrive_set_controller_mode_pack(encoded_data, &mode_msg, sizeof(encoded_data));
 
   boost::array<unsigned char, 8> converted_data; // Different type needed for can msg
   for (size_t i = 0; i < converted_data.size(); ++i) {
@@ -181,14 +181,14 @@ void PegasusHWInterface::can_callback(const can_msgs::Frame::ConstPtr& msg)
 
 void PegasusHWInterface::handle_vel_msg(const can_msgs::Frame::ConstPtr& msg, uint32_t axis_id)
 {
-  cantools::odrive_set_input_vel_t* vel_msg;
+  cantools::odrive_set_input_vel_t vel_msg;
 
-  cantools::odrive_set_input_vel_init(vel_msg);
+  cantools::odrive_set_input_vel_init(&vel_msg);
 
   uint8_t encoded_data[8];
 
   std::copy(msg->data.begin(), msg->data.end(), encoded_data);
-  cantools::odrive_set_input_vel_unpack(vel_msg, encoded_data, msg->dlc);
+  cantools::odrive_set_input_vel_unpack(&vel_msg, encoded_data, msg->dlc);
 
   geometry_msgs::TwistWithCovarianceStamped twist_msg = geometry_msgs::TwistWithCovarianceStamped();
   twist_msg.header.frame_id = (axis_id == 1) ? this->axis0_frame : this->axis1_frame;
@@ -199,7 +199,7 @@ void PegasusHWInterface::handle_vel_msg(const can_msgs::Frame::ConstPtr& msg, ui
   twist_msg.twist.covariance = {0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   twist_msg.twist.twist = geometry_msgs::Twist();
 
-  double speed = vel_msg->input_vel; // in rev/s
+  double speed = vel_msg.input_vel; // in rev/s
   speed *= M_PI * this->wheel_diameter;
   twist_msg.twist.twist.linear.x = (axis_id == 1) ? speed : -speed; // The left wheel is inverted
 
@@ -215,17 +215,18 @@ void PegasusHWInterface::handle_vel_msg(const can_msgs::Frame::ConstPtr& msg, ui
 void PegasusHWInterface::publish_steering_msg(float steering)
 {
   // Convert [-1, 1] to a steering range [-steer_max_step, steer_max_step]
+
   steering = steering * steer_max_step;
   uint32_t id = CAN_NODE_ID << 2 | CAN_STEER_ID;
 
-  cantools::odrive_set_input_steering_t* msg;
+  cantools::odrive_set_input_steering_t msg;
 
-  cantools::odrive_set_input_steering_init(msg);
-
-  msg->input_steering = steering;  
-
+  cantools::odrive_set_input_steering_init(&msg);
+  
+  msg.input_steering = steering;  
+  
   uint8_t encoded_data[8];
-  cantools::odrive_set_input_steering_pack(encoded_data, msg, sizeof(encoded_data));
+  cantools::odrive_set_input_steering_pack(encoded_data, &msg, sizeof(encoded_data));
 
   boost::array<unsigned char, 8> converted_data; // Different type needed for can msg
   for (size_t i = 0; i < converted_data.size(); ++i) {
@@ -243,15 +244,15 @@ void PegasusHWInterface::publish_steering_msg(float steering)
 void PegasusHWInterface::publish_vel_msg(float vel, int axis)
 {
   // axis = 1 is right, axis = 2 is left
-  cantools::odrive_set_input_vel_t* msg;
+  cantools::odrive_set_input_vel_t msg;
 
-  cantools::odrive_set_input_vel_init(msg);
+  cantools::odrive_set_input_vel_init(&msg);
 
-  msg->input_vel = vel;
-  msg->input_torque_ff = 0;
+  msg.input_vel = vel;
+  msg.input_torque_ff = 0;
 
   uint8_t encoded_data[8];
-  cantools::odrive_set_input_vel_pack(encoded_data, msg, sizeof(encoded_data));
+  cantools::odrive_set_input_vel_pack(encoded_data, &msg, sizeof(encoded_data));
 
   uint32_t can_id = axis << 5 | 0x00D;
 
