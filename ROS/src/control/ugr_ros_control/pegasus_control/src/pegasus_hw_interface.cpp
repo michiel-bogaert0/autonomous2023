@@ -77,9 +77,9 @@ void PegasusHWInterface::init()
   std::string drive_joint_name = nh_.param<std::string>("hardware_interface/drive_joint", "axis0");
   std::string steering_joint_name = nh_.param<std::string>("hardware_interface/steering_joint", "axis_steering");
 
-  this->axis0_frame = nh.param("~axis0/frame", std::string("ugr/car_base_link/axis0"));
-  this->axis1_frame = nh.param("~axis1/frame", std::string("ugr/car_base_link/axis1"));
-  this->wheel_diameter = nh.param("~wheel_diameter", 8.0 * 2.54 / 100.0); // in m
+  this->axis0_frame = nh.param("axis0/frame", std::string("ugr/car_base_link/axis0"));
+  this->axis1_frame = nh.param("axis1/frame", std::string("ugr/car_base_link/axis1"));
+  this->wheel_diameter = nh.param("wheel_diameter", 8.0 * 2.54 / 100.0); // in m
 
   drive_joint_id = std::find(joint_names_.begin(), joint_names_.end(), drive_joint_name) - joint_names_.begin();
   steering_joint_id = std::find(joint_names_.begin(), joint_names_.end(), steering_joint_name) - joint_names_.begin();
