@@ -130,7 +130,7 @@ int odrive_set_input_steering_pack(
 {
     uint32_t input_steering;
 
-    if (size < 2u) {
+    if (size < 8u) {
         return (-EINVAL);
     }
 

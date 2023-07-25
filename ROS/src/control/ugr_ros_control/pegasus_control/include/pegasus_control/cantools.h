@@ -78,7 +78,7 @@ struct odrive_set_input_steering_t {
      * Scale: 1
      * Offset: 0
      */
-    float input_steering;
+    int input_steering;
 };
 
 /**
