@@ -238,4 +238,39 @@ int odrive_set_controller_mode_init(struct odrive_set_controller_mode_t *msg_p)
     return 0;
 }
 
+int odrive_get_encoder_estimates_unpack(
+    struct cantools::odrive_get_encoder_estimates_t *dst_p,
+    const uint8_t *src_p,
+    size_t size)
+{
+    uint32_t pos_estimate;
+    uint32_t vel_estimate;
+
+    if (size < 8u) {
+        return (-EINVAL);
+    }
+
+    pos_estimate = unpack_right_shift_u32(src_p[0], 0u, 0xffu);
+    pos_estimate |= unpack_left_shift_u32(src_p[1], 8u, 0xffu);
+    pos_estimate |= unpack_left_shift_u32(src_p[2], 16u, 0xffu);
+    pos_estimate |= unpack_left_shift_u32(src_p[3], 24u, 0xffu);
+    memcpy(&dst_p->pos_estimate, &pos_estimate, sizeof(dst_p->pos_estimate));
+    vel_estimate = unpack_right_shift_u32(src_p[4], 0u, 0xffu);
+    vel_estimate |= unpack_left_shift_u32(src_p[5], 8u, 0xffu);
+    vel_estimate |= unpack_left_shift_u32(src_p[6], 16u, 0xffu);
+    vel_estimate |= unpack_left_shift_u32(src_p[7], 24u, 0xffu);
+    memcpy(&dst_p->vel_estimate, &vel_estimate, sizeof(dst_p->vel_estimate));
+
+    return (0);
+}
+
+int odrive_get_encoder_estimates_init(struct cantools::odrive_get_encoder_estimates_t *msg_p)
+{
+    if (msg_p == NULL) return -1;
+
+    memset(msg_p, 0, sizeof(struct cantools::odrive_get_encoder_estimates_t));
+
+    return 0;
+}
+
 }

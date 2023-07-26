@@ -6,11 +6,6 @@
   <arg unless="$(arg debug)" name="launch_prefix" value="" />
   <arg if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
 
-  <!-- Load Pegasus URDF -->
-  <param name="robot_description"
-    command="$(find xacro)/xacro '$(find pegasus_description)/urdf/pegasus.urdf'" />
-
-
   <group ns="pegasus">
 
 
@@ -23,8 +18,8 @@
 
       <!-- Encoder 0: right -->
       <!-- Encoder 1: left -->
-      <remap from="/output/vel0" to="/ugr/car/sensors/encoder0" />
-      <remap from="/output/vel1" to="/ugr/car/sensors/encoder1" />
+      <remap from="/output/vel0" to="/ugr/car/sensors/hwinterface/encoder0" />
+      <remap from="/output/vel1" to="/ugr/car/sensors/hwinterface/encoder1" />
 
       
     </node>
@@ -37,9 +32,6 @@
       respawn="false"
       output="screen"
       args="spawn joint_state_controller drive_velocity_controller steering_position_controller" />
-
-    <!-- Convert joint states to /tf tranforms -->
-    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 
   </group>
 

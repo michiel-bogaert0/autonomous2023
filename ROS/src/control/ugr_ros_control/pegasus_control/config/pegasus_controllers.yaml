@@ -18,7 +18,7 @@ hardware_interface:
             - effort
       axis_steering:
          interfaces:
-            - velocity # No feedback here, so no state interface!
+            - position
 
 # Publish all joint states ----------------------------------
 # Creates the /joint_states topic necessary in ROS
@@ -28,16 +28,15 @@ joint_state_controller:
 
 # Joint position controller for steering
 steering_position_controller:
-   type: velocity_controllers/JointPositionController
+   type: position_controllers/JointPositionController
    joint: axis_steering
-   pid: {p: 1.0, i: 0.01, d: 0.0}
 
 # Velocity controller for drive
 drive_velocity_controller:
-   type: effort_controllers/JointVelocityController
+   type: velocity_controllers/JointVelocityController
    joint: axis0
-   pid: {p: 10.0, i: 0.01, d: 0.0}
 
 drive_effort_controller:
    type: effort_controllers/JointEffortController
    joint: axis0
+   pid: {p: 10.0, i: 0.01, d: 0.0}

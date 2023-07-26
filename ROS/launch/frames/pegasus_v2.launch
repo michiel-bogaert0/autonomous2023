@@ -3,6 +3,8 @@
   <param name="robot_description"
     command="$(find xacro)/xacro '$(find pegasus_description)/urdf/pegasus.urdf'" />
 
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+  <group ns="pegasus">
 
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+  </group>
 </launch>

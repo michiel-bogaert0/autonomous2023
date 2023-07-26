@@ -57,7 +57,7 @@
   </group>
 
   <group if="$(arg enable_drive)">
-    <include file="$(find car_driver)/launch/pegasus.launch" />
+    <include file="$(find ugr_ros_control)/pegasus_control/launch/pegasus_hardware.launch" />
   </group>
 
 </launch>

@@ -79,7 +79,7 @@ void PegasusHWInterface::init()
 
   this->axis0_frame = nh.param("axis0/frame", std::string("ugr/car_base_link/axis0"));
   this->axis1_frame = nh.param("axis1/frame", std::string("ugr/car_base_link/axis1"));
-  this->wheel_diameter = nh.param("wheel_diameter", 8.0 * 2.54 / 100.0); // in m
+  this->wheel_diameter = nh.param("wheel_diameter", 8.0 * 2.54 / 100.0);  // in m
 
   drive_joint_id = std::find(joint_names_.begin(), joint_names_.end(), drive_joint_name) - joint_names_.begin();
   steering_joint_id = std::find(joint_names_.begin(), joint_names_.end(), steering_joint_name) - joint_names_.begin();
@@ -103,7 +103,7 @@ void PegasusHWInterface::init()
 
 void PegasusHWInterface::read(ros::Duration& elapsed_time)
 {
-  joint_velocity_[drive_joint_id] = this->cur_velocity; 
+  joint_velocity_[drive_joint_id] = this->cur_velocity;
 }
 
 void PegasusHWInterface::write(ros::Duration& elapsed_time)
@@ -120,44 +120,44 @@ void PegasusHWInterface::write(ros::Duration& elapsed_time)
 }
 
 bool PegasusHWInterface::canSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
-                         const std::list<hardware_interface::ControllerInfo>& stop_list)
-  {
-    // TODO
-    return true;
-  }
+                                   const std::list<hardware_interface::ControllerInfo>& stop_list)
+{
+  // TODO
+  return true;
+}
 
 void PegasusHWInterface::doSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
-                        const std::list<hardware_interface::ControllerInfo>& stop_list)
+                                  const std::list<hardware_interface::ControllerInfo>& stop_list)
 {
   cantools::odrive_set_controller_mode_t mode_msg;
 
   cantools::odrive_set_controller_mode_init(&mode_msg);
 
   mode_msg.input_mode = ODRIVE_PASSTHROUGH_INPUT_MODE;
-  mode_msg.control_mode = ODRIVE_VELOCITY_CONTROL_MODE;  
+  mode_msg.control_mode = ODRIVE_VELOCITY_CONTROL_MODE;
 
   uint8_t encoded_data[8];
   cantools::odrive_set_controller_mode_pack(encoded_data, &mode_msg, sizeof(encoded_data));
 
-  boost::array<unsigned char, 8> converted_data; // Different type needed for can msg
-  for (size_t i = 0; i < converted_data.size(); ++i) {
-      converted_data[i] = encoded_data[i];
+  boost::array<unsigned char, 8> converted_data;  // Different type needed for can msg
+  for (size_t i = 0; i < converted_data.size(); ++i)
+  {
+    converted_data[i] = encoded_data[i];
   }
 
   can_msgs::Frame can_msg;
   can_msg.data = converted_data;
   can_msg.dlc = 8;
 
-  uint32_t can_id = 1 << 5 | 0x00D; // Right
+  uint32_t can_id = 1 << 5 | 0x00D;  // Right
   can_msg.id = can_id;
 
   can_pub.publish(can_msg);
 
-  can_id = 2 << 5 | 0x00D; // Left
+  can_id = 2 << 5 | 0x00D;  // Left
   can_msg.id = can_id;
 
   can_pub.publish(can_msg);
-
 }
 
 void PegasusHWInterface::enforceLimits(ros::Duration& period)
@@ -169,10 +169,12 @@ void PegasusHWInterface::enforceLimits(ros::Duration& period)
 void PegasusHWInterface::can_callback(const can_msgs::Frame::ConstPtr& msg)
 {
   uint32_t axis_id = msg->id >> 5;
-  if (axis_id == 1 || axis_id == 2){
+  if (axis_id == 1 || axis_id == 2)
+  {
     uint32_t cmd_id = msg->id & 0b11111;
 
-    if (cmd_id == 9){
+    if (cmd_id == 9)
+    {
       // TODO: publish diagnostics
       handle_vel_msg(msg, axis_id);
     }
@@ -181,35 +183,38 @@ void PegasusHWInterface::can_callback(const can_msgs::Frame::ConstPtr& msg)
 
 void PegasusHWInterface::handle_vel_msg(const can_msgs::Frame::ConstPtr& msg, uint32_t axis_id)
 {
-  cantools::odrive_set_input_vel_t vel_msg;
+  cantools::odrive_get_encoder_estimates_t vel_msg;
 
-  cantools::odrive_set_input_vel_init(&vel_msg);
+  cantools::odrive_get_encoder_estimates_init(&vel_msg);
 
   uint8_t encoded_data[8];
 
   std::copy(msg->data.begin(), msg->data.end(), encoded_data);
-  cantools::odrive_set_input_vel_unpack(&vel_msg, encoded_data, msg->dlc);
+  cantools::odrive_get_encoder_estimates_unpack(&vel_msg, encoded_data, msg->dlc);
 
   geometry_msgs::TwistWithCovarianceStamped twist_msg = geometry_msgs::TwistWithCovarianceStamped();
   twist_msg.header.frame_id = (axis_id == 1) ? this->axis0_frame : this->axis1_frame;
   twist_msg.header.stamp = ros::Time::now();
-  twist_msg.twist = geometry_msgs::TwistWithCovariance(); 
+  twist_msg.twist = geometry_msgs::TwistWithCovariance();
 
   // TODO Use actual covariance measurements (first we need data to estimate these)
-  twist_msg.twist.covariance = {0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  twist_msg.twist.covariance = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
   twist_msg.twist.twist = geometry_msgs::Twist();
 
-  double speed = vel_msg.input_vel; // in rev/s
+  double speed = vel_msg.vel_estimate;  // in rev/s
   speed *= M_PI * this->wheel_diameter;
-  twist_msg.twist.twist.linear.x = (axis_id == 1) ? speed : -speed; // The left wheel is inverted
 
-  this->cur_velocity = speed;
+  twist_msg.twist.twist.linear.x = (axis_id == 1) ? speed : -speed;  // The left wheel is inverted
 
   if (axis_id == 1)
-      vel_right_pub.publish(twist_msg);
-  else if (axis_id == 2)
-      vel_left_pub.publish(twist_msg);
+    this->cur_velocity = vel_msg.vel_estimate * 2 * M_PI;
 
+  if (axis_id == 1)
+    vel_right_pub.publish(twist_msg);
+  else if (axis_id == 2)
+    vel_left_pub.publish(twist_msg);
 }
 
 void PegasusHWInterface::publish_steering_msg(float steering)
@@ -222,15 +227,16 @@ void PegasusHWInterface::publish_steering_msg(float steering)
   cantools::odrive_set_input_steering_t msg;
 
   cantools::odrive_set_input_steering_init(&msg);
-  
-  msg.input_steering = (int)steering;  
-  
+
+  msg.input_steering = (int)steering;
+
   uint8_t encoded_data[8];
   cantools::odrive_set_input_steering_pack(encoded_data, &msg, sizeof(encoded_data));
 
-  boost::array<unsigned char, 8> converted_data; // Different type needed for can msg
-  for (size_t i = 0; i < converted_data.size(); i++) {
-      converted_data[i] = encoded_data[i];
+  boost::array<unsigned char, 8> converted_data;  // Different type needed for can msg
+  for (size_t i = 0; i < converted_data.size(); i++)
+  {
+    converted_data[i] = encoded_data[i];
   }
 
   can_msgs::Frame can_msg;
@@ -248,7 +254,7 @@ void PegasusHWInterface::publish_vel_msg(float vel, int axis)
 
   cantools::odrive_set_input_vel_init(&msg);
 
-  msg.input_vel = vel;
+  msg.input_vel = vel / (2 * M_PI);
   msg.input_torque_ff = 0;
 
   uint8_t encoded_data[8];
@@ -256,9 +262,10 @@ void PegasusHWInterface::publish_vel_msg(float vel, int axis)
 
   uint32_t can_id = axis << 5 | 0x00D;
 
-  boost::array<unsigned char, 8> converted_data; // Different type needed for can msg
-  for (size_t i = 0; i < converted_data.size(); i++) {
-      converted_data[i] = encoded_data[i];
+  boost::array<unsigned char, 8> converted_data;  // Different type needed for can msg
+  for (size_t i = 0; i < converted_data.size(); i++)
+  {
+    converted_data[i] = encoded_data[i];
   }
 
   can_msgs::Frame can_msg;

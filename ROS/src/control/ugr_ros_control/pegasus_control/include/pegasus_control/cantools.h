@@ -189,6 +189,64 @@ int odrive_set_controller_mode_pack(
  */
 int odrive_set_controller_mode_init(struct odrive_set_controller_mode_t *msg_p);
 
+/**
+ * Signals in message Get_Encoder_Estimates.
+ *
+ * All signal values are as on the CAN bus.
+ */
+struct odrive_get_encoder_estimates_t {
+    /**
+     * Range: -
+     * Scale: 1
+     * Offset: 0
+     */
+    float pos_estimate;
+
+    /**
+     * Range: -
+     * Scale: 1
+     * Offset: 0
+     */
+    float vel_estimate;
+};
+
+/**
+ * Pack message Get_Encoder_Estimates.
+ *
+ * @param[out] dst_p Buffer to pack the message into.
+ * @param[in] src_p Data to pack.
+ * @param[in] size Size of dst_p.
+ *
+ * @return Size of packed data, or negative error code.
+ */
+int odrive_get_encoder_estimates_pack(
+    uint8_t *dst_p,
+    const struct odrive_get_encoder_estimates_t *src_p,
+    size_t size);
+
+/**
+ * Unpack message Get_Encoder_Estimates.
+ *
+ * @param[out] dst_p Object to unpack the message into.
+ * @param[in] src_p Message to unpack.
+ * @param[in] size Size of src_p.
+ *
+ * @return zero(0) or negative error code.
+ */
+int odrive_get_encoder_estimates_unpack(
+    struct odrive_get_encoder_estimates_t *dst_p,
+    const uint8_t *src_p,
+    size_t size);
+
+/**
+ * Init message fields to default values from Get_Encoder_Estimates.
+ *
+ * @param[in] msg_p Message to init.
+ *
+ * @return zero(0) on success or (-1) in case of nullptr argument.
+ */
+int odrive_get_encoder_estimates_init(struct odrive_get_encoder_estimates_t *msg_p);
+
 } // namespace cantools
 
 #ifdef __cplusplus
