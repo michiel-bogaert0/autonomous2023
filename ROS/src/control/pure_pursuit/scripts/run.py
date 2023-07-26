@@ -126,7 +126,7 @@ class PurePursuit:
                 if not success:
                     # BRAKE! We don't know where to drive to!
                     rospy.loginfo("No target point found!")
-                    self.velocity_cmd.data = self.min_speed
+                    self.velocity_cmd.data = 0.0
                     self.steering_cmd.data = 0.0
                 else:
 
@@ -141,10 +141,7 @@ class PurePursuit:
                     rospy.loginfo(f"R: {R}, steering angle {self.steering_cmd.data}")
 
                     # Go ahead and drive. But adjust speed in corners
-                    self.velocity_cmd.data = max(
-                        (1 - abs(self.steering_cmd.data)) * self.speed_target,
-                        self.min_corner_speed,
-                    )
+                    self.velocity_cmd.data = self.speed_target
 
                 # Publish to velocity and position steering controller
                 self.steering_cmd.data /= self.steering_transmission
