@@ -32,6 +32,7 @@
   <build_depend>libgflags-dev</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>rosparam_shortcuts</build_depend>
+  <build_depend>ugr_msgs</build_depend>
 
   <run_depend>hardware_interface</run_depend>
   <run_depend>controller_manager</run_depend>
@@ -47,6 +48,7 @@
   <run_depend>std_msgs</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>rosparam_shortcuts</run_depend>
+  <run_depend>ugr_msgs</run_depend>
 
   <!-- These are needed if you want to run the sim simulation demo -->
   <!--<run_depend>xacro</run_depend>-->

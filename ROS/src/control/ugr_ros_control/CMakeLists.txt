@@ -24,6 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   trajectory_msgs
   transmission_interface
+  ugr_msgs
   urdf
 )
 
@@ -46,6 +47,7 @@ catkin_package(
     std_msgs
     trajectory_msgs
     transmission_interface
+    ugr_msgs
     urdf
   LIBRARIES
     generic_hw_control_loop

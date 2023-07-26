@@ -70,6 +70,8 @@ void PegasusHWInterface::init()
   this->can_pub = nh.advertise<can_msgs::Frame>("/output/can", 10);
   this->can_sub = nh.subscribe<can_msgs::Frame>("/input/can", 1, &PegasusHWInterface::can_callback, this);
 
+  this->state_sub = nh.subscribe<ugr_msgs::State>("/state", 1, &PegasusHWInterface::state_change, this);
+
   this->vel_right_pub = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/vel0", 10);
   this->vel_left_pub = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/vel1", 10);
 
@@ -113,10 +115,20 @@ void PegasusHWInterface::write(ros::Duration& elapsed_time)
 
   // Open loop steering so just couple back
   joint_position_[steering_joint_id] = joint_position_command_[steering_joint_id];
-  publish_steering_msg(joint_position_command_[steering_joint_id]);
 
-  publish_vel_msg(joint_velocity_command_[drive_joint_id], 1);
-  publish_vel_msg(-joint_velocity_command_[drive_joint_id], 2);
+  if (this->is_running == true){
+    publish_steering_msg(joint_position_command_[steering_joint_id]);
+
+    publish_vel_msg(joint_velocity_command_[drive_joint_id], 1);
+    publish_vel_msg(-joint_velocity_command_[drive_joint_id], 2);
+  }
+  else {
+    publish_steering_msg(0);
+
+    publish_vel_msg(0, 1);
+    publish_vel_msg(0, 2);
+  }
+  
 }
 
 bool PegasusHWInterface::canSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
@@ -164,6 +176,13 @@ void PegasusHWInterface::enforceLimits(ros::Duration& period)
 {
   // Enforces position and velocity
   pos_jnt_sat_interface_.enforceLimits(period);
+}
+
+void PegasusHWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
+{
+  if (msg->scope == "autonomous"){
+    this->is_running = (msg->cur_state == "asdrive") ? true : false;
+  }
 }
 
 void PegasusHWInterface::can_callback(const can_msgs::Frame::ConstPtr& msg)

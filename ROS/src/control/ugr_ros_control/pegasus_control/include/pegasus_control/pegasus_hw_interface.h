@@ -52,6 +52,7 @@
 #include <can_msgs/Frame.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <ugr_msgs/State.h>
 
 namespace pegasus_control
 {
@@ -93,6 +94,8 @@ public:
   virtual void doSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
                         const std::list<hardware_interface::ControllerInfo>& stop_list);
 
+  void state_change(const ugr_msgs::State::ConstPtr& msg);
+
   void handle_vel_msg(const can_msgs::Frame::ConstPtr& msg, uint32_t axis_id);
 
   void publish_steering_msg(float steering);
@@ -108,10 +111,13 @@ private:
 
   float wheel_diameter;
 
+  bool is_running = false;
+
   int IMU_ids[2] = {0xE2, 0xE3};
 
   ros::Publisher can_pub;
   ros::Subscriber can_sub;
+  ros::Subscriber state_sub;
   ros::Publisher vel_left_pub;
   ros::Publisher vel_right_pub;
   float steer_max_step;
