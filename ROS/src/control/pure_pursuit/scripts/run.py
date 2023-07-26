@@ -31,10 +31,10 @@ class PurePursuit:
         # Controllers themselves spawned in the state machines respective launch files
 
         self.velocity_pub = rospy.Publisher(
-            "/sim/drive_velocity_controller/command", Float64, queue_size=10
+            "/pegasus/drive_velocity_controller/command", Float64, queue_size=10
         )
         self.steering_pub = rospy.Publisher(
-            "/sim/steering_position_controller/command", Float64, queue_size=10
+            "/pegasus/steering_position_controller/command", Float64, queue_size=10
         )
 
         self.debug_target_pub = rospy.Publisher(
@@ -147,7 +147,7 @@ class PurePursuit:
                     )
 
                 # Publish to velocity and position steering controller
-                self.steering_cmd /= self.steering_transmission
+                self.steering_cmd.data /= self.steering_transmission
                 self.steering_pub.publish(self.steering_cmd)
 
                 self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
