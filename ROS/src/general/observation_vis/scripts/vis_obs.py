@@ -37,7 +37,7 @@ class ObservationVisualiser(ROSNode):
 
         self.vis_namespace = rospy.get_param("~namespace", "slam_vis")
         self.vis_lifetime = rospy.get_param("~lifetime", 3)
-        self.scale = rospy.get_param("~scale")
+        self.scale = rospy.get_param("~scale", 1)
 
         self.vis_handler = ObsVis(
             [self.blue_cone_model_url, self.yellow_cone_model_url]

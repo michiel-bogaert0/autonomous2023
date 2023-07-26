@@ -18,7 +18,7 @@ class PublishNode(ROSNode, ABC):
     def __init__(self, name):
         super().__init__(name, False)
         self.rate = rospy.Rate(rospy.get_param("~rate", 10))
-        self.frame = f"ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
+        self.frame = f"/ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
 
     @abstractmethod
     def get_camera_info(self) -> CameraInfo:
@@ -84,7 +84,7 @@ class PublishNode(ROSNode, ABC):
                     self.publish("/input/image", data)
                     info = self.get_camera_info()
                     if info is not None:
-                        info.header = self.create_header()
+                        info.header = data.header
                         self.publish("/input/info", info)
 
                 self.rate.sleep()
