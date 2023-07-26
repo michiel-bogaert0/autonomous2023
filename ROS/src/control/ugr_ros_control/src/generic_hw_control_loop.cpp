@@ -67,6 +67,12 @@ GenericHWControlLoop::GenericHWControlLoop(ros::NodeHandle& nh,
 void GenericHWControlLoop::run()
 {
   ros::Rate rate(loop_hz_);
+
+  // Switch Odrive to velocity control mode
+  std::list<hardware_interface::ControllerInfo> start_list;
+  std::list<hardware_interface::ControllerInfo> stop_list;
+  hardware_interface_->doSwitch(start_list, stop_list);
+
   while (ros::ok())
   {
     update();
