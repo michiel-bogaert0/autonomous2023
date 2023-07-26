@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- GDB functionality -->
+  <arg name="debug" default="false" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+
+  <group ns="sim">
+
+
+    <!-- Load hardware interface -->
+    <node name="sim_hardware_interface" pkg="ugr_ros_control" type="sim_hw_main"
+      output="screen" launch-prefix="$(arg launch_prefix)">
+
+      <remap from="/output/gt_odometry" to="/ugr/car/odometry/filtered/gt"/>
+      <remap from="/output/imu0" to="/ugr/car/sensors/imu2" />
+      <remap from="/output/encoder0" to="/ugr/car/sensors/encoder0" />
+    </node>
+
+    <!-- Load controller settings -->
+    <rosparam file="$(find ugr_ros_control)/sim_control/config/sim_controllers.yaml" command="load" />
+
+    <!-- Load controller manager -->
+    <node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager"
+      respawn="false"
+      output="screen"
+      args="spawn joint_state_controller drive_velocity_controller steering_position_controller" />
+
+  </group>
+
+</launch>

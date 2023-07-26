@@ -2,6 +2,6 @@
 
   <include file="$(find slam_simulator)/launch/slam_simulator.launch" pass_all_args="true" />
 
-  <!-- TODO closed loop driver node (node still todo) -->
+  <include file="$(find ugr_ros_control)/sim_control/launch/sim_hardware.launch" pass_all_args="true"/>
 
 </launch>

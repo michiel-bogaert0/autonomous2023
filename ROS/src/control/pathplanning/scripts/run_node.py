@@ -66,9 +66,18 @@ class PathPlanning():
         self.params["max_path_distance"] = rospy.get_param(
             "~max_path_distance", 6
         )
-        # The lookahead distance for sorting points
-        self.params["sorting_range"] = rospy.get_param(
-           "~sorting_range", 8 
+
+        # The range in front of the car where cones should be kept
+        self.params["range_front"] = rospy.get_param(
+           "~range_front", 10 
+        )
+        # The range behind the car where cones should be kept
+        self.params["range_behind"] = rospy.get_param(
+           "~range_behind", 0
+        )
+        # The range to the sides of the car where cones should be kept
+        self.params["range_sides"] = rospy.get_param(
+           "~range_sides", 3 
         )
 
         
@@ -130,7 +139,9 @@ class PathPlanning():
                 self.params["max_angle_change"],
                 self.params["max_path_distance"],
                 self.params["safety_dist"],
-                self.params["sorting_range"],
+                self.params["range_front"],
+                self.params["range_behind"],
+                self.params["range_sides"],
                 vis_points=self.vis_points,
                 vis_lines=self.vis_lines,
                 vis_namespace=self.params["vis_namespace"],
