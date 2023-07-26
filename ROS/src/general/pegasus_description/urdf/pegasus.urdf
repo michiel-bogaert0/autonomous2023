@@ -90,7 +90,7 @@
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/axis_steering" />
 
-    <limit lower="-1.5" upper="1.5" effort="100.0" velocity="10.0" />
+    <limit lower="-3.14" upper="3.14" effort="100.0" velocity="10.0" />
   </joint>
 
   <joint name="gps_ublox_right_joint" type="fixed">

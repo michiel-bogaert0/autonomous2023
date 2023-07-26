@@ -65,6 +65,7 @@ class PurePursuit:
         self.trajectory = Trajectory(minimal_distance, t_step, max_angle)
         self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.speed_target = rospy.get_param("~speed/target", 3.0)
+        self.steering_transmission = rospy.get_param("~steering/transmission", 0.25) # Factor from actuator to steering angle
 
         self.path = None
 
@@ -146,6 +147,7 @@ class PurePursuit:
                     )
 
                 # Publish to velocity and position steering controller
+                self.steering_cmd /= self.steering_transmission
                 self.steering_pub.publish(self.steering_cmd)
 
                 self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
