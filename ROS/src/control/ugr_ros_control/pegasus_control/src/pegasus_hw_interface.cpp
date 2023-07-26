@@ -219,9 +219,9 @@ void PegasusHWInterface::handle_vel_msg(const can_msgs::Frame::ConstPtr& msg, ui
 
 void PegasusHWInterface::publish_steering_msg(float steering)
 {
-  // Convert [-1, 1] to a steering range [-steer_max_step, steer_max_step]
+  // Convert [-3.14, 3.14] to a steering range [-steer_max_step, steer_max_step]
 
-  steering = steering * steer_max_step;
+  steering = steering / 3.14 * steer_max_step;
   uint32_t id = CAN_NODE_ID << 2 | CAN_STEER_ID;
 
   cantools::odrive_set_input_steering_t msg;
