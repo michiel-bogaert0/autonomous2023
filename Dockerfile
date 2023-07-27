@@ -69,6 +69,7 @@ RUN apt-get update && apt-get install -y ros-noetic-tf2-geometry-msgs \
     ros-noetic-ros-control \
     ros-noetic-ros-controllers \
     ros-noetic-rosparam-shortcuts \
+    ros-noetic-image-geometry \
     python3-catkin-tools \
     libyaml-cpp-dev \
     libcurl4-openssl-dev \
@@ -96,6 +97,7 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 
 
 # Python stuff
+RUN pip install nvidia-pyindex
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
