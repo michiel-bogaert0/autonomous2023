@@ -8,14 +8,14 @@ from time import time
 
 import rospy
 from dateutil import tz
-from node_fixture.node_fixture import ROSNode
 from sensor_msgs.msg import NavSatFix, NavSatStatus
 
 
-class GPSPublisher(ROSNode):
+class GPSPublisher:
     def __init__(self):
-
-        super().__init__("pep_wave_gps", False)
+        #ros initialization
+        rospy.init_node("pep_wave_gps")
+        self.publisher = rospy.Publisher("/output/gps", navsatfix_msg,queue_size=10)
 
         self.ip = rospy.get_param("~ip_address", "192.168.50.1")
         self.port = rospy.get_param("~port", 60660)
@@ -92,11 +92,12 @@ class GPSPublisher(ROSNode):
                             NavSatFix.COVARIANCE_TYPE_UNKNOWN
                         )
 
-                        self.publish("/output/gps", navsatfix_msg)
+                        self.publisher.publish(navsatfix_msg)
 
 
 if __name__ == "__main__":
     try:
         cp = GPSPublisher()
+        rospy.spin()
     except rospy.ROSInterruptException:
         pass

@@ -5,7 +5,6 @@ from math import atan2, pi
 import rospy
 import serial
 from geometry_msgs.msg import PoseWithCovarianceStamped
-from node_fixture.node_fixture import ROSNode
 from sensor_msgs.msg import Imu, NavSatFix, TimeReference
 from tf.transformations import quaternion_from_euler
 from ubxtranslator.core import Parser
@@ -19,7 +18,7 @@ from nav_msgs.msg import Odometry
 import utm
 import socket
 
-class ParseUblox(ROSNode):
+class ParseUblox:
     def __init__(self):
         """
         This node parses UBX messages from a source
@@ -35,8 +34,12 @@ class ParseUblox(ROSNode):
             ntrip/source: If use_ntrip is True, this address is used to fetch RTCM data
             ntrip/port: If use_ntrip is True, this port is used to fetch RTCM data
         """
-
-        super().__init__("parse_ubx_msgs")
+        #ros initialization
+        rospy.init_node("parse_ubx_msgs")
+        self.diag_publisher = rospy.Publisher("/diagnostics",DiagnosticArray,queue_size=10)
+        self.pvtfix_publisher = rospy.Publisher("/output/pvt/fix",NavSatFix,queue_size=10)
+        self.pvtodom_publisher = rospy.Publisher("/output/pvt/odom",Odometry,queue_size=10)
+        self.relposodom_publisher = rospy.Publisher("/output/relposned/odom",Odometry,queue_size=10)
 
         # Arguments
         self.source_name = rospy.get_param("~source", "/dev/ttyUSB0")
@@ -77,7 +80,7 @@ class ParseUblox(ROSNode):
                     rospy.loginfo('Connected to {} port {}'.format(*SERVER_ADDRESS))
 
                 except Exception as e:
-                    self.publish("/diagnostics", create_diagnostic_message(
+                    self.diag_publisher.publish(create_diagnostic_message(
                         level=DiagnosticStatus.ERROR,
                         name=f"[GPS {self.source_name}] NTRIP connection failed",
                         message=str(e),
@@ -96,14 +99,14 @@ class ParseUblox(ROSNode):
 
                 try:
                     data = self.sock.recv(1024)
-                    self.publish("/diagnostics", create_diagnostic_message(
+                    self.diag_publisher.publish(create_diagnostic_message(
                         level=DiagnosticStatus.OK,
                         name=f"[GPS {self.source_name}] NTRIP data received length",
                         message=f"{len(data)}",
                     ))
                     self.source.write(data)
                 except Exception as e:
-                    self.publish("/diagnostics", create_diagnostic_message(
+                    self.diag_publisher.publish(create_diagnostic_message(
                         level=DiagnosticStatus.WARN,
                         name=f"[GPS {self.source_name}] Could not receive NTRIP data. Is the NTRIP caster still online?",
                         message=str(e),
@@ -135,7 +138,7 @@ class ParseUblox(ROSNode):
             if subclass == "PVT":  # Simple PVT solution
 
                 if data.flags.gnssFixOK != 1:    
-                    self.publish("/diagnostics", create_diagnostic_message(
+                    self.diag_publisher.publish(create_diagnostic_message(
                         level=DiagnosticStatus.ERROR,
                         name=f"[GPS {self.source_name}] UBX-NAV-PVT",
                         message=f"GNSS solution invalid",
@@ -144,7 +147,7 @@ class ParseUblox(ROSNode):
                     return
                 
                 if data.flags.carrSoln != 2:
-                    self.publish("/diagnostics", create_diagnostic_message(
+                    self.diag_publisher.publish(create_diagnostic_message(
                         level=DiagnosticStatus.WARN,
                         name=f"[GPS {self.source_name}] UBX-NAV-PVT",
                         message=f"Solution mode: RTK FLOAT",
@@ -154,7 +157,7 @@ class ParseUblox(ROSNode):
                         return
                     
                 else:
-                    self.publish("/diagnostics", create_diagnostic_message(
+                    self.diag_publisher.publish(create_diagnostic_message(
                         level=DiagnosticStatus.OK,
                         name=f"[GPS {self.source_name}] UBX-NAV-PVT",
                         message=f"Solution mode: RTK FIX",
@@ -174,7 +177,7 @@ class ParseUblox(ROSNode):
 
                 rosmsg.status.status = 0 if data.flags.carrSoln == 2 else -1
 
-                self.publish("/output/pvt/fix", rosmsg)
+                self.pvtfix_publisher.publish(rosmsg)
 
                 # Odometry:
                 # - velocity
@@ -203,7 +206,7 @@ class ParseUblox(ROSNode):
                 rosmsg.pose.pose.orientation.z = q[2]
                 rosmsg.pose.pose.orientation.w = q[3]
 
-                self.publish("/output/pvt/odom", rosmsg)
+                self.pvtodom_publisher.publish(rosmsg)
                 
 
             # https://content.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_UBX-13003221.pdf#page=390&zoom=100,0,0
@@ -219,7 +222,7 @@ class ParseUblox(ROSNode):
                     return
                 
                 if data.flags.carrSoln != 2:
-                    self.publish("/diagnostics", create_diagnostic_message(
+                    self.diag_publisher.publish(create_diagnostic_message(
                         level=DiagnosticStatus.WARN,
                         name=f"[GPS {self.source_name}] UBX-NAV-RELPOSNED",
                         message=f"Solution mode: FLOAT",
@@ -228,7 +231,7 @@ class ParseUblox(ROSNode):
                     if self.fixed_only_mode:
                         return
                 else:
-                    self.publish("/diagnostics", create_diagnostic_message(
+                    self.diag_publisher.publish(create_diagnostic_message(
                         level=DiagnosticStatus.OK,
                         name=f"[GPS {self.source_name}] UBX-NAV-RELPOSNED",
                         message=f"Solution mode: FIX",
@@ -265,7 +268,7 @@ class ParseUblox(ROSNode):
                 rosmsg.pose.pose.orientation.z = q[2]
                 rosmsg.pose.pose.orientation.w = q[3]
 
-                self.publish("/output/relposned/odom", rosmsg)
+                self.relposodom_publisher.publish(rosmsg)
 
         except (ValueError, IOError) as err:
             pass
@@ -274,5 +277,6 @@ class ParseUblox(ROSNode):
 if __name__ == "__main__":
     try:
         parser = ParseUblox()
+        rospy.spin()
     except rospy.ROSInterruptException:
         pass

@@ -9,7 +9,6 @@ from geometry_msgs.msg import (
     Quaternion,
 )
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import AddSubscriber, ROSNode
 from pid import PID
 from trajectory import Trajectory
 from std_msgs.msg import Header
@@ -19,9 +18,12 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from fs_msgs.msg import ControlCommand
 
 
-class PIDControlNode(ROSNode):
+class PIDControlNode:
     def __init__(self):
-        super().__init__("pid_car_control")
+        # ros initialization
+        rospy.init_node("pid_car_control")
+        self.update_subscriber = rospy.Subscriber("/input/path",PoseArray,self.getPathplanningUpdate)
+        self.publisher = rospy.Publisher("/output/control_command",ControlCommand,queue_size=10)
 
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
@@ -70,7 +72,6 @@ class PIDControlNode(ROSNode):
         # Helpers
         self.start_pid_sender()
 
-    @AddSubscriber("/input/path")
     def getPathplanningUpdate(self, msg: PoseArray):
         """
         Takes in a new exploration path coming from the mapping algorithm.
@@ -175,12 +176,12 @@ class PIDControlNode(ROSNode):
 
                     self.cmd.steering = error_pid
 
-                self.publish("/output/control_command", self.cmd)
+                self.publisher.publish(self.cmd)
             except Exception as e:
                 rospy.logwarn(f"Control has caught an exception: {e}")
 
             rate.sleep()
 
-
-node = PIDControlNode()
-node.start()
+if __name__=="__main__":
+    node = PIDControlNode()
+    rospy.spin()
