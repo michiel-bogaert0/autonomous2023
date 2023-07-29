@@ -13,6 +13,9 @@ struct Node {
     std::vector<Node*> children; // Vector of pointers to child nodes
     double angle;
     double angle_change;
+
+    Node(double x, double y, double distance, Node* parent, const std::vector<Node*>& children, double angle, double angle_change)
+        : x(x), y(y), distance(distance), parent(parent), children(children), angle(angle), angle_change(angle_change) {}
 };
 
 // Define a utility function to calculate squared distance between 2 points
