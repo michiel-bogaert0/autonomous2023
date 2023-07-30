@@ -12,15 +12,13 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(
   FILES
-  ConeKeypoint.msg
   CarPath.msg
   Particle.msg
   Particles.msg
-  ConeKeypoints.msg
   Observation.msg
   ObservationArray.msg
-  ConeDetections.msg
   BoundingBox.msg
+  BoundingBoxesStamped.msg
   Map.msg
   MapUpdate.msg
   ExplorationMove.msg

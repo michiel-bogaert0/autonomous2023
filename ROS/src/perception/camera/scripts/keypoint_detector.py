@@ -7,12 +7,14 @@ from keypoint_detection.utils.load_checkpoints import load_from_checkpoint
 
 
 class KeypointDetector:
-    def __init__(self, keypoint_model_path, detection_height_threshold, device) -> None:
+    def __init__(self, keypoint_model_path, device) -> None:
         """Initialise a keypoint detector"""
-        self.cone_image_margin = 5  # Padding that gets added to the top and left side before keypoint predictio
-        self.keypoint_heatmap_threshold = 0.1  # The minimal heatmap intensity value that can be accepted as a keypointn
+        # Use this 5px margin, since the kpt detector is trained on this
+        # Basically it prevents edge artefacts during kpt inference
+        self.cone_image_margin = 5
+        self.keypoint_heatmap_threshold = 0.1  # The minimal heatmap intensity value that can be accepted as a keypoint
+        # Use this (128x96, hxw) cropped cone size since the kpt detector is trained on this
         self.keypoint_image_size = np.array([128, 96], dtype=int)
-        self.detection_height_threshold = detection_height_threshold
         self.image_resizer = T.Resize(
             size=(self.keypoint_image_size[0], self.keypoint_image_size[1]),
             antialias=False,
@@ -71,7 +73,11 @@ class KeypointDetector:
 
         tops, bottoms = np.empty((0, 2)), np.empty((0, 2))
         predicted_keypoints = predicted_keypoints.cpu().numpy()
+
+        # Iterate over all predicted keypoint and pick out the good pairs
+        # The keypoints for each cropped cone are chosen using a (filtered) argmax on the heatmap
         for i, pred in enumerate(predicted_keypoints):
+            # Find a bottom keypoint
             bottom_idx = np.argmax(pred[1])
             y, x = divmod(bottom_idx, self.keypoint_image_size[1])
             bottom = np.array([x, y])
@@ -91,6 +97,7 @@ class KeypointDetector:
                 + cone_bbox_corners[i][1]
             )
 
+            # Find a top keypoint
             top_idx = np.argmax(pred[0])
             y, x = divmod(top_idx, self.keypoint_image_size[1])
             top = np.array([x, y])

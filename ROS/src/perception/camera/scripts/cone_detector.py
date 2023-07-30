@@ -16,9 +16,11 @@ class ConeDetector:
         self.device = device
 
         # YOLOv8 settings
-        self.yolo_model = YOLO(yolo_model_path)
+        self.yolo_model = YOLO(yolo_model_path, task="detect")
         self.original_image_size = (1200, 1920)
-        self.image_size = (416, 640)
+        self.image_size = (416, 640)  # YOLOv8s uses downscaled images for extra SPEED
+        # Use this 5px margin, since the kpt detector is trained on this
+        # Basically it prevents edge artefacts during kpt inference
         self.bbox_margin = 5
         self.dummy_input = torch.rand(1, 3, *self.image_size).to(self.device)
         self.detection_height_threshold = detection_height_threshold
@@ -29,7 +31,7 @@ class ConeDetector:
 
         # Warm-up (YOLO does this automatically, so just run one image through)
         print("YOLO warm-up")
-        self.yolo_model.predict(self.dummy_input, device=self.device)
+        self.yolo_model.predict(self.dummy_input, device=self.device, imgsz=self.image_size)
 
     def find_cones(self, image: torch.Tensor, conf: float = 0.25) -> npt.ArrayLike:
         """

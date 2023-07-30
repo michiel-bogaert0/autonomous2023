@@ -6,11 +6,14 @@ import tf2_ros as tf
 from clustering.clustering import Clustering
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point, TransformStamped
-from node_fixture.node_fixture import (DiagnosticArray, DiagnosticStatus,
-                                       ROSNode, create_diagnostic_message)
+from node_fixture.node_fixture import (
+    ROSNode,
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
 from rosgraph_msgs.msg import Clock
 from slam_clustering.srv import Reset, ResetRequest, ResetResponse
-from slam_vis import SlamVis
 from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import (ObservationWithCovariance,
                           ObservationWithCovarianceArrayStamped, Particle,
@@ -42,14 +45,17 @@ class ClusterMapping:
         self.use_sim_time = rospy.get_param("use_sim_time", False)
 
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
-        self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
+        self.gt_link_frame = rospy.get_param("~base_link_frame", "ugr/gt_base_link")
+        self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.do_time_transform = rospy.get_param("~do_time_transform", True)
-        self.observation_queue_size = rospy.get_param("~observation_queue_size", None)
-        self.max_landmark_range = rospy.get_param("~max_landmark_range", 0) ** 2
+        self.observation_queue_size = rospy.get_param("~observation_queue_size", 1)
+        self.max_landmark_range = rospy.get_param("~max_landmark_range", 20) ** 2
 
         self.eps = rospy.get_param("~clustering/eps", 0.5)
+        self.standing_still_delay = rospy.get_param("~standing_still_delay", 1.0)
+        self.standing_still_threshold = rospy.get_param("~standing_still_threshold", 0.002)
         self.min_sampling = rospy.get_param("~clustering/min_samples", 5)
-        self.mode = rospy.get_param("~clustering/mode", "local")
+        self.mode = rospy.get_param("~clustering/mode", "global")
         self.expected_nr_of_landmarks = rospy.get_param(
             "~clustering/expected_nr_of_landmarks", 1000
         )
@@ -58,6 +64,8 @@ class ClusterMapping:
         # Used to handle the sample output of the clusterer
         self.previous_sample_point = 0
 
+        self.started = False
+
         # The clustering implementation
         self.clustering = Clustering(
             self.mode,
@@ -65,6 +73,7 @@ class ClusterMapping:
             self.eps,
             self.min_sampling,
         )
+        self.particle_state = [0, 0, 0]
 
         # Add a service that allows us to reset the clustering when needed
         rospy.Service("clustermapping/reset", Reset, self.handle_reset_srv_request)
@@ -84,6 +93,10 @@ class ClusterMapping:
 
             self.current_clock = 0
 
+        self.prev_t = rospy.Time().now().to_sec()
+        self.standing_still_t = rospy.Time().now().to_sec()
+        self.add_subscribers()
+
         # Diagnostics Publisher
         self.diagnostics = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
@@ -91,8 +104,6 @@ class ClusterMapping:
 
         # Helpers
         self.previous_clustering_time = rospy.Time.now().to_sec()
-        self.cleared_vis = 0
-
         self.initialized = True
         rospy.loginfo(f"Clustering mapping node initialized!")
         self.diagnostics.publish(
@@ -165,6 +176,7 @@ class ClusterMapping:
 
         self.current_clock = 0
         self.previous_sample_point = 0
+        self.started = False
         self.cleared_vis = 0
 
         self.tf_buffer = tf.Buffer()
@@ -213,7 +225,7 @@ class ClusterMapping:
                     self.base_link_frame,
                     observations.header.stamp,
                     self.world_frame,  # Needs a fixed frame to use as fixture for the transformation
-                    rospy.Duration(1),
+                    rospy.Duration(0),
                 )
                 time_transformed_observations = ROSNode.do_transform_observations(
                     transformed_observations, transform
@@ -235,10 +247,10 @@ class ClusterMapping:
             - observations: The ObservationWithCovarianceArrayStamped message that needs to be processed
         """
 
-        # Look up the base_link frame relative to the world at the time of the observations.
+        # Look up the GT base_link frame relative to the world at the time of the observations.
         # This is needed to correctly transform the observations on the "map" (=world frame) before clustering
         transform: TransformStamped = self.tf_buffer.lookup_transform(
-            self.world_frame, self.base_link_frame, observations.header.stamp
+            self.world_frame, self.gt_link_frame, observations.header.stamp, rospy.Duration(0.1)
         )
 
         _, _, yaw = euler_from_quaternion(
@@ -250,25 +262,58 @@ class ClusterMapping:
             ]
         )
 
+        if (
+            abs(
+                (
+                    (self.particle_state[0] - transform.transform.translation.x) ** 2
+                    + (self.particle_state[1] - transform.transform.translation.y) ** 2
+                )
+                / (rospy.Time().now().to_sec() - self.prev_t)
+            )
+            > self.standing_still_threshold
+        ):
+            
+            self.standing_still_t = rospy.Time().now().to_sec()
+
+            self.particle_state = [
+                transform.transform.translation.x,
+                transform.transform.translation.y,
+                yaw,
+            ]
+            self.prev_t = rospy.Time().now().to_sec()
+            return
+
+        self.prev_t = rospy.Time().now().to_sec()
         self.particle_state = [
             transform.transform.translation.x,
             transform.transform.translation.y,
             yaw,
         ]
 
+        if rospy.Time().now().to_sec() - self.standing_still_t < self.standing_still_delay:
+            return
+
+        observations.header.frame_id = self.gt_link_frame
         world_observations: ObservationWithCovarianceArrayStamped = (
             ROSNode.do_transform_observations(observations, transform)
         )
 
         for observation in world_observations.observations:
-            distance = (observation.location.x - self.particle_state[0]) ** 2 + (
-                observation.location.y - self.particle_state[1]
-            ) ** 2
+            
+            distance = (
+                observation.observation.location.x - self.particle_state[0]
+            ) ** 2 + (observation.observation.location.y - self.particle_state[1]) ** 2
 
-            if distance <= self.max_landmark_range and distance > 0.1:
+            if distance <= self.max_landmark_range and distance > 0.05:
+                
                 self.clustering.add_sample(
-                    np.array([observation.location.x, observation.location.y]),
-                    int(observation.observation_class),
+                    np.array(
+                        [
+                            observation.observation.location.x,
+                            observation.observation.location.y,
+                        ]
+                    ),
+                    int(observation.observation.observation_class),
                 )
 
         # Clustering itself is rate limited to limit performance impact
@@ -299,7 +344,7 @@ class ClusterMapping:
             landmark = landmarks[j]
 
             new_obs = ObservationWithCovariance()
-            new_obs.location = Point(
+            new_obs.observation.location = Point(
                 x=landmark[0] - self.particle_state[0],
                 y=landmark[1] - self.particle_state[1],
                 z=0,
@@ -307,27 +352,30 @@ class ClusterMapping:
 
             # Apply rotation
             x = (
-                np.cos(-self.particle_state[2]) * new_obs.location.x
-                - np.sin(-self.particle_state[2]) * new_obs.location.y
+                np.cos(-self.particle_state[2]) * new_obs.observation.location.x
+                - np.sin(-self.particle_state[2]) * new_obs.observation.location.y
             )
             y = (
-                np.sin(-self.particle_state[2]) * new_obs.location.x
-                + np.cos(-self.particle_state[2]) * new_obs.location.y
+                np.sin(-self.particle_state[2]) * new_obs.observation.location.x
+                + np.cos(-self.particle_state[2]) * new_obs.observation.location.y
             )
 
             distance = (landmark[0] ** 2 + landmark[1] ** 2) ** (1 / 2)
 
             if distance > 0.1:
-                new_obs.location.x = x
-                new_obs.location.y = y
 
-                new_obs.observation_class = clss
+                new_obs.observation.location.x = x
+                new_obs.observation.location.y = y
+
+                new_obs.observation.observation_class = clss
 
                 observations.observations.append(new_obs)
 
                 new_map_point = ObservationWithCovariance()
-                new_map_point.location = Point(x=landmark[0], y=landmark[1], z=0)
-                new_map_point.observation_class = clss
+                new_map_point.observation.location = Point(
+                    x=landmark[0], y=landmark[1], z=0
+                )
+                new_map_point.observation.observation_class = clss
 
                 new_map.observations.append(new_map_point)
 
@@ -353,8 +401,10 @@ class ClusterMapping:
                 self.clustering.samples[self.previous_sample_point :],
             ):
                 samples_point = ObservationWithCovariance()
-                samples_point.location = Point(x=sample[0], y=sample[1], z=0)
-                samples_point.observation_class = clss
+                samples_point.observation.location = Point(
+                    x=sample[0], y=sample[1], z=0
+                )
+                samples_point.observation.observation_class = int(clss)
 
                 samples.observations.append(samples_point)
 
@@ -373,8 +423,8 @@ class ClusterMapping:
             self.clustering.samples[self.previous_sample_point : self.clustering.size],
         ):
             samples_point = ObservationWithCovariance()
-            samples_point.location = Point(x=sample[0], y=sample[1], z=0)
-            samples_point.observation_class = clss
+            samples_point.observation.location = Point(x=sample[0], y=sample[1], z=0)
+            samples_point.observation.observation_class = int(clss)
 
             samples.observations.append(samples_point)
 
@@ -387,7 +437,7 @@ class ClusterMapping:
 
         self.previous_sample_point = self.clustering.size
 
-        self.sample_publisher.publish("output/samples", samples)
+        self.sample_publisher.publish(samples)
 
 
 node = ClusterMapping()

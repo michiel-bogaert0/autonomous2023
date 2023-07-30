@@ -4,10 +4,12 @@ import os
 from pathlib import Path
 from typing import List
 
+import sys
 import numpy as np
 import numpy.typing as npt
 import rospy
 import torch
+from std_msgs.msg import Header
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from geometry_msgs.msg import Point
 from node_fixture.node_fixture import create_diagnostic_message
@@ -18,6 +20,7 @@ from ugr_msgs.msg import (
     Observation,
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
+    BoundingBoxesStamped,
 )
 
 
@@ -26,6 +29,8 @@ class PerceptionNode:
         rospy.init_node("perception")
 
         # ROS parameters
+
+        # Node I/O
         self.sub_image_input = rospy.Subscriber(
             "/input/image", Image, self.run_perception_pipeline
         )
@@ -35,30 +40,33 @@ class PerceptionNode:
             queue_size=10,
         )
 
+        # Visualisation and diagnostics
         self.visualise = rospy.get_param("~vis", False)
         if self.visualise:
-            raise NotImplementedError(
-                "Visualisation is not yet implemented, but code is ready"
-            )
             self.pub_image_annotated = rospy.Publisher(
                 "/output/image_annotated",
                 Image,
                 queue_size=10,
             )
-
         self.diagnostics = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
 
-        # Cone detection parameters
+        # Hardware parameters
         self.rate = rospy.get_param("~rate", 10)
         self.device = (
             "cuda:0"
             if torch.cuda.is_available() and rospy.get_param("~cuda", True)
             else "cpu"
         )
+        # TensorRT is only used for cone detection in the three-stage model
+        self.tensorrt = rospy.get_param("~tensorrt", True)
+        if self.tensorrt and self.device == "cpu":
+            rospy.logerr(
+                "TensorRT does not work on CPU:/"
+            )
 
-        # Camera settings
+        # Camera settings (based on Baumer/Ricoh combination)
         self.focal_length = 8  # in mm
         self.camera_matrix = np.load(
             Path(os.getenv("BINARY_LOCATION")) / "pnp" / "camera_calibration_baumer.npz"
@@ -68,60 +76,57 @@ class PerceptionNode:
 
         # Model parameters
 
-        # Maximum distance for keypoint matching (in pixels)
+        # Maximum distance for keypoint pair matching (in pixels)
         self.matching_threshold_px = rospy.get_param("~matching_threshold_px", 150)
         # The minimum height of a cone detection in px for it to be run through the keypoint detector
+        # 33px corresponds to a small cone at 15m distance
         self.detection_height_threshold = rospy.get_param(
-            "~detection_height_threshold", 15
+            "~detection_height_threshold", 33
         )
-        # Cones further than this are dropped during detection (in meters)
-        self.detection_max_distance = rospy.get_param("~detection_max_distance", 15)
 
-        self.use_two_stage = rospy.get_param("~use_two_stage", False)
+        # The keypoint detector used also decides whether to use a 2/3-stage model
+        # Best option: unet_threestage.pt               -> more accurate and faster, but uses two neural nets
+        # Second best option: mobilenetv3_twostage.pt   -> slower but only one network
         self.keypoint_detector_model = rospy.get_param(
-            "~keypoint_detector_model", "mobilenetv3_threestage.pt"
+            "~keypoint_detector_model", "unet_threestage.pt"
         )
+        self.use_two_stage = "twostage" in self.keypoint_detector_model
 
-        if self.use_two_stage and "threestage" in self.keypoint_detector_model:
-            rospy.logerr(
-                "You chose a three-stage keypoint detector but want to run in two-stage mode. Maybe check this:/"
-            )
-
-        if not self.use_two_stage and "twostage" in self.keypoint_detector_model:
-            rospy.logerr(
-                "You chose a two-stage keypoint detector but want to run in three-stage mode. Maybe check this:/"
-            )
-
-        yolo_model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / "yolov8.pt"
+        yolo_model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / f"yolov8s.{'engine' if self.tensorrt else 'pt'}"
         keypoint_model_path = (
             Path(os.getenv("BINARY_LOCATION"))
             / "nn_models"
             / self.keypoint_detector_model
         )
+        # Initialise the pipeline as None, since it takes some time to start-up
         self.pipeline = None
 
         if self.use_two_stage:
-            raise NotImplementedError(
-                "TwoStage is not yet implemented, but code is ready"
-            )
             self.pipeline = TwoStageModel(
                 keypoint_model_path,
                 self.height_to_pos,
-                image_size=self.image_size,
+                image_size=(1184, 1920),
                 matching_threshold_px=self.matching_threshold_px,
                 detection_height_threshold=self.detection_height_threshold,
-                detection_max_distance=self.detection_max_distance,
                 device=self.device,
+                visualise=self.visualise,
             )
         else:
+            # We only publish bboxes in 3-stage mode
+            self.pub_bounding_boxes = rospy.Publisher(
+                "/output/bounding_boxes",
+                BoundingBoxesStamped,
+                queue_size=10,
+            )
             self.pipeline = ThreeStageModel(
                 yolo_model_path,
                 keypoint_model_path,
                 height_to_pos=self.height_to_pos,
+                pub_bounding_boxes=self.pub_bounding_boxes,
                 camera_matrix=self.camera_matrix,
                 detection_height_threshold=self.detection_height_threshold,
-                detection_max_distance=self.detection_max_distance,
                 device=self.device,
+                visualise=self.visualise,
             )
 
         self.diagnostics.publish(
@@ -149,10 +154,16 @@ class PerceptionNode:
         image = self.ros_img_to_np(ros_image)
 
         # The image should be an RGB Opencv array of HxWx3
-        cones, cone_confidences, latencies = self.pipeline.predict(image)
+        if self.use_two_stage:
+            cones, latencies, vis_img = self.pipeline.predict(image)
+        else:
+            cones, latencies, vis_img = self.pipeline.predict(image, ros_image.header)
 
+        # Publish the image
         msg = self.create_observation_msg(cones, ros_image.header)
+        self.pub_cone_locations.publish(msg)
 
+        # Publish disgnostics and visualisation
         timing_msg = f"[{np.sum(latencies):.0f}]"
         for t in latencies:
             timing_msg += f" {t:.1f}"
@@ -164,7 +175,9 @@ class PerceptionNode:
             )
         )
 
-        self.pub_cone_locations.publish(msg)
+        if self.visualise:
+            self.pub_image_annotated.publish(self.np_to_ros_img(vis_img, ros_image.header.frame_id))
+
 
     def height_to_pos(
         self, categories: npt.ArrayLike, heights: npt.ArrayLike, bottoms: npt.ArrayLike
@@ -249,6 +262,32 @@ class PerceptionNode:
         )
 
         return img
+
+    def np_to_ros_img(self, arr: np.ndarray, frame) -> Image:
+        """Creates a ROS image type based on a Numpy array
+        Args:
+            arr: numpy array in RGB format (H, W, 3), datatype uint8
+        Returns:
+            ROS Image with appropriate header and data
+        """
+
+        ros_img = Image(encoding="rgb8")
+        ros_img.height, ros_img.width, _ = arr.shape
+        contig = arr  # np.ascontiguousarray(arr)
+        ros_img.data = contig.tobytes()
+        ros_img.step = contig.strides[0]
+        ros_img.is_bigendian = (
+            arr.dtype.byteorder == ">"
+            or arr.dtype.byteorder == "="
+            and sys.byteorder == "big"
+        )
+
+        header = Header()
+        header.stamp = rospy.Time.now()
+        header.frame_id = frame
+        ros_img.header = header
+
+        return ros_img
 
 
 if __name__ == "__main__":

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot name="pegasus">
+
+  <link name="/ugr/car_base_link" />
+
+  <link name="/ugr/car_base_link/lidar0" />
+
+  <link name="/ugr/car_base_link/os_sensor" />
+
+  <link name="/ugr/car_base_link/os_imu" />
+
+  <link name="/ugr/car_base_link/os_lidar" />
+
+  <link name="/ugr/car_base_link/cam0" />
+
+  <link name="/ugr/car_base_link/imu0" />
+
+  <link name="/ugr/car_base_link/imu1" />
+
+  <link name="/ugr/car_base_link/axis0" />
+
+  <link name="/ugr/car_base_link/axis1" />
+
+  <link name="/ugr/car_base_link/axis_steering" />
+
+  <link name="/ugr/car_base_link/gps0" />
+
+  <link name="/ugr/car_base_link/gps1" />
+
+  <!-- Joint definitions -->
+
+  <joint name="lidar0_joint" type="fixed">
+    <origin xyz="0.0 0 0.37" rpy="0 0 0" />
+    <parent link="/ugr/car_base_link" />
+    <child link="/ugr/car_base_link/lidar0" />
+  </joint>
+
+  <joint name="os_sensor_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="/ugr/car_base_link/lidar0" />
+    <child link="/ugr/car_base_link/os_sensor" />
+  </joint>
+
+  <joint name="os_imu_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="/ugr/car_base_link/os_sensor" />
+    <child link="/ugr/car_base_link/os_imu" />
+  </joint>
+
+  <joint name="os_lidar_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 -0.0087197" />
+    <parent link="/ugr/car_base_link/os_sensor" />
+    <child link="/ugr/car_base_link/os_lidar" />
+  </joint>
+
+  <joint name="cam0_joint" type="fixed">
+    <origin xyz="0.06 0 0.74" rpy="0 0 -0.0218149" />
+    <parent link="/ugr/car_base_link" />
+    <child link="/ugr/car_base_link/cam0" />
+  </joint>
+
+  <joint name="imu0_joint" type="fixed">
+    <origin xyz="-0.26 0 0.35" rpy="0 0 0" />
+    <parent link="/ugr/car_base_link" />
+    <child link="/ugr/car_base_link/imu0" />
+  </joint>
+
+  <joint name="imu1_joint" type="fixed">
+    <origin xyz="-0.26 0 0.37" rpy="3.1415 0 0" />
+    <parent link="/ugr/car_base_link" />
+    <child link="/ugr/car_base_link/imu1" />
+  </joint>
+
+  <joint name="axis0" type="continuous">
+    <origin xyz="-0.36 0.34 0" rpy="0 0 0" />
+    <parent link="/ugr/car_base_link" />
+    <child link="/ugr/car_base_link/axis0" />
+
+    <limit effort="100.0" velocity="100.0" />
+  </joint>
+
+  <joint name="axis1" type="continuous">
+    <origin xyz="-0.36 -0.34 0" rpy="0 0 0" />
+    <parent link="/ugr/car_base_link" />
+    <child link="/ugr/car_base_link/axis1" />
+  </joint>
+
+  <joint name="axis_steering" type="revolute">
+    <origin xyz="0.36 0.0 0" rpy="0 0 0" /> <!-- Doesn't matter -->
+    <parent link="/ugr/car_base_link" />
+    <child link="/ugr/car_base_link/axis_steering" />
+
+    <limit lower="-3.14" upper="3.14" effort="100.0" velocity="10.0" />
+  </joint>
+
+  <joint name="gps_ublox_right_joint" type="fixed">
+    <origin xyz="0.06 -0.36 0.74" rpy="0 0 0" />
+    <parent link="/ugr/car_base_link" />
+    <child link="/ugr/car_base_link/gps0" />
+  </joint>
+
+  <joint name="gps_ublox_left_joint" type="fixed">
+    <origin xyz="0.06 0.36 0.74" rpy="0 0 0" />
+    <parent link="/ugr/car_base_link" />
+    <child link="/ugr/car_base_link/gps1" />
+  </joint>
+
+</robot>

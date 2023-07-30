@@ -7,7 +7,7 @@ import rospy
 import torch
 from sensor_msgs.msg import Image
 from std_msgs.msg import Empty
-from tools.tools import np_to_ros_image, ros_img_to_np
+from cv_bridge import CvBridge
 
 
 class ImageSaver:
@@ -16,6 +16,8 @@ class ImageSaver:
         self.sub_save = rospy.Subscriber("/input/save", Empty, self.save_image)
         self.sub_img = rospy.Subscriber("/input/image", Image, self.receive_image)
         self.last_image = None
+
+        self.bridge = CvBridge()
 
         rospy.spin()
 
@@ -30,9 +32,9 @@ class ImageSaver:
             rospy.logerr(f"No image to save.")
             return
 
-        img = ros_img_to_np(image=self.last_image)[:, :, ::-1]
+        img = self.bridge.imgmsg_to_cv2(self.last_image, desired_encoding='bgr8')
 
-        path = f"/home/ugentracing/{self.last_image.header.stamp}.png".replace("-", "_")
+        path = f"/home/ugr/autonomous2023/calib_images/{self.last_image.header.stamp}.png".replace("-", "_")
         cv2.imwrite(path, img)
         rospy.loginfo(f"Save image to {path}")
 

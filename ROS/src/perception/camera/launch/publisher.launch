@@ -5,7 +5,7 @@
 
     <group ns="dummy0" if="$(eval arg('type') =='dummy')">
         <node pkg="camera" type="dummy.py" name="dummy_publisher" output="screen">
-            <param name="rate" value="10"/>
+            <param name="rate" value="50"/>
             <remap from="/input/image" to="/ugr/car/sensors/cam0" />
         </node>
 
@@ -13,9 +13,9 @@
 
     <group ns="cam" if='$(eval arg("type") =="camera")'>
         <node pkg="camera" type="camera.py" name="camera_publisher" output="screen">
-            <param name="rate" value="10"/>
-            <remap from="/input/image" to="/ugr/car/sensors/cam0" />
-            <remap from="/input/info" to="/ugr/car/sensors/cam0/info" />
+            <param name="rate" value="50"/>
+            <remap from="/input/image" to="/ugr/car/sensors/cam0/image" />
+            <remap from="/input/info" to="/ugr/car/sensors/cam0/camera_info" />
             <param name="use_raw" value="false"/>
         </node>
     </group>

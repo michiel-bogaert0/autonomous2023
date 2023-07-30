@@ -22,7 +22,7 @@ class PublishNode(ABC):
         self.sim_sub = rospy.Subscriber("/raw/input", Image, self.publish_sub_data)
 
         self.rate = rospy.Rate(rospy.get_param("~rate", 10))
-        self.frame = f"ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
+        self.frame = f"/ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
 
     @abstractmethod
     def get_camera_info(self) -> CameraInfo:

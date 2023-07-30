@@ -4,7 +4,7 @@ from enum import Enum
 from std_msgs.msg import UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
-from node_launcher import NodeLauncher
+from node_launcher.node_launcher import NodeLauncher
 from node_fixture.node_fixture import (
     AutonomousMission,
     SLAMStatesEnum,

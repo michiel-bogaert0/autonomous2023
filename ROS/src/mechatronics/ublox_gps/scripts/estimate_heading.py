@@ -69,6 +69,8 @@ class HeadingEstimation:
         self.max_distance = rospy.get_param("~max_distance", 2)
         self.min_distance = rospy.get_param("~min_distance", 0.05)
         self.max_covariance = rospy.get_param("~max_covariance", 0.01)
+        self.dual_mode = rospy.get_param("~dual_mode", True)
+        self.single_mode = rospy.get_param("~single_mode", False)
 
         self.gps_msgs = [deque([], 2) for i in range(2)]
         self.gps_vel = [None, None]
@@ -139,6 +141,9 @@ class HeadingEstimation:
         Tries to calculate the heading based on both GPS's (dual GPS heading)
         """
 
+        if not self.dual_mode:
+            return
+
         if len(self.gps_msgs[0]) < 1:
             return
         if len(self.gps_msgs[1]) < 1:
@@ -151,21 +156,11 @@ class HeadingEstimation:
         if not msg0 or not msg1:
             return
 
-        if (
-            msg0.position_covariance[0] > self.max_covariance
-            or msg1.position_covariance[0] > self.max_covariance
-        ):
-            rospy.logwarn(
-                "[Dual GPS]> Covariance on the GPS's is too big in order to calculate dual GPS heading"
-            )
-            return
+        if msg0.position_covariance[0] > self.max_covariance or msg1.position_covariance[0] > self.max_covariance:
+            return 
 
         # Time deviates to much? No heading!
-        if (
-            abs(msg0.header.stamp.to_sec() - msg1.header.stamp.to_sec())
-            > self.max_time_deviation
-        ):
-            rospy.logwarn("[Dual GPS]> time deviation too big")
+        if abs(msg0.header.stamp.to_sec() - msg1.header.stamp.to_sec()) > self.max_time_deviation:
             return
 
         # Actually calculate heading
@@ -187,7 +182,6 @@ class HeadingEstimation:
 
         bearing -= self.offset[2]
         self.heading_yaw[2] = bearing
-
         self.publish_heading(bearing)
 
     def estimate_single_heading(self, gpsIndex):
@@ -197,6 +191,9 @@ class HeadingEstimation:
         Args:
             gpsIndex: the index of the GPS to use (0 or 1)
         """
+
+        if not self.single_mode:
+            return
 
         if len(self.gps_msgs[gpsIndex]) < 2:
             return

@@ -12,6 +12,7 @@ class OdomFrameChanger:
         rospy.init_node('odom_frame_changer')
 
         self.frame = rospy.get_param("~frame_id", "")
+        self.override_timestamp = rospy.get_param("~override_timestamp", False)
 
         # Subscribe to the Odometry topic
         self.sub = rospy.Subscriber('/input/odom', Odometry, self.odom_callback)
@@ -22,6 +23,8 @@ class OdomFrameChanger:
     def odom_callback(self, msg):
         # Modify the frame id of the Odometry message
         msg.header.frame_id = self.frame
+        if self.override_timestamp:
+            msg.header.stamp = rospy.Time().now()
 
         # Publish the modified Odometry message
         self.pub.publish(msg)
