@@ -8,9 +8,10 @@ from fastslam.fastslam import FastSLAM
 from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from slam.helpers import observations_to_range_bearings
-from slam.slam import SLAMNode
 from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
+
+from slam.slam import SLAMNode
 
 
 class LocalFastSLAM(SLAMNode):
@@ -102,7 +103,6 @@ class LocalFastSLAM(SLAMNode):
         self.busy = True
 
         try:
-
             # Timestamp for measuring dt
             timestamp = rospy.Time.now()
             timestamp_sec = timestamp.to_sec()
@@ -162,4 +162,4 @@ class LocalFastSLAM(SLAMNode):
 
 
 node = LocalFastSLAM()
-node.start()
+rospy.spin()

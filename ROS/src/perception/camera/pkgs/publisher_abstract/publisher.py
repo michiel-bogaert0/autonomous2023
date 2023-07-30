@@ -15,12 +15,12 @@ from std_msgs.msg import Header
 
 class PublishNode(ABC):
     def __init__(self, name):
-        #ros initialization
+        # ros initialization
         rospy.init_node(name)
-        self.image_publisher = rospy.Publisher("/input/image",Image,queue_size=10)
-        self.info_publisher=rospy.Publisher("/input/info",Image,queue_size=10)
-        self.sim_sub = rospy.Subscriber("/raw/input",Image,self.publish_sub_data)
-        
+        self.image_publisher = rospy.Publisher("/input/image", Image, queue_size=10)
+        self.info_publisher = rospy.Publisher("/input/info", Image, queue_size=10)
+        self.sim_sub = rospy.Subscriber("/raw/input", Image, self.publish_sub_data)
+
         self.rate = rospy.Rate(rospy.get_param("~rate", 10))
         self.frame = f"ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
 

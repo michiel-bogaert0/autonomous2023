@@ -7,15 +7,11 @@ import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import Point, Pose, PoseArray, TransformStamped
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import AddSubscriber, ROSNode
-from ugr_msgs.msg import (
-    ObservationWithCovariance,
-    ObservationWithCovarianceArrayStamped,
-    Particle,
-    Particles,
-)
-
+from node_fixture.node_fixture import ROSNode
 from slam_vis import SlamVis
+from ugr_msgs.msg import (ObservationWithCovariance,
+                          ObservationWithCovarianceArrayStamped, Particle,
+                          Particles)
 
 """
 Generic SLAM node should have the following behaviour
@@ -30,7 +26,7 @@ Outputs:
 """
 
 
-class SLAMNode(ROSNode, ABC):
+class SLAMNode(ABC):
     """
     This node is the generic interface for a SLAM module/node.
     It takes in odometry and observations and spits out a map estimate
@@ -39,7 +35,6 @@ class SLAMNode(ROSNode, ABC):
     """
 
     def __init__(self, name):
-        super().__init__(name, False)
         """
         Args:
             - name: The name of the node
@@ -51,6 +46,11 @@ class SLAMNode(ROSNode, ABC):
                             This frame is also
                             This is also the frame in which the resulting map estimate is published
         """
+        # ROS initialization
+        rospy.init_node(
+            name
+        )
+
         # Parameters
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
@@ -63,32 +63,19 @@ class SLAMNode(ROSNode, ABC):
         self.vis_lifetime = rospy.get_param("~vis/lifetime", 3)
         self.vis_handler = SlamVis()
 
-        AddSubscriber("input/observations", self.observation_queue_size)(
-            self.handle_observation_message
+        self.observation_sub = rospy.Subscriber(
+            "input/observations",
+            ObservationWithCovarianceArrayStamped,
+            self.handle_observation_message,
+            queue_size=self.observation_queue_size,
         )
-
-        self.add_subscribers()
+        self.odom_sub = rospy.Subscriber(
+            "/input/odometry", Odometry, self.handle_odometry_message
+        )
 
         # Helpers
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
-
-        # Clear visualisation
-        if self.vis:
-            self.publish(
-                "/output/vis",
-                self.vis_handler.delete_markerarray(
-                    self.vis_namespace + "/observations"
-                ),
-            )
-            self.publish(
-                "/output/vis",
-                self.vis_handler.delete_markerarray(self.vis_namespace + "/map"),
-            )
-            self.publish(
-                "/output/vis",
-                self.vis_handler.delete_markerarray(self.vis_namespace + "/particles"),
-            )
 
         rospy.loginfo(f"SLAM node ({name}) initialized!")
 
@@ -138,7 +125,6 @@ class SLAMNode(ROSNode, ABC):
         else:
             self.process_observations(transformed_observations)
 
-    @AddSubscriber("input/odometry")
     def handle_odometry_message(self, odometry: Odometry):
         """
         Handles incoming Odometry messages. The header and frames should of course match with what is expected
@@ -238,25 +224,15 @@ class SLAMNode(ROSNode, ABC):
                 observations.observations.append(new_obs)
 
             new_map_point = ObservationWithCovariance()
-            new_map_point.observation.location = Point(x=obs_location[0], y=obs_location[1], z=0)
+            new_map_point.observation.location = Point(
+                x=obs_location[0], y=obs_location[1], z=0
+            )
             new_map_point.observation.observation_class = landmark_classes[i]
 
             new_map.observations.append(new_map_point)
 
         self.publish("output/observations", observations)
         self.publish("output/map", new_map)
-
-        # Visualisation
-        if self.vis:
-            marker_array = self.vis_handler.observations_to_markerarray(
-                observations, self.vis_namespace + "/observations", 0, False
-            )
-            self.publish("/output/vis", marker_array)
-
-            marker_array = self.vis_handler.observations_to_markerarray(
-                new_map, self.vis_namespace + "/map", 0, False
-            )
-            self.publish("/output/vis", marker_array)
 
         # Publish slam state
         slam_prediction = Odometry()

@@ -6,28 +6,34 @@ import tf2_ros as tf
 from clustering.clustering import Clustering
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point, TransformStamped
-from node_fixture.node_fixture import AddSubscriber, ROSNode, DiagnosticArray, DiagnosticStatus, create_diagnostic_message
+from node_fixture.node_fixture import (DiagnosticArray, DiagnosticStatus,
+                                       ROSNode, create_diagnostic_message)
 from rosgraph_msgs.msg import Clock
-from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import (
-    ObservationWithCovariance,
-    ObservationWithCovarianceArrayStamped,
-    Particle,
-    Particles,
-)
-
 from slam_clustering.srv import Reset, ResetRequest, ResetResponse
 from slam_vis import SlamVis
+from tf.transformations import euler_from_quaternion
+from ugr_msgs.msg import (ObservationWithCovariance,
+                          ObservationWithCovarianceArrayStamped, Particle,
+                          Particles)
 
 
-class ClusterMapping(ROSNode):
+class ClusterMapping:
     def __init__(self) -> None:
         """
         The ClusterMapping algorithm provides slam with a way to create a map based on the clustering of observations.
         This is the ROS wrapper. For the implementation you have to go to src
         """
-
-        super().__init__("clustermapping", False)
+        # ROS initialization
+        rospy.init_node("clustermapping")
+        self.observations_publisher = rospy.Publisher(
+            "/output/observations", ObservationWithCovarianceArrayStamped, queue_size=10
+        )
+        self.map_publisher = rospy.Publisher(
+            "/output/map", ObservationWithCovarianceArrayStamped, queue_size=10
+        )
+        self.sample_publisher = rospy.Publisher(
+            "/output/samples", ObservationWithCovarianceArrayStamped, queue_size=10
+        )
 
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
@@ -40,22 +46,6 @@ class ClusterMapping(ROSNode):
         self.do_time_transform = rospy.get_param("~do_time_transform", True)
         self.observation_queue_size = rospy.get_param("~observation_queue_size", None)
         self.max_landmark_range = rospy.get_param("~max_landmark_range", 0) ** 2
-
-        self.vis = rospy.get_param("~vis", True)
-        self.blue_cone_model_url = rospy.get_param(
-            "~vis/cone_models/blue",
-            "https://storage.googleapis.com/learnmakeshare_cdn_public/blue_cone_final.dae",
-        )
-        self.yellow_cone_model_url = rospy.get_param(
-            "~vis/cone_models/yellow",
-            "https://storage.googleapis.com/learnmakeshare_cdn_public/yellow_cone_final.dae",
-        )
-        self.vis_namespace = rospy.get_param("~vis/namespace", "slam_vis")
-        self.vis_lifetime = rospy.get_param("~vis/lifetime", 3)
-        self.vis_sample_color = rospy.get_param("~vis/sample_color", "g")
-        self.vis_handler = SlamVis(
-            [self.blue_cone_model_url, self.yellow_cone_model_url]
-        )
 
         self.eps = rospy.get_param("~clustering/eps", 0.5)
         self.min_sampling = rospy.get_param("~clustering/min_samples", 5)
@@ -79,22 +69,25 @@ class ClusterMapping(ROSNode):
         # Add a service that allows us to reset the clustering when needed
         rospy.Service("clustermapping/reset", Reset, self.handle_reset_srv_request)
 
-        # It is done this way instead of using decorators because we need to dynamically inject the queue size
-        AddSubscriber("input/observations", self.observation_queue_size)(
-            self.handle_observation_message
+        self.obs_sub = rospy.Subscriber(
+            "input/observations",
+            self.handle_observation_message,
+            queue_size=self.observation_queue_size,
         )
-
+        self.clock_sub = None
         if self.use_sim_time:
-            AddSubscriber("/clock", self.observation_queue_size)(
-                self.detect_backwards_time_jump
+            self.clock_sub = rospy.Subscriber(
+                "/clock",
+                self.detect_backwards_time_jump,
+                queue_size=self.observation_queue_size,
             )
 
             self.current_clock = 0
 
-        self.add_subscribers()
-
         # Diagnostics Publisher
-        self.diagnostics = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
+        self.diagnostics = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
 
         # Helpers
         self.previous_clustering_time = rospy.Time.now().to_sec()
@@ -103,12 +96,12 @@ class ClusterMapping(ROSNode):
         self.initialized = True
         rospy.loginfo(f"Clustering mapping node initialized!")
         self.diagnostics.publish(
-                    create_diagnostic_message(
-                        level=DiagnosticStatus.OK,
-                        name="[SLAM CM] Status",
-                        message="Initialized.",
-                    )
-                )
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="[SLAM CM] Status",
+                message="Initialized.",
+            )
+        )
 
     def handle_reset_srv_request(self, req: ResetRequest):
         """
@@ -125,12 +118,12 @@ class ClusterMapping(ROSNode):
 
         self.reset()
         self.diagnostics.publish(
-                    create_diagnostic_message(
-                        level=DiagnosticStatus.OK,
-                        name="[SLAM CM] Reset",
-                        message="FastMapping reset.",
-                    )
-                )
+            create_diagnostic_message(
+                level=DiagnosticStatus.OK,
+                name="[SLAM CM] Reset",
+                message="FastMapping reset.",
+            )
+        )
 
         return ResetResponse()
 
@@ -154,12 +147,12 @@ class ClusterMapping(ROSNode):
                 f"A backwards jump in time of {self.current_clock - clock.clock.to_sec()} has been detected. Resetting the clusterer..."
             )
             self.diagnostics.publish(
-                    create_diagnostic_message(
-                        level=DiagnosticStatus.WARN,
-                        name="[SLAM CM] Backwards time",
-                        message="FastMapping reset.",
-                    )
+                create_diagnostic_message(
+                    level=DiagnosticStatus.WARN,
+                    name="[SLAM CM] Backwards time",
+                    message="FastMapping reset.",
                 )
+            )
 
             self.reset()
 
@@ -268,13 +261,11 @@ class ClusterMapping(ROSNode):
         )
 
         for observation in world_observations.observations:
-
             distance = (observation.location.x - self.particle_state[0]) ** 2 + (
                 observation.location.y - self.particle_state[1]
             ) ** 2
 
             if distance <= self.max_landmark_range and distance > 0.1:
-
                 self.clustering.add_sample(
                     np.array([observation.location.x, observation.location.y]),
                     int(observation.observation_class),
@@ -327,7 +318,6 @@ class ClusterMapping(ROSNode):
             distance = (landmark[0] ** 2 + landmark[1] ** 2) ** (1 / 2)
 
             if distance > 0.1:
-
                 new_obs.location.x = x
                 new_obs.location.y = y
 
@@ -341,8 +331,8 @@ class ClusterMapping(ROSNode):
 
                 new_map.observations.append(new_map_point)
 
-        self.publish("output/observations", observations)
-        self.publish("output/map", new_map)
+        self.observations_publisher.publish(observations)
+        self.map_publisher.publish(new_map)
 
         # Publish delta samples as well. These are the points used to cluster
         # Could be useful to estimate statistical distributions from
@@ -397,72 +387,7 @@ class ClusterMapping(ROSNode):
 
         self.previous_sample_point = self.clustering.size
 
-        self.publish("output/samples", samples)
-
-        if self.vis:
-
-            if self.cleared_vis < 5:
-
-                self.publish(
-                    "/output/vis",
-                    self.vis_handler.delete_markerarray(
-                        self.vis_namespace + "/observations"
-                    ),
-                )
-                self.publish(
-                    "/output/vis",
-                    self.vis_handler.delete_markerarray(self.vis_namespace + "/map"),
-                )
-                self.publish(
-                    "/output/vis",
-                    self.vis_handler.delete_markerarray(
-                        self.vis_namespace + "/samples"
-                    ),
-                )
-
-                self.cleared_vis += 1
-
-            marker_array = self.vis_handler.observations_to_markerarray(
-                observations, self.vis_namespace + "/observations", 0, False
-            )
-            self.publish("/output/vis", marker_array)
-
-            marker_array = self.vis_handler.observations_to_markerarray(
-                new_map, self.vis_namespace + "/map", 0, False
-            )
-            self.publish("/output/vis", marker_array)
-
-            marker_array = self.vis_handler.particles_to_markerarray(
-                Particles(
-                    header=samples_as_particles.header,
-                    particles=[
-                        particle
-                        for i, particle in enumerate(samples_as_particles.particles)
-                        if samples.observations[i].observation_class == Cone.BLUE
-                    ],
-                ),
-                self.vis_namespace + "/samples",
-                self.vis_lifetime,
-                "b",
-                True,
-            )
-            self.publish("/output/vis", marker_array)
-
-            marker_array = self.vis_handler.particles_to_markerarray(
-                Particles(
-                    header=samples_as_particles.header,
-                    particles=[
-                        particle
-                        for i, particle in enumerate(samples_as_particles.particles)
-                        if samples.observations[i].observation_class == Cone.YELLOW
-                    ],
-                ),
-                self.vis_namespace + "/samples",
-                self.vis_lifetime,
-                "y",
-                True,
-            )
-            self.publish("/output/vis", marker_array)
+        self.sample_publisher.publish("output/samples", samples)
 
 
 node = ClusterMapping()

@@ -1,29 +1,28 @@
 #!/usr/bin/env python3
 import numpy as np
 import rospy
-from geometry_msgs.msg import (
-    PoseArray,
-    Point,
-    PoseStamped,
-    TransformStamped,
-    Quaternion,
-)
+import tf2_ros as tf
+from fs_msgs.msg import ControlCommand
+from geometry_msgs.msg import (Point, PoseArray, PoseStamped, Quaternion,
+                               TransformStamped)
 from nav_msgs.msg import Odometry
 from pid import PID
-from trajectory import Trajectory
 from std_msgs.msg import Header
 from tf2_geometry_msgs import do_transform_pose
-import tf2_ros as tf
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
-from fs_msgs.msg import ControlCommand
+from trajectory import Trajectory
 
 
 class PIDControlNode:
     def __init__(self):
         # ros initialization
         rospy.init_node("pid_car_control")
-        self.update_subscriber = rospy.Subscriber("/input/path",PoseArray,self.getPathplanningUpdate)
-        self.publisher = rospy.Publisher("/output/control_command",ControlCommand,queue_size=10)
+        self.update_subscriber = rospy.Subscriber(
+            "/input/path", PoseArray, self.getPathplanningUpdate
+        )
+        self.publisher = rospy.Publisher(
+            "/output/control_command", ControlCommand, queue_size=10
+        )
 
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
@@ -86,9 +85,7 @@ class PIDControlNode:
         """
         rate = rospy.Rate(self.publish_rate)
         while not rospy.is_shutdown():
-
             try:
-
                 self.current_angle = [0, 0]
                 self.current_angle = 0
 
@@ -128,7 +125,9 @@ class PIDControlNode:
                 else:
                     # Go ahead and drive
                     self.cmd.brake = 0.0
-                    self.cmd.throttle = max(1 - abs(self.cmd.steering), self.min_corner_speed)
+                    self.cmd.throttle = max(
+                        1 - abs(self.cmd.steering), self.min_corner_speed
+                    )
 
                     # Calculate angle
                     self.set_angle = PID.pi_to_pi(
@@ -182,6 +181,7 @@ class PIDControlNode:
 
             rate.sleep()
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     node = PIDControlNode()
     rospy.spin()
