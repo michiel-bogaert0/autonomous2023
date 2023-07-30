@@ -28,8 +28,8 @@ public:
         float range_front,
         float range_behind,
         float range_sides,
-        ros::Publisher vis_points = ros::Publisher(),
-        ros::Publisher vis_lines = ros::Publisher(),
+        ros::Publisher vis_points,
+        ros::Publisher vis_lines,
         std::string vis_namespace = "pathplanning_vis",
         float vis_lifetime = 0.2
     );
