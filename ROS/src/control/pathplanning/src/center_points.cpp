@@ -2,8 +2,8 @@
 
 namespace triangulation {
 
-std::tuple<std::vector<std::array<double, 2>>, std::vector<std::array<double, 2>>>
-get_center_points(const std::vector<std::array<double, 2>>& position_cones,
+std::tuple<std::vector<std::vector<double>>, std::vector<std::vector<double>>>
+get_center_points(const std::vector<std::vector<double>>& position_cones,
                   double triangulation_min_var,
                   double triangulation_var_threshold,
                   double range_front)
@@ -22,9 +22,9 @@ get_center_points(const std::vector<std::array<double, 2>>& position_cones,
 
 
     // Perform Delaunay triangulation
-    std::vector<std::array<double, 2>> center_points;
-    std::vector<std::array<double, 2>> flattened_center_points;
-    std::unordered_set<std::array<double, 2>, utils::ArrayHash> unique_points;
+    std::vector<std::vector<double>> center_points;
+    std::vector<std::vector<double>> flattened_center_points;
+    std::unordered_set<std::vector<double>, utils::ArrayHash> unique_points;
 
     std::vector<size_t> indices;
     for (size_t i = 0; i < position_cones.size(); ++i)
@@ -34,14 +34,14 @@ get_center_points(const std::vector<std::array<double, 2>>& position_cones,
 
     std::vector<std::size_t>& filtered_triangles;
     std::vector<double>& filtered_coords;
-    std::vector<std::array<double, 2>> center_points;
+    std::vector<std::vector<double>> center_points;
 
 
     
     for (size_t i = 0; i < triangles.size(); i += 3){
         
         // Variance of lengths within a triangle should be small
-        std::array<double, 3> distances;
+        std::vector<double> distances;
 
         for (size_t j = 0; j < 3; j++)
         {
@@ -67,13 +67,13 @@ get_center_points(const std::vector<std::array<double, 2>>& position_cones,
     */
 
     // Store the counts of each center point using a std::map
-    std::unordered_map<std::array<double, 2>, int> center_point_counts;
+    std::unordered_map<std::vector<double>, int> center_point_counts;
     for (const auto& point : center_points) {
         center_point_counts[point]++;
     }
 
     // Find duplicated centers by iterating through the std::map
-    std::vector<std::array<double, 2>> duplicated_centers;
+    std::vector<std::vector<double>> duplicated_centers;
     for (const auto& cnt : center_point_counts) {
         if (cnt.second > 1) {
             duplicated_centers.push_back({cnt.first[0], cnt.first[1]});
@@ -81,17 +81,17 @@ get_center_points(const std::vector<std::array<double, 2>>& position_cones,
     }
 
     // Add closest center in front of you as this one will not be duplicated
-    std::vector<std::array<double, 2>> closest_centers = sort_closest_to(duplicated_centers, [0,0], range_front);
+    std::vector<std::vector<double>> closest_centers = sort_closest_to(duplicated_centers, [0,0], range_front);
     duplicated_centers.push_back(closest_centers.front());
 
     return std::make_tuple(center_points, duplicated_centers);
 }
 
-std::vector<std::array<double, 2>> filter_center_points(const std::vector<std::array<double, 2>>& center_points,
-                                                       const std::vector<std::array<double, 2>>& triangulation_centers,
-                                                       const std::vector<std::array<double, 3>>& cones)
+std::vector<std::vector<double>> filter_center_points(const std::vector<std::vector<double>>& center_points,
+                                                       const std::vector<std::vector<double>>& triangulation_centers,
+                                                       const std::vector<std::vector<double>>& cones)
 {
-    std::vector<std::array<double, 2>> filtered_points;
+    std::vector<std::vector<double>> filtered_points;
 
     // False positive removal
     // Remove points whose closest three cones have the same color

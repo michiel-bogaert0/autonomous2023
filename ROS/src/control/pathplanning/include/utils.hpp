@@ -22,13 +22,13 @@ struct Node {
 double distance_squared(double x1, double y1, double x2, double y2);
 
 // Function to check if there is no collision between a node and a point with safety distance around cones
-bool no_collision(const Node& parent, const std::array<double, 2>& point, const std::vector<std::array<double, 3>>& cones, double safety_dist_squared);
+bool no_collision(const Node& parent, const std::vector<double>& point, const std::vector<std::vector<double>>& cones, double safety_dist_squared);
 
 // Function to get the closest center points to an origin point
-std::vector<std::array<double, 2>> get_closest_center(const std::vector<std::array<double, 2>>& center_points, size_t amount, const std::array<double, 2>& origin = {0, 0}, double max_distance = -1);
+std::vector<std::vector<double>> get_closest_center(const std::vector<std::vector<double>>& center_points, size_t amount, const std::vector<double>& origin = {0, 0}, double max_distance = -1);
 
 // Function to sort the center points based on their distance to the origin point
-std::vector<std::array<double, 2>> sort_closest_to(const std::vector<std::array<double, 2>>& center_points, const std::array<double, 2>& origin = {0, 0}, double max_distance = -1);
+std::vector<std::vector<double>> sort_closest_to(const std::vector<std::vector<double>>& center_points, const std::vector<double>& origin = {0, 0}, double max_distance = -1);
 } // namespace triangulation
 
 #endif // UTILS_HPP

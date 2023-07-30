@@ -10,7 +10,7 @@ double distance_squared(double x1, double y1, double x2, double y2)
     return std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2);
 }
 
-bool no_collision(const Node& parent, const std::array<double, 2>& point, const std::vector<std::array<double, 3>>& cones, double safety_dist_squared)
+bool no_collision(const Node& parent, const std::vector<double>& point, const std::vector<std::vector<double>>& cones, double safety_dist_squared)
 {
     double x1 = parent.x;
     double y1 = parent.y;
@@ -41,7 +41,7 @@ bool no_collision(const Node& parent, const std::array<double, 2>& point, const 
     return true;
 }
 
-std::vector<std::array<double, 2>> get_closest_center(const std::vector<std::array<double, 2>>& center_points, size_t amount, const std::array<double, 2>& origin, double max_distance)
+std::vector<std::vector<double>> get_closest_center(const std::vector<std::vector<double>>& center_points, size_t amount, const std::vector<double>& origin, double max_distance)
 {
     std::vector<double> distances_squared;
     distances_squared.reserve(center_points.size());
@@ -52,7 +52,7 @@ std::vector<std::array<double, 2>> get_closest_center(const std::vector<std::arr
         distances_squared.push_back(dist_squared);
     }
 
-    std::vector<std::array<double, 2>> points_within_distance;
+    std::vector<std::vector<double>> points_within_distance;
     for (size_t i = 0; i < center_points.size(); i++)
     {
         if (distances_squared[i] < max_distance * max_distance || max_distance == -1)
@@ -75,7 +75,7 @@ std::vector<std::array<double, 2>> get_closest_center(const std::vector<std::arr
         return distances_squared[i1] < distances_squared[i2];
     });
 
-    std::vector<std::array<double, 2>> closest_center_points;
+    std::vector<std::vector<double>> closest_center_points;
     closest_center_points.reserve(amount);
     for (size_t i = 0; i < amount; i++)
     {
@@ -85,7 +85,7 @@ std::vector<std::array<double, 2>> get_closest_center(const std::vector<std::arr
     return closest_center_points;
 }
 
-std::vector<std::array<double, 2>> sort_closest_to(const std::vector<std::array<double, 2>>& center_points, const std::array<double, 2>& origin, double max_distance)
+std::vector<std::vector<double>> sort_closest_to(const std::vector<std::vector<double>>& center_points, const std::vector<double>& origin, double max_distance)
 {
     std::vector<double> distances_squared;
     distances_squared.reserve(center_points.size());
@@ -96,7 +96,7 @@ std::vector<std::array<double, 2>> sort_closest_to(const std::vector<std::array<
         distances_squared.push_back(dist_squared);
     }
 
-    std::vector<std::array<double, 2>> points_within_distance;
+    std::vector<std::vector<double>> points_within_distance;
     std::vector<double> distances_squared_points_within_distance;
     for (size_t i = 0; i < center_points.size(); i++)
     {
@@ -114,7 +114,7 @@ std::vector<std::array<double, 2>> sort_closest_to(const std::vector<std::array<
         return distances_squared_points_within_distance[i1] < distances_squared_points_within_distance[i2];
     });
 
-    std::vector<std::array<double, 2>> sorted_points_within_distance;
+    std::vector<std::vector<double>> sorted_points_within_distance;
     sorted_points_within_distance.reserve(points_within_distance.size());
     for (size_t i = 0; i < points_within_distance.size(); i++)
     {

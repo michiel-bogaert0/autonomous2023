@@ -3,9 +3,9 @@
 
 namespace triangulation {
 std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
-    const std::vector<std::array<double, 2>>& triangulation_centers,
-    const std::vector<std::array<double, 2>>& center_points,
-    const std::vector<std::array<double, 3>>& cones,
+    const std::vector<std::vector<double>>& triangulation_centers,
+    const std::vector<std::vector<double>>& center_points,
+    const std::vector<std::vector<double>>& cones,
     double range_front
 ) {
     Node* root_node = new Node(0, 0, 0, nullptr, std::vector<Node*>(), 0, 0);
@@ -22,7 +22,7 @@ std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
         queue.erase(queue.begin());
 
         // Get the closest center points to this element that are within range_front
-        std::vector<std::array<double, 2>> next_nodes;
+        std::vector<std::vector<double>> next_nodes;
         next_nodes = sort_closest_to(center_points, {parent->x, parent->y}, range_front);
 
         // A list of all the abs_angle_change to nodes seen thus far
@@ -30,7 +30,7 @@ std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
 
         // Iterate over each next_node, calculate the metrics, and add the node to the tree
         // we also perform some early pruning based on the angle between nodes
-        for (const std::array<double, 2>& next_pos : next_nodes) {
+        for (const std::vector<double>& next_pos : next_nodes) {
             // Make sure we're not looping from the parent to itself
             if (std::abs(next_pos[0] - parent->x) < std::numeric_limits<double>::epsilon()
                 && std::abs(next_pos[1] - parent->y) < std::numeric_limits<double>::epsilon()) {
@@ -81,7 +81,7 @@ std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
     return std::make_pair(root_node, leaves);
 }
 
-std::pair<double, double> TriangulationPaths::get_cost_branch(const std::vector<Node*>& branch, const std::vector<std::array<double, 3>>& cones, double range_front) {
+std::pair<double, double> TriangulationPaths::get_cost_branch(const std::vector<Node*>& branch, const std::vector<std::vector<double>>& cones, double range_front) {
     // angle should not change much over one path
     std::vector<double> angle_changes;
     for (const Node* point : branch) {
