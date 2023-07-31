@@ -1,6 +1,6 @@
 #include<center_points.hpp>
 
-namespace triangulation {
+namespace pathplanning {
 
 std::tuple<std::vector<std::vector<double>>, std::vector<std::vector<double>>>
 get_center_points(const std::vector<std::vector<double>>& position_cones,
@@ -11,20 +11,16 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
     // Need 1D array for Delaunay
     std::vector<double> positions;
     positions.reserve(position_cones.size() * 2);
-    for (size_t i = 0; i < position_cones.size(), i++) {
+    for (size_t i = 0; i < position_cones.size(); i++) {
         positions.push_back(position_cones[i][0]);
         positions.push_back(position_cones[i][1]);
     }
-    delaunator::Delaunator d(positions);
+    Delaunator d(positions);
     
     const std::vector<std::size_t>& triangles = d.triangles;
-    const std::vector<double>& coords = delaunator.coords;
+    const std::vector<double>& coords = d.coords;
 
-
-    // Perform Delaunay triangulation
     std::vector<std::vector<double>> center_points;
-    std::vector<std::vector<double>> flattened_center_points;
-    std::unordered_set<std::vector<double>, utils::ArrayHash> unique_points;
 
     std::vector<size_t> indices;
     for (size_t i = 0; i < position_cones.size(); ++i)
@@ -32,31 +28,36 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
         indices.push_back(i);
     }
 
-    std::vector<std::size_t>& filtered_triangles;
-    std::vector<double>& filtered_coords;
-    std::vector<std::vector<double>> center_points;
+    std::vector<double> filtered_coords;
+    std::vector<double> distances;
+    std::vector<double> variances;
 
-
-    
     for (size_t i = 0; i < triangles.size(); i += 3){
         
         // Variance of lengths within a triangle should be small
-        std::vector<double> distances;
+        distances.clear();
 
         for (size_t j = 0; j < 3; j++)
-        {
-            distances[j] = std::pow(coords[2 * triangles[i + j]] - coords[2 * triangles[(i + j + 1) % 3 + i]], 2) + std::pow(coords[2 * triangles[i + j] + 1] - coords[2 * triangles[(i + j + 1) % 3 + i] + 1], 2);
+        {   
+            size_t index1 = 2 * triangles[i + j];
+            size_t index2 = 2 * triangles[(i + j + 1) % 3 + i];
+            double distance = std::pow(coords[index1] - coords[index2], 2) + std::pow(coords[index1 + 1] - coords[index2 + 1], 2);
+            distances.push_back(distance);
         }
-        double variance = std::variance(distances.begin(), distances.end());
+        double variance = calculate_variance(distances);
+        variances.push_back(variance);
+    }
 
+    double median_variance = calculate_median(variances);
+
+    for (size_t i = 0; i < variances.size(); i++){
         // If below var, get center points
-        if (variance < triangulation_min_var || variance < triangulation_var_threshold * std::median(distances.begin(), distances.end())){
+        if (variances[i] < triangulation_min_var || variances[i] < triangulation_var_threshold * median_variance){
             for (size_t j = 0; j < 3; j++){
-                filtered.triangles.push_back(triangles[i]);
-                filtered_coords.push_back(coords[2 * triangles[i]]);
-                filtered_coords.push_back(coords[2 * triangles[i] + 1]);
-                double x_coord = (coords[2 * triangles[i + j]] - coords[2 * triangles[(i + j + 1) % 3 + i]]) / 2;
-                double y_coord = (coords[2 * triangles[i + j] + 1] - coords[2 * triangles[(i + j + 1) % 3 + i] + 1]) / 2;
+                filtered_coords.push_back(coords[2 * triangles[3*i]]);
+                filtered_coords.push_back(coords[2 * triangles[3*i] + 1]);
+                double x_coord = (coords[2 * triangles[3*i + j]] - coords[2 * triangles[(3*i + j + 1) % 3 + 3*i]]) / 2;
+                double y_coord = (coords[2 * triangles[3*i + j] + 1] - coords[2 * triangles[(3*i + j + 1) % 3 + 3*i] + 1]) / 2;
                 center_points.push_back({x_coord, y_coord});
             }
         }
@@ -67,7 +68,7 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
     */
 
     // Store the counts of each center point using a std::map
-    std::unordered_map<std::vector<double>, int> center_point_counts;
+    std::map<std::vector<double>, int> center_point_counts;
     for (const auto& point : center_points) {
         center_point_counts[point]++;
     }
@@ -81,7 +82,7 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
     }
 
     // Add closest center in front of you as this one will not be duplicated
-    std::vector<std::vector<double>> closest_centers = sort_closest_to(duplicated_centers, [0,0], range_front);
+    std::vector<std::vector<double>> closest_centers = sort_closest_to(duplicated_centers, {0.0,0.0}, range_front);
     duplicated_centers.push_back(closest_centers.front());
 
     return std::make_tuple(center_points, duplicated_centers);
@@ -107,15 +108,15 @@ std::vector<std::vector<double>> filter_center_points(const std::vector<std::vec
             closest_cones.push(std::make_pair(dist, cone[2]));
 
             // If there are more than three cones, remove the farthest one
-            if (closestCones.size() > 3) {
-                closestCones.pop();
+            if (closest_cones.size() > 3) {
+                closest_cones.pop();
             }
         }
         
         // Copy to colours array to perform count
         std::vector<int> colours;
         while (!closest_cones.empty()) {
-            temp_int_values.push_back(closest_cones.top().second);
+            colours.push_back(closest_cones.top().second);
             closest_cones.pop();
         }
 
@@ -128,4 +129,4 @@ std::vector<std::vector<double>> filter_center_points(const std::vector<std::vec
     return filtered_points;
 }
 
-} // namespace triangulation
+} // namespace pathplanning

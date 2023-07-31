@@ -8,10 +8,11 @@
 #include <algorithm>
 #include <iostream>
 #include <unordered_set>
+#include <map>
 #include <utils.hpp>
 #include <delaunay.hpp>
 
-namespace triangulation {
+namespace pathplanning {
 
 std::tuple<std::vector<std::vector<double>>, std::vector<std::vector<double>>>
 get_center_points(const std::vector<std::vector<double>>& position_cones,
@@ -23,6 +24,6 @@ std::vector<std::vector<double>> filter_center_points(const std::vector<std::vec
                                                        const std::vector<std::vector<double>>& triangulation_centers,
                                                        const std::vector<std::vector<double>>& cones);
 
-} // namespace triangulation
+} // namespace pathplanning
 
 #endif // TRIANGULATION_HPP

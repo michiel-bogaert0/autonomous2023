@@ -1,6 +1,6 @@
 #include <triangulator.hpp>
 
-namespace triangulation {
+namespace pathplanning {
 Triangulator::Triangulator(
     ros::NodeHandle &n,
     float triangulation_min_var,
@@ -31,13 +31,14 @@ Triangulator::Triangulator(
     vis_points_(vis_points),
     vis_lines_(vis_lines),
     vis_namespace_(vis_namespace),
-    vis_lifetime_(vis_lifetime)
+    vis_lifetime_(vis_lifetime),
+    triangulation_paths(max_iter_, max_angle_change_, max_path_distance_, safety_dist_)
 {
     vis_ = vis_points_ && vis_lines_;
-    TriangulationPaths triangulation_paths(max_iter_, max_angle_change_, max_path_distance_, safety_dist_);
+    // this->triangulation_paths = new TriangulationPaths(max_iter_, max_angle_change_, max_path_distance_, safety_dist_);
 }
 
-std::vector<std::vector<double>>& Triangulator::get_path(const std::vector<std::vector<double>& cones, const std_msgs::Header& header)
+std::vector<Node*> Triangulator::get_path(const std::vector<std::vector<double>>& cones, const std_msgs::Header& header)
 {
     std::vector<std::vector<double>> filtered_cones;
     std::vector<std::vector<double>> position_cones;
@@ -57,7 +58,7 @@ std::vector<std::vector<double>>& Triangulator::get_path(const std::vector<std::
     while (filtered_cones.size() < 4) {
         tries++;
         if (tries >= 3){
-            return NULL;
+            return {};
         }
         ROS_INFO_STREAM("Not enough cones for triangulation. Trying again with a larger rectangle");
 
@@ -95,7 +96,7 @@ std::vector<std::vector<double>>& Triangulator::get_path(const std::vector<std::
     leaves = std::get<1>(all_paths);
 
     if (leaves.empty()) {
-        return std::vector<Node*>();
+        return {};
     }
 
     return get_best_path(leaves, cones);
@@ -108,9 +109,9 @@ std::vector<Node*> Triangulator::get_best_path(const std::vector<Node*>& leaves,
     std::vector<size_t> path_lengths(1, 0);
 
     // Iterate each leaf
-    for (size_t i = 0; i < leaves.size(), i++) {
+    for (size_t i = 0; i < leaves.size(); i++) {
         // Find the path connecting this leaf to the root and reverse it
-        leaf = leaves[i];
+        Node* leaf = leaves[i];
         std::vector<Node*> path;
         Node* parent = leaf;
         while (parent->parent != nullptr) {
@@ -130,12 +131,12 @@ std::vector<Node*> Triangulator::get_best_path(const std::vector<Node*>& leaves,
 
     // Normalize costs
     double max_angle_cost = std::max_element(costs.begin(), costs.end(),
-        [](const auto& a, const auto& b) {
+        [](const std::array<double,2>& a, const std::array<double,2>& b) {
             return a[0] < b[0];
         }
     )->at(0);
     double max_length_cost = std::max_element(costs.begin(), costs.end(),
-        [](const auto& a, const auto& b) {
+        [](const std::array<double,2>& a, const std::array<double,2>& b) {
             return a[1] < b[1];
         }
     )->at(1);
@@ -160,7 +161,7 @@ std::vector<Node*> Triangulator::get_best_path(const std::vector<Node*>& leaves,
 void Triangulator::publish_points(
     const std::vector<std::vector<double>>& points,
     const std_msgs::Header& header,
-    const std::string& namespace,
+    const std::string& vis_namespace,
     const std::array<double, 4>& color,
     double scale = 0.1
 ) {
@@ -171,7 +172,7 @@ void Triangulator::publish_points(
         visualization_msgs::Marker marker;
 
         marker.header = header;
-        marker.ns = namespace;
+        marker.ns = vis_namespace;
 
         marker.type = visualization_msgs::Marker::SPHERE;
         marker.action = visualization_msgs::Marker::ADD;
@@ -194,7 +195,7 @@ void Triangulator::publish_points(
         marker.color.b = color[2];
         marker.color.a = color[3];
 
-        marker.lifetime = ros::Duration(this->vis_lifetime);
+        marker.lifetime = ros::Duration(this->vis_lifetime_);
 
         marker_array.markers.push_back(marker);
     }
@@ -239,4 +240,4 @@ void Triangulator::publish_line(
     this->vis_lines_.publish(output);
 }
 
-} // namespace triangulation
+} // namespace pathplanning

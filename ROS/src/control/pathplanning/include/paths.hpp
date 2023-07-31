@@ -3,7 +3,7 @@
 #include <cmath>
 #include <utils.hpp>
 
-namespace triangulation {
+namespace pathplanning {
 class TriangulationPaths {
 public:
     TriangulationPaths(int max_iter, double max_angle_change, double max_path_distance, double safety_dist)
@@ -27,4 +27,4 @@ private:
     double angle_sensitivity;
 };
 
-} // namespace triangulation
+} // namespace pathplanning

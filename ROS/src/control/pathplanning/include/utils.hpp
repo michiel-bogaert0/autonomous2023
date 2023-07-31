@@ -3,8 +3,13 @@
 
 #include <vector>
 #include <array>
+#include <cmath>
+#include <algorithm>
+#include <numeric>
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
 
-namespace triangulation {
+namespace pathplanning {
 struct Node {
     double x;
     double y;
@@ -29,6 +34,10 @@ std::vector<std::vector<double>> get_closest_center(const std::vector<std::vecto
 
 // Function to sort the center points based on their distance to the origin point
 std::vector<std::vector<double>> sort_closest_to(const std::vector<std::vector<double>>& center_points, const std::vector<double>& origin = {0, 0}, double max_distance = -1);
-} // namespace triangulation
+
+double calculate_variance(const std::vector<double>& data);
+double calculate_median(const std::vector<double>& data);
+
+} // namespace pathplanning
 
 #endif // UTILS_HPP

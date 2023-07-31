@@ -1,9 +1,6 @@
-#include <vector>
-#include <array>
-#include <cmath>
-#include <algorithm>
+#include <utils.hpp>
 
-namespace triangulation {
+namespace pathplanning {
 
 double distance_squared(double x1, double y1, double x2, double y2)
 {
@@ -124,4 +121,28 @@ std::vector<std::vector<double>> sort_closest_to(const std::vector<std::vector<d
     return sorted_points_within_distance;
 }
 
-} // namespace triangulation
+double calculate_variance(const std::vector<double>& data) {
+    // Using Boost Accumulators to calculate variance
+    namespace ba = boost::accumulators;
+    ba::accumulator_set<double, ba::stats<ba::tag::variance>> acc;
+
+    for (double value : data) {
+        acc(value);
+    }
+
+    return ba::variance(acc);
+}
+
+double calculate_median(const std::vector<double>& data) {
+    // Using Boost Accumulators to calculate median
+    namespace ba = boost::accumulators;
+    ba::accumulator_set<double, ba::stats<ba::tag::median>> acc;
+
+    for (double value : data) {
+        acc(value);
+    }
+
+    return ba::median(acc);
+}
+
+} // namespace pathplanning

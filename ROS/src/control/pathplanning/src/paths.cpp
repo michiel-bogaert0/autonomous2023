@@ -1,7 +1,7 @@
-#include<paths.hpp>
+#include <paths.hpp>
 
 
-namespace triangulation {
+namespace pathplanning {
 std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
     const std::vector<std::vector<double>>& triangulation_centers,
     const std::vector<std::vector<double>>& center_points,
@@ -62,7 +62,7 @@ std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
 
             double distance_node = (parent->x - next_pos[0]) * (parent->x - next_pos[0]) + (parent->y - next_pos[1]) * (parent->y - next_pos[1]);
 
-            if (no_collision(&parent, next_pos, cones, this->safety_dist_squared);) {
+            if (no_collision(*parent, next_pos, cones, this->safety_dist_squared)) {
                 Node* node = new Node(next_pos[0], next_pos[1], distance_node, parent, std::vector<Node*>(), angle_node, angle_change);
 
                 angles_added.push_back(abs_angle_change);
@@ -87,7 +87,8 @@ std::pair<double, double> TriangulationPaths::get_cost_branch(const std::vector<
     for (const Node* point : branch) {
         angle_changes.push_back(std::abs(point->angle_change));
     }
-    double angle_cost = utils::variance(angle_changes);
+    
+    double angle_cost = calculate_variance(angle_changes);
 
     // longer paths usually work better as they make use of more center points
     // having many segments along a path is usually a good path
@@ -131,4 +132,4 @@ std::pair<double, double> TriangulationPaths::get_cost_branch(const std::vector<
 }
 
 
-} // namespace triangulation
+} // namespace pathplanning

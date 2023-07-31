@@ -7,13 +7,14 @@
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <geometry_msgs/PoseArray.h>
 
 #include <vector>
 #include <array>
 #include <tuple>
 #include <cmath> 
 
-namespace triangulation {
+namespace pathplanning {
 class Triangulator {
 
 public:
@@ -34,7 +35,7 @@ public:
         float vis_lifetime = 0.2
     );
 
-    std::vector<std::vector<double>>& get_path(const std::vector<std::vector<double>& cones, const std_msgs::Header& header);
+    std::vector<Node*> get_path(const std::vector<std::vector<double>>& cones, const std_msgs::Header& header);
 
 private:
     ros::NodeHandle &n_;
@@ -54,13 +55,14 @@ private:
     std::string vis_namespace_;
     float vis_lifetime_;
 
-    void publish_points(const std::vector<std::vector<double>>& points, const std_msgs::Header& header,
-                        const std::string& namespace, const std::array<float, 4>& color, float scale = 0.1);
+    TriangulationPaths triangulation_paths;
+
+    void publish_points(const std::vector<std::vector<double>>& points, const std_msgs::Header& header, const std::string& vis_namespace, const std::array<double, 4>& color, double scale);
     void publish_line(const std::vector<std::vector<double>>& line, const std_msgs::Header& header);
 
     std::vector<Node*> get_best_path(const std::vector<Node*>& leaves, const std::vector<std::vector<double>>& cones);
 };
 
-} // namespace triangulation
+} // namespace pathplanning
 
 #endif

@@ -3,45 +3,69 @@
 
 namespace pathplanning{
 
-Pathplanning::Pathplanning(ros::NodeHandle &n)
-    : n_(n) {
+TransformFrames::TransformFrames(ros::NodeHandle &n) 
+    : nh(n), tfBuffer(), tfListener(tfBuffer) {}
 
-    // Do we want to output visualizations for diagnostics?
-    nh.param("~debug_visualisation", this->debug_visualisation_, false);
-    nh.param("~vis_namespace", this->vis_namespace_, std::string("pathplanning_vis"));
-    nh.param("~vis_lifetime", this->vis_lifetime_, 0.2);
+Pathplanning::Pathplanning(ros::NodeHandle &n, bool debug_visualisation, std::string vis_namespace,
+                    double vis_lifetime, int max_iter, double max_angle_change, 
+                    double safety_dist, double triangulation_min_var,
+                    double triangulation_var_threshold, double max_path_distance, 
+                    double range_front, double range_behind, double range_sides,
+                    ros::Publisher vis_points, ros::Publisher vis_lines
+    )
+    : n_(n) , frametf_(n), debug_visualisation_(debug_visualisation), 
+        vis_namespace_(vis_namespace), vis_lifetime_(vis_lifetime),
+        max_iter_(max_iter), max_angle_change_(max_angle_change),
+        safety_dist_(safety_dist), 
+        triangulation_min_var_(triangulation_min_var),
+        triangulation_var_threshold_(triangulation_var_threshold),
+        max_path_distance_(max_path_distance), range_front_(range_front),
+        range_behind_(range_behind), range_sides_(range_sides),
+        vis_points_(vis_points), vis_lines_(vis_lines),
+        triangulator_(n, triangulation_min_var, triangulation_var_threshold,
+                        max_iter, max_angle_change, max_path_distance,
+                        safety_dist, range_front, range_behind,
+                        range_sides, vis_points, vis_lines, vis_namespace,
+                        vis_lifetime
+        )
+{
 
-    nh.param("~max_iter", this->max_iter_, 100);
-    nh.param("~max_angle_change", this->max_angle_change_, 0.5);
-    nh.param("~safety_dist", this->safety_dist_, 1);
+    // // Do we want to output visualizations for diagnostics?
+    // n_.param("~debug_visualisation", this->debug_visualisation_, false);
+    // n_.param("~vis_namespace", this->vis_namespace_, std::string("pathplanning_vis"));
+    // n_.param("~vis_lifetime", this->vis_lifetime_, 0.2);
 
-    nh.param("~triangulation_min_var", this->triangulation_min_var_, 100);
-    nh.param("~triangulation_var_threshold", this->triangulation_var_threshold_, 1.2);
-    nh.param("~max_path_distance", this->max_path_distance_, 6.0);
-    nh.param("~range_front", this->range_front_, 6.0);
-    nh.param("~range_behind", this->range_behind_, 0);
-    nh.param("~range_sides", this->range_sides_, 3);
+    // n_.param("~max_iter", this->max_iter_, 100);
+    // n_.param("~max_angle_change", this->max_angle_change_, 0.5);
+    // n_.param("~safety_dist", this->safety_dist_, 1.0);
 
-    if (this->debug_visualisation_){
-        this->vis_points_ = nh.advertise<visualization_msgs::MarkerArray>("/output/debug/markers", 10);
-        this->vis_lines_ = nh.advertise<geometry_msgs::PoseArray>("/output/debug/poses", 10); 
-    }
+    // n_.param("~triangulation_min_var", this->triangulation_min_var_, 100.0);
+    // n_.param("~triangulation_var_threshold", this->triangulation_var_threshold_, 1.2);
+    // n_.param("~max_path_distance", this->max_path_distance_, 6.0);
+    // n_.param("~range_front", this->range_front_, 6.0);
+    // n_.param("~range_behind", this->range_behind_, 0.0);
+    // n_.param("~range_sides", this->range_sides_, 3.0);
 
-    this->triangulator_ = Triangulator(this->n_, this->triangulation_min_var_, this->triangulation_var_threshold_,
-                                 this->max_iter_, this->max_angle_change_, this->max_path_distance_,
-                                 this->safety_dist_, this->range_front_, this->range_behind_,
-                                 this->range_sides_, this->vis_points_, this->vis_lines_, this->vis_namespace_,
-                                 this->vis_lifetime_);
+    // if (this->debug_visualisation_){
+    //     this->vis_points_ = n_.advertise<visualization_msgs::MarkerArray>("/output/debug/markers", 10);
+    //     this->vis_lines_ = n_.advertise<geometry_msgs::PoseArray>("/output/debug/poses", 10); 
+    // }
+
+    // this->triangulator_ = Triangulator(this->n_, this->triangulation_min_var_, this->triangulation_var_threshold_,
+    //                              this->max_iter_, this->max_angle_change_, this->max_path_distance_,
+    //                              this->safety_dist_, this->range_front_, this->range_behind_,
+    //                              this->range_sides_, this->vis_points_, this->vis_lines_, this->vis_namespace_,
+    //                              this->vis_lifetime_);
     
 
-    this->path_pub_ = nh_.advertise<geometry_msgs::PoseArray>("/output/path", 10);
-    this->path_stamped_pub_ = nh_.advertise<nav_msgs::Path>("/output/path_stamped", 10);
-    this->map_sub_ = nh_.subscribe("/input/local_map", 10, &PathPlanning::receive_new_map, this);
+    this->path_pub_ = n_.advertise<geometry_msgs::PoseArray>("/output/path", 10);
+    this->path_stamped_pub_ = n_.advertise<nav_msgs::Path>("/output/path_stamped", 10);
+    this->map_sub_ = n_.subscribe("/input/local_map", 10, &Pathplanning::receive_new_map, this);
 }
 
 void Pathplanning::receive_new_map(const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr& track)
 {
-    std::vector<std::vector<double> cones;
+    std::vector<std::vector<double>> cones;
     for (const auto& obs_with_cov : track->observations)
     {
         std::vector<double> cone;
