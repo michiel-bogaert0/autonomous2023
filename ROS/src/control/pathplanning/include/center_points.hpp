@@ -11,6 +11,7 @@
 #include <map>
 #include <utils.hpp>
 #include <delaunay.hpp>
+#include <ros/ros.h>
 
 namespace pathplanning {
 
