@@ -39,7 +39,7 @@ Triangulator::Triangulator(
 }
 
 std::vector<Node*> Triangulator::get_path(const std::vector<std::vector<double>>& cones, const std_msgs::Header& header)
-{
+{   
     std::vector<std::vector<double>> filtered_cones;
     std::vector<std::vector<double>> position_cones;
     for (const auto& cone : cones) {
@@ -53,7 +53,7 @@ std::vector<Node*> Triangulator::get_path(const std::vector<std::vector<double>>
             
         }
     }
-
+    
     int tries = -1;
     while (filtered_cones.size() < 4) {
         tries++;

@@ -29,49 +29,20 @@ Pathplanning::Pathplanning(ros::NodeHandle &n, bool debug_visualisation, std::st
                         vis_lifetime
         )
 {
-
-    // // Do we want to output visualizations for diagnostics?
-    // n_.param("~debug_visualisation", this->debug_visualisation_, false);
-    // n_.param("~vis_namespace", this->vis_namespace_, std::string("pathplanning_vis"));
-    // n_.param("~vis_lifetime", this->vis_lifetime_, 0.2);
-
-    // n_.param("~max_iter", this->max_iter_, 100);
-    // n_.param("~max_angle_change", this->max_angle_change_, 0.5);
-    // n_.param("~safety_dist", this->safety_dist_, 1.0);
-
-    // n_.param("~triangulation_min_var", this->triangulation_min_var_, 100.0);
-    // n_.param("~triangulation_var_threshold", this->triangulation_var_threshold_, 1.2);
-    // n_.param("~max_path_distance", this->max_path_distance_, 6.0);
-    // n_.param("~range_front", this->range_front_, 6.0);
-    // n_.param("~range_behind", this->range_behind_, 0.0);
-    // n_.param("~range_sides", this->range_sides_, 3.0);
-
-    // if (this->debug_visualisation_){
-    //     this->vis_points_ = n_.advertise<visualization_msgs::MarkerArray>("/output/debug/markers", 10);
-    //     this->vis_lines_ = n_.advertise<geometry_msgs::PoseArray>("/output/debug/poses", 10); 
-    // }
-
-    // this->triangulator_ = Triangulator(this->n_, this->triangulation_min_var_, this->triangulation_var_threshold_,
-    //                              this->max_iter_, this->max_angle_change_, this->max_path_distance_,
-    //                              this->safety_dist_, this->range_front_, this->range_behind_,
-    //                              this->range_sides_, this->vis_points_, this->vis_lines_, this->vis_namespace_,
-    //                              this->vis_lifetime_);
-    
-
     this->path_pub_ = n_.advertise<geometry_msgs::PoseArray>("/output/path", 10);
     this->path_stamped_pub_ = n_.advertise<nav_msgs::Path>("/output/path_stamped", 10);
     this->map_sub_ = n_.subscribe("/input/local_map", 10, &Pathplanning::receive_new_map, this);
 }
 
 void Pathplanning::receive_new_map(const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr& track)
-{
+{   
     std::vector<std::vector<double>> cones;
     for (const auto& obs_with_cov : track->observations)
     {
         std::vector<double> cone;
-        cone[0] = obs_with_cov.observation.location.x;
-        cone[1] = obs_with_cov.observation.location.y;
-        cone[2] = obs_with_cov.observation.observation_class;
+        cone.push_back(obs_with_cov.observation.location.x);
+        cone.push_back(obs_with_cov.observation.location.y);
+        cone.push_back(obs_with_cov.observation.observation_class);
         cones.push_back(cone);
     }
 
@@ -79,7 +50,7 @@ void Pathplanning::receive_new_map(const ugr_msgs::ObservationWithCovarianceArra
 }
 
 void Pathplanning::compute(const std::vector<std::vector<double>>& cones, const std_msgs::Header& header)
-{
+{   
     std::vector<Node*> path = this->triangulator_.get_path(cones, header);
     
     if (path.empty())
@@ -89,6 +60,20 @@ void Pathplanning::compute(const std::vector<std::vector<double>>& cones, const 
     }
 
     std::vector<geometry_msgs::Pose> poses;
+
+    // Manually add zero_pose
+    geometry_msgs::Pose zero_pose;
+    zero_pose.position.x = 0;
+    zero_pose.position.y = 0;
+    zero_pose.position.z = 0.0;
+
+    zero_pose.orientation.x = 0.0;
+    zero_pose.orientation.y = 0.0;
+    zero_pose.orientation.z = 0.0;
+    zero_pose.orientation.w = 1.0;
+
+    poses.push_back(zero_pose);
+
     for (const auto& node : path)
     {
         geometry_msgs::Pose pose;
@@ -99,7 +84,7 @@ void Pathplanning::compute(const std::vector<std::vector<double>>& cones, const 
         pose.orientation.x = 0.0;
         pose.orientation.y = 0.0;
         pose.orientation.z = 0.0;
-        pose.orientation.w = 0.0;
+        pose.orientation.w = 1.0;
 
         poses.push_back(pose);
     }

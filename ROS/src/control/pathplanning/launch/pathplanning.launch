@@ -2,7 +2,7 @@
     <arg name="pathplanning_type" default="triangulation" />
 
     <group if="$(eval arg('pathplanning_type') == 'triangulation')">
-        <node pkg="pathplanning" type="run_node.py" name="triangulation" respawn="true" output="screen">
+        <node pkg="pathplanning" type="pathplanning" name="triangulation" respawn="true" output="screen">
             <param name="output_frame" value="ugr/car_odom" />
             <param name="algorithm" value="tri" />
             <param name="max_iter" value="1000" />

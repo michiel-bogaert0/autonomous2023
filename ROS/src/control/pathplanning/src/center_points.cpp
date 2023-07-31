@@ -1,4 +1,4 @@
-#include<center_points.hpp>
+#include <center_points.hpp>
 
 namespace pathplanning {
 
@@ -56,8 +56,8 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
             for (size_t j = 0; j < 3; j++){
                 filtered_coords.push_back(coords[2 * triangles[3*i]]);
                 filtered_coords.push_back(coords[2 * triangles[3*i] + 1]);
-                double x_coord = (coords[2 * triangles[3*i + j]] - coords[2 * triangles[(3*i + j + 1) % 3 + 3*i]]) / 2;
-                double y_coord = (coords[2 * triangles[3*i + j] + 1] - coords[2 * triangles[(3*i + j + 1) % 3 + 3*i] + 1]) / 2;
+                double x_coord = (coords[2 * triangles[3*i + j]] + coords[2 * triangles[(3*i + j + 1) % 3 + 3*i]]) / 2;
+                double y_coord = (coords[2 * triangles[3*i + j] + 1] + coords[2 * triangles[(3*i + j + 1) % 3 + 3*i] + 1]) / 2;
                 center_points.push_back({x_coord, y_coord});
             }
         }
@@ -83,7 +83,11 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
 
     // Add closest center in front of you as this one will not be duplicated
     std::vector<std::vector<double>> closest_centers = sort_closest_to(duplicated_centers, {0.0,0.0}, range_front);
-    duplicated_centers.push_back(closest_centers.front());
+    if (!closest_centers.empty()) {
+        duplicated_centers.push_back(closest_centers.front());
+    } else {
+        ROS_WARN_STREAM("closest_centers is empty. Handling this case accordingly...");
+    }
 
     return std::make_tuple(center_points, duplicated_centers);
 }
