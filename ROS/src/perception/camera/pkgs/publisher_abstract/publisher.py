@@ -17,12 +17,14 @@ class PublishNode(ABC):
     def __init__(self, name):
         # ros initialization
         rospy.init_node(name)
+        self.raw_sub = rospy.Subscriber("/raw/input",Image,self.publish_sub_data)
         self.image_publisher = rospy.Publisher("/input/image", Image, queue_size=10)
         self.info_publisher = rospy.Publisher("/input/info", Image, queue_size=10)
         self.sim_sub = rospy.Subscriber("/raw/input", Image, self.publish_sub_data)
 
         self.rate = rospy.Rate(rospy.get_param("~rate", 10))
         self.frame = f"/ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
+        
 
     @abstractmethod
     def get_camera_info(self) -> CameraInfo:
@@ -67,7 +69,6 @@ class PublishNode(ABC):
 
         return ros_img
 
-    @AddSubscriber("raw/input")
     def publish_sub_data(self, data: Image):
         """
         simple wrapper function for uniformity reasons, used to connect to fsds sim

@@ -54,7 +54,7 @@ class ObservationVisualiser:
             msg (ObservationWithCovarianceArrayStamped): the message to visualise
         """
         empty_array = self.vis_handler.delete_markerarray(self.vis_namespace)
-        self.publish("/output/vis", empty_array)
+        self.vis_publisher.publish(empty_array)
 
         marker_array = self.vis_handler.observations_to_markerarray(
             msg,

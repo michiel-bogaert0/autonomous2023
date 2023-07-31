@@ -441,4 +441,4 @@ class ClusterMapping:
 
 
 node = ClusterMapping()
-node.start()
+rospy.spin()

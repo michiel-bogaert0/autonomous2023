@@ -231,7 +231,7 @@ class ParseUblox:
             # https://content.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_UBX-13003221.pdf#page=390&zoom=100,0,0
             elif subclass == "RELPOSNED":  # Relative positioning (in NED frame)]]
                 if data.flags.gnssFixOK != 1:
-                    self.publish(
+                    self.diag_publisher.publish(
                         "/diagnostics",
                         create_diagnostic_message(
                             level=DiagnosticStatus.ERROR,

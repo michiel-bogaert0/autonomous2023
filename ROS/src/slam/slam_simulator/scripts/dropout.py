@@ -90,4 +90,4 @@ class DropoutNode:
 
 
 node = DropoutNode()
-node.start()
+rospy.spin()
