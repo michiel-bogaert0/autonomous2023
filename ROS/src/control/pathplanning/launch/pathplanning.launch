@@ -22,7 +22,7 @@
 
             <param name="debug_visualisation" value="true" />
             <param name="vis_namespace" value="pathplanning_vis" />
-            <param name="vis_lifetime" value="0.0" />
+            <param name="vis_lifetime" value="0.1" />
             <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
             <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
         </node>
