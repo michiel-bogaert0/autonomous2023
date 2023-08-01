@@ -96,7 +96,15 @@ public:
                     double safety_dist, double triangulation_min_var,
                     double triangulation_var_threshold, double max_path_distance, 
                     double range_front, double range_behind, double range_sides,
-                    ros::Publisher vis_points, ros::Publisher vis_lines
+                    ros::Publisher vis_points, ros::Publisher vis_lines,
+                    double stage1_rect_width_,
+                    int stage1_threshold_bad_points_,
+                    int stage1_threshold_center_points_,
+                    double stage2_rect_width_,
+                    int stage2_threshold_bad_points_,
+                    int stage2_threshold_center_points_,
+                    int max_depth_,
+                    double continuous_dist_
     );
 
 private:
@@ -118,6 +126,15 @@ private:
     double range_front_;
     double range_behind_;
     double range_sides_;
+    
+    double stage1_rect_width_;
+    double stage1_threshold_bad_points_;
+    double stage1_threshold_center_points_;
+    double stage2_rect_width_;
+    double stage2_threshold_bad_points_;
+    double stage2_threshold_center_points_;
+    double max_depth_;
+    double continuous_dist_;
 
     ros::Publisher vis_points_;
     ros::Publisher vis_lines_;

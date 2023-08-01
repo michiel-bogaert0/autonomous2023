@@ -11,7 +11,15 @@ Pathplanning::Pathplanning(ros::NodeHandle &n, bool debug_visualisation, std::st
                     double safety_dist, double triangulation_min_var,
                     double triangulation_var_threshold, double max_path_distance, 
                     double range_front, double range_behind, double range_sides,
-                    ros::Publisher vis_points, ros::Publisher vis_lines
+                    ros::Publisher vis_points, ros::Publisher vis_lines,
+                    double stage1_rect_width_,
+                    int stage1_threshold_bad_points_,
+                    int stage1_threshold_center_points_,
+                    double stage2_rect_width_,
+                    int stage2_threshold_bad_points_,
+                    int stage2_threshold_center_points_,
+                    int max_depth_,
+                    double continuous_dist_
     )
     : n_(n) , frametf_(n), debug_visualisation_(debug_visualisation), 
         vis_namespace_(vis_namespace), vis_lifetime_(vis_lifetime),
@@ -26,7 +34,9 @@ Pathplanning::Pathplanning(ros::NodeHandle &n, bool debug_visualisation, std::st
                         max_iter, max_angle_change, max_path_distance,
                         safety_dist, range_front, range_behind,
                         range_sides, vis_points, vis_lines, vis_namespace,
-                        vis_lifetime
+                        vis_lifetime, stage1_rect_width_, stage1_threshold_bad_points_, stage1_threshold_center_points_,
+                        stage2_rect_width_, stage2_threshold_bad_points_, stage2_threshold_center_points_,
+                        max_depth_, continuous_dist_
         )
 {
     this->path_pub_ = n_.advertise<geometry_msgs::PoseArray>("/output/path", 10);

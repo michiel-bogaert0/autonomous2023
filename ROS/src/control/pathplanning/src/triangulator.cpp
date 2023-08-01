@@ -16,7 +16,15 @@ Triangulator::Triangulator(
     ros::Publisher vis_points,
     ros::Publisher vis_lines,
     std::string vis_namespace,
-    float vis_lifetime
+    float vis_lifetime,
+    double stage1_rect_width_,
+    int stage1_threshold_bad_points_,
+    int stage1_threshold_center_points_,
+    double stage2_rect_width_,
+    int stage2_threshold_bad_points_,
+    int stage2_threshold_center_points_,
+    int max_depth_,
+    double continuous_dist_
 )
 :   n_(n),
     triangulation_min_var_(triangulation_min_var),
@@ -33,7 +41,7 @@ Triangulator::Triangulator(
     vis_lines_(vis_lines),
     vis_namespace_(vis_namespace),
     vis_lifetime_(vis_lifetime),
-    triangulation_paths(max_iter_, max_angle_change_, max_path_distance_, safety_dist_)
+    triangulation_paths(max_iter_, max_angle_change_, max_path_distance_, safety_dist_, stage1_rect_width_, stage1_threshold_bad_points_, stage1_threshold_center_points_, stage2_rect_width_, stage2_threshold_bad_points_, stage2_threshold_center_points_, max_depth_, continuous_dist_)
 {
     vis_ = vis_points_ && vis_lines_;
     // this->triangulation_paths = new TriangulationPaths(max_iter_, max_angle_change_, max_path_distance_, safety_dist_);

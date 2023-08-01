@@ -21,6 +21,15 @@ int main(int argc, char **argv) {
   double range_behind = n.param("range_behind", 0.0);
   double range_sides = n.param("range_sides", 3.0);
 
+  double stage1_rect_width_ = n.param("stage1_rect_width", 1.2);
+  int stage1_threshold_bad_points_ = n.param("stage1_threshold_bad_points", 2);
+  int stage1_threshold_center_points_ = n.param("stage1_threshold_center_points", 3);
+  double stage2_rect_width_ = n.param("stage2_rect_width", 1.2);
+  int stage2_threshold_bad_points_ = n.param("stage2_threshold_bad_points", 2);
+  int stage2_threshold_center_points_ = n.param("stage2_threshold_center_points", 3);
+  int max_depth_ = n.param<int>("max_depth", 5);
+  double continuous_dist_ = n.param("continuous_dist", 4.0);
+
   ros::Publisher vis_points = ros::Publisher();
   ros::Publisher vis_lines = ros::Publisher();
 
@@ -34,7 +43,11 @@ int main(int argc, char **argv) {
                                           safety_dist, triangulation_min_var,
                                           triangulation_var_threshold, max_path_distance,
                                           range_front, range_behind, range_sides, 
-                                          vis_points, vis_lines
+                                          vis_points, vis_lines,
+                                          stage1_rect_width_, stage1_threshold_bad_points_, 
+                                          stage1_threshold_center_points_, stage2_rect_width_,
+                                          stage2_threshold_bad_points_, stage2_threshold_center_points_,
+                                          max_depth_, continuous_dist_
   );
 
   // Spin the node

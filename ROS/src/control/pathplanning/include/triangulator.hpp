@@ -31,8 +31,16 @@ public:
         float range_sides,
         ros::Publisher vis_points,
         ros::Publisher vis_lines,
-        std::string vis_namespace = "pathplanning_vis",
-        float vis_lifetime = 0.2
+        std::string vis_namespace,
+        float vis_lifetime,
+        double stage1_rect_width_,
+        int stage1_threshold_bad_points_,
+        int stage1_threshold_center_points_,
+        double stage2_rect_width_,
+        int stage2_threshold_bad_points_,
+        int stage2_threshold_center_points_,
+        int max_depth_,
+        double continuous_dist_
     );
 
     std::vector<Node*> get_path(const std::vector<std::vector<double>>& cones, const std_msgs::Header& header);

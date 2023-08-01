@@ -38,7 +38,7 @@ std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
         while (child_found) {
             // Get the closest center points to this element that are within close distance
             std::vector<std::vector<double>> next_nodes;
-            next_nodes = sort_closest_to(center_points, {parent->x, parent->y}, 4);
+            next_nodes = sort_closest_to(center_points, {parent->x, parent->y}, this->continuous_dist_);
 
             child_found = false;
 
@@ -52,9 +52,9 @@ std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
                     cones,
                     this->max_angle_change,
                     this->safety_dist_squared,
-                    1.2,
-                    2,
-                    3
+                    this->stage1_rect_width_,
+                    this->stage1_threshold_bad_points_,
+                    this->stage1_threshold_center_points_
                 )) {
 
                     double distance_node = pow(parent->x - next_pos[0], 2) + pow(parent->y - next_pos[1], 2);
@@ -78,7 +78,7 @@ std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
         }
         // Now we are at the second stage. We basically look for a node in the distance (to bridge a gap) and add it to the stack to explore further
         // We also limit the depth of this stage
-        if (depth >= 5) {
+        if (depth >= this->max_depth_) {
             leaves.push_back(parent);
             continue;
         }
@@ -98,9 +98,9 @@ std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
                     cones,
                     this->max_angle_change,
                     this->safety_dist_squared,
-                    1.2,
-                    2,
-                    3
+                    this->stage2_rect_width_,
+                    this->stage2_threshold_bad_points_,
+                    this->stage2_threshold_center_points_
                 )) {
 
                     double distance_node = pow(parent->x - next_pos[0], 2) + pow(parent->y - next_pos[1], 2);
