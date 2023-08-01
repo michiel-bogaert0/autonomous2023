@@ -110,7 +110,7 @@ class Triangulator:
         position_cones = cones[:, :-1]  # Extract the x and y positions
 
         # Only keep cones within a rectangle around the car
-        position_cones = position_cones[position_cones[:, 0] >= self.range_behind]
+        position_cones = position_cones[position_cones[:, 0] <= self.range_behind]
         position_cones = position_cones[abs(position_cones[:, 1]) <= self.range_sides]
         position_cones = position_cones[position_cones[:, 0] <= self.range_front]
 
@@ -132,7 +132,7 @@ class Triangulator:
             position_cones = cones[:, :-1]  # Extract the x and y positions
 
             # Only keep cones within a rectangle around the car
-            position_cones = position_cones[position_cones[:, 0] >= self.range_behind]
+            position_cones = position_cones[position_cones[:, 0] <= self.range_behind]
             position_cones = position_cones[
                 abs(position_cones[:, 1]) <= self.range_sides
             ]

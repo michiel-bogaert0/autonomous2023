@@ -13,6 +13,7 @@ from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
 from rrt.rrt import Rrt
 from triangulation.triangulator import Triangulator
+from scipy.interpolate import interp1d
 
 
 class PathPlanning():
@@ -226,6 +227,14 @@ class PathPlanning():
             return
 
         path = np.array([[0, 0]] + [[e.x, e.y] for e in path])
+
+        # Smooth path
+        distance = np.cumsum( np.sqrt(np.sum( np.diff(path, axis=0)**2, axis=1 )) )
+        distance = np.insert(distance, 0, 0)/distance[-1]
+        alpha = np.linspace(0, 1, len(path) * 4)
+        interpolator =  interp1d(distance, path, kind='cubic', axis=0)
+        
+        path = interpolator(alpha)
 
         # Calculate orientations
         yaws = np.arctan2(path[:, 1], path[:, 0])
