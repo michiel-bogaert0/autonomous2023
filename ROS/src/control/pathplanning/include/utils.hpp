@@ -38,6 +38,17 @@ std::vector<std::vector<double>> sort_closest_to(const std::vector<std::vector<d
 double calculate_variance(const std::vector<double>& data);
 double calculate_median(const std::vector<double>& data);
 
+std::vector<Point> extend_line_to_rectangle(Point point, double angle_radians, double length, double width);
+
+bool is_point_inside_rectangle(const std::vector<Point>& rectangle_points, Point point);
+std::vector<bool> vectorized_is_point_inside_rectangle(const std::vector<Point> &rectangle_points, const std::vector<Point> &points)
+
+bool check_if_feasible_child(const Node& parent, const std::vector<Point>& path, Point next_pos,
+                             const std::vector<Point>& bad_points, const std::vector<Point>& center_points,
+                             const std::vector<Point>& cones, double max_angle_change,
+                             double safety_dist_squared, double rect_width, int bad_points_threshold,
+                             int center_points_threshold);
+
 } // namespace pathplanning
 
 #endif // UTILS_HPP
