@@ -84,12 +84,12 @@ class Convert:
 
         new_msg.twist.covariance = covariance.reshape((1, 36)).tolist()[0]
 
-        self.gps_pub.publish("/output/gss", new_msg)
+        self.gss_pub.publish(new_msg)
 
     def convertIMU(self, msg: Imu):
         msg.header.frame_id = self.base_link_frame
 
-        self.imu_pub.publish("/output/imu", msg)
+        self.imu_pub.publish( msg)
 
     def convertGTOdometry(self, msg: Odometry):
         msg.header.frame_id = self.gt_world_frame
@@ -113,14 +113,14 @@ class Convert:
             self.gt_world_frame,
         )
 
-        self.gt_odom_pub.publish("/output/gt_odometry", msg)
+        self.gt_odom_pub.publish( msg)
 
     def convertTrack(self, msg: Track):
-        self.track_pub.publish("/output/gt_track", msg)
+        self.track_pub.publish( msg)
 
     def convertGPS(self, msg: NavSatFix):
         msg.header.frame_id = self.base_link_frame
-        self.gps_pub.publish("/output/gps", msg)
+        self.gps_pub.publish( msg)
 
 
 if __name__ == "__main__":

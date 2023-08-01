@@ -96,7 +96,6 @@ class PerceptionSimulator(StageSimulator):
         This function gets executed at a specific frequency. Basically publishes the 'visible' cones as observations
         Those observations are relative to the base_link frame
         """
-
         if not self.started:
             return
 
@@ -151,7 +150,7 @@ class PerceptionSimulator(StageSimulator):
         observations.header.frame_id = self.base_link_frame
         observations.observations = filtered_cones
 
-        self.observation_pub.publish("/output/observations", observations)
+        self.observation_pub.publish(observations)
 
     @staticmethod
     def pi_2_pi(angle):
