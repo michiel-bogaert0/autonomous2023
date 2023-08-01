@@ -103,51 +103,10 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
     if (!closest_centers.empty()) {
         duplicated_centers.push_back(closest_centers.front());
     } else {
-        ROS_WARN_STREAM("closest_centers is empty. Handling this case accordingly...");
+        ROS_WARN_STREAM("No closest center found!");
     }
 
     return std::make_tuple(center_points, duplicated_centers, bad_points);
-}
-
-std::vector<std::vector<double>> filter_center_points(const std::vector<std::vector<double>>& center_points,
-                                                       const std::vector<std::vector<double>>& triangulation_centers,
-                                                       const std::vector<std::vector<double>>& cones)
-{
-    std::vector<std::vector<double>> filtered_points;
-
-    // False positive removal
-    // Remove points whose closest three cones have the same color
-
-    // Calculate the distance from each center_point to each cone
-    for (const auto& center_point : center_points)
-    {   
-        // Queue to keep distance and colour of three closest cones
-        std::priority_queue<std::pair<double, int>> closest_cones;
-        for (const auto& cone : cones)
-        {   
-            double dist = distance_squared(center_point[0], center_point[1], cone[0], cone[1]);
-            closest_cones.push(std::make_pair(dist, cone[2]));
-
-            // If there are more than three cones, remove the farthest one
-            if (closest_cones.size() > 2) {
-                closest_cones.pop();
-            }
-        }
-        
-        // Copy to colours array to perform count
-        std::vector<int> colours;
-        while (!closest_cones.empty()) {
-            colours.push_back(closest_cones.top().second);
-            closest_cones.pop();
-        }
-
-        if (std::count(colours.begin(), colours.end(), colours[0]) != colours.size())
-        {
-            filtered_points.push_back(center_point);
-        }
-    }
-
-    return filtered_points;
 }
 
 } // namespace pathplanning

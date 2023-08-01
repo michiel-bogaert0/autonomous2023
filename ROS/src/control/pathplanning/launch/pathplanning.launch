@@ -3,7 +3,7 @@
 
     <group if="$(eval arg('pathplanning_type') == 'triangulation')">
         <node pkg="pathplanning" type="pathplanning" name="triangulation" respawn="true" output="screen">
-            <param name="output_frame" value="ugr/car_odom" />
+            <param name="output_frame" value="ugr/car_base_link" />
             <param name="algorithm" value="tri" />
             <param name="max_iter" value="1000" />
             <param name="triangulation_min_var" value="200" />

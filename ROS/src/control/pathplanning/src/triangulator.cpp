@@ -44,7 +44,6 @@ Triangulator::Triangulator(
     triangulation_paths(max_iter_, max_angle_change_, max_path_distance_, safety_dist_, stage1_rect_width_, stage1_threshold_bad_points_, stage1_threshold_center_points_, stage2_rect_width_, stage2_threshold_bad_points_, stage2_threshold_center_points_, max_depth_, continuous_dist_)
 {
     vis_ = vis_points_ && vis_lines_;
-    // this->triangulation_paths = new TriangulationPaths(max_iter_, max_angle_change_, max_path_distance_, safety_dist_);
 }
 
 std::vector<Node*> Triangulator::get_path(const std::vector<std::vector<double>>& cones, const std_msgs::Header& header)
@@ -92,9 +91,6 @@ std::vector<Node*> Triangulator::get_path(const std::vector<std::vector<double>>
     auto triangulation_centers = std::get<0>(result_center_points);
     auto center_points = std::get<1>(result_center_points);
     auto bad_points = std::get<2>(result_center_points);
-
-
-    // center_points = filter_center_points(center_points, triangulation_centers, cones);
 
     // Publish visualisation topics if needed
     if (this->vis_) {
@@ -215,7 +211,6 @@ void Triangulator::publish_points(
         marker_array.markers.push_back(marker);
     }
 
-    // Assuming you already have a publisher named 'vis_points_pub'
     this->vis_points_.publish(marker_array);
 }
 

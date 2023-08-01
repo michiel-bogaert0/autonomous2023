@@ -10,7 +10,8 @@
 #include <boost/accumulators/statistics.hpp>
 
 namespace pathplanning {
-struct Node {
+class Node {
+public:
     double x;
     double y;
     double distance;

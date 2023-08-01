@@ -16,7 +16,7 @@ std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
     std::vector<Node*> leaves;
     int iteration = 0;
 
-    while (!queue.empty() && iteration < max_iter) {
+    while (!queue.empty()) {
         iteration++;
 
         if (iteration >= this->max_iter)

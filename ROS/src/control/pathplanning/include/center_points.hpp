@@ -22,10 +22,6 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
                   double triangulation_var_threshold,
                   double range_front);
 
-std::vector<std::vector<double>> filter_center_points(const std::vector<std::vector<double>>& center_points,
-                                                       const std::vector<std::vector<double>>& triangulation_centers,
-                                                       const std::vector<std::vector<double>>& cones);
-
 } // namespace pathplanning
 
 #endif // TRIANGULATION_HPP
