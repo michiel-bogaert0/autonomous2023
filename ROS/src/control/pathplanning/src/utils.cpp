@@ -187,12 +187,12 @@ namespace pathplanning
     }
 
     // Function to check if a list of points is inside a rectangle
-    std::vector<bool> vectorized_is_point_inside_rectangle(const std::vector<Point> &rectangle_points, const std::vector<Point> &points)
+    std::vector<bool> vectorized_is_point_inside_rectangle(const std::tuple<Point, Point, Point, Point> &rectangle_points, const std::vector<Point> &points)
     {
-        Point p1 = rectangle_points[0];
-        Point p2 = rectangle_points[1];
-        Point p3 = rectangle_points[2];
-        Point p4 = rectangle_points[3];
+        Point p1 = std::get<0>(rectangle_points);
+        Point p2 = std::get<1>(rectangle_points);
+        Point p3 = std::get<2>(rectangle_points);
+        Point p4 = std::get<3>(rectangle_points);
 
         std::vector<bool> result(points.size());
         for (size_t i = 0; i < points.size(); ++i)
@@ -204,42 +204,42 @@ namespace pathplanning
     }
 
     // Function to check if a point is inside a rectangle
-    bool is_point_inside_rectangle(const std::vector<Point> &rectangle_points, Point point)
+    bool is_point_inside_rectangle(const std::tuple<Point, Point, Point, Point> &rectangle_points, Point point)
     {
-        Point p1 = rectangle_points[0];
-        Point p2 = rectangle_points[1];
-        Point p3 = rectangle_points[2];
-        Point p4 = rectangle_points[3];
+        Point p1 = std::get<0>(rectangle_points);
+        Point p2 = std::get<1>(rectangle_points);
+        Point p3 = std::get<2>(rectangle_points);
+        Point p4 = std::get<3>(rectangle_points);
 
         return is_point_on_same_side(p1, p2, p3, p4, point) && is_point_on_same_side(p2, p3, p4, p1, point);
     }
 
     // Function to check if a child node is feasible to be added to a path
-    bool check_if_feasible_child(const Node &parent, const std::vector<Point> &path, Point next_pos,
-                                 const std::vector<Point> &bad_points, const std::vector<Point> &center_points,
-                                 const std::vector<Point> &cones, double max_angle_change,
+    bool check_if_feasible_child(const Node &parent, const std::vector<std::vector<double>> &path, std::vector<double> next_pos,
+                                 const std::vector<std::vector<double>> &bad_points, const std::vector<std::vector<double>> &center_points,
+                                 const std::vector<std::vector<double>> &cones, double max_angle_change,
                                  double safety_dist_squared, double rect_width, int bad_points_threshold,
                                  int center_points_threshold)
     {
 
         // Make sure we're not looping from the parent to itself
-        if (std::abs(next_pos.x - parent.x) < 1e-6 && std::abs(next_pos.y - parent.y) < 1e-6)
+        if (std::abs(next_pos[0] - parent.x) < 1e-6 && std::abs(next_pos[1] - parent.y) < 1e-6)
         {
             return false;
         }
 
         // Make sure we are not visiting nodes double
-        for (const Point &point : path)
+        for (auto &point : path)
         {
-            if (std::abs(point.x - next_pos.x) < 1e-6 && std::abs(point.y - next_pos.y) < 1e-6)
+            if (std::abs(point[0] - next_pos[0]) < 1e-6 && std::abs(point[1] - next_pos[1]) < 1e-6)
             {
                 return false;
             }
         }
 
-        double angle_node = std::atan2(next_pos.y - parent.y, next_pos.x - parent.x);
+        double angle_node = std::atan2(next_pos[1] - parent.y, next_pos[0] - parent.x);
         double angle_change = angle_node - parent.angle;
-        double distance_node = std::pow(parent.x - next_pos.x, 2) + std::pow(parent.y - next_pos.y, 2);
+        double distance_node = std::pow(parent.x - next_pos[0], 2) + std::pow(parent.y - next_pos[1], 2);
 
         double abs_angle_change = std::min(std::abs(angle_change), 2 * M_PI - std::abs(angle_change));
 
@@ -250,41 +250,42 @@ namespace pathplanning
         }
 
         // Check we're not colliding with a cone
-        // Note: Implement the no_collision function based on your collision avoidance logic
-        // if (!no_collision(parent, next_pos, cones, safety_dist_squared))
-        // {
-        //     return false;
-        // }
+        if (!no_collision(parent, next_pos, cones, safety_dist_squared))
+        {
+            return false;
+        }
 
         // Don't allow coming close to bad points
-        // std::vector<Point> rectangle_points = extend_line_to_rectangle(
-        //     Point(parent.x, parent.y), angle_node, std::sqrt(distance_node), rect_width);
-        // int bad_points_crossings = 0;
-        // for (const Point &bad_point : bad_points)
-        // {
-        //     if (is_point_inside_rectangle(rectangle_points, bad_point))
-        //     {
-        //         bad_points_crossings++;
-        //         if (bad_points_crossings > bad_points_threshold)
-        //         {
-        //             return false;
-        //         }
-        //     }
-        // }
+        auto rectangle_points = extend_line_to_rectangle(
+            Point(parent.x, parent.y), angle_node, std::sqrt(distance_node), rect_width);
+        int bad_points_crossings = 0;
+        for (auto &bad_point : bad_points)
+        {   
+            Point bad_point_as_point = {bad_point[0], bad_point[1]};
+            if (is_point_inside_rectangle(rectangle_points, bad_point_as_point))
+            {
+                bad_points_crossings++;
+                if (bad_points_crossings > bad_points_threshold)
+                {
+                    return false;
+                }
+            }
+        }
 
-        // // Also don't allow skipping center points
-        // int center_points_crossings = 0;
-        // for (const Point &center_point : center_points)
-        // {
-        //     if (is_point_inside_rectangle(rectangle_points, center_point))
-        //     {
-        //         center_points_crossings++;
-        //         if (center_points_crossings > center_points_threshold)
-        //         {
-        //             return false;
-        //         }
-        //     }
-        // }
+        // Also don't allow skipping center points
+        int center_points_crossings = 0;
+        for (auto &center_point : center_points)
+        {
+            Point center_point_as_point = {center_point[0], center_point[1]};
+            if (is_point_inside_rectangle(rectangle_points, center_point_as_point))
+            {
+                center_points_crossings++;
+                if (center_points_crossings > center_points_threshold)
+                {
+                    return false;
+                }
+            }
+        }
 
         return true;
     }
