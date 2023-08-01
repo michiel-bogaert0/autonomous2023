@@ -44,7 +44,7 @@ class PathPlanning():
 
         # General parameters
         # The amount of branches generated
-        self.params["max_iter"] = rospy.get_param("~max_iter", 100)
+        self.params["max_iter"] = rospy.get_param("~max_iter", 1000)
         # Early prune settings
         # The maximum angle (rad) for a branch to be valid (sharper turns will be pruned prematurely)
         self.params["max_angle_change"] = rospy.get_param("~max_angle_change", 0.5)
@@ -56,7 +56,7 @@ class PathPlanning():
         # The minimal variance each allowed set of triangle edge lengths can always have.
         #   So it's the minimal maximum variance
         self.params["triangulation_min_var"] = rospy.get_param(
-            "~triangulation_min_var", 100
+            "~triangulation_min_var", 200
         )
         # Factor multiplied to the median of the variance of triangle lengths in order to filter bad triangles
         self.params["triangulation_var_threshold"] = rospy.get_param(
@@ -65,6 +65,39 @@ class PathPlanning():
         # Maximum distance between nodes in the planned path (paths with nodes further than this will be pruned prematurely)
         self.params["max_path_distance"] = rospy.get_param(
             "~max_path_distance", 6
+        )
+
+        # continuous_dist: the max distance between nodes in stage 1
+        # stage1_rect_width: width of the rectangle for line expansion
+        # stage1_bad_points_threshold: threshold for the amount of bad points crossings allowed
+        # stage1_center_points_threshold: threshold for the amount of center point (not used) crossings allowed
+        # stage2_rect_width: width of the rectangle for line expansion
+        # stage2_bad_points_threshold: threshold for the amount of bad points crossings allowed
+        # stage2_center_points_threshold: threshold for the amount of center point (not used) crossings allowed
+        # max_depth: maximal depth for path searching in stage 2
+        self.params["continuous_dist"] = rospy.get_param(
+            "~continuous_dist", 4
+        )
+        self.params["stage1_rectangle_width"] = rospy.get_param(
+            "~stage1_rectangle_width", 1.2
+        )
+        self.params["stage1_bad_points_threshold"] = rospy.get_param(
+            "~stage1_bad_points_threshold", 1
+        )
+        self.params["stage1_center_points_threshold"] = rospy.get_param(
+            "~stage1_center_points_threshold", 3
+        )
+        self.params["stage2_rectangle_width"] = rospy.get_param(
+            "~stage2_rectangle_width", 1.2
+        )
+        self.params["stage2_bad_points_threshold"] = rospy.get_param(
+            "~stage2_bad_points_threshold", 1
+        )
+        self.params["stage2_center_points_threshold"] = rospy.get_param(
+            "~stage2_center_points_threshold", 2
+        )
+        self.params["max_depth"] = rospy.get_param(
+            "~max_depth", 5
         )
 
         # The range in front of the car where cones should be kept
@@ -139,6 +172,14 @@ class PathPlanning():
                 self.params["max_angle_change"],
                 self.params["max_path_distance"],
                 self.params["safety_dist"],
+                self.params["continuous_dist"],
+                self.params["stage1_rectangle_width"],
+                self.params["stage1_bad_points_threshold"],
+                self.params["stage1_center_points_threshold"],
+                self.params["stage2_rectangle_width"],
+                self.params["stage2_bad_points_threshold"],
+                self.params["stage2_center_points_threshold"],
+                self.params["max_depth"],
                 self.params["range_front"],
                 self.params["range_behind"],
                 self.params["range_sides"],
