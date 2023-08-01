@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from geometry_msgs.msg import Pose, PoseStamped
-from nav_msgs.msg import Path
+from geometry_msgs.msg import Pose, PoseArray
 from scipy.interpolate import interp1d
 import numpy as np
 
@@ -11,10 +10,10 @@ class PoseArraySmootherNode:
         rospy.init_node('pose_array_smoother_node', anonymous=True)
 
         # Subscriber and publisher
-        self.subscriber = rospy.Subscriber('/input/path', Path, self.pose_array_callback)
-        self.publisher = rospy.Publisher('/output/path', Path, queue_size=10)
+        self.subscriber = rospy.Subscriber('/input/path', PoseArray, self.pose_array_callback)
+        self.publisher = rospy.Publisher('/output/path', PoseArray, queue_size=10)
 
-    def pose_array_callback(self, msg: Path):
+    def pose_array_callback(self, msg: PoseArray):
         try:
             
             path = np.array([[p.pose.position.x, p.pose.position.y] for p in msg.poses])
@@ -29,7 +28,7 @@ class PoseArraySmootherNode:
             smoothed_msg = msg
             smoothed_msg.poses = []
             for point in path:
-                pose = PoseStamped()
+                pose = Pose()
                 pose.pose.position.x = point[0]
                 pose.pose.position.y = point[1]
                 smoothed_msg.poses.append(pose)

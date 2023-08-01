@@ -3,7 +3,7 @@
 
     <group if="$(eval arg('pathplanning_type') == 'triangulation')">
         <node pkg="pathplanning" type="pathplanning" name="triangulation" respawn="true" output="screen">
-            <param name="output_frame" value="ugr/car_base_link" />
+            <param name="output_frame" value="ugr/car_odom" />
             <param name="algorithm" value="tri" />
             <param name="max_iter" value="1000" />
             <param name="triangulation_min_var" value="200" />
@@ -18,7 +18,6 @@
             
             <remap from="/input/local_map" to="/ugr/car/map/fastslam/local"/>
             <remap from="/output/path" to="/pathplanning/poses"/>
-            <remap from="/output/path_stamped" to="/pathplanning/path/raw"/>
 
             <param name="debug_visualisation" value="true" />
             <param name="vis_namespace" value="pathplanning_vis" />
@@ -28,7 +27,7 @@
         </node>
 
         <node pkg="pathplanning" type="smooth_path.py" name="path_smoother" respawn="true" output="screen">
-            <remap from="/input/path" to="/pathplanning/path/raw"/>
+            <remap from="/input/path" to="/pathplanning/poses"/>
             <remap from="/output/path" to="/pathplanning/path"/>
         </node>
     </group>

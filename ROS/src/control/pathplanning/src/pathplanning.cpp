@@ -40,7 +40,6 @@ Pathplanning::Pathplanning(ros::NodeHandle &n, bool debug_visualisation, std::st
         )
 {
     this->path_pub_ = n_.advertise<geometry_msgs::PoseArray>("/output/path", 10);
-    this->path_stamped_pub_ = n_.advertise<nav_msgs::Path>("/output/path_stamped", 10);
     this->map_sub_ = n_.subscribe("/input/local_map", 10, &Pathplanning::receive_new_map, this);
 }
 
@@ -107,21 +106,6 @@ void Pathplanning::compute(const std::vector<std::vector<double>>& cones, const 
     geometry_msgs::PoseArray output_transformed = this->frametf_.pose_transform(output);
 
     this->path_pub_.publish(output_transformed);
-
-    std::vector<geometry_msgs::PoseStamped> poses_stamped;
-    for (const auto& pose : output_transformed.poses)
-    {
-        geometry_msgs::PoseStamped pose_stamped;
-        pose_stamped.pose = pose;
-        pose_stamped.header = output_transformed.header;
-        poses_stamped.push_back(pose_stamped);
-    }
-
-    nav_msgs::Path stamped_output;
-    stamped_output.header = output_transformed.header;
-    stamped_output.poses = poses_stamped;
-
-    this->path_stamped_pub_.publish(stamped_output);
 }
 
 

@@ -92,7 +92,7 @@ std::vector<Node*> Triangulator::get_path(const std::vector<std::vector<double>>
     auto triangulation_centers = std::get<0>(result_center_points);
     auto center_points = std::get<1>(result_center_points);
     auto bad_points = std::get<2>(result_center_points);
-    
+
 
     // center_points = filter_center_points(center_points, triangulation_centers, cones);
 
@@ -138,8 +138,10 @@ std::vector<Node*> Triangulator::get_best_path(const std::vector<Node*>& leaves,
         double angle_cost = std::get<0>(costs_tuple);
         double length_cost = std::get<1>(costs_tuple);
         costs[i] = {angle_cost, length_cost};
-        paths.push_back(path);
-        path_lengths.push_back(path.size());
+        if (!path.empty()) {
+            paths.push_back(path);
+            path_lengths.push_back(path.size());
+        }
     }
 
     // Normalize costs
