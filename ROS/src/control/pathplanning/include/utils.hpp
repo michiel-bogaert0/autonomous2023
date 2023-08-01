@@ -23,6 +23,15 @@ struct Node {
         : x(x), y(y), distance(distance), parent(parent), children(children), angle(angle), angle_change(angle_change) {}
 };
 
+class Point
+{
+public:
+    double x;
+    double y;
+
+    Point(double x_val, double y_val) : x(x_val), y(y_val) {}
+};
+
 // Define a utility function to calculate squared distance between 2 points
 double distance_squared(double x1, double y1, double x2, double y2);
 
@@ -38,10 +47,10 @@ std::vector<std::vector<double>> sort_closest_to(const std::vector<std::vector<d
 double calculate_variance(const std::vector<double>& data);
 double calculate_median(const std::vector<double>& data);
 
-std::vector<Point> extend_line_to_rectangle(Point point, double angle_radians, double length, double width);
+std::tuple<Point, Point, Point, Point> extend_line_to_rectangle(Point point, double angle_radians, double length, double width);
 
 bool is_point_inside_rectangle(const std::vector<Point>& rectangle_points, Point point);
-std::vector<bool> vectorized_is_point_inside_rectangle(const std::vector<Point> &rectangle_points, const std::vector<Point> &points)
+std::vector<bool> vectorized_is_point_inside_rectangle(const std::vector<Point> &rectangle_points, const std::vector<Point> &points);
 
 bool check_if_feasible_child(const Node& parent, const std::vector<Point>& path, Point next_pos,
                              const std::vector<Point>& bad_points, const std::vector<Point>& center_points,

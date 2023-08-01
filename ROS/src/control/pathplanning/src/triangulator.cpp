@@ -1,4 +1,5 @@
 #include <triangulator.hpp>
+#include <ros/ros.h>
 
 namespace pathplanning {
 Triangulator::Triangulator(
@@ -42,13 +43,15 @@ std::vector<Node*> Triangulator::get_path(const std::vector<std::vector<double>>
 {   
     std::vector<std::vector<double>> filtered_cones;
     std::vector<std::vector<double>> position_cones;
+    std::vector<int> cone_classes;
     for (const auto& cone : cones) {
         if (cone[2] <= 1) { // Only keep blue and yellow cones
             position_cones.push_back({cone[0], cone[1]});
 
             // Only keep cones within a rectangle around the car
-            if (cone[0] >= range_behind_ && std::abs(cone[1]) <= range_sides_ && cone[0] <= range_front_) {
+            if (cone[0] <= range_behind_ && std::abs(cone[1]) <= range_sides_ && cone[0] <= range_front_) {
                 filtered_cones.push_back({cone[0], cone[1]});
+                cone_classes.push_back(cone[2]);
             }   
             
         }
@@ -67,27 +70,29 @@ std::vector<Node*> Triangulator::get_path(const std::vector<std::vector<double>>
         range_front_ *= 2;
 
         filtered_cones.clear();
+        cone_classes.clear();
         for (const auto& cone : position_cones) {
-            if (cone[0] >= range_behind_ && std::abs(cone[1]) <= range_sides_ && cone[0] <= range_front_) {
+            if (cone[0] <= range_behind_ && std::abs(cone[1]) <= range_sides_ && cone[0] <= range_front_) {
                 filtered_cones.push_back(cone);
+                cone_classes.push_back(cone[2]);
             }
         }
     }
-
-    std::tuple<std::vector<std::vector<double>>, std::vector<std::vector<double>>> result_center_points;
-
-    std::vector<std::vector<double>> triangulation_centers;
-    std::vector<std::vector<double>> center_points;
     
     // Perform triangulation and get the (useful) center points
-    result_center_points = get_center_points(filtered_cones, this->triangulation_min_var_, this->triangulation_var_threshold_, this->range_front_);
-    triangulation_centers = std::get<0>(result_center_points);
-    center_points = std::get<1>(result_center_points);
+    auto result_center_points = get_center_points(filtered_cones, cone_classes, this->triangulation_min_var_, this->triangulation_var_threshold_, this->range_front_);
+    auto triangulation_centers = std::get<0>(result_center_points);
+    auto center_points = std::get<1>(result_center_points);
+    auto bad_points = std::get<2>(result_center_points);
+    
 
-    // Try to get rid of false positives
-    center_points = filter_center_points(center_points, triangulation_centers, cones);
+    // center_points = filter_center_points(center_points, triangulation_centers, cones);
 
-    // TODO: Publish visualisation topics if needed
+    // Publish visualisation topics if needed
+    if (this->vis_) {
+        this->publish_points(center_points, header, this->vis_namespace_ + "/center_points", {0, 1, 0, 1}, 0.2);
+        this->publish_points(bad_points, header, this->vis_namespace_ + "/bad_points", {1, 0, 0, 1}, 0.2);
+    }
     
     Node* root_node;
     std::vector<Node*> leaves;

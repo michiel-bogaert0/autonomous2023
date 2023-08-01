@@ -57,7 +57,7 @@ private:
 
     TriangulationPaths triangulation_paths;
 
-    void publish_points(const std::vector<std::vector<double>>& points, const std_msgs::Header& header, const std::string& vis_namespace, const std::array<double, 4>& color, double scale);
+    void publish_points(const std::vector<std::vector<double>>& points, const std_msgs::Header& header, const std::string& nsp, const std::array<double, 4>& color, double scale);
     void publish_line(const std::vector<std::vector<double>>& line, const std_msgs::Header& header);
 
     std::vector<Node*> get_best_path(const std::vector<Node*>& leaves, const std::vector<std::vector<double>>& cones);

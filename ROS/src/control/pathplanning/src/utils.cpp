@@ -148,15 +148,6 @@ namespace pathplanning
         return ba::median(acc);
     }
 
-    class Point
-    {
-    public:
-        double x;
-        double y;
-
-        Point(double x_val, double y_val) : x(x_val), y(y_val) {}
-    };
-
     std::tuple<Point, Point, Point, Point> extend_line_to_rectangle(Point point, double angle_radians, double length, double width)
     {
         // Extract x and y coordinates from the 'point'
@@ -260,40 +251,40 @@ namespace pathplanning
 
         // Check we're not colliding with a cone
         // Note: Implement the no_collision function based on your collision avoidance logic
-        if (!no_collision(parent, next_pos, cones, safety_dist_squared))
-        {
-            return false;
-        }
+        // if (!no_collision(parent, next_pos, cones, safety_dist_squared))
+        // {
+        //     return false;
+        // }
 
         // Don't allow coming close to bad points
-        std::vector<Point> rectangle_points = extend_line_to_rectangle(
-            Point(parent.x, parent.y), angle_node, std::sqrt(distance_node), rect_width);
-        int bad_points_crossings = 0;
-        for (const Point &bad_point : bad_points)
-        {
-            if (is_point_inside_rectangle(rectangle_points, bad_point))
-            {
-                bad_points_crossings++;
-                if (bad_points_crossings > bad_points_threshold)
-                {
-                    return false;
-                }
-            }
-        }
+        // std::vector<Point> rectangle_points = extend_line_to_rectangle(
+        //     Point(parent.x, parent.y), angle_node, std::sqrt(distance_node), rect_width);
+        // int bad_points_crossings = 0;
+        // for (const Point &bad_point : bad_points)
+        // {
+        //     if (is_point_inside_rectangle(rectangle_points, bad_point))
+        //     {
+        //         bad_points_crossings++;
+        //         if (bad_points_crossings > bad_points_threshold)
+        //         {
+        //             return false;
+        //         }
+        //     }
+        // }
 
-        // Also don't allow skipping center points
-        int center_points_crossings = 0;
-        for (const Point &center_point : center_points)
-        {
-            if (is_point_inside_rectangle(rectangle_points, center_point))
-            {
-                center_points_crossings++;
-                if (center_points_crossings > center_points_threshold)
-                {
-                    return false;
-                }
-            }
-        }
+        // // Also don't allow skipping center points
+        // int center_points_crossings = 0;
+        // for (const Point &center_point : center_points)
+        // {
+        //     if (is_point_inside_rectangle(rectangle_points, center_point))
+        //     {
+        //         center_points_crossings++;
+        //         if (center_points_crossings > center_points_threshold)
+        //         {
+        //             return false;
+        //         }
+        //     }
+        // }
 
         return true;
     }

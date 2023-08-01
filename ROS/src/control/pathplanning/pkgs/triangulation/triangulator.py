@@ -107,12 +107,13 @@ class Triangulator:
         cones = cones[
             cones[:, 2] <= 1
         ]  # Only keep blue and yellow cones as orange cones are irrelevant
-        position_cones = cones[:, :-1]  # Extract the x and y positions
 
         # Only keep cones within a rectangle around the car
-        position_cones = position_cones[position_cones[:, 0] <= self.range_behind]
-        position_cones = position_cones[abs(position_cones[:, 1]) <= self.range_sides]
-        position_cones = position_cones[position_cones[:, 0] <= self.range_front]
+        cones = cones[cones[:, 0] <= self.range_behind]
+        cones = cones[abs(cones[:, 1]) <= self.range_sides]
+        cones = cones[cones[:, 0] <= self.range_front]
+
+        position_cones = cones[:, :-1]        
 
         # We need at least 4 cones for Delaunay triangulation
         while len(position_cones) < 4:

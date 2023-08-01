@@ -2,8 +2,9 @@
 
 namespace pathplanning {
 
-std::tuple<std::vector<std::vector<double>>, std::vector<std::vector<double>>>
+std::tuple<std::vector<std::vector<double>>, std::vector<std::vector<double>>, std::vector<std::vector<double>>>
 get_center_points(const std::vector<std::vector<double>>& position_cones,
+                  const std::vector<int>& classes,
                   double triangulation_min_var,
                   double triangulation_var_threshold,
                   double range_front)
@@ -21,6 +22,8 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
     const std::vector<double>& coords = d.coords;
 
     std::vector<std::vector<double>> center_points;
+    std::vector<int> center_point_classes;
+    std::vector<std::vector<double>> bad_points;
 
     std::vector<size_t> indices;
     for (size_t i = 0; i < position_cones.size(); ++i)
@@ -54,11 +57,26 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
         // If below var, get center points
         if (variances[i] < triangulation_min_var || variances[i] < triangulation_var_threshold * median_variance){
             for (size_t j = 0; j < 3; j++){
-                filtered_coords.push_back(coords[2 * triangles[3*i]]);
-                filtered_coords.push_back(coords[2 * triangles[3*i] + 1]);
+
                 double x_coord = (coords[2 * triangles[3*i + j]] + coords[2 * triangles[(3*i + j + 1) % 3 + 3*i]]) / 2;
                 double y_coord = (coords[2 * triangles[3*i + j] + 1] + coords[2 * triangles[(3*i + j + 1) % 3 + 3*i] + 1]) / 2;
-                center_points.push_back({x_coord, y_coord});
+
+                // If this is true, this means that the two points that make up the centerpoint
+                // are the same color. So then we have a bad point!
+                if (classes[triangles[3*i + j]] == classes[triangles[(3*i + j + 1) % 3 + 3*i]]) {
+                    bad_points.push_back({x_coord, y_coord});
+                    ROS_INFO("hallo");
+                } else {
+                    filtered_coords.push_back(coords[2 * triangles[3*i]]);
+                    filtered_coords.push_back(coords[2 * triangles[3*i] + 1]);
+                    center_points.push_back({x_coord, y_coord});
+                }
+            }
+        } else {
+            for (size_t j = 0; j < 3; j++){
+                double x_coord = (coords[2 * triangles[3*i + j]] + coords[2 * triangles[(3*i + j + 1) % 3 + 3*i]]) / 2;
+                double y_coord = (coords[2 * triangles[3*i + j] + 1] + coords[2 * triangles[(3*i + j + 1) % 3 + 3*i] + 1]) / 2;
+                bad_points.push_back({x_coord, y_coord});
             }
         }
     }
@@ -89,7 +107,7 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
         ROS_WARN_STREAM("closest_centers is empty. Handling this case accordingly...");
     }
 
-    return std::make_tuple(center_points, duplicated_centers);
+    return std::make_tuple(center_points, duplicated_centers, bad_points);
 }
 
 std::vector<std::vector<double>> filter_center_points(const std::vector<std::vector<double>>& center_points,
@@ -112,7 +130,7 @@ std::vector<std::vector<double>> filter_center_points(const std::vector<std::vec
             closest_cones.push(std::make_pair(dist, cone[2]));
 
             // If there are more than three cones, remove the farthest one
-            if (closest_cones.size() > 3) {
+            if (closest_cones.size() > 2) {
                 closest_cones.pop();
             }
         }
