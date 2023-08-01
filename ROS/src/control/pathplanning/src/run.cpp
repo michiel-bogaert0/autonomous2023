@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
   double triangulation_min_var = n.param("triangulation_min_var", 100.0);
   double triangulation_var_threshold = n.param("triangulation_var_threshold", 1.2);
   double max_path_distance = n.param("max_path_distance", 6.0);
-  double range_front = n.param("range_front", 6.0);
+  double range_front = n.param("range_front", 20.0);
   double range_behind = n.param("range_behind", 0.0);
   double range_sides = n.param("range_sides", 3.0);
 

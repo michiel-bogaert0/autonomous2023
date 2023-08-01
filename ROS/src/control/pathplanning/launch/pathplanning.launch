@@ -17,14 +17,19 @@
             <param name="range_behind" value="100" />
             
             <remap from="/input/local_map" to="/ugr/car/map/fastslam/local"/>
-            <remap from="/output/path" to="/pathplanning/path"/>
-            <remap from="/output/path_stamped" to="/pathplanning/path_stamped"/>
+            <remap from="/output/path" to="/pathplanning/poses"/>
+            <remap from="/output/path_stamped" to="/pathplanning/path/raw"/>
 
             <param name="debug_visualisation" value="true" />
             <param name="vis_namespace" value="pathplanning_vis" />
             <param name="vis_lifetime" value="0.0" />
             <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
             <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
+        </node>
+
+        <node pkg="pathplanning" type="smooth_path.py" name="path_smoother" respawn="true" output="screen">
+            <remap from="/input/path" to="/pathplanning/path/raw"/>
+            <remap from="/output/path" to="/pathplanning/path"/>
         </node>
     </group>
     <group if="$(eval arg('pathplanning_type') == 'rrt')">

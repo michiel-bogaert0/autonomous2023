@@ -52,7 +52,7 @@ std::tuple<Point, Point, Point, Point> extend_line_to_rectangle(Point point, dou
 bool is_point_inside_rectangle(const std::tuple<Point, Point, Point, Point> & rectangle_points, Point point);
 std::vector<bool> vectorized_is_point_inside_rectangle(const std::tuple<Point, Point, Point, Point> &rectangle_points, const std::vector<Point> &points);
 
-bool check_if_feasible_child(const Node &parent, const std::vector<std::vector<double>> &path, std::vector<double> next_pos,
+bool check_if_feasible_child(const Node &parent, const std::vector<std::array<double, 2>> &path, std::vector<double> next_pos,
                                  const std::vector<std::vector<double>> &bad_points, const std::vector<std::vector<double>> &center_points,
                                  const std::vector<std::vector<double>> &cones, double max_angle_change,
                                  double safety_dist_squared, double rect_width, int bad_points_threshold,

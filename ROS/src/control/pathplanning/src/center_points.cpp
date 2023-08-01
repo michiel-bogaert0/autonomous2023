@@ -65,7 +65,6 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
                 // are the same color. So then we have a bad point!
                 if (classes[triangles[3*i + j]] == classes[triangles[(3*i + j + 1) % 3 + 3*i]]) {
                     bad_points.push_back({x_coord, y_coord});
-                    ROS_INFO("hallo");
                 } else {
                     filtered_coords.push_back(coords[2 * triangles[3*i]]);
                     filtered_coords.push_back(coords[2 * triangles[3*i] + 1]);

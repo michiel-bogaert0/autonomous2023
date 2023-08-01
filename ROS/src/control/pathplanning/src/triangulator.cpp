@@ -96,7 +96,7 @@ std::vector<Node*> Triangulator::get_path(const std::vector<std::vector<double>>
     
     Node* root_node;
     std::vector<Node*> leaves;
-    std::tuple<Node*, std::vector<Node*>> all_paths = this->triangulation_paths.get_all_paths(triangulation_centers, center_points, position_cones, range_front_);
+    std::tuple<Node*, std::vector<Node*>> all_paths = this->triangulation_paths.get_all_paths(bad_points, center_points, position_cones, range_front_);
     root_node = std::get<0>(all_paths);
     leaves = std::get<1>(all_paths);
 
