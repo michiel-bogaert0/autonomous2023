@@ -6,9 +6,8 @@ class Trajectory:
     Helper class to calculate the cars target point based on a given path it has to follow
     """
 
-    def __init__(self, minimal_distance=2, t_step=0.1, max_angle=1):
+    def __init__(self, t_step=0.1, max_angle=1):
         self.path = np.array([0, 0])
-        self.minimal_distance = minimal_distance**2
 
         self.t_step = t_step
         self.max_angle = max_angle
@@ -46,7 +45,7 @@ class Trajectory:
                 parametric_equation(p0[1], p1[1]),
             ]
 
-    def calculate_target_point(self, current_pos, current_angle):
+    def calculate_target_point(self, minimal_distance, current_pos, current_angle):
         """
         Calculates a target point by traversing the path from start to finish.
         Returns the first points that matches the conditions given by minimal_distance and max_angle
@@ -69,7 +68,7 @@ class Trajectory:
             x, y = self.piecewise_equation(t)
 
             distance = (x - current_pos[0]) ** 2 + (y - current_pos[1]) ** 2
-            if distance < self.minimal_distance:
+            if distance < minimal_distance ** 2:
                 continue
 
             angle = (np.arctan2(y - current_pos[1], x - current_pos[0]) + np.pi / 2) % (

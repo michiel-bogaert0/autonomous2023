@@ -1,2 +1,9 @@
 # Use this file to override paramters for simulation
-ugr/car/steering/transmission: 1.0
+ugr:
+  car:
+    steering:
+      transmission: 1.0
+
+pure_pursuit:
+  speed:
+    target: 3.0

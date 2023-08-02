@@ -55,10 +55,10 @@ class PurePursuit:
             - t_step: the t step the alg takes when progressing through the underlying parametric equations 
                       Indirectly determines how many points are checked per segment. 
         """
-        minimal_distance = rospy.get_param("~trajectory/minimal_distance", 2)
+        self.minimal_distance = rospy.get_param("~trajectory/minimal_distance", 2)
         t_step = rospy.get_param("~trajectory/t_step", 0.05)
         max_angle = rospy.get_param("~trajectory/max_angle", 1.5)
-        self.trajectory = Trajectory(minimal_distance, t_step, max_angle)
+        self.trajectory = Trajectory(t_step, max_angle)
         self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.speed_target = rospy.get_param("~speed/target", 3.0)
         self.steering_transmission = rospy.get_param("ugr/car/steering/transmission", 0.25) # Factor from actuator to steering angle
@@ -116,7 +116,7 @@ class PurePursuit:
 
                 # First try to get a target point
                 target_x, target_y, success = self.trajectory.calculate_target_point(
-                    self.current_pos, self.current_angle
+                    min(self.minimal_distance * 3, max(self.minimal_distance / 3, self.minimal_distance * self.velocity_cmd.data)), self.current_pos, self.current_angle
                 )
 
                 if not success:
