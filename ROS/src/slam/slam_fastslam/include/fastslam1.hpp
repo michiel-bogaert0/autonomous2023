@@ -50,19 +50,23 @@ namespace slam
       double penalty_score;
       int effective_particle_count;
       int min_clustering_point_count;
-      double observe_dt;
+      double observe_prob;
       double eps;
       double clustering_eps;
       double belief_factor;
 
+      double publish_rate;
+      
       bool doSynchronous;
 
       double latestTime;
 
       bool firstRound;
+      bool gotFirstObservations;
       bool updateRound;
       
       double minThreshold;
+      double saturation_score;
       double acceptance_score;
 
       double max_range;
@@ -105,7 +109,7 @@ namespace slam
 
       void build_associations(Particle &, ugr_msgs::ObservationWithCovarianceArrayStamped &, vector<VectorXf> &, vector<VectorXf> &, vector<int> &, vector<int>&, vector<int>&);
 
-      double compute_particle_weight(Particle &particle, vector<VectorXf> &z, vector<int> &idf, MatrixXf &R);
+      double compute_particle_weight(Particle &particle, vector<VectorXf> &z, vector<int> &idf, MatrixXf &R, vector<VectorXf> &zp, vector<MatrixXf> &Hv, vector<MatrixXf> &Hf, vector<MatrixXf> &Sf);
 
       void landmarks_to_observations(vector<VectorXf> &lm, vector<VectorXf> &obs, VectorXf &pose);
       void landmark_to_observation(VectorXf &lm, VectorXf &obs, VectorXf &pose);
@@ -118,8 +122,11 @@ namespace slam
 
       chrono::steady_clock::time_point  prev_time;
       chrono::steady_clock::time_point  prev_predict_time;
+      chrono::steady_clock::time_point  prev_publish_time;
 
       vector<Particle> particles; 
+
+      ros::Time prev_transform_time;
 
       // Yaw unwrapping threshold
       float yaw_unwrap_threshold;

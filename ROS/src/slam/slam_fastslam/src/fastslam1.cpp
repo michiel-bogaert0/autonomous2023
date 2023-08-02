@@ -62,14 +62,15 @@ namespace slam
                                              expected_half_fov(n.param<double>("expected_half_angle", 60 * 0.0174533)),
                                              max_range(n.param<double>("max_range", 15)),
                                              max_half_fov(n.param<double>("max_half_angle", 60 * 0.0174533)),
-                                             observe_dt(n.param<double>("observe_dt", 0.2)),
+                                             observe_prob(n.param<double>("observe_prob", 0.9)),
                                              acceptance_score(n.param<double>("acceptance_score", 3.0)),
                                              penalty_score(n.param<double>("penalty_score", -1)),
                                              minThreshold(n.param<double>("discard_score", -2.0)),
+                                             saturation_score(n.param<double>("saturation_score", 6.0)),
                                              prev_state({0, 0, 0}),
-                                             Q(2, 2),
+                                             publish_rate(n.param<double>("publish_rate", 3.0)),
+                                             Q(3, 3),
                                              R(2, 2),
-                                             particles(vector<Particle>(particle_count)),
                                              yaw_unwrap_threshold(n.param<float>("yaw_unwrap_threshold", M_PI * 1.3)),
                                              tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0)
   {
@@ -77,7 +78,7 @@ namespace slam
     // Initialize map Service Client
     string SetMap_service = n.param<string>("SetMap_service", "/ugr/srv/slam_map_server/set");
     this->setmap_srv_client = n.serviceClient<slam_controller::SetMap::Request>(SetMap_service, true);
-    
+
     this->globalmap_namespace = n.param<string>("globalmap_namespace", "global");
     this->localmap_namespace = n.param<string>("localmap_namespace", "local");
 
@@ -91,14 +92,16 @@ namespace slam
 
     this->prev_predict_time = chrono::steady_clock::now();
 
+    gotFirstObservations = false;
+
     vector<double> QAsVector;
     vector<double> RAsVector;
 
-    n.param<vector<double>>("input_noise", QAsVector, {0.1, 0.0, 0.0, 0.02});
+    n.param<vector<double>>("input_noise", QAsVector, {0.1, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.05});
     n.param<vector<double>>("measurement_covariance", RAsVector, {0.3, 0.0, 0.0, 0.05});
 
-    if (QAsVector.size() != 4)
-      throw invalid_argument("Q (measurement_covariance) Must be a vector of size 4");
+    if (QAsVector.size() != 9)
+      throw invalid_argument("Q (measurement_covariance) Must be a vector of size 9");
 
     if (RAsVector.size() != 4)
       throw invalid_argument("R (input_noise) Must be a vector of size 4");
@@ -108,23 +111,39 @@ namespace slam
 
     this->Q(0, 0) = pow(QAsVector[0], 2);
     this->Q(0, 1) = pow(QAsVector[1], 2);
-    this->Q(1, 0) = pow(QAsVector[2], 2);
-    this->Q(1, 1) = pow(QAsVector[3], 2);
+    this->Q(0, 2) = pow(QAsVector[2], 2);
+    this->Q(1, 0) = pow(QAsVector[3], 2);
+    this->Q(1, 1) = pow(QAsVector[4], 2);
+    this->Q(1, 2) = pow(QAsVector[5], 2);
+    this->Q(2, 0) = pow(QAsVector[6], 2);
+    this->Q(2, 1) = pow(QAsVector[7], 2);
+    this->Q(2, 2) = pow(QAsVector[8], 2);
 
     this->R(0, 0) = pow(RAsVector[0], 2);
     this->R(0, 1) = pow(RAsVector[1], 2);
     this->R(1, 0) = pow(RAsVector[2], 2);
     this->R(1, 1) = pow(RAsVector[3], 2);
+
+    double stand_div = n.param<double>("setup_stand_dev", 0.1);
+    this->particles.clear();
+    for (int i = 0; i < this->particle_count; i++)
+    {
+      this->particles.push_back(Particle(stand_div));
+    }
+    firstRound = true;
   }
 
   void FastSLAM1::predict(Particle &particle, double dDist, double dYaw, double dt)
   {
 
+    // ROS_INFO("dDist: %f", dDist);
+
     // Add noise
-    VectorXf A(2);
+    VectorXf A(3);
     A(0) = dDist;
     A(1) = dYaw;
-    VectorXf VG(2);
+    A(2) = 0.0;
+    VectorXf VG(3);
     MatrixXf Q = this->Q * dt;
     VG = multivariate_gauss(A, Q, 1);
     dDist = VG(0);
@@ -135,7 +154,7 @@ namespace slam
     VectorXf xv_temp(3);
     xv_temp << xv(0) + dDist * cos(dYaw + xv(2)),
         xv(1) + dDist * sin(dYaw + xv(2)),
-        pi_to_pi2(xv(2) + dYaw);
+        pi_to_pi2(xv(2) + dYaw + VG(2));
     particle.setXv(xv_temp);
   }
 
@@ -179,7 +198,8 @@ namespace slam
 
     // Make a kdtree of the current particle
     LandmarkSearchResult result;
-    vector<KDTreePoint> kdtreePoints;
+    std::vector<VectorXf> vectorsToConsider;
+    std::vector<int> indices;
 
     if (particle.xf().size() == 0)
     {
@@ -187,14 +207,15 @@ namespace slam
     }
     else
     {
-      for (int i = 0; i < particle.xf().size(); i++)
+      for (int i = particle.xf().size() - 1; i >= 0; i--)
       {
         if (particle.metadata()[i].score > this->minThreshold)
-          kdtreePoints.push_back(KDTreePoint(particle.xf()[i], i));
+        {
+          vectorsToConsider.push_back(particle.xf()[i]);
+          indices.push_back(i);
+        }
       }
     }
-
-    kdt::KDTree<KDTreePoint> tree(kdtreePoints);
 
     for (auto observation : observations.observations)
     {
@@ -205,37 +226,37 @@ namespace slam
       VectorXf landmark(2);
       this->observation_to_landmark(obsAsVector, landmark, particle.xv());
 
-      const KDTreePoint query(landmark, -1);
-
-      if (result.index != -1)
+      // Loop over landmarks until close enough one found (<eps)
+      bool found = false;
+      int index;
+      for (int i = 0; i < vectorsToConsider.size(); i++)
       {
-        int kdpointIndex = tree.nnSearch(query, &(result.distance));
-        result.index = kdtreePoints[kdpointIndex].getId();
+        float distance = pow(landmark[0] - vectorsToConsider[i](0), 2) + pow(landmark[1] - vectorsToConsider[i](1), 2);
+
+        if (distance < pow(this->eps, 2))
+        {
+          index = indices[i];
+          found = true;
+          break;
+        }
       }
 
-      if (result.index == -1 || result.distance > this->eps)
+      if (!found)
       {
         newLandmarks.push_back(landmark);
         newClasses.push_back(observation.observation.observation_class);
       }
       else
       {
-        knownLandmarks.push_back(particle.xf()[result.index]);
-        knownIndices.push_back(result.index);
+        knownLandmarks.push_back(particle.xf()[index]);
+        knownIndices.push_back(index);
         knownClasses.push_back(observation.observation.observation_class);
       }
     }
   }
 
-  double FastSLAM1::compute_particle_weight(Particle &particle, vector<VectorXf> &z, vector<int> &idf, MatrixXf &R)
+  double FastSLAM1::compute_particle_weight(Particle &particle, vector<VectorXf> &z, vector<int> &idf, MatrixXf &R, vector<VectorXf> &zp, vector<MatrixXf> &Hv, vector<MatrixXf> &Hf, vector<MatrixXf> &Sf)
   {
-    vector<MatrixXf> Hv;
-    vector<MatrixXf> Hf;
-    vector<MatrixXf> Sf;
-    vector<VectorXf> zp;
-
-    // process each feature, incrementally refine proposal distribution
-    compute_jacobians(particle, idf, R, zp, &Hv, &Hf, &Sf);
 
     vector<VectorXf> v;
 
@@ -290,6 +311,7 @@ namespace slam
     }
 
     this->observations = *obs;
+    this->gotFirstObservations = true;
     this->updateRound = true;
 
     if (this->doSynchronous)
@@ -301,21 +323,22 @@ namespace slam
   void FastSLAM1::step()
   {
 
-    // Sometimes let the particle filter spread out
-    chrono::steady_clock::time_point time = chrono::steady_clock::now();
-    bool doObserve = abs(std::chrono::duration_cast<std::chrono::duration<double>>(time - this->prev_time).count()) > this->observe_dt;
+    if (!gotFirstObservations)
+      return;
 
-    if (doObserve)
-      this->prev_time = time;
+    std::vector<double> times;
+
+    std::chrono::steady_clock::time_point t1;
+    std::chrono::steady_clock::time_point t2;
+
+    t1 = std::chrono::steady_clock::now();
+
+    // Sometimes let the particle filter spread out
+    bool doObserve = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) < this->observe_prob;
 
     // Transform the observations to the base_link frame (statically)
     // Only if using the 'asynchronous method' also to current time
 
-    std::chrono::steady_clock::time_point t1;
-    std::chrono::steady_clock::time_point t2;
-    double time_round;
-
-    t1 = std::chrono::steady_clock::now();
     ugr_msgs::ObservationWithCovarianceArrayStamped transformed_obs;
     transformed_obs.header.frame_id = this->base_link_frame;
 
@@ -339,10 +362,7 @@ namespace slam
 
       try
       {
-        transformed_ob.observation.location = this->tfBuffer.transform<geometry_msgs::PointStamped>(locStamped, this->base_link_frame, transformed_obs.header.stamp, this->world_frame, ros::Duration(0.1)).point;
-        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
-                                               "Observation transform",
-                                               "Static transform and time transform success!");
+        transformed_ob.observation.location = this->tfBuffer.transform<geometry_msgs::PointStamped>(locStamped, this->base_link_frame, transformed_obs.header.stamp, this->world_frame, ros::Duration(0.05)).point;
       }
       catch (const exception e)
 
@@ -356,10 +376,10 @@ namespace slam
 
       // Filter out the observation if it is not "in range"
       VectorXf z(2);
-      z(0) = pow(pow(transformed_ob.observation.location.x, 2) + pow(transformed_ob.observation.location.y, 2), 0.5);
+      z(0) = pow(transformed_ob.observation.location.x, 2) + pow(transformed_ob.observation.location.y, 2);
       z(1) = atan2(transformed_ob.observation.location.y, transformed_ob.observation.location.x);
 
-      if (z(0) > this->max_range || abs(z(1)) > this->max_half_fov)
+      if (z(0) > pow(this->max_range, 2) || abs(z(1)) > this->max_half_fov)
       {
         continue;
       }
@@ -375,10 +395,7 @@ namespace slam
     geometry_msgs::TransformStamped car_pose;
     try
     {
-      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, ros::Time(0), ros::Duration(0.1));
-      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
-                                             "car_pose transform",
-                                             "success");
+      car_pose = this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, transformed_obs.header.stamp, ros::Duration(0.05));
     }
     catch (const exception e)
     {
@@ -400,11 +417,11 @@ namespace slam
     tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 
     dYaw = yaw - this->prev_state[2];
-    
+
     // Check for reverse
     double drivingAngle = atan2(y - this->prev_state[1], x - this->prev_state[0]);
     bool forward = abs(drivingAngle - yaw) < M_PI_2;
-    dDist = (forward ? 1 : -1) *  pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1], 2), 0.5);
+    dDist = (forward ? 1 : -1) * pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1], 2), 0.5);
 
     // Initial pose mechanism
     if (firstRound)
@@ -413,38 +430,47 @@ namespace slam
       this->prev_state[1] = y;
       this->prev_state[2] = yaw;
 
+      this->prev_transform_time = ros::Time::now();
+
       firstRound = false;
       return;
-    } 
+    }
 
     vector<vector<int>> knownObsIndicesVector;
     vector<int> newLmsCounts;
 
     t2 = std::chrono::steady_clock::now();
 
-    time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-    ROS_INFO("Observations (nr: %d) preparation took: %f s", this->observations.observations.size(), time_round);
-    this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
-                                             "Observations preparation",
-                                             "Time: " + std::to_string(time_round) + " s");
+    times.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count());
+
+    t1 = std::chrono::steady_clock::now();
+
+    double time_predict = 0.0;
+    double time_association = 0.0;
+    double time_update = 0.0;
+    double dt = (ros::Time::now() - prev_transform_time).toSec(); // std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - this->prev_predict_time).count();
+    prev_transform_time = car_pose.header.stamp;
+
+    ROS_INFO("dt %f; dDist %f", dt, dDist);
 
     if (doObserve)
     {
 
-      t1 = std::chrono::steady_clock::now();
-
       for (int j = 0; j < particles.size(); j++)
       {
 
-        Particle &particle = particles[j];
+        t1 = std::chrono::steady_clock::now();
 
+        Particle &particle = particles[j];
         //---- Predict step -----//
-        chrono::steady_clock::time_point time = chrono::steady_clock::now();
-        double dt = std::chrono::duration_cast<std::chrono::duration<double>>(time - this->prev_predict_time).count();
-        this->prev_predict_time = chrono::steady_clock::now();
         this->predict(particle, dDist, dYaw, dt);
 
+        t2 = std::chrono::steady_clock::now();
+        time_predict += std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+
         //---- Observe step ----//
+
+        t1 = std::chrono::steady_clock::now();
 
         // Get landmark associations (per particle!)
         vector<VectorXf> knownLms, newLms;
@@ -454,8 +480,12 @@ namespace slam
         vector<int> knownObsIndices;
 
         this->build_associations(particle, transformed_obs, knownLms, newLms, knownObsIndices, knownClasses, newClasses);
+        t2 = std::chrono::steady_clock::now();
+        time_association += std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
 
         //----- Update step -----//
+
+        t1 = std::chrono::steady_clock::now();
 
         newLmsCounts.push_back(newLms.size());
         if (!newLms.empty())
@@ -473,94 +503,111 @@ namespace slam
           vector<VectorXf> z;
           this->landmarks_to_observations(knownLms, z, particle.xv());
 
-          double w = this->compute_particle_weight(particle, z, knownObsIndices, this->R);
+          vector<VectorXf> zp;
+          vector<MatrixXf> Hv;
+          vector<MatrixXf> Hf;
+          vector<MatrixXf> Sf;
+
+          compute_jacobians(particle, knownObsIndices, this->R, zp, &Hv, &Hf, &Sf);
+
+          double w = this->compute_particle_weight(particle, z, knownObsIndices, this->R, zp, Hv, Hf, Sf);
           particle.setW(particle.w() * w);
 
-          feature_update(particle, z, knownObsIndices, this->R, knownClasses);
+          feature_update(particle, z, knownObsIndices, this->R, knownClasses, zp, Hv, Hf, Sf);
         }
 
         knownObsIndicesVector.push_back(knownObsIndices);
+
+        t2 = std::chrono::steady_clock::now();
+        time_update += std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
       }
 
-      //---- Resample step ----//
-      resample_particles(this->particles, this->effective_particle_count, 1);
-
-      t2 = std::chrono::steady_clock::now();
-
-      time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-      ROS_INFO("FastSLAM1.0 took: %f s. That is %f s per particle", time_round, time_round / this->particles.size());
-      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
-                                             "FastSLAM1.0 algorithm",
-                                             "Time: " + std::to_string(time_round) + " s ; " +
-                                             "#Particles: " + std::to_string(this->particles.size()) + " ; " +
-                                             "Seconds per particle: " + std::to_string(time_round / this->particles.size()));
-
-      t1 = std::chrono::steady_clock::now();
-      // Check which cones should have been seen but were not and lower their score
-
-      if (this->updateRound)
-      {
-        for (int k = 0; k < particles.size(); k++)
-        {
-
-          Particle &particle = particles[k];
-          vector<int> &indices = knownObsIndicesVector[k];
-
-          vector<VectorXf> zs;
-          this->landmarks_to_observations(particle.xf(), zs, particle.xv());
-
-          for (int i = 0; i < zs.size() - newLmsCounts[k]; i++)
-          {
-            if (zs[i](0) < this->expected_range && abs(zs[i](1)) < this->expected_half_fov && count(indices.begin(), indices.end(), i) == 0)
-            {
-              LandmarkMetadata meta = particle.metadata()[i];
-              meta.score += penalty_score;
-              particle.setMetadatai(i, meta);
-            }
-          }
-        }
-      }
-      t2 = std::chrono::steady_clock::now();
-
-      time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-      ROS_INFO("FP Filter took %f s. That is %f s per particle", time_round, time_round / this->particles.size());
-      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
-                                             "FP Filter",
-                                             "Time: " + std::to_string(time_round) + " s ; " +
-                                             "#Particles: " + std::to_string(this->particles.size()) + " ; " +
-                                             "Seconds per particle: " + std::to_string(time_round / this->particles.size()));
+      times.push_back(time_predict);
+      times.push_back(time_association);
+      times.push_back(time_update);
     }
     else
     {
+
       for (int j = 0; j < particles.size(); j++)
       {
+
         Particle &particle = particles[j];
 
         //---- Predict step -----//
-        chrono::steady_clock::time_point time = chrono::steady_clock::now();
-        double dt = std::chrono::duration_cast<std::chrono::duration<double>>(time - this->prev_predict_time).count();
-        this->prev_predict_time = chrono::steady_clock::now();
         this->predict(particle, dDist, dYaw, dt);
       }
     }
 
+    t1 = std::chrono::steady_clock::now();
+    //---- Resample step ----//
+    resample_particles(this->particles, this->effective_particle_count, 1);
+    t2 = std::chrono::steady_clock::now();
+    times.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count());
+    t1 = std::chrono::steady_clock::now();
+    // Check which cones should have been seen but were not and lower their score
+
+    if (this->updateRound && doObserve)
+    {
+      for (int k = 0; k < particles.size(); k++)
+      {
+
+        Particle &particle = particles[k];
+        vector<int> &indices = knownObsIndicesVector[k];
+
+        vector<VectorXf> zs;
+        this->landmarks_to_observations(particle.xf(), zs, particle.xv());
+
+        for (int i = 0; i < zs.size() - newLmsCounts[k]; i++)
+        {
+          if (zs[i](0) < this->expected_range && abs(zs[i](1)) < this->expected_half_fov && count(indices.begin(), indices.end(), i) == 0)
+          {
+            LandmarkMetadata meta = particle.metadata()[i];
+            meta.score += penalty_score;
+            particle.setMetadatai(i, meta);
+          }
+        }
+      }
+    }
+    t2 = std::chrono::steady_clock::now();
+    times.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count());
+    t1 = std::chrono::steady_clock::now();
     // Finalizing
     this->prev_state = {x, y, yaw};
     this->updateRound = false;
+    int size = this->observations.observations.size();
     this->observations.observations.clear();
+    t2 = std::chrono::steady_clock::now();
+    times.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count());
+
+    t1 = std::chrono::steady_clock::now();
 
     // Done ! Now produce the output
     this->publishOutput(transformed_obs.header.stamp);
+    t2 = std::chrono::steady_clock::now();
+    times.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count());
+    double totalTime = 0.0;
+    for (auto const &time : times)
+    {
+      totalTime += time;
+    }
+
+    ROS_INFO("Timetable (%d observations, %d particles):", size, this->particles.size());
+    for (auto const &time : times)
+    {
+      ROS_INFO("%.3fms (%.3f%)", time * 1000.0, time * 100.0 / totalTime);
+    }
   }
 
   void FastSLAM1::publishOutput(ros::Time lookupTime)
   {
 
-    std::chrono::steady_clock::time_point t1;
-    std::chrono::steady_clock::time_point t2;
-    double time_round;
+    if (std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - this->prev_publish_time).count() < 1.0 / this->publish_rate)
+    {
+      return;
+    }
 
-    t1 = std::chrono::steady_clock::now();
+    this->prev_publish_time = std::chrono::steady_clock::now();
 
     // Calculate statistical mean and covariance of the particle filter (pose)
     // Also gather some other information while we are looping
@@ -618,13 +665,6 @@ namespace slam
       // Correct yaw by offsetting
       curYaw += particle.rev() * 2 * M_PI;
 
-      if (abs(particle.xv()(2) - particle.prevyaw()) > yaw_unwrap_threshold)
-        // Print corrected yaw
-        ROS_DEBUG_STREAM("Corrected yaw: " << curYaw);
-        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
-                                               "Yaw correction",
-                                               "Corrected yaw: " + std::to_string(curYaw));
-
       x += particle.xv()(0) * w;
       y += particle.xv()(1) * w;
       yaw += curYaw * w;
@@ -671,101 +711,14 @@ namespace slam
     VectorXf pose(3);
     pose << bestParticle.xv()(0), bestParticle.xv()(1), bestParticle.xv()(2);
 
-    boost::array<double, 36> poseCovariance;
-
-    poseCovariance[0] = calculate_covariance(poseX, poseX);
-    poseCovariance[1] = calculate_covariance(poseX, poseY);
-    poseCovariance[5] = calculate_covariance(poseYaw, poseX);
-    poseCovariance[7] = calculate_covariance(poseY, poseY);
-    poseCovariance[11] = calculate_covariance(poseYaw, poseY);
-    poseCovariance[35] = calculate_covariance(poseYaw, poseYaw);
-
-    poseCovariance[6] = poseCovariance[1];
-    poseCovariance[30] = poseCovariance[5];
-    poseCovariance[31] = poseCovariance[11];
-
     vector<MatrixXf> positionCovariances;
     vector<VectorXf> lmMeans;
     vector<LandmarkMetadata> lmMetadatas;
 
-    if (this->post_clustering)
-    {
-      // Now apply DBSCAN to the samples
-      // A cluster is a vector of indices
-      vector<vector<unsigned int>> clusters = dbscanVectorXf(samples, this->clustering_eps, this->min_clustering_point_count);
-
-      // Convert the clusters back to landmarks
-      for (vector<unsigned int> cluster : clusters)
-      {
-
-        VectorXf lmMean(2);
-        LandmarkMetadata lmMetadata;
-
-        float totalP = 0.0;
-
-        for (unsigned int index : cluster)
-        {
-          lmMean[0] += samples[index][0];
-          lmMean[1] += samples[index][1];
-
-          for (int i = 0; i < LANDMARK_CLASS_COUNT; i++)
-          {
-            lmMetadata.classDetectionCount[i] += sampleMetadata[index].classDetectionCount[i];
-          }
-          lmMetadata.score += sampleMetadata[index].score;
-        }
-        lmMetadata.score /= static_cast<float>(cluster.size());
-        lmMean[0] /= static_cast<float>(cluster.size());
-        lmMean[1] /= static_cast<float>(cluster.size());
-
-        lmMeans.push_back(lmMean);
-        lmMetadatas.push_back(lmMetadata);
-      }
-
-      // Calculate 2x2 position covariance matrix. We assume that there is no significan relation between class and position
-      // Thus allowing us to easily extend this to 3x3, which includes class variance
-
-      for (unsigned int i = 0; i < clusters.size(); i++)
-      {
-        vector<unsigned int> cluster = clusters[i];
-
-        MatrixXf cov(2, 2);
-
-        vector<float> X;
-        vector<float> Y;
-        for (auto index : cluster)
-        {
-          X.push_back(samples[index][0]);
-          Y.push_back(samples[index][1]);
-        }
-
-        cov(0, 0) = calculate_covariance(X, X);
-        cov(0, 1) = calculate_covariance(X, Y);
-        cov(1, 0) = cov(0, 1);
-        cov(1, 1) = calculate_covariance(Y, Y);
-
-        positionCovariances.push_back(cov);
-      }
-    }
-    else
-    {
-      // Just take all the particles from the best particle
-      lmMeans = bestParticle.xf();
-      lmMetadatas = bestParticle.metadata();
-      positionCovariances = bestParticle.Pf();
-    }
-
-    t2 = std::chrono::steady_clock::now();
-
-    time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-    ROS_INFO("Output averaging took %f s. That is %f s per particle", time_round, time_round / this->particles.size());
-    this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
-                                           "Output averaging",
-                                           "Time: " + std::to_string(time_round) + " s ; " +
-                                           "#Particles: " + std::to_string(this->particles.size()) + " ; " +
-                                           "Seconds per particle: " + std::to_string(time_round / this->particles.size()));
-
-    t1 = std::chrono::steady_clock::now();
+    // Just take all the particles from the best particle
+    lmMeans = bestParticle.xf();
+    lmMetadatas = bestParticle.metadata();
+    positionCovariances = bestParticle.Pf();
 
     ROS_INFO("Number of landmarks (total): %d", lmMeans.size());
     this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
@@ -826,7 +779,7 @@ namespace slam
       float p[LANDMARK_CLASS_COUNT];
       for (unsigned int j = 0; j < LANDMARK_CLASS_COUNT; j++)
       {
-        p[j] = filteredMeta[i].classDetectionCount[j] / total_count;
+        p[j] = filteredMeta[i].classDetectionCount[j] / (total_count == 0.0 ? 1.0 : total_count);
       }
 
       float obsClassMean = 0.0;
@@ -864,6 +817,59 @@ namespace slam
       local.observations.push_back(local_ob);
     }
 
+    if (this->setmap_srv_client.exists())
+    {
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                             "SetMap service call",
+                                             "exists");
+      // Initialize global request
+      slam_controller::SetMap global_srv;
+      global_srv.request.map = global;
+      global_srv.request.name = this->globalmap_namespace;
+
+      // Set global map with Service
+      if (!this->setmap_srv_client.call(global_srv))
+      {
+        ROS_WARN("Global map service call failed!");
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+                                               "Global map service call",
+                                               "failed");
+      }
+      else
+      {
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                               "Global map service call",
+                                               "success");
+      }
+
+      // Initialize local request
+      slam_controller::SetMap local_srv;
+      local_srv.request.map = local;
+      local_srv.request.name = this->localmap_namespace;
+
+      // Set local map with Service
+      if (!this->setmap_srv_client.call(local_srv))
+      {
+        ROS_WARN("Local map service call failed!");
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+                                               "Local map service call",
+                                               "failed");
+      }
+      else
+      {
+        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
+                                               "Local map service call",
+                                               "success");
+      }
+    }
+    else
+    {
+      ROS_WARN("SetMap service call does not exist (yet)!");
+      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+                                             "SetMap service call",
+                                             "Does not exist!");
+    }
+
     // Odometry message (for correction of state estimation)
     // So from map_frame to base_link_frame
     nav_msgs::Odometry odom;
@@ -882,52 +888,6 @@ namespace slam
     odom.pose.pose.orientation.y = quat.getY();
     odom.pose.pose.orientation.z = quat.getZ();
     odom.pose.pose.orientation.w = quat.getW();
-
-    odom.pose.covariance = poseCovariance;
-
-    if(this->setmap_srv_client.exists()) {
-      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
-                                             "SetMap service call",
-                                             "exists");
-      // Initialize global request
-      slam_controller::SetMap global_srv;
-      global_srv.request.map = global;
-      global_srv.request.name = this->globalmap_namespace;
-
-      // Set global map with Service
-      if (!this->setmap_srv_client.call(global_srv)) {
-        ROS_WARN("Global map service call failed!");
-        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
-                                               "Global map service call",
-                                               "failed");
-      } else {
-        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
-                                               "Global map service call",
-                                               "success");
-      }
-      
-      // Initialize local request
-      slam_controller::SetMap local_srv;
-      local_srv.request.map = local;
-      local_srv.request.name = this->localmap_namespace;
-
-      // Set local map with Service
-      if (!this->setmap_srv_client.call(local_srv)) {
-        ROS_WARN("Local map service call failed!");
-        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
-                                               "Local map service call",
-                                               "failed");
-      } else {
-        this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
-                                               "Local map service call",
-                                               "success");
-      }
-    } else {
-      ROS_WARN("SetMap service call does not exist (yet)!");
-      this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
-                                             "SetMap service call",
-                                             "Does not exist!");
-    }
 
     // Publish odometry
     this->odomPublisher.publish(odom);
@@ -950,13 +910,5 @@ namespace slam
 
     static tf2_ros::TransformBroadcaster br;
     br.sendTransform(transformMsg);
-
-    t2 = std::chrono::steady_clock::now();
-
-    time_round = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2).count();
-    ROS_INFO("Output publishing took %f s.", time_round);
-    this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
-                                           "Output Publishing",
-                                           "Time: " + std::to_string(time_round) + " s");
   }
 }
