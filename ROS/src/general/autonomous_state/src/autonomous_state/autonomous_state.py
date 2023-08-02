@@ -28,7 +28,7 @@ class AutonomousController:
         self.state_publisher = rospy.Publisher("/state", State, queue_size=10, latch=True)
         self.diagnostics_publisher = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
 
-        self.car_name = rospy.get_param("~model", "pegasus")
+        self.car_name = rospy.get_param("car", "pegasus")
 
         if self.car_name == "pegasus":
             self.car = PegasusState()

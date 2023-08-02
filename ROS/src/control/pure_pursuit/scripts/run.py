@@ -31,14 +31,10 @@ class PurePursuit:
         # Controllers themselves spawned in the state machines respective launch files
 
         self.velocity_pub = rospy.Publisher(
-            "/pegasus/drive_velocity_controller/command", Float64, queue_size=10
+            "/output/drive_velocity_controller/command", Float64, queue_size=10
         )
         self.steering_pub = rospy.Publisher(
-            "/pegasus/steering_position_controller/command", Float64, queue_size=10
-        )
-
-        self.debug_target_pub = rospy.Publisher(
-            "/output/target_point", PoseStamped, queue_size=10
+            "/output/steering_position_controller/command", Float64, queue_size=10
         )
 
         # Subscriber for path
@@ -65,7 +61,7 @@ class PurePursuit:
         self.trajectory = Trajectory(minimal_distance, t_step, max_angle)
         self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.speed_target = rospy.get_param("~speed/target", 3.0)
-        self.steering_transmission = rospy.get_param("~steering/transmission", 0.25) # Factor from actuator to steering angle
+        self.steering_transmission = rospy.get_param("ugr/car/steering/transmission", 0.25) # Factor from actuator to steering angle
 
         self.path = None
 
