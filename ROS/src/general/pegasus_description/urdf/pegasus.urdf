@@ -30,7 +30,7 @@
   <!-- Joint definitions -->
 
   <joint name="lidar0_joint" type="fixed">
-    <origin xyz="0.0 0 0.37" rpy="0 0 0" />
+    <origin xyz="0.36 0 0.37" rpy="0 0 0" />
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/lidar0" />
   </joint>
@@ -54,25 +54,25 @@
   </joint>
 
   <joint name="cam0_joint" type="fixed">
-    <origin xyz="0.06 0 0.74" rpy="0 0 -0.0218149" />
+    <origin xyz="0.42 0 0.74" rpy="0 0 -0.0218149" />
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/cam0" />
   </joint>
 
   <joint name="imu0_joint" type="fixed">
-    <origin xyz="-0.26 0 0.35" rpy="0 0 0" />
+    <origin xyz="0.10 0 0.35" rpy="0 0 0" />
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/imu0" />
   </joint>
 
   <joint name="imu1_joint" type="fixed">
-    <origin xyz="-0.26 0 0.37" rpy="3.1415 0 0" />
+    <origin xyz="0.10 0 0.37" rpy="3.1415 0 0" />
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/imu1" />
   </joint>
 
   <joint name="axis0" type="continuous">
-    <origin xyz="-0.36 0.34 0" rpy="0 0 0" />
+    <origin xyz="0.0 0.34 0" rpy="0 0 0" />
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/axis0" />
 
@@ -80,13 +80,13 @@
   </joint>
 
   <joint name="axis1" type="continuous">
-    <origin xyz="-0.36 -0.34 0" rpy="0 0 0" />
+    <origin xyz="0.0 -0.34 0" rpy="0 0 0" />
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/axis1" />
   </joint>
 
   <joint name="axis_steering" type="revolute">
-    <origin xyz="0.36 0.0 0" rpy="0 0 0" /> <!-- Doesn't matter -->
+    <origin xyz="0.72 0.0 0" rpy="0 0 0" /> <!-- Doesn't matter -->
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/axis_steering" />
 
@@ -94,13 +94,13 @@
   </joint>
 
   <joint name="gps_ublox_right_joint" type="fixed">
-    <origin xyz="0.06 -0.36 0.74" rpy="0 0 0" />
+    <origin xyz="0.42 -0.36 0.74" rpy="0 0 0" />
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/gps0" />
   </joint>
 
   <joint name="gps_ublox_left_joint" type="fixed">
-    <origin xyz="0.06 0.36 0.74" rpy="0 0 0" />
+    <origin xyz="0.42 0.36 0.74" rpy="0 0 0" />
     <parent link="/ugr/car_base_link" />
     <child link="/ugr/car_base_link/gps1" />
   </joint>
