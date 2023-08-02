@@ -15,7 +15,7 @@ class GPSPublisher:
     def __init__(self):
         # ros initialization
         rospy.init_node("pep_wave_gps")
-        self.publisher = rospy.Publisher("/output/gps", navsatfix_msg, queue_size=10)
+        self.publisher = rospy.Publisher("/output/gps", NavSatFix, queue_size=10)
 
         self.ip = rospy.get_param("~ip_address", "192.168.50.1")
         self.port = rospy.get_param("~port", 60660)
