@@ -7,14 +7,15 @@ from math import atan2, cos, pi, sin, sqrt
 
 import rospy
 from geometry_msgs.msg import Point
-from node_fixture.node_fixture import ROSNode
-from sensor_msgs.msg import NavSatFix, Imu
+from sensor_msgs.msg import Imu, NavSatFix
 from tf.transformations import quaternion_from_euler
+
 
 class StreamingMovingAverage:
     """
     Class that averages streamed data (moving average)
     """
+
     def __init__(self, window_size):
         """
         Args:
@@ -39,10 +40,11 @@ class StreamingMovingAverage:
 
         if len(self.values) > self.window_size:
             self.sum -= self.values.pop(0)
-        
+
         return float(self.sum) / len(self.values)
 
-class HeadingEstimation(ROSNode):
+
+class HeadingEstimation:
     def __init__(self):
         """
         This node estimates the heading based on two GPS's, which must be fairly accurate
@@ -54,8 +56,10 @@ class HeadingEstimation(ROSNode):
             min_distance: the minimal distance between two consecutive points to make it "valid"
             max_time_deviation: the maximal time deviation between two NavSatFix msgs for dual GPS estimation
         """
-
-        super().__init__("gps_heading_estimation", False)
+        # ros initialization
+        rospy.init_node("gps_heading_estimation")
+        self.yaw_pub = rospy.Publisher("/output/yaw", Point, queue_size=10)
+        self.heading_pub = rospy.Publisher("/output/heading", Imu, queue_size=10)
 
         self.rate = rospy.get_param("~rate", 20)
         self.max_time_deviation = rospy.get_param("~max_time_deviation", 0.1)
@@ -96,7 +100,7 @@ class HeadingEstimation(ROSNode):
 
     def calculate_heading_from_points(self, msg0: NavSatFix, msg1: NavSatFix):
         """
-        Calculates the heading (as the derivative) between msg0 and msg1. 
+        Calculates the heading (as the derivative) between msg0 and msg1.
         The path between them is traversed FROM msg0 TO msg1
 
         The heading is normalized to ROS conventions (East = 0)
@@ -117,12 +121,20 @@ class HeadingEstimation(ROSNode):
         dlat = lat1 - lat0
 
         R = 6365244  # Taking into account our general latitude
-        a = sin(dlat / 2) ** 2 + cos(lat0) * cos(lat1) * sin(dlong/2) ** 2
-        c = 2 * atan2(sqrt(a), sqrt(1-a))
+        a = sin(dlat / 2) ** 2 + cos(lat0) * cos(lat1) * sin(dlong / 2) ** 2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
         distance = R * c
 
-        return atan2(sin(dlong) * cos(lat1), cos(lat0) * sin(lat1) - sin(lat0) * cos(lat1) * cos(dlong)) * (-1) - pi/2, distance
+        return (
+            atan2(
+                sin(dlong) * cos(lat1),
+                cos(lat0) * sin(lat1) - sin(lat0) * cos(lat1) * cos(dlong),
+            )
+            * (-1)
+            - pi / 2,
+            distance,
+        )
 
     def estimate_dual_heading(self):
         """
@@ -157,9 +169,16 @@ class HeadingEstimation(ROSNode):
         bearing += pi / 2
 
         # Correct bearing
-        if abs(bearing - self.heading_yaw[2] - self.offset[2]) > pi and self.heading_yaw[2] != 0:
+        if (
+            abs(bearing - self.heading_yaw[2] - self.offset[2]) > pi
+            and self.heading_yaw[2] != 0
+        ):
             while abs(bearing - self.heading_yaw[2] - self.offset[2]) > pi:
-                self.offset[2] += 2 * pi * (1 if bearing - self.heading_yaw[2] - self.offset[2] > 0 else -1 )
+                self.offset[2] += (
+                    2
+                    * pi
+                    * (1 if bearing - self.heading_yaw[2] - self.offset[2] > 0 else -1)
+                )
 
         bearing -= self.offset[2]
         self.heading_yaw[2] = bearing
@@ -168,7 +187,7 @@ class HeadingEstimation(ROSNode):
     def estimate_single_heading(self, gpsIndex):
         """
         Tries to calculate the heading based on a single GPS source
-        
+
         Args:
             gpsIndex: the index of the GPS to use (0 or 1)
         """
@@ -180,24 +199,42 @@ class HeadingEstimation(ROSNode):
             return
 
         # Take one
-        msg0 = self.gps_msgs[gpsIndex][1]       
+        msg0 = self.gps_msgs[gpsIndex][1]
         msg1 = self.gps_msgs[gpsIndex].popleft()
 
         # Actually calculate heading and distance
         bearing, distance = self.calculate_heading_from_points(msg0, msg1)
 
         if distance > self.max_distance:
-            rospy.logwarn(f"[GPS {gpsIndex}]> Distance between points of GPS {gpsIndex} is too long (d = {distance} m)")
+            rospy.logwarn(
+                f"[GPS {gpsIndex}]> Distance between points of GPS {gpsIndex} is too long (d = {distance} m)"
+            )
             return
 
         if distance < self.min_distance:
-            rospy.logwarn(f"[GPS {gpsIndex}]> Distance between points of GPS {gpsIndex} is too short (d = {distance} m)")
+            rospy.logwarn(
+                f"[GPS {gpsIndex}]> Distance between points of GPS {gpsIndex} is too short (d = {distance} m)"
+            )
             return
 
-        if abs(bearing - self.heading_yaw[gpsIndex] - self.offset[gpsIndex]) > pi and self.heading_yaw[gpsIndex] != 0:
-            while abs(bearing - self.heading_yaw[gpsIndex] - self.offset[gpsIndex]) > pi:
-                self.offset[gpsIndex] += 2 * pi * (1 if bearing - self.heading_yaw[gpsIndex] - self.offset[gpsIndex] > 0 else -1 )
-        
+        if (
+            abs(bearing - self.heading_yaw[gpsIndex] - self.offset[gpsIndex]) > pi
+            and self.heading_yaw[gpsIndex] != 0
+        ):
+            while (
+                abs(bearing - self.heading_yaw[gpsIndex] - self.offset[gpsIndex]) > pi
+            ):
+                self.offset[gpsIndex] += (
+                    2
+                    * pi
+                    * (
+                        1
+                        if bearing - self.heading_yaw[gpsIndex] - self.offset[gpsIndex]
+                        > 0
+                        else -1
+                    )
+                )
+
         bearing -= self.offset[gpsIndex]
         self.heading_yaw[gpsIndex] = bearing
 
@@ -217,12 +254,12 @@ class HeadingEstimation(ROSNode):
         bearing = self.yaw_averager.process(bearing_input)
         bm = Point(z=bearing)
 
-        self.publish("/output/yaw", bm)
+        self.yaw_pub.publish(bm)
 
         # Publish as Imu message
         msg = Imu()
         msg.header.frame_id = self.base_link_frame
-        msg.header.stamp = rospy.Time.from_sec(      
+        msg.header.stamp = rospy.Time.from_sec(
             rospy.Time.now().to_sec() - self.time_offset
         )
 
@@ -232,7 +269,7 @@ class HeadingEstimation(ROSNode):
         msg.orientation.z = z
         msg.orientation.w = w
 
-        self.publish("/output/heading", msg)
+        self.heading_pub.publish(msg)
 
     def handle_gps(self, navsatfixMsg: NavSatFix, gpsIndex: int):
         """
@@ -244,6 +281,7 @@ class HeadingEstimation(ROSNode):
         """
         self.gps_msgs[gpsIndex].append(navsatfixMsg)
         self.estimate_single_heading(gpsIndex)
+
 
 if __name__ == "__main__":
     try:

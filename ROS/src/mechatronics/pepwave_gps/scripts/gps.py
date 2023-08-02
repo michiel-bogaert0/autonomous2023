@@ -8,14 +8,14 @@ from time import time
 
 import rospy
 from dateutil import tz
-from node_fixture.node_fixture import ROSNode
 from sensor_msgs.msg import NavSatFix, NavSatStatus
 
 
-class GPSPublisher(ROSNode):
+class GPSPublisher:
     def __init__(self):
-
-        super().__init__("pep_wave_gps", False)
+        # ros initialization
+        rospy.init_node("pep_wave_gps")
+        self.publisher = rospy.Publisher("/output/gps", NavSatFix, queue_size=10)
 
         self.ip = rospy.get_param("~ip_address", "192.168.50.1")
         self.port = rospy.get_param("~port", 60660)
@@ -26,7 +26,6 @@ class GPSPublisher(ROSNode):
         self.client_socket.connect((self.ip, self.port))
 
         while True:
-
             # Check for external shutdown
             if rospy.is_shutdown():
                 return
@@ -35,7 +34,6 @@ class GPSPublisher(ROSNode):
 
             data = self.client_socket.recv(1024)
             if len(data) > 0:
-
                 lines = data.decode("ascii").splitlines(1)
 
                 for line in lines:
@@ -43,7 +41,6 @@ class GPSPublisher(ROSNode):
 
                     # See https://docs.novatel.com/OEM7/Content/Logs/GPRMC.htm for format of GPRMC message
                     if gpsstring[0] == "$GPRMC":
-
                         # Get the Lat and Long and put it into a sensor_msgs/NavSatFix
                         navsatfix_msg = NavSatFix()
 
@@ -92,11 +89,12 @@ class GPSPublisher(ROSNode):
                             NavSatFix.COVARIANCE_TYPE_UNKNOWN
                         )
 
-                        self.publish("/output/gps", navsatfix_msg)
+                        self.publisher.publish(navsatfix_msg)
 
 
 if __name__ == "__main__":
     try:
         cp = GPSPublisher()
+        rospy.spin()
     except rospy.ROSInterruptException:
         pass

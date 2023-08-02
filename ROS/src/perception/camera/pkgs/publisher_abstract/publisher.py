@@ -9,16 +9,22 @@ from typing import Any
 
 import numpy as np
 import rospy
-from node_fixture.node_fixture import AddSubscriber, ROSNode
 from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import Header
 
 
-class PublishNode(ROSNode, ABC):
+class PublishNode(ABC):
     def __init__(self, name):
-        super().__init__(name, False)
+        # ros initialization
+        rospy.init_node(name)
+        self.raw_sub = rospy.Subscriber("/raw/input",Image,self.publish_sub_data)
+        self.image_publisher = rospy.Publisher("/input/image", Image, queue_size=10)
+        self.info_publisher = rospy.Publisher("/input/info", Image, queue_size=10)
+        self.sim_sub = rospy.Subscriber("/raw/input", Image, self.publish_sub_data)
+
         self.rate = rospy.Rate(rospy.get_param("~rate", 10))
         self.frame = f"/ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
+        
 
     @abstractmethod
     def get_camera_info(self) -> CameraInfo:
@@ -63,12 +69,11 @@ class PublishNode(ROSNode, ABC):
 
         return ros_img
 
-    @AddSubscriber("raw/input")
-    def publish_sub_data(self, data: Any):
+    def publish_sub_data(self, data: Image):
         """
         simple wrapper function for uniformity reasons, used to connect to fsds sim
         """
-        self.publish("/input/image", data)
+        self.image_publisher.publish(data)
 
     def publish_image_data(self):
         """
@@ -81,11 +86,11 @@ class PublishNode(ROSNode, ABC):
 
                 if data is not None:
                     data.header = self.create_header()
-                    self.publish("/input/image", data)
+                    self.image_publisher.publish(data)
                     info = self.get_camera_info()
                     if info is not None:
-                        info.header = data.header
-                        self.publish("/input/info", info)
+                        info.header = self.create_header()
+                        self.info_publisher.publish(info)
 
                 self.rate.sleep()
 
