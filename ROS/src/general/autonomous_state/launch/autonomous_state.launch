@@ -1,11 +1,7 @@
 <launch>
 
-  <arg name="car" default="simulation"/>
 
   <node name="autonomous_state" pkg="autonomous_state" type="autonomous_state.py" output="screen">
-
-    <param name="model" value="$(arg car)"/>
-
     <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom" />
   </node>
 </launch>

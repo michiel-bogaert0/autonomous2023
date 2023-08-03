@@ -16,7 +16,7 @@ class PoseArraySmootherNode:
     def pose_array_callback(self, msg: PoseArray):
         try:
             
-            path = np.array([[p.pose.position.x, p.pose.position.y] for p in msg.poses])
+            path = np.array([[p.position.x, p.position.y] for p in msg.poses])
 
             distance = np.cumsum( np.sqrt(np.sum( np.diff(path, axis=0)**2, axis=1 )) )
             distance = np.insert(distance, 0, 0)/distance[-1]
@@ -29,8 +29,8 @@ class PoseArraySmootherNode:
             smoothed_msg.poses = []
             for point in path:
                 pose = Pose()
-                pose.pose.position.x = point[0]
-                pose.pose.position.y = point[1]
+                pose.position.x = point[0]
+                pose.position.y = point[1]
                 smoothed_msg.poses.append(pose)
 
             self.publisher.publish(smoothed_msg)

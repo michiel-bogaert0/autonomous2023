@@ -57,12 +57,10 @@ void BicycleModel::update(double dt, double in_alpha, double in_phi)
   ROS_DEBUG_STREAM("v " << v << " a " << a << " dt " << dt << " drag acc " << drag_acc);
 
   // Outputs (and intermediates)
-  double beta = atan(tan(zeta) / L * Lr);
-
-  omega = v * tan(zeta) * cos(beta) / L;
+  omega = v * tan(zeta) / L;
   theta += omega * dt;
-  double x_vel = v * cos(theta + beta);
-  double y_vel = v * sin(theta + beta);
+  double x_vel = v * cos(theta);
+  double y_vel = v * sin(theta);
 
   x += x_vel * dt;
   y += y_vel * dt;
