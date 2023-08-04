@@ -34,6 +34,7 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
     std::vector<double> filtered_coords;
     std::vector<double> distances;
     std::vector<double> variances;
+    std::vector<double> perimeters;
 
     for (size_t i = 0; i < triangles.size(); i += 3){
         
@@ -49,21 +50,26 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
         }
         double variance = calculate_variance(distances);
         variances.push_back(variance);
+
+        double perimeter = distances[0] + distances[1] + distances[2];
+        perimeters.push_back(perimeter);
     }
 
     double median_variance = calculate_median(variances);
 
     for (size_t i = 0; i < variances.size(); i++){
+        double var = variances[i] / perimeters[i];
+
         // If below var, get center points
-        if (variances[i] < triangulation_min_var || variances[i] < triangulation_var_threshold * median_variance){
+        if (var < triangulation_min_var || var < triangulation_var_threshold * median_variance){
             for (size_t j = 0; j < 3; j++){
 
                 double x_coord = (coords[2 * triangles[3*i + j]] + coords[2 * triangles[(3*i + j + 1) % 3 + 3*i]]) / 2;
                 double y_coord = (coords[2 * triangles[3*i + j] + 1] + coords[2 * triangles[(3*i + j + 1) % 3 + 3*i] + 1]) / 2;
 
                 // If this is true, this means that the two points that make up the centerpoint
-                // are the same color. So then we have a bad point!
-                if (classes[triangles[3*i + j]] == classes[triangles[(3*i + j + 1) % 3 + 3*i]]) {
+                // are the same color (except for orange cones). So then we have a bad point!
+                if ((classes[triangles[3*i + j]] == classes[triangles[(3*i + j + 1) % 3 + 3*i]]) && (classes[triangles[3*i + j]] != 2)) {
                     bad_points.push_back({x_coord, y_coord});
                 } else {
                     filtered_coords.push_back(coords[2 * triangles[3*i]]);
