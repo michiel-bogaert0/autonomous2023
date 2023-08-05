@@ -128,20 +128,19 @@ std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
 }
 
 std::pair<double, double> TriangulationPaths::get_cost_branch(const std::vector<Node*>& branch, const std::vector<std::vector<double>>& cones, double range_front) {
-    // angle should not change much over one path
+    
     std::vector<double> angle_changes;
+    std::vector<double> node_distances;
     for (const Node* point : branch) {
         angle_changes.push_back(std::abs(point->angle_change));
+        node_distances.push_back(point->distance);
     }
     
+    // angle should not change much over one path
     double angle_cost = calculate_variance(angle_changes);
 
     // longer paths usually work better as they make use of more center points
     // having many segments along a path is usually a good path
-    std::vector<double> node_distances;
-    for (const Node* point : branch) {
-        node_distances.push_back(point->distance);
-    }
     double distance = std::accumulate(node_distances.begin(), node_distances.end(), 0.0);
     double length_cost = 1 / distance + 10.0 / node_distances.size();
 
@@ -154,6 +153,38 @@ std::pair<double, double> TriangulationPaths::get_cost_branch(const std::vector<
         } else if (cone[2] == 1) {
             yellow_sorted.push_back(cone);
         }
+    }
+
+    // Iterate over the path, get all cones in a certain distance to line, and apply a penalty every time a cone is on the wrong side
+    for (const auto& point : branch) {
+        std::vector<double> line_distances_squared(cones.size());
+        std::vector<double> distances_squared(cones.size());
+        std::vector<std::vector<double>> close_cones;
+        std::vector<double> diff_angles;
+        std::vector<int> close_classes;
+
+        for (size_t i = 0; i < cones.size(); ++i) {
+            line_distances_squared[i] = std::cos(point->angle) * (cones[i][1] - point->y) - std::sin(point->angle) * (cones[i][0] - point->x);
+            distances_squared[i] = distance_squared(point->x, point->y, cones[i][0], cones[i][1]);
+
+            if (line_distances_squared[i] < 5 * 3 && distances_squared[i] < 5 * 3) {
+                close_cones.push_back(cones[i]);
+                diff_angles.push_back(std::atan2(cones[i][1] - point->y, cones[i][0] - point->x) - point->angle);
+                close_classes.push_back(cones[i][2]);
+            }
+        }
+
+        int penalty_amount = 0;
+        for (size_t i = 0; i < close_cones.size(); ++i) {
+            if (diff_angles[i] > 0.0 && close_classes[i] == 1) {
+                penalty_amount++;
+            } else if (diff_angles[i] < 0.0 && close_classes[i] == 0) {
+                penalty_amount++;
+            }
+        }
+
+        length_cost += penalty_amount * 10;
+        angle_cost += penalty_amount * 10;
     }
 
     // get center between closest blue cone and closest yellow cone

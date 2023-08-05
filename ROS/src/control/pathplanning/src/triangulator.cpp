@@ -52,16 +52,13 @@ std::vector<Node*> Triangulator::get_path(const std::vector<std::vector<double>>
     std::vector<std::vector<double>> position_cones;
     std::vector<int> cone_classes;
     for (const auto& cone : cones) {
-        if (cone[2] <= 1) { // Only keep blue and yellow cones
-            position_cones.push_back({cone[0], cone[1]});
+        position_cones.push_back({cone[0], cone[1]});
 
-            // Only keep cones within a rectangle around the car
-            if (cone[0] <= range_behind_ && std::abs(cone[1]) <= range_sides_ && cone[0] <= range_front_) {
-                filtered_cones.push_back({cone[0], cone[1]});
-                cone_classes.push_back(cone[2]);
-            }   
-            
-        }
+        // Only keep cones within a rectangle around the car
+        if (cone[0] <= range_behind_ && std::abs(cone[1]) <= range_sides_ && cone[0] <= range_front_) {
+            filtered_cones.push_back({cone[0], cone[1]});
+            cone_classes.push_back(cone[2]);
+        }   
     }
     
     int tries = -1;
