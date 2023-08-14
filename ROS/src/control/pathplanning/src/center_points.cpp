@@ -16,6 +16,7 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
         positions.push_back(position_cones[i][0]);
         positions.push_back(position_cones[i][1]);
     }
+    // Perform delaunay triangulation
     Delaunator d(positions);
     
     const std::vector<std::size_t>& triangles = d.triangles;
@@ -49,23 +50,26 @@ get_center_points(const std::vector<std::vector<double>>& position_cones,
             distances.push_back(distance);
         }
         double variance = calculate_variance(distances);
-        variances.push_back(variance);
 
         double perimeter = distances[0] + distances[1] + distances[2];
-        perimeters.push_back(perimeter);
+
+        // Normalize variance by perimeter
+        variances.push_back(variance / perimeter);
     }
 
     double median_variance = calculate_median(variances);
 
     for (size_t i = 0; i < variances.size(); i++){
-        double var = variances[i] / perimeters[i];
 
-        // If below var, get center points
-        if (var < triangulation_min_var || var < triangulation_var_threshold * median_variance){
+        // If below variance threshold, get center points
+        if (variances[i] < triangulation_min_var || variances[i] < triangulation_var_threshold * median_variance){
             for (size_t j = 0; j < 3; j++){
 
-                double x_coord = (coords[2 * triangles[3*i + j]] + coords[2 * triangles[(3*i + j + 1) % 3 + 3*i]]) / 2;
-                double y_coord = (coords[2 * triangles[3*i + j] + 1] + coords[2 * triangles[(3*i + j + 1) % 3 + 3*i] + 1]) / 2;
+                size_t index1 = 2 * triangles[3*i + j];
+                size_t index2 = 2 * triangles[(3*i + j + 1) % 3 + 3*i];
+
+                double x_coord = (coords[index1] + coords[index2]) / 2;
+                double y_coord = (coords[index1 + 1] + coords[index2 + 1]) / 2;
 
                 // If this is true, this means that the two points that make up the centerpoint
                 // are the same color (except for orange cones). So then we have a bad point!

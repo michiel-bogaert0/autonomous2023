@@ -22,8 +22,6 @@ std::pair<Node*, std::vector<Node*>> TriangulationPaths::get_all_paths(
         if (iteration >= this->max_iter)
             break;
 
-        bool found_child = false;
-
         // Get the next element from the queue
         auto t = queue[0];
         auto parent = std::get<0>(t);
@@ -144,17 +142,6 @@ std::pair<double, double> TriangulationPaths::get_cost_branch(const std::vector<
     double distance = std::accumulate(node_distances.begin(), node_distances.end(), 0.0);
     double length_cost = 1 / distance + 10.0 / node_distances.size();
 
-    // get array of blue cones and array of yellow cones sorted by distance
-    std::vector<std::vector<double>> sorted_cones = sort_closest_to(cones, std::vector<double>{0.0, 0.0}, range_front);
-    std::vector<std::vector<double>> blue_sorted, yellow_sorted;
-    for (const std::vector<double>& cone : sorted_cones) {
-        if (cone[2] == 0) {
-            blue_sorted.push_back(cone);
-        } else if (cone[2] == 1) {
-            yellow_sorted.push_back(cone);
-        }
-    }
-
     // Iterate over the path, get all cones in a certain distance to line, and apply a penalty every time a cone is on the wrong side
     for (const auto& point : branch) {
         std::vector<double> line_distances_squared(cones.size());
@@ -185,24 +172,6 @@ std::pair<double, double> TriangulationPaths::get_cost_branch(const std::vector<
 
         length_cost += penalty_amount * 10;
         angle_cost += penalty_amount * 10;
-    }
-
-    // get center between closest blue cone and closest yellow cone
-    double center_x = (blue_sorted[0][0] + yellow_sorted[0][0]) / 2;
-    double center_y = (blue_sorted[0][1] + yellow_sorted[0][1]) / 2;
-    bool center_point_close = false;
-    for (const Node* point : branch) {
-        if (std::abs(center_x - point->x) < std::numeric_limits<double>::epsilon()
-            && std::abs(center_y - point->y) < std::numeric_limits<double>::epsilon()) {
-            center_point_close = true;
-            break;
-        }
-    }
-
-    if (center_point_close) {
-        // if any point of the path is close to this center point, reduce cost
-        length_cost /= 100;
-        angle_cost /= 100;
     }
 
     return std::make_pair(angle_cost, length_cost);
