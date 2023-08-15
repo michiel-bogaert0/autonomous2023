@@ -85,10 +85,10 @@ class Controller:
 
                 elif self.state == SLAMStatesEnum.RACING:
                     if self.mission == 'trackdrive' or self.mission == 'skidpad':
-                        speed_target = 10.0 if self.car == 'simulation' else 1.0
+                        speed_target = 4.0 if self.car == 'simulation' else 1.0
 
                     elif self.mission == 'acceleration':
-                        speed_target = 5.0 if self.car == 'simulation' else 3.0
+                        speed_target = 4.0 if self.car == 'simulation' else 3.0
 
                 rospy.set_param("/pure_pursuit/speed/target", speed_target)
 
