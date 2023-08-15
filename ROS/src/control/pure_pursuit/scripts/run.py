@@ -92,6 +92,8 @@ class PurePursuit:
             try:
                 self.current_angle = 0
 
+                self.speed_target = rospy.get_param("~speed/target", 3.0)
+
                 # Transform received message
                 trans = self.tf_buffer.lookup_transform(
                     self.base_link_frame,

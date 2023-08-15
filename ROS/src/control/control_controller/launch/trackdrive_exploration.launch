@@ -1,11 +1,14 @@
 <launch>
   
   <!-- ? Pathplanning -->
-  <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true" />
+  <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true"> 
+    <arg name="map" default="/ugr/car/map/fastslam/local" />
+  </include>
 
   <!-- Control node (generates output commands) -->
   <include file="$(find pure_pursuit)/launch/pure_pursuit.launch" pass_all_args="true">
     <arg name="reference_frame" default="ugr/car_odom" />
+    <arg name="speed_target" default="3.0" />
   </include>
 
 </launch>

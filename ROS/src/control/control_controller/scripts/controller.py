@@ -69,8 +69,7 @@ class Controller:
             self.state = state.cur_state
 
             if self.state == SLAMStatesEnum.FINISHING:
-                #TODO: put velocity to 0 and steering to ??
-                pass
+                rospy.set_param("/pure_pursuit/speed/target", 0.0)
             elif self.state == SLAMStatesEnum.EXPLORATION or self.state == SLAMStatesEnum.RACING:
                 self.launcher.launch_node(
                     "control_controller", f"launch/{self.mission}_{self.state}.launch"
