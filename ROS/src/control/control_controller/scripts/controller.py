@@ -25,9 +25,12 @@ class Controller:
 
         self.launcher = NodeLauncher()
         self.mission = ""
+        self.car = ""
+
+        self.car = rospy.get_param("/car")
 
         rospy.Subscriber("/state", State, self.handle_state_change)
-
+        
         self.diagnostics_publisher = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
@@ -70,10 +73,25 @@ class Controller:
 
             if self.state == SLAMStatesEnum.FINISHING:
                 rospy.set_param("/pure_pursuit/speed/target", 0.0)
+
             elif self.state == SLAMStatesEnum.EXPLORATION or self.state == SLAMStatesEnum.RACING:
                 self.launcher.launch_node(
                     "control_controller", f"launch/{self.mission}_{self.state}.launch"
                 )
+                
+                speed_target = 0.0
+                if self.state == SLAMStatesEnum.EXPLORATION:
+                    speed_target = 3.0 if self.car == 'simulation' else 1.0
+
+                elif self.state == SLAMStatesEnum.RACING:
+                    if self.mission == 'trackdrive' or self.mission == 'skidpad':
+                        speed_target = 10.0 if self.car == 'simulation' else 1.0
+
+                    elif self.mission == 'acceleration':
+                        speed_target = 5.0 if self.car == 'simulation' else 3.0
+
+                rospy.set_param("/pure_pursuit/speed/target", speed_target)
+
             else:
                 self.launcher.shutdown()
 
