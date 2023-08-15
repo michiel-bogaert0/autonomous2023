@@ -4,27 +4,21 @@ from functools import partial
 from time import time_ns
 
 import rospy
-from node_fixture.node_fixture import (
-    AddSubscriber,
-    ROSNode,
-    DiagnosticArray,
-    DiagnosticStatus,
-    create_diagnostic_message,
-)
-
+from node_fixture.node_fixture import (AddSubscriber, DiagnosticArray,
+                                       DiagnosticStatus,
+                                       create_diagnostic_message)
 from slam_simulator.srv import Dropout, DropoutRequest, DropoutResponse
 
 
-class DropoutNode(ROSNode):
+class DropoutNode:
     def __init__(self) -> None:
         """
         This node allows someone to make a set of data streams 'drop out' on request.
         The dropout of a single DropoutNode happens simultaniously
         """
-
-        super().__init__(
+        # ROS initialization
+        rospy.init_node(
             f"slam_simulator_dropout_{time_ns()}",
-            already_add_subscriber=False,
         )
 
         self.name = rospy.get_param("~name", f"dropout_{rospy.Time.now().to_nsec()}")
@@ -96,4 +90,4 @@ class DropoutNode(ROSNode):
 
 
 node = DropoutNode()
-node.start()
+rospy.spin()

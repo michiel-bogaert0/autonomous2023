@@ -4,6 +4,6 @@
     <arg name="filename" value="circle_R15.yaml"/>
   </include>
 
-  <!-- TODO closed loop driver node (node still todo) -->
+  <include file="$(find ugr_ros_control)/sim_control/launch/sim_hardware.launch" pass_all_args="true"/>
 
 </launch>

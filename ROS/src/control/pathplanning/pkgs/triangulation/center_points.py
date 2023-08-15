@@ -6,9 +6,10 @@ import triangulation.utils as utils
 
 def get_center_points(
     position_cones: np.ndarray,
+    classes,
     triangulation_min_var: float,
     triangulation_var_threshold: float,
-    sorting_range: float,
+    range_front: float,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Get center points of the edges of the triangles
 
@@ -19,7 +20,7 @@ def get_center_points(
         triangulation_min_var: the minimum variance each allowed set of triangle edge lengths can always have.
             So it's the minimal maximum variance
         triangulation_var_threshold: Factor multiplied to the median of the variance of triangle lengths in order to filter bad triangles
-        sorting_range: The lookahead distance for sorting points
+        range_front: The lookahead distance for sorting points
 
     Returns:
         Tuple of center_points, duplicated_centers, triangles
@@ -27,6 +28,7 @@ def get_center_points(
     tri = Delaunay(position_cones)
     indices = tri.simplices
     triangles = position_cones[indices]
+    triangle_points_classes = classes[indices]
 
     # The distances of all three sides of each triangle
     distances = triangles - np.roll(triangles, 1, axis=1)
@@ -41,9 +43,16 @@ def get_center_points(
         triangulation_min_var, np.median(variances) * triangulation_var_threshold
     )
     triangles = triangles[variances < var_filter, :]
+    triangle_points_classes = triangle_points_classes[variances < var_filter]
 
     # Find all center points
     center_points = (triangles + np.roll(triangles, 1, axis=1)) / 2
+    
+    # Find center point classes and filter out bad ones NOW
+    center_point_classes = ( triangle_points_classes + np.roll(triangle_points_classes, 1, axis=1) ) / 2
+    bad_points = center_points[np.logical_not(np.logical_xor( center_point_classes != center_point_classes.astype(int), center_point_classes == 1.5 ))]
+    center_points = center_points[np.logical_xor( center_point_classes != center_point_classes.astype(int), center_point_classes == 1.5 )]
+
     flattened_center_points = center_points.reshape((center_points.size // 2, 2))
 
     # Each center point inside of the racing track should have been added as part of two neighbouring triangles
@@ -52,39 +61,7 @@ def get_center_points(
     duplicated_centers = unique[counts > 1]
 
     # Add closest center in front of you as this one will not be duplicated
-    closest_centers = utils.sort_closest_to(unique, (0,0), sorting_range)
+    closest_centers = utils.sort_closest_to(unique, (0,0), range_front)
     duplicated_centers = np.append(duplicated_centers, [closest_centers[0]], axis=0)
 
-    return center_points, duplicated_centers, triangles
-
-
-def filter_center_points(
-    center_points: np.ndarray, triangulation_centers: np.ndarray, cones: np.ndarray
-) -> np.ndarray:
-    """The center_points will now probably form the center of the racetrack
-    Let's try to improve the false positives and false negatives first though
-
-    Args:
-        center_points: the probably track center points (Nx2 array)
-        triangulation_centers: all triangulation center points (also includes center_points)
-        cones: array of cones (x, y, colour)
-    """
-
-    # False positive removal
-    # Remove points who's closest two cones have the same colour
-
-    # Calculate the distance from each center_point to each cone
-    distances = distance.cdist(center_points, cones[:, :2], "euclidean")
-    # For each row (center_point) this returns the indices of the three closest cones in their list
-    idx = np.argsort(distances, axis=1)[:, 1:4]
-    closest_cone_colours = cones[idx, 2]
-
-    # Only take those where not all cones have the same colour
-    filtered_points = center_points[
-        np.logical_or(
-            np.count_nonzero(closest_cone_colours, axis=1) == 1,
-            np.count_nonzero(closest_cone_colours, axis=1) == 2
-        )
-    ]
-
-    return filtered_points
+    return center_points, duplicated_centers, triangles, bad_points

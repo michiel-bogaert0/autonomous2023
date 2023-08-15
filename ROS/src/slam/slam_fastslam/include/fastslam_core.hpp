@@ -70,6 +70,7 @@ class Particle
 {
 public:
     Particle();
+    Particle(double stand_div);
     Particle(float &w, VectorXf &xv, MatrixXf &Pv, vector<VectorXf> &xf, vector<MatrixXf> &Pf, float *da);
     ~Particle();
 
@@ -158,7 +159,7 @@ void data_associate_known(vector<VectorXf> &z, vector<int> &idz, VectorXf &table
                           vector<VectorXf> &zf, vector<int> &idf, vector<VectorXf> &zn);
 
 void add_feature(Particle &particle, vector<VectorXf> &z, MatrixXf &R, vector<int> observationClass);
-void feature_update(Particle &particle, vector<VectorXf> &z, vector<int> &idf, MatrixXf &R, vector<int> observationClass);
+void feature_update(Particle &particle, vector<VectorXf> &z, vector<int> &idf, MatrixXf &R, vector<int> observationClass, vector<VectorXf> &zp, vector<MatrixXf> &Hv, vector<MatrixXf> &Hf, vector<MatrixXf> &Sf);
 
 ////////////////////////////////////////////////////////////////////////////////
 // EKF-SLAM functions

@@ -7,32 +7,36 @@ from clustering.clustering import Clustering
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point, TransformStamped
 from node_fixture.node_fixture import (
-    AddSubscriber,
     ROSNode,
     DiagnosticArray,
     DiagnosticStatus,
     create_diagnostic_message,
 )
 from rosgraph_msgs.msg import Clock
-from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import (
-    ObservationWithCovariance,
-    ObservationWithCovarianceArrayStamped,
-    Particle,
-    Particles,
-)
-
 from slam_clustering.srv import Reset, ResetRequest, ResetResponse
+from tf.transformations import euler_from_quaternion
+from ugr_msgs.msg import (ObservationWithCovariance,
+                          ObservationWithCovarianceArrayStamped, Particle,
+                          Particles)
 
 
-class ClusterMapping(ROSNode):
+class ClusterMapping:
     def __init__(self) -> None:
         """
         The ClusterMapping algorithm provides slam with a way to create a map based on the clustering of observations.
         This is the ROS wrapper. For the implementation you have to go to src
         """
-
-        super().__init__("clustermapping", False)
+        # ROS initialization
+        rospy.init_node("clustermapping")
+        self.observations_publisher = rospy.Publisher(
+            "/output/observations", ObservationWithCovarianceArrayStamped, queue_size=10
+        )
+        self.map_publisher = rospy.Publisher(
+            "/output/map", ObservationWithCovarianceArrayStamped, queue_size=10
+        )
+        self.sample_publisher = rospy.Publisher(
+            "/output/samples", ObservationWithCovarianceArrayStamped, queue_size=10
+        )
 
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
@@ -74,14 +78,17 @@ class ClusterMapping(ROSNode):
         # Add a service that allows us to reset the clustering when needed
         rospy.Service("clustermapping/reset", Reset, self.handle_reset_srv_request)
 
-        # It is done this way instead of using decorators because we need to dynamically inject the queue size
-        AddSubscriber("/input/observations", self.observation_queue_size)(
-            self.handle_observation_message
+        self.obs_sub = rospy.Subscriber(
+            "input/observations",
+            self.handle_observation_message,
+            queue_size=self.observation_queue_size,
         )
-
+        self.clock_sub = None
         if self.use_sim_time:
-            AddSubscriber("/clock", self.observation_queue_size)(
-                self.detect_backwards_time_jump
+            self.clock_sub = rospy.Subscriber(
+                "/clock",
+                self.detect_backwards_time_jump,
+                queue_size=self.observation_queue_size,
             )
 
             self.current_clock = 0
@@ -372,8 +379,8 @@ class ClusterMapping(ROSNode):
 
                 new_map.observations.append(new_map_point)
 
-        self.publish("output/observations", observations)
-        self.publish("output/map", new_map)
+        self.observations_publisher.publish(observations)
+        self.map_publisher.publish(new_map)
 
         # Publish delta samples as well. These are the points used to cluster
         # Could be useful to estimate statistical distributions from
@@ -430,7 +437,8 @@ class ClusterMapping(ROSNode):
 
         self.previous_sample_point = self.clustering.size
 
-        self.publish("output/samples", samples)
+        self.sample_publisher.publish(samples)
+
 
 node = ClusterMapping()
-node.start()
+rospy.spin()

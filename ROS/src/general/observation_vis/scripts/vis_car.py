@@ -4,12 +4,11 @@ from math import pi
 
 import rospy
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import AddSubscriber, ROSNode
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from visualization_msgs.msg import Marker, MarkerArray
 
 
-class VisCar(ROSNode):
+class VisCar:
     """
     This node visualises a pose (nav_msgs/Odometry) with a car model
     """
@@ -21,8 +20,10 @@ class VisCar(ROSNode):
             vis_namespace: the namespace to use
             vis_lifetime: how long a marker should stay alive
         """
-
-        super().__init__(f"slam_vis_obs_{time.time()}")
+        #ros initialization
+        rospy.init_node(f"slam_vis_obs_{time.time()}")
+        self.vis_subscriber = rospy.Subscriber("/input/vis",Odometry,self.handleOdom)
+        self.vis_publisher = rospy.Publisher("/output/vis",MarkerArray,queue_size=10)
 
         self.car_model = rospy.get_param(
             "~car_model",
@@ -32,7 +33,6 @@ class VisCar(ROSNode):
         self.vis_namespace = rospy.get_param("~namespace", "slam_vis/car")
         self.vis_lifetime = rospy.get_param("~lifetime", 3)
 
-    @AddSubscriber("/input/vis")
     def handleOdom(self, msg: Odometry):
         """Handles nav_msgs/Odometry message
 
@@ -84,8 +84,8 @@ class VisCar(ROSNode):
 
         marker_array.markers.append(marker)
 
-        self.publish("/output/vis", marker_array)
+        self.vis_publisher.publish(marker_array)
 
 
 node = VisCar()
-node.start()
+rospy.spin()

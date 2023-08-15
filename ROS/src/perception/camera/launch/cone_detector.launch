@@ -3,14 +3,13 @@
 
     <node pkg="camera" type="run.py" name="perception_camera" output="screen">
         <param name="cuda" value="True" />
-        <param name="use_two_stage" value="False" />
-        <param name="keypoint_detector_model" value="mobilenetv3_threestage.pt" />
+        <param name="keypoint_detector_model" value="unet_threestage.pt" />
         <param name="detection_height_threshold" value="20" />
         <param name="detection_max_distance" value="15" />
         <param name="vis" value="False" />
         <remap from="/output/image_annotated" to="/ugr/car/perception/camera/image_annotated" />
         <remap from="/output/update" to="/ugr/car/observations/camera" />
-        <remap from="/input/image" to="/ugr/car/sensors/cam0" />
+        <remap from="/output/bounding_boxes" to="/ugr/car/observations/camera/bounding_boxes" />
+        <remap from="/input/image" to="/ugr/car/sensors/cam0/image" />
     </node>
-
 </launch>

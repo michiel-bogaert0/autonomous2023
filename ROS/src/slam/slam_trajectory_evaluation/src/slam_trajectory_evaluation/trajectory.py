@@ -4,10 +4,6 @@ import os
 import time
 import yaml
 import math
-#from sensor_msgs.msg import Imu, NavSatFix
-#from ROS.src.general.node_fixture.src.node_fixture.node_fixture import AddSubscriber
-#import rospy
-#from nav_msgs.msg import Odometry
 import pickle
 
 import numpy as np

@@ -296,8 +296,8 @@ def serialcan_to_roscan(can_message: can.Message) -> Frame:
 
 def create_diagnostic_message(
     level: DiagnosticStatus,
-    name: String,
-    message: String,
+    name: str,
+    message: str,
 ) -> DiagnosticArray:
     """Creates a DiagnosticArray message with a level, name and message
 

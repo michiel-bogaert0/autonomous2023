@@ -4,20 +4,21 @@
   <arg name="base_link_frame" default="ugr/car_base_link"/>
   <arg name="slam_base_link_frame" default="ugr/slam_base_link"/>
 
-  <arg name="particle_count" default="300"/>
-  <arg name="effective_particle_count" default="200"/>
+  <arg name="particle_count" default="1000"/>
+  <arg name="effective_particle_count" default="800"/>
   <arg name="eps" default="0.5"/>
-  <arg name="max_range" default="15"/>
-  <arg name="max_half_angle" default="1.5"/>
-  <arg name="expected_range" default="15"/>
-  <arg name="expected_half_angle" default="1.5"/>
-  <arg name="observe_dt" default="0.1"/>
+  <arg name="max_range" default="20"/>
+  <arg name="max_half_angle" default="3.14"/>
+  <arg name="expected_range" default="20"/>
+  <arg name="expected_half_angle" default="3.14"/>
+  <arg name="observe_prob" default="0.99"/>
 
   <arg name="yaw_unwrap_threshold" default="4.0"/>
 
-  <arg name="acceptance_score" default="1.0"/>
-  <arg name="penalty_score" default="-0.4"/>
-  <arg name="discard_score" default="-100.0"/>
+  <arg name="acceptance_score" default="5.0"/>
+  <arg name="saturation_score" default="15.0"/>
+  <arg name="penalty_score" default="-0.5"/>
+  <arg name="discard_score" default="-2.0"/>
 
   <node pkg="slam_fastslam"  type="fastslam1" name="local_fastslam_car" respawn="False">
     # Parameters
@@ -32,17 +33,18 @@
     <param name="max_half_angle" value="$(arg max_half_angle)" />
     <param name="expected_range" value="$(arg expected_range)" />
     <param name="expected_half_angle" value="$(arg expected_half_angle)" />
-    <param name="observe_dt" value="$(arg observe_dt)" />
+    <param name="observe_prob" value="$(arg observe_prob)" />
 
     <param name="yaw_unwrap_threshold" value="$(arg yaw_unwrap_threshold)" />
     <param name="synchronous" value="false"/>
 
-    <rosparam param="measurement_covariance">[0.3, 0.0, 0.0, 0.01]</rosparam>
-    <rosparam param="input_noise">[4, 0.0, 0.0, 1]</rosparam>
+    <rosparam param="measurement_covariance">[0.1, 0.0, 0.0, 0.1]</rosparam>
+    <rosparam param="input_noise">[0.1, 0.0, 0.0, 0.0, 0.03, 0.0, 0.0, 0.0, 0.01]</rosparam>
     <param name="acceptance_score" value="$(arg acceptance_score)" />
     <param name="penalty_score" value="$(arg penalty_score)" />
     <param name="discard_score" value="$(arg discard_score)" />
-    
+    <param name="saturation_score" value="$(arg saturation_score"/>
+  
     # Map service Parameters
     <param name="SetMap_service" value="/ugr/srv/slam_map_server/set" />
     <param name="globalmap_namespace" value="fastslam/global" />

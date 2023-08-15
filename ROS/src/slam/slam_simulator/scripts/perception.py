@@ -7,9 +7,7 @@ from fs_msgs.msg import Track
 from geometry_msgs.msg import Point, Quaternion, TransformStamped
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import (
-    AddSubscriber,
     DataLatch,
-    ROSNode,
     DiagnosticArray,
     DiagnosticStatus,
     create_diagnostic_message,
@@ -72,8 +70,9 @@ class PerceptionSimulator(StageSimulator):
                 message="Started.",
             )
         )
+        self.track_sub = rospy.Subscriber("/input/track",ObservationWithCovarianceArrayStamped,self.track_update)
+        self.observation_pub = rospy.Publisher("/output/observations",ObservationWithCovarianceArrayStamped,queue_size=10)
 
-    @AddSubscriber("/input/track")
     def track_update(self, track: ObservationWithCovarianceArrayStamped):
         """
         Track update is used to collect the ground truth cones
@@ -97,7 +96,6 @@ class PerceptionSimulator(StageSimulator):
         This function gets executed at a specific frequency. Basically publishes the 'visible' cones as observations
         Those observations are relative to the base_link frame
         """
-
         if not self.started:
             return
 
@@ -152,7 +150,7 @@ class PerceptionSimulator(StageSimulator):
         observations.header.frame_id = self.base_link_frame
         observations.observations = filtered_cones
 
-        self.publish("/output/observations", observations)
+        self.observation_pub.publish(observations)
 
     @staticmethod
     def pi_2_pi(angle):
@@ -188,4 +186,4 @@ class PerceptionSimulator(StageSimulator):
 
 
 node = PerceptionSimulator()
-node.start()
+rospy.spin()

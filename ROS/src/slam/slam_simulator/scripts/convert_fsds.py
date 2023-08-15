@@ -8,19 +8,30 @@ import tf
 from fs_msgs.msg import Track
 from geometry_msgs.msg import TwistStamped, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import (
-    AddSubscriber,
-    ROSNode,
-    DiagnosticArray,
-    DiagnosticStatus,
-    create_diagnostic_message,
-)
+from node_fixture.node_fixture import (DiagnosticArray, DiagnosticStatus,
+                                       create_diagnostic_message)
 from sensor_msgs.msg import Imu, NavSatFix
 
 
-class Convert(ROSNode):
+class Convert:
     def __init__(self):
-        super().__init__("converter")
+        # ROS initialization
+        rospy.init_node("converter")
+        self.gss_sub = rospy.Subscriber("/input/gss", TwistStamped, self.convertGSS)
+        self.imu_sub = rospy.Subscriber("/input/imu", Imu, self.convertIMU)
+        self.gt_odom_sub = rospy.Subscriber(
+            "/input/gt_odometry", Odometry, self.convertGTOdometry
+        )
+        self.track_sub = rospy.Subscriber("/input/gt_track", Track, self.convertTrack)
+        self.gps_sub = rospy.Subscriber("/fsds/gps", NavSatFix, self.convertGPS)
+
+        self.gss_pub = rospy.Publisher("/input/gss", TwistStamped, queue_size=10)
+        self.imu_pub = rospy.Publisher("/input/imu", Imu, queue_size=10)
+        self.gt_odom_pub = rospy.Publisher(
+            "/input/gt_odometry", Odometry, queue_size=10
+        )
+        self.track_pub = rospy.Publisher("/input/gt_track", Track, queue_size=10)
+        self.gps_pub = rospy.Publisher("/fsds/gps", NavSatFix, queue_size=10)
 
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
@@ -50,7 +61,6 @@ class Convert(ROSNode):
             )
         )
 
-    @AddSubscriber("/input/gss")
     def convertGSS(self, msg: TwistStamped):
         covariance = np.diag([0.1, 0.1, 0, 0, 0, 0])
 
@@ -74,15 +84,13 @@ class Convert(ROSNode):
 
         new_msg.twist.covariance = covariance.reshape((1, 36)).tolist()[0]
 
-        self.publish("/output/gss", new_msg)
+        self.gss_pub.publish(new_msg)
 
-    @AddSubscriber("/input/imu")
     def convertIMU(self, msg: Imu):
         msg.header.frame_id = self.base_link_frame
 
-        self.publish("/output/imu", msg)
+        self.imu_pub.publish( msg)
 
-    @AddSubscriber("/input/gt_odometry")
     def convertGTOdometry(self, msg: Odometry):
         msg.header.frame_id = self.gt_world_frame
         msg.child_frame_id = self.gt_base_link_frame
@@ -105,17 +113,16 @@ class Convert(ROSNode):
             self.gt_world_frame,
         )
 
-        self.publish("/output/gt_odometry", msg)
+        self.gt_odom_pub.publish( msg)
 
-    @AddSubscriber("/input/gt_track")
     def convertTrack(self, msg: Track):
-        self.publish("/output/gt_track", msg)
+        self.track_pub.publish( msg)
 
-    @AddSubscriber("/fsds/gps")
     def convertGPS(self, msg: NavSatFix):
         msg.header.frame_id = self.base_link_frame
-        self.publish("/output/gps", msg)
+        self.gps_pub.publish( msg)
 
 
-node = Convert()
-node.start()
+if __name__ == "__main__":
+    node = Convert()
+    rospy.spin()

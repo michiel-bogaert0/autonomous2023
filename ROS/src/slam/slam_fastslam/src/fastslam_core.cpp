@@ -13,17 +13,21 @@
 
 #include "fastslam_core.hpp"
 
+#include <random>
+
 #include <ros/ros.h>
 
 using namespace std;
 using namespace Eigen;
 
-float calculate_covariance(vector<float> &X, vector<float> &Y) {
-    
-    if (X.size() != Y.size()) {
+float calculate_covariance(vector<float> &X, vector<float> &Y)
+{
+
+    if (X.size() != Y.size())
+    {
         throw invalid_argument("Size of X must equal size of Y");
     }
-    
+
     unsigned int N = X.size();
 
     float meanX = reduce(X.begin(), X.end()) / static_cast<float>(N);
@@ -31,35 +35,40 @@ float calculate_covariance(vector<float> &X, vector<float> &Y) {
 
     float covariance = 0.0;
 
-    for (unsigned int i = 0; i < N; i++) {
+    for (unsigned int i = 0; i < N; i++)
+    {
         covariance += (X[i] - meanX) * (Y[i] - meanY);
     }
 
     return covariance / static_cast<float>(N);
 }
 
-float calculate_covariance(vector<float> &X, vector<float> &Y, vector<float> &P) {
-    
-    if (X.size() != Y.size() || X.size() != P.size()) {
+float calculate_covariance(vector<float> &X, vector<float> &Y, vector<float> &P)
+{
+
+    if (X.size() != Y.size() || X.size() != P.size())
+    {
         throw invalid_argument("Size of X must equal size of Y and P");
     }
-    
+
     unsigned int N = X.size();
 
     float meanX = 0.0;
     float meanY = 0.0;
 
-    for (unsigned int i = 0; i < N; i++) {
+    for (unsigned int i = 0; i < N; i++)
+    {
         meanX += X[i] * P[i];
         meanY += Y[i] * P[i];
     }
-    
+
     meanX /= static_cast<float>(N);
     meanY /= static_cast<float>(N);
 
     float covariance = 0.0;
 
-    for (unsigned int i = 0; i < N; i++) {
+    for (unsigned int i = 0; i < N; i++)
+    {
         covariance += (X[i] - meanX) * (Y[i] - meanY) * P[i];
     }
 
@@ -186,7 +195,7 @@ void data_associate_known(vector<VectorXf> &z, vector<int> &idz, VectorXf &table
 
 // z is the list of measurements conditioned on the particle.
 void feature_update(Particle &particle, vector<VectorXf> &z,
-                    vector<int> &idf, MatrixXf &R, vector<int> observationClass)
+                    vector<int> &idf, MatrixXf &R, vector<int> observationClass, vector<VectorXf> &zp, vector<MatrixXf> &Hv, vector<MatrixXf> &Hf, vector<MatrixXf> &Sf)
 {
     // Having selected a new pose from the proposal distribution,
     //   this pose is assumed perfect and each feature update maybe
@@ -199,13 +208,6 @@ void feature_update(Particle &particle, vector<VectorXf> &z,
         xf.push_back(particle.xf()[idf[i]]); // means
         Pf.push_back(particle.Pf()[idf[i]]); // covariances
     }
-
-    vector<VectorXf> zp;
-    vector<MatrixXf> Hv;
-    vector<MatrixXf> Hf;
-    vector<MatrixXf> Sf;
-
-    compute_jacobians(particle, idf, R, zp, &Hv, &Hf, &Sf);
 
     vector<VectorXf> v; // difference btw two measurements (used to update mean)
     for (unsigned long i = 0; i < z.size(); i++)
@@ -788,7 +790,7 @@ void stratified_resample(VectorXf w, vector<int> &keep, float &Neff)
         w(i) = w(i) / w_sum;
         wsqrd(i) = pow(w(i), 2);
     }
-    Neff = 1.0 / (float) wsqrd.sum();
+    Neff = 1.0 / (float)wsqrd.sum();
 
     int len = w.size();
     keep.resize(len);
@@ -992,6 +994,26 @@ void read_slam_input_file(const string s, MatrixXf *lm, MatrixXf *wp)
 ////////////////////////////////////////////////////////////////////////////////
 // particle class
 ////////////////////////////////////////////////////////////////////////////////
+Particle::Particle(double stand_div)
+{
+    _w = 1.0;
+    _xv = VectorXf(3);
+    _xv.setZero(3);
+    _prev_yaw = 0.0;
+    _rev = 0;
+    _Pv = MatrixXf(3, 3);
+    _Pv.setZero(3, 3);
+    _da = NULL;
+
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+
+    std::normal_distribution d{0.0, stand_div};
+
+    _xv(0) = d(gen);
+    _xv(1) = d(gen);
+}
+
 Particle::Particle()
 {
     _w = 1.0;
@@ -1123,11 +1145,13 @@ void Particle::setRev(int rev)
     _rev = rev;
 }
 
-void Particle::incRev() {
+void Particle::incRev()
+{
     _rev++;
 }
 
-void Particle::decRev() {
+void Particle::decRev()
+{
     _rev--;
 }
 
@@ -1163,7 +1187,8 @@ void Particle::setMetadatai(unsigned long i, LandmarkMetadata &meta)
         _metadata.resize(i + 1);
     }
 
-    for (int j = 0; j < LANDMARK_CLASS_COUNT; j++) {
+    for (int j = 0; j < LANDMARK_CLASS_COUNT; j++)
+    {
         _metadata[i].classDetectionCount[j] = meta.classDetectionCount[j];
     }
     _metadata[i].score = meta.score;

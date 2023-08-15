@@ -4,7 +4,7 @@ from enum import Enum
 from std_msgs.msg import UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
-from node_launcher import NodeLauncher
+from node_launcher.node_launcher import NodeLauncher
 from node_fixture.node_fixture import (
     AutonomousMission,
     SLAMStatesEnum,
@@ -42,7 +42,6 @@ class Controller:
         )
 
         while not rospy.is_shutdown():
-            
             try:
                 self.launcher.run()
                 self.diagnostics_publisher.publish(
@@ -64,14 +63,11 @@ class Controller:
         """
         Updates the internal state and launches or kills nodes if needed
         """
-
         new_state = self.state
-
         if self.state == SLAMStatesEnum.IDLE or self.state == SLAMStatesEnum.FINISHED or (rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission):
             if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
                 # Go to state depending on mission
                 self.mission = rospy.get_param("/mission")
-
                 # Reset loop counter
                 rospy.ServiceProxy("/reset_closure", Empty)
 

@@ -1,7 +1,7 @@
 #
 # Base stage. Install repository dependencies
 #
-FROM nvidia/cuda:11.7.0-runtime-ubuntu20.04 AS ugr-base
+FROM nvidia/cuda:11.7.1-runtime-ubuntu20.04 AS ugr-base
 
 #
 # Install torch and torchvision
@@ -66,6 +66,10 @@ RUN apt-get update && apt-get install -y ros-noetic-tf2-geometry-msgs \
     ros-noetic-nmea-navsat-driver \
     ros-noetic-rosbridge-suite \
     ros-noetic-catkin-virtualenv \
+    ros-noetic-ros-control \
+    ros-noetic-ros-controllers \
+    ros-noetic-rosparam-shortcuts \
+    ros-noetic-image-geometry \
     python3-catkin-tools \
     libyaml-cpp-dev \
     libcurl4-openssl-dev \
@@ -93,6 +97,7 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 
 
 # Python stuff
+RUN pip install nvidia-pyindex
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
