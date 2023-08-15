@@ -17,7 +17,7 @@
   <node pkg="slam_loopclosure" output="screen" respawn="true" type="loopclosure" name="loopclosure">
       <param name="world_frame" value="$(arg world_frame)" />
       <param name="base_link_frame" value="$(arg base_link_frame)" />
-      <rosparam param="finishpoint">[25,0,0]</rosparam>
+      <rosparam param="finishpoint">[75,0,0]</rosparam>
       
       <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
       <remap from="/reset_closure" to="/ugr/srv/reset_loopclosure"/>

@@ -161,7 +161,7 @@ class Controller:
             odom: the odometry message containing speed information
         """
 
-        if abs(odom.twist.twist.linear.x) < 0.05 and self.state == SLAMStatesEnum.FINISHING:
+        if abs(odom.twist.twist.linear.x) < 0.2 and self.state == SLAMStatesEnum.FINISHING:
             self.change_state(SLAMStatesEnum.FINISHED)
         
 

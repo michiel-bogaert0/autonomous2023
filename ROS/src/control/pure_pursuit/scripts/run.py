@@ -133,9 +133,13 @@ class PurePursuit:
                         (target_x - self.current_pos[0]) ** 2
                         + (target_y - self.current_pos[1]) ** 2
                     ) / (2 * (target_y - self.current_pos[1]))
-                    self.steering_cmd.data = self.symmetrically_bound_angle(
-                        np.arctan2(1.0, R), np.pi / 2
-                    )
+
+                    if self.speed_target < 0.05:
+                        self.steering_cmd.data = 0
+                    else:
+                        self.steering_cmd.data = self.symmetrically_bound_angle(
+                            np.arctan2(1.0, R), np.pi / 2
+                        )
                     rospy.loginfo(f"R: {R}, steering angle {self.steering_cmd.data}")
 
                     # Go ahead and drive. But adjust speed in corners

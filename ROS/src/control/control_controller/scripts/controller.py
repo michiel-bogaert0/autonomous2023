@@ -85,7 +85,7 @@ class Controller:
 
                 elif self.state == SLAMStatesEnum.RACING:
                     if self.mission == 'trackdrive' or self.mission == 'skidpad':
-                        speed_target = 4.0 if self.car == 'simulation' else 1.0
+                        speed_target = 4.0 if self.car == 'simulation' else 0.8
 
                     elif self.mission == 'acceleration':
                         speed_target = 4.0 if self.car == 'simulation' else 3.0
