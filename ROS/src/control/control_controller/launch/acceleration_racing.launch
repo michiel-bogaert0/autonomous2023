@@ -1,7 +1,7 @@
 <launch>
   
   <node name="path_publisher" pkg="control_controller" output="screen" type="path_publisher.py">
-  <param name="path" value="$(find control_controller)/paths/straight_L75.yaml" />
+  <param name="path" value="$(find control_controller)/paths/straight_L25.yaml" />
 
     <remap from="/output/path" to="/pathplanning/path" />
   </node>
