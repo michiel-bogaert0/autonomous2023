@@ -1,6 +1,8 @@
 <launch>
 
-  <include file="$(find slam_simulator)/launch/slam_simulator.launch" pass_all_args="true" />
+  <include file="$(find slam_simulator)/launch/slam_simulator.launch" pass_all_args="true" >
+    <arg name="filename" default="circle_R15.yaml"/>
+  </include>
 
   <include file="$(find ugr_ros_control)/sim_control/launch/sim_hardware.launch" pass_all_args="true"/>
 
