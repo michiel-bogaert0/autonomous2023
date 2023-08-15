@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 find_package(Boost REQUIRED)
 
-add_service_files(FILES FinishPoint.srv)
+add_service_files(DIRECTORY srv FILES FinishPoint.srv)
 
 generate_messages(
   DEPENDENCIES

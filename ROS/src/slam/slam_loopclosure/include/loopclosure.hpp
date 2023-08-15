@@ -7,7 +7,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/Point.h>
 #include "node_fixture/node_fixture.hpp"
-#include <slam_loopclosure/FinishPoint.h>
+#include "slam_loopclosure/FinishPoint.h"
 
 namespace slam
 {
@@ -36,6 +36,8 @@ namespace slam
 
         ros::Publisher loopClosedPublisher;
         ros::ServiceServer reset_service;
+        ros::ServiceServer adjust_finish;
+        ros::ServiceServer adjust_targetpoint;
 
         std::unique_ptr<node_fixture::DiagnosticPublisher> diagnosticPublisher;
 

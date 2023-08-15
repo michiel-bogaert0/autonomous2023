@@ -11,15 +11,27 @@ namespace slam
     LoopClosure::LoopClosure(ros::NodeHandle &n) : tfListener(tfBuffer),
                                                    n(n),
                                                    base_link_frame(n.param<std::string>("base_link_frame", "ugr/car_base_link")),
-                                                   world_frame(n.param<std::string>("world_frame", "ugr/slam_map"))
+                                                   world_frame(n.param<std::string>("world_frame", "ugr/map"))
     {
+        std::vector<float> point;
+        n.param<std::vector<float>>("finishpoint", point, {0,0,0});
+
+        this->finishPoint.x = point[0];
+        this->finishPoint.y = point[1];
+        this->finishPoint.z = point[2];
+        isLoopingTarget = false;
+
         diagnosticPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(new node_fixture::DiagnosticPublisher(n, "SLAM LC"));
         loopClosedPublisher = n.advertise<std_msgs::UInt16>("/output/loopClosure", 5, true);
-        reset_service = n.advertiseService("/reset_closure", &slam::LoopClosure::handleResetClosureService, this);
+        //reset_service = n.advertiseService("/reset_closure", &slam::LoopClosure::handleResetClosureService, this);
+        //adjust_finish = n.advertiseService("/adjust_finish", &slam::LoopClosure::handleAdjustFinishLine, this);
+        //adjust_targetpoint = n.advertiseService("/adjust_targetpoint", &slam::LoopClosure::handleAdjustFinishLine, this);
 
+            
         ResetClosure();
 
         ROS_INFO("Loop closure detection started!");
+
     }
 
     void LoopClosure::CheckWhenLoopIsClosed()
@@ -38,11 +50,11 @@ namespace slam
             car_pose = tfBuffer.lookupTransform(this->world_frame, this->base_link_frame, ros::Time(0), ros::Duration(0.1));
         }
         catch (const std::exception e)
-
         {
             ROS_ERROR("Car pose lookup failed: %s", e.what());
             return;
         }
+
 
         // calculate the vector from startpos to current pos
         geometry_msgs::Point distanceVectorToStart; 
@@ -51,19 +63,19 @@ namespace slam
         distanceVectorToStart.z =(float)car_pose.transform.translation.z - startPosition.z;
 
         geometry_msgs::Point distanceVectorToTarget;
-        distanceVectorToStart.x =(float)car_pose.transform.translation.x - targetPoint.x; 
-        distanceVectorToStart.y =(float)car_pose.transform.translation.y - targetPoint.y; 
-        distanceVectorToStart.z =(float)car_pose.transform.translation.z - targetPoint.z;
+        distanceVectorToTarget.x =(float)car_pose.transform.translation.x - targetPoint.x; 
+        distanceVectorToTarget.y =(float)car_pose.transform.translation.y - targetPoint.y; 
+        distanceVectorToTarget.z =(float)car_pose.transform.translation.z - targetPoint.z;
       
         geometry_msgs::Point distanceVectorToFinish;
-        distanceVectorToStart.x =(float)car_pose.transform.translation.x - finishPoint.x; 
-        distanceVectorToStart.y =(float)car_pose.transform.translation.y - finishPoint.y; 
-        distanceVectorToStart.z =(float)car_pose.transform.translation.z - finishPoint.z;
+        distanceVectorToFinish.x =(float)car_pose.transform.translation.x - finishPoint.x; 
+        distanceVectorToFinish.y =(float)car_pose.transform.translation.y - finishPoint.y; 
+        distanceVectorToFinish.z =(float)car_pose.transform.translation.z - finishPoint.z;
 
-        
         // when the currentpos is close enough to startpos (after racing the round)
         if (checkDistanceGoingUpWhenInRange)
         {
+            
             // check if the car is in front of the startposition
             // determine if it is the target/finish or start
             if(DotProduct(directionWhenGoingInRange, distanceVectorToStart) < 0 && !isLoopingTarget)
@@ -96,33 +108,41 @@ namespace slam
             if(finishPoint.x == FLT_MAX || finishPoint.y == FLT_MAX || finishPoint.z == FLT_MAX)
                 finishPoint = startPosition;
         }
+        
         // calculate distance
-        float currentDistanceSquare = 0;
-        if(isLoopingTarget) currentDistanceSquare = DotProduct(distanceVectorToStart, distanceVectorToTarget);
-        else currentDistanceSquare = DotProduct(distanceVectorToStart, distanceVectorToStart);
-        //ROS_INFO("%f",currentDistanceSquare);
         // if the car is outside the outer range -> enable to check if the car is going towards the start position
         if (!doNotCheckDistance)
         { 
-            float currentDistanceSquare = 0;
-            if(isLoopingTarget) currentDistanceSquare = DotProduct(distanceVectorToStart, distanceVectorToTarget);
+             float currentDistanceSquare = 0;
+            if(isLoopingTarget && amountOfLaps != 0) currentDistanceSquare = DotProduct(distanceVectorToTarget, distanceVectorToTarget);
             else currentDistanceSquare = DotProduct(distanceVectorToStart, distanceVectorToStart);
-            ROS_INFO("%f",currentDistanceSquare);
+            
             if (isinf(currentDistanceSquare))
                 return;
             if (maxDistanceSquare < currentDistanceSquare)
             {
+                ROS_INFO("is far away");
+                ROS_INFO("pos: %f", currentDistanceSquare);
                 doNotCheckDistance = true;
             }
         }
         else
         { 
-            float currentDistanceSquareFinish = DotProduct(distanceVectorToFinish,distanceVectorToFinish);
+            float currentDistanceSquareFinish = 0;
+            geometry_msgs::Point direction = distanceVectorToFinish;
+            if(isLoopingTarget) {
+                currentDistanceSquareFinish = DotProduct(distanceVectorToTarget, distanceVectorToTarget);
+                direction = distanceVectorToTarget;
+            }
+            else currentDistanceSquareFinish =  DotProduct(distanceVectorToFinish,distanceVectorToFinish);
+
+            ROS_INFO("pos: %f", currentDistanceSquareFinish);
             // if the car is close enough to the finishposition
             if (currentDistanceSquareFinish < minDistanceForClose * minDistanceForClose)
             {
+                ROS_INFO("now is close enough to check");
                 checkDistanceGoingUpWhenInRange = true;
-                directionWhenGoingInRange = distanceVectorToStart;
+                directionWhenGoingInRange = direction;
             }
         }
     }
@@ -155,9 +175,6 @@ namespace slam
         startPosition.x = initial_car_pose.transform.translation.x;
         startPosition.y = initial_car_pose.transform.translation.y;
         startPosition.z = initial_car_pose.transform.translation.z;
-        ROS_INFO("%f", startPosition.x);
-        ROS_INFO("%f", startPosition.y);
-        ROS_INFO("%f", startPosition.z);
 
         doNotCheckDistance = false;
         checkDistanceGoingUpWhenInRange = false;
@@ -183,14 +200,18 @@ namespace slam
         this->ResetClosure();
         return true;
     }
-    bool LoopClosure::handleAdjustFinishLine(slam_loopclosure::FinishPoint::Request   &request, std_srvs::Empty::Response &response)
+
+    bool LoopClosure::handleAdjustFinishLine(slam_loopclosure::FinishPoint::Request &request, std_srvs::Empty::Response &response)
     {
         this->finishPoint = request.point;
+        isLoopingTarget = false;
         return true;
     }
+
     bool LoopClosure::handleAdjustTargetPoint(slam_loopclosure::FinishPoint::Request &request, std_srvs::Empty::Response &response)
     {
         this->targetPoint = request.point;
+        isLoopingTarget = true;
         return true;
     }
 }
