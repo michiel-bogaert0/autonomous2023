@@ -3,7 +3,7 @@ header:
   stamp: 
     secs: 0
     nsecs: 0
-  frame_id: "ugr/car_odom"
+  frame_id: "ugr/map"
 poses: 
   - 
     position: 

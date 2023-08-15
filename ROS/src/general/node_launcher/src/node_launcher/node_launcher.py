@@ -47,7 +47,7 @@ class NodeLauncher:
         # Construct path of launch file
         rel_path = pkg_path / launchfile
         # Check if roslaunch file is syntactic correct
-        rospy.logdebug(roslaunch.rlutil.check_roslaunch(str(rel_path.absolute())))
+        rospy.loginfo(roslaunch.rlutil.check_roslaunch(str(rel_path.absolute())))
 
         if self.active:
             # Shutdown currently active launch
