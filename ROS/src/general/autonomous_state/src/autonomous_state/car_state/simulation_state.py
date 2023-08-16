@@ -23,9 +23,13 @@ class SimulationState(CarState):
         }
 
         self.as_state = AutonomousStatesEnum.ASOFF
+        self.ebs_state = carStateEnum.ON
 
     def update(self, state: AutonomousStatesEnum):
         self.as_state = state
+
+    def activate_EBS(self):
+        self.ebs_state = carStateEnum.ACTIVATED
 
     def get_state(self):
         """
@@ -52,6 +56,6 @@ class SimulationState(CarState):
         self.state["ASMS"] = carStateEnum.ON
 
         # EBS
-        self.state["EBS"] = carStateEnum.ON
+        self.state["EBS"] = self.ebs_state
 
         return self.state

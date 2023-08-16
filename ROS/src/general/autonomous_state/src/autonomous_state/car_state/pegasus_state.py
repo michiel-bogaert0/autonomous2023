@@ -66,6 +66,7 @@ class PegasusState(CarState):
         self.bus = rospy.Publisher("/ugr/car/can/tx", Frame, queue_size=10)
 
         self.as_state = AutonomousStatesEnum.ASOFF
+        self.ebs_state = carStateEnum.ON
 
         time.sleep(1)
 
@@ -103,6 +104,9 @@ class PegasusState(CarState):
                 self.state["ASMS"] = (
                     carStateEnum.ON if frame.data[0] == 0 else carStateEnum.ON
                 )  # Is inversed
+
+    def activate_EBS(self):
+        self.ebs_state = carStateEnum.ACTIVATED
 
     def update(self, state: AutonomousStatesEnum):
 
@@ -219,7 +223,7 @@ class PegasusState(CarState):
         self.state["EBS"] = (
             carStateEnum.ACTIVATED
             if self.res_estop_signal or t - self.teensy_hb > 0.2
-            else carStateEnum.ON
+            else self.ebs_state
         )
 
         return self.state

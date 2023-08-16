@@ -51,3 +51,7 @@ class CarState(ABC):
     @abstractmethod
     def update(self, state):
         pass
+
+    @abstractmethod
+    def activate_EBS(self):
+        pass

@@ -153,18 +153,6 @@ class Controller:
         )
         self.state = new_state
 
-    def handle_odom(self, odom: Odometry):
-        """
-        Just keeps track of latest odometry estimate
-
-        Args:
-            odom: the odometry message containing speed information
-        """
-
-        if abs(odom.twist.twist.linear.x) < 0.2 and self.state == SLAMStatesEnum.FINISHING:
-            self.change_state(SLAMStatesEnum.FINISHED)
-        
-
     def lapFinished(self, laps):
         """
         Subscriber callback for the lap counter. Does an internal state transition if required
@@ -173,7 +161,7 @@ class Controller:
             laps: the UInt16 message containing the lap count
         """
 
-        if self.target_lap_count == laps.data:
+        if self.target_lap_count <= laps.data:
             new_state = self.state
 
             if self.state == SLAMStatesEnum.EXPLORATION:
