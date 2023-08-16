@@ -69,7 +69,7 @@ class AutonomousController:
         self.diagnostics_publisher.publish(create_diagnostic_message(DiagnosticStatus.ERROR if self.state == AutonomousStatesEnum.ASEMERGENCY else DiagnosticStatus.OK, "[GNRL] STATE: AS state", str(self.state)))
         self.diagnostics_publisher.publish(create_diagnostic_message(DiagnosticStatus.OK, "[GNRL] STATE: Car state", str(ccs)))
 
-        if ccs["EBS"] == carStateEnum.ACTIVATED
+        if ccs["EBS"] == carStateEnum.ACTIVATED:
 
             if self.mission_finished and self.vehicle_stopped:
                 self.change_state(AutonomousStatesEnum.ASFINISHED)
