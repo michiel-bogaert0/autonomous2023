@@ -8,14 +8,11 @@ Panels:
         - /Status1
         - /Perception1
         - /Perception1/Lidar Raw1
-        - /Perception1/Lidar Raw1/Status1
         - /Perception1/Observations1
-        - /Perception1/Observations1/Status1
         - /SLAM1
         - /SLAM1/TF1
         - /SLAM1/TF1/Frames1
         - /SLAM1/TF1/Tree1
-        - /SLAM1/Map MCL1/Status1
         - /SLAM1/MCL1/Shape1
         - /Control1
       Splitter Ratio: 0.4060402810573578
@@ -178,42 +175,6 @@ Visualization Manager:
           Frame Timeout: 15
           Frames:
             All Enabled: true
-            os_imu:
-              Value: true
-            os_lidar:
-              Value: true
-            os_sensor:
-              Value: true
-            ugr/car_base_link:
-              Value: true
-            ugr/car_base_link/axis0:
-              Value: true
-            ugr/car_base_link/axis1:
-              Value: true
-            ugr/car_base_link/cam0:
-              Value: true
-            ugr/car_base_link/gps0:
-              Value: true
-            ugr/car_base_link/gps1:
-              Value: true
-            ugr/car_base_link/imu0:
-              Value: true
-            ugr/car_base_link/imu1:
-              Value: true
-            ugr/car_base_link/lidar0:
-              Value: true
-            ugr/car_base_link/os_imu:
-              Value: true
-            ugr/car_base_link/os_lidar:
-              Value: true
-            ugr/car_base_link/os_sensor:
-              Value: true
-            ugr/car_odom:
-              Value: true
-            ugr/gt_base_link:
-              Value: true
-            ugr/map:
-              Value: true
           Marker Alpha: 1
           Marker Scale: 1
           Name: TF
@@ -221,36 +182,7 @@ Visualization Manager:
           Show Axes: true
           Show Names: true
           Tree:
-            ugr/car_base_link/os_sensor:
-              ugr/car_base_link/os_imu:
-                {}
-              ugr/car_base_link/os_lidar:
-                {}
-            ugr/map:
-              ugr/car_odom:
-                ugr/car_base_link:
-                  ugr/car_base_link/axis0:
-                    {}
-                  ugr/car_base_link/axis1:
-                    {}
-                  ugr/car_base_link/cam0:
-                    {}
-                  ugr/car_base_link/gps0:
-                    {}
-                  ugr/car_base_link/gps1:
-                    {}
-                  ugr/car_base_link/imu0:
-                    {}
-                  ugr/car_base_link/imu1:
-                    {}
-                  ugr/car_base_link/lidar0:
-                    os_sensor:
-                      os_imu:
-                        {}
-                      os_lidar:
-                        {}
-              ugr/gt_base_link:
-                {}
+            {}
           Update Interval: 0
           Value: true
         - Alpha: 1

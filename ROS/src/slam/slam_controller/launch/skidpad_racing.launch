@@ -6,7 +6,7 @@
   </include>
 
   <node name="map_publisher" pkg="slam_simulator" output="screen" type="map_publisher.py">
-    <param name="map" value="$(find slam_simulator)/maps/skidpad_small.yaml" />
+    <param name="map" value="$(find slam_simulator)/maps/skidpad.yaml" />
 
     <remap from="/output/map" to="/ugr/car/map/global" />
   </node>

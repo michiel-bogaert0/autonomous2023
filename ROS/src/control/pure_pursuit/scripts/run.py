@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 import rospy
-from geometry_msgs.msg import PoseArray, PoseStamped
+from geometry_msgs.msg import PoseArray, PoseStamped, PointStamped
 
 from std_msgs.msg import Float64, Header
 from tf2_geometry_msgs import do_transform_pose
@@ -36,6 +36,9 @@ class PurePursuit:
         self.steering_pub = rospy.Publisher(
             "/output/steering_position_controller/command", Float64, queue_size=10
         )
+        self.vis_pub = rospy.Publisher(
+            "/output/target_point", PointStamped, 
+        )
 
         # Subscriber for path
         self.path_sub = rospy.Subscriber(
@@ -56,14 +59,10 @@ class PurePursuit:
                       Indirectly determines how many points are checked per segment. 
         """
         self.minimal_distance = rospy.get_param("~trajectory/minimal_distance", 2)
-        t_step = rospy.get_param("~trajectory/t_step", 0.05)
-        max_angle = rospy.get_param("~trajectory/max_angle", 1.5)
-        self.trajectory = Trajectory(t_step, max_angle)
+        self.trajectory = Trajectory()
         self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.speed_target = rospy.get_param("~speed/target", 3.0)
         self.steering_transmission = rospy.get_param("ugr/car/steering/transmission", 0.25) # Factor from actuator to steering angle
-
-        self.path = None
 
         # Helpers
         self.start_sender()
@@ -74,7 +73,21 @@ class PurePursuit:
         The path should be relative to self.world_frame. Otherwise it will transform to it
         """
 
-        self.path = msg
+        # Transform received message
+        trans = self.tf_buffer.lookup_transform(
+            msg.header.frame_id,
+            self.base_link_frame,
+            rospy.Time(),
+        )
+
+        # Create a new path
+        current_path = np.zeros((0, 2))
+        for pose in msg.poses:
+            current_path = np.vstack(
+                (current_path, [pose.position.x, pose.position.y])
+            )
+
+        self.trajectory.set_path(current_path, [trans.transform.translation.x,  trans.transform.translation.y])
 
     def symmetrically_bound_angle(self, angle, max_angle):
         """
@@ -88,38 +101,37 @@ class PurePursuit:
         """
         rate = rospy.Rate(self.publish_rate)
         while not rospy.is_shutdown():
-
+            
             try:
-                self.current_angle = 0
-
                 self.speed_target = rospy.get_param("~speed/target", 3.0)
 
-                # Transform received message
+                # Lookup position
                 trans = self.tf_buffer.lookup_transform(
+                    self.world_frame,
                     self.base_link_frame,
-                    self.path.header.frame_id,
                     rospy.Time(),
                 )
-                new_header = Header(frame_id=self.world_frame, stamp=rospy.Time.now())
-                pose_array_transformed = PoseArray(header=new_header)
-                for pose in self.path.poses:
-                    pose_s = PoseStamped(pose=pose, header=self.path.header)
-                    pose_t = do_transform_pose(pose_s, trans)
-                    pose_array_transformed.poses.append(pose_t.pose)
-
-                # Create a new path
-                self.current_path = np.zeros((0, 2))
-                for pose in pose_array_transformed.poses:
-                    self.current_path = np.vstack(
-                        (self.current_path, [pose.position.x, pose.position.y])
-                    )
-
-                self.trajectory.set_path(self.current_path)
 
                 # First try to get a target point
+                # The target point is given in the world frame
                 target_x, target_y, success = self.trajectory.calculate_target_point(
-                    min(self.minimal_distance * 3, max(self.minimal_distance / 3, self.minimal_distance * self.velocity_cmd.data)), self.current_pos, self.current_angle
+                    min(self.minimal_distance * 3, max(self.minimal_distance / 3, self.minimal_distance * self.velocity_cmd.data)), [trans.transform.translation.x,  trans.transform.translation.y]
                 )
+
+                # Transform to base_link frame
+                invtrans = self.tf_buffer.lookup_transform(
+                    self.base_link_frame,
+                    self.world_frame,
+                    rospy.Time(),
+                )
+                target_pose = PoseStamped(header=Header(frame_id=self.base_link_frame, stamp=rospy.Time.now()))
+                target_pose.pose.position.x = target_x
+                target_pose.pose.position.y = target_y
+
+                target_pose_t = do_transform_pose(target_pose, invtrans)
+
+                target_x = target_pose_t.pose.position.x
+                target_y = target_pose_t.pose.position.y
 
                 if not success:
                     # BRAKE! We don't know where to drive to!
@@ -140,7 +152,7 @@ class PurePursuit:
                         self.steering_cmd.data = self.symmetrically_bound_angle(
                             np.arctan2(1.0, R), np.pi / 2
                         )
-                    rospy.loginfo(f"R: {R}, steering angle {self.steering_cmd.data}")
+                    rospy.loginfo(f"x: {target_x}, y: {target_y} R: {R}, steering angle {self.steering_cmd.data}")
 
                     # Go ahead and drive. But adjust speed in corners
                     self.velocity_cmd.data = self.speed_target
@@ -151,6 +163,13 @@ class PurePursuit:
 
                 self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
                 self.velocity_pub.publish(self.velocity_cmd)
+
+                point = PointStamped()
+                point.header.stamp = rospy.Time.now()
+                point.header.frame_id = self.base_link_frame
+                point.point.x = target_x
+                point.point.y = target_y
+                self.vis_pub.publish(point)
 
             except Exception as e:
                 rospy.logwarn(f"PurePursuit has caught an exception: {e}")
