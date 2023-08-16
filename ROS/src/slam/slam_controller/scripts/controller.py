@@ -75,9 +75,7 @@ class Controller:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
                 elif self.mission == AutonomousMission.SKIDPAD:
-                    # TODO something special, but 
-                    # TODO for that loop closure 
-                    # TODO must be updated as well (in progress)
+                    self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
                 elif self.mission == AutonomousMission.AUTOCROSS:
                     self.target_lap_count = 1
@@ -175,9 +173,9 @@ class Controller:
                         "slam_controller", f"launch/{self.mission}_{new_state}.launch"
                     )
                 else:
-                    new_state = SLAMStatesEnum.FINISHING
+                    new_state = SLAMStatesEnum.FINISHED
             else:
-                new_state = SLAMStatesEnum.FINISHING
+                new_state = SLAMStatesEnum.FINISHED
 
             self.change_state(new_state)
 

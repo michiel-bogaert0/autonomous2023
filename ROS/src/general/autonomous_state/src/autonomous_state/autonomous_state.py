@@ -147,7 +147,7 @@ class AutonomousController:
             also do something
             """
 
-            self.mission_finished = state.cur_state == SLAMStatesEnum.FINISHED or state.cur_state == SLAMStatesEnum.FINISHING
+            self.mission_finished = state.cur_state == SLAMStatesEnum.FINISHED
 
         elif state.scope == StateMachineScopeEnum.AUTONOMOUS:
             return

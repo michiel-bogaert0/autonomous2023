@@ -71,7 +71,7 @@ class Controller:
         if state.scope == StateMachineScopeEnum.SLAM:
             self.state = state.cur_state
 
-            if self.state == SLAMStatesEnum.FINISHING:
+            if self.state == SLAMStatesEnum.FINISHED:
                 rospy.set_param("/pure_pursuit/speed/target", 0.0)
 
             elif self.state == SLAMStatesEnum.EXPLORATION or self.state == SLAMStatesEnum.RACING:
