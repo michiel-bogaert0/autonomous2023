@@ -2,6 +2,7 @@
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseArray, PoseStamped, PointStamped
+from nav_msgs.msg import Path
 
 from std_msgs.msg import Float64, Header
 from tf2_geometry_msgs import do_transform_pose
@@ -42,7 +43,7 @@ class PurePursuit:
 
         # Subscriber for path
         self.path_sub = rospy.Subscriber(
-            "/input/path", PoseArray, self.getPathplanningUpdate
+            "/input/path", Path, self.getPathplanningUpdate
         )
 
         self.current_angle = 0
@@ -67,7 +68,7 @@ class PurePursuit:
         # Helpers
         self.start_sender()
 
-    def getPathplanningUpdate(self, msg: PoseArray):
+    def getPathplanningUpdate(self, msg: Path):
         """
         Takes in a new exploration path coming from the mapping algorithm.
         The path should be relative to self.world_frame. Otherwise it will transform to it
@@ -84,7 +85,7 @@ class PurePursuit:
         current_path = np.zeros((0, 2))
         for pose in msg.poses:
             current_path = np.vstack(
-                (current_path, [pose.position.x, pose.position.y])
+                (current_path, [pose.pose.position.x, pose.pose.position.y])
             )
 
         self.trajectory.set_path(current_path, [trans.transform.translation.x,  trans.transform.translation.y])

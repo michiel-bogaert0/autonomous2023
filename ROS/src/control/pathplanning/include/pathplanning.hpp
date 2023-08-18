@@ -40,24 +40,20 @@ public:
         }
     }
 
-    geometry_msgs::PoseArray pose_transform(const geometry_msgs::PoseArray &pose_array)
+    nav_msgs::Path pose_transform(const nav_msgs::Path &pose_array)
     {
         std::string target_frame = nh.param<std::string>("output_frame", "odom");
         geometry_msgs::TransformStamped transform = get_transform(pose_array.header.frame_id, target_frame);
 
-        geometry_msgs::PoseArray pose_array_transformed;
+        nav_msgs::Path pose_array_transformed;
         pose_array_transformed.header.frame_id = target_frame;
         pose_array_transformed.header.stamp = pose_array.header.stamp;
 
         for (const auto &pose : pose_array.poses)
         {
-            geometry_msgs::PoseStamped pose_stamped;
-            pose_stamped.pose = pose;
-            pose_stamped.header = pose_array.header;
-
             geometry_msgs::PoseStamped pose_transformed;
-            tf2::doTransform(pose_stamped, pose_transformed, transform);
-            pose_array_transformed.poses.push_back(pose_transformed.pose);
+            tf2::doTransform(pose, pose_transformed, transform);
+            pose_array_transformed.poses.push_back(pose_transformed);
         }
 
         return pose_array_transformed;

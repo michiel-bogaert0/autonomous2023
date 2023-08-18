@@ -4,13 +4,14 @@ import os
 import rospy
 import yaml
 from genpy.message import fill_message_args
-from geometry_msgs.msg import PoseArray
+from geometry_msgs.msg import PoseArray, PoseStamped
 from node_fixture.node_fixture import (
     DiagnosticArray,
     DiagnosticStatus,
     create_diagnostic_message,
 )
 
+from nav_msgs.msg import Path
 
 class PathPublisher:
     def __init__(self):
@@ -22,7 +23,7 @@ class PathPublisher:
 
         self.path_publisher = rospy.Publisher(
             "/output/path",
-            PoseArray,
+            Path,
             queue_size=1,
             latch=True,
         )
@@ -50,7 +51,7 @@ class PathPublisher:
 
     def publish_path(self):
         # Try to parse YAML
-        ros_path = PoseArray()
+        ros_path = Path()
         with open(self.path, "r") as file:
             path = yaml.safe_load(file)
             fill_message_args(ros_path, path)

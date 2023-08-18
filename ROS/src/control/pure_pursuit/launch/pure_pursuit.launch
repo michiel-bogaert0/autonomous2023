@@ -1,7 +1,7 @@
 <launch>
     <node pkg="pure_pursuit" type="run.py" name="pure_pursuit" output="screen" respawn="true">
 
-        <param name="publish_rate" value="10" />
+        <param name="publish_rate" value="50" />
 
         <param name="trajectory/minimal_distance" value="0.5" />
         <param name="trajectory/t_step" value="0.05" />
