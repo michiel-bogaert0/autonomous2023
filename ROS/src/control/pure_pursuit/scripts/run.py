@@ -73,21 +73,31 @@ class PurePursuit:
         Takes in a new exploration path coming from the mapping algorithm.
         The path should be relative to self.world_frame. Otherwise it will transform to it
         """
-
-        # Transform received message
+        # Transform received message to self.world_frame
         trans = self.tf_buffer.lookup_transform(
+            self.world_frame,
             msg.header.frame_id,
-            self.base_link_frame,
             rospy.Time(),
         )
+        new_header = Header(frame_id=self.world_frame, stamp=rospy.Time.now())
+        transformed_path = Path(header=new_header)
+        for pose in msg.poses:
+            pose_t = do_transform_pose(pose, trans)
+            transformed_path.poses.append(pose_t)
 
         # Create a new path
         current_path = np.zeros((0, 2))
-        for pose in msg.poses:
+        for pose in transformed_path.poses:
             current_path = np.vstack(
                 (current_path, [pose.pose.position.x, pose.pose.position.y])
             )
 
+        # Fetch current position
+        trans = self.tf_buffer.lookup_transform(
+            self.world_frame,
+            self.base_link_frame,
+            rospy.Time(),
+        )
         self.trajectory.set_path(current_path, [trans.transform.translation.x,  trans.transform.translation.y])
 
     def symmetrically_bound_angle(self, angle, max_angle):

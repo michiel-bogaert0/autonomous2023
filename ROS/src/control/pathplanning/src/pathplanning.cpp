@@ -39,7 +39,7 @@ Pathplanning::Pathplanning(ros::NodeHandle &n, bool debug_visualisation, std::st
                         max_depth_, continuous_dist_
         )
 {
-    this->path_pub_ = n_.advertise<geometry_msgs::PoseArray>("/output/path", 10);
+    this->path_pub_ = n_.advertise<nav_msgs::Path>("/output/path", 10);
     this->map_sub_ = n_.subscribe("/input/local_map", 10, &Pathplanning::receive_new_map, this);
 }
 
