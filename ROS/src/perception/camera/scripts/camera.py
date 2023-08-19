@@ -25,14 +25,14 @@ class CameraNode(PublishNode):
         self.target_brightness = rospy.get_param("~target_brightness", 70)
         self.brightness_deadzone = rospy.get_param("~brightness_deadzone", 5)
         self.max_exposure = rospy.get_param("~max_exposure", 300_000)
-        self.min_gain = rospy.get_param("~min_gain", 1)
+        self.min_gain = rospy.get_param("~min_gain", 0.01)
         self.max_gain = rospy.get_param("~max_gain", 10)
         self.stepsize_gain = rospy.get_param("~stepsize_gain", 0.1)
         self.stepsize_exposure = rospy.get_param("~stepsize_exposure", 0.1)
         self.camera_control_interval = rospy.get_param("~camera_control_interval", 50)
 
         self.exposure = 1_000
-        self.gain = 1
+        self.gain = 0.1
         self.last_control = self.camera_control_interval
 
         self.diagnostics = rospy.Publisher(
