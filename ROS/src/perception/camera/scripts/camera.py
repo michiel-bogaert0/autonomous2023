@@ -31,7 +31,7 @@ class CameraNode(PublishNode):
         self.stepsize_exposure = rospy.get_param("~stepsize_exposure", 0.1)
         self.camera_control_interval = rospy.get_param("~camera_control_interval", 50)
 
-        self.exposure = 100_000
+        self.exposure = 1_000
         self.gain = 1
         self.last_control = self.camera_control_interval
 

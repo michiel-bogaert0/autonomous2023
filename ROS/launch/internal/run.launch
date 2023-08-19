@@ -2,7 +2,7 @@
 
   <arg name="frames" default="pegasus_v2"/>
 
-  <arg name="car" default="simulation"/>
+  <arg name="car" default="pegasus"/>
   <arg name="mission" default=""/>
   <arg name="use_sim_time" default="false"/>
 
