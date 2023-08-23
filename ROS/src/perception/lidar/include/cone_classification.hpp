@@ -49,6 +49,7 @@ private:
                              // 1 -> the pointcloud must have the precise shape
                              // of a cone
   double height_width_factor_; // the minimal value height/depth needs to have
+  double threshold_white_cones; // distance where the lidar will stop determining color and set the color to white
   double checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
                     Eigen::Vector4f centroid, bool orange);
 };

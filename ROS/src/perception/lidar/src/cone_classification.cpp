@@ -15,6 +15,7 @@ ConeClassification::ConeClassification(ros::NodeHandle &n) : n_(n) {
   n.param<float>("threshold_height_big_cone", threshold_height_big_cone_, 0.40);
   n.param<double>("cone_shape_factor", cone_shape_factor_, 0.3);
   n.param<double>("cone_height_width_factor", height_width_factor_, 0.9);
+  n.param<double>("threshold_white_cone",threshold_white_cones,10);
 }
 
 /**
@@ -66,6 +67,10 @@ ConeCheck ConeClassification::classifyCone(
       cone_check.is_cone = true;
       cone_check.cone_metric = cone_metric;
 
+      if (dist > threshold_white_cones){
+        cone_check.color = 4;
+        return cone_check;
+      }
       // if the cone is orange based on its height there is no need to compute
       // the color by the intensity
       if (is_orange) {

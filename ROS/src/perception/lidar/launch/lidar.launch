@@ -30,8 +30,8 @@
         <param name= "cone_reconstruction_treshold" value= "0.10"/>
 
         <param name= "publish_preprocessing" value = "false"/>
-        <param name= "publish_ground" value = "false"/>
-        <param name= "publish_clusters" value = "false"/>
+        <param name= "publish_ground" value = "true"/>
+        <param name= "publish_clusters" value = "true"/>
         <param name= "use_sort" value = "false"/>
         
         <param name= "color_factor" value = "1"/>
