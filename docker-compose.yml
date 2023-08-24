@@ -10,7 +10,6 @@ services:
     entrypoint: zsh -c 'source ~/.zshrc && roscore'
     ports:  
       - "11311:11311"
-      - "9090:9090"
     volumes:
       - "./:/home/ugr/autonomous2023/:rw"
     environment:
@@ -27,7 +26,7 @@ services:
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
       - ROS_HOSTNAME=$ROS_HOSTNAME
-    # runtime: nvidia
+    runtime: nvidia
     restart: always
     tty: true
     entrypoint: /bin/zsh -c 'source ~/.zshrc && rosrun rviz rviz -d ~/autonomous2023/ROS/rviz/ugr.rviz'
@@ -45,10 +44,7 @@ services:
       - "DISPLAY=$DISPLAY"
       - "QT_X11_NO_MITSHM=1"
       - ROS_HOSTNAME=$ROS_HOSTNAME
-    # runtime: nvidia
-    ports:  
-      - "11311:11311"
-      - "9090:9090"
+    runtime: nvidia
     restart: always
     tty: true
     privileged: true
