@@ -7,7 +7,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/Point.h>
 #include "node_fixture/node_fixture.hpp"
-#include "slam_loopclosure/FinishPoint.h"
+#include <slam_loopclosure/FinishPoint.h>
 
 namespace slam
 {
@@ -17,8 +17,8 @@ namespace slam
         LoopClosure(ros::NodeHandle &n);
 
         bool handleResetClosureService(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
-        bool handleAdjustFinishLine(slam_loopclosure::FinishPoint::Request &request, std_srvs::Empty::Response &response);
-        bool handleAdjustTargetPoint(slam_loopclosure::FinishPoint::Request &request, std_srvs::Empty::Response &response);
+        bool handleAdjustFinishLine(slam_loopclosure::FinishPoint::Request &request, slam_loopclosure::FinishPoint::Response &response);
+        bool handleAdjustTargetPoint(slam_loopclosure::FinishPoint::Request &request, slam_loopclosure::FinishPoint::Response &response);
         
         void CheckWhenLoopIsClosed();
 
@@ -52,6 +52,7 @@ namespace slam
         double latestTime;
         bool doNotCheckDistance = false;
         bool checkDistanceGoingUpWhenInRange = false;
+        bool runLoopClosureDetection = true;
         geometry_msgs::Point directionWhenGoingInRange = geometry_msgs::Point();
         float minDistanceForClose = 2.0f;
         int amountOfLaps = 0;

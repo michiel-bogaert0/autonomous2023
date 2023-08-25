@@ -4,7 +4,7 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2_ros/buffer.h"
 #include <tf2_ros/transform_listener.h>
-#include "node_fixture/node_fixture.hpp"
+#include <node_fixture/node_fixture.hpp>
 
 namespace slam
 {
@@ -23,16 +23,15 @@ namespace slam
 
         diagnosticPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(new node_fixture::DiagnosticPublisher(n, "SLAM LC"));
         loopClosedPublisher = n.advertise<std_msgs::UInt16>("/output/loopClosure", 5, true);
-        //reset_service = n.advertiseService("/reset_closure", &slam::LoopClosure::handleResetClosureService, this);
-        //adjust_finish = n.advertiseService("/adjust_finish", &slam::LoopClosure::handleAdjustFinishLine, this);
-        //adjust_targetpoint = n.advertiseService("/adjust_targetpoint", &slam::LoopClosure::handleAdjustFinishLine, this);
-
+        reset_service = n.advertiseService("/reset_closure", &slam::LoopClosure::handleResetClosureService, this);
+        adjust_finish = n.advertiseService("/adjust_finish", &slam::LoopClosure::handleAdjustFinishLine, this);
+        adjust_targetpoint = n.advertiseService("/adjust_targetpoint", &slam::LoopClosure::handleAdjustTargetPoint, this);        
             
         ResetClosure();
 
         ROS_INFO("Loop closure detection started!");
-
     }
+    
 
     void LoopClosure::CheckWhenLoopIsClosed()
     {
@@ -55,6 +54,17 @@ namespace slam
             return;
         }
 
+        if(!runLoopClosureDetection)
+        {
+            return;
+        }
+
+        //ros::ServiceClient client = n.serviceClient<slam_loopclosure::FinishPoint>("/adjust_targetpoint");
+
+
+        // Create a request message and populate the parameters
+        slam_loopclosure::FinishPoint req;
+        req.request.point = startPosition;
 
         // calculate the vector from startpos to current pos
         geometry_msgs::Point distanceVectorToStart; 
@@ -74,8 +84,7 @@ namespace slam
 
         // when the currentpos is close enough to startpos (after racing the round)
         if (checkDistanceGoingUpWhenInRange)
-        {
-            
+        { 
             // check if the car is in front of the startposition
             // determine if it is the target/finish or start
             if(DotProduct(directionWhenGoingInRange, distanceVectorToStart) < 0 && !isLoopingTarget)
@@ -94,8 +103,8 @@ namespace slam
             else if (DotProduct(directionWhenGoingInRange, distanceVectorToFinish) < 0 && isLoopingTarget)
             {
                 amountOfLaps++;
+                runLoopClosureDetection = false;
                 this->publish();
-                return;
             }
             return;
         }
@@ -121,8 +130,6 @@ namespace slam
                 return;
             if (maxDistanceSquare < currentDistanceSquare)
             {
-                ROS_INFO("is far away");
-                ROS_INFO("pos: %f", currentDistanceSquare);
                 doNotCheckDistance = true;
             }
         }
@@ -135,12 +142,9 @@ namespace slam
                 direction = distanceVectorToTarget;
             }
             else currentDistanceSquareFinish =  DotProduct(distanceVectorToFinish,distanceVectorToFinish);
-
-            ROS_INFO("pos: %f", currentDistanceSquareFinish);
             // if the car is close enough to the finishposition
             if (currentDistanceSquareFinish < minDistanceForClose * minDistanceForClose)
             {
-                ROS_INFO("now is close enough to check");
                 checkDistanceGoingUpWhenInRange = true;
                 directionWhenGoingInRange = direction;
             }
@@ -184,6 +188,8 @@ namespace slam
         this->latestTime = ros::Time::now().toSec();
 
         this->publish();
+        
+        runLoopClosureDetection = true;
     }
 
     void LoopClosure::publish()
@@ -201,17 +207,20 @@ namespace slam
         return true;
     }
 
-    bool LoopClosure::handleAdjustFinishLine(slam_loopclosure::FinishPoint::Request &request, std_srvs::Empty::Response &response)
+    bool LoopClosure::handleAdjustFinishLine(slam_loopclosure::FinishPoint::Request &request, slam_loopclosure::FinishPoint::Response &response)
     {
+        ROS_INFO("Finish line is changed");
         this->finishPoint = request.point;
         isLoopingTarget = false;
         return true;
     }
 
-    bool LoopClosure::handleAdjustTargetPoint(slam_loopclosure::FinishPoint::Request &request, std_srvs::Empty::Response &response)
+    bool LoopClosure::handleAdjustTargetPoint(slam_loopclosure::FinishPoint::Request &request, slam_loopclosure::FinishPoint::Response &response)
     {
+        ROS_INFO("Target point is changed");
         this->targetPoint = request.point;
         isLoopingTarget = true;
         return true;
     }
+    
 }
