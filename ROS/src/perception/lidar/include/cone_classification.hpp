@@ -52,6 +52,14 @@ private:
   bool use_white_cones_;         // are white cones passed forward or not
   double threshold_white_cones_; // distance where the lidar will stop
                                  // determining color and set the color to white
+
+  double first_tipping_distance_;
+  double second_tipping_distance_;
+  double zero_value_distance_;
+  double value_start_;
+  double value_first_tipping_distance_;
+  double value_second_tipping_distance_;
+
   double checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
                     Eigen::Vector4f centroid, bool orange);
 

@@ -18,6 +18,14 @@ ConeClassification::ConeClassification(ros::NodeHandle &n) : n_(n) {
   n.param<double>("cone_height_width_factor", height_width_factor_, 0.9);
   n.param<double>("threshold_white_cone", threshold_white_cones_, 10);
   n.param<bool>("use_white_cones", use_white_cones_, false);
+
+  n.param<double>("first_tipping_distance", first_tipping_distance_,10);
+  n.param<double>("second_tipping_distance", second_tipping_distance_,12);
+  n.param<double>("zero_value_distance", zero_value_distance_,21);
+  n.param<double>("value_start", value_start_,1);
+  n.param<double>("value_first_tipping_distance", value_first_tipping_distance_,0.9);
+  n.param<double>("value_second_tipping_distance", value_second_tipping_distance_,0.3);
+
 }
 
 /**
@@ -175,30 +183,29 @@ ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
  *
  * @returns a double representing the belief from 0 to 100%
  */
-double
-ConeClassification::calculateBelief(float dist){
-  double begin_sigmoid = 10;
-  double value_start = 1;
-  double value_begin_s = 0.9;
+double ConeClassification::calculateBelief(float dist) {
 
-  double end_sigmoid = 12;
-  double value_end_sigmoid = 0.3;
-  double zero_point = 20;
+  double slope_1 =
+      (value_first_tipping_distance_ - value_start_) / first_tipping_distance_;
+  double slope_2 = -value_second_tipping_distance_ /
+                   (zero_value_distance_ - second_tipping_distance_);
 
-  double slope_1 = (value_begin_s - value_start)/begin_sigmoid;
-  double slope_2 = -value_end_sigmoid/(zero_point - end_sigmoid);
-
-  if(dist > zero_point){
+  if (dist > zero_value_distance_) {
     return 0;
   }
-  if(dist < begin_sigmoid){
-    return value_start + slope_1*dist;
+  if (dist < first_tipping_distance_) {
+    return value_start_ + slope_1 * dist;
   }
-  if(dist > end_sigmoid){
-    return value_end_sigmoid + slope_2*(dist - end_sigmoid);
-  }
-  else{
-    return (value_begin_s - value_end_sigmoid)/(1 + exp(12*(dist - begin_sigmoid)/(end_sigmoid - begin_sigmoid) -6)) + value_end_sigmoid;
+  if (dist > second_tipping_distance_) {
+    return value_second_tipping_distance_ +
+           slope_2 * (dist - second_tipping_distance_);
+  } else {
+    return (value_first_tipping_distance_ - value_second_tipping_distance_) /
+               (1 +
+                exp(12 * (dist - first_tipping_distance_) /
+                        (second_tipping_distance_ - first_tipping_distance_) -
+                    6)) +
+           value_second_tipping_distance_;
   }
 }
 
