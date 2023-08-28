@@ -39,7 +39,7 @@ Pathplanning::Pathplanning(ros::NodeHandle &n, bool debug_visualisation, std::st
                         max_depth_, continuous_dist_
         )
 {
-    this->path_pub_ = n_.advertise<geometry_msgs::PoseArray>("/output/path", 10);
+    this->path_pub_ = n_.advertise<nav_msgs::Path>("/output/path", 10);
     this->map_sub_ = n_.subscribe("/input/local_map", 10, &Pathplanning::receive_new_map, this);
 }
 
@@ -68,42 +68,49 @@ void Pathplanning::compute(const std::vector<std::vector<double>>& cones, const 
         return;
     }
 
-    std::vector<geometry_msgs::Pose> poses;
+    std::vector<geometry_msgs::PoseStamped> poses;
 
     // Manually add zero_pose
-    geometry_msgs::Pose zero_pose;
-    zero_pose.position.x = 0;
-    zero_pose.position.y = 0;
-    zero_pose.position.z = 0.0;
+    geometry_msgs::PoseStamped zero_pose;
+    zero_pose.pose.position.x = 0;
+    zero_pose.pose.position.y = 0;
+    zero_pose.pose.position.z = 0.0;
 
-    zero_pose.orientation.x = 0.0;
-    zero_pose.orientation.y = 0.0;
-    zero_pose.orientation.z = 0.0;
-    zero_pose.orientation.w = 1.0;
+    zero_pose.pose.orientation.x = 0.0;
+    zero_pose.pose.orientation.y = 0.0;
+    zero_pose.pose.orientation.z = 0.0;
+    zero_pose.pose.orientation.w = 1.0;
+
+    zero_pose.header.frame_id = header.frame_id;
+    zero_pose.header.stamp = header.stamp;
 
     poses.push_back(zero_pose);
 
     for (const auto& node : path)
     {
-        geometry_msgs::Pose pose;
-        pose.position.x = node->x;
-        pose.position.y = node->y;
-        pose.position.z = 0.0;
+        geometry_msgs::PoseStamped pose;
 
-        pose.orientation.x = 0.0;
-        pose.orientation.y = 0.0;
-        pose.orientation.z = 0.0;
-        pose.orientation.w = 1.0;
+        pose.pose.position.x = node->x;
+        pose.pose.position.y = node->y;
+        pose.pose.position.z = 0.0;
+
+        pose.pose.orientation.x = 0.0;
+        pose.pose.orientation.y = 0.0;
+        pose.pose.orientation.z = 0.0;
+        pose.pose.orientation.w = 1.0;
+
+        pose.header.frame_id = header.frame_id;
+        pose.header.stamp = header.stamp;
 
         poses.push_back(pose);
     }
 
-    geometry_msgs::PoseArray output;
+    nav_msgs::Path output;
     output.header.frame_id = header.frame_id;
     output.poses = poses;
     output.header.stamp = header.stamp;
 
-    geometry_msgs::PoseArray output_transformed = this->frametf_.pose_transform(output);
+    nav_msgs::Path output_transformed = this->frametf_.pose_transform(output);
 
     this->path_pub_.publish(output_transformed);
 }

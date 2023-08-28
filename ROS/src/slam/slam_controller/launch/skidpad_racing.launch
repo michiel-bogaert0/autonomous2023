@@ -6,7 +6,7 @@
   </include>
 
   <node name="map_publisher" pkg="slam_simulator" output="screen" type="map_publisher.py">
-    <param name="map" value="$(find slam_simulator)/maps/acceleration_75m.yaml" />
+    <param name="map" value="$(find slam_simulator)/maps/skidpad_small.yaml" />
 
     <remap from="/output/map" to="/ugr/car/map/global" />
   </node>
@@ -17,7 +17,7 @@
   <node pkg="slam_loopclosure" output="screen" respawn="true" type="loopclosure" name="loopclosure">
       <param name="world_frame" value="$(arg world_frame)" />
       <param name="base_link_frame" value="$(arg base_link_frame)" />
-      <rosparam param="finishpoint">[90,0,0]</rosparam>
+      <rosparam param="finishpoint">[16,0,0]</rosparam>
       
       <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
       <remap from="/reset_closure" to="/ugr/srv/reset_loopclosure"/>

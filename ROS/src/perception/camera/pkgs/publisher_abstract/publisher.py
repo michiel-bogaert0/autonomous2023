@@ -19,11 +19,11 @@ class PublishNode(ABC):
         rospy.init_node(name)
         self.raw_sub = rospy.Subscriber("/raw/input",Image,self.publish_sub_data)
         self.image_publisher = rospy.Publisher("/input/image", Image, queue_size=10)
-        self.info_publisher = rospy.Publisher("/input/info", Image, queue_size=10)
+        self.info_publisher = rospy.Publisher("/input/info", CameraInfo, queue_size=10)
         self.sim_sub = rospy.Subscriber("/raw/input", Image, self.publish_sub_data)
 
         self.rate = rospy.Rate(rospy.get_param("~rate", 10))
-        self.frame = f"/ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
+        self.frame = f"ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
         
 
     @abstractmethod
@@ -89,7 +89,7 @@ class PublishNode(ABC):
                     self.image_publisher.publish(data)
                     info = self.get_camera_info()
                     if info is not None:
-                        info.header = self.create_header()
+                        info.header = data.header
                         self.info_publisher.publish(info)
 
                 self.rate.sleep()

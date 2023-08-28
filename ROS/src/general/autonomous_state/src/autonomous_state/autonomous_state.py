@@ -5,6 +5,7 @@ from nav_msgs.msg import Odometry
 from node_fixture import AutonomousStatesEnum, StateMachineScopeEnum, SLAMStatesEnum, create_diagnostic_message
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from time import sleep
+from collections import deque
 
 from car_state import *
 
@@ -39,6 +40,8 @@ class AutonomousController:
 
         self.mission_finished = False
         self.vehicle_stopped = True
+
+        self.odom_avg = deque([], 100)
 
         # Setup
         self.change_state(AutonomousStatesEnum.ASOFF)
@@ -75,6 +78,9 @@ class AutonomousController:
 
         elif ccs["EBS"] == carStateEnum.ON:
 
+            if self.mission_finished and self.vehicle_stopped:
+                self.car.activate_EBS()
+
             if (
                 rospy.has_param("/mission") and rospy.get_param("/mission") != ""
                 and ccs["ASMS"] == carStateEnum.ON
@@ -104,8 +110,8 @@ class AutonomousController:
         Args:
             odom: the odometry message containing speed information
         """
-
-        self.vehicle_stopped = abs(odom.twist.twist.linear.x) < 0.05
+        self.odom_avg.append(abs(odom.twist.twist.linear.x))
+        self.vehicle_stopped = sum(list(self.odom_avg)) / len(list(self.odom_avg)) < 0.1
 
     def change_state(self, new_state: AutonomousStatesEnum):
         """
@@ -141,7 +147,7 @@ class AutonomousController:
             also do something
             """
 
-            self.mission_finished = state.cur_state == SLAMStatesEnum.FINISHED or state.cur_state == SLAMStatesEnum.FINISHING
+            self.mission_finished = state.cur_state == SLAMStatesEnum.FINISHED
 
         elif state.scope == StateMachineScopeEnum.AUTONOMOUS:
             return

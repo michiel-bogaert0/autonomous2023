@@ -80,7 +80,7 @@ class ParseUblox:
                 try:
                     SERVER_ADDRESS = (
                         rospy.get_param("~ntrip/source", "192.168.50.36"),
-                        rospy.get_param("~ntrip/port", 50010),
+                        rospy.get_param("~ntrip/port", 50000),
                     )
 
                     # Connect the socket to the server address and port
@@ -232,7 +232,6 @@ class ParseUblox:
             elif subclass == "RELPOSNED":  # Relative positioning (in NED frame)]]
                 if data.flags.gnssFixOK != 1:
                     self.diag_publisher.publish(
-                        "/diagnostics",
                         create_diagnostic_message(
                             level=DiagnosticStatus.ERROR,
                             name=f"[GPS {self.source_name}] UBX-NAV-RELPOSNED",

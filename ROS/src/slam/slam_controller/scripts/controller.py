@@ -64,7 +64,7 @@ class Controller:
         Updates the internal state and launches or kills nodes if needed
         """
         new_state = self.state
-        if self.state == SLAMStatesEnum.IDLE or self.state == SLAMStatesEnum.FINISHED or (rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission):
+        if self.state == SLAMStatesEnum.IDLE or (rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission):
             if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
                 # Go to state depending on mission
                 self.mission = rospy.get_param("/mission")
@@ -75,9 +75,7 @@ class Controller:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
                 elif self.mission == AutonomousMission.SKIDPAD:
-                    # TODO something special, but 
-                    # TODO for that loop closure 
-                    # TODO must be updated as well (in progress)
+                    self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
                 elif self.mission == AutonomousMission.AUTOCROSS:
                     self.target_lap_count = 1
@@ -153,18 +151,6 @@ class Controller:
         )
         self.state = new_state
 
-    def handle_odom(self, odom: Odometry):
-        """
-        Just keeps track of latest odometry estimate
-
-        Args:
-            odom: the odometry message containing speed information
-        """
-
-        if abs(odom.twist.twist.linear.x) < 0.05 and self.state == SLAMStatesEnum.FINISHING:
-            self.change_state(SLAMStatesEnum.FINISHED)
-        
-
     def lapFinished(self, laps):
         """
         Subscriber callback for the lap counter. Does an internal state transition if required
@@ -173,7 +159,7 @@ class Controller:
             laps: the UInt16 message containing the lap count
         """
 
-        if self.target_lap_count == laps.data:
+        if self.target_lap_count <= laps.data:
             new_state = self.state
 
             if self.state == SLAMStatesEnum.EXPLORATION:
@@ -187,9 +173,9 @@ class Controller:
                         "slam_controller", f"launch/{self.mission}_{new_state}.launch"
                     )
                 else:
-                    new_state = SLAMStatesEnum.FINISHING
+                    new_state = SLAMStatesEnum.FINISHED
             else:
-                new_state = SLAMStatesEnum.FINISHING
+                new_state = SLAMStatesEnum.FINISHED
 
             self.change_state(new_state)
 

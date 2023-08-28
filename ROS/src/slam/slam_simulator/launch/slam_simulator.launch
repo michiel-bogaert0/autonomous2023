@@ -24,7 +24,7 @@
 
   <!-- GT map publisher-->
 
-  <node name="map_publisher" pkg="slam_simulator" output="screen" type="map_publisher.py">
+  <node name="gt_map_publisher" pkg="slam_simulator" output="screen" type="map_publisher.py">
     <param name="map" value="$(find slam_simulator)/maps/$(arg filename)" />
 
     <remap from="/output/map" to="$(arg gt_map_topic)" />
