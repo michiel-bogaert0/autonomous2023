@@ -1,5 +1,6 @@
 #include "cone_classification.hpp"
 #include <algorithm>
+#include <cmath>
 
 #define VERT_RES_TAN std::tan(0.35 * M_PI / (2.0f * 180))
 #define HOR_RES_TAN std::tan(2 * M_PI / (2.0f * 2048))
@@ -15,7 +16,8 @@ ConeClassification::ConeClassification(ros::NodeHandle &n) : n_(n) {
   n.param<float>("threshold_height_big_cone", threshold_height_big_cone_, 0.40);
   n.param<double>("cone_shape_factor", cone_shape_factor_, 0.3);
   n.param<double>("cone_height_width_factor", height_width_factor_, 0.9);
-  n.param<double>("threshold_white_cone",threshold_white_cones,10);
+  n.param<double>("threshold_white_cone", threshold_white_cones_, 10);
+  n.param<bool>("use_white_cones", use_white_cones_, false);
 }
 
 /**
@@ -65,9 +67,10 @@ ConeCheck ConeClassification::classifyCone(
       cone_check.bounds[1] = bound_y;
       cone_check.bounds[2] = bound_z;
       cone_check.is_cone = true;
-      cone_check.cone_metric = cone_metric;
 
-      if (dist > threshold_white_cones){
+      cone_check.cone_metric = ConeClassification::calculateBelief(dist);
+
+      if (use_white_cones_ && dist > threshold_white_cones_) {
         cone_check.color = 4;
         return cone_check;
       }
@@ -165,6 +168,38 @@ ConeClassification::checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
   double cone_metric = cone_matrix.row(3).sum() / cone_matrix.cols();
 
   return cone_metric;
+}
+
+/**
+ * @brief determines The belief in the color of the observation
+ *
+ * @returns a double representing the belief from 0 to 100%
+ */
+double
+ConeClassification::calculateBelief(float dist){
+  double begin_sigmoid = 10;
+  double value_start = 1;
+  double value_begin_s = 0.9;
+
+  double end_sigmoid = 12;
+  double value_end_sigmoid = 0.3;
+  double zero_point = 20;
+
+  double slope_1 = (value_begin_s - value_start)/begin_sigmoid;
+  double slope_2 = -value_end_sigmoid/(zero_point - end_sigmoid);
+
+  if(dist > zero_point){
+    return 0;
+  }
+  if(dist < begin_sigmoid){
+    return value_start + slope_1*dist;
+  }
+  if(dist > end_sigmoid){
+    return value_end_sigmoid + slope_2*(dist - end_sigmoid);
+  }
+  else{
+    return (value_begin_s - value_end_sigmoid)/(1 + exp(12*(dist - begin_sigmoid)/(end_sigmoid - begin_sigmoid) -6)) + value_end_sigmoid;
+  }
 }
 
 /**
