@@ -19,13 +19,14 @@ ConeClassification::ConeClassification(ros::NodeHandle &n) : n_(n) {
   n.param<double>("threshold_white_cone", threshold_white_cones_, 10);
   n.param<bool>("use_white_cones", use_white_cones_, false);
 
-  n.param<double>("first_tipping_distance", first_tipping_distance_,10);
-  n.param<double>("second_tipping_distance", second_tipping_distance_,12);
-  n.param<double>("zero_value_distance", zero_value_distance_,21);
-  n.param<double>("value_start", value_start_,1);
-  n.param<double>("value_first_tipping_distance", value_first_tipping_distance_,0.9);
-  n.param<double>("value_second_tipping_distance", value_second_tipping_distance_,0.3);
-
+  n.param<double>("first_tipping_distance", first_tipping_distance_, 10);
+  n.param<double>("second_tipping_distance", second_tipping_distance_, 12);
+  n.param<double>("zero_value_distance", zero_value_distance_, 21);
+  n.param<double>("value_start", value_start_, 1);
+  n.param<double>("value_first_tipping_distance", value_first_tipping_distance_,
+                  0.9);
+  n.param<double>("value_second_tipping_distance",
+                  value_second_tipping_distance_, 0.3);
 }
 
 /**
