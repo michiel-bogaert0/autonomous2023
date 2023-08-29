@@ -18,7 +18,6 @@
   <include file="$(find slam_controller)/launch/ISE.launch" pass_all_args="true"/>
   
   <!-- ? Lap counter -->
-
   <include file="$(find slam_loopclosure)/launch/loopclosure.launch" pass_all_args="true" />
 
   <!-- ? TF service -->
