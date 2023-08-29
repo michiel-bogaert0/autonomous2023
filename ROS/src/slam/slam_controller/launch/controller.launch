@@ -19,7 +19,7 @@
   
   <!-- ? Lap counter -->
 
-  <!-- <include file="$(find slam_loopclosure)/launch/loopclosure.launch" pass_all_args="true" /> -->
+  <include file="$(find slam_loopclosure)/launch/loopclosure.launch" pass_all_args="true" />
 
   <!-- ? TF service -->
   <node name="tf_service" pkg="tf_service" type="server" ></node>

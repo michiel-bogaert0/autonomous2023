@@ -7,7 +7,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/Point.h>
 #include "node_fixture/node_fixture.hpp"
-#include <slam_loopclosure/FinishPoint.h>
+#include "slam_loopclosure/FinishPoint.h"
 
 namespace slam
 {
