@@ -51,5 +51,8 @@ endif (CMAKE_COMPILER_IS_GNUCXX)
 
 file(GLOB srcs src/loopclosure.cpp src/run_loopclosure.cpp include/loopclosure.hpp)
 
+
+
 add_executable(loopclosure ${srcs})
+add_dependencies(loopclosure ${catkin_EXPORTED_TARGETS})
 target_link_libraries(loopclosure ${catkin_LIBRARIES})
