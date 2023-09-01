@@ -1,0 +1,24 @@
+<launch>
+
+  <arg name="frames" default="pegasus_v2"/>
+
+  <arg name="car" default="pegasus"/>
+  <arg name="mission" default=""/>
+  <arg name="use_sim_time" default="false"/>
+
+  <!-- Populating the parameter server to use globally -->
+  <param name="mission" value="$(arg mission)"/>
+  <param name="car" value="$(arg car)"/>
+  <param name="use_sim_time" value="$(arg use_sim_time)"/>
+
+  <!-- Launch files of subteams -->
+  <include file="$(find ugr_launch/launch/frames/$(arg frames).launch" pass_all_args="true"/>
+  <include file="$(find ugr_launch/launch/internal/perception.launch" pass_all_args="true"/>
+  <include file="$(find ugr_launch/launch/internal/general.launch" pass_all_args="true"/>
+  <include file="$(find ugr_launch/launch/internal/slam.launch" pass_all_args="true"/>
+  <include file="$(find ugr_launch/launch/internal/control.launch" pass_all_args="true"/>
+
+  <!-- Load extra car specific parameters or override parameters -->
+  <rosparam command="load" file="$(find ugr_launch/config/$(arg car).yaml" />
+
+</launch>

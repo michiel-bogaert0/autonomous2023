@@ -2,8 +2,8 @@
   <arg name="frames" default="pegasus_v2" />
   <arg name="use_sim_time" default="true" />
 
-  <include file="$(find autonomous_state)/../../../launch/frames/$(arg frames).launch" />
-  <include file="$(find autonomous_state)/../../../launch/internal/perception.launch"
+  <include file="$(find ugr_launch/launch/frames/$(arg frames).launch" />
+  <include file="$(find ugr_launch/launch/internal/perception.launch"
     pass_all_args="true" />
 
   <include file="$(find ublox_gps)/launch/estimate_heading.launch" pass_all_args="true" />

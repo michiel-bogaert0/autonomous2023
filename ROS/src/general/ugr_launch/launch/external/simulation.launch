@@ -1,5 +1,10 @@
 <launch>
 
+  <!-- 
+    High level launch file for the external simulation. 
+    Runs the SLAM part of the simulator (Perception + GT
+   -->
+
   <include file="$(find slam_simulator)/launch/slam_simulator.launch" pass_all_args="true" >
     <arg name="filename" default="circle_R15.yaml"/>
   </include>
