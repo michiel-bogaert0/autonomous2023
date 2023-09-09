@@ -1,4 +1,13 @@
 <launch>
+
+  <!-- 
+    Launch file used for the GT map extraction procedure
+    
+    Args:
+      frames: what static frames to use
+      use_sim_time: if it should use simulation time (probably yes)
+  -->
+
   <arg name="frames" default="pegasus_v2" />
   <arg name="use_sim_time" default="true" />
 

@@ -1,8 +1,25 @@
 <launch>
 
+  <!-- 
+    Launch file for external nodes Pegasus. 
+    The arguments decide which parts of Pegasus you want to enable.
+
+    Note that enable_sensors should only launch the drivers, not the computational nodes!
+
+    Args:
+      enable_sensors: enable sensor drivers
+      enable_can: enable the CAN bus (required for some sensor drivers)
+      enable_drive: enables the hardware interface for Pegasus
+      frames: what static frames to use
+   -->
+
   <arg name="enable_sensors" default="true" />
   <arg name="enable_can" default="true" />
   <arg name="enable_drive" default="true" />
+
+  <arg name="frames" default="pegasus_v2"/>
+
+  <include file="$(find ugr_launch/launch/frames/$(arg frames).launch" pass_all_args="true"/>
 
   <group if="$(arg enable_can)">
     <node pkg="can_node" type="can_driver.py" name="can_driver" output="screen">
