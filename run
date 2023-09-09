@@ -145,16 +145,6 @@ function build-stack {
 }
 
 function launch {
-  detach_mode=""
-
-  while getopts ":d" opt; do
-    case ${opt} in
-      d ) detach_mode="-d" ;;
-      \? ) echo "Invalid option: -$OPTARG" 1>&2
-          exit 1 ;;
-    esac
-  done
-  shift $((OPTIND -1))
 
   LAUNCH_FILE=$1
   shift
@@ -164,9 +154,15 @@ function launch {
       exit 1
   fi
 
-  docker ps -q --filter name=ugr-${LAUNCH_FILE//\//-}-* | xargs docker rm -f
+  CONTAINERS=$(docker ps -q --filter name=ugr-${LAUNCH_FILE//\//-}-*)
 
-  docker run $detach_mode --name ugr-${LAUNCH_FILE//\//-}-$(date +'%Y%m%d%H%M%S') \
+  if [ -n "$CONTAINERS" ]; then
+    echo "$CONTAINERS" | xargs docker rm -f
+  else
+    echo "No containers found matching the filter criteria."
+  fi
+
+  docker run -d --name ugr-${LAUNCH_FILE//\//-}-$(date +'%Y%m%d%H%M%S') \
       --privileged \
       --network host \
       -e DISPLAY=$DISPLAY \
@@ -178,7 +174,7 @@ function launch {
       -v /dev:/dev \
       -v ./../rosbags:/home/ugr/rosbags/:rw \
       ugr-base \
-      /bin/zsh -c "source ~/.zshrc && roslaunch ugr_launch $LAUNCH_FILE.launch $*"
+      /bin/zsh -c "source ~/.zshrc && roslaunch --wait ugr_launch $LAUNCH_FILE.launch $*"
 }
 
 function pegasus {
@@ -189,8 +185,8 @@ function pegasus {
 
 function simulation {
   clean ugr
-  launch -d simulation filename:=$2.yaml
-  launch -d run mission:=$1
+  launch simulation filename:=$2.yaml
+  launch run mission:=$1
 }
 
 function default {

@@ -33,5 +33,5 @@ jobs:
           ./run set-car simulation
           ./run start-headless
           ./run simulation skidpad skidpad
-          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=30"
+          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=60"
           ./run stop

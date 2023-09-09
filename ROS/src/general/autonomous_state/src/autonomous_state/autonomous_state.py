@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 import rospy
 from ugr_msgs.msg import State
+from std_msgs.msg import Header
 from nav_msgs.msg import Odometry
 from node_fixture import AutonomousStatesEnum, StateMachineScopeEnum, SLAMStatesEnum, create_diagnostic_message
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
@@ -126,6 +127,7 @@ class AutonomousController:
 
         self.state_publisher.publish(
             State(
+                header=Header(stamp=rospy.Time.now()),
                 scope=StateMachineScopeEnum.AUTONOMOUS,
                 prev_state=self.state,
                 cur_state=new_state,

@@ -23,6 +23,11 @@ class StateSupervisorNode:
     def state_callback(self, data: State):
         
         if data.scope == StateMachineScopeEnum.AUTONOMOUS:
+            
+            if data.cur_state == AutonomousStatesEnum.ASDRIVE:
+                rospy.loginfo(f"Received '{AutonomousStatesEnum.ASDRIVE}', resetting starting time...")
+                self.start_time = data.header.stamp.to_sec()
+            
             self.state = data.cur_state
 
     def run(self):
@@ -32,7 +37,7 @@ class StateSupervisorNode:
         while not rospy.is_shutdown():
             if self.state == AutonomousStatesEnum.ASFINISHED:
                 
-                rospy.loginfo(f"{AutonomousStatesEnum.ASFINISHED} received in time. Exiting successfully.")
+                rospy.loginfo(f"{AutonomousStatesEnum.ASFINISHED} received in time. Mission took {rospy.Time.now().to_sec() - self.start_time} ROS seconds. Exiting successfully.")
                 rospy.signal_shutdown("Result received successfully")
                 break
 
