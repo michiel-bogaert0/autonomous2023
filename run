@@ -165,7 +165,7 @@ function pegasus {
 function simulation {
   clean ugr
   docker compose up -d roscore
-  launch -d simulation filename:=$2
+  launch -d simulation filename:=$2.yaml
   launch -d run mission:=$1
 }
 
