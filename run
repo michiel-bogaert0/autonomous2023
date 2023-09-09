@@ -125,7 +125,13 @@ function clean {
       exit 1
   fi
 
-  docker ps -q --filter name=$PREFIX* | xargs docker rm -f
+  CONTAINERS=$(docker ps -q --filter name=$PREFIX*)
+
+  if [ -n "$CONTAINERS" ]; then
+    echo "$CONTAINERS" | xargs docker rm -f
+  else
+    echo "No containers found matching the filter criteria."
+  fi
 }
 
 function stop {

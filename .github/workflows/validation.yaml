@@ -24,6 +24,7 @@ jobs:
         run: ./run build-stack
   simulate-skidpad:
     runs-on: self-hosted
+    needs: [build]
     steps:
 
       - name: Run Skidpad simulation and supervise
