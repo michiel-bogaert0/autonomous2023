@@ -45,13 +45,15 @@ function _set-docker-runtime {
     exit 1
   fi
 
+  echo "Don't worry about 'jq' compile errors. They are used as checks."
+
   # Set the new runtime value
   new_runtime=$1
 
   # Check if the Docker daemon configuration file exists
   if [ -f /etc/docker/daemon.json ]; then
     # Configuration file exists, update the 'default-runtime' value if it exists
-    if jq -e ".default-runtime" /etc/docker/daemon.json >/dev/null; then
+    if jq -e ".default-runtime" /etc/docker/daemon.json > /dev/null; then
       # Update the existing 'default-runtime' value
       jq ".default-runtime = \"$new_runtime\"" /etc/docker/daemon.json > /tmp/daemon.json.tmp
       mv /tmp/daemon.json.tmp /etc/docker/daemon.json
@@ -59,17 +61,17 @@ function _set-docker-runtime {
     else
       # Add the 'default-runtime' key to the configuration file
       jq ". + {\"default-runtime\": \"$new_runtime\"}" /etc/docker/daemon.json > /tmp/daemon.json.tmp
-      mv /tmp/daemon.json.tmp /etc/docker/daemon.json
+      sudo mv /tmp/daemon.json.tmp /etc/docker/daemon.json
       echo "Added 'default-runtime' with value '$new_runtime' to /etc/docker/daemon.json"
     fi
   else
     # Configuration file doesn't exist, create it with 'default-runtime' set
-    echo "{\"default-runtime\": \"$new_runtime\"}" > /etc/docker/daemon.json
+    sudo echo "{\"default-runtime\": \"$new_runtime\"}" > /etc/docker/daemon.json
     echo "Created /etc/docker/daemon.json with 'default-runtime' set to '$new_runtime'"
   fi
 
   # Restart Docker to apply the changes
-  systemctl restart docker
+  sudo systemctl restart docker
 
   echo "Docker daemon configuration updated. Docker has been restarted."
 }
@@ -84,6 +86,8 @@ function set-car {
     (simulation|pegasus) ;; # OK
     (*) printf >&2 'Error... Car should be "simulation" or "pegasus" \n'; exit 1;;
   esac
+
+  echo "Setting UGR_CAR to $1..."
 
   echo "export UGR_CAR=$1" > env-vars.sh
 }
@@ -148,21 +152,21 @@ function launch {
       -v /dev:/dev \
       -v ./../rosbags:/home/ugr/rosbags/:rw \
       ugr-base \
-      /bin/zsh -c "source ~/.zshrc && roslaunch /home/ugr/autonomous2023/ROS/launch/$LAUNCH_FILE.launch $*"
+      /bin/zsh -c "source ~/.zshrc && roslaunch ugr_launch $LAUNCH_FILE.launch $*"
 }
 
 function pegasus {
   clean ugr
   docker compose up -d roscore
-  launch.sh -d external/pegasus
-  launch.sh -d internal/run mission:=$1
+  launch -d pegasus
+  launch -d run mission:=$1
 }
 
 function simulation {
   clean ugr
   docker compose up -d roscore
-  launch.sh -d external/simulation
-  launch.sh -d internal/run mission:=$1
+  launch -d simulation filename:=$2
+  launch -d run mission:=$1
 }
 
 function default {

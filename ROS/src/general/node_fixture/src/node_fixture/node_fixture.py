@@ -248,6 +248,7 @@ class AutonomousMission(str, enum.Enum):
     EBSTEST = "emergencybraketest"
     INPSPECTION = "inspection"
     SKIDPAD = "skidpad"
+    SKIDPAD_SMALL = "skidpad_small"
     
 # States of global state machine
 class AutonomousStatesEnum(str, enum.Enum):

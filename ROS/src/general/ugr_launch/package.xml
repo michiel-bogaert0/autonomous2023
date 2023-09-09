@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>ugr_launch</name>
+  <license>TODO</license>
   <version>0.0.0</version>
   <description>The ugr_launch package</description>
 

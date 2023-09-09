@@ -163,7 +163,7 @@ class PegasusState(CarState):
 
         if mission == AutonomousMission.ACCELERATION:
             bits = 1
-        elif mission == AutonomousMission.SKIDPAD:
+        elif mission == AutonomousMission.SKIDPAD or mission == AutonomousMission.SKIDPAD_SMALL:
             bits = 2
         elif mission == AutonomousMission.TRACKDRIVE:
             bits = 3

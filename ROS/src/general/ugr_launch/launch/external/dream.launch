@@ -1,8 +1,5 @@
 <launch>
-
-  <arg name="frames" default="pegasus_v2"/>
-
-  <arg name="car" default="pegasus"/>
+  <arg name="car" default="simulation"/>
   <arg name="mission" default=""/>
   <arg name="use_sim_time" default="false"/>
 
@@ -11,13 +8,16 @@
   <param name="car" value="$(env UGR_CAR)"/>
   <param name="use_sim_time" value="$(arg use_sim_time)"/>
 
-  <!-- Launch files of subteams -->
+  <arg name="enable_sensors" value="false" />
+  <arg name="enable_can" value="true" />
+  <arg name="enable_drive" value="true" />
+
+  <include file="$(find ugr_launch)/launch/frames/pegasus_v2.launch" />
+
   <include file="$(find ugr_launch)/launch/internal/perception.launch" pass_all_args="true"/>
-  <include file="$(find ugr_launch)/launch/internal/general.launch" pass_all_args="true"/>
   <include file="$(find ugr_launch)/launch/internal/slam.launch" pass_all_args="true"/>
+  <include file="$(find ugr_launch)/launch/internal/general.launch" pass_all_args="true"/>
   <include file="$(find ugr_launch)/launch/internal/control.launch" pass_all_args="true"/>
 
-  <!-- Load extra car specific parameters or override parameters -->
-  <rosparam command="load" file="$(find ugr_launch)/config/$(env UGR_CAR).yaml" />
-
+  <include file="$(find ugr_launch)/launch/external/pegasus.launch" pass_all_args="true"/>
 </launch>

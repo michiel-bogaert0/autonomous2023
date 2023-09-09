@@ -3,6 +3,7 @@
   <arg name="mission" default="" />
 
   <param name="/mission" value="$(arg mission)" />
+  <param name="/car" value="$(env UGR_CAR)" />
 
   <!-- ? Controller -->
   <node name="slam_controller" pkg="slam_controller" type="controller.py" output="screen">

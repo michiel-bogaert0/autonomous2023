@@ -19,7 +19,7 @@
 
   <arg name="frames" default="pegasus_v2"/>
 
-  <include file="$(find ugr_launch/launch/frames/$(arg frames).launch" pass_all_args="true"/>
+  <include file="$(find ugr_launch)/launch/frames/$(arg frames).launch" pass_all_args="true"/>
 
   <group if="$(arg enable_can)">
     <node pkg="can_node" type="can_driver.py" name="can_driver" output="screen">
