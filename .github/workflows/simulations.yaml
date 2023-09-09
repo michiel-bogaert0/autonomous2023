@@ -1,0 +1,30 @@
+name: ugr-run-simulations
+
+on:
+  workflow_run:
+    workflows: ["ros-build-modules"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+
+      - name: Build Docker image (nogpu)
+        run: ./run build-nogpu
+
+      - name: Build stack
+        run: ./run build-stack
+
+      - name: Run Skidpad simulation and supervise
+        run: | 
+          ./run stop
+          ./run start-headless
+          ./run set-car simulation
+          ./run simulation skidpad skidpad
+          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=30"
+          ./run stop

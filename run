@@ -96,6 +96,10 @@ function start {
   docker compose up -d dev roscore rviz
 }
 
+function start-headless {
+  docker compose up -d dev roscore
+}
+
 function clean {
   PREFIX=$1
   shift
