@@ -1,0 +1,33 @@
+# General
+empy
+catkin_pkg
+rospkg
+pybind11[global]
+
+# SLAM
+utm
+ubxtranslator
+
+# Perception
+# Minimum Numpy version of 1.20.0 for better typing support
+# Maximum Numpy version of 1.23.X since in 1.24 they depricated np.bool which breaks TensorRT>:(
+numpy>=1.20.0,<1.24.0
+ultralytics
+scikit-learn>=1.2.2
+tqdm
+matplotlib>=3.6.2
+xmltodict
+
+# Jetson CAN
+python-can==4.0.0
+cantools==37.1.0
+
+# Dev tools
+black
+isort
+pynput
+mypy
+pytest
+autoflake
+mkdocs-material
+pynput

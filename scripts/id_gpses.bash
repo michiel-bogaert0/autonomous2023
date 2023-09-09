@@ -5,7 +5,7 @@ L="1-2"
 # echo USB Devices:
 # ls /dev/ttyUSB* | cut -d "/" -f 3
 
-output=""
+output="export UGR_CAR=pegasus\n"
 
 for usb in $(ls /dev/ttyUSB* | cut -d "/" -f 3)
 do

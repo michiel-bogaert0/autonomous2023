@@ -1,0 +1,179 @@
+#!/bin/bash
+
+function build {
+    docker build -t ugr-base .
+}
+
+function build-nogpu {
+  docker build -t ugr-base -f Dockerfile.nogpu .
+}
+
+function post-install {
+  # Depends on your terminal
+  echo "alias ugrdev=\"docker exec -it dev zsh\"" >> ~/.zshrc
+	echo "alias ugrdev=\"docker exec -it dev zsh\"" >> ~/.bashrc
+
+  # Sets the default car to simulation
+  set-car simulation
+}
+
+function install {
+  build
+
+  if docker info | grep -i runtime | grep -q "nvidia"; then
+    echo "NVIDIA runtime is in use."
+  else
+    echo "NVIDIA runtime is not installed. Please follow https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html or use the 'nogpu' commands ('install-nogpu')"
+    exit 1
+  fi
+
+  _set-docker-runtime nvidia
+
+  post-install
+}
+
+function install-nogpu {
+  build-nogpu
+  _set-docker-runtime runc
+  post-install
+}
+
+function _set-docker-runtime {
+  # Check if jq (a JSON processor) is installed
+  if ! command -v jq &>/dev/null; then
+    echo "Error: 'jq' is not installed. Please install it before running this script."
+    exit 1
+  fi
+
+  # Set the new runtime value
+  new_runtime=$1
+
+  # Check if the Docker daemon configuration file exists
+  if [ -f /etc/docker/daemon.json ]; then
+    # Configuration file exists, update the 'default-runtime' value if it exists
+    if jq -e ".default-runtime" /etc/docker/daemon.json >/dev/null; then
+      # Update the existing 'default-runtime' value
+      jq ".default-runtime = \"$new_runtime\"" /etc/docker/daemon.json > /tmp/daemon.json.tmp
+      mv /tmp/daemon.json.tmp /etc/docker/daemon.json
+      echo "Updated 'default-runtime' to '$new_runtime' in /etc/docker/daemon.json"
+    else
+      # Add the 'default-runtime' key to the configuration file
+      jq ". + {\"default-runtime\": \"$new_runtime\"}" /etc/docker/daemon.json > /tmp/daemon.json.tmp
+      mv /tmp/daemon.json.tmp /etc/docker/daemon.json
+      echo "Added 'default-runtime' with value '$new_runtime' to /etc/docker/daemon.json"
+    fi
+  else
+    # Configuration file doesn't exist, create it with 'default-runtime' set
+    echo "{\"default-runtime\": \"$new_runtime\"}" > /etc/docker/daemon.json
+    echo "Created /etc/docker/daemon.json with 'default-runtime' set to '$new_runtime'"
+  fi
+
+  # Restart Docker to apply the changes
+  systemctl restart docker
+
+  echo "Docker daemon configuration updated. Docker has been restarted."
+}
+
+function install-nogpu {
+  build-nogpu
+  post-install
+}
+
+function set-car {
+  case $1 in
+    (simulation|pegasus) ;; # OK
+    (*) printf >&2 'Error... Car should be "simulation" or "pegasus" \n'; exit 1;;
+  esac
+
+  echo "export UGR_CAR=$1" > env-vars.sh
+}
+
+function start {
+  docker compose up -d dev roscore rviz
+}
+
+function clean {
+  PREFIX=$1
+  shift
+  if [ -z "$PREFIX" ]
+    then
+      echo "Please provide a prefix."
+      exit 1
+  fi
+
+  docker ps -q --filter name=$PREFIX* | xargs docker rm -f
+}
+
+function stop {
+  docker compose down
+  clean ugr
+}
+
+function build-stack {
+  docker compose up builder
+}
+
+function launch {
+  detach_mode=""
+
+  while getopts ":d" opt; do
+    case ${opt} in
+      d ) detach_mode="-d" ;;
+      \? ) echo "Invalid option: -$OPTARG" 1>&2
+          exit 1 ;;
+    esac
+  done
+  shift $((OPTIND -1))
+
+  LAUNCH_FILE=$1
+  shift
+  if [ -z "$LAUNCH_FILE" ]
+    then
+      echo "Please provide the name of the launch file."
+      exit 1
+  fi
+
+  docker ps -q --filter name=ugr-${LAUNCH_FILE//\//-}-* | xargs docker rm -f
+
+  docker run $detach_mode --name ugr-${LAUNCH_FILE//\//-}-$(date +'%Y%m%d%H%M%S') \
+      --privileged \
+      --network host \
+      -e DISPLAY=$DISPLAY \
+      -e QT_X11_NO_MITSHM=1 \
+      --restart=always \
+      -it \
+      -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+      -v ./:/home/ugr/autonomous2023/:rw \
+      -v ./../autonomous2023_binaries:/home/ugr/autonomous2023_binaries/:rw \
+      -v /dev:/dev \
+      -v ./../rosbags:/home/ugr/rosbags/:rw \
+      ugr-base \
+      /bin/zsh -c "source ~/.zshrc && roslaunch /home/ugr/autonomous2023/ROS/launch/$LAUNCH_FILE.launch $*"
+}
+
+function pegasus {
+  clean ugr
+  docker compose up -d roscore
+  launch.sh -d external/pegasus
+  launch.sh -d internal/run mission:=$1
+}
+
+function simulation {
+  clean ugr
+  docker compose up -d roscore
+  launch.sh -d external/simulation
+  launch.sh -d internal/run mission:=$1
+}
+
+function default {
+    start
+}
+
+function help {
+    echo "$0 <task> <args>"
+    echo "Tasks:"
+    compgen -A function | cat -n
+}
+
+TIMEFORMAT="Task completed in %3lR"
+time ${@:-default}

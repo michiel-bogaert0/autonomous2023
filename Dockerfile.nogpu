@@ -1,14 +1,12 @@
 #
 # Base stage. Install repository dependencies
 #
-FROM nvidia/cuda:11.7.1-runtime-ubuntu20.04 AS ugr-base
+FROM ubuntu:20.04 AS ugr-base
 
 #
-# Install torch and torchvision
+# Install python
 #
 RUN apt-get update && apt-get -y install --no-install-recommends python3 python3-pip
-RUN pip install torch==2.0.0
-RUN pip install torchvision==0.15.1
 
 #
 # Initial dependencies
@@ -93,12 +91,8 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 
 
 # Python stuff
-RUN pip install nvidia-pyindex
-COPY requirements.txt requirements.txt
+COPY requirements.nogpu.txt requirements.txt
 RUN pip install -r requirements.txt
-
-RUN wget -O neoapi-1.2.1-cp38-cp38-linux_x86_64.whl https://github.com/UgentRacing/autonomous_public_binaries/blob/main/modules/neoapi-1.2.1-cp38-cp38-linux_x86_64.whl?raw=true
-RUN python3 -m pip install neoapi-1.2.1-cp38-cp38-linux_x86_64.whl
 
 # Handy commands
 RUN echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.zshrc && \
@@ -108,11 +102,5 @@ RUN echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.zshrc && \
     echo "alias ugr=\"cd ~/autonomous2023/ROS/\"" >> ~/.zshrc && \
     echo "alias cbuild='catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release'" >> ~/.zshrc && \ 
     echo "source /home/ugr/autonomous2023/env-vars.sh" >> ~/.zshrc
-
-# nvidia-container-runtime
-ENV NVIDIA_VISIBLE_DEVICES \
-    ${NVIDIA_VISIBLE_DEVICES:-all}
-ENV NVIDIA_DRIVER_CAPABILITIES \
-    ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
 
 CMD /bin/zsh
