@@ -19,6 +19,9 @@ jobs:
 
       - name: Build stack
         run: ./run build-stack
+  simulate:
+    runs-on: self-hosted
+    steps:
 
       - name: Run Skidpad simulation and supervise
         run: | 

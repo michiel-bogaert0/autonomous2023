@@ -118,7 +118,8 @@ function stop {
 }
 
 function build-stack {
-  docker compose up builder
+  docker compose up -d --remove-orphans dev
+  docker exec -it dev /bin/zsh -c "source ~/.zshrc || cd ~/autonomous2023/ROS && catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build"
 }
 
 function launch {
@@ -184,4 +185,4 @@ function help {
 }
 
 TIMEFORMAT="Task completed in %3lR"
-time ${@:-default}
+${@:-default}
