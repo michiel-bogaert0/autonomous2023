@@ -93,10 +93,26 @@ function set-car {
 }
 
 function start {
+
+  file="env-vars.sh"
+
+  if [ ! -e "$file" ]; then
+    echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'"
+    exit 1
+  fi
+
   docker compose up -d dev roscore rviz
 }
 
 function start-headless {
+
+  file="env-vars.sh"
+
+  if [ ! -e "$file" ]; then
+    echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'"
+    exit 1
+  fi
+
   docker compose up -d dev roscore
 }
 
@@ -119,7 +135,7 @@ function stop {
 
 function build-stack {
   docker compose up -d --remove-orphans dev
-  docker exec -it dev /bin/zsh -c "source ~/.zshrc || cd ~/autonomous2023/ROS && catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build"
+  docker exec dev /bin/zsh -c "source ~/.zshrc || cd ~/autonomous2023/ROS && catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build"
 }
 
 function launch {
@@ -150,7 +166,6 @@ function launch {
       -e DISPLAY=$DISPLAY \
       -e QT_X11_NO_MITSHM=1 \
       --restart=always \
-      -it \
       -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
       -v ./:/home/ugr/autonomous2023/:rw \
       -v ./../autonomous2023_binaries:/home/ugr/autonomous2023_binaries/:rw \
@@ -162,14 +177,12 @@ function launch {
 
 function pegasus {
   clean ugr
-  docker compose up -d roscore
   launch -d pegasus
   launch -d run mission:=$1
 }
 
 function simulation {
   clean ugr
-  docker compose up -d roscore
   launch -d simulation filename:=$2.yaml
   launch -d run mission:=$1
 }
