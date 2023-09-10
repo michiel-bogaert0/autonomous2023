@@ -31,19 +31,21 @@ jobs:
         run: | 
           ./run stop
           ./run set-car simulation
+          ./run set-random-roscore-port
           ./run start-headless
           ./run simulation skidpad skidpad
           docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=60"
           ./run stop
   simulate-acceleration:
     runs-on: self-hosted
-    needs: [simulate-skidpad]
+    needs: [build]
     steps:
 
       - name: Run acceleration simulation and supervise
         run: | 
           ./run stop
           ./run set-car simulation
+          ./run set-random-roscore-port
           ./run start-headless
           ./run simulation acceleration acceleration_75m
           docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=30"

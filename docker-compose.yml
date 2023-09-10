@@ -6,7 +6,7 @@ services:
     restart: always
     tty: true
     privileged: true
-    entrypoint: zsh -c 'source ~/.zshrc && roscore'
+    entrypoint: zsh -c 'source ~/.zshrc && /home/ugr/autonomous2023/scripts/start_roscore.sh'
     volumes:
       - "./:/home/ugr/autonomous2023/:rw"
   rviz:
