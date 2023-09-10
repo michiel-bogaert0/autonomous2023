@@ -179,6 +179,10 @@ void GenericHWInterface::registerJointLimits(const hardware_interface::JointHand
     if (joint_limits.has_velocity_limits)
       ROS_INFO_STREAM_NAMED(name_, "Joint " << joint_names_[joint_id] << " has URDF velocity limit ["
                                              << joint_limits.max_velocity << "]");
+    
+    if (joint_limits.has_effort_limits)
+      ROS_INFO_STREAM_NAMED(name_, "Joint " << joint_names_[joint_id] << " has URDF effort limit ["
+                                             << joint_limits.max_effort << "]");
   }
   else
   {

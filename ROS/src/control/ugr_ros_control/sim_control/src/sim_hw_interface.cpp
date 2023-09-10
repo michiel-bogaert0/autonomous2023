@@ -49,7 +49,7 @@ SimHWInterface::SimHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
   ros::NodeHandle n("~");
 
   this->model = new BicycleModel(n.param<double>("R", 0.1), n.param<double>("L", 1.0), n.param<double>("Lr", 0.5),
-                                 n.param<double>("mu", 0.1), n.param<double>("DC", 0.8));
+                                 n.param<double>("mu", 0.1), n.param<double>("DC", 0.025));
 
   ROS_INFO_NAMED("sim_hw_interface", "SimHWInterface Ready.");
 }
@@ -127,6 +127,8 @@ void SimHWInterface::write(ros::Duration& elapsed_time)
   // Safety
   enforceLimits(elapsed_time);
 
+  // TODO add logic for when using a feedforward velocity controller instead of effort interface / joint velocity controller
+
   // Feed to bicycle model
   this->model->update(elapsed_time.toSec(), joint_effort_command_[drive_joint_id],
                       joint_velocity_command_[steering_joint_id]);
@@ -136,6 +138,7 @@ void SimHWInterface::enforceLimits(ros::Duration& period)
 {
   // Enforces position and velocity
   pos_jnt_sat_interface_.enforceLimits(period);
+  eff_jnt_sat_interface_.enforceLimits(period);
 }
 
 void SimHWInterface::publish_gt(const ros::TimerEvent&)

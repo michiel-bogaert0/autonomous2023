@@ -36,7 +36,7 @@ steering_position_controller:
 drive_velocity_controller:
    type: effort_controllers/JointVelocityController
    joint: axis0
-   pid: {p: 10.0, i: 0.01, d: 0.0}
+   pid: {p: 100.0, i: 5.0, d: 0.0, i_clamp_max: 100.0, i_clamp_min: -100.0, antiwindup: True, publish_state: True}
 
 drive_effort_controller:
    type: effort_controllers/JointEffortController
