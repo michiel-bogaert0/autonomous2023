@@ -105,7 +105,7 @@ class PerceptionSimulator(StageSimulator):
                 self.world_frame,
                 self.gt_base_link_frame,
                 rospy.Time.now() - rospy.Duration(self.delay),
-                rospy.Duration(1)
+                rospy.Duration(0.2)
             )
         except:
             return

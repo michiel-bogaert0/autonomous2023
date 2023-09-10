@@ -18,7 +18,7 @@
     <param name="viewing_distance" value="15" />
     <param name="fov" value="90" />
     <param name="add_noise" value="true" />
-    <param name="cone_noise" value="0.002" />
+    <param name="cone_noise" value="0.02" />
 
     <remap from="/output/observations" to="/ugr/car/observations/lidar" />
     <remap from="/input/track" to="$(arg gt_map_topic)" />
