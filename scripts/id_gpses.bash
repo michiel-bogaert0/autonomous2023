@@ -20,15 +20,3 @@ do
     echo "Left (fixed rover): $usb"
   fi
 done
-
-sudo /home/$(whoami)/autonomous2023/run set-car pegasus
-sudo /home/$(whoami)/autonomous2023/run set-env ROS_HOSTNAME 192.168.50.17
-sudo /home/$(whoami)/autonomous2023/run set-env ROS_MASTER_URI http://192.168.50.17:11311
-
-chmod +x /home/$(whoami)/autonomous2023/env-vars.sh
-
-echo "Environment variable export script written to /home/$(whoami)/autonomous2023/env-vars.sh"
-
-sudo /home/$(whoami)/autonomous2023/run stop
-sudo /home/$(whoami)/autonomous2023/run start-headless
-sudo /home/$(whoami)/autonomous2023/run pegasus

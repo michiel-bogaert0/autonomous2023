@@ -29,4 +29,13 @@ done
 
 bash /home/ugentracing/autonomous2023/scripts/id_gpses.bash
 
+# Setup environment and start code
+sudo /home/$(whoami)/autonomous2023/run set-car pegasus
+sudo /home/$(whoami)/autonomous2023/run set-env ROS_HOSTNAME 192.168.50.17
+sudo /home/$(whoami)/autonomous2023/run set-env ROS_MASTER_URI http://192.168.50.17:11311
+
+sudo /home/$(whoami)/autonomous2023/run stop
+sudo /home/$(whoami)/autonomous2023/run start-headless
+sudo /home/$(whoami)/autonomous2023/run pegasus
+
 exit 0
