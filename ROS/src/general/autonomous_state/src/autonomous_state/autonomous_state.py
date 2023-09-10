@@ -74,7 +74,11 @@ class AutonomousController:
 
             if self.mission_finished and self.vehicle_stopped:
                 self.change_state(AutonomousStatesEnum.ASFINISHED)
-            else:
+
+            # ! This line is here to prevent rapid toggles between ASFINISHED and ASEMERGENCY as a result of self.vehicle_stopped rapidly switching
+            # ! In a normal FS car this isn't a problem because you have to apply both EBS and the brakes in order to get the vehicle to a "standstill" state
+            # ! But for pegasus (and currently simulation also) we can't really "apply the brakes"
+            elif self.state != AutonomousStatesEnum.ASFINISHED: 
                 self.change_state(AutonomousStatesEnum.ASEMERGENCY)
 
         elif ccs["EBS"] == carStateEnum.ON:
@@ -111,6 +115,12 @@ class AutonomousController:
         Args:
             odom: the odometry message containing speed information
         """
+
+        # If vehicle is stopped and EBS is activated, vehicle will not be able to move, so 
+        # latch self.vehicle_stopped
+        if self.vehicle_stopped and self.car.get_state()["EBS"] == carStateEnum.ACTIVATED:
+            return
+
         self.odom_avg.append(abs(odom.twist.twist.linear.x))
         self.vehicle_stopped = sum(list(self.odom_avg)) / len(list(self.odom_avg)) < 0.1
 
