@@ -38,7 +38,7 @@ class KeypointDetector:
         """Given an image and YOLO bounding boxes, predict keypoints on each cone in the image
 
         Args:
-            image: tensor on the GPU (3xHxW)
+            image: normalised tensor on the GPU (3xHxW)
             bboxes: array of bounding boxes
 
         Returns:
@@ -46,9 +46,6 @@ class KeypointDetector:
             - cone heights in pixels
             - bottom keypoint coordinates in pixels
         """
-
-        # The image should also use pixel values between 0 and 1
-        image = image.float() / 255
 
         valid_cones = np.ones(bboxes.shape[0], dtype=bool)
 

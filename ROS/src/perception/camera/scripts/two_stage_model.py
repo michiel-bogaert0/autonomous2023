@@ -163,8 +163,8 @@ class TwoStageModel:
 
             if self.image_encoding is not None:
                 # Don't forget to undo any image resizing afterwards
-                kpts[i][:, 0] *= original_size[1] / self.image_size[1]
-                kpts[i][:, 1] *= original_size[0] / self.image_size[0]
+                kpts[i][:, 0] = (kpts[i][:, 0] * original_size[1] / self.image_size[1]).astype(int)
+                kpts[i][:, 1] = (kpts[i][:, 1] * original_size[0] / self.image_size[0]).astype(int)
         latencies.append(1000 * (time.perf_counter() - start))
 
         # Find cone locations
