@@ -70,5 +70,5 @@ class ConeDetector:
             valid_bboxes,
         )
         bb = bb[valid_bboxes]
-
+        
         return bb

@@ -63,6 +63,8 @@ class ThreeStageModel:
         # This is less acurate, but does not slow down the code as much
         latencies = []
 
+        cv2.imwrite("/home/ugr/autonomous2023/image.jpg", original_image)
+
         # The image should be 3xHxW, normalised, and on the GPU
         start = time.perf_counter()
         image = torch.from_numpy(original_image).to(self.device).permute(2, 0, 1) / 255
