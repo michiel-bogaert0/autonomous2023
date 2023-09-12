@@ -230,6 +230,13 @@ function pegasus {
 }
 
 function simulation {
+
+    if [ -z "$2" ] 
+    then
+      echo "Error: the second argument (ground truth map) is empty. This will crash the simulator. Please give a valid map from slam_simulator/maps ";
+      exit 1;
+    fi
+
     clean ugr
     launch simulation filename:=$2.yaml
     launch run mission:=$1
