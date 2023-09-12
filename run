@@ -250,6 +250,17 @@ function set-random-roscore-port {
     done
 }
 
+function disconnect-pegasus {
+    stop 
+
+    # Sets the default car to simulation
+    set-car simulation
+    
+    # Default ROS master uri and hostname
+    set-env "ROS_MASTER_URI" "http://localhost:11311"
+    set-env "ROS_HOSTNAME" "localhost"
+}
+
 function connect-pegasus {
 
     stop
