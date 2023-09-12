@@ -3,7 +3,7 @@
 
     <node pkg="camera" type="run.py" name="perception_camera" output="screen">
         <param name="cuda" value="True" />
-        <param name="tensorrt" value="False" />
+        <param name="tensorrt" value="True" />
         <param name="keypoint_detector_model" value="unet_threestage.pt" />
         <param name="detection_height_threshold" value="20" />
         <param name="detection_max_distance" value="15" />
