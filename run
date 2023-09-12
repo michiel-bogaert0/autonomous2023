@@ -9,6 +9,9 @@ function build-nogpu {
 }
 
 function post-install {
+    touch env-vars.sh
+    sudo chmod +x env-vars.sh
+
     # Depends on your terminal
     echo "alias ugrdev=\"docker exec -it dev zsh\"" >> ~/.zshrc
     echo "alias ugrdev=\"docker exec -it dev zsh\"" >> ~/.bashrc
@@ -19,6 +22,8 @@ function post-install {
     # Default ROS master uri and hostname
     set-env "ROS_MASTER_URI" "http://localhost:11311"
     set-env "ROS_HOSTNAME" "localhost"
+
+    build-stack
 }
 
 function install {
@@ -45,8 +50,8 @@ function install-nogpu {
 function _set-docker-runtime {
     # Check if jq (a JSON processor) is installed
     if ! command -v jq &>/dev/null; then
-        echo "Error: 'jq' is not installed. Please install it before running this script."
-        exit 1
+        echo "Error: 'jq' is not installed."
+        sudo apt install jq
     fi
     
     echo "Don't worry about 'jq' compile errors. They are used as checks."
@@ -116,8 +121,9 @@ function start {
     file="env-vars.sh"
     
     if [ ! -e "$file" ]; then
-        echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'"
-        exit 1
+        echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'";
+        echo "lol"
+        exit 324;
     fi
     
     docker compose up -d dev roscore rviz
@@ -128,8 +134,8 @@ function start-headless {
     file="env-vars.sh"
     
     if [ ! -e "$file" ]; then
-        echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'"
-        exit 1
+        echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'";
+        exit 1;
     fi
     
     docker compose up -d dev roscore
@@ -160,7 +166,7 @@ function stop {
 
 function build-stack {
     docker compose up -d --remove-orphans dev
-    docker exec dev /bin/zsh -c "source ~/.zshrc || cd ~/autonomous2023/ROS && catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build"
+    docker exec dev /bin/zsh -c "cd ~/autonomous2023/ROS && source ~/.zshrc || catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build"
 }
 
 function launch {
@@ -198,8 +204,8 @@ function launch {
 
 function pegasus {
     clean ugr
-    launch -d pegasus
-    launch -d run mission:=$1
+    launch pegasus
+    launch run mission:=$1
 }
 
 function simulation {
