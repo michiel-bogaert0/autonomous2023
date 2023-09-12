@@ -21,24 +21,6 @@ class CameraNode(PublishNode):
         # Unless you know what you're doing, don't enable use_raw
         self.use_raw = rospy.get_param("~use_raw", False)
 
-        # Auto-brightness parameters
-        self.target_brightness = rospy.get_param("~target_brightness", 70)
-        self.brightness_deadzone = rospy.get_param("~brightness_deadzone", 5)
-        self.max_exposure = rospy.get_param("~max_exposure", 300_000)
-        self.min_gain = rospy.get_param("~min_gain", 0.01)
-        self.max_gain = rospy.get_param("~max_gain", 10)
-        self.stepsize_gain = rospy.get_param("~stepsize_gain", 0.1)
-        self.stepsize_exposure = rospy.get_param("~stepsize_exposure", 0.1)
-        self.camera_control_interval = rospy.get_param("~camera_control_interval", 50)
-
-        self.exposure = 1_000
-        self.gain = 0.1
-        self.last_control = self.camera_control_interval
-
-        self.diagnostics = rospy.Publisher(
-            "/diagnostics", DiagnosticArray, queue_size=10
-        )
-
         camsettings_location = rospy.get_param("~camsettings", "camera_settings.yaml")
         with open(
             Path(os.getenv("BINARY_LOCATION")) / "pnp" / camsettings_location, "r"
@@ -46,29 +28,6 @@ class CameraNode(PublishNode):
             self.camera_settings = yaml.safe_load(stream)
 
         self.setup_camera()
-
-        self.diagnostics.publish(
-            self.create_diagnostic_message(
-                level=DiagnosticStatus.WARN,
-                brightness="INIT"
-            )
-        )
-
-    def create_diagnostic_message(
-            self,
-            level: DiagnosticStatus,
-            brightness: str,
-        ) -> DiagnosticArray:
-        diag_array = DiagnosticArray(
-            status=[
-            DiagnosticStatus(
-                level=level,
-                name="[HW] Camera driver",
-                message=f"Brightness: {brightness} - Exposure: {self.exposure:.0f} - Gain: {self.gain:.2f}",
-            )
-        ])
-
-        return diag_array
 
     def get_camera_info(self):
         msg = CameraInfo()
@@ -102,30 +61,24 @@ class CameraNode(PublishNode):
         camera = neoapi.Cam()
         camera.Connect("700006709126")
 
+        # Get the configuration saved on the camera itself
+        selector = camera.GetFeature("UserSetSelector")
+        selector.value = "UserSet1"
+
+        user = camera.GetFeature("UserSetLoad")
+        user.Execute()
+
         # Use continuous mode
         camera.f.TriggerMode.value = (
             neoapi.TriggerMode_Off
         )  # set camera to trigger mode, the camera starts streaming
+        camera.f.AcquisitionFrameRateEnable = (
+            True  # enable the frame rate control (optional)
+        )
+        camera.f.AcquisitionFrameRate = 24  # set the frame rate to 24 fps (optional)
+
         if camera.f.PixelFormat.GetEnumValueList().IsReadable("BGR8"):
             camera.f.PixelFormat.SetString("BGR8")
-
-        # Setting all the needed parameters to manually change exposure and gain
-        camera.f.Height = self.camera_settings["height"]
-        camera.f.Width = self.camera_settings["width"]
-        camera.f.ExposureMode.Set(neoapi.ExposureMode_Timed)
-        camera.f.ExposureAuto.Set(neoapi.ExposureAuto_Off)
-        camera.f.BalanceWhiteAuto.Set(neoapi.BalanceWhiteAuto_Off)
-        camera.f.GainSelector.Set(neoapi.GainSelector_All)
-        camera.f.GainAuto.Set(neoapi.GainAuto_Off)
-        camera.f.SequencerConfigurationMode.Set(neoapi.SequencerConfigurationMode_Off)
-        camera.f.ColorTransformationAuto.Set(neoapi.ColorTransformationAuto_Off)
-        camera.f.SequencerMode.Set(neoapi.SequencerMode_Off)
-        camera.f.SequencerMode.Set(neoapi.SequencerMode_Off)
-        camera.f.SequencerMode.Set(neoapi.SequencerMode_Off)
-
-        # Some default values
-        camera.f.ExposureTime.Set(self.exposure)
-        camera.f.Gain.Set(self.gain)
 
         self.camera = camera
 
@@ -154,44 +107,6 @@ class CameraNode(PublishNode):
             cv.CV_32FC1,
         )
 
-    def update_camera_params(self, img):
-        # Get a measure of the perceived image brightness
-        # Formula: 0.2126*R + 0.7152*G + 0.0722*B
-        # Remember that the image is still BGR here
-        means = np.mean(img, axis=(0, 1))
-        perceived_brightness = 0.2126 * means[2] + 0.7152 * means[1] + 0.0722 * means[0]
-
-        # Tweak the camera parameters
-        err = perceived_brightness - self.target_brightness
-        if err > self.brightness_deadzone:
-            # The image is too bright
-            if self.gain == self.min_gain:
-                self.exposure -= self.stepsize_exposure * self.exposure
-            else:
-                self.gain -= self.stepsize_gain * self.gain
-                self.gain = max(self.gain, self.min_gain)
-        elif -err > self.brightness_deadzone:
-            # The image is too dim
-            if self.gain == self.max_gain:
-                self.exposure += self.stepsize_exposure * self.exposure
-                self.exposure = min(self.exposure, self.max_exposure)
-            else:
-                self.gain += self.stepsize_gain * self.gain
-                self.gain = min(self.gain, self.max_gain)
-
-        self.camera.f.ExposureTime.Set(self.exposure)
-        self.camera.f.Gain.Set(self.gain)
-
-
-        self.diagnostics.publish(
-            self.create_diagnostic_message(
-                level=DiagnosticStatus.WARN
-                if abs(err) > self.brightness_deadzone
-                else DiagnosticStatus.OK,
-                brightness=f"{perceived_brightness:.1f}"
-            )
-        )
-
     def process_data(self):
         """
         reads the frames from the camera
@@ -203,11 +118,6 @@ class CameraNode(PublishNode):
 
         if not image.IsEmpty():
             img = image.GetNPArray()
-
-            self.last_control -= 1
-            if self.last_control < 0:
-                self.last_control = self.camera_control_interval
-                self.update_camera_params(img)
 
             if not self.use_raw:
                 img = cv.remap(
@@ -225,3 +135,4 @@ class CameraNode(PublishNode):
 
 node = CameraNode()
 node.publish_image_data()
+
