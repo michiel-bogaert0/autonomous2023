@@ -138,6 +138,7 @@ void SimHWInterface::enforceLimits(ros::Duration& period)
 {
   // Enforces position and velocity
   pos_jnt_sat_interface_.enforceLimits(period);
+  vel_jnt_sat_interface_.enforceLimits(period);
   eff_jnt_sat_interface_.enforceLimits(period);
 }
 
