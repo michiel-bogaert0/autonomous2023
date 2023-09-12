@@ -265,6 +265,8 @@ function connect-pegasus {
 
     stop
 
+    set-car pegasus
+
     set-env ROS_MASTER_URI http://192.168.50.17:11311
     
     default_interface=$(ip route | awk '/default/ {print $5}')
