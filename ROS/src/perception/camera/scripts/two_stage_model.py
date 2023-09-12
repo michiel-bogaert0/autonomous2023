@@ -1,3 +1,4 @@
+from typing import List, Optional, Tuple
 import cv2
 import numpy as np
 import numpy.typing as npt
@@ -51,25 +52,25 @@ class TwoStageModel:
 
     def extract_cones(self, tops, bottoms, category: int):
         """Given a list of top and bottom keypoints extract the cone type and positions
-        
+
         Args:
             tops: top keypoint positions (u, v)
             bottoms: bottom keypoint positions (u, v)
             category: the cone type
-        
+
         Returns:
             an array of Nx4 containing (cone category, x, y, z)
         """
 
         heights, valid_bottom_idx = np.empty(0), []
-        
+
         # Enumerate over all bottom keypoints
         for i, bottom in enumerate(bottoms):
             # The possible top keypoint matches must be to the top-right of the bottom
             targets = tops[
                 np.logical_and(tops[:, 0] > bottom[0], tops[:, 1] < bottom[1])
             ]
-            
+
             # If there are none, too bad:(
             if len(targets) == 0:
                 continue
@@ -108,10 +109,10 @@ class TwoStageModel:
 
     def predict(self, original_image: npt.ArrayLike):
         """Given an image, pass it through the global keypoint detector, match the keypoints, and return the cones that were found.
-        
+
         Args:
             original_image: the numpy image object of (H, W, 3)
-        
+
         Returns:
             - an array of Nx4 containing (cone category, x, y, z)
             - the pipeline latencies containing triplets of (pre-processing, kpt inference, post-processing)
@@ -121,7 +122,7 @@ class TwoStageModel:
         # This is less acurate, but does not slow down the code as much
         latencies = []
 
-         # The image should be on the GPU and 3xHxW 
+        # The image should be on the GPU and 3xHxW
         start = time.perf_counter()
         image = torch.from_numpy(original_image).to(self.device).permute(2, 0, 1)
         latencies.append(1000 * (time.perf_counter() - start))
@@ -141,21 +142,29 @@ class TwoStageModel:
         # Extract keypoints
         start = time.perf_counter()
 
+        # Use the GPU-accelerated keypoint extractor (re-written by Thomas Lips)
+        # The result are the extracted keypoints ((u, v) coordinates) for each batch (1), channel (8)
+
         # List with elements: Array of #detections x 2
-        kpts = []
         # There are 8 detection channels:
         #   blue_top, blue_bottom, yellow_top, ...
-        for i in range(8):
-            # Use the GPU-accelerated keypoint extractor
-            arr = self.extract_keypoints_from_heatmap(keypoints[0, i])
+        kpts = self.get_keypoints_from_heatmap_batch_maxpool(keypoints)[
+            0
+        ]  # There should only be one batch, take that one
 
-            if len(arr) == 0:
-                arr = np.empty((0, 2))
-            elif self.image_encoding is not None:
+        # The resulting list should be 8 lists of unknown length (possibly empty)
+        for i in range(8):
+            if len(kpts[i]) == 0:
+                kpts[i] = np.empty((0, 2))
+                continue
+
+            # Convert the list to a Numpy array
+            kpts[i] = np.array(kpts[i])
+
+            if self.image_encoding is not None:
                 # Don't forget to undo any image resizing afterwards
-                arr[:, 0] *= original_size[1] / self.image_size[1]
-                arr[:, 1] *= original_size[0] / self.image_size[0]
-            kpts.append(arr)
+                kpts[i][:, 0] = (kpts[i][:, 0] * original_size[1] / self.image_size[1]).astype(int)
+                kpts[i][:, 1] = (kpts[i][:, 1] * original_size[0] / self.image_size[0]).astype(int)
         latencies.append(1000 * (time.perf_counter() - start))
 
         # Find cone locations
@@ -178,39 +187,104 @@ class TwoStageModel:
 
         return cones, latencies, vis_img
 
-    def extract_keypoints_from_heatmap(self, heatmap, nms_range = 15, threshold = 0.1):
-        """Extracts keypoitns from a heatmap using GPU acceleration
-        
+    def get_keypoints_from_heatmap_batch_maxpool(
+        self,
+        heatmap: torch.Tensor,
+        max_keypoints: int = 20,
+        min_keypoint_pixel_distance: int = 1,
+        abs_max_threshold: Optional[float] = None,
+        rel_max_threshold: Optional[float] = None,
+        return_scores: bool = False,
+    ) -> List[List[List[Tuple[int, int]]]]:
+        """Fast extraction of keypoints from a batch of heatmaps using maxpooling.
+
+        Taken from:
+        https://github.com/tlpss/keypoint-detection
+        Inspired by mmdetection and CenterNet:
+        https://mmdetection.readthedocs.io/en/v2.13.0/_modules/mmdet/models/utils/gaussian_target.html
+
         Args:
-            heatmap: (H, W) array
-            nms_range: the range for NMS in pixels
-            threshold: the minimal heatmap value to be considered a keypoint
-        
+            heatmap (torch.Tensor): NxCxHxW heatmap batch
+            max_keypoints (int, optional): max number of keypoints to extract, lowering will result in faster execution times. Defaults to 20.
+            min_keypoint_pixel_distance (int, optional): _description_. Defaults to 1.
+
+            Following thresholds can be used at inference time to select where you want to be on the AP curve. They should ofc. not be used for training
+            abs_max_threshold (Optional[float], optional): _description_. Defaults to None.
+            rel_max_threshold (Optional[float], optional): _description_. Defaults to None.
+
         Returns:
-            array of Nx2 containing (u, v) coordinates
+            The extracted keypoints for each batch, channel and heatmap; and their scores
         """
 
-        output_points = torch.empty((0, 2), dtype=float, device=self.device)
-        nms_range_squared = nms_range ** 2
+        # TODO: maybe separate the thresholding into another function to make sure it is not used during training, where it should not be used?
 
-        kpt_candidates_x, kpt_candidates_y = torch.where(heatmap > threshold)
-        kpt_candidates = torch.vstack((kpt_candidates_x, kpt_candidates_y)).T
-        kpt_candidates_scores = heatmap[heatmap > threshold]
-        order = torch.argsort(kpt_candidates_scores, descending=True)
-        kpt_candidates = kpt_candidates[order]
+        # TODO: ugly that the output can change based on a flag.. should always return scores and discard them when I don't need them...
 
-        # From lowest to highest score
-        # Only add the points without a higher point in the NMS range
-        while kpt_candidates.shape[0] > 0:
-            kpt = kpt_candidates[0]
-            output_points = torch.vstack((output_points, kpt))
-            distances = torch.pow(kpt_candidates - kpt, 2).sum(dim=1)
+        batch_size, n_channels, _, width = heatmap.shape
 
-            # Identify points outside of NMS range and keep them
-            keypoints_outside_nms_mask = distances > nms_range_squared
-            kpt_candidates = kpt_candidates[keypoints_outside_nms_mask]
+        # obtain max_keypoints local maxima for each channel (w/ maxpool)
 
-        return output_points.cpu().numpy()[..., ::-1]
+        kernel = min_keypoint_pixel_distance * 2 + 1
+        pad = min_keypoint_pixel_distance
+        # exclude border keypoints by padding with highest possible value
+        # bc the borders are more susceptible to noise and could result in false positives
+        padded_heatmap = torch.nn.functional.pad(
+            heatmap, (pad, pad, pad, pad), mode="constant", value=1.0
+        )
+        max_pooled_heatmap = torch.nn.functional.max_pool2d(
+            padded_heatmap, kernel, stride=1, padding=0
+        )
+        # if the value equals the original value, it is the local maximum
+        local_maxima = max_pooled_heatmap == heatmap
+        # all values to zero that are not local maxima
+        heatmap = heatmap * local_maxima
+
+        # extract top-k from heatmap (may include non-local maxima if there are less peaks than max_keypoints)
+        scores, indices = torch.topk(
+            heatmap.view(batch_size, n_channels, -1), max_keypoints, sorted=True
+        )
+        indices = torch.stack(
+            [torch.div(indices, width, rounding_mode="floor"), indices % width], dim=-1
+        )
+        # at this point either score > 0.0, in which case the index is a local maximum
+        # or score is 0.0, in which case topk returned non-maxima, which will be filtered out later.
+
+        #  remove top-k that are not local maxima and threshold (if required)
+        # thresholding shouldn't be done during training
+
+        #  moving them to CPU now to avoid multiple GPU-mem accesses!
+        indices = indices.detach().cpu().numpy()
+        scores = scores.detach().cpu().numpy()
+        filtered_indices = [[[] for _ in range(n_channels)] for _ in range(batch_size)]
+        filtered_scores = [[[] for _ in range(n_channels)] for _ in range(batch_size)]
+        # determine NMS threshold
+        threshold = (
+            0.01  # make sure it is > 0 to filter out top-k that are not local maxima
+        )
+        if abs_max_threshold is not None:
+            threshold = max(threshold, abs_max_threshold)
+        if rel_max_threshold is not None:
+            threshold = max(threshold, rel_max_threshold * heatmap.max())
+
+        # have to do this manually as the number of maxima for each channel can be different
+        for batch_idx in range(batch_size):
+            for channel_idx in range(n_channels):
+                candidates = indices[batch_idx, channel_idx]
+                for candidate_idx in range(candidates.shape[0]):
+
+                    # these are filtered out directly.
+                    if scores[batch_idx, channel_idx, candidate_idx] > threshold:
+                        # convert to (u,v)
+                        filtered_indices[batch_idx][channel_idx].append(
+                            candidates[candidate_idx][::-1].tolist()
+                        )
+                        filtered_scores[batch_idx][channel_idx].append(
+                            scores[batch_idx, channel_idx, candidate_idx]
+                        )
+        if return_scores:
+            return filtered_indices, filtered_scores
+        else:
+            return filtered_indices
 
     def visualise(self, image, kpts):
         for i in range(4):

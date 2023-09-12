@@ -38,7 +38,7 @@ class ConeDetector:
         Runs the cone position estimation pipeline on an image
 
         Args:
-            image: The input image (not normalised) 3xHxW
+            image: The input image (normalised) 3xHxW
         Returns:
             An array of Nx6: xyxy, conf, cat
         """
@@ -70,5 +70,5 @@ class ConeDetector:
             valid_bboxes,
         )
         bb = bb[valid_bboxes]
-
+        
         return bb

@@ -63,9 +63,9 @@ class ThreeStageModel:
         # This is less acurate, but does not slow down the code as much
         latencies = []
 
-        # The image should be 3xHxW and on the GPU
+        # The image should be 3xHxW, normalised, and on the GPU
         start = time.perf_counter()
-        image = torch.from_numpy(original_image).to(self.device).permute(2, 0, 1)
+        image = torch.from_numpy(original_image).to(self.device).permute(2, 0, 1) / 255
         latencies.append(1000 * (time.perf_counter() - start))
 
         # Nx6 array of cones: xyxy, conf, cat
