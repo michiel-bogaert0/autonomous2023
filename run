@@ -1,0 +1,294 @@
+#!/bin/bash
+
+function build {
+    docker build -t ugr-base .
+}
+
+function build-nogpu {
+    docker build -t ugr-base -f Dockerfile.nogpu .
+}
+
+function post-install {
+    touch env-vars.sh
+    sudo chmod +x env-vars.sh
+
+    # Depends on your terminal
+    input_string="alias ugrdev=\"docker exec -it dev zsh\""
+    file="/home/$(whoami)/.zshrc"
+    
+    if [ ! -f "$file" ]; then
+        touch "$file"
+    fi
+    if grep -q "^alias ugrdev=" "$file"; then
+        sed -i "s#^alias ugrdev=.*#$input_string#" "$file"
+    else
+        echo "$input_string" >> "$file"
+    fi
+
+    file="/home/$(whoami)/.bashrc"
+    if [ ! -f "$file" ]; then
+        touch "$file"
+    fi
+    if grep -q "^alias ugrdev=" "$file"; then
+        sed -i "s#^alias ugrdev=.*#$input_string#" "$file"
+    else
+        echo "$input_string" >> "$file"
+    fi
+
+    # Sets the default car to simulation
+    set-car simulation
+    
+    # Default ROS master uri and hostname
+    set-env "ROS_MASTER_URI" "http://localhost:11311"
+    set-env "ROS_HOSTNAME" "localhost"
+
+    echo "Building stack..."
+
+    build-stack
+}
+
+function install {
+    build
+    
+    if docker info | grep -i runtime | grep -q "nvidia"; then
+        echo "NVIDIA runtime is in use."
+    else
+        echo "NVIDIA runtime is not installed. Please follow https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html or use the 'nogpu' commands ('install-nogpu')"
+        exit 1
+    fi
+    
+    _set-docker-runtime nvidia
+    
+    post-install
+}
+
+function install-nogpu {
+    build-nogpu
+    _set-docker-runtime runc
+    post-install
+}
+
+function _set-docker-runtime {
+    # Check if jq (a JSON processor) is installed
+    if ! command -v jq &>/dev/null; then
+        echo "Error: 'jq' is not installed."
+        sudo apt install jq
+    fi
+    
+    echo "Don't worry about 'jq' compile errors. They are used as checks."
+    
+    # Set the new runtime value
+    new_runtime=$1
+    
+    # Check if the Docker daemon configuration file exists
+    if [ -f /etc/docker/daemon.json ]; then
+        # Configuration file exists, update the 'default-runtime' value if it exists
+        if jq -e ".default-runtime" /etc/docker/daemon.json > /dev/null; then
+            # Update the existing 'default-runtime' value
+            jq ".default-runtime = \"$new_runtime\"" /etc/docker/daemon.json > /tmp/daemon.json.tmp
+            mv /tmp/daemon.json.tmp /etc/docker/daemon.json
+            echo "Updated 'default-runtime' to '$new_runtime' in /etc/docker/daemon.json"
+        else
+            # Add the 'default-runtime' key to the configuration file
+            jq ". + {\"default-runtime\": \"$new_runtime\"}" /etc/docker/daemon.json > /tmp/daemon.json.tmp
+            sudo mv /tmp/daemon.json.tmp /etc/docker/daemon.json
+            echo "Added 'default-runtime' with value '$new_runtime' to /etc/docker/daemon.json"
+        fi
+    else
+        # Configuration file doesn't exist, create it with 'default-runtime' set
+        sudo echo "{\"default-runtime\": \"$new_runtime\"}" > /etc/docker/daemon.json
+        echo "Created /etc/docker/daemon.json with 'default-runtime' set to '$new_runtime'"
+    fi
+    
+    # Restart Docker to apply the changes
+    sudo systemctl restart docker
+    
+    echo "Docker daemon configuration updated. Docker has been restarted."
+}
+
+function install-nogpu {
+    build-nogpu
+    post-install
+}
+
+function set-car {
+    case $1 in
+    (simulation|pegasus) ;; # OK
+(*) printf >&2 'Error... Car should be "simulation" or "pegasus" \n'; exit 1;;
+esac
+    
+    set-env "UGR_CAR" $1
+}
+
+function set-env {
+    input_string="export $1=$2"
+    env_vars_file="env-vars.sh"
+    
+    if [ ! -f "$env_vars_file" ]; then
+        touch "$env_vars_file"
+    fi
+    
+    if grep -q "^export $1=" "$env_vars_file"; then
+        sed -i "s#^export $1=.*#$input_string#" "$env_vars_file"
+        echo "env variable '$1' updated to '$2'"
+    else
+        echo "$input_string" >> "$env_vars_file"
+        echo "env variable '$1' set to '$2'"
+    fi
+}
+
+function start {
+    
+    file="env-vars.sh"
+    
+    if [ ! -e "$file" ]; then
+        echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'";
+        echo "lol"
+        exit 324;
+    fi
+    
+    docker compose up -d dev roscore rviz
+}
+
+function start-headless {
+    
+    file="env-vars.sh"
+    
+    if [ ! -e "$file" ]; then
+        echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'";
+        exit 1;
+    fi
+    
+    docker compose up -d dev roscore
+}
+
+function clean {
+    PREFIX=$1
+    shift
+    if [ -z "$PREFIX" ]
+    then
+        echo "Please provide a prefix."
+        exit 1
+    fi
+    
+    CONTAINERS=$(docker ps -q --filter name=$PREFIX*)
+    
+    if [ -n "$CONTAINERS" ]; then
+        echo "$CONTAINERS" | xargs docker rm -f
+    else
+        echo "No containers found matching the filter criteria."
+    fi
+}
+
+function stop {
+    docker compose down
+    clean ugr
+}
+
+function build-stack {
+    docker compose up -d --remove-orphans dev
+    docker exec dev /bin/zsh -c "cd ~/autonomous2023/ROS && source ~/.zshrc || catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build"
+}
+
+function launch {
+    
+    LAUNCH_FILE=$1
+    shift
+    if [ -z "$LAUNCH_FILE" ]
+    then
+        echo "Please provide the name of the launch file."
+        exit 1
+    fi
+    
+    CONTAINERS=$(docker ps -q --filter name=ugr-${LAUNCH_FILE//\//-}-*)
+    
+    if [ -n "$CONTAINERS" ]; then
+        echo "$CONTAINERS" | xargs docker rm -f
+    else
+        echo "No containers found matching the filter criteria."
+    fi
+    
+    docker run -d --name ugr-${LAUNCH_FILE//\//-}-$(date +'%Y%m%d%H%M%S') \
+    --privileged \
+    --network host \
+    -e DISPLAY=$DISPLAY \
+    -e QT_X11_NO_MITSHM=1 \
+    --restart=always \
+    -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+    -v ./:/home/ugr/autonomous2023/:rw \
+    -v ./../autonomous2023_binaries:/home/ugr/autonomous2023_binaries/:rw \
+    -v /dev:/dev \
+    -v ./../rosbags:/home/ugr/rosbags/:rw \
+    ugr-base \
+    /bin/zsh -c "source ~/.zshrc && roslaunch --wait ugr_launch $LAUNCH_FILE.launch $*"
+}
+
+function pegasus {
+    clean ugr
+    launch pegasus
+    launch run mission:=$1
+}
+
+function simulation {
+
+    if [ -z "$2" ] 
+    then
+      echo "Error: the second argument (ground truth map) is empty. This will crash the simulator. Please give a valid map from slam_simulator/maps ";
+      exit 1;
+    fi
+
+    clean ugr
+    launch simulation filename:=$2.yaml
+    launch run mission:=$1
+}
+
+function default {
+    start
+}
+
+function set-random-roscore-port {
+    for i in {0..1000}; do
+        port=$((49152 + RANDOM % 16384))
+        (echo >/dev/tcp/localhost/$port) >/dev/null 2>&1 && echo "Port $port is open" || {
+            echo "Port $port is closed";
+            set-env "ROS_MASTER_URI" "http://localhost:$port";
+            break;
+        }
+    done
+}
+
+function disconnect-pegasus {
+    stop 
+
+    # Sets the default car to simulation
+    set-car simulation
+    
+    # Default ROS master uri and hostname
+    set-env "ROS_MASTER_URI" "http://localhost:11311"
+    set-env "ROS_HOSTNAME" "localhost"
+}
+
+function connect-pegasus {
+
+    stop
+
+    set-car pegasus
+
+    set-env ROS_MASTER_URI http://192.168.50.17:11311
+    
+    default_interface=$(ip route | awk '/default/ {print $5}')
+    ip_address=$(ip addr show dev $default_interface | awk '/inet / {print $2}' | cut -d '/' -f 1)
+    echo "IP address of the host on the default route interface ($default_interface) for internet access: $ip_address"
+    
+    set-env "ROS_HOSTNAME" $ip_address
+
+    docker compose up -d dev rviz    
+}
+
+function help {
+    echo "$0 <task> <args>"
+    echo "Tasks:"
+    compgen -A function | cat -n
+}
+
+${@:-default}

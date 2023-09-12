@@ -1,7 +1,7 @@
 <launch>
   
   <node name="path_publisher" pkg="control_controller" output="screen" type="path_publisher.py">
-  <param name="path" value="$(find control_controller)/paths/straight_L100.yaml" />
+  <param name="path" value="$(find control_controller)/paths/straight_L75.yaml" />
 
     <remap from="/output/path" to="/pathplanning/path" />
   </node>
@@ -9,6 +9,7 @@
   <!-- Control node (generates output commands) -->
   <include file="$(find pure_pursuit)/launch/pure_pursuit.launch" pass_all_args="true">
     <arg name="reference_frame" default="ugr/map" />
+    <arg name="minimal_distance" value="3"/>
   </include>
 
 </launch>

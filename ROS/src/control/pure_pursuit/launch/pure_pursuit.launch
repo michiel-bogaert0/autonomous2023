@@ -1,9 +1,12 @@
 <launch>
+
+    <arg name="minimal_distance" default="1.2"/>
+
     <node pkg="pure_pursuit" type="run.py" name="pure_pursuit" output="screen" respawn="true">
 
         <param name="publish_rate" value="50" />
 
-        <param name="trajectory/minimal_distance" value="0.8" />
+        <param name="trajectory/minimal_distance" value="$(arg minimal_distance)" />
         <param name="trajectory/t_step" value="0.05" />
         <param name="trajectory/max_angle" value="3" />
 
@@ -11,6 +14,7 @@
         <param name="world_frame" value="$(arg reference_frame)" />
 
         <remap from="/input/path" to="/pathplanning/path" />
+        <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>
         <remap from="/output/drive_velocity_controller/command" to="/ugr/car/drive_velocity_controller/command" />
         <remap from="/output/steering_position_controller/command" to="/ugr/car/steering_position_controller/command" />
         <remap from="/output/target_point" to="/pure_pursuit/target_point"/>

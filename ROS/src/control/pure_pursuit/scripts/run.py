@@ -2,7 +2,7 @@
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseArray, PoseStamped, PointStamped
-from nav_msgs.msg import Path
+from nav_msgs.msg import Path, Odometry
 
 from std_msgs.msg import Float64, Header
 from tf2_geometry_msgs import do_transform_pose
@@ -27,6 +27,7 @@ class PurePursuit:
 
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
+        self.actual_speed = 0.0
 
         # Publishers for the controllers
         # Controllers themselves spawned in the state machines respective launch files
@@ -44,6 +45,9 @@ class PurePursuit:
         # Subscriber for path
         self.path_sub = rospy.Subscriber(
             "/input/path", Path, self.getPathplanningUpdate
+        )
+        self.odom_sub = rospy.Subscriber(
+            "/input/odom", Odometry, self.get_odom_update
         )
 
         self.current_angle = 0
@@ -67,6 +71,9 @@ class PurePursuit:
 
         # Helpers
         self.start_sender()
+
+    def get_odom_update(self, msg: Odometry):
+        self.actual_speed = msg.twist.twist.linear.x
 
     def getPathplanningUpdate(self, msg: Path):
         """
@@ -126,7 +133,7 @@ class PurePursuit:
                 # First try to get a target point
                 # The target point is given in the world frame
                 target_x, target_y, success = self.trajectory.calculate_target_point(
-                    min(self.minimal_distance * 3, max(self.minimal_distance / 3, self.minimal_distance * self.velocity_cmd.data)), [trans.transform.translation.x,  trans.transform.translation.y]
+                    min(self.minimal_distance * 3, max(self.minimal_distance, self.minimal_distance * self.actual_speed)), [trans.transform.translation.x,  trans.transform.translation.y]
                 )
 
                 # Transform to base_link frame
@@ -157,12 +164,9 @@ class PurePursuit:
                         + (target_y - self.current_pos[1]) ** 2
                     ) / (2 * (target_y - self.current_pos[1]))
 
-                    if self.speed_target < 0.05:
-                        self.steering_cmd.data = 0
-                    else:
-                        self.steering_cmd.data = self.symmetrically_bound_angle(
-                            np.arctan2(1.0, R), np.pi / 2
-                        )
+                    self.steering_cmd.data = self.symmetrically_bound_angle(
+                        np.arctan2(1.0, R), np.pi / 2
+                    )
                     rospy.loginfo(f"x: {target_x}, y: {target_y} R: {R}, steering angle {self.steering_cmd.data}")
 
                     # Go ahead and drive. But adjust speed in corners

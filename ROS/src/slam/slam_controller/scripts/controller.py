@@ -3,6 +3,7 @@ import rospy
 from enum import Enum
 from std_msgs.msg import UInt16
 from std_srvs.srv import Empty
+from std_msgs.msg import Header
 from ugr_msgs.msg import State
 from node_launcher.node_launcher import NodeLauncher
 from node_fixture.node_fixture import (
@@ -144,6 +145,7 @@ class Controller:
 
         self.state_publisher.publish(
             State(
+                header=Header(stamp=rospy.Time.now()),
                 scope=StateMachineScopeEnum.SLAM,
                 prev_state=self.state,
                 cur_state=new_state,

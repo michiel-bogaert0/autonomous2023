@@ -4128,7 +4128,7 @@ poses:
       frame_id: "ugr/map"
     pose: 
       position: 
-        x: 30.0
+        x: 50.0
         y: 0.0
         z: 0
       orientation: 

@@ -1,6 +1,6 @@
 from car_state import carStateEnum, CarState
 from node_fixture import AutonomousStatesEnum
-
+import rospy
 
 class SimulationState(CarState):
 
@@ -22,6 +22,8 @@ class SimulationState(CarState):
             "EBS": carStateEnum.UNKOWN,
         }
 
+        self.start_t = rospy.Time.now().to_sec()
+
         self.as_state = AutonomousStatesEnum.ASOFF
         self.ebs_state = carStateEnum.ON
 
@@ -39,7 +41,7 @@ class SimulationState(CarState):
         """
 
         # R2D
-        if self.as_state == AutonomousStatesEnum.ASREADY:
+        if self.as_state == AutonomousStatesEnum.ASREADY and rospy.Time.now().to_sec() - self.start_t > 5.0:
             self.state["R2D"] = carStateEnum.ACTIVATED
         elif self.as_state != AutonomousStatesEnum.ASDRIVE:
             self.state["R2D"] = carStateEnum.OFF

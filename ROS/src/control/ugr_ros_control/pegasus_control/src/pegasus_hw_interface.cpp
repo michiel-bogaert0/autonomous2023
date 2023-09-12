@@ -123,8 +123,6 @@ void PegasusHWInterface::write(ros::Duration& elapsed_time)
     publish_vel_msg(-joint_velocity_command_[drive_joint_id], 2);
   }
   else {
-    publish_steering_msg(0);
-
     publish_vel_msg(0, 1);
     publish_vel_msg(0, 2);
   }
@@ -176,12 +174,16 @@ void PegasusHWInterface::enforceLimits(ros::Duration& period)
 {
   // Enforces position and velocity
   pos_jnt_sat_interface_.enforceLimits(period);
+  vel_jnt_sat_interface_.enforceLimits(period);
+  eff_jnt_sat_interface_.enforceLimits(period);
 }
 
 void PegasusHWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
 {
   if (msg->scope == "autonomous"){
-    this->is_running = (msg->cur_state == "asdrive") ? true : false;
+    this->is_running = msg->cur_state == "asdrive";
+  } else if (msg->scope == "slam" && msg->cur_state == "finished") {
+    this->is_running = false;
   }
 }
 

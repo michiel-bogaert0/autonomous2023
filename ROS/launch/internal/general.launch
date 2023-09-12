@@ -1,9 +1,0 @@
-<launch>
-
-  <!-- Only put nodes here that are related to processing in general -->
-  <!-- There should be NO hardware dependencies! -->
-
-  <!-- Pathplanning  -->
-  <include file="$(find autonomous_state)/launch/autonomous_state.launch" pass_all_args="true"></include>
-
-</launch>
