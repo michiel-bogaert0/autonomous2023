@@ -195,7 +195,7 @@ void data_associate_known(vector<VectorXf> &z, vector<int> &idz, VectorXf &table
 
 // z is the list of measurements conditioned on the particle.
 void feature_update(Particle &particle, vector<VectorXf> &z,
-                    vector<int> &idf, MatrixXf &R, vector<int> observationClass, vector<VectorXf> &zp, vector<MatrixXf> &Hv, vector<MatrixXf> &Hf, vector<MatrixXf> &Sf)
+                    vector<int> &idf, MatrixXf &R, vector<int> &observationClass, vector<float> &beliefs, vector<VectorXf> &zp, vector<MatrixXf> &Hv, vector<MatrixXf> &Hf, vector<MatrixXf> &Sf)
 {
     // Having selected a new pose from the proposal distribution,
     //   this pose is assumed perfect and each feature update maybe
@@ -241,7 +241,7 @@ void feature_update(Particle &particle, vector<VectorXf> &z,
         LandmarkMetadata old_meta = particle.metadata()[idf[i]];
 
         old_meta.score++;
-        old_meta.classDetectionCount[observationClass[i]]++;
+        old_meta.classDetectionCount[observationClass[i]] += beliefs[i];
 
         particle.setMetadatai(idf[i], old_meta);
     }
@@ -614,7 +614,7 @@ float pi_to_pi2(float ang)
 //
 // add new features
 //
-void add_feature(Particle &particle, vector<VectorXf> &z, MatrixXf &R, vector<int> observationClass)
+void add_feature(Particle &particle, vector<VectorXf> &z, MatrixXf &R, vector<int> &observationClass, vector<float> &beliefs)
 {
     int lenz = z.size();
     vector<VectorXf> xf;
