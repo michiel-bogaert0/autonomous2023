@@ -647,6 +647,7 @@ void add_feature(Particle &particle, vector<VectorXf> &z, MatrixXf &R, vector<in
         particle.setXfi(i, xf[(i - lenx)]);
         particle.setPfi(i, Pf[(i - lenx)]);
         LandmarkMetadata meta;
+        meta.classDetectionCount[observationClass[i]] = beliefs[i];
         particle.setMetadatai(i, meta);
     }
 }
