@@ -190,6 +190,11 @@ function build-stack {
     docker exec dev /bin/zsh -c "cd ~/autonomous2023/ROS && source ~/.zshrc || catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build"
 }
 
+function clean-stack {
+    docker compose up -d --remove-orphans dev
+    docker exec dev /bin/zsh -c "cd ~/autonomous2023/ROS && source ~/.zshrc && catkin clean -y"
+}
+
 function launch {
     
     LAUNCH_FILE=$1
