@@ -22,6 +22,20 @@ jobs:
 
       - name: Build stack
         run: ./run build-stack
+  simulate-trackdrive:
+    runs-on: self-hosted
+    needs: [build]
+    steps:
+
+      - name: Run trackdrive simulation and supervise
+        run: | 
+          ./run stop
+          ./run set-car simulation
+          ./run set-random-roscore-port
+          ./run start-headless
+          ./run simulation trackdrive track_19jul_2228
+          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=180"
+          ./run stop
   simulate-skidpad:
     runs-on: self-hosted
     needs: [build]
