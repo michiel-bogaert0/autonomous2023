@@ -84,7 +84,7 @@ class PurePursuit:
         trans = self.tf_buffer.lookup_transform(
             self.world_frame,
             msg.header.frame_id,
-            rospy.Time(),
+            msg.header.stamp,
         )
         new_header = Header(frame_id=self.world_frame, stamp=rospy.Time.now())
         transformed_path = Path(header=new_header)
@@ -103,7 +103,7 @@ class PurePursuit:
         trans = self.tf_buffer.lookup_transform(
             self.world_frame,
             self.base_link_frame,
-            rospy.Time(),
+            msg.header.stamp,
         )
         self.trajectory.set_path(current_path, [trans.transform.translation.x,  trans.transform.translation.y])
 
