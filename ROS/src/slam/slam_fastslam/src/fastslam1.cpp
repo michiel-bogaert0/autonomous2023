@@ -420,7 +420,12 @@ namespace slam
 
     // Check for reverse
     double drivingAngle = atan2(y - this->prev_state[1], x - this->prev_state[0]);
-    bool forward = abs(drivingAngle - yaw) < M_PI_2;
+    double angleDifference = abs(drivingAngle - yaw);
+    if (angleDifference > M_PI) {
+      angleDifference = 2 * M_PI - angleDifference; 
+    }
+
+    bool forward = angleDifference < M_PI_2;
     dDist = (forward ? 1 : -1) * pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1], 2), 0.5);
 
     // Initial pose mechanism
