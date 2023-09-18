@@ -9,4 +9,7 @@
   <!-- Camera -->
   <include file="$(find camera)/launch/cone_detector.launch" pass_all_args="true"/>
 
+  <!-- Fusion -->
+  <node pkg="fusion" output="log" type="merge.py" name="topic_merger" respawn="False"></node>
+
 </launch>
