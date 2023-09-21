@@ -32,7 +32,7 @@ class PerceptionNode:
 
         # Node I/O
         self.sub_image_input = rospy.Subscriber(
-            "/input/image", Image, self.run_perception_pipeline
+            "/input/image", Image, self.get_image
         )
         self.pub_cone_locations = rospy.Publisher(
             "/output/update",
@@ -100,6 +100,7 @@ class PerceptionNode:
         )
         # Initialise the pipeline as None, since it takes some time to start-up
         self.pipeline = None
+        self.ros_image = None
 
         if self.use_two_stage:
             self.pipeline = TwoStageModel(
@@ -137,9 +138,15 @@ class PerceptionNode:
             )
         )
 
-        rospy.spin()
+        r = rospy.Rate(100)
+        while not rospy.is_shutdown():
+            self.run_perception_pipeline()
+            r.sleep()
 
-    def run_perception_pipeline(self, ros_image: Image) -> None:
+    def get_image(self, ros_image: Image):
+        self.ros_image = ros_image
+
+    def run_perception_pipeline(self) -> None:
         """
         Given an image, run through the entire perception pipeline and publish to ROS
 
@@ -147,6 +154,13 @@ class PerceptionNode:
             image: The input image as numpy array
             ros_image: The input image as ROS message
         """
+
+        # If no image, do nothing
+        ros_image = self.ros_image
+        if ros_image is None:
+            return
+        self.ros_image = None
+
         # Wait for the pipeline to initialise
         if self.pipeline is None:
             return
