@@ -20,7 +20,6 @@ import sys
 
 import rospy
 import tf2_ros
-
 import tf_service
 
 if __name__ == "__main__":
@@ -40,8 +39,7 @@ if __name__ == "__main__":
     rate = rospy.Rate(args.lookup_frequency)
     while not rospy.is_shutdown():
         try:
-            buffer.lookup_transform("map", "odom", rospy.Time(0),
-                                    rospy.Duration(1))
+            buffer.lookup_transform("map", "odom", rospy.Time(0), rospy.Duration(1))
         except tf2_ros.TransformException as e:
             rospy.logerr("%s: %s" % (str(type(e)), str(e)))
             break

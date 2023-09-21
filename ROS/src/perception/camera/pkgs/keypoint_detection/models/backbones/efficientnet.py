@@ -1,5 +1,3 @@
-from functools import reduce
-from operator import __add__
 
 import timm
 import torch

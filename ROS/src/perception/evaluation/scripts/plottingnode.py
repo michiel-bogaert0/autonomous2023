@@ -39,7 +39,7 @@ class plotListener:
 
         # initialize subscribers
         for arg in args.keys():
-            sub = rospy.Subscriber(f"/input/{arg}", args[arg], self.update, arg)
+            rospy.Subscriber(f"/input/{arg}", args[arg], self.update, arg)
 
         # initialize output publisher
         self.output_publisher = rospy.Publisher(

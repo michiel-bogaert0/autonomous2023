@@ -1,10 +1,11 @@
-import rospy
-from can_msgs.msg import Frame
-from car_state import carStateEnum, CarState
-from node_fixture import AutonomousStatesEnum, AutonomousMission, serialcan_to_roscan
+import time
+
 import can
 import rosparam
-import time
+import rospy
+from can_msgs.msg import Frame
+from car_state import CarState, carStateEnum
+from node_fixture import AutonomousMission, AutonomousStatesEnum, serialcan_to_roscan
 
 
 class PegasusState(CarState):
@@ -44,7 +45,6 @@ class PegasusState(CarState):
     """
 
     def __init__(self) -> None:
-
         rospy.Subscriber("/ugr/car/can/rx", Frame, self.handle_can)
 
         self.res_go_signal = False
@@ -109,7 +109,6 @@ class PegasusState(CarState):
         self.ebs_state = carStateEnum.ACTIVATED
 
     def update(self, state: AutonomousStatesEnum):
-
         # On a state transition, start 5 second timeout
         if (
             state == AutonomousStatesEnum.ASREADY

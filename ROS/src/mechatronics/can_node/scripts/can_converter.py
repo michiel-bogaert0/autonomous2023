@@ -4,8 +4,8 @@ import rospy
 from can_msgs.msg import Frame
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from imu import ImuConverter
-from odrive import OdriveConverter
 from node_fixture.node_fixture import create_diagnostic_message
+from odrive import OdriveConverter
 
 
 class CanConverter:
@@ -16,9 +16,10 @@ class CanConverter:
         rospy.init_node("can_converter")
 
         self.last_send_time = rospy.get_time()
-        
 
-        self.diagnostics = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
+        self.diagnostics = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
 
         self.res_send_interval = rospy.get_param("~res_send_interval", 0.1)  # ms
 
@@ -48,8 +49,7 @@ class CanConverter:
         axis_id = can_msg.id >> 5
         if axis_id == 1 or axis_id == 2:
             cmd_id = can_msg.id & 0b11111
-            node_id = can_msg.id & 0b11111000000
-            
+
             if cmd_id == 9:
                 self.diagnostics.publish(
                     create_diagnostic_message(
@@ -87,22 +87,22 @@ class CanConverter:
                 )
 
             self.diagnostics.publish(
-                    create_diagnostic_message(
-                        level=DiagnosticStatus.OK,
-                        name=f"[MECH] CAN: IMU [{imu_id}]",
-                        message="IMU operational.",
-                    )
+                create_diagnostic_message(
+                    level=DiagnosticStatus.OK,
+                    name=f"[MECH] CAN: IMU [{imu_id}]",
+                    message="IMU operational.",
                 )
+            )
             self.imu.handle_imu_msg(can_msg, imu_id == self.IMU_IDS[0])
 
         if can_msg.id == 0x191:
             self.diagnostics.publish(
-                    create_diagnostic_message(
-                        level=DiagnosticStatus.OK,
-                        name="[MECH] CAN: RES",
-                        message="RES activated.",
-                    )
+                create_diagnostic_message(
+                    level=DiagnosticStatus.OK,
+                    name="[MECH] CAN: RES",
+                    message="RES activated.",
                 )
+            )
             self.res_activated = True
 
         elif (

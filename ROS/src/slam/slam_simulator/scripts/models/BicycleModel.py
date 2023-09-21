@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import numpy as np
-from .CarModel import CarModel
 import rospy
 
+from .CarModel import CarModel
+
+
 class BicycleModel(CarModel):
-    
     def __init__(self) -> None:
-        
         """
         Bicycle model
 
@@ -15,7 +15,7 @@ class BicycleModel(CarModel):
           Ohm: angular turning speed of steering wheel
 
         Outputs (state):
-          x: x-position of back wheel 
+          x: x-position of back wheel
           y: y-position of back wheel
           theta: heading to x-as
 
@@ -23,10 +23,10 @@ class BicycleModel(CarModel):
           alpha: linear velocity 'friction' factor
           beta: steering 'homing' factor
           L: wheelbase length
-          input_scale: input scaling 
+          input_scale: input scaling
 
         """
-        
+
         super().__init__()
 
         # ROS params
@@ -56,7 +56,7 @@ class BicycleModel(CarModel):
         self.v = 0
         self.delta = 0
         self.omega = 0
-        
+
     def reset(self):
         """
         Resets the car to initial (0, 0) position
@@ -66,7 +66,7 @@ class BicycleModel(CarModel):
         self.x = 0
         self.y = 0
         self.theta = 0
-    
+
     def update(self, dt, driving_intention, steering_intention):
         """
         Should update internal state and motion model
@@ -75,21 +75,27 @@ class BicycleModel(CarModel):
             dt: time since last update
             driving_intention: the intention of driving. +1 is "drive forward", -1 is "drive backwards". Can be anything inbetween
             steering_intention: the intention of steering. +1 is "steer left", -1 is "steer right". Can be anything inbetween
-        
-            
-        Returns: 
+
+
+        Returns:
           Note: should be in our frame conventions
-  
+
           (x, y, heading), (forward velocity, linear acceleration, angular acceleration)
         """
 
         if abs(driving_intention) < 0.001:
-            self.a = 0.0 - (self.v / abs(self.v) * self.alpha if abs(self.v) > 0.001 else 0.0)
+            self.a = 0.0 - (
+                self.v / abs(self.v) * self.alpha if abs(self.v) > 0.001 else 0.0
+            )
         else:
             self.a = driving_intention / abs(driving_intention)
 
         if abs(steering_intention) < 0.001:
-            self.ohm = 0.0 - ( self.delta / abs(self.delta) * self.beta if abs(self.delta) > 0.001 else 0.0)
+            self.ohm = 0.0 - (
+                self.delta / abs(self.delta) * self.beta
+                if abs(self.delta) > 0.001
+                else 0.0
+            )
         else:
             self.ohm = steering_intention / abs(steering_intention)
 

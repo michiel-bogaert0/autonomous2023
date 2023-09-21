@@ -1,13 +1,12 @@
 #! /usr/bin/python3
-import sys
 
 import cv2
 import numpy as np
 import rospy
 import torch
+from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from std_msgs.msg import Empty
-from cv_bridge import CvBridge
 
 
 class ImageSaver:
@@ -32,9 +31,11 @@ class ImageSaver:
             rospy.logerr(f"No image to save.")
             return
 
-        img = self.bridge.imgmsg_to_cv2(self.last_image, desired_encoding='bgr8')
+        img = self.bridge.imgmsg_to_cv2(self.last_image, desired_encoding="bgr8")
 
-        path = f"/home/ugr/autonomous2023/calib_images/{self.last_image.header.stamp}.png".replace("-", "_")
+        path = f"/home/ugr/autonomous2023/calib_images/{self.last_image.header.stamp}.png".replace(
+            "-", "_"
+        )
         cv2.imwrite(path, img)
         rospy.loginfo(f"Save image to {path}")
 

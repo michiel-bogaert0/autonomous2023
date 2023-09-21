@@ -20,10 +20,10 @@ class VisCar:
             vis_namespace: the namespace to use
             vis_lifetime: how long a marker should stay alive
         """
-        #ros initialization
+        # ros initialization
         rospy.init_node(f"slam_vis_obs_{time.time()}")
-        self.vis_subscriber = rospy.Subscriber("/input/vis",Odometry,self.handleOdom)
-        self.vis_publisher = rospy.Publisher("/output/vis",MarkerArray,queue_size=10)
+        self.vis_subscriber = rospy.Subscriber("/input/vis", Odometry, self.handleOdom)
+        self.vis_publisher = rospy.Publisher("/output/vis", MarkerArray, queue_size=10)
 
         self.car_model = rospy.get_param(
             "~car_model",

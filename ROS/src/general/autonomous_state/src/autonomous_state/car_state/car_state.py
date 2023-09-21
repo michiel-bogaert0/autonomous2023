@@ -12,7 +12,7 @@ Explanation of system states (hierarchical):
 """
 
 
-class carStateEnum(Enum):
+class CarStateEnum(Enum):
     OFF = 0
     ON = 1
     ACTIVATED = 2
@@ -46,7 +46,6 @@ class CarState(ABC):
             object with the (physical) state of the car systems,
             like EBS and ASSI. See general docs for info about this state
         """
-        pass
 
     @abstractmethod
     def update(self, state):

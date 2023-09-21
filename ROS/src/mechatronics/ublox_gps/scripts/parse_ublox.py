@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import datetime
 import socket
 import time
 from math import atan2, pi
@@ -9,8 +8,7 @@ import rospy
 import serial
 import utm
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-from geometry_msgs.msg import (PoseWithCovarianceStamped,
-                               TwistWithCovarianceStamped)
+from geometry_msgs.msg import PoseWithCovarianceStamped, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import create_diagnostic_message
 from sensor_msgs.msg import Imu, NavSatFix, TimeReference

@@ -1,22 +1,21 @@
 #! /usr/bin/python3
+from time import sleep
+
 import rospy
-from enum import Enum
-from std_msgs.msg import UInt16
-from std_srvs.srv import Empty
-from std_msgs.msg import Header
-from ugr_msgs.msg import State
-from node_launcher.node_launcher import NodeLauncher
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import (
     AutonomousMission,
-    SLAMStatesEnum,
     AutonomousStatesEnum,
+    SLAMStatesEnum,
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-from nav_msgs.msg import Odometry
+from node_launcher.node_launcher import NodeLauncher
+from std_msgs.msg import Header, UInt16
+from std_srvs.srv import Empty
+from ugr_msgs.msg import State
 
-from time import sleep
 
 class Controller:
     def __init__(self) -> None:
@@ -65,7 +64,9 @@ class Controller:
         Updates the internal state and launches or kills nodes if needed
         """
         new_state = self.state
-        if self.state == SLAMStatesEnum.IDLE or (rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission):
+        if self.state == SLAMStatesEnum.IDLE or (
+            rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission
+        ):
             if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
                 # Go to state depending on mission
                 self.mission = rospy.get_param("/mission")
@@ -180,5 +181,6 @@ class Controller:
                 new_state = SLAMStatesEnum.FINISHED
 
             self.change_state(new_state)
+
 
 node = Controller()

@@ -4,19 +4,17 @@ import numpy as np
 import rospy
 import tf2_geometry_msgs
 import tf2_ros
-from nav_msgs.msg import Path
 from geometry_msgs.msg import Point, Pose, PoseArray, PoseStamped, Quaternion
-from visualization_msgs.msg import MarkerArray
-from std_msgs.msg import Header
-from tf.transformations import quaternion_from_euler
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
-
+from nav_msgs.msg import Path
 from rrt.rrt import Rrt
-from triangulation.triangulator import Triangulator
 from scipy.interpolate import interp1d
+from std_msgs.msg import Header
+from triangulation.triangulator import Triangulator
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
+from visualization_msgs.msg import MarkerArray
 
 
-class PathPlanning():
+class PathPlanning:
     """Path planning node. Calculates and publishes path based on observations."""
 
     def __init__(self) -> None:
@@ -34,13 +32,11 @@ class PathPlanning():
         self.params["vis_namespace"] = rospy.get_param(
             "~vis_namespace", "pathplanning_vis"
         )
-        self.params["vis_lifetime"] = rospy.get_param(
-            "~vis_lifetime", 0.2
-        )
+        self.params["vis_lifetime"] = rospy.get_param("~vis_lifetime", 0.2)
 
         # Defines which algorithm to run triangulatie ("tri") or RRT ("RRT")
         self.params["algo"] = rospy.get_param("~algorithm", "tri")
-        
+
         # Load at least all params from config file via ros parameters
 
         # General parameters
@@ -52,7 +48,7 @@ class PathPlanning():
         # The radius around a obstacle (cone) where no path can be planned
         # Should be at least the half the width of the car
         self.params["safety_dist"] = rospy.get_param("~safety_dist", 1)
-        
+
         # Extra parameters for triangulation
         # The minimal variance each allowed set of triangle edge lengths can always have.
         #   So it's the minimal maximum variance
@@ -64,9 +60,7 @@ class PathPlanning():
             "~triangulation_var_threshold", 1.2
         )
         # Maximum distance between nodes in the planned path (paths with nodes further than this will be pruned prematurely)
-        self.params["max_path_distance"] = rospy.get_param(
-            "~max_path_distance", 6
-        )
+        self.params["max_path_distance"] = rospy.get_param("~max_path_distance", 6)
 
         # continuous_dist: the max distance between nodes in stage 1
         # stage1_rect_width: width of the rectangle for line expansion
@@ -76,9 +70,7 @@ class PathPlanning():
         # stage2_bad_points_threshold: threshold for the amount of bad points crossings allowed
         # stage2_center_points_threshold: threshold for the amount of center point (not used) crossings allowed
         # max_depth: maximal depth for path searching in stage 2
-        self.params["continuous_dist"] = rospy.get_param(
-            "~continuous_dist", 4
-        )
+        self.params["continuous_dist"] = rospy.get_param("~continuous_dist", 4)
         self.params["stage1_rectangle_width"] = rospy.get_param(
             "~stage1_rectangle_width", 1.2
         )
@@ -97,24 +89,15 @@ class PathPlanning():
         self.params["stage2_center_points_threshold"] = rospy.get_param(
             "~stage2_center_points_threshold", 2
         )
-        self.params["max_depth"] = rospy.get_param(
-            "~max_depth", 5
-        )
+        self.params["max_depth"] = rospy.get_param("~max_depth", 5)
 
         # The range in front of the car where cones should be kept
-        self.params["range_front"] = rospy.get_param(
-           "~range_front", 10 
-        )
+        self.params["range_front"] = rospy.get_param("~range_front", 10)
         # The range behind the car where cones should be kept
-        self.params["range_behind"] = rospy.get_param(
-           "~range_behind", 0
-        )
+        self.params["range_behind"] = rospy.get_param("~range_behind", 0)
         # The range to the sides of the car where cones should be kept
-        self.params["range_sides"] = rospy.get_param(
-           "~range_sides", 3 
-        )
+        self.params["range_sides"] = rospy.get_param("~range_sides", 3)
 
-        
         # Extra parameters for RRT
         # The distance by which the car drives every update
         self.params["expand_dist"] = rospy.get_param("~expand_dist", 0.5)
@@ -193,7 +176,11 @@ class PathPlanning():
         self.pub = rospy.Publisher("/output/path", PoseArray, queue_size=10)
         self.pub_stamped = rospy.Publisher("/output/path_stamped", Path, queue_size=10)
 
-        rospy.Subscriber("/input/local_map", ObservationWithCovarianceArrayStamped, self.receive_new_map)
+        rospy.Subscriber(
+            "/input/local_map",
+            ObservationWithCovarianceArrayStamped,
+            self.receive_new_map,
+        )
         rospy.spin()
 
     def receive_new_map(self, track: ObservationWithCovarianceArrayStamped):
@@ -204,14 +191,17 @@ class PathPlanning():
         """
         cones = np.array(
             [
-                [obs_with_cov.observation.location.x, obs_with_cov.observation.location.y, obs_with_cov.observation.observation_class]
+                [
+                    obs_with_cov.observation.location.x,
+                    obs_with_cov.observation.location.y,
+                    obs_with_cov.observation.observation_class,
+                ]
                 for obs_with_cov in track.observations
             ]
         )
 
         # Compute
         self.compute(cones, track.header)
-        
 
     def compute(self, cones: np.ndarray, header: Header) -> None:
         """Calculate path and publish it.
@@ -229,16 +219,12 @@ class PathPlanning():
         path = np.array([[0, 0]] + [[e.x, e.y] for e in path])
 
         # Smooth path
-        distance = np.cumsum( np.sqrt(np.sum( np.diff(path, axis=0)**2, axis=1 )) )
-        distance = np.insert(distance, 0, 0)/distance[-1]
+        distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
+        distance = np.insert(distance, 0, 0) / distance[-1]
         alpha = np.linspace(0, 1, len(path) * 4)
-        interpolator =  interp1d(distance, path, kind='cubic', axis=0)
-        
-        path = interpolator(alpha)
+        interpolator = interp1d(distance, path, kind="cubic", axis=0)
 
-        # Calculate orientations
-        yaws = np.arctan2(path[:, 1], path[:, 0])
-        orientations = np.array([quaternion_from_euler(0, 0, yaw) for yaw in yaws])
+        path = interpolator(alpha)
 
         poses: list(Pose) = []
         for point in path:

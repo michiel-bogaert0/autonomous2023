@@ -86,7 +86,6 @@ class ConeLogger:
         cone_type_int = self.cone_colors[cone_type]
 
         try:
-
             most_accurate = self.covariances.index(min(self.covariances))
             self.cone_pusher.publish(
                 ConeLocation(

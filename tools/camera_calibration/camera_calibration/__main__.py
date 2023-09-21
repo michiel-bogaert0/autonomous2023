@@ -1,9 +1,10 @@
 #!/usr/bin/python
 import argparse
 import re
-import numpy as np
-import cv2.aruco as aruco
+
 import cv2 as cv
+import cv2.aruco as aruco
+import numpy as np
 
 """
 A generic validator class to be able to validate regex based expressions
@@ -41,7 +42,6 @@ class Validator(object):
 
 
 def main():
-
     gridSize = Validator(r"([0-9]{1,})x([0-9]{1,})")
     jpg_or_png = Validator(r"([^\s]+(\.(jpg)|(png))$)")
     npz = Validator(r"([^\s]+(\.(npz))$)")

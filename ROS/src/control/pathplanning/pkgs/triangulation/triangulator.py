@@ -1,12 +1,13 @@
 import sys
 from typing import Tuple
-import rospy
+
 import numpy as np
+import rospy
+from geometry_msgs.msg import Point, Pose, PoseArray, Quaternion
+from std_msgs.msg import Header
 from triangulation.center_points import get_center_points
 from triangulation.paths import TriangulationPaths
 from visualization_msgs.msg import Marker, MarkerArray
-from geometry_msgs.msg import Point, Pose, PoseArray, Quaternion
-from std_msgs.msg import Header
 
 
 class Triangulator:
@@ -113,7 +114,7 @@ class Triangulator:
         cones = cones[abs(cones[:, 1]) <= self.range_sides]
         cones = cones[cones[:, 0] <= self.range_front]
 
-        position_cones = cones[:, :-1]        
+        position_cones = cones[:, :-1]
 
         # We need at least 4 cones for Delaunay triangulation
         while len(position_cones) < 4:
@@ -211,7 +212,6 @@ class Triangulator:
 
         # Iterate each leaf
         for i, leave in enumerate(leaves):
-
             # Find the path connecting this leaf to the root and reverse it
             path = []
             parent = leave

@@ -40,20 +40,18 @@ class ThreeStageModel:
         )
 
         # Create the keypoint detector
-        self.keypoint_detector = KeypointDetector(
-            keypoint_model_path, self.device
-        )
+        self.keypoint_detector = KeypointDetector(keypoint_model_path, self.device)
 
         # Camera settings
         self.camera_matrix = camera_matrix
 
     def predict(self, original_image: npt.ArrayLike, header):
         """Given an image, pass it through the global keypoint detector, match the keypoints, and return the cones that were found.
-        
+
         Args:
             original_image: the numpy image object of (H, W, 3)
             header: the original ROS header of the image
-        
+
         Returns:
             - an array of Nx4 containing (cone category, x, y, z)
             - the pipeline latencies containing triplets of (pre-processing, bbox inference, kpt inference, post-processing)
@@ -77,14 +75,17 @@ class ThreeStageModel:
         bbox_msg.header = header
 
         # type, score, left, top, width, height
-        bbox_msg.bounding_boxes = [BoundingBox(
-            int(row[5]),
-            row[4],
-            row[0],
-            row[1],
-            row[2] - row[0],
-            row[3] - row[1],
-        ) for row in bboxes]
+        bbox_msg.bounding_boxes = [
+            BoundingBox(
+                int(row[5]),
+                row[4],
+                row[0],
+                row[1],
+                row[2] - row[0],
+                row[3] - row[1],
+            )
+            for row in bboxes
+        ]
         self.pub_bounding_boxes.publish(bbox_msg)
 
         # Predict keypoints

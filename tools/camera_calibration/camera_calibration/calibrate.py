@@ -1,10 +1,11 @@
 #!/usr/bin/python
-import numpy as np
-import cv2 as cv
 import glob
-import cv2.aruco as aruco
-from tqdm import tqdm
 import random
+
+import cv2 as cv
+import cv2.aruco as aruco
+import numpy as np
+from tqdm import tqdm
 
 
 class Calibrator:
@@ -103,7 +104,6 @@ class Calibrator:
 
         # Read images to fetch image points
 
-
         images = glob.glob(imgPath)
         for fname in images:
             img = cv.imread(fname)
@@ -140,7 +140,6 @@ class Calibrator:
             ret, corners = cv.findChessboardCorners(gray, self.size, None)
 
             if ret == True:
-
                 refinedCorners = cv.cornerSubPix(
                     gray, corners, (5, 5), (-1, -1), self.criteria
                 )
@@ -230,7 +229,6 @@ class Calibrator:
 
         # Go over each image and detect the markers
         for fname in tqdm(images):
-
             frame = cv.imread(fname)
             allImgs.append(frame)
 
@@ -273,7 +271,7 @@ class Calibrator:
             pass
         elif len(ids) > 0:
             # Draw the boxes
-            output_frame = aruco.drawDetectedMarkers(frame_copy, corners, ids)
+            aruco.drawDetectedMarkers(frame_copy, corners, ids)
 
             # estimate pose of board
             retval, rvec, tvec = aruco.estimatePoseBoard(

@@ -135,4 +135,3 @@ class CameraNode(PublishNode):
 
 node = CameraNode()
 node.publish_image_data()
-
