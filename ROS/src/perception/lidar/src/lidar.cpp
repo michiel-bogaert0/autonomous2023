@@ -14,7 +14,7 @@ Lidar::Lidar(ros::NodeHandle &n)
   rawLidarSubscriber_ =
       n.subscribe("/ugr/car/sensors/lidar", 10, &Lidar::rawPcCallback, this);
 
-  n.param<double>("estimated_latency", estimated_latency_, 0.07);
+  n.param<double>("estimated_latency", estimated_latency_, 0.056);
 
   n.param<bool>("publish_preprocessing", publish_preprocessing_, false);
   n.param<bool>("publish_ground", publish_ground_, false);
