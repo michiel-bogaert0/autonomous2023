@@ -168,7 +168,7 @@ class Controller:
                 if self.mission == AutonomousMission.TRACKDRIVE:
                     new_state = SLAMStatesEnum.RACING
 
-                    self.target_lap_count = 10
+                    self.target_lap_count = 9
 
                     # Relaunch (different) nodes
                     self.launcher.launch_node(
