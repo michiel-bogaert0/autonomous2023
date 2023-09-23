@@ -18,10 +18,10 @@ class MergeNode:
         """
         rospy.init_node('observation_merger_node', anonymous=True)
         
-        rospy.Subscriber("/ugr/car/observations/lidar", ObservationWithCovarianceArrayStamped, self.publish)
-        rospy.Subscriber("/ugr/car/observations/camera", ObservationWithCovarianceArrayStamped, self.publish)
+        rospy.Subscriber("/input/topic1", ObservationWithCovarianceArrayStamped, self.publish)
+        rospy.Subscriber("/input/topic2", ObservationWithCovarianceArrayStamped, self.publish)
 
-        self.result_publisher = rospy.Publisher("/ugr/car/observations", ObservationWithCovarianceArrayStamped, queue_size=10)
+        self.result_publisher = rospy.Publisher("/output/topic", ObservationWithCovarianceArrayStamped, queue_size=10)
         
         rospy.spin()
 

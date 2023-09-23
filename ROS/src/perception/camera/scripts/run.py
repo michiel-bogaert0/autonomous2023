@@ -240,7 +240,7 @@ class PerceptionNode:
                         observation_class=int(cone[0]),
                         location=Point(*cone[1:]),
                     ),
-                    covariance=[0.7, 0, 0, 0, 0.3, 0, 0, 0, 0.1],  # TODO: tweak
+                    covariance=[0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1],  # TODO: tweak
                 )
             )
 
