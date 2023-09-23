@@ -69,6 +69,7 @@ namespace slam
                                              saturation_score(n.param<double>("saturation_score", 6.0)),
                                              prev_state({0, 0, 0}),
                                              publish_rate(n.param<double>("publish_rate", 3.0)),
+                                             average_output_pose(n.param<bool>("average_output_pose", true)),
                                              Q(3, 3),
                                              R(2, 2),
                                              yaw_unwrap_threshold(n.param<float>("yaw_unwrap_threshold", M_PI * 1.3)),
@@ -714,8 +715,11 @@ namespace slam
     this->particlePosePublisher.publish(particlePoses);
 
     VectorXf pose(3);
-    pose << bestParticle.xv()(0), bestParticle.xv()(1), bestParticle.xv()(2);
-
+    if (this->average_output_pose) {
+      pose << x, y, yaw;
+    } else {
+      pose << bestParticle.xv()(0), bestParticle.xv()(1), bestParticle.xv()(2);
+    }
     vector<MatrixXf> positionCovariances;
     vector<VectorXf> lmMeans;
     vector<LandmarkMetadata> lmMetadatas;

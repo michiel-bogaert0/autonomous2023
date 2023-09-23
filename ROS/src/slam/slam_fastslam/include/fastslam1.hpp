@@ -48,6 +48,7 @@ namespace slam
       bool post_clustering;
       int particle_count;
       double penalty_score;
+      bool average_output_pose;
       int effective_particle_count;
       int min_clustering_point_count;
       double observe_prob;
