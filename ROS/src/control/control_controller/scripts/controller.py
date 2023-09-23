@@ -87,7 +87,7 @@ class Controller:
                 
                 speed_target = 0.0
                 if self.state == SLAMStatesEnum.EXPLORATION:
-                    speed_target = 3.0 if self.car == 'simulation' else 1.0
+                    speed_target = 2.0 if self.car == 'simulation' else 1.0
 
                 elif self.state == SLAMStatesEnum.RACING:
                     if self.mission == AutonomousMission.TRACKDRIVE or self.mission == AutonomousMission.SKIDPAD:
