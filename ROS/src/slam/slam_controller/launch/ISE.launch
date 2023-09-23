@@ -28,7 +28,7 @@
     <param name="reset_on_time_jump" value="true" />
 
     <!-- Angular rate -->
-    <param name="imu0" value="/vectornav/IMU" />
+    <param name="imu0" value="/ugr/car/sensors/vectornav/imu" />
     <rosparam param="imu0_config">[false, false, false,
       false, false, true,
       false, false, false,
