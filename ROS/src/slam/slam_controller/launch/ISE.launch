@@ -55,23 +55,15 @@
     <param name="imu2_differential" value="false" />
     <param name="imu2_relative" value="true" />
 
-    <param name="imu3" value="/ugr/car/sensors/imu0/acc" />
+    <!-- Angular heading -->
+    <param name="imu3" value="/ugr/car/sensors/vectornav/imu" />
     <rosparam param="imu3_config">[false, false, false,
+      false, false, true,
       false, false, false,
-      false, false, false,
-      false, false, false,
-      true, false, false]</rosparam>
+      false, false, true,
+      false, false, false]</rosparam>
     <param name="imu3_differential" value="false" />
     <param name="imu3_relative" value="true" />
-
-    <param name="imu4" value="/ugr/car/sensors/imu1/acc" />
-    <rosparam param="imu4_config">[false, false, false,
-      false, false, false,
-      false, false, false,
-      false, false, false,
-      true, false, false]</rosparam>
-    <param name="imu4_differential" value="false" />
-    <param name="imu4_relative" value="true" /> 
 
     <!-- Wheel encoders -->
     <param name="twist0" value="ugr/car/sensors/encoder0" />
@@ -136,23 +128,15 @@
     <param name="imu2_differential" value="false" />
     <param name="imu2_relative" value="true" />
 
-    <param name="imu3" value="/ugr/car/sensors/imu0/acc" />
+    <!-- Angular heading -->
+    <param name="imu3" value="/ugr/car/sensors/vectornav/imu" />
     <rosparam param="imu3_config">[false, false, false,
+      false, false, true,
       false, false, false,
-      false, false, false,
-      false, false, false,
-      true, false, false]</rosparam>
+      false, false, true,
+      false, false, false]</rosparam>
     <param name="imu3_differential" value="false" />
     <param name="imu3_relative" value="true" />
-
-    <param name="imu4" value="/ugr/car/sensors/imu1/acc" />
-    <rosparam param="imu4_config">[false, false, false,
-      false, false, false,
-      false, false, false,
-      false, false, false,
-      true, false, false]</rosparam>
-    <param name="imu4_differential" value="false" />
-    <param name="imu4_relative" value="true" />
 
     <param name="twist0" value="ugr/car/sensors/encoder0" />
     <rosparam param="twist0_config">
@@ -287,33 +271,14 @@
     <param name="imu2_differential" value="false" />
     <param name="imu2_relative" value="true" />
 
-    <param name="imu3" value="/ugr/car/sensors/imu0/acc" />
+    <param name="imu3" value="/ugr/car/sensors/vectornav/imu" />
     <rosparam param="imu3_config">[false, false, false,
-      false, false, false,
-      false, false, false,
-      false, false, false,
-      true, false, false]</rosparam>
-    <param name="imu3_differential" value="false" />
-    <param name="imu3_relative" value="true" />
-
-    <param name="imu4" value="/ugr/car/sensors/imu1/acc" />
-    <rosparam param="imu4_config">[false, false, false,
-      false, false, false,
-      false, false, false,
-      false, false, false,
-      true, false, false]</rosparam>
-    <param name="imu4_differential" value="false" />
-    <param name="imu4_relative" value="true" />
-
-    <param name="imu5" value="ugr/car/sensors/heading" />
-    <param name="imu5_differential" value="false" />
-    <param name="imu5_relative" value="true" />
-    <rosparam param="imu5_config">
-      [false, false, false,
       false, false, true,
       false, false, false,
-      false, false, false,
+      false, false, true,
       false, false, false]</rosparam>
+    <param name="imu3_differential" value="false" />
+    <param name="imu3_relative" value="true" />
 
     <param name="twist0" value="ugr/car/sensors/encoder0" />
     <rosparam param="twist0_config">
