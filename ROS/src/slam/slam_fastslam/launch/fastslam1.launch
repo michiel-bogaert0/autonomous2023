@@ -4,6 +4,7 @@
   <arg name="base_link_frame" default="ugr/car_base_link"/>
   <arg name="slam_base_link_frame" default="ugr/slam_base_link"/>
 
+  <arg name="setup_stand_dev" default="0.1"/>
   <arg name="particle_count" default="1000"/>
   <arg name="effective_particle_count" default="800"/>
   <arg name="eps" default="0.5"/>
@@ -26,6 +27,7 @@
     <param name="base_link_frame" value="$(arg base_link_frame)" />
     <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
 
+    <param name="setup_stand_dev" value="$(arg setup_stand_dev)" />
     <param name="particle_count" value="$(arg particle_count)" />
     <param name="effective_particle_count" value="$(arg effective_particle_count)" />
     <param name="eps" value="$(arg eps)" />
