@@ -86,6 +86,8 @@ void Pathplanning::compute(const std::vector<std::vector<double>>& cones, const 
 
     poses.push_back(zero_pose);
 
+    bool away_from_start = false;
+
     for (const auto& node : path)
     {
         geometry_msgs::PoseStamped pose;
@@ -103,6 +105,17 @@ void Pathplanning::compute(const std::vector<std::vector<double>>& cones, const 
         pose.header.stamp = header.stamp;
 
         poses.push_back(pose);
+
+        double distance = pow(node->x, 2) + pow(node->y, 2);
+
+        if (away_from_start && distance < 9.0) {
+            // Close loop
+            poses.push_back(zero_pose);
+            break;
+        }
+       if (!away_from_start && distance > 4.0) {
+            away_from_start = true;
+        }
     }
 
     nav_msgs::Path output;
