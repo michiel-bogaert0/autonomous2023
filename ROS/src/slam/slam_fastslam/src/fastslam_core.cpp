@@ -994,7 +994,7 @@ void read_slam_input_file(const string s, MatrixXf *lm, MatrixXf *wp)
 ////////////////////////////////////////////////////////////////////////////////
 // particle class
 ////////////////////////////////////////////////////////////////////////////////
-Particle::Particle(double stand_div)
+Particle::Particle(double stand_dev)
 {
     _w = 1.0;
     _xv = VectorXf(3);
@@ -1008,7 +1008,7 @@ Particle::Particle(double stand_div)
     std::random_device rd{};
     std::mt19937 gen{rd()};
 
-    std::normal_distribution d{0.0, stand_div};
+    std::normal_distribution d{0.0, stand_dev};
 
     _xv(0) = d(gen);
     _xv(1) = d(gen);
