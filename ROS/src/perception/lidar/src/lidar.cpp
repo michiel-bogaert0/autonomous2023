@@ -14,6 +14,8 @@ Lidar::Lidar(ros::NodeHandle &n)
   rawLidarSubscriber_ =
       n.subscribe("/ugr/car/sensors/lidar", 10, &Lidar::rawPcCallback, this);
 
+  n.param<double>("estimated_latency", estimated_latency_, 0.056);
+
   n.param<bool>("publish_preprocessing", publish_preprocessing_, false);
   n.param<bool>("publish_ground", publish_ground_, false);
   n.param<bool>("publish_clusters", publish_clusters_, true);
@@ -167,7 +169,7 @@ void Lidar::preprocessing(
 void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
   ugr_msgs::ObservationWithCovarianceArrayStamped observations;
   observations.header.frame_id = cones.header.frame_id;
-  observations.header.stamp = cones.header.stamp;
+  observations.header.stamp = cones.header.stamp - ros::Duration(this->estimated_latency_);
 
   int i = 0;
   for (auto cone : cones.points) {
