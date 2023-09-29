@@ -194,7 +194,7 @@ namespace slam
     lm(1) = pose(1) + obs(0) * sin(pose(2) + obs(1));
   }
 
-  void FastSLAM1::build_associations(Particle &particle, ugr_msgs::ObservationWithCovarianceArrayStamped &observations, vector<VectorXf> &knownLandmarks, vector<VectorXf> &newLandmarks, vector<int> &knownIndices, vector<int> &knownClasses, vector<int> &newClasses)
+  void FastSLAM1::build_associations(Particle &particle, ugr_msgs::ObservationWithCovarianceArrayStamped &observations, vector<VectorXf> &knownLandmarks, vector<VectorXf> &newLandmarks, vector<int> &knownIndices, vector<int> &knownClasses, vector<int> &newClasses, vector<float> &knownBeliefs, vector<float> &newBeliefs)
   {
 
     // Make a kdtree of the current particle
@@ -246,12 +246,14 @@ namespace slam
       {
         newLandmarks.push_back(landmark);
         newClasses.push_back(observation.observation.observation_class);
+        newBeliefs.push_back(observation.observation.belief);
       }
       else
       {
         knownLandmarks.push_back(particle.xf()[index]);
         knownIndices.push_back(index);
         knownClasses.push_back(observation.observation.observation_class);
+        knownBeliefs.push_back(observation.observation.belief);
       }
     }
   }
@@ -387,6 +389,7 @@ namespace slam
 
       transformed_ob.covariance = observation.covariance;
       transformed_ob.observation.observation_class = observation.observation.observation_class;
+      transformed_ob.observation.belief = observation.observation.belief;
       transformed_obs.observations.push_back(transformed_ob);
     }
 
@@ -483,9 +486,12 @@ namespace slam
         vector<int> knownClasses;
         vector<int> newClasses;
 
+        vector<float> knownBeliefs;
+        vector<float> newBeliefs;
+
         vector<int> knownObsIndices;
 
-        this->build_associations(particle, transformed_obs, knownLms, newLms, knownObsIndices, knownClasses, newClasses);
+        this->build_associations(particle, transformed_obs, knownLms, newLms, knownObsIndices, knownClasses, newClasses, knownBeliefs, newBeliefs);
         t2 = std::chrono::steady_clock::now();
         time_association += std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
 
@@ -500,7 +506,7 @@ namespace slam
           vector<VectorXf> z;
           this->landmarks_to_observations(newLms, z, particle.xv());
 
-          add_feature(particle, z, this->R, newClasses);
+          add_feature(particle, z, this->R, newClasses, newBeliefs);
         }
 
         if (!knownLms.empty())
@@ -519,7 +525,7 @@ namespace slam
           double w = this->compute_particle_weight(particle, z, knownObsIndices, this->R, zp, Hv, Hf, Sf);
           particle.setW(particle.w() * w);
 
-          feature_update(particle, z, knownObsIndices, this->R, knownClasses, zp, Hv, Hf, Sf);
+          feature_update(particle, z, knownObsIndices, this->R, knownClasses, knownBeliefs, zp, Hv, Hf, Sf);
         }
 
         knownObsIndicesVector.push_back(knownObsIndices);
@@ -771,8 +777,8 @@ namespace slam
       ugr_msgs::ObservationWithCovariance local_ob;
 
       int observation_class = 0;
-      int max_count = 0;
-      int total_count = 0;
+      float max_count = 0.0;
+      float total_count = 0.0;
       for (int j = 0; j < LANDMARK_CLASS_COUNT; j++)
       {
         total_count += filteredMeta[i].classDetectionCount[j];
