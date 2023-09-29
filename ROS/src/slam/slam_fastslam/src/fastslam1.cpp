@@ -69,6 +69,7 @@ namespace slam
                                              saturation_score(n.param<double>("saturation_score", 6.0)),
                                              prev_state({0, 0, 0}),
                                              publish_rate(n.param<double>("publish_rate", 3.0)),
+                                             average_output_pose(n.param<bool>("average_output_pose", true)),
                                              Q(3, 3),
                                              R(2, 2),
                                              yaw_unwrap_threshold(n.param<float>("yaw_unwrap_threshold", M_PI * 1.3)),
@@ -420,7 +421,12 @@ namespace slam
 
     // Check for reverse
     double drivingAngle = atan2(y - this->prev_state[1], x - this->prev_state[0]);
-    bool forward = abs(drivingAngle - yaw) < M_PI_2;
+    double angleDifference = abs(drivingAngle - yaw);
+    if (angleDifference > M_PI) {
+      angleDifference = 2 * M_PI - angleDifference; 
+    }
+
+    bool forward = angleDifference < M_PI_2;
     dDist = (forward ? 1 : -1) * pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1], 2), 0.5);
 
     // Initial pose mechanism
@@ -709,8 +715,11 @@ namespace slam
     this->particlePosePublisher.publish(particlePoses);
 
     VectorXf pose(3);
-    pose << bestParticle.xv()(0), bestParticle.xv()(1), bestParticle.xv()(2);
-
+    if (this->average_output_pose) {
+      pose << x, y, yaw;
+    } else {
+      pose << bestParticle.xv()(0), bestParticle.xv()(1), bestParticle.xv()(2);
+    }
     vector<MatrixXf> positionCovariances;
     vector<VectorXf> lmMeans;
     vector<LandmarkMetadata> lmMetadatas;
