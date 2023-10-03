@@ -31,6 +31,9 @@
         <param name= "cone_height_width_factor" value = "0.5"/>
         <param name= "cone_reconstruction_treshold" value= "0.10"/>
 
+        <!-- orange cone functionality -->
+        <param name= "use_orange_cones" value="false"/>
+
         <!-- white cone functionality -->
         <param name= "use_white_cones" value="false"/>
         <param name= "threshold_white_cone" value="7"/>

@@ -18,6 +18,7 @@ ConeClassification::ConeClassification(ros::NodeHandle &n) : n_(n) {
   n.param<double>("cone_height_width_factor", height_width_factor_, 0.9);
   n.param<double>("threshold_white_cone", threshold_white_cones_, 10);
   n.param<bool>("use_white_cones", use_white_cones_, false);
+  n.param<bool>("use_orange_cones", use_orange_cones_, false);
 
   n.param<double>("first_tipping_distance", first_tipping_distance_, 10);
   n.param<double>("second_tipping_distance", second_tipping_distance_, 12);
@@ -61,6 +62,13 @@ ConeCheck ConeClassification::classifyCone(
 
     // check size cloud for orange cone
     if (bound_z > threshold_height_big_cone_) {
+      
+      // If we do not use orange cones, we can throw away this cloud because 
+      // it is too tall
+      if(!use_orange_cones_){
+        cone_check.is_cone = false;
+        return cone_check;
+      }
       is_orange = true;
     }
     // We allow for some play in the point count prediction
