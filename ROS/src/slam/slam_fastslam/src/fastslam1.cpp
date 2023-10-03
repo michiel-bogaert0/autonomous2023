@@ -125,11 +125,11 @@ namespace slam
     this->R(1, 0) = pow(RAsVector[2], 2);
     this->R(1, 1) = pow(RAsVector[3], 2);
 
-    double stand_div = n.param<double>("setup_stand_dev", 0.1);
+    double stand_dev = n.param<double>("setup_stand_dev", 0.1);
     this->particles.clear();
     for (int i = 0; i < this->particle_count; i++)
     {
-      this->particles.push_back(Particle(stand_div));
+      this->particles.push_back(Particle(stand_dev));
     }
     firstRound = true;
   }

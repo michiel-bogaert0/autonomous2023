@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <random>
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
@@ -28,6 +29,25 @@ Particle::Particle()
   _w = 1.0;
   _prev_yaw = 0.0;
   _rev = 0;
+}
+
+Particle::Particle(double stand_dev)
+{
+  _pose = VectorXf(3);
+  _variance = MatrixXf(3, 3);
+  _pose.setZero(3);
+  _variance.setZero(3, 3);
+
+  _w = 1.0;
+  _prev_yaw = 0.0;
+  _rev = 0;
+
+  std::random_device rd{};
+  std::mt19937 gen{rd()};
+  std::normal_distribution d{0.0, stand_dev};
+
+  _pose(0) = d(gen);
+  _pose(1) = d(gen);
 }
 
 Particle::Particle(float &w, VectorXf &pose, MatrixXf &variance)
