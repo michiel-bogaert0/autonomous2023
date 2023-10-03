@@ -139,6 +139,7 @@ class PerceptionSimulator(StageSimulator):
             filtered_cones.append(
                 ObservationWithCovariance(
                     observation=Observation(
+                        belief=1.0,
                         location=Point(x=cone[0], y=cone[1], z=cone[2]),
                         observation_class=int(cone[3]),
                     )

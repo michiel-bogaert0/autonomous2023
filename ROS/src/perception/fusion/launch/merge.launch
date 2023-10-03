@@ -3,6 +3,6 @@
   <node pkg="fusion" output="log" type="merge.py" name="topic_merger" respawn="False">
     <remap from="/input/topic1" to="/ugr/car/observations/lidar"/>
     <remap from="/input/topic2" to="/ugr/car/observations/camera"/>
-    <remap from="/ouput/topic" to="/ugr/car/observations"/>
+    <remap from="/output/topic" to="/ugr/car/observations"/>
   </node>
 </launch>

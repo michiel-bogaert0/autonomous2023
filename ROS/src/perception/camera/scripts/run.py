@@ -254,7 +254,8 @@ class PerceptionNode:
             cone_positions.append(
                 ObservationWithCovariance(
                     observation=Observation(
-                        observation_class,
+                        belief=1.0,
+                        observation_class=int(cone[0]),
                         location=Point(*cone[1:]),
                     ),
                     covariance=[0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1],  # TODO: tweak
