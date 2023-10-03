@@ -20,7 +20,7 @@ Pathplanning::Pathplanning(ros::NodeHandle &n, bool debug_visualisation, std::st
                     int stage2_threshold_center_points_,
                     int max_depth_,
                     double continuous_dist_,
-                    double min_distance_away_from_start
+                    double min_distance_away_from_start,
                     double max_distance_away_from_start
     )
     : n_(n) , frametf_(n), debug_visualisation_(debug_visualisation), 
