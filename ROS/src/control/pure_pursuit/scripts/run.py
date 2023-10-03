@@ -28,6 +28,10 @@ class PurePursuit:
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
         self.actual_speed = 0.0
+        self.speed_start = rospy.get_param("~speed_start", 10)
+        self.speed_stop = rospy.get_param("~speed_stop", 50)
+        self.distance_start = rospy.get_param("~distance_start", 1.2)
+        self.distance_stop = rospy.get_param("~distance_stop", 2.4)
 
         # Publishers for the controllers
         # Controllers themselves spawned in the state machines respective launch files
@@ -131,6 +135,15 @@ class PurePursuit:
                 )
 
                 # First try to get a target point
+
+                # Change the look-ahead distance (minimal_distance)  parameters: snelheid, self.actual_speed, self.speed_start, self.speed_stop, self.distance_start, self.distance_stop
+                if self.actual_speed < self.speed_start:
+                    self.minimal_distance = self.distance_start
+                elif self.actual_speed < self.speed_stop:
+                    self.minimal_distance = (self.distance_stop - self.distance_start)/(self.speed_stop - self.speed_start) * self.actual_speed
+                else:
+                    self.minimal_distance = self.distance_stop
+
                 # The target point is given in the world frame
                 target_x, target_y, success = self.trajectory.calculate_target_point(
                     min(self.minimal_distance * 3, max(self.minimal_distance, self.minimal_distance * self.actual_speed)), [trans.transform.translation.x,  trans.transform.translation.y]
