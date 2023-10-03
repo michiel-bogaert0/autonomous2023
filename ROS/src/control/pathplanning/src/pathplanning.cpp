@@ -19,7 +19,9 @@ Pathplanning::Pathplanning(ros::NodeHandle &n, bool debug_visualisation, std::st
                     int stage2_threshold_bad_points_,
                     int stage2_threshold_center_points_,
                     int max_depth_,
-                    double continuous_dist_
+                    double continuous_dist_,
+                    double min_distance_away_from_start,
+                    double max_distance_away_from_start
     )
     : n_(n) , frametf_(n), debug_visualisation_(debug_visualisation), 
         vis_namespace_(vis_namespace), vis_lifetime_(vis_lifetime),
@@ -30,6 +32,7 @@ Pathplanning::Pathplanning(ros::NodeHandle &n, bool debug_visualisation, std::st
         max_path_distance_(max_path_distance), range_front_(range_front),
         range_behind_(range_behind), range_sides_(range_sides),
         vis_points_(vis_points), vis_lines_(vis_lines),
+        min_distance_away_from_start(min_distance_away_from_start), max_distance_away_from_start(max_distance_away_from_start),
         triangulator_(n, triangulation_min_var, triangulation_var_threshold,
                         max_iter, max_angle_change, max_path_distance,
                         safety_dist, range_front, range_behind,
@@ -108,12 +111,12 @@ void Pathplanning::compute(const std::vector<std::vector<double>>& cones, const 
 
         double distance = pow(node->x, 2) + pow(node->y, 2);
 
-        if (away_from_start && distance < 9.0) {
+        if (away_from_start && distance < max_distance_away_from_start) {
             // Close loop
             poses.push_back(zero_pose);
             break;
         }
-       if (!away_from_start && distance > 4.0) {
+       if (!away_from_start && distance > min_distance_away_from_start) {
             away_from_start = true;
         }
     }
