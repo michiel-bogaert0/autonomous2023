@@ -248,10 +248,13 @@ class PerceptionNode:
         cone_positions: List[ObservationWithCovariance] = []
 
         for cone in cones:
+            observation_class=int(cone[0])
+            if not rospy.get_param("~use_orange_cones", False) and observation_class==2:
+                continue
             cone_positions.append(
                 ObservationWithCovariance(
                     observation=Observation(
-                        observation_class=int(cone[0]),
+                        observation_class,
                         location=Point(*cone[1:]),
                     ),
                     covariance=[0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1],  # TODO: tweak
