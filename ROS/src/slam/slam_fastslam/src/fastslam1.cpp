@@ -55,7 +55,7 @@ namespace slam
                                              doSynchronous(n.param<bool>("synchronous", true)),
                                              effective_particle_count(n.param<int>("effective_particle_count", 75)),
                                              min_clustering_point_count(n.param<int>("min_clustering_point_count", 30)),
-                                             eps(n.param<double>("eps", 2.0)),
+                                             
                                              clustering_eps(n.param<double>("clustering_eps", 0.5)),
                                              belief_factor(n.param<double>("belief_factor", 2.0)),
                                              expected_range(n.param<double>("expected_range", 15)),
@@ -75,6 +75,11 @@ namespace slam
                                              yaw_unwrap_threshold(n.param<float>("yaw_unwrap_threshold", M_PI * 1.3)),
                                              tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0)
   {
+    ROS_WARN("Lidar!!!");
+    lidarOptions = {};
+    cameraOptions = {};
+    lidarOptions.eps = n.param<double>("lidar_eps", 2.0);
+    cameraOptions.eps = n.param<double>("camera_eps", 2.0);
 
     // Initialize map Service Client
     string SetMap_service = n.param<string>("SetMap_service", "/ugr/srv/slam_map_server/set");
@@ -234,7 +239,7 @@ namespace slam
       {
         float distance = pow(landmark[0] - vectorsToConsider[i](0), 2) + pow(landmark[1] - vectorsToConsider[i](1), 2);
 
-        if (distance < pow(this->eps, 2))
+        if (distance < pow(this->options->eps, 2))
         {
           index = indices[i];
           found = true;
@@ -286,7 +291,14 @@ namespace slam
 
   void FastSLAM1::handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs)
   {
-
+    ROS_WARN("Lidar!!! %s", obs->header.frame_id.c_str());
+    if (obs->header.frame_id == this->base_link_frame)
+    {
+      options = &lidarOptions;
+    }else{
+      options = &cameraOptions;
+    }
+    
     if (this->latestTime - obs->header.stamp.toSec() > 0.5 && this->latestTime > 0.0)
     {
       // Reset

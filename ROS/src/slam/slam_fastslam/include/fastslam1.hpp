@@ -22,6 +22,11 @@ using namespace std;
 
 namespace slam
 {
+  struct ObsOptions {
+    double eps;
+  };
+
+
   class FastSLAM1
   {
     public: 
@@ -36,6 +41,9 @@ namespace slam
       void step();
 
     private:
+      ObsOptions* options;
+      ObsOptions lidarOptions;
+      ObsOptions cameraOptions;
       
       // ROS
       ros::NodeHandle n;
