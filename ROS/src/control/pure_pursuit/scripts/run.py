@@ -136,11 +136,11 @@ class PurePursuit:
 
                 # First try to get a target point
 
-                # Change the look-ahead distance (minimal_distance)  parameters: snelheid, self.actual_speed, self.speed_start, self.speed_stop, self.distance_start, self.distance_stop
+                # Change the look-ahead distance (minimal_distance)  parameters: self.actual_speed, self.speed_start, self.speed_stop, self.distance_start, self.distance_stop
                 if self.actual_speed < self.speed_start:
                     self.minimal_distance = self.distance_start
                 elif self.actual_speed < self.speed_stop:
-                    self.minimal_distance = (self.distance_stop - self.distance_start)/(self.speed_stop - self.speed_start) * self.actual_speed
+                    self.minimal_distance = self.distance_start + (self.distance_stop - self.distance_start)/(self.speed_stop - self.speed_start) * (self.actual_speed - self.speed_start)
                 else:
                     self.minimal_distance = self.distance_stop
 
