@@ -251,6 +251,7 @@ class PerceptionNode:
             cone_positions.append(
                 ObservationWithCovariance(
                     observation=Observation(
+                        belief=1.0,
                         observation_class=int(cone[0]),
                         location=Point(*cone[1:]),
                     ),
