@@ -77,9 +77,10 @@ class Controller:
             elif self.state == SLAMStatesEnum.EXPLORATION or self.state == SLAMStatesEnum.RACING:
 
                 if self.mission == AutonomousMission.TRACKDRIVE:
-                    self.launcher.launch_node(
-                        "control_controller", f"launch/{self.mission}.launch"
-                    )
+                    if self.state == SLAMStatesEnum.EXPLORATION:                
+                        self.launcher.launch_node(
+                            "control_controller", f"launch/{self.mission}.launch"
+                        )
                 else:
                     self.launcher.launch_node(
                         "control_controller", f"launch/{self.mission}_{self.state}.launch"
