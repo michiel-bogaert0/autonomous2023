@@ -298,7 +298,7 @@ namespace slam
 
   void FastSLAM1::handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs)
   {
-    if (obs->header.frame_id == "os_sensor")
+    if (obs->header.frame_id == "os_sensor" || obs->header.frame_id == this->base_link_frame)
     {
      options = &lidarOptions;
     }else{
