@@ -14,16 +14,12 @@
         <param name= "big_radial_bucket_length" value = "5"/>
         <param name= "radial_bucket_tipping_point" value = "8"/>
         <param name= "use_slope" value = "true"/>
-        <param name= "max_bucket_height" value = "0.35"/>
-        <param name= "min_points_per_bucket" value = "8"/>
-        <param name= "max_points_per_bucket" value = "200"/>
 
         <!-- Clustering -->
         <param name= "clustering_method" value="string" />
         <param name= "cluster_tolerance" value="1" />
         <param name= "point_count_threshold" value="2"/>
-        
-        <param name= "min_distance_factor" value="1.5"/>
+        <param name= "min_distance_factor" value="2.5"/>
         <param name= "minimal_points_cone" value = "5"/>
         <param name= "threshold_height_big_cone" value ="0.4"/>
         <param name= "minimal_height_cone" value = "0.07"/>
@@ -33,6 +29,13 @@
         <param name= "cone_shape_factor" value = "0.25"/>
         <param name= "cone_height_width_factor" value = "0.5"/>
         <param name= "cone_reconstruction_treshold" value= "0.10"/>
+
+        <!-- noisy environment -->
+        <param name= "noisy_environment" value = "true"/>
+        <param name= "min_distance_factor_noisy_environment" value="1.5"/>
+        <param name= "max_bucket_height" value = "0.35"/>
+        <param name= "min_points_per_bucket" value = "8"/>
+        <param name= "max_points_per_bucket" value = "200"/>
 
         <!-- orange cone functionality -->
         <param name= "use_orange_cones" value="false"/>

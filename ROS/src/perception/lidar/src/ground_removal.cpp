@@ -21,6 +21,7 @@ GroundRemoval::GroundRemoval(ros::NodeHandle &n) : n_(n) {
   n.param<int>("angular_buckets", angular_buckets_, 10);
   n.param<double>("radial_bucket_tipping_point", radial_bucket_tipping_point_,
                   10);
+  n.param<bool>("noisy_environment", noisy_environment_, false);
   n.param<double>("max_bucket_height", max_bucket_height_,0.35);
   n.param<int>("min_points_per_bucket", min_points_per_bucket_,8);
   n.param<int>("max_points_per_bucket", max_points_per_bucket_,200);
@@ -107,9 +108,13 @@ void GroundRemoval::groundRemovalBins(
   for (uint16_t i = 0; i < bucket_size; i++) {
     pcl::PointCloud<pcl::PointXYZI> bucket = buckets[i];
 
-    // throw away buckets with not enough or too much points
-    if ((bucket.size() != 0) && (bucket.size()>min_points_per_bucket_) 
-                             && (bucket.size()<max_points_per_bucket_)) {
+    if (bucket.size() != 0) {
+
+      // throw away buckets with not enough or too much points in noisy environment
+      if(noisy_environment_ && (bucket.size()>min_points_per_bucket_) 
+                            && (bucket.size()<max_points_per_bucket_)){
+        continue;
+      }
 
       // sort bucket from bottom to top
       std::sort(bucket.begin(), bucket.end(), zsort);
@@ -118,8 +123,10 @@ void GroundRemoval::groundRemovalBins(
       int number_of_points = std::max(int(std::ceil(bucket.size() / 10)), 1);
 
       // calculate the height difference between the 10% highest and 10% lowest points
-      // throw the bin away if this value is too big
-      if(bucket.points[std::ceil(0.9*bucket.size())].z - bucket.points[std::ceil(0.1*bucket.size())].z>max_bucket_height_){
+      // throw the bin away if this value is too big, only in noisy environment
+      if(noisy_environment_ && (bucket.points[std::ceil(0.9*bucket.size())].z - 
+                                bucket.points[std::ceil(0.1*bucket.size())].z
+                                >max_bucket_height_)){
         continue;
       }
       pcl::PointCloud<pcl::PointXYZI> expected_ground_points;

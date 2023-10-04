@@ -12,6 +12,9 @@ ConeClustering::ConeClustering(ros::NodeHandle &n)
   n.param<std::string>("clustering_method", clustering_method_, "string");
   n.param<double>("cluster_tolerance", cluster_tolerance_, 0.4);
   n.param<double>("min_distance_factor", min_distance_factor_, 1.5);
+  n.param<bool>("noisy_environment", noisy_environment_, false);
+  n.param<double>("min_distance_factor_noisy_environment",
+                  min_distance_factor_noisy_environment_, 1.5);
   n.param<double>("cone_reconstruction_treshold", cone_reconstruction_treshold_,
                   0.2);
   n.param<double>("maximal_delta_arc_cluster", max_arc_cluster_, 0.3);
@@ -159,9 +162,14 @@ ConeClustering::stringClustering(
                                  atan2(rightmost.x, rightmost.y));
       float dist = hypot3d(point.x - rightmost.x, point.y - rightmost.y, 0);
 
+      if(noisy_environment_){
+        min_distance_factor = min_distance_factor_noisy_environment_;
+      }
+
       // A cone is max 285mm wide, check whether this point is within that
       // distance from the rightmost point in each cluster
       if (dist < WIDTH_BIG_CONE * min_distance_factor_) {
+
         found_cluster = true;
 
         // Add the point to the cluster
