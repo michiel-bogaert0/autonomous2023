@@ -23,7 +23,7 @@
         <param name= "cluster_tolerance" value="1" />
         <param name= "point_count_threshold" value="2"/>
         
-        <param name= "min_distance_factor" value="2.5"/>
+        <param name= "min_distance_factor" value="1.5"/>
         <param name= "minimal_points_cone" value = "5"/>
         <param name= "threshold_height_big_cone" value ="0.4"/>
         <param name= "minimal_height_cone" value = "0.07"/>
