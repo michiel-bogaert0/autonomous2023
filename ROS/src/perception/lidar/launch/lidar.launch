@@ -15,8 +15,8 @@
         <param name= "radial_bucket_tipping_point" value = "8"/>
         <param name= "use_slope" value = "true"/>
         <param name= "max_bucket_height" value = "0.35"/>
-        <param name= "minimum_points_per_bucket" value = "8"/>
-        <param name= "maximum_points_per_bucket" value = "200"/>
+        <param name= "min_points_per_bucket" value = "8"/>
+        <param name= "max_points_per_bucket" value = "200"/>
 
         <!-- Clustering -->
         <param name= "clustering_method" value="string" />

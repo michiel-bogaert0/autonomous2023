@@ -22,8 +22,8 @@ GroundRemoval::GroundRemoval(ros::NodeHandle &n) : n_(n) {
   n.param<double>("radial_bucket_tipping_point", radial_bucket_tipping_point_,
                   10);
   n.param<double>("max_bucket_height", max_bucket_height_,0.35);
-  n.param<int>("minimum_points_per_bucket", minimum_points_per_bucket_,8);
-  n.param<int>("maximum_points_per_bucket", maximum_points_per_bucket_,200);
+  n.param<int>("min_points_per_bucket", min_points_per_bucket_,8);
+  n.param<int>("max_points_per_bucket", max_points_per_bucket_,200);
   n.param<bool>("use_slope", use_slope_, true);
   n.param<int>("color_factor", factor_color_, 5);
 }
@@ -108,8 +108,8 @@ void GroundRemoval::groundRemovalBins(
     pcl::PointCloud<pcl::PointXYZI> bucket = buckets[i];
 
     // throw away buckets with not enough or too much points
-    if ((bucket.size() != 0) && (bucket.size()>minimum_points_per_bucket_) 
-                             && (bucket.size()<maximum_points_per_bucket_)) {
+    if ((bucket.size() != 0) && (bucket.size()>min_points_per_bucket_) 
+                             && (bucket.size()<max_points_per_bucket_)) {
 
       // sort bucket from bottom to top
       std::sort(bucket.begin(), bucket.end(), zsort);

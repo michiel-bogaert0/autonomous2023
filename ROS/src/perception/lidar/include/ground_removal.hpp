@@ -56,6 +56,10 @@ private:
   double small_radial_bucket_length_;  // length of small buckets
   double big_radial_bucket_length_;    // length of big buckets
   bool use_slope_;                     // Is the slope used for GR or not
+  double max_bucket_height_;           // maximum height difference between top points 
+                                       // and lower points in bin 
+  int min_points_per_bucket_;      // minimum points allowed in a bucket
+  int max_points_per_bucket_;      // maximum points allowed in a bucket
 
   int factor_color_; // number of consecutive points that get the same color
 
