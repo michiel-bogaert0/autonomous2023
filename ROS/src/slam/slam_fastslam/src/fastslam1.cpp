@@ -75,7 +75,6 @@ namespace slam
                                              yaw_unwrap_threshold(n.param<float>("yaw_unwrap_threshold", M_PI * 1.3)),
                                              tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0)
   {
-    ROS_WARN("Lidar!!!");
     lidarOptions = {};
     cameraOptions = {};
     lidarOptions.eps = n.param<double>("lidar_eps", 2.0);
@@ -291,12 +290,11 @@ namespace slam
 
   void FastSLAM1::handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs)
   {
-    ROS_WARN("Lidar!!! %s", obs->header.frame_id.c_str());
     if (obs->header.frame_id == this->base_link_frame)
     {
-      options = &lidarOptions;
+     options = &lidarOptions;
     }else{
-      options = &cameraOptions;
+     options = &cameraOptions;
     }
     
     if (this->latestTime - obs->header.stamp.toSec() > 0.5 && this->latestTime > 0.0)

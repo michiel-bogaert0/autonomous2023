@@ -60,7 +60,6 @@ namespace slam
       int effective_particle_count;
       int min_clustering_point_count;
       double observe_prob;
-      double eps;
       double clustering_eps;
       double belief_factor;
 

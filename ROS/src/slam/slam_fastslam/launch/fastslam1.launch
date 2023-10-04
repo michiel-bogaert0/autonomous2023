@@ -6,8 +6,10 @@
 
   <arg name="particle_count" default="1000"/>
   <arg name="effective_particle_count" default="800"/>
+
   <arg name="lidar_eps" default="0.5"/>
   <arg name="camera_eps" default="0.5"/>
+
   <arg name="max_range" default="20"/>
   <arg name="max_half_angle" default="3.14"/>
   <arg name="expected_range" default="20"/>
@@ -29,8 +31,10 @@
 
     <param name="particle_count" value="$(arg particle_count)" />
     <param name="effective_particle_count" value="$(arg effective_particle_count)" />
-    <param name="lidar_eps" value="$(arg eps)" />
-    <param name="camera_eps" value="$(arg eps)" />
+
+    <param name="lidar_eps" value="$(arg lidar_eps)" />
+    <param name="camera_eps" value="$(arg camera_eps)" />
+
     <param name="max_range" value="$(arg max_range)" />
     <param name="max_half_angle" value="$(arg max_half_angle)" />
     <param name="expected_range" value="$(arg expected_range)" />
