@@ -4,6 +4,8 @@
   <arg name="base_link_frame" default="ugr/car_base_link"/>
   <arg name="slam_base_link_frame" default="ugr/slam_base_link"/>
 
+  <arg name="lidar_frame" default="os_sensor"/>
+
   <arg name="particle_count" default="1000"/>
   <arg name="effective_particle_count" default="800"/>
 
@@ -19,7 +21,6 @@
   <arg name="lidar_expected_half_angle" default="3.14"/>
 
   <arg name="lidar_acceptance_score" default="5.0"/>
-  <arg name="lidar_saturation_score" default="15.0"/>
   <arg name="lidar_penalty_score" default="-0.5"/>
   <arg name="lidar_discard_score" default="-2.0"/>
 
@@ -31,7 +32,6 @@
   <arg name="camera_expected_half_angle" default="3.14"/>
 
   <arg name="camera_acceptance_score" default="5.0"/>
-  <arg name="camera_saturation_score" default="15.0"/>
   <arg name="camera_penalty_score" default="-0.5"/>
   <arg name="camera_discard_score" default="-2.0"/>
 
@@ -40,6 +40,8 @@
     <param name="world_frame" value="$(arg world_frame)" />
     <param name="base_link_frame" value="$(arg base_link_frame)" />
     <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
+
+    <param name="lidar_frame" value="$(arg lidar_frame)" />
 
     <param name="particle_count" value="$(arg particle_count)" />
     <param name="effective_particle_count" value="$(arg effective_particle_count)" />
@@ -62,7 +64,6 @@
     <param name="lidar_acceptance_score" value="$(arg lidar_acceptance_score)" />
     <param name="lidar_penalty_score" value="$(arg lidar_penalty_score)" />
     <param name="lidar_discard_score" value="$(arg lidar_discard_score)" />
-    <param name="lidar_saturation_score" value="$(arg lidar_saturation_score"/>
 
     #Camera
     <param name="camera_eps" value="$(arg camera_eps)" />
@@ -74,7 +75,6 @@
     <param name="camera_acceptance_score" value="$(arg camera_acceptance_score)" />
     <param name="camera_penalty_score" value="$(arg camera_penalty_score)" />
     <param name="camera_discard_score" value="$(arg camera_discard_score)" />
-    <param name="camera_saturation_score" value="$(arg camera_saturation_score"/>
   
     # Map service Parameters
     <param name="SetMap_service" value="/ugr/srv/slam_map_server/set" />

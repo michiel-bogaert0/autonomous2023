@@ -50,6 +50,7 @@ namespace slam
                                              slam_base_link_frame(n.param<string>("slam_base_link_frame", "ugr/slam_base_link")),
                                              world_frame(n.param<string>("world_frame", "ugr/car_odom")),
                                              map_frame(n.param<string>("map_frame", "ugr/map")),
+                                             lidar_frame(n.param<string>("lidar_frame", "os_sensor")),
                                              particle_count(n.param<int>("particle_count", 100)),
                                              post_clustering(n.param<bool>("post_clustering", false)),
                                              doSynchronous(n.param<bool>("synchronous", true)),
@@ -73,7 +74,6 @@ namespace slam
     lidarOptions.expected_range = n.param<double>("lidar_expected_range", 15);
     lidarOptions.expected_half_fov = n.param<double>("lidar_expected_half_angle", 60 * 0.0174533);
     lidarOptions.acceptance_score = n.param<double>("lidar_acceptance_score", 5.0);
-    lidarOptions.saturation_score = n.param<double>("lidar_saturation_score", 15.0);
     lidarOptions.penalty_score = n.param<double>("lidar_penalty_score", -0.5);
     lidarOptions.minThreshold = n.param<double>("lidar_discard_score", -2.0);
 
@@ -84,7 +84,6 @@ namespace slam
     cameraOptions.expected_range = n.param<double>("camera_expected_range", 15);
     cameraOptions.expected_half_fov = n.param<double>("camera_expected_half_angle", 60 * 0.0174533);
     cameraOptions.acceptance_score = n.param<double>("camera_acceptance_score", 5.0);
-    cameraOptions.saturation_score = n.param<double>("camera_saturation_score", 15.0);
     cameraOptions.penalty_score = n.param<double>("camera_penalty_score", -0.5);
     cameraOptions.minThreshold = n.param<double>("camera_discard_score", -2.0);
 
@@ -298,7 +297,8 @@ namespace slam
 
   void FastSLAM1::handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs)
   {
-    if (obs->header.frame_id == "os_sensor" || obs->header.frame_id == this->base_link_frame)
+    //change options for camera or lidar (simulator geeft base_link_frame mee)
+    if (obs->header.frame_id == this->lidar_frame || obs->header.frame_id == this->base_link_frame)
     {
      options = &lidarOptions;
     }else{

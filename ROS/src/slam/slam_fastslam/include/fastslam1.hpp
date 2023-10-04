@@ -29,7 +29,6 @@ namespace slam
     double expected_range;
     double expected_half_fov; // radians, single side 
     double acceptance_score;
-    double saturation_score;
     double penalty_score;
     double minThreshold;
   };
@@ -61,6 +60,8 @@ namespace slam
       string world_frame;
       string map_frame;
       string slam_base_link_frame;
+      string lidar_frame;
+
       bool post_clustering;
       int particle_count;
       bool average_output_pose;
