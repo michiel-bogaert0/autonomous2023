@@ -17,9 +17,9 @@
   #Lidar slam options
   <arg name="lidar_eps" default="0.5"/>
   <arg name="lidar_max_range" default="20"/>
-  <arg name="lidar_max_half_angle" default="3.14"/>
-  <arg name="lidar_expected_range" default="20"/>
-  <arg name="lidar_expected_half_angle" default="3.14"/>
+  <arg name="lidar_max_half_angle" default="1.57"/>
+  <arg name="lidar_expected_range" default="15"/>
+  <arg name="lidar_expected_half_angle" default="1.57"/>
 
   <arg name="lidar_acceptance_score" default="5.0"/>
   <arg name="lidar_penalty_score" default="-0.5"/>
@@ -28,9 +28,9 @@
   #Camera slam options
   <arg name="camera_eps" default="0.5"/>
   <arg name="camera_max_range" default="20"/>
-  <arg name="camera_max_half_angle" default="3.14"/>
-  <arg name="camera_expected_range" default="20"/>
-  <arg name="camera_expected_half_angle" default="3.14"/>
+  <arg name="camera_max_half_angle" default="0.6"/>
+  <arg name="camera_expected_range" default="15"/>
+  <arg name="camera_expected_half_angle" default="0.6"/>
 
   <arg name="camera_acceptance_score" default="5.0"/>
   <arg name="camera_penalty_score" default="-0.5"/>
