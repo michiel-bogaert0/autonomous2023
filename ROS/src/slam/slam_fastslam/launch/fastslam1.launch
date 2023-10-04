@@ -3,38 +3,51 @@
   <arg name="world_frame" default="ugr/car_odom"/>
   <arg name="base_link_frame" default="ugr/car_base_link"/>
   <arg name="slam_base_link_frame" default="ugr/slam_base_link"/>
+  <arg name="lidar_frame" default="os_sensor"/>
 
   <arg name="setup_stand_dev" default="0.1"/>
+  
   <arg name="particle_count" default="1000"/>
   <arg name="effective_particle_count" default="800"/>
-  <arg name="eps" default="0.5"/>
-  <arg name="max_range" default="20"/>
-  <arg name="max_half_angle" default="3.14"/>
-  <arg name="expected_range" default="20"/>
-  <arg name="expected_half_angle" default="3.14"/>
+
   <arg name="observe_prob" default="0.99"/>
 
   <arg name="yaw_unwrap_threshold" default="4.0"/>
 
-  <arg name="acceptance_score" default="5.0"/>
-  <arg name="saturation_score" default="15.0"/>
-  <arg name="penalty_score" default="-0.5"/>
-  <arg name="discard_score" default="-2.0"/>
+  #Lidar slam options
+  <arg name="lidar_eps" default="0.5"/>
+  <arg name="lidar_max_range" default="20"/>
+  <arg name="lidar_max_half_angle" default="1.57"/>
+  <arg name="lidar_expected_range" default="15"/>
+  <arg name="lidar_expected_half_angle" default="1.57"/>
+
+  <arg name="lidar_acceptance_score" default="5.0"/>
+  <arg name="lidar_penalty_score" default="-0.5"/>
+  <arg name="lidar_discard_score" default="-2.0"/>
+
+  #Camera slam options
+  <arg name="camera_eps" default="0.5"/>
+  <arg name="camera_max_range" default="20"/>
+  <arg name="camera_max_half_angle" default="0.6"/>
+  <arg name="camera_expected_range" default="15"/>
+  <arg name="camera_expected_half_angle" default="0.6"/>
+
+  <arg name="camera_acceptance_score" default="5.0"/>
+  <arg name="camera_penalty_score" default="-0.5"/>
+  <arg name="camera_discard_score" default="-2.0"/>
 
   <node pkg="slam_fastslam" output="screen" type="fastslam1" name="local_fastslam_car" respawn="False">
     # Parameters
     <param name="world_frame" value="$(arg world_frame)" />
     <param name="base_link_frame" value="$(arg base_link_frame)" />
     <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
-
+    <param name="lidar_frame" value="$(arg lidar_frame)" />
+    
     <param name="setup_stand_dev" value="$(arg setup_stand_dev)" />
+    
     <param name="particle_count" value="$(arg particle_count)" />
     <param name="effective_particle_count" value="$(arg effective_particle_count)" />
-    <param name="eps" value="$(arg eps)" />
-    <param name="max_range" value="$(arg max_range)" />
-    <param name="max_half_angle" value="$(arg max_half_angle)" />
-    <param name="expected_range" value="$(arg expected_range)" />
-    <param name="expected_half_angle" value="$(arg expected_half_angle)" />
+
     <param name="observe_prob" value="$(arg observe_prob)" />
 
     <param name="yaw_unwrap_threshold" value="$(arg yaw_unwrap_threshold)" />
@@ -42,10 +55,28 @@
 
     <rosparam param="measurement_covariance">[0.1, 0.0, 0.0, 0.1]</rosparam>
     <rosparam param="input_noise">[0.1, 0.0, 0.0, 0.0, 0.03, 0.0, 0.0, 0.0, 0.01]</rosparam>
-    <param name="acceptance_score" value="$(arg acceptance_score)" />
-    <param name="penalty_score" value="$(arg penalty_score)" />
-    <param name="discard_score" value="$(arg discard_score)" />
-    <param name="saturation_score" value="$(arg saturation_score"/>
+
+    #Lidar
+    <param name="lidar_eps" value="$(arg lidar_eps)" />
+    <param name="lidar_max_range" value="$(arg lidar_max_range)" />
+    <param name="lidar_max_half_angle" value="$(arg lidar_max_half_angle)" />
+    <param name="lidar_expected_range" value="$(arg lidar_expected_range)" />
+    <param name="lidar_expected_half_angle" value="$(arg lidar_expected_half_angle)" />
+
+    <param name="lidar_acceptance_score" value="$(arg lidar_acceptance_score)" />
+    <param name="lidar_penalty_score" value="$(arg lidar_penalty_score)" />
+    <param name="lidar_discard_score" value="$(arg lidar_discard_score)" />
+
+    #Camera
+    <param name="camera_eps" value="$(arg camera_eps)" />
+    <param name="camera_max_range" value="$(arg camera_max_range)" />
+    <param name="camera_max_half_angle" value="$(arg camera_max_half_angle)" />
+    <param name="camera_expected_range" value="$(arg camera_expected_range)" />
+    <param name="camera_expected_half_angle" value="$(arg camera_expected_half_angle)" />
+
+    <param name="camera_acceptance_score" value="$(arg camera_acceptance_score)" />
+    <param name="camera_penalty_score" value="$(arg camera_penalty_score)" />
+    <param name="camera_discard_score" value="$(arg camera_discard_score)" />
   
     # Map service Parameters
     <param name="SetMap_service" value="/ugr/srv/slam_map_server/set" />
