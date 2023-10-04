@@ -58,11 +58,9 @@ namespace slam
                                  prev_state({0, 0, 0}),
                                  Q(2, 2),
                                  R(2, 2),
-                                 particles(vector<Particle>(particle_count)),
                                  yaw_unwrap_threshold(n.param<float>("yaw_unwrap_threshold", M_PI * 1.3)),
                                  tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0)
   {
-
     this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
 
     this->diagPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(new node_fixture::DiagnosticPublisher(n, "SLAM MCL"));
@@ -100,6 +98,13 @@ namespace slam
     // Use it like any other TF2 buffer.
     std::string errstr;
 
+    double stand_dev = n.param<double>("setup_stand_dev", 0.1);
+    this->particles.clear();
+    for (int i = 0; i < this->particle_count; i++)
+    {
+      this->particles.push_back(Particle(stand_dev));
+    }
+
     // For particle initial position
     if (buffer.canTransform(this->map_frame, this->slam_base_link_frame, ros::Time(0), ros::Duration(1), &errstr))
     {
@@ -110,14 +115,14 @@ namespace slam
           initial_particle_pose.transform.rotation.y,
           initial_particle_pose.transform.rotation.z,
           initial_particle_pose.transform.rotation.w);
-
+      
       for (int i = 0; i < this->particles.size(); i++)
       {
         Particle &particle = this->particles[i];
 
         VectorXf xv = particle.pose();
-        xv(0) = initial_particle_pose.transform.translation.x;
-        xv(1) = initial_particle_pose.transform.translation.y;
+        xv(0) += initial_particle_pose.transform.translation.x;
+        xv(1) += initial_particle_pose.transform.translation.y;
 
         double roll, pitch, yaw;
         tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);

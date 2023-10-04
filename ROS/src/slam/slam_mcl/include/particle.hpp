@@ -21,6 +21,7 @@ class Particle
 {
 public:
     Particle();
+    Particle(double);
     Particle(float &w, VectorXf &pose, MatrixXf &variance);
     inline ~Particle() {};
 

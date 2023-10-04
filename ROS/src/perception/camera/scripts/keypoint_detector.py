@@ -119,7 +119,6 @@ class KeypointDetector:
                     top[1] * cone_original_sizes[i][0] / self.keypoint_image_size[0]
                     + cone_bbox_corners[i][1]
                 )
-
             tops = np.vstack((tops, top))
             bottoms = np.vstack((bottoms, bottom))
 
