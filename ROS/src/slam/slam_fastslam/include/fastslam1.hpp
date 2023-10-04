@@ -24,6 +24,14 @@ namespace slam
 {
   struct ObsOptions {
     double eps;
+    double max_range;
+    double max_half_fov;
+    double expected_range;
+    double expected_half_fov; // radians, single side 
+    double acceptance_score;
+    double saturation_score;
+    double penalty_score;
+    double minThreshold;
   };
 
 
@@ -55,7 +63,6 @@ namespace slam
       string slam_base_link_frame;
       bool post_clustering;
       int particle_count;
-      double penalty_score;
       bool average_output_pose;
       int effective_particle_count;
       int min_clustering_point_count;
@@ -72,15 +79,6 @@ namespace slam
       bool firstRound;
       bool gotFirstObservations;
       bool updateRound;
-      
-      double minThreshold;
-      double saturation_score;
-      double acceptance_score;
-
-      double max_range;
-      double max_half_fov;
-      double expected_range;
-      double expected_half_fov; // radians, single side 
 
       ugr_msgs::ObservationWithCovarianceArrayStamped observations;
 
