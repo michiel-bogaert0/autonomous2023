@@ -111,8 +111,8 @@ void GroundRemoval::groundRemovalBins(
     if (bucket.size() != 0) {
 
       // throw away buckets with not enough or too much points in noisy environment
-      if(noisy_environment_ && (bucket.size()>min_points_per_bucket_) 
-                            && (bucket.size()<max_points_per_bucket_)){
+      if(noisy_environment_ && ((bucket.size()<min_points_per_bucket_) 
+                            || (bucket.size()>max_points_per_bucket_))){
         continue;
       }
 

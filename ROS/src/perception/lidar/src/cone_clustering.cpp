@@ -163,7 +163,7 @@ ConeClustering::stringClustering(
       float dist = hypot3d(point.x - rightmost.x, point.y - rightmost.y, 0);
 
       if(noisy_environment_){
-        min_distance_factor = min_distance_factor_noisy_environment_;
+        min_distance_factor_ = min_distance_factor_noisy_environment_;
       }
 
       // A cone is max 285mm wide, check whether this point is within that

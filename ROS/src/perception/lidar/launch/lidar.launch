@@ -31,7 +31,7 @@
         <param name= "cone_reconstruction_treshold" value= "0.10"/>
 
         <!-- noisy environment -->
-        <param name= "noisy_environment" value = "true"/>
+        <param name= "noisy_environment" value = "false"/>
         <param name= "min_distance_factor_noisy_environment" value="1.5"/>
         <param name= "max_bucket_height" value = "0.35"/>
         <param name= "min_points_per_bucket" value = "8"/>
