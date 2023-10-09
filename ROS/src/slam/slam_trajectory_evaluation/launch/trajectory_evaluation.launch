@@ -9,6 +9,7 @@
         <remap from="/input/odometry" to="/ugr/car/odometry/filtered/odom"/>
         <remap from="/input/gps" to="/ugr/car/odometry/filtered/gps"/>
         <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
+        <remap from="/output/observations" to="/ugr/car/observations/lidar" />
 
         <!-- services evaluation -->
         <remap from="/reset" to="ugr/car/evaluation/reset"/>

@@ -13,11 +13,15 @@ import numpy as np
 import plot_utils as pu
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import SLAMStatesEnum, StateMachineScopeEnum
-from std_msgs.msg import UInt16
 from std_srvs.srv import Empty, EmptyResponse
 from trajectory import Trajectory
-from ugr_msgs.msg import State
-
+from ugr_msgs.msg import (
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+    Observation,
+    State,
+    UInt16,
+)
 
 class analyze_while_running:
     align_num_frames = -1
@@ -55,7 +59,24 @@ class analyze_while_running:
 
         if not os.path.exists(self.dirpath):
             os.makedirs(self.dirpath)
-
+        self.track_sub = rospy.Subscriber("/output/observations",ObservationWithCovarianceArrayStamped,self.track_update)
+        
+    ### reads the data from the cones and the position of them.
+    def track_update(self, track: ObservationWithCovarianceArrayStamped):
+        """
+        Track update is used to collect the ground truth cones
+        """
+        cones = []
+        for cone in track.observations:
+            cones.append(
+                np.array(
+                    [cone.observation.location.x, cone.observation.location.y, cone.observation.location.z, cone.observation.observation_class],
+                    dtype=np.float32,
+                )
+            )
+        
+        cones = np.array(cones)
+        rospy.loginfo(len(cones))
     def run_trajectoryEvaluation(self, msg: Empty):
         """
         analyse the trajectoryEvaluation
