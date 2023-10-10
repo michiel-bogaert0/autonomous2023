@@ -1,0 +1,19 @@
+{
+    // Default path to open when attaching to a new container.
+    "workspaceFolder": "/home/ugr/autonomous2023",
+    // Set *default* container specific settings.json values on container create.
+    "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+    },
+    // Add the IDs of extensions you want installed when the container is created.
+    "extensions": [
+        "ms-python.python",
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cmake-tools"
+    ],
+    // An array port numbers to forward
+    "forwardPorts": [],
+    // Container user VS Code should use when connecting
+    "remoteUser": "ugr"
+}
