@@ -29,12 +29,13 @@ class NodeLauncher:
         self.action_to_execute = ''
 
 
-    def launch_node(self, package: str, launchfile: str) -> None:
+    def launch_node(self, package: str, launchfile: str, arguments: [str] = []) -> None:
         """Launch roslaunch file
 
         Args:
             package: Package of which launch file should be taken
             launchfile: Path of the roslaunch file relative to package location
+            arguments: list of arguments (for example: ['filename:=chicane.yaml'])
 
         """
         # Convert str to Path
@@ -56,7 +57,7 @@ class NodeLauncher:
 
         # Start launch file
         self.active = roslaunch.parent.ROSLaunchParent(
-            self.uuid, [str(rel_path.absolute())]
+            self.uuid, [(str(rel_path.absolute()), arguments)]
         )
 
         self.action_to_execute = "start"
