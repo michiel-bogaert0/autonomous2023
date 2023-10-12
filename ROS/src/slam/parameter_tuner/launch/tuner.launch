@@ -1,7 +1,8 @@
 <launch>
-
-  <!-- ? Controller -->
+   <arg name="filename" default="circle_R15.yaml" />
+   
   <node name="parameter_tuner" pkg="parameter_tuner" type="tuner.py" output="screen">
+    <param name="filename" value="$(arg filename)" />
   </node>
 
 </launch>
