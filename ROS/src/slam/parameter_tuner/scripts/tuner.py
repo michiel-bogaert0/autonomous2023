@@ -26,13 +26,21 @@ class Tuner:
         self.simulationLauncher.shutdown()
 
 
+    #
     def launch_simulation(self, filename: str):
+        """
+        Launches the simulation launchfile using the provided filename parameter.
+
+        Args:
+            filename (str): The filename to be passed as a parameter to the simulation launch file.
+
+        """
         rospy.loginfo("Launch simulation")
         self.simulationLauncher.launch_node("ugr_launch", "launch/external/simulation.launch", [str('filename:=' + filename)])
         try:
             self.simulationLauncher.run()
         except Exception as e:
-            rospy.logerr("[SLAM] Node launching %s", str(e))
+            rospy.logerr("Simulation launch: %s", str(e))
 
 
 node = Tuner()
