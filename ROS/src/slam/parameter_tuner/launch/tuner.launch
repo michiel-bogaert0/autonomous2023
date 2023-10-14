@@ -1,8 +1,10 @@
 <launch>
-   <arg name="filename" default="circle_R15.yaml" />
+   <arg name="map" default="circle_R15" />
+   <arg name="mission" default="trackdrive" />
    
   <node name="parameter_tuner" pkg="parameter_tuner" type="tuner.py" output="screen">
-    <param name="filename" value="$(arg filename)" />
+    <param name="map" value="$(arg map)" />
+    <param name="mission" value="$(arg mission)" />
   </node>
 
 </launch>
