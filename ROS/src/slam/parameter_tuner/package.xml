@@ -15,7 +15,8 @@
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>rospy</exec_depend>
 
+  <build_depend>node_launcher</build_depend>
+  <exec_depend>node_launcher</exec_depend>
   
-
   <export></export>
 </package>
