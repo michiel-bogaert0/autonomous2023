@@ -1,0 +1,25 @@
+#
+# This workflow runs all the time. 
+# Checks if our repository can be build (both Docker and ROS stack)
+# and then runs some simulations to functionally validate our stack
+#
+
+name: ugr-linting-workflow
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+    - id: file_changes
+      uses: trilom/file-changes-action@v1.2.4
+      with:
+        output: 'space'
+    - uses: pre-commit/action@v2.0.0
+      with:
+        extra_args: --files ${{ steps.file_changes.outputs.files}}
