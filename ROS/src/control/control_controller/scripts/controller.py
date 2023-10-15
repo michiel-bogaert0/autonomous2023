@@ -66,6 +66,7 @@ class Controller:
             self.launcher.shutdown()
             return
 
+        # Decides what to do based on the received state
         if state.scope == StateMachineScopeEnum.SLAM:
             self.state = state.cur_state
 
