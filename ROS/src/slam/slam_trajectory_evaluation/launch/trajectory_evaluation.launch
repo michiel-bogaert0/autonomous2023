@@ -5,12 +5,15 @@
         output="screen" type="analyze_while_running.py">
         
         <param name="alignmentType" value="sim3"/>
+        <param name="sampleSize" value="50"/>
 
         <remap from="/input/odometry" to="/ugr/car/odometry/filtered/odom"/>
         <remap from="/input/gps" to="/ugr/car/odometry/filtered/gps"/>
         <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
         <remap from="/output/observations" to="/ugr/car/observations/lidar" />
-
+        <remap from="/output/map" to="/ugr/car/map/gt" />
+        <remap from="/output/obs/fslam" to="/ugr/car/map/fastslam/global"/>
+        <remap from="/output/car_base" to="/ugr/car_odom"/>
         <!-- services evaluation -->
         <remap from="/reset" to="ugr/car/evaluation/reset"/>
         <remap from="/run_evaluation" to="ugr/car/evaluation/run"/>

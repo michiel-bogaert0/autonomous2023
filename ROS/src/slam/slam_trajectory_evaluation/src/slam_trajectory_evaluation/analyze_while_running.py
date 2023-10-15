@@ -11,17 +11,50 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import plot_utils as pu
+import math
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import SLAMStatesEnum, StateMachineScopeEnum
 from std_srvs.srv import Empty, EmptyResponse
+from std_msgs.msg import UInt16
+from geometry_msgs.msg import Point
 from trajectory import Trajectory
 from ugr_msgs.msg import (
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
     Observation,
     State,
-    UInt16,
 )
+def CalculateDistanceSqr(original: Point, other:Point ) ->float:
+        """
+        Calculate the distance from one point to the next one returning the squared not the root
+        """
+        x = original.x - other.x
+        y = original.y - other.y
+        z = original.z - other.z
+        return x*x + y*y +z*z
+
+class DataCone:
+    pos = Point(0,0,0)
+    
+    def __init__(self, amount):
+        self.maxamount = amount
+        self.classType = -1
+        self.min = 10000
+        self.max = 0
+        self.distances=[]
+        self.posEval=[]
+    def AddItem(self, distance: float, pos: Point):
+        if distance < self.min: self.min = distance
+        elif distance > self.max: self.max = distance
+        
+        if len(self.distances) < self.maxamount : 
+            self.distances.append(distance) 
+            self.posEval.append(pos)
+    def CheckPos(self,pos: Point) -> bool:
+        for p in self.posEval:
+            if(abs(p.x - pos.x) < 0.01 and abs(p.y - pos.y) < 0.01):
+                return True
+        return False
 
 class analyze_while_running:
     align_num_frames = -1
@@ -35,6 +68,7 @@ class analyze_while_running:
         self.previousData = []
 
         self.alignmentType = rospy.get_param("~alignmentType")
+        self.sampleSize = rospy.get_param("~sampleSize")
         if self.alignmentType == "":
             self.alignmentType = "sim3"
 
@@ -60,23 +94,60 @@ class analyze_while_running:
         if not os.path.exists(self.dirpath):
             os.makedirs(self.dirpath)
         self.track_sub = rospy.Subscriber("/output/observations",ObservationWithCovarianceArrayStamped,self.track_update)
+        self.slamMap = rospy.Subscriber("/output/obs/fslam",ObservationWithCovarianceArrayStamped,self.SLAMMap)
+        self.gtMap = rospy.Subscriber("/output/map",ObservationWithCovarianceArrayStamped,self.GTmap)
         
     ### reads the data from the cones and the position of them.
     def track_update(self, track: ObservationWithCovarianceArrayStamped):
         """
         Track update is used to collect the ground truth cones
         """
-        cones = []
-        for cone in track.observations:
-            cones.append(
-                np.array(
-                    [cone.observation.location.x, cone.observation.location.y, cone.observation.location.z, cone.observation.observation_class],
-                    dtype=np.float32,
-                )
-            )
+
+        for con in track.observations:
+            minDist = 10000
+            minidx = 0
+            for idx, absPos in enumerate(self.cones):
+                dist = CalculateDistanceSqr(con.observation.location, absPos.pos)
+                if minDist > dist:
+                    minDist = dist
+                    minidx = idx
+            #min distance is found, so the cone is found
+            self.cones[minidx].AddItem(math.sqrt(minDist), con.observation.location)
+
+        #for cone in self.cones:
+            #rospy.loginfo(cone.distances)
+
+    def SLAMMap(self, track: ObservationWithCovarianceArrayStamped):
+        for con in track.observations:
+            minDist2 = 100000
+            minidx = 0
+            for idx, absPos in enumerate(self.cones):
+                dist = CalculateDistanceSqr(con.observation.location, absPos.pos)
+                if minDist2 > dist:
+                    minDist2 = dist
+                    minidx = idx
+            if not self.SLAMcones[minidx].CheckPos(con.observation.location):
+                self.SLAMcones[minidx].AddItem(math.sqrt(minDist2), con.observation.location)
+            
+    def GTmap(self, track: ObservationWithCovarianceArrayStamped):
+        """ 
+        reads the information of the GTmap of the cones and add alle the data of the cones
+        """
+        self.cones = []
+        self.SLAMcones = []
+
+        #rospy.loginfo(len(self.cones))
         
-        cones = np.array(cones)
-        rospy.loginfo(len(cones))
+        for cone in track.observations:
+            DaCo = DataCone(self.sampleSize)
+            DaCo.pos = cone.observation.location
+            DaCo.classType = cone.observation.observation_class
+            self.cones.append(DaCo)
+            self.SLAMcones.append(DaCo)
+
+            #rospy.loginfo(DaCo.pos)
+   
+
     def run_trajectoryEvaluation(self, msg: Empty):
         """
         analyse the trajectoryEvaluation
@@ -133,12 +204,13 @@ class analyze_while_running:
             )
             self.odomData.append(self.previousData)
 
-    def loopIsClosed(self, totalLaps: UInt16):
+    def loopIsClosed(self, totalLaps):
         """
         when finishing up a lap we start getting information
         this is temporary until the statmachine works
         """
-        self.analyze_trail()
+        if(totalLaps.data == 1):
+            self.analyze_trail()
 
     def stateChanged(self, state: State):
         """
@@ -154,26 +226,31 @@ class analyze_while_running:
         """
         analyse the trail and show the errors in pdf form
         """
-
+        rospy.loginfo("startanalyzing")
         data_gt = np.array(self.gpsData, dtype=float)
         data_est = np.array(self.odomData, dtype=float)
         stamps_gt = [float(v[0]) for v in self.gpsData]
         stamps_est = [float(v[0]) for v in self.odomData]
 
-        self.traj = Trajectory(load_data=False, align_type=self.alignmentType)
-        self.traj.align_trajectory_with_data(data_gt, data_est, stamps_gt, stamps_est)
+        #self.traj = Trajectory(load_data=False, align_type=self.alignmentType)
+        #self.traj.align_trajectory_with_data(data_gt, data_est, stamps_gt, stamps_est)
         # compute the absolute error
-        self.traj.compute_absolute_error()
+        rospy.loginfo("aligned")
+        #self.traj.compute_absolute_error()
 
-        self.traj.compute_relative_errors()
+        rospy.loginfo("absolut error calculate")
+        #self.traj.compute_relative_errors()
+        rospy.loginfo("relative error calculate")
 
-        rel_errors, distances = self.traj.get_relative_errors_and_distance_no_ignore()
-        self.print_error_to_file(rel_errors, distances)
+        #rel_errors, distances = self.traj.get_relative_errors_and_distance_no_ignore()
+        #self.print_error_to_file(rel_errors, distances)
+        self.print_error_to_file([],[])
 
     def print_error_to_file(self, rel_errors, distances):
         labels = ["Estimate"]
         FORMAT = ".pdf"
         colors = ["b"]
+        rospy.loginfo("print")
 
         self.dirpath += str(
             datetime.datetime.now().date().isoformat()
@@ -183,6 +260,108 @@ class analyze_while_running:
         if not os.path.exists(self.dirpath):
             os.mkdir(self.dirpath)
 
+        #print the map
+        fig = plt.figure(figsize=(10,10))
+        ax = fig.add_subplot()
+        #defaultPos
+        posx0 = []
+        posy0 = []
+        posx1 = []
+        posy1 = []
+        posx2 = []
+        posy2 = []
+        posx3 = []
+        posy3 = []
+        id0 = []
+        id1 = []
+        id2 = []
+        id3 = []
+        posxView0 = []
+        posyView0 = []
+        posxView1 = []
+        posyView1 = []
+        posxView2 = []
+        posyView2 = []
+        posxView3 = []
+        posyView3 = []
+        id = 0
+        for con in self.SLAMcones:
+            for x in con.posEval:
+                if con.classType == 0:
+                    posxView0.append(x.x)
+                    posyView0.append(x.y)
+                elif con.classType == 1:
+                    posxView1.append(x.x)
+                    posyView1.append(x.y)
+                elif con.classType == 2:
+                    posxView2.append(x.x)
+                    posyView2.append(x.y)
+                elif con.classType == 3:
+                    posxView3.append(x.x)
+                    posyView3.append(x.y)
+            if con.classType == 0:
+                posx0.append(con.pos.x)
+                posy0.append(con.pos.y)
+                id0.append(id)
+            elif con.classType == 1:
+                posx1.append(con.pos.x)
+                posy1.append(con.pos.y)
+                id1.append(id)
+            elif con.classType == 2:
+                posx2.append(con.pos.x)
+                posy2.append(con.pos.y)
+                id2.append(id)
+            elif con.classType == 3:
+                posx3.append(con.pos.x)
+                posy3.append(con.pos.y)
+                id3.append(id)
+            id+=1
+
+        size = 20
+        ax.scatter(posx0, posy0, s=size, color='#0000FF')
+        ax.scatter(posx1, posy1, s=size, color="#FFFF00")
+        ax.scatter(posx2, posy2, s=size, color="#FFA500")
+        ax.scatter(posx3, posy3, s=size, color="r")
+        ax.scatter(posxView0, posyView0, s=size/2,marker='x', color='#00FFFF')
+        ax.scatter(posxView1, posyView1, s=size/2,marker='x', color="#FFe600")
+        ax.scatter(posxView2, posyView2, s=size/2,marker='x', color="#FFA500")
+        ax.scatter(posxView3, posyView3, s=size/2,marker='x', color="r")
+
+        id = 0
+        for i in id0:
+            ax.annotate(i, (posx0[id], posy0[id]))
+            id+=1
+        id = 0
+        for i in id1:
+            ax.annotate(i, (posx1[id], posy1[id]))
+            id+=1
+        id = 0
+        for i in id2:
+            ax.annotate(i, (posx2[id], posy2[id]))
+            id+=1
+        id = 0
+        for i in id3:
+            ax.annotate(i, (posx3[id], posy3[id]))
+            id+=1
+
+        fig.savefig(self.dirpath + "/mapPos" + FORMAT, bbox_inches="tight") 
+        plt.close(fig)
+        fig.tight_layout()
+
+        fig = plt.figure(figsize=(30,10))
+        ax = fig.add_subplot()
+        id = 0
+        for i in self.cones:
+            for y in i.distances:
+                ax.scatter(id,y)
+            id += 1
+        
+        fig.tight_layout()
+        fig.savefig(self.dirpath + "/SLAMdist" + FORMAT, bbox_inches="tight") 
+        plt.close(fig)
+        
+
+        return
         # trajectory path
         fig = plt.figure(figsize=(6, 5.5))
         ax = fig.add_subplot(111, aspect="equal", xlabel="x [m]", ylabel="z [m]")
