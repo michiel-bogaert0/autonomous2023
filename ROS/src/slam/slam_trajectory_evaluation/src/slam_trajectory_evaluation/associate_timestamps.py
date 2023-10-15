@@ -72,7 +72,7 @@ def associate(first_stamps, second_stamps, offset, max_difference):
     matches = []
     first_idxes = list(range(len(first_stamps)))
     second_idxes = list(range(len(second_stamps)))
-    for diff, idx_a, idx_b in potential_matches:
+    for _diff, idx_a, idx_b in potential_matches:
         if idx_a in first_idxes and idx_b in second_idxes:
             first_idxes.remove(idx_a)
             second_idxes.remove(idx_b)

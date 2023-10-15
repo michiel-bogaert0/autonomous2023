@@ -12,7 +12,7 @@ import trajectory_loading as traj_loading
 import trajectory_utils as traj_utils
 import transformations as tf
 import yaml
-from colorama import Fore, init
+from colorama import Fore
 from metrics import kRelMetricLables, kRelMetrics
 
 
@@ -37,10 +37,16 @@ class Trajectory:
         nm_gt="stamped_groundtruth.txt",
         nm_est="stamped_traj_estimate.txt",
         nm_matches="stamped_est_gt_matches.txt",
-        preset_boxplot_distances=[],
-        preset_boxplot_percentages=[],
+        preset_boxplot_distances=None,
+        preset_boxplot_percentages=None,
         load_data=True,
     ):
+        if preset_boxplot_distances is None:
+            preset_boxplot_distances = []
+
+        if preset_boxplot_percentages is None:
+            preset_boxplot_distances = []
+
         if load_data:
             assert os.path.exists(
                 results_dir
@@ -413,19 +419,23 @@ class Trajectory:
             self.rel_errors[subtraj_len] = dist_rel_err
         return True
 
-    def compute_relative_errors(self, subtraj_lengths=[]):
+    def compute_relative_errors(self, subtraj_lengths=None):
+        if subtraj_lengths is None:
+            subtraj_lengths = []
+
         suc = True
         if subtraj_lengths:
-            for l in subtraj_lengths:
-                suc = suc and self.compute_relative_error_at_subtraj_len(l)
+            for length in subtraj_lengths:
+                suc = suc and self.compute_relative_error_at_subtraj_len(length)
         else:
-            for l in self.preset_boxplot_distances:
-                suc = suc and self.compute_relative_error_at_subtraj_len(l)
+            for length in self.preset_boxplot_distances:
+                suc = suc and self.compute_relative_error_at_subtraj_len(length)
         self.success = suc
 
-    def get_relative_errors_and_distances(
-        self, error_types=["rel_trans", "rel_trans_perc", "rel_yaw"]
-    ):
+    def get_relative_errors_and_distances(self, error_types=None):
+        if error_types is None:
+            error_types = ["rel_trans", "rel_trans_perc", "rel_yaw"]
+
         rel_errors = {}
         for err_i in error_types:
             assert err_i in kRelMetrics
@@ -434,9 +444,10 @@ class Trajectory:
             ]
         return rel_errors, self.preset_boxplot_distances
 
-    def get_relative_errors_and_distance_no_ignore(
-        self, error_types=["rel_trans", "rel_trans_perc", "rel_yaw"]
-    ):
+    def get_relative_errors_and_distance_no_ignore(self, error_types=None):
+        if error_types is None:
+            error_types = ["rel_trans", "rel_trans_perc", "rel_yaw"]
+
         rel_errors = {}
         for err_i in error_types:
             rel_errors[err_i] = [

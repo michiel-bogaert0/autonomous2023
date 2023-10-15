@@ -4,7 +4,6 @@ import numpy as np
 import rospy
 import tf2_ros as tf
 from clustering.clustering import Clustering
-from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point, TransformStamped
 from node_fixture.node_fixture import (
     DiagnosticArray,
@@ -110,7 +109,7 @@ class ClusterMapping:
         # Helpers
         self.previous_clustering_time = rospy.Time.now().to_sec()
         self.initialized = True
-        rospy.loginfo(f"Clustering mapping node initialized!")
+        rospy.loginfo("Clustering mapping node initialized!")
         self.diagnostics.publish(
             create_diagnostic_message(
                 level=DiagnosticStatus.OK,

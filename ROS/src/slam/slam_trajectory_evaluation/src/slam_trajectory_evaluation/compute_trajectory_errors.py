@@ -7,8 +7,11 @@ import transformations as tf
 
 
 def compute_relative_error(
-    p_es, q_es, p_gt, q_gt, T_cm, dist, max_dist_diff, accum_distances=[], scale=1.0
+    p_es, q_es, p_gt, q_gt, T_cm, dist, max_dist_diff, accum_distances=None, scale=1.0
 ):
+    if accum_distances is None:
+        accum_distances = []
+
     if len(accum_distances) == 0:
         accum_distances = tu.get_distance_from_start(p_gt)
     comparisons = tu.compute_comparison_indices_length(

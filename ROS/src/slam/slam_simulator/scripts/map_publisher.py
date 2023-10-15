@@ -35,7 +35,7 @@ class MapPublisher:
 
         try:
             self.publish_map()
-        except:
+        except Exception:
             rospy.logerr(
                 f"Error publishing map. Make sure that the file '{self.map}' exists, is readable and is valid YAML!"
             )

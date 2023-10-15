@@ -8,7 +8,6 @@ import neoapi
 import numpy as np
 import rospy
 import yaml
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from publisher_abstract.publisher import PublishNode
 from sensor_msgs.msg import CameraInfo
 

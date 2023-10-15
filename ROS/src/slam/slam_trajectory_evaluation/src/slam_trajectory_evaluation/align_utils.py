@@ -136,7 +136,7 @@ def alignTrajectory(p_es, p_gt, q_es, q_gt, method, n_aligned=-1):
         R = np.identity(3)
         t = np.zeros((3,))
     else:
-        assert False, "unknown alignment method"
+        raise AssertionError("unknown alignment method")
 
     return s, R, t
 

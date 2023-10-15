@@ -1,9 +1,7 @@
 #! /usr/bin/python3
 
 import cv2
-import numpy as np
 import rospy
-import torch
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from std_msgs.msg import Empty
@@ -28,7 +26,7 @@ class ImageSaver:
             ros_image: The input image as ROS message
         """
         if self.last_image is None:
-            rospy.logerr(f"No image to save.")
+            rospy.logerr("No image to save.")
             return
 
         img = self.bridge.imgmsg_to_cv2(self.last_image, desired_encoding="bgr8")

@@ -96,7 +96,6 @@ class ThreeStageModel:
         # Find cone locations
         start = time.perf_counter()
         categories = bboxes[valid_cones, -1]
-        confidences = bboxes[valid_cones, -2]  # These are currently not used
         cones = self.height_to_pos(categories, heights, bottoms)
         latencies.append(1000 * (time.perf_counter() - start))
 

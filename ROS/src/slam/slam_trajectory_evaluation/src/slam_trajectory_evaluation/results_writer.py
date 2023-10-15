@@ -67,7 +67,7 @@ def write_tex_table(list_values, rows, cols, outfn):
         f.write(" " + cols[-1] + "\n")
 
         # write each row
-        for row_idx, row_i in enumerate(list_values):
+        for row_idx, _row_i in enumerate(list_values):
             f.write(rows[row_idx] + " &     ")
             row_values = list_values[row_idx]
             for col_idx in range(len(row_values) - 1):

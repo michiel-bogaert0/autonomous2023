@@ -49,10 +49,12 @@ class Aggregation(ABC):
             the argument specifications of that function
         """
         # get the "hidden" name of the function inside this class
-        do = f"aggregate_data"
+        do = "aggregate_data"
 
         # check if string is valid
-        if hasattr(self, do) and callable(func := getattr(self, do)):
+        if hasattr(self, do) and callable(
+            func := getattr(self, do)  # NOQA (not sure what this is)
+        ):
             return get_type_hints(getattr(self, do))
 
     def apply(self, func: str, kwargs: dict) -> Any:
@@ -66,9 +68,11 @@ class Aggregation(ABC):
         """
 
         # get the "hidden" name of the function inside this class
-        do = f"aggregate_data"
+        do = "aggregate_data"
         # check if string is valid
-        if hasattr(self, do) and callable(func := getattr(self, do)):
+        if hasattr(self, do) and callable(
+            func := getattr(self, do)  # NOQA (not sure what this is)
+        ):
             value = getattr(self, do)(**kwargs)
             self.update_state(value)
             return value

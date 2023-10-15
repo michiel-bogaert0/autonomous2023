@@ -113,7 +113,7 @@ class Calibrator:
 
             ret, corners = cv.findChessboardCorners(gray, self.size, None)
 
-            if ret == True:
+            if ret is True:
                 objPoints.append(self.objectPoints)
                 refinedCorners = cv.cornerSubPix(
                     gray, corners, (5, 5), (-1, -1), self.criteria
@@ -139,7 +139,7 @@ class Calibrator:
 
             ret, corners = cv.findChessboardCorners(gray, self.size, None)
 
-            if ret == True:
+            if ret is True:
                 refinedCorners = cv.cornerSubPix(
                     gray, corners, (5, 5), (-1, -1), self.criteria
                 )
@@ -235,7 +235,7 @@ class Calibrator:
             corners, ids, rejected = aruco.detectMarkers(frame, dictionary)
 
             # if nothin was detected
-            if corners == None or len(corners) == 0:
+            if corners is None or len(corners) == 0:
                 continue
 
             ret, charucoCorners, charucoIds = aruco.interpolateCornersCharuco(
@@ -260,7 +260,7 @@ class Calibrator:
         print(f"analyzed a total of {len(images)} frames")
         print(f"Calculated error is: {ret}")
 
-        ### Draw the pose on one image to see if it worked ###
+        # Draw the pose on one image to see if it worked ###
         frame = allImgs[random.randint(0, len(images) - 1)]
         frame_copy = frame.copy()
 
@@ -289,7 +289,7 @@ class Calibrator:
         cv.imshow("frame", frame_copy)
 
         # wait for user input
-        cv.waitKey(0) & 0xFF == ord("q")
+        cv.waitKey(0)
 
         cv.destroyAllWindows()
 

@@ -11,6 +11,7 @@ function build-nogpu {
 function post-install {
     # Install pre-commit hook
     pip3 install pre-commit
+    pre-commit install
 
     touch env-vars.sh
     sudo chmod +x env-vars.sh

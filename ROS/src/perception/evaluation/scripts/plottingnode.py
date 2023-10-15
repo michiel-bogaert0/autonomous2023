@@ -3,12 +3,8 @@
 
 from typing import Any
 
-import matplotlib.pyplot as plt
-import numpy as np
 import rospy
 from aggregation.aggr_plus import plus_aggr
-from aggregation.aggregation import Aggregation
-from std_msgs.msg import Float32
 
 
 class plotListener:

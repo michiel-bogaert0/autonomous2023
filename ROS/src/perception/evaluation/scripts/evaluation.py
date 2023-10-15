@@ -92,7 +92,7 @@ class ConeLogger:
                     location=self.cone_position[most_accurate], cone_type=cone_type_int
                 )
             )
-        except Exception as e:
+        except Exception:
             rospy.logerr(traceback.format_exc())
             rospy.logerr("exception while trying to publish a cone location!")
 

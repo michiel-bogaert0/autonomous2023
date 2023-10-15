@@ -2,7 +2,6 @@
 import argparse
 import re
 
-import cv2 as cv
 import cv2.aruco as aruco
 import numpy as np
 
@@ -28,7 +27,7 @@ class Validator(object):
 
       Args:
         value: the value that must match the pattern
-      
+
       Returns:
         The parameter 'value' when value matches the pattern. Throws an error if this is not the case (which will be visible in the terminal)
     """

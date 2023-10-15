@@ -106,7 +106,7 @@ class CarSimulator:
             self.model = models.BicycleModel()
 
         else:
-            raise "Unknown model!"
+            raise Exception("Unknown model!")
 
         self.model.reset()
 
@@ -198,19 +198,19 @@ class CarSimulator:
             key = event.key
             if key == keyboard.Key.up:
                 self.key_state["up"] = (
-                    True if type(event) == keyboard.Events.Press else False
+                    True if type(event) is keyboard.Events.Press else False
                 )
             elif key == keyboard.Key.down:
                 self.key_state["down"] = (
-                    True if type(event) == keyboard.Events.Press else False
+                    True if type(event) is keyboard.Events.Press else False
                 )
             elif key == keyboard.Key.left:
                 self.key_state["left"] = (
-                    True if type(event) == keyboard.Events.Press else False
+                    True if type(event) is keyboard.Events.Press else False
                 )
             elif key == keyboard.Key.right:
                 self.key_state["right"] = (
-                    True if type(event) == keyboard.Events.Press else False
+                    True if type(event) is keyboard.Events.Press else False
                 )
             elif key == keyboard.Key.space:
                 self.key_state = {
