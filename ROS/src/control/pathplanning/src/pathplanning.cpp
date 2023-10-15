@@ -36,9 +36,6 @@ Pathplanning::Pathplanning(
           stage2_threshold_bad_points_, stage2_threshold_center_points_,
           max_depth_, continuous_dist_) {
 
-  // Deze lijn is niet goed
-  int waardeloos = 0;
-
   this->path_pub_ = n_.advertise<nav_msgs::Path>("/output/path", 10);
   this->map_sub_ = n_.subscribe("/input/local_map", 10,
                                 &Pathplanning::receive_new_map, this);
