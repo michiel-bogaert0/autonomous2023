@@ -20,5 +20,7 @@ jobs:
     - id: changed-files
       uses: tj-actions/changed-files@v36
     - uses: pre-commit/action@v3.0.0
-      with:
-        extra_args: --files ${{ steps.changed-files.outputs.all_changed_files }}
+      run: |
+        pip3 install pre-commit
+        pre-commit install 
+        pre-commit run --files ${{ steps.changed-files.outputs.all_changed_files }}
