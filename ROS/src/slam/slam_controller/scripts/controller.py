@@ -168,6 +168,8 @@ class Controller:
                 if self.mission == AutonomousMission.TRACKDRIVE:
                     new_state = SLAMStatesEnum.RACING
 
+                    # Note that lap count becomes 9, because it restarts counting after exploration
+                    # Perhaps we have to redo this in the future
                     self.target_lap_count = 9
 
                     # Relaunch (different) nodes
