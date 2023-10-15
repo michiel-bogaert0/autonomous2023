@@ -1,6 +1,6 @@
 """
 A perception publisher should have the following structure:
-option 1: with a predefined rate and a publish function -> call the publish_image_data function 
+option 1: with a predefined rate and a publish function -> call the publish_image_data function
 option 2: subscribes to a topic that publishes raw data -> start the child rosnode (by calling node.start())
 """
 import sys
@@ -16,6 +16,9 @@ class PublishNode(ABC):
     def __init__(self, name):
         # ros initialization
         rospy.init_node(name)
+
+        self.estimated_latency = rospy.get_param("estimated_latency", 0.27)
+
         self.raw_sub = rospy.Subscriber("/raw/input", Image, self.publish_sub_data)
         self.image_publisher = rospy.Publisher("/input/image", Image, queue_size=10)
         self.info_publisher = rospy.Publisher("/input/info", CameraInfo, queue_size=10)
@@ -93,6 +96,6 @@ class PublishNode(ABC):
 
     def create_header(self):
         header = Header()
-        header.stamp = rospy.Time.now()
+        header.stamp = rospy.Time.now() - rospy.Duration(self.estimated_latency)
         header.frame_id = self.frame
         return header

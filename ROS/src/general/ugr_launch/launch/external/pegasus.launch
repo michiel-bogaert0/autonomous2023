@@ -33,6 +33,9 @@
 
   <group if="$(arg enable_sensors)">
 
+    <!-- Vectornav -->
+    <include file="$(find vectornav)/launch/vectornav.launch"/>
+
     <!-- Lidar -->
     <include file="$(find ouster_ros)/launch/sensor.launch" />
 

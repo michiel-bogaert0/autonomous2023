@@ -3,7 +3,6 @@ from time import sleep
 
 import rospy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import (
     AutonomousMission,
     AutonomousStatesEnum,
@@ -169,7 +168,7 @@ class Controller:
                 if self.mission == AutonomousMission.TRACKDRIVE:
                     new_state = SLAMStatesEnum.RACING
 
-                    self.target_lap_count = 10
+                    self.target_lap_count = 9
 
                     # Relaunch (different) nodes
                     self.launcher.launch_node(

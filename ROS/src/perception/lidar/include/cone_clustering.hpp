@@ -46,6 +46,9 @@ private:
   double
       min_distance_factor_; // distance around the cone that contains no
                             // other cones as a factor to the width of the cone
+  double
+      min_distance_factor_noisy_environment_; // same but now optimised for noisy environment
+  bool noisy_environment_; // whether the lidar is used in a busy/noisy room (more points)
 
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
   euclidianClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,

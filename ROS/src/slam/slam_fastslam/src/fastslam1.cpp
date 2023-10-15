@@ -50,30 +50,42 @@ namespace slam
                                              slam_base_link_frame(n.param<string>("slam_base_link_frame", "ugr/slam_base_link")),
                                              world_frame(n.param<string>("world_frame", "ugr/car_odom")),
                                              map_frame(n.param<string>("map_frame", "ugr/map")),
+                                             lidar_frame(n.param<string>("lidar_frame", "os_sensor")),
                                              particle_count(n.param<int>("particle_count", 100)),
                                              post_clustering(n.param<bool>("post_clustering", false)),
                                              doSynchronous(n.param<bool>("synchronous", true)),
                                              effective_particle_count(n.param<int>("effective_particle_count", 75)),
                                              min_clustering_point_count(n.param<int>("min_clustering_point_count", 30)),
-                                             eps(n.param<double>("eps", 2.0)),
                                              clustering_eps(n.param<double>("clustering_eps", 0.5)),
                                              belief_factor(n.param<double>("belief_factor", 2.0)),
-                                             expected_range(n.param<double>("expected_range", 15)),
-                                             expected_half_fov(n.param<double>("expected_half_angle", 60 * 0.0174533)),
-                                             max_range(n.param<double>("max_range", 15)),
-                                             max_half_fov(n.param<double>("max_half_angle", 60 * 0.0174533)),
                                              observe_prob(n.param<double>("observe_prob", 0.9)),
-                                             acceptance_score(n.param<double>("acceptance_score", 3.0)),
-                                             penalty_score(n.param<double>("penalty_score", -1)),
-                                             minThreshold(n.param<double>("discard_score", -2.0)),
-                                             saturation_score(n.param<double>("saturation_score", 6.0)),
                                              prev_state({0, 0, 0}),
                                              publish_rate(n.param<double>("publish_rate", 3.0)),
+                                             average_output_pose(n.param<bool>("average_output_pose", true)),
                                              Q(3, 3),
                                              R(2, 2),
                                              yaw_unwrap_threshold(n.param<float>("yaw_unwrap_threshold", M_PI * 1.3)),
                                              tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0)
   {
+    lidarOptions = {};
+    lidarOptions.eps = n.param<double>("lidar_eps", 0.5);
+    lidarOptions.max_range = n.param<double>("lidar_max_range", 15);
+    lidarOptions.max_half_fov = n.param<double>("lidar_max_half_angle", 60 * 0.0174533);
+    lidarOptions.expected_range = n.param<double>("lidar_expected_range", 15);
+    lidarOptions.expected_half_fov = n.param<double>("lidar_expected_half_angle", 60 * 0.0174533);
+    lidarOptions.acceptance_score = n.param<double>("lidar_acceptance_score", 5.0);
+    lidarOptions.penalty_score = n.param<double>("lidar_penalty_score", -0.5);
+    lidarOptions.minThreshold = n.param<double>("lidar_discard_score", -2.0);
+
+    cameraOptions = {};
+    cameraOptions.eps = n.param<double>("camera_eps", 0.5);
+    cameraOptions.max_range = n.param<double>("camera_max_range", 15);
+    cameraOptions.max_half_fov = n.param<double>("camera_max_half_andle", 60 * 0.0174533);
+    cameraOptions.expected_range = n.param<double>("camera_expected_range", 15);
+    cameraOptions.expected_half_fov = n.param<double>("camera_expected_half_angle", 60 * 0.0174533);
+    cameraOptions.acceptance_score = n.param<double>("camera_acceptance_score", 5.0);
+    cameraOptions.penalty_score = n.param<double>("camera_penalty_score", -0.5);
+    cameraOptions.minThreshold = n.param<double>("camera_discard_score", -2.0);
 
     // Initialize map Service Client
     string SetMap_service = n.param<string>("SetMap_service", "/ugr/srv/slam_map_server/set");
@@ -106,7 +118,7 @@ namespace slam
     if (RAsVector.size() != 4)
       throw invalid_argument("R (input_noise) Must be a vector of size 4");
 
-    if (penalty_score > 0.0)
+    if (this->options->penalty_score > 0.0)
       throw invalid_argument("penalty_score should be less than zero");
 
     this->Q(0, 0) = pow(QAsVector[0], 2);
@@ -124,11 +136,11 @@ namespace slam
     this->R(1, 0) = pow(RAsVector[2], 2);
     this->R(1, 1) = pow(RAsVector[3], 2);
 
-    double stand_div = n.param<double>("setup_stand_dev", 0.1);
+    double stand_dev = n.param<double>("setup_stand_dev", 0.1);
     this->particles.clear();
     for (int i = 0; i < this->particle_count; i++)
     {
-      this->particles.push_back(Particle(stand_div));
+      this->particles.push_back(Particle(stand_dev));
     }
     firstRound = true;
   }
@@ -193,7 +205,7 @@ namespace slam
     lm(1) = pose(1) + obs(0) * sin(pose(2) + obs(1));
   }
 
-  void FastSLAM1::build_associations(Particle &particle, ugr_msgs::ObservationWithCovarianceArrayStamped &observations, vector<VectorXf> &knownLandmarks, vector<VectorXf> &newLandmarks, vector<int> &knownIndices, vector<int> &knownClasses, vector<int> &newClasses)
+  void FastSLAM1::build_associations(Particle &particle, ugr_msgs::ObservationWithCovarianceArrayStamped &observations, vector<VectorXf> &knownLandmarks, vector<VectorXf> &newLandmarks, vector<int> &knownIndices, vector<int> &knownClasses, vector<int> &newClasses, vector<float> &knownBeliefs, vector<float> &newBeliefs)
   {
 
     // Make a kdtree of the current particle
@@ -209,7 +221,7 @@ namespace slam
     {
       for (int i = particle.xf().size() - 1; i >= 0; i--)
       {
-        if (particle.metadata()[i].score > this->minThreshold)
+        if (particle.metadata()[i].score > this->options->minThreshold)
         {
           vectorsToConsider.push_back(particle.xf()[i]);
           indices.push_back(i);
@@ -233,7 +245,7 @@ namespace slam
       {
         float distance = pow(landmark[0] - vectorsToConsider[i](0), 2) + pow(landmark[1] - vectorsToConsider[i](1), 2);
 
-        if (distance < pow(this->eps, 2))
+        if (distance < pow(this->options->eps, 2))
         {
           index = indices[i];
           found = true;
@@ -245,12 +257,14 @@ namespace slam
       {
         newLandmarks.push_back(landmark);
         newClasses.push_back(observation.observation.observation_class);
+        newBeliefs.push_back(observation.observation.belief);
       }
       else
       {
         knownLandmarks.push_back(particle.xf()[index]);
         knownIndices.push_back(index);
         knownClasses.push_back(observation.observation.observation_class);
+        knownBeliefs.push_back(observation.observation.belief);
       }
     }
   }
@@ -283,7 +297,14 @@ namespace slam
 
   void FastSLAM1::handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs)
   {
-
+    //change options for camera or lidar (simulator geeft base_link_frame mee)
+    if (obs->header.frame_id == this->lidar_frame || obs->header.frame_id == this->base_link_frame)
+    {
+     options = &lidarOptions;
+    }else{
+     options = &cameraOptions;
+    }
+    
     if (this->latestTime - obs->header.stamp.toSec() > 0.5 && this->latestTime > 0.0)
     {
       // Reset
@@ -379,13 +400,14 @@ namespace slam
       z(0) = pow(transformed_ob.observation.location.x, 2) + pow(transformed_ob.observation.location.y, 2);
       z(1) = atan2(transformed_ob.observation.location.y, transformed_ob.observation.location.x);
 
-      if (z(0) > pow(this->max_range, 2) || abs(z(1)) > this->max_half_fov)
+      if (z(0) > pow(this->options->max_range, 2) || abs(z(1)) > this->options->max_half_fov)
       {
         continue;
       }
 
       transformed_ob.covariance = observation.covariance;
       transformed_ob.observation.observation_class = observation.observation.observation_class;
+      transformed_ob.observation.belief = observation.observation.belief;
       transformed_obs.observations.push_back(transformed_ob);
     }
 
@@ -420,7 +442,12 @@ namespace slam
 
     // Check for reverse
     double drivingAngle = atan2(y - this->prev_state[1], x - this->prev_state[0]);
-    bool forward = abs(drivingAngle - yaw) < M_PI_2;
+    double angleDifference = abs(drivingAngle - yaw);
+    if (angleDifference > M_PI) {
+      angleDifference = 2 * M_PI - angleDifference; 
+    }
+
+    bool forward = angleDifference < M_PI_2;
     dDist = (forward ? 1 : -1) * pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1], 2), 0.5);
 
     // Initial pose mechanism
@@ -477,9 +504,12 @@ namespace slam
         vector<int> knownClasses;
         vector<int> newClasses;
 
+        vector<float> knownBeliefs;
+        vector<float> newBeliefs;
+
         vector<int> knownObsIndices;
 
-        this->build_associations(particle, transformed_obs, knownLms, newLms, knownObsIndices, knownClasses, newClasses);
+        this->build_associations(particle, transformed_obs, knownLms, newLms, knownObsIndices, knownClasses, newClasses, knownBeliefs, newBeliefs);
         t2 = std::chrono::steady_clock::now();
         time_association += std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
 
@@ -494,7 +524,7 @@ namespace slam
           vector<VectorXf> z;
           this->landmarks_to_observations(newLms, z, particle.xv());
 
-          add_feature(particle, z, this->R, newClasses);
+          add_feature(particle, z, this->R, newClasses, newBeliefs);
         }
 
         if (!knownLms.empty())
@@ -513,7 +543,7 @@ namespace slam
           double w = this->compute_particle_weight(particle, z, knownObsIndices, this->R, zp, Hv, Hf, Sf);
           particle.setW(particle.w() * w);
 
-          feature_update(particle, z, knownObsIndices, this->R, knownClasses, zp, Hv, Hf, Sf);
+          feature_update(particle, z, knownObsIndices, this->R, knownClasses, knownBeliefs, zp, Hv, Hf, Sf);
         }
 
         knownObsIndicesVector.push_back(knownObsIndices);
@@ -560,10 +590,10 @@ namespace slam
 
         for (int i = 0; i < zs.size() - newLmsCounts[k]; i++)
         {
-          if (zs[i](0) < this->expected_range && abs(zs[i](1)) < this->expected_half_fov && count(indices.begin(), indices.end(), i) == 0)
+          if (zs[i](0) < this->options->expected_range && abs(zs[i](1)) < this->options->expected_half_fov && count(indices.begin(), indices.end(), i) == 0)
           {
             LandmarkMetadata meta = particle.metadata()[i];
-            meta.score += penalty_score;
+            meta.score += this->options->penalty_score;
             particle.setMetadatai(i, meta);
           }
         }
@@ -709,8 +739,11 @@ namespace slam
     this->particlePosePublisher.publish(particlePoses);
 
     VectorXf pose(3);
-    pose << bestParticle.xv()(0), bestParticle.xv()(1), bestParticle.xv()(2);
-
+    if (this->average_output_pose) {
+      pose << x, y, yaw;
+    } else {
+      pose << bestParticle.xv()(0), bestParticle.xv()(1), bestParticle.xv()(2);
+    }
     vector<MatrixXf> positionCovariances;
     vector<VectorXf> lmMeans;
     vector<LandmarkMetadata> lmMetadatas;
@@ -733,7 +766,7 @@ namespace slam
 
     for (int i = 0; i < lmMeans.size(); i++)
     {
-      if (lmMetadatas[i].score >= this->acceptance_score)
+      if (lmMetadatas[i].score >= this->options->acceptance_score)
       {
         filteredCovariances.push_back(positionCovariances[i]);
         filteredMeta.push_back(lmMetadatas[i]);
@@ -762,8 +795,8 @@ namespace slam
       ugr_msgs::ObservationWithCovariance local_ob;
 
       int observation_class = 0;
-      int max_count = 0;
-      int total_count = 0;
+      float max_count = 0.0;
+      float total_count = 0.0;
       for (int j = 0; j < LANDMARK_CLASS_COUNT; j++)
       {
         total_count += filteredMeta[i].classDetectionCount[j];

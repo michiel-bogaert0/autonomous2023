@@ -21,6 +21,10 @@ GroundRemoval::GroundRemoval(ros::NodeHandle &n) : n_(n) {
   n.param<int>("angular_buckets", angular_buckets_, 10);
   n.param<double>("radial_bucket_tipping_point", radial_bucket_tipping_point_,
                   10);
+  n.param<bool>("noisy_environment", noisy_environment_, false);
+  n.param<double>("max_bucket_height", max_bucket_height_,0.35);
+  n.param<int>("min_points_per_bucket", min_points_per_bucket_,8);
+  n.param<int>("max_points_per_bucket", max_points_per_bucket_,200);
   n.param<bool>("use_slope", use_slope_, true);
   n.param<int>("color_factor", factor_color_, 5);
 }
@@ -106,11 +110,25 @@ void GroundRemoval::groundRemovalBins(
 
     if (bucket.size() != 0) {
 
+      // throw away buckets with not enough or too much points in noisy environment
+      if(noisy_environment_ && ((bucket.size()<min_points_per_bucket_) 
+                            || (bucket.size()>max_points_per_bucket_))){
+        continue;
+      }
+
       // sort bucket from bottom to top
       std::sort(bucket.begin(), bucket.end(), zsort);
 
       // taken the 10% lowest points
       int number_of_points = std::max(int(std::ceil(bucket.size() / 10)), 1);
+
+      // calculate the height difference between the 10% highest and 10% lowest points
+      // throw the bin away if this value is too big, only in noisy environment
+      if(noisy_environment_ && (bucket.points[std::ceil(0.9*bucket.size())].z - 
+                                bucket.points[std::ceil(0.1*bucket.size())].z
+                                >max_bucket_height_)){
+        continue;
+      }
       pcl::PointCloud<pcl::PointXYZI> expected_ground_points;
       for (int j = 0; j < number_of_points; j++) {
         expected_ground_points.push_back(bucket.points[j]);

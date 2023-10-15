@@ -63,7 +63,7 @@ struct LandmarkSearchResult {
 
 struct LandmarkMetadata {
     float score = 0.0;
-    vector<int> classDetectionCount = vector<int>(LANDMARK_CLASS_COUNT, 0);
+    vector<float> classDetectionCount = vector<float>(LANDMARK_CLASS_COUNT, 0);
 };
 
 class Particle
@@ -158,8 +158,8 @@ void cumsum(VectorXf &w);
 void data_associate_known(vector<VectorXf> &z, vector<int> &idz, VectorXf &table, int Nf,
                           vector<VectorXf> &zf, vector<int> &idf, vector<VectorXf> &zn);
 
-void add_feature(Particle &particle, vector<VectorXf> &z, MatrixXf &R, vector<int> observationClass);
-void feature_update(Particle &particle, vector<VectorXf> &z, vector<int> &idf, MatrixXf &R, vector<int> observationClass, vector<VectorXf> &zp, vector<MatrixXf> &Hv, vector<MatrixXf> &Hf, vector<MatrixXf> &Sf);
+void add_feature(Particle &particle, vector<VectorXf> &z, MatrixXf &R, vector<int> &observationClass, vector<float> &beliefs);
+void feature_update(Particle &particle, vector<VectorXf> &z, vector<int> &idf, MatrixXf &R, vector<int> &observationClass, vector<float> &beliefs, vector<VectorXf> &zp, vector<MatrixXf> &Hv, vector<MatrixXf> &Hf, vector<MatrixXf> &Sf);
 
 ////////////////////////////////////////////////////////////////////////////////
 // EKF-SLAM functions

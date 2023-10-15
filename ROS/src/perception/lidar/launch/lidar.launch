@@ -19,7 +19,6 @@
         <param name= "clustering_method" value="string" />
         <param name= "cluster_tolerance" value="1" />
         <param name= "point_count_threshold" value="2"/>
-        
         <param name= "min_distance_factor" value="2.5"/>
         <param name= "minimal_points_cone" value = "5"/>
         <param name= "threshold_height_big_cone" value ="0.4"/>
@@ -30,6 +29,16 @@
         <param name= "cone_shape_factor" value = "0.25"/>
         <param name= "cone_height_width_factor" value = "0.5"/>
         <param name= "cone_reconstruction_treshold" value= "0.10"/>
+
+        <!-- noisy environment -->
+        <param name= "noisy_environment" value = "false"/>
+        <param name= "min_distance_factor_noisy_environment" value="1.5"/>
+        <param name= "max_bucket_height" value = "0.35"/>
+        <param name= "min_points_per_bucket" value = "8"/>
+        <param name= "max_points_per_bucket" value = "200"/>
+
+        <!-- orange cone functionality -->
+        <param name= "use_orange_cones" value="false"/>
 
         <!-- white cone functionality -->
         <param name= "use_white_cones" value="false"/>

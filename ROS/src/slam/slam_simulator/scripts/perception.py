@@ -4,9 +4,7 @@ import copy
 import numpy as np
 import rospy
 import tf2_ros as tf
-from fs_msgs.msg import Track
 from geometry_msgs.msg import Point, Quaternion, TransformStamped
-from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import (
     DataLatch,
     DiagnosticArray,
@@ -120,7 +118,7 @@ class PerceptionSimulator(StageSimulator):
                 rospy.Time.now() - rospy.Duration(self.delay),
                 rospy.Duration(0.2),
             )
-        except:
+        except Exception:
             return
 
         pos = transform.transform.translation
@@ -152,6 +150,7 @@ class PerceptionSimulator(StageSimulator):
             filtered_cones.append(
                 ObservationWithCovariance(
                     observation=Observation(
+                        belief=1.0,
                         location=Point(x=cone[0], y=cone[1], z=cone[2]),
                         observation_class=int(cone[3]),
                     )

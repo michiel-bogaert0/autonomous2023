@@ -11,44 +11,7 @@ sudo chmod 777 /dev/ttyUSB* /dev/ttyACM*
 
 echo "Permissions set for ttyUSB and ttyACM devices"
 
-# Now recognize left (fixed) GPS and split it with socat
-
-L="1-2"
-
-for usb in $(ls /dev/ttyUSB* | cut -d "/" -f 3)
-do
-cd -P /sys/class/tty/$usb/device
-path=$(pwd)
-if [[ $path =~ $L ]]; then
-  echo "Left (fixed rover): $usb"
-  echo "Splitting to /dev/ttybase"
-  sudo socat /dev/ttyUSB1 /dev/ttybase
-  sudo chmod 777 /dev/ttybase
-fi
-done
-
-# Setup environment
-R="1-1"
-L="1-2"
-
-# echo USB Devices:
-ls /dev/ttyUSB* | cut -d "/" -f 3
-
-for usb in $(ls /dev/ttyUSB* | cut -d "/" -f 3)
-do
-  cd -P /sys/class/tty/$usb/device
-  path=$(pwd)
-  if [[ $path =~ $R ]]; then
-    cd /home/ugentracing/autonomous2023
-    /home/ugentracing/autonomous2023/run set-env MOVING_ROVER_USB $usb
-    echo "Right (moving rover): $usb"
-  fi
-  if [[ $path =~ $L ]]; then
-    cd /home/ugentracing/autonomous2023
-    /home/ugentracing/autonomous2023/run set-env FIXED_ROVER_USB $usb
-    echo "Left (fixed rover): $usb"
-  fi
-done
+# Stack startup
 
 cd /home/ugentracing/autonomous2023
 

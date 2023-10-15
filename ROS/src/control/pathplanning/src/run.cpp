@@ -30,6 +30,9 @@ int main(int argc, char **argv) {
   int max_depth_ = n.param<int>("max_depth", 5);
   double continuous_dist_ = n.param("continuous_dist", 4.0);
 
+  double min_distance_away_from_start = n.param("min_distance_away_from_start", 4.0);
+  double max_distance_away_from_start = n.param("max_distance_away_from_start", 9.0);
+
   ros::Publisher vis_points = ros::Publisher();
   ros::Publisher vis_lines = ros::Publisher();
 
@@ -47,7 +50,8 @@ int main(int argc, char **argv) {
                                           stage1_rect_width_, stage1_threshold_bad_points_, 
                                           stage1_threshold_center_points_, stage2_rect_width_,
                                           stage2_threshold_bad_points_, stage2_threshold_center_points_,
-                                          max_depth_, continuous_dist_
+                                          max_depth_, continuous_dist_, min_distance_away_from_start,
+                                          max_distance_away_from_start
   );
 
   // Spin the node

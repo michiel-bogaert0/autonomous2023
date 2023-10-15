@@ -31,9 +31,7 @@ class PerceptionNode:
         # ROS parameters
 
         # Node I/O
-        self.sub_image_input = rospy.Subscriber(
-            "/input/image", Image, self.run_perception_pipeline
-        )
+        self.sub_image_input = rospy.Subscriber("/input/image", Image, self.get_image)
         self.pub_cone_locations = rospy.Publisher(
             "/output/update",
             ObservationWithCovarianceArrayStamped,
@@ -102,6 +100,7 @@ class PerceptionNode:
         )
         # Initialise the pipeline as None, since it takes some time to start-up
         self.pipeline = None
+        self.ros_image = None
 
         if self.use_two_stage:
             self.pipeline = TwoStageModel(
@@ -139,9 +138,15 @@ class PerceptionNode:
             )
         )
 
-        rospy.spin()
+        r = rospy.Rate(100)
+        while not rospy.is_shutdown():
+            self.run_perception_pipeline()
+            r.sleep()
 
-    def run_perception_pipeline(self, ros_image: Image) -> None:
+    def get_image(self, ros_image: Image):
+        self.ros_image = ros_image
+
+    def run_perception_pipeline(self) -> None:
         """
         Given an image, run through the entire perception pipeline and publish to ROS
 
@@ -149,6 +154,13 @@ class PerceptionNode:
             image: The input image as numpy array
             ros_image: The input image as ROS message
         """
+
+        # If no image, do nothing
+        ros_image = self.ros_image
+        if ros_image is None:
+            return
+        self.ros_image = None
+
         # Wait for the pipeline to initialise
         if self.pipeline is None:
             return
@@ -237,13 +249,20 @@ class PerceptionNode:
         cone_positions: List[ObservationWithCovariance] = []
 
         for cone in cones:
+            observation_class = int(cone[0])
+            if (
+                not rospy.get_param("~use_orange_cones", False)
+                and observation_class == 2
+            ):
+                continue
             cone_positions.append(
                 ObservationWithCovariance(
                     observation=Observation(
+                        belief=1.0,
                         observation_class=int(cone[0]),
                         location=Point(*cone[1:]),
                     ),
-                    covariance=[0.7, 0, 0, 0, 0.3, 0, 0, 0, 0.1],  # TODO: tweak
+                    covariance=[0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1],  # TODO: tweak
                 )
             )
 

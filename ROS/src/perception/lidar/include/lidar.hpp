@@ -37,6 +37,8 @@ private:
   ConeClustering cone_clustering_;
   GroundRemoval ground_removal_;
 
+  double estimated_latency_; // Latency between capture of data and actual ROS arrival (estimated)
+
   bool publish_preprocessing_; // publish the preprocessed pointcloud
   bool publish_ground_;        // publish the debug ground pointclouds
   bool publish_clusters_;      // color the clusters and publish them
