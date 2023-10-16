@@ -22,6 +22,6 @@ jobs:
     - name: "Linting check"
       run: |
         pip3 install pre-commit clang-format
-        apt-get install cppcheck llvm
+        sudo apt-get install cppcheck llvm
         pre-commit install 
         pre-commit run --files ${{ steps.changed-files.outputs.all_changed_files }}
