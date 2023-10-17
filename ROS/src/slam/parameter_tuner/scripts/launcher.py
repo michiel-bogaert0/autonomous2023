@@ -9,6 +9,8 @@ import os
 class Launcher:
     def __init__(self, logging: bool = True) -> None:
         self.logging = logging
+        self.simulation_running = False
+        self.car_running = False
         if(self.logging):
             self.simulationLauncher = NodeLauncher()
             self.carLauncher = NodeLauncher()
@@ -22,6 +24,7 @@ class Launcher:
 
         """
         rospy.loginfo("Launch simulation")
+        self.simulation_running = True
 
         # run a parallel subprocess for launching if you don't want to log
         if(not self.logging):
@@ -43,6 +46,7 @@ class Launcher:
 
         """
         rospy.loginfo("Launch car run")
+        self.car_running = True
 
         # run a parallel subprocess for launching if you don't want to log
         if(not self.logging):
@@ -57,7 +61,10 @@ class Launcher:
     
 
     def shutdown_simulation(self):
+        if(not self.simulation_running):
+            return
         rospy.loginfo("Shutdown Simulation")
+        self.simulation_running = False
         if(self.logging):
             self.simulationLauncher.shutdown()
         else:
@@ -65,7 +72,10 @@ class Launcher:
             os.killpg(os.getpgid(self.simulationProcess.pid), signal.SIGTERM)
 
     def shutdown_car(self):
+        if(not self.car_running):
+            return
         rospy.loginfo("Shutdown car run")
+        self.car_running = False
         if(self.logging):
             self.carLauncher.shutdown()
         else:
