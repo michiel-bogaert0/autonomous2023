@@ -5,6 +5,7 @@
   <node name="parameter_tuner" pkg="parameter_tuner" type="tuner.py" output="screen">
     <param name="map" value="$(arg map)" />
     <param name="mission" value="$(arg mission)" />
+    <param name="logging" value="False" />
   </node>
 
 </launch>
