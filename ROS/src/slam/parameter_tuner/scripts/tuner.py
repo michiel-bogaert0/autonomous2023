@@ -4,8 +4,6 @@ from ugr_msgs.msg import State
 
 from launcher import Launcher
 
-
-
 from time import sleep
 
 class Tuner:

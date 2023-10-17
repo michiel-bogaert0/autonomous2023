@@ -55,6 +55,15 @@ class Launcher:
         except Exception as e:
             rospy.logerr("Car run launch: %s", str(e))
     
+
+    def shutdown_simulation(self):
+        rospy.loginfo("Shutdown Simulation")
+        if(self.logging):
+            self.simulationLauncher.shutdown()
+        else:
+            # self.simulationProcess.terminate() # Doesn't work because of shell=True
+            os.killpg(os.getpgid(self.simulationProcess.pid), signal.SIGTERM)
+
     def shutdown_car(self):
         rospy.loginfo("Shutdown car run")
         if(self.logging):
