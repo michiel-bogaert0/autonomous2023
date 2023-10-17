@@ -2,12 +2,14 @@
    <arg name="map" default="circle_R15" />  <!--zonder .yaml-->
    <arg name="mission" default="trackdrive" />
    <arg name="max_time" default="500" /> <!--max time simulation can run in seconds -->
+   <arg name="number_of_simulations" default="2" />
    
   <node name="parameter_tuner" pkg="parameter_tuner" type="tuner.py" output="screen">
     <param name="map" value="$(arg map)" />
     <param name="mission" value="$(arg mission)" />
 
     <param name="max_time" value="$(arg max_time)" />
+    <param name="number_of_simulations" value="$(arg number_of_simulations)" />
 
     <param name="logging" value="False" />
   </node>

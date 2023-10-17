@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 import rospy
 from ugr_msgs.msg import State
+from std_msgs.msg import UInt16
 
 from node_fixture.node_fixture import AutonomousStatesEnum, StateMachineScopeEnum
 from launcher import Launcher
@@ -17,13 +18,16 @@ class Tuner:
         self.map_filename = rospy.get_param('~map', "circle_R15") + ".yaml"
         self.mission = rospy.get_param('~mission', "trackdrive")
         self.max_time = rospy.Duration.from_sec(rospy.get_param('~max_time', 60))
+        self.number_of_simulations = rospy.get_param('~number_of_simulations', 2)
 
         self.state = AutonomousStatesEnum.ASOFF
 
         self.launcher = Launcher(rospy.get_param("~logging", True))
         
         rospy.Subscriber("/state", State, self.state_callback)
+        rospy.Subscriber("/ugr/car/loopclosure", UInt16, self.loopclosure_callback)
 
+        self.simulation = 0
         self.new_simulation()
 
 
@@ -48,9 +52,21 @@ class Tuner:
         if(data.scope == StateMachineScopeEnum.AUTONOMOUS):
             self.state = data.cur_state
 
+    def loopclosure_callback(self, data):
+        rospy.loginfo("Laps finished: %s", data.data)
+
+
     def new_simulation(self):
         self.launcher.shutdown_car()
         self.launcher.shutdown_simulation()
+
+        if(self.simulation >= self.number_of_simulations):
+            rospy.loginfo("Finished all simulations")
+            rospy.signal_shutdown("Finished all simulations")
+            return
+        
+        self.simulation = self.simulation + 1
+        rospy.loginfo("Start simulation %s", self.simulation)
 
         self.state = AutonomousStatesEnum.ASOFF
         sleep(2)
