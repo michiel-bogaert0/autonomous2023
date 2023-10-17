@@ -18,50 +18,36 @@ namespace pathplanning {
 class Triangulator {
 
 public:
-    Triangulator(
-        ros::NodeHandle &n,
-        float triangulation_min_var,
-        float triangulation_var_threshold,
-        int max_iter,
-        float max_angle_change,
-        float max_path_distance,
-        float safety_dist,
-        float range_front,
-        float range_behind,
-        float range_sides,
-        ros::Publisher vis_points,
-        ros::Publisher vis_lines,
-        std::string vis_namespace,
-        float vis_lifetime,
-        double stage1_rect_width_,
-        int stage1_threshold_bad_points_,
-        int stage1_threshold_center_points_,
-        double stage2_rect_width_,
-        int stage2_threshold_bad_points_,
-        int stage2_threshold_center_points_,
-        int max_depth_,
-        double continuous_dist_
-    );
+    Triangulator(ros::NodeHandle &n);
 
     std::vector<Node*> get_path(const std::vector<std::vector<double>>& cones, const std_msgs::Header& header);
 
 private:
     ros::NodeHandle &n_;
-    float triangulation_min_var_;
-    float triangulation_var_threshold_;
+    double triangulation_min_var_;
+    double triangulation_var_threshold_;
     int max_iter_;
-    float max_angle_change_;
-    float max_path_distance_;
-    float safety_dist_;
-    float safety_dist_squared_;
-    float range_front_;
-    float range_behind_;
-    float range_sides_;
+    double max_angle_change_;
+    double max_path_distance_;
+    double safety_dist_;
+    double safety_dist_squared_;
+    double stage1_rect_width_;
+    int stage1_threshold_bad_points_;
+    int stage1_threshold_center_points_;
+    double stage2_rect_width_;
+    int stage2_threshold_bad_points_;
+    int stage2_threshold_center_points_;
+    int max_depth_;
+    double continuous_dist_;
+    double range_front_;
+    double range_behind_;
+    double range_sides_;
     bool vis_;
     ros::Publisher vis_points_;
     ros::Publisher vis_lines_;
     std::string vis_namespace_;
-    float vis_lifetime_;
+    double vis_lifetime_;
+    bool debug_visualisation_;
 
     TriangulationPaths triangulation_paths;
 
