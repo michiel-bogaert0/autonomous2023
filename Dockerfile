@@ -34,7 +34,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     lsb-release \
     mesa-utils \
     htop \
-    python3-opencv
+    python3-opencv \ 
+    texlive-full
 
 RUN export TZ=Europe/Brussels
 

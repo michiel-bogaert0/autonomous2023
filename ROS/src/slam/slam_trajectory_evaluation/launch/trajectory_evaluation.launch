@@ -13,7 +13,6 @@
         <remap from="/output/observations" to="/ugr/car/observations/lidar" />
         <remap from="/output/map" to="/ugr/car/map/gt" />
         <remap from="/output/obs/fslam" to="/ugr/car/map/fastslam/global"/>
-        <remap from="/output/car_base" to="/ugr/car_odom"/>
         <!-- services evaluation -->
         <remap from="/reset" to="ugr/car/evaluation/reset"/>
         <remap from="/run_evaluation" to="ugr/car/evaluation/run"/>

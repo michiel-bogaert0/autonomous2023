@@ -246,6 +246,46 @@ class analyze_while_running:
         #self.print_error_to_file(rel_errors, distances)
         self.print_error_to_file([],[])
 
+    def printCones(self, cones) -> plt.figure:
+        fig = plt.figure(figsize=(10,10))
+        ax = fig.add_subplot()
+        pos =[[],[],[],[]]
+        colorTruth =['#0000FF', "#FFFF00","#FFA500", "#ff0000"]
+        colorGuess =['#00FFFF', "#FFe600","#fcc662", "#ff6200"]
+        posView = [[],[],[],[]]
+
+        id = 0
+        for con in cones:
+            for poss in con.posEval:
+                if con.classType <= 3:
+                    posView[con.classType].append([poss.x,poss.y])
+            if con.classType <= 3:
+                pos[con.classType].append([con.pos.x, con.pos.y, id])
+            id+=1
+
+        size = 20
+        for idx, color in enumerate(colorTruth):
+            if len(pos[idx]) >= 3:
+                ax.scatter(pos[idx][0],pos[idx][1], s=size, color=color)
+                ax.annotate(pos[idx][2], (pos[idx][0], pos[idx][1]))
+        for idx, color in enumerate(colorGuess):
+            if len(posView[idx]) >= 2:
+                ax.scatter(posView[idx][0], posView[idx][1], s=size/2,marker='x',color=color)
+        plt.close(fig)
+        return fig
+    
+    def printDistances(self, cones) -> plt.figure:
+        fig = plt.figure(figsize=(30,10))
+        ax = fig.add_subplot()
+        id = 0
+        for i in cones:
+            for y in i.distances:
+                ax.scatter(id,y)
+            id += 1
+        
+        plt.close(fig)
+        return fig
+    
     def print_error_to_file(self, rel_errors, distances):
         labels = ["Estimate"]
         FORMAT = ".pdf"
@@ -357,10 +397,10 @@ class analyze_while_running:
             id += 1
         
         fig.tight_layout()
-        fig.savefig(self.dirpath + "/SLAMdist" + FORMAT, bbox_inches="tight") 
-        plt.close(fig)
-        
-
+        #fig.savefig(self.dirpath + "/SLAMdist" + FORMAT, bbox_inches="tight") 
+        #plt.close(fig)
+        self.printCones(self.cones).savefig(self.dirpath + "/mapPos" + FORMAT, bbox_inches="tight") 
+        self.printDistances(self.cones).savefig(self.dirpath + "/mapDist" + FORMAT, bbox_inches="tight")
         return
         # trajectory path
         fig = plt.figure(figsize=(6, 5.5))
@@ -446,7 +486,7 @@ class analyze_while_running:
         rospy.loginfo(
             "finished calculating errors it is saved under the folder:" + self.dirpath
         )
-
+   
 
 node = analyze_while_running()
 rospy.spin()
