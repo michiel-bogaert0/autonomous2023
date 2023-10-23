@@ -1,5 +1,6 @@
 #! /usr/bin/python3
 import rospy
+
 from ugr_msgs.msg import State
 from std_msgs.msg import UInt16
 
@@ -7,6 +8,7 @@ from node_fixture.node_fixture import AutonomousStatesEnum, StateMachineScopeEnu
 from launcher import Launcher
 
 from time import sleep
+import yaml
 
 class Tuner:
     def __init__(self) -> None:
@@ -19,6 +21,8 @@ class Tuner:
         self.mission = rospy.get_param('~mission', "trackdrive")
         self.max_time = rospy.Duration.from_sec(rospy.get_param('~max_time', 60))
         self.number_of_simulations = rospy.get_param('~number_of_simulations', 2)
+        self.yaml_file_path = rospy.get_param('~yaml_file_path')
+        self.parameter = rospy.get_param('~parameter')
 
         self.state = AutonomousStatesEnum.ASOFF
 
@@ -69,10 +73,29 @@ class Tuner:
         rospy.loginfo("Start simulation %s", self.simulation)
 
         self.state = AutonomousStatesEnum.ASOFF
+        self.change_parameter()
         sleep(2)
         self.launcher.launch_simulation(self.map_filename)
         sleep(1)
         self.launcher.launch_car(self.mission)
         self.start = rospy.Time.now()
+
+    def change_parameter(self):
+        with open(self.yaml_file_path,'r') as f:
+            data = list(yaml.safe_load_all(f))
+
+        data[0][self.parameter] -= 200
+        with open(self.yaml_file_path, 'w') as file:
+            yaml.dump_all(data, file, sort_keys=False)
+
+        rospy.loginfo(f"Change parameter({self.parameter}) to {data[0][self.parameter]} in yaml file")
+
+    def init_data_file():
+        
+        return
+    
+    def save_simulation_data():
+
+        return
 
 node = Tuner()

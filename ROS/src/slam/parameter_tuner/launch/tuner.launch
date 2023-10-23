@@ -10,6 +10,9 @@
 
     <param name="max_time" value="$(arg max_time)" />
     <param name="number_of_simulations" value="$(arg number_of_simulations)" />
+    
+    <param name="yaml_file_path" value="$(find slam_fastslam)/config/fastslam1.yaml" />
+    <param name="parameter" value="particle_count" />
 
     <param name="logging" value="False" />
   </node>
