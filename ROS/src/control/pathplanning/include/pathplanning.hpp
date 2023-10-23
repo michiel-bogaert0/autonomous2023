@@ -87,59 +87,15 @@ private:
 class Pathplanning {
 
 public:
-    Pathplanning(ros::NodeHandle &n, bool debug_visualisation, std::string vis_namespace,
-                    double vis_lifetime, int max_iter, double max_angle_change, 
-                    double safety_dist, double triangulation_min_var,
-                    double triangulation_var_threshold, double max_path_distance, 
-                    double range_front, double range_behind, double range_sides,
-                    ros::Publisher vis_points, ros::Publisher vis_lines,
-                    double stage1_rect_width_,
-                    int stage1_threshold_bad_points_,
-                    int stage1_threshold_center_points_,
-                    double stage2_rect_width_,
-                    int stage2_threshold_bad_points_,
-                    int stage2_threshold_center_points_,
-                    int max_depth_,
-                    double continuous_dist_,
-                    double min_distance_away_from_start,
-                    double max_distance_away_from_start
-    );
+    Pathplanning(ros::NodeHandle &n);
 
 private:
     ros::NodeHandle n_;
 
     TransformFrames frametf_;
 
-    bool debug_visualisation_;
-    std::string vis_namespace_;
-    double vis_lifetime_;
-
-    int max_iter_;
-    double max_angle_change_;
-    double safety_dist_;
-
-    double triangulation_min_var_;
-    double triangulation_var_threshold_;
-    double max_path_distance_;
-    double range_front_;
-    double range_behind_;
-    double range_sides_;
-    
-    double stage1_rect_width_;
-    double stage1_threshold_bad_points_;
-    double stage1_threshold_center_points_;
-    double stage2_rect_width_;
-    double stage2_threshold_bad_points_;
-    double stage2_threshold_center_points_;
-    double max_depth_;
-    double continuous_dist_;
-
-    double min_distance_away_from_start;
-    double max_distance_away_from_start;
-
-    ros::Publisher vis_points_;
-    ros::Publisher vis_lines_;
-
+    double min_distance_away_from_start_;
+    double max_distance_away_from_start_;
 
     ros::Publisher path_pub_;
     ros::Publisher path_stamped_pub_;

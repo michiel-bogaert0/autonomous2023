@@ -2,47 +2,39 @@
 #include <ros/ros.h>
 
 namespace pathplanning {
-Triangulator::Triangulator(
-    ros::NodeHandle &n,
-    float triangulation_min_var,
-    float triangulation_var_threshold,
-    int max_iter,
-    float max_angle_change,
-    float max_path_distance,
-    float safety_dist,
-    float range_front,
-    float range_behind,
-    float range_sides,
-    ros::Publisher vis_points,
-    ros::Publisher vis_lines,
-    std::string vis_namespace,
-    float vis_lifetime,
-    double stage1_rect_width_,
-    int stage1_threshold_bad_points_,
-    int stage1_threshold_center_points_,
-    double stage2_rect_width_,
-    int stage2_threshold_bad_points_,
-    int stage2_threshold_center_points_,
-    int max_depth_,
-    double continuous_dist_
-)
-:   n_(n),
-    triangulation_min_var_(triangulation_min_var),
-    triangulation_var_threshold_(triangulation_var_threshold),
-    max_iter_(max_iter),
-    max_angle_change_(max_angle_change),
-    max_path_distance_(max_path_distance),
-    safety_dist_(safety_dist),
-    safety_dist_squared_(safety_dist * safety_dist),
-    range_front_(range_front),
-    range_behind_(range_behind),
-    range_sides_(range_sides),
-    vis_points_(vis_points),
-    vis_lines_(vis_lines),
-    vis_namespace_(vis_namespace),
-    vis_lifetime_(vis_lifetime),
-    triangulation_paths(max_iter_, max_angle_change_, max_path_distance_, safety_dist_, stage1_rect_width_, stage1_threshold_bad_points_, stage1_threshold_center_points_, stage2_rect_width_, stage2_threshold_bad_points_, stage2_threshold_center_points_, max_depth_, continuous_dist_)
+Triangulator::Triangulator(ros::NodeHandle &n) :
+            n_(n),
+            triangulation_min_var_(n.param<double>("triangulation_min_var", 100.0)),
+            triangulation_var_threshold_(n.param<double>("triangulation_var_threshold", 1.2)),
+            max_iter_(n.param<int>("max_iter", 100)),
+            max_angle_change_(n.param<double>("max_angle_change", 0.5)),
+            max_path_distance_(n.param<double>("max_path_distance", 6.0)),
+            safety_dist_(n.param<double>("safety_dist", 1.0)),
+            safety_dist_squared_(safety_dist_ * safety_dist_),
+            stage1_rect_width_(n.param<double>("stage1_rect_width", 1.2)),
+            stage1_threshold_bad_points_(n.param<int>("stage1_threshold_bad_points", 2)),
+            stage1_threshold_center_points_(n.param<int>("stage1_threshold_center_points", 3)),
+            stage2_rect_width_(n.param<double>("stage2_rect_width", 1.2)),
+            stage2_threshold_bad_points_(n.param<int>("stage2_threshold_bad_points", 2)),
+            stage2_threshold_center_points_(n.param<int>("stage2_threshold_center_points", 3)),
+            max_depth_(n.param<int>("max_depth", 5)),
+            continuous_dist_(n.param<double>("continuous_dist", 4.0)),
+            range_front_(n.param<double>("range_front", 20.0)),
+            range_behind_(n.param<double>("range_behind", 0.0)),
+            range_sides_(n.param<double>("range_sides", 3.0)),
+            vis_namespace_(n.param<std::string>("vis_namespace", std::string("pathplanning_vis"))),
+            vis_lifetime_(n.param<double>("vis_lifetime", 0.2)),
+            debug_visualisation_(n.param<bool>("debug_visualisation", false)),
+            triangulation_paths(max_iter_, max_angle_change_, max_path_distance_, safety_dist_, stage1_rect_width_, stage1_threshold_bad_points_, stage1_threshold_center_points_, stage2_rect_width_, stage2_threshold_bad_points_, stage2_threshold_center_points_, max_depth_, continuous_dist_)
 {
+    ros::Publisher vis_points_ = ros::Publisher();
+    ros::Publisher vis_lines_ = ros::Publisher();
+
+    if (debug_visualisation_){
+    vis_points_ = n.advertise<visualization_msgs::MarkerArray>("/output/debug/markers", 10);
+    vis_lines_ = n.advertise<geometry_msgs::PoseArray>("/output/debug/poses", 10); 
+    }
+    
     vis_ = vis_points_ && vis_lines_;
 }
 
