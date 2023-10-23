@@ -58,6 +58,11 @@ class Launcher:
             self.carLauncher.run()
         except Exception as e:
             rospy.logerr("Car run launch: %s", str(e))
+
+    
+    def shutdown(self):
+        self.shutdown_car()
+        self.shutdown_simulation()
     
 
     def shutdown_simulation(self):
