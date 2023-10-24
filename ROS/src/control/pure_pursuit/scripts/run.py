@@ -156,10 +156,10 @@ class PurePursuit:
                         self.minimal_distance * 3,
                         max(
                             self.minimal_distance,
-                            self.maximal_distance,
                             self.minimal_distance * self.actual_speed,
                         ),
                     ),
+                    self.maximal_distance,
                     [trans.transform.translation.x, trans.transform.translation.y],
                 )
 
