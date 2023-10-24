@@ -46,7 +46,7 @@ class Trajectory:
 
         Args:
             minimal_distance: minimal lookahead distance
-            maximal_distance: maximal lookahead distance (loop closure)
+            maximal_distance: maximal lookahead distance
             current_position: Current position of car
 
         Returns:
