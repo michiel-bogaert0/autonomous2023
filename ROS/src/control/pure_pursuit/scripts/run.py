@@ -60,11 +60,13 @@ class PurePursuit:
         """
           Trajectory parameters and conditions
             - minimal_distance: the minimal required distance between the car and the candidate target point
+            - maximal_distance: the maximal allowed distance between the car and the candidate target point (loop closure)
             - max_angle: the maximal allowed angle difference between the car and the candidate target point
             - t_step: the t step the alg takes when progressing through the underlying parametric equations
                       Indirectly determines how many points are checked per segment.
         """
         self.minimal_distance = rospy.get_param("~trajectory/minimal_distance", 2)
+        self.maximal_distance = rospy.get_param("~trajectory/maximal_distance", 3)
         self.trajectory = Trajectory()
         self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.speed_target = rospy.get_param("~speed/target", 3.0)
@@ -154,6 +156,7 @@ class PurePursuit:
                         self.minimal_distance * 3,
                         max(
                             self.minimal_distance,
+                            self.maximal_distance
                             self.minimal_distance * self.actual_speed,
                         ),
                     ),
