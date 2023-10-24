@@ -76,6 +76,8 @@ void Pathplanning::compute(const std::vector<std::vector<double>> &cones,
 
     poses.push_back(pose);
 
+    double distance = pow(node->x, 2) + pow(node->y, 2);
+
     if (away_from_start && distance < max_distance_away_from_start_) {
       // Close loop
       poses.push_back(zero_pose);
