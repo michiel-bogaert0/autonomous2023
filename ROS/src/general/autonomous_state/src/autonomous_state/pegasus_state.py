@@ -4,7 +4,7 @@ import can
 import rosparam
 import rospy
 from can_msgs.msg import Frame
-from car_state import CarState, carStateEnum
+from car_state import CarState, CarStateEnum
 from node_fixture import AutonomousMission, AutonomousStatesEnum, serialcan_to_roscan
 
 
@@ -56,17 +56,17 @@ class PegasusState(CarState):
         self.as_ready_time = rospy.Time.now().to_sec()
 
         self.state = {
-            "TS": carStateEnum.UNKOWN,
-            "ASMS": carStateEnum.UNKOWN,
-            "R2D": carStateEnum.UNKOWN,
-            "ASB": carStateEnum.UNKOWN,
-            "EBS": carStateEnum.UNKOWN,
+            "TS": CarStateEnum.UNKOWN,
+            "ASMS": CarStateEnum.UNKOWN,
+            "R2D": CarStateEnum.UNKOWN,
+            "ASB": CarStateEnum.UNKOWN,
+            "EBS": CarStateEnum.UNKOWN,
         }
 
         self.bus = rospy.Publisher("/ugr/car/can/tx", Frame, queue_size=10)
 
         self.as_state = AutonomousStatesEnum.ASOFF
-        self.ebs_state = carStateEnum.ON
+        self.ebs_state = CarStateEnum.ON
 
         time.sleep(1)
 
@@ -102,11 +102,11 @@ class PegasusState(CarState):
             # ASMS message Teensy
             if cmd_id == 0x2:
                 self.state["ASMS"] = (
-                    carStateEnum.ON if frame.data[0] == 0 else carStateEnum.ON
+                    CarStateEnum.ON if frame.data[0] == 0 else CarStateEnum.ON
                 )  # Is inversed
 
     def activate_EBS(self):
-        self.ebs_state = carStateEnum.ACTIVATED
+        self.ebs_state = CarStateEnum.ACTIVATED
 
     def update(self, state: AutonomousStatesEnum):
         # On a state transition, start 5 second timeout
@@ -147,11 +147,11 @@ class PegasusState(CarState):
 
         # Bit 3 - 4
         bits = 0
-        if self.state["EBS"] == carStateEnum.OFF:
+        if self.state["EBS"] == CarStateEnum.OFF:
             bits = 1
-        elif self.state["EBS"] == carStateEnum.ON:
+        elif self.state["EBS"] == CarStateEnum.ON:
             bits = 2
-        elif self.state["EBS"] == carStateEnum.ACTIVATED:
+        elif self.state["EBS"] == CarStateEnum.ACTIVATED:
             bits = 3
 
         data[0] |= bits << 3
@@ -197,30 +197,30 @@ class PegasusState(CarState):
 
         # R2D
         if self.res_go_signal and t - self.as_ready_time > 5.0:
-            self.state["R2D"] = carStateEnum.ACTIVATED
+            self.state["R2D"] = CarStateEnum.ACTIVATED
         elif self.as_state != AutonomousStatesEnum.ASDRIVE:
-            self.state["R2D"] = carStateEnum.OFF
+            self.state["R2D"] = CarStateEnum.OFF
 
         # TS and ASB
         self.state["TS"] = (
-            carStateEnum.ON if t - self.odrive_hb < 0.2 else carStateEnum.OFF
+            CarStateEnum.ON if t - self.odrive_hb < 0.2 else CarStateEnum.OFF
         )
         self.state["ASB"] = (
             (
-                carStateEnum.ACTIVATED
-                if self.state["R2D"] == carStateEnum.OFF
-                else carStateEnum.ON
+                CarStateEnum.ACTIVATED
+                if self.state["R2D"] == CarStateEnum.OFF
+                else CarStateEnum.ON
             )
             if t - self.odrive_hb < 0.2
-            else carStateEnum.OFF
+            else CarStateEnum.OFF
         )
 
         if t - self.odrive_hb > 0.2 or t - self.teensy_hb > 0.2:
-            self.state["ASMS"] = carStateEnum.UNKOWN
+            self.state["ASMS"] = CarStateEnum.UNKOWN
 
         # EBS
         self.state["EBS"] = (
-            carStateEnum.ACTIVATED
+            CarStateEnum.ACTIVATED
             if self.res_estop_signal or t - self.teensy_hb > 0.2
             else self.ebs_state
         )

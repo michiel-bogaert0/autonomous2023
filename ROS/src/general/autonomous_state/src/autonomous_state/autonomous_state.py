@@ -3,7 +3,7 @@ from collections import deque
 from time import sleep
 
 import rospy
-from car_state import CarStateEnum, PegasusState, SimulationState
+from car_state import CarStateEnum
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from nav_msgs.msg import Odometry
 from node_fixture import (
@@ -12,6 +12,8 @@ from node_fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
+from pegasus_state import PegasusState
+from simulation_state import SimulationState
 from std_msgs.msg import Header
 from ugr_msgs.msg import State
 
