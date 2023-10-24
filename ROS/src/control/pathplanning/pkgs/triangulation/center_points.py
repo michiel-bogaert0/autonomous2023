@@ -1,7 +1,8 @@
-import numpy as np
-from scipy.spatial import Delaunay, distance
 from typing import Tuple
+
+import numpy as np
 import triangulation.utils as utils
+from scipy.spatial import Delaunay
 
 
 def get_center_points(
@@ -47,11 +48,25 @@ def get_center_points(
 
     # Find all center points
     center_points = (triangles + np.roll(triangles, 1, axis=1)) / 2
-    
+
     # Find center point classes and filter out bad ones NOW
-    center_point_classes = ( triangle_points_classes + np.roll(triangle_points_classes, 1, axis=1) ) / 2
-    bad_points = center_points[np.logical_not(np.logical_xor( center_point_classes != center_point_classes.astype(int), center_point_classes == 1.5 ))]
-    center_points = center_points[np.logical_xor( center_point_classes != center_point_classes.astype(int), center_point_classes == 1.5 )]
+    center_point_classes = (
+        triangle_points_classes + np.roll(triangle_points_classes, 1, axis=1)
+    ) / 2
+    bad_points = center_points[
+        np.logical_not(
+            np.logical_xor(
+                center_point_classes != center_point_classes.astype(int),
+                center_point_classes == 1.5,
+            )
+        )
+    ]
+    center_points = center_points[
+        np.logical_xor(
+            center_point_classes != center_point_classes.astype(int),
+            center_point_classes == 1.5,
+        )
+    ]
 
     flattened_center_points = center_points.reshape((center_points.size // 2, 2))
 
@@ -61,7 +76,7 @@ def get_center_points(
     duplicated_centers = unique[counts > 1]
 
     # Add closest center in front of you as this one will not be duplicated
-    closest_centers = utils.sort_closest_to(unique, (0,0), range_front)
+    closest_centers = utils.sort_closest_to(unique, (0, 0), range_front)
     duplicated_centers = np.append(duplicated_centers, [closest_centers[0]], axis=0)
 
     return center_points, duplicated_centers, triangles, bad_points

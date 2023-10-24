@@ -133,7 +133,6 @@ class ObsVis:
 
         marker_array = MarkerArray()
         for i, obs_with_cov in enumerate(observations.observations):
-
             obs = obs_with_cov.observation
             marker = Marker()
 

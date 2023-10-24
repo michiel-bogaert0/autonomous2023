@@ -2,9 +2,10 @@
 import time
 
 import rospy
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 from obs_vis import ObsVis
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 from visualization_msgs.msg import MarkerArray
+
 
 class ObservationVisualiser:
     """
@@ -21,10 +22,12 @@ class ObservationVisualiser:
             vis_namespace: the namespace to use
             vis_lifetime: how long a marker should stay alive
         """
-        #ros initialization
+        # ros initialization
         rospy.init_node(f"slam_vis_obs_{time.time()}")
-        self.vis_subscriber = rospy.Subscriber("/input/vis",ObservationWithCovarianceArrayStamped,self.handleObs)
-        self.vis_publisher = rospy.Publisher("/output/vis",MarkerArray,queue_size=10)
+        self.vis_subscriber = rospy.Subscriber(
+            "/input/vis", ObservationWithCovarianceArrayStamped, self.handleObs
+        )
+        self.vis_publisher = rospy.Publisher("/output/vis", MarkerArray, queue_size=10)
 
         self.blue_cone_model_url = rospy.get_param(
             "~cone_models/blue",
@@ -45,7 +48,6 @@ class ObservationVisualiser:
         self.vis_handler = ObsVis(
             [self.blue_cone_model_url, self.yellow_cone_model_url]
         )
-
 
     def handleObs(self, msg: ObservationWithCovarianceArrayStamped):
         """Handles ugr_mgs/Observations message

@@ -1,6 +1,5 @@
-import inspect
 from abc import ABC, abstractmethod
-from typing import Any, get_type_hints, List
+from typing import Any, List, get_type_hints
 
 
 class Aggregation(ABC):
@@ -18,14 +17,12 @@ class Aggregation(ABC):
         """
         function that computes the outcome value, should have the right arguments
         """
-        pass
 
     @abstractmethod
     def get_output_type(self) -> Any:
         """
         Needed for the publisher
         """
-        pass
 
     @abstractmethod
     def plot(self, values: List[Any], savedir: str) -> None:
@@ -35,7 +32,6 @@ class Aggregation(ABC):
             values: a list of aggregate values that are kept in the plottingnode
             savedir: the file to save the plot to
         """
-        pass
 
     @abstractmethod
     def update_state(self, input: Any) -> Any:
@@ -53,11 +49,12 @@ class Aggregation(ABC):
             the argument specifications of that function
         """
         # get the "hidden" name of the function inside this class
-        do = f"aggregate_data"
+        do = "aggregate_data"
 
         # check if string is valid
-        if hasattr(self, do) and callable(func := getattr(self, do)):
-
+        if hasattr(self, do) and callable(
+            func := getattr(self, do)  # NOQA (not sure what this is)
+        ):
             return get_type_hints(getattr(self, do))
 
     def apply(self, func: str, kwargs: dict) -> Any:
@@ -71,9 +68,11 @@ class Aggregation(ABC):
         """
 
         # get the "hidden" name of the function inside this class
-        do = f"aggregate_data"
+        do = "aggregate_data"
         # check if string is valid
-        if hasattr(self, do) and callable(func := getattr(self, do)):
+        if hasattr(self, do) and callable(
+            func := getattr(self, do)  # NOQA (not sure what this is)
+        ):
             value = getattr(self, do)(**kwargs)
             self.update_state(value)
             return value

@@ -1,4 +1,5 @@
 from typing import List, Tuple
+
 import numpy as np
 from pathplanning_dc.node import Node
 
@@ -223,7 +224,7 @@ def check_if_feasible_child(
     safety_dist_squared: float,
     rect_width: float,
     bad_points_threshold: int,
-    center_points_threshold: int
+    center_points_threshold: int,
 ):
     """
     Checks if a certain child node is feasible to be added to a path where 'parent' is the current leaf node.

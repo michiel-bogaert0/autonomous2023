@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 
-import matplotlib
-import rospkg
-import rospy
-
-matplotlib.use("Agg")
 import datetime
 import os
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import plot_utils as pu
+import rospkg
+import rospy
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import SLAMStatesEnum, StateMachineScopeEnum
 from std_msgs.msg import UInt16
 from std_srvs.srv import Empty, EmptyResponse
 from trajectory import Trajectory
 from ugr_msgs.msg import State
+
+matplotlib.use("Agg")
 
 
 class analyze_while_running:
@@ -225,7 +225,7 @@ class analyze_while_running:
         # rel errors position in percentage
         fig = plt.figure(figsize=(6, 2.5))
         ax = fig.add_subplot(
-            111, xlabel="Distance traveled [m]", ylabel="Translation error [\%]"
+            111, xlabel="Distance traveled [m]", ylabel="Translation error [%]"
         )
         pu.boxplot_compare(ax, distances, rel_errors["rel_trans_perc"], labels, colors)
         fig.tight_layout()

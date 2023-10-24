@@ -1,16 +1,17 @@
 #! /usr/bin/python3
 
+from functools import partial
+
 import rospy
 from slam_controller.srv import (
-    SetMap,
     GetMap,
-    SetMapRequest,
     GetMapRequest,
     GetMapResponse,
+    SetMap,
+    SetMapRequest,
     SetMapResponse,
 )
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
-from functools import partial
 
 
 class MapServer:
