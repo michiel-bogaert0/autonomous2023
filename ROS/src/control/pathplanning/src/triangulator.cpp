@@ -132,33 +132,40 @@ std::vector<Node *>
 Triangulator::get_best_path(const std::vector<Node *> &leaves,
                             const std::vector<std::vector<double>> &cones) {
 
-  std::vector<std::array<double, 2>> costs(leaves.size(), {0.0, 0.0});
+  std::vector<std::array<double, 2>> costs;
   std::vector<std::vector<Node *>> paths;
   std::vector<size_t> path_lengths(1, 0);
 
   // Iterate each leaf
-  for (size_t i = 0; i < leaves.size(); i++) {
+  for (Node *leaf : leaves) {
     // Find the path connecting this leaf to the root and reverse it
-    Node *leaf = leaves[i];
     std::vector<Node *> path;
     Node *parent = leaf;
-    while (parent->parent != nullptr) {
-      path.push_back(parent);
-      parent = parent->parent;
+    if (leaf != nullptr) {
+      while (parent->parent != nullptr) {
+        path.push_back(parent);
+        parent = parent->parent;
+      }
+      // the last node points back to the root node [0, 0] which is not included
+      // in the path
+      std::reverse(path.begin(), path.end());
     }
-    std::reverse(path.begin(), path.end());
 
-    // Calculate the path cost
-    std::tuple<double, double> costs_tuple =
-        this->triangulation_paths.get_cost_branch(path, cones,
-                                                  this->range_front_);
-    double angle_cost = std::get<0>(costs_tuple);
-    double length_cost = std::get<1>(costs_tuple);
-    costs[i] = {angle_cost, length_cost};
     if (!path.empty()) {
+      // Calculate the path cost
+      std::tuple<double, double> costs_tuple =
+          this->triangulation_paths.get_cost_branch(path, cones,
+                                                    this->range_front_);
+      double angle_cost = std::get<0>(costs_tuple);
+      double length_cost = std::get<1>(costs_tuple);
+      costs.push_back({angle_cost, length_cost});
       paths.push_back(path);
       path_lengths.push_back(path.size());
     }
+  }
+
+  if (paths.empty()) {
+    return {};
   }
 
   // Normalize costs
