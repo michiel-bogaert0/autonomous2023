@@ -21,6 +21,7 @@ from trajectory import Trajectory
 from ugr_msgs.msg import (
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
+    TrajectoryInfo,
     Observation,
     State,
 )
@@ -96,6 +97,7 @@ class analyze_while_running:
         self.track_sub = rospy.Subscriber("/output/observations",ObservationWithCovarianceArrayStamped,self.track_update)
         self.slamMap = rospy.Subscriber("/output/obs/fslam",ObservationWithCovarianceArrayStamped,self.SLAMMap)
         self.gtMap = rospy.Subscriber("/output/map",ObservationWithCovarianceArrayStamped,self.GTmap)
+        #self.publishResults = rospy.Publisher("output/trajectorEvaluationMap", TrajectoryInfo,queue_size=10)
         
     ### reads the data from the cones and the position of them.
     def track_update(self, track: ObservationWithCovarianceArrayStamped):
@@ -245,7 +247,8 @@ class analyze_while_running:
         #rel_errors, distances = self.traj.get_relative_errors_and_distance_no_ignore()
         #self.print_error_to_file(rel_errors, distances)
         self.print_error_to_file([],[])
-
+    #def PrintToTopic(self):
+    #    self.publishResults.publish()
     def printCones(self, cones) -> plt.figure:
         fig = plt.figure(figsize=(10,10))
         ax = fig.add_subplot()
