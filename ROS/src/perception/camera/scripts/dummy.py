@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 
 import cv2 as cv
-import numpy as np
 import rospy
 from publisher_abstract.publisher import PublishNode
 from sensor_msgs.msg import Image

@@ -4,12 +4,12 @@ import os
 import rospy
 import yaml
 from genpy.message import fill_message_args
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 from node_fixture.node_fixture import (
     DiagnosticArray,
     DiagnosticStatus,
     create_diagnostic_message,
 )
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
 
 class MapPublisher:
@@ -17,7 +17,8 @@ class MapPublisher:
         rospy.init_node("slam_simulator_map_publisher")
 
         self.map = rospy.get_param(
-            "~map", f"{os.path.dirname(__file__)}/../maps/circle_R15.yaml")
+            "~map", f"{os.path.dirname(__file__)}/../maps/circle_R15.yaml"
+        )
         self.override_time = rospy.get_param("~override_time", True)
 
         self.map_publisher = rospy.Publisher(
@@ -34,7 +35,7 @@ class MapPublisher:
 
         try:
             self.publish_map()
-        except:
+        except Exception:
             rospy.logerr(
                 f"Error publishing map. Make sure that the file '{self.map}' exists, is readable and is valid YAML!"
             )

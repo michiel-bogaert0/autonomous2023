@@ -1,10 +1,11 @@
 #!/usr/bin/python
-import numpy as np
-import cv2 as cv
 import glob
-import cv2.aruco as aruco
-from tqdm import tqdm
 import random
+
+import cv2 as cv
+import cv2.aruco as aruco
+import numpy as np
+from tqdm import tqdm
 
 
 class Calibrator:
@@ -103,7 +104,6 @@ class Calibrator:
 
         # Read images to fetch image points
 
-
         images = glob.glob(imgPath)
         for fname in images:
             img = cv.imread(fname)
@@ -113,7 +113,7 @@ class Calibrator:
 
             ret, corners = cv.findChessboardCorners(gray, self.size, None)
 
-            if ret == True:
+            if ret is True:
                 objPoints.append(self.objectPoints)
                 refinedCorners = cv.cornerSubPix(
                     gray, corners, (5, 5), (-1, -1), self.criteria
@@ -139,8 +139,7 @@ class Calibrator:
 
             ret, corners = cv.findChessboardCorners(gray, self.size, None)
 
-            if ret == True:
-
+            if ret is True:
                 refinedCorners = cv.cornerSubPix(
                     gray, corners, (5, 5), (-1, -1), self.criteria
                 )
@@ -230,14 +229,13 @@ class Calibrator:
 
         # Go over each image and detect the markers
         for fname in tqdm(images):
-
             frame = cv.imread(fname)
             allImgs.append(frame)
 
             corners, ids, rejected = aruco.detectMarkers(frame, dictionary)
 
             # if nothin was detected
-            if corners == None or len(corners) == 0:
+            if corners is None or len(corners) == 0:
                 continue
 
             ret, charucoCorners, charucoIds = aruco.interpolateCornersCharuco(
@@ -262,7 +260,7 @@ class Calibrator:
         print(f"analyzed a total of {len(images)} frames")
         print(f"Calculated error is: {ret}")
 
-        ### Draw the pose on one image to see if it worked ###
+        # Draw the pose on one image to see if it worked ###
         frame = allImgs[random.randint(0, len(images) - 1)]
         frame_copy = frame.copy()
 
@@ -273,7 +271,7 @@ class Calibrator:
             pass
         elif len(ids) > 0:
             # Draw the boxes
-            output_frame = aruco.drawDetectedMarkers(frame_copy, corners, ids)
+            aruco.drawDetectedMarkers(frame_copy, corners, ids)
 
             # estimate pose of board
             retval, rvec, tvec = aruco.estimatePoseBoard(
@@ -291,7 +289,7 @@ class Calibrator:
         cv.imshow("frame", frame_copy)
 
         # wait for user input
-        cv.waitKey(0) & 0xFF == ord("q")
+        cv.waitKey(0)
 
         cv.destroyAllWindows()
 

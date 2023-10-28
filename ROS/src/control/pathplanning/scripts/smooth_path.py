@@ -1,29 +1,31 @@
 #!/usr/bin/env python3
 
-import rospy
-from geometry_msgs.msg import Pose, PoseArray, PoseStamped
-from scipy.interpolate import interp1d
-from nav_msgs.msg import Path
 import numpy as np
+import rospy
+from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Path
+from scipy.interpolate import interp1d
+
 
 class PoseArraySmootherNode:
     def __init__(self):
-        rospy.init_node('pose_array_smoother_node', anonymous=True)
+        rospy.init_node("pose_array_smoother_node", anonymous=True)
 
         # Subscriber and publisher
-        self.subscriber = rospy.Subscriber('/input/path', Path, self.pose_array_callback)
-        self.publisher = rospy.Publisher('/output/path', Path, queue_size=10)
+        self.subscriber = rospy.Subscriber(
+            "/input/path", Path, self.pose_array_callback
+        )
+        self.publisher = rospy.Publisher("/output/path", Path, queue_size=10)
 
     def pose_array_callback(self, msg: Path):
         try:
-            
             path = np.array([[p.pose.position.x, p.pose.position.y] for p in msg.poses])
 
-            distance = np.cumsum( np.sqrt(np.sum( np.diff(path, axis=0)**2, axis=1 )) )
-            distance = np.insert(distance, 0, 0)/distance[-1]
+            distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
+            distance = np.insert(distance, 0, 0) / distance[-1]
             alpha = np.linspace(0, 1, len(path) * 10)
-            interpolator =  interp1d(distance, path, kind='quadratic', axis=0)
-            
+            interpolator = interp1d(distance, path, kind="quadratic", axis=0)
+
             path = interpolator(alpha)
 
             smoothed_msg = msg
@@ -39,7 +41,8 @@ class PoseArraySmootherNode:
             rospy.logerr("Error occurred while smoothing PoseArray: {}".format(e))
             self.publisher.publish(msg)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     try:
         node = PoseArraySmootherNode()
         rospy.spin()

@@ -1,8 +1,8 @@
-import numpy as np
-from pathplanning_dc.node import Node
-import triangulation.utils as utils
 from typing import Tuple
-import math
+
+import numpy as np
+import triangulation.utils as utils
+from pathplanning_dc.node import Node
 
 
 class TriangulationPaths:
@@ -87,13 +87,11 @@ class TriangulationPaths:
             # First stage is adding as much continuous nodes as possible to reduce search space by alot
             child_found = True
             while child_found:
-
                 next_nodes = utils.sort_closest_to(
                     center_points, (parent.x, parent.y), self.continuous_dist
                 )
                 child_found = False
                 for next_pos in next_nodes:
-
                     if utils.check_if_feasible_child(
                         parent,
                         path,
@@ -107,7 +105,6 @@ class TriangulationPaths:
                         self.stage1_bad_points_threshold,
                         self.stage1_center_points_threshold,
                     ):
-
                         distance_node = (parent.x - next_pos[0]) ** 2 + (
                             parent.y - next_pos[1]
                         ) ** 2
@@ -148,7 +145,6 @@ class TriangulationPaths:
             )
             child_found = False
             for next_pos in next_nodes:
-
                 if utils.check_if_feasible_child(
                     parent,
                     path,
@@ -162,7 +158,6 @@ class TriangulationPaths:
                     self.stage2_bad_points_threshold,
                     self.stage2_center_points_threshold,
                 ):
-
                     distance_node = (parent.x - next_pos[0]) ** 2 + (
                         parent.y - next_pos[1]
                     ) ** 2

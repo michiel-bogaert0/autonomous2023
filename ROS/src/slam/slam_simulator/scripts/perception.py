@@ -3,9 +3,8 @@ import copy
 
 import numpy as np
 import rospy
-from fs_msgs.msg import Track
+import tf2_ros as tf
 from geometry_msgs.msg import Point, Quaternion, TransformStamped
-from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import (
     DataLatch,
     DiagnosticArray,
@@ -15,11 +14,10 @@ from node_fixture.node_fixture import (
 from StageSimulator import StageSimulator
 from tf.transformations import euler_from_quaternion
 from ugr_msgs.msg import (
+    Observation,
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
-    Observation,
 )
-import tf2_ros as tf
 
 
 class PerceptionSimulator(StageSimulator):
@@ -50,12 +48,16 @@ class PerceptionSimulator(StageSimulator):
 
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
-        self.gt_base_link_frame = rospy.get_param("~gt_base_link_frame", "ugr/gt_base_link")
+        self.gt_base_link_frame = rospy.get_param(
+            "~gt_base_link_frame", "ugr/gt_base_link"
+        )
         self.viewing_distance = rospy.get_param("~viewing_distance", 15.0) ** 2
         self.fov = np.deg2rad(rospy.get_param("~fov", 90))
         self.delay = rospy.get_param("~delay", 0.0)
         self.add_noise = rospy.get_param("~add_noise", True)
-        self.cone_noise = rospy.get_param("~cone_noise", 0.0 / 20) # Noise per meter distance. Gets scaled with range
+        self.cone_noise = rospy.get_param(
+            "~cone_noise", 0.0 / 20
+        )  # Noise per meter distance. Gets scaled with range
 
         # Diagnostics Publisher
         self.diagnostics = rospy.Publisher(
@@ -70,8 +72,12 @@ class PerceptionSimulator(StageSimulator):
                 message="Started.",
             )
         )
-        self.track_sub = rospy.Subscriber("/input/track",ObservationWithCovarianceArrayStamped,self.track_update)
-        self.observation_pub = rospy.Publisher("/output/observations",ObservationWithCovarianceArrayStamped,queue_size=10)
+        self.track_sub = rospy.Subscriber(
+            "/input/track", ObservationWithCovarianceArrayStamped, self.track_update
+        )
+        self.observation_pub = rospy.Publisher(
+            "/output/observations", ObservationWithCovarianceArrayStamped, queue_size=10
+        )
 
     def track_update(self, track: ObservationWithCovarianceArrayStamped):
         """
@@ -81,11 +87,16 @@ class PerceptionSimulator(StageSimulator):
         for cone in track.observations:
             cones.append(
                 np.array(
-                    [cone.observation.location.x, cone.observation.location.y, cone.observation.location.z, cone.observation.observation_class],
+                    [
+                        cone.observation.location.x,
+                        cone.observation.location.y,
+                        cone.observation.location.z,
+                        cone.observation.observation_class,
+                    ],
                     dtype=np.float32,
                 )
             )
-        
+
         cones = np.array(cones)
         self.datalatch.set("cones", cones)
 
@@ -99,15 +110,15 @@ class PerceptionSimulator(StageSimulator):
         if not self.started:
             return
 
-        try: 
+        try:
             # Fetch GT position of car
             transform: TransformStamped = self.tf_buffer.lookup_transform(
                 self.world_frame,
                 self.gt_base_link_frame,
                 rospy.Time.now() - rospy.Duration(self.delay),
-                rospy.Duration(0.2)
+                rospy.Duration(0.2),
             )
-        except:
+        except Exception:
             return
 
         pos = transform.transform.translation
@@ -117,7 +128,7 @@ class PerceptionSimulator(StageSimulator):
         )
 
         new_cones = copy.deepcopy(self.datalatch.get("cones"))
-        
+
         new_cones[:, :-2] = PerceptionSimulator.apply_transformation(
             new_cones[:, :-2], [pos.x, pos.y], yaw, True
         )
@@ -132,10 +143,10 @@ class PerceptionSimulator(StageSimulator):
                 continue
 
             if self.add_noise:
-                range = (cone[0] ** 2 + cone[1] ** 2) ** (1/2)
+                range = (cone[0] ** 2 + cone[1] ** 2) ** (1 / 2)
                 cone[0] += np.random.randn() * self.cone_noise * range
                 cone[1] += np.random.randn() * self.cone_noise * range
-            
+
             filtered_cones.append(
                 ObservationWithCovariance(
                     observation=Observation(

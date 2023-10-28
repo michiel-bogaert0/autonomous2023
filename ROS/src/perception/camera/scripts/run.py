@@ -1,26 +1,26 @@
 #! /usr/bin/python3
 
 import os
+import sys
 from pathlib import Path
 from typing import List
 
-import sys
 import numpy as np
 import numpy.typing as npt
 import rospy
 import torch
-from std_msgs.msg import Header
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from geometry_msgs.msg import Point
 from node_fixture.node_fixture import create_diagnostic_message
 from sensor_msgs.msg import Image
+from std_msgs.msg import Header
 from three_stage_model import ThreeStageModel
 from two_stage_model import TwoStageModel
 from ugr_msgs.msg import (
+    BoundingBoxesStamped,
     Observation,
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
-    BoundingBoxesStamped,
 )
 
 
@@ -31,9 +31,7 @@ class PerceptionNode:
         # ROS parameters
 
         # Node I/O
-        self.sub_image_input = rospy.Subscriber(
-            "/input/image", Image, self.get_image
-        )
+        self.sub_image_input = rospy.Subscriber("/input/image", Image, self.get_image)
         self.pub_cone_locations = rospy.Publisher(
             "/output/update",
             ObservationWithCovarianceArrayStamped,
@@ -62,9 +60,7 @@ class PerceptionNode:
         # TensorRT is only used for cone detection in the three-stage model
         self.tensorrt = rospy.get_param("~tensorrt", True)
         if self.tensorrt and self.device == "cpu":
-            rospy.logerr(
-                "TensorRT does not work on CPU:/"
-            )
+            rospy.logerr("TensorRT does not work on CPU:/")
 
         # Camera settings (based on Baumer/Ricoh combination)
         self.focal_length = 8  # in mm
@@ -92,7 +88,11 @@ class PerceptionNode:
         )
         self.use_two_stage = "twostage" in self.keypoint_detector_model
 
-        yolo_model_path = Path(os.getenv("BINARY_LOCATION")) / "nn_models" / f"yolov8s.{'engine' if self.tensorrt else 'pt'}"
+        yolo_model_path = (
+            Path(os.getenv("BINARY_LOCATION"))
+            / "nn_models"
+            / f"yolov8s.{'engine' if self.tensorrt else 'pt'}"
+        )
         keypoint_model_path = (
             Path(os.getenv("BINARY_LOCATION"))
             / "nn_models"
@@ -190,8 +190,9 @@ class PerceptionNode:
         )
 
         if self.visualise:
-            self.pub_image_annotated.publish(self.np_to_ros_img(vis_img, ros_image.header.frame_id))
-
+            self.pub_image_annotated.publish(
+                self.np_to_ros_img(vis_img, ros_image.header.frame_id)
+            )
 
     def height_to_pos(
         self, categories: npt.ArrayLike, heights: npt.ArrayLike, bottoms: npt.ArrayLike
@@ -248,8 +249,11 @@ class PerceptionNode:
         cone_positions: List[ObservationWithCovariance] = []
 
         for cone in cones:
-            observation_class=int(cone[0])
-            if not rospy.get_param("~use_orange_cones", False) and observation_class==2:
+            observation_class = int(cone[0])
+            if (
+                not rospy.get_param("~use_orange_cones", False)
+                and observation_class == 2
+            ):
                 continue
             cone_positions.append(
                 ObservationWithCovariance(

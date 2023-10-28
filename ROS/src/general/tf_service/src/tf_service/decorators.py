@@ -15,7 +15,6 @@
 import functools
 
 import tf2_ros
-
 from tf_service import client_binding
 
 

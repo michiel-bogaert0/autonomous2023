@@ -1,1 +1,1 @@
-from .node_fixture import *
+from .node_fixture import *  # NOQA

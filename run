@@ -9,6 +9,11 @@ function build-nogpu {
 }
 
 function post-install {
+    # Install pre-commit hook
+    sudo apt-get install cppcheck llvm
+    pip3 install pre-commit clang-format
+    pre-commit install
+
     touch env-vars.sh
     sudo chmod +x env-vars.sh
 

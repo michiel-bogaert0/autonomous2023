@@ -1,14 +1,21 @@
 #! /usr/bin/python3
-import rospy
-from ugr_msgs.msg import State
-from std_msgs.msg import Header
-from nav_msgs.msg import Odometry
-from node_fixture import AutonomousStatesEnum, StateMachineScopeEnum, SLAMStatesEnum, create_diagnostic_message
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-from time import sleep
 from collections import deque
+from time import sleep
 
-from car_state import *
+import rospy
+from car_state import CarStateEnum
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+from nav_msgs.msg import Odometry
+from node_fixture import (
+    AutonomousStatesEnum,
+    SLAMStatesEnum,
+    StateMachineScopeEnum,
+    create_diagnostic_message,
+)
+from pegasus_state import PegasusState
+from simulation_state import SimulationState
+from std_msgs.msg import Header
+from ugr_msgs.msg import State
 
 
 class AutonomousController:
@@ -27,8 +34,12 @@ class AutonomousController:
         rospy.Subscriber("/state", State, self.handle_external_state_change)
         rospy.Subscriber("/input/odom", Odometry, self.handle_odom)
 
-        self.state_publisher = rospy.Publisher("/state", State, queue_size=10, latch=True)
-        self.diagnostics_publisher = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
+        self.state_publisher = rospy.Publisher(
+            "/state", State, queue_size=10, latch=True
+        )
+        self.diagnostics_publisher = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
 
         self.car_name = rospy.get_param("car", "pegasus")
 
@@ -67,41 +78,50 @@ class AutonomousController:
         # Gets car state as reported by our helper class (can be simulated or a specific car such as Peggy)
         ccs = self.car.get_state()
 
-        self.diagnostics_publisher.publish(create_diagnostic_message(DiagnosticStatus.ERROR if self.state == AutonomousStatesEnum.ASEMERGENCY else DiagnosticStatus.OK, "[GNRL] STATE: AS state", str(self.state)))
-        self.diagnostics_publisher.publish(create_diagnostic_message(DiagnosticStatus.OK, "[GNRL] STATE: Car state", str(ccs)))
+        self.diagnostics_publisher.publish(
+            create_diagnostic_message(
+                DiagnosticStatus.ERROR
+                if self.state == AutonomousStatesEnum.ASEMERGENCY
+                else DiagnosticStatus.OK,
+                "[GNRL] STATE: AS state",
+                str(self.state),
+            )
+        )
+        self.diagnostics_publisher.publish(
+            create_diagnostic_message(
+                DiagnosticStatus.OK, "[GNRL] STATE: Car state", str(ccs)
+            )
+        )
 
-        if ccs["EBS"] == carStateEnum.ACTIVATED:
-
+        if ccs["EBS"] == CarStateEnum.ACTIVATED:
             if self.mission_finished and self.vehicle_stopped:
                 self.change_state(AutonomousStatesEnum.ASFINISHED)
 
             # ! This line is here to prevent rapid toggles between ASFINISHED and ASEMERGENCY as a result of self.vehicle_stopped rapidly switching
             # ! In a normal FS car this isn't a problem because you have to apply both EBS and the brakes in order to get the vehicle to a "standstill" state
             # ! But for pegasus (and currently simulation also) we can't really "apply the brakes"
-            elif self.state != AutonomousStatesEnum.ASFINISHED: 
+            elif self.state != AutonomousStatesEnum.ASFINISHED:
                 self.change_state(AutonomousStatesEnum.ASEMERGENCY)
 
-        elif ccs["EBS"] == carStateEnum.ON:
-
+        elif ccs["EBS"] == CarStateEnum.ON:
             if self.mission_finished and self.vehicle_stopped:
                 self.car.activate_EBS()
 
             if (
-                rospy.has_param("/mission") and rospy.get_param("/mission") != ""
-                and ccs["ASMS"] == carStateEnum.ON
+                rospy.has_param("/mission")
+                and rospy.get_param("/mission") != ""
+                and ccs["ASMS"] == CarStateEnum.ON
                 and (
-                    ccs["ASB"] == carStateEnum.ON
-                    or ccs["ASB"] == carStateEnum.ACTIVATED
+                    ccs["ASB"] == CarStateEnum.ON
+                    or ccs["ASB"] == CarStateEnum.ACTIVATED
                 )
-                and ccs["TS"] == carStateEnum.ON
+                and ccs["TS"] == CarStateEnum.ON
             ):
-                if ccs["R2D"] == carStateEnum.ACTIVATED:
-
+                if ccs["R2D"] == CarStateEnum.ACTIVATED:
                     self.change_state(AutonomousStatesEnum.ASDRIVE)
 
                 else:
-
-                    if ccs["ASB"] == carStateEnum.ACTIVATED:
+                    if ccs["ASB"] == CarStateEnum.ACTIVATED:
                         self.change_state(AutonomousStatesEnum.ASREADY)
                     else:
                         self.change_state(AutonomousStatesEnum.ASOFF)
@@ -116,9 +136,12 @@ class AutonomousController:
             odom: the odometry message containing speed information
         """
 
-        # If vehicle is stopped and EBS is activated, vehicle will not be able to move, so 
+        # If vehicle is stopped and EBS is activated, vehicle will not be able to move, so
         # latch self.vehicle_stopped
-        if self.vehicle_stopped and self.car.get_state()["EBS"] == carStateEnum.ACTIVATED:
+        if (
+            self.vehicle_stopped
+            and self.car.get_state()["EBS"] == CarStateEnum.ACTIVATED
+        ):
             return
 
         self.odom_avg.append(abs(odom.twist.twist.linear.x))

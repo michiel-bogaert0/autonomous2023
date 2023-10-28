@@ -1,0 +1,27 @@
+#
+# This workflow runs all the time. 
+# Checks if our repository can be build (both Docker and ROS stack)
+# and then runs some simulations to functionally validate our stack
+#
+
+name: ugr-linting-workflow
+
+on:
+  push:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+    - id: changed-files
+      uses: tj-actions/changed-files@v36
+    - name: "Linting check"
+      run: |
+        pip3 install pre-commit clang-format
+        sudo apt-get install cppcheck llvm
+        pre-commit install 
+        pre-commit run --files ${{ steps.changed-files.outputs.all_changed_files }}

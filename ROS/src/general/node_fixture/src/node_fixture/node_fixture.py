@@ -1,27 +1,28 @@
 #!/usr/bin/python3
 import enum
-import queue
 from collections import deque
 from functools import partial
 from pathlib import Path
-from typing import Any, Tuple, Type, get_type_hints
+from typing import Any, Type, get_type_hints
 
-import numpy as np
+import can
 import PyKDL
 import roslib.message
 import rospy
 import rostopic
+from can_msgs.msg import Frame
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from fs_msgs.msg import Cone
 from geometry_msgs.msg import TransformStamped
-from rospy.impl.tcpros import DEFAULT_BUFF_SIZE, get_tcpros_handler
+from rospy.impl.tcpros import DEFAULT_BUFF_SIZE
 from rospy.rostime import Time
-from std_msgs.msg import String
 from tf2_kdl import transform_to_kdl
-from ugr_msgs.msg import (Map, ObservationWithCovariance,
-                          ObservationWithCovarianceArrayStamped)
-from can_msgs.msg import Frame
-import can
+from ugr_msgs.msg import (
+    Map,
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+)
+
 
 class AddSubscriber:
     functions_to_subscribe = {}
@@ -129,7 +130,9 @@ class ROSNode:
         res = ObservationWithCovarianceArrayStamped()
         for obs in observations.observations:
             p = kdl_transform * PyKDL.Vector(
-                obs.observation.location.x, obs.observation.location.y, obs.observation.location.z
+                obs.observation.location.x,
+                obs.observation.location.y,
+                obs.observation.location.z,
             )
 
             new_observation = ObservationWithCovariance()
@@ -181,8 +184,8 @@ class ROSNode:
             try:
                 type_hints = get_type_hints(callback)
                 topic_msg_class = list(type_hints.values())[-1]
-            except Exception as e:
-                topic_msg_type, _, fn = rostopic.get_topic_type(
+            except Exception:
+                topic_msg_type, _, _ = rostopic.get_topic_type(
                     f"/{topic.strip('/')}", True
                 )  #
                 topic_msg_class = roslib.message.get_message_class(topic_msg_type)
@@ -223,14 +226,17 @@ class ROSNode:
         """
         return int(rosstamp.__str__()) / 10**9
 
-##
-## See https://ugentracing.sharepoint.com/sites/UGRWiki/SitePages/State-machine-conventions.aspx
-##
+
+#
+# See https://ugentracing.sharepoint.com/sites/UGRWiki/SitePages/State-machine-conventions.aspx
+#
+
 
 # All scopes of state machines in autonomous
 class StateMachineScopeEnum(str, enum.Enum):
     AUTONOMOUS = "autonomous"
     SLAM = "slam"
+
 
 # States of SLAM state machine
 class SLAMStatesEnum(str, enum.Enum):
@@ -238,6 +244,7 @@ class SLAMStatesEnum(str, enum.Enum):
     EXPLORATION = "exploration"
     RACING = "racing"
     FINISHED = "finished"
+
 
 # Autonomous missions
 class AutonomousMission(str, enum.Enum):
@@ -248,7 +255,8 @@ class AutonomousMission(str, enum.Enum):
     EBSTEST = "emergencybraketest"
     INPSPECTION = "inspection"
     SKIDPAD = "skidpad"
-    
+
+
 # States of global state machine
 class AutonomousStatesEnum(str, enum.Enum):
     ASDRIVE = "asdrive"
@@ -259,9 +267,12 @@ class AutonomousStatesEnum(str, enum.Enum):
     ASFINISHING = "asfinishing"
     ASFINISHED = "asfinished"
 
+
 """
 Helper functions for CAN
 """
+
+
 def roscan_to_serialcan(data: Frame) -> can.Message:
     can_message = can.Message(
         timestamp=data.header.stamp.to_sec(),
@@ -273,13 +284,11 @@ def roscan_to_serialcan(data: Frame) -> can.Message:
     )
     return can_message
 
+
 def build_simplified_serialcan(id, data) -> can.Message:
-    can_message = can.Message(
-        arbitration_id=id,
-        data=list(data),
-        dlc=len(data)
-    )
+    can_message = can.Message(arbitration_id=id, data=list(data), dlc=len(data))
     return can_message
+
 
 def serialcan_to_roscan(can_message: can.Message) -> Frame:
     ros_message = Frame()
@@ -292,6 +301,7 @@ def serialcan_to_roscan(can_message: can.Message) -> Frame:
     ros_message.is_extended = can_message.is_extended_id
 
     return ros_message
+
 
 def create_diagnostic_message(
     level: DiagnosticStatus,
