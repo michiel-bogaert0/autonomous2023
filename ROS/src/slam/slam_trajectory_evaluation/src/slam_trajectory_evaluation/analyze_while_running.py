@@ -97,7 +97,10 @@ class analyze_while_running:
         self.track_sub = rospy.Subscriber("/output/observations",ObservationWithCovarianceArrayStamped,self.track_update)
         self.slamMap = rospy.Subscriber("/output/obs/fslam",ObservationWithCovarianceArrayStamped,self.SLAMMap)
         self.gtMap = rospy.Subscriber("/output/map",ObservationWithCovarianceArrayStamped,self.GTmap)
-        #self.publishResults = rospy.Publisher("output/trajectorEvaluationMap", TrajectoryInfo,queue_size=10)
+        self.publishResults = rospy.Publisher("output/trajectorEvaluationMap", TrajectoryInfo,queue_size=10)
+
+
+        print(self.dirpath)
         
     ### reads the data from the cones and the position of them.
     def track_update(self, track: ObservationWithCovarianceArrayStamped):
@@ -246,32 +249,43 @@ class analyze_while_running:
 
         #rel_errors, distances = self.traj.get_relative_errors_and_distance_no_ignore()
         #self.print_error_to_file(rel_errors, distances)
+        self.PrintToTopic()
         self.print_error_to_file([],[])
-    #def PrintToTopic(self):
-    #    self.publishResults.publish()
+    def PrintToTopic(self):
+        info = TrajectoryInfo()
+        for i in self.cones:
+            for y in i.distances:
+                info.avgDistanceToConePerception.append(y)
+        for i in self.SLAMcones:
+            for y in i.distances:
+                info.avgDistanceToConeSLAM.append(y)
+        self.publishResults.publish(info)
     def printCones(self, cones) -> plt.figure:
         fig = plt.figure(figsize=(10,10))
         ax = fig.add_subplot()
         pos =[[],[],[],[]]
         colorTruth =['#0000FF', "#FFFF00","#FFA500", "#ff0000"]
         colorGuess =['#00FFFF', "#FFe600","#fcc662", "#ff6200"]
-        posView = [[],[],[],[]]
+        posView = [[[],[]],[[],[]],[[],[]],[[],[]]]
 
         id = 0
         for con in cones:
             for poss in con.posEval:
                 if con.classType <= 3:
-                    posView[con.classType].append([poss.x,poss.y])
+                    posView[con.classType][0].append(poss.x)
+                    posView[con.classType][1].append(poss.y)
             if con.classType <= 3:
                 pos[con.classType].append([con.pos.x, con.pos.y, id])
             id+=1
 
         size = 20
-        for idx, color in enumerate(colorTruth):
-            if len(pos[idx]) >= 3:
-                ax.scatter(pos[idx][0],pos[idx][1], s=size, color=color)
-                ax.annotate(pos[idx][2], (pos[idx][0], pos[idx][1]))
+        for coloridx, color in enumerate(colorTruth):
+            for p in pos[coloridx]:
+                if len(p) >= 3:
+                    ax.scatter(p[0],p[1], s=size, color=color)
+                    ax.annotate(p[2], (p[0], p[1]))
         for idx, color in enumerate(colorGuess):
+            print(len(posView[idx]))
             if len(posView[idx]) >= 2:
                 ax.scatter(posView[idx][0], posView[idx][1], s=size/2,marker='x',color=color)
         plt.close(fig)
@@ -293,117 +307,23 @@ class analyze_while_running:
         labels = ["Estimate"]
         FORMAT = ".pdf"
         colors = ["b"]
-        rospy.loginfo("print")
 
-        self.dirpath += str(
-            datetime.datetime.now().date().isoformat()
+        path = self.dirpath + str(
+            str(datetime.datetime.now().date().isoformat())
             + "--"
-            + datetime.datetime.now().time().isoformat()
+            + str(datetime.datetime.now().time().hour) + ":" 
+            + str(datetime.datetime.now().time().minute) + ":" 
+            + str(datetime.datetime.now().time().second)
         )
-        if not os.path.exists(self.dirpath):
-            os.mkdir(self.dirpath)
+        if not os.path.exists(path):
+            os.mkdir(path)
 
-        #print the map
-        fig = plt.figure(figsize=(10,10))
-        ax = fig.add_subplot()
-        #defaultPos
-        posx0 = []
-        posy0 = []
-        posx1 = []
-        posy1 = []
-        posx2 = []
-        posy2 = []
-        posx3 = []
-        posy3 = []
-        id0 = []
-        id1 = []
-        id2 = []
-        id3 = []
-        posxView0 = []
-        posyView0 = []
-        posxView1 = []
-        posyView1 = []
-        posxView2 = []
-        posyView2 = []
-        posxView3 = []
-        posyView3 = []
-        id = 0
-        for con in self.SLAMcones:
-            for x in con.posEval:
-                if con.classType == 0:
-                    posxView0.append(x.x)
-                    posyView0.append(x.y)
-                elif con.classType == 1:
-                    posxView1.append(x.x)
-                    posyView1.append(x.y)
-                elif con.classType == 2:
-                    posxView2.append(x.x)
-                    posyView2.append(x.y)
-                elif con.classType == 3:
-                    posxView3.append(x.x)
-                    posyView3.append(x.y)
-            if con.classType == 0:
-                posx0.append(con.pos.x)
-                posy0.append(con.pos.y)
-                id0.append(id)
-            elif con.classType == 1:
-                posx1.append(con.pos.x)
-                posy1.append(con.pos.y)
-                id1.append(id)
-            elif con.classType == 2:
-                posx2.append(con.pos.x)
-                posy2.append(con.pos.y)
-                id2.append(id)
-            elif con.classType == 3:
-                posx3.append(con.pos.x)
-                posy3.append(con.pos.y)
-                id3.append(id)
-            id+=1
-
-        size = 20
-        ax.scatter(posx0, posy0, s=size, color='#0000FF')
-        ax.scatter(posx1, posy1, s=size, color="#FFFF00")
-        ax.scatter(posx2, posy2, s=size, color="#FFA500")
-        ax.scatter(posx3, posy3, s=size, color="r")
-        ax.scatter(posxView0, posyView0, s=size/2,marker='x', color='#00FFFF')
-        ax.scatter(posxView1, posyView1, s=size/2,marker='x', color="#FFe600")
-        ax.scatter(posxView2, posyView2, s=size/2,marker='x', color="#FFA500")
-        ax.scatter(posxView3, posyView3, s=size/2,marker='x', color="r")
-
-        id = 0
-        for i in id0:
-            ax.annotate(i, (posx0[id], posy0[id]))
-            id+=1
-        id = 0
-        for i in id1:
-            ax.annotate(i, (posx1[id], posy1[id]))
-            id+=1
-        id = 0
-        for i in id2:
-            ax.annotate(i, (posx2[id], posy2[id]))
-            id+=1
-        id = 0
-        for i in id3:
-            ax.annotate(i, (posx3[id], posy3[id]))
-            id+=1
-
-        fig.savefig(self.dirpath + "/mapPos" + FORMAT, bbox_inches="tight") 
-        plt.close(fig)
-        fig.tight_layout()
-
-        fig = plt.figure(figsize=(30,10))
-        ax = fig.add_subplot()
-        id = 0
-        for i in self.cones:
-            for y in i.distances:
-                ax.scatter(id,y)
-            id += 1
-        
-        fig.tight_layout()
         #fig.savefig(self.dirpath + "/SLAMdist" + FORMAT, bbox_inches="tight") 
         #plt.close(fig)
-        self.printCones(self.cones).savefig(self.dirpath + "/mapPos" + FORMAT, bbox_inches="tight") 
-        self.printDistances(self.cones).savefig(self.dirpath + "/mapDist" + FORMAT, bbox_inches="tight")
+        #self.printCones(self.SLAMcones).savefig(path + "/mapPos" + FORMAT, bbox_inches="tight") 
+        #self.printCones(self.cones).savefig(path + "/perceptionPos" + FORMAT, bbox_inches="tight") 
+        self.printDistances(self.SLAMcones).savefig(path + "/mapDist" + FORMAT, bbox_inches="tight")
+        self.printDistances(self.cones).savefig(path + "/perceptionDist" + FORMAT, bbox_inches="tight")
         return
         # trajectory path
         fig = plt.figure(figsize=(6, 5.5))
