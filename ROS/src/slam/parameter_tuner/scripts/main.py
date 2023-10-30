@@ -2,12 +2,11 @@
 from time import sleep
 
 import rospy
-import yaml
 from data import Data, SimulationData, SimulationStopEnum
 from launcher import Launcher
 from node_fixture.node_fixture import AutonomousStatesEnum, StateMachineScopeEnum
+from param import Param
 from std_msgs.msg import UInt16
-from tuner import Tuner
 from ugr_msgs.msg import State
 
 
@@ -22,19 +21,16 @@ class Main:
         self.mission = rospy.get_param("~mission", "trackdrive")
         self.max_time = rospy.Duration.from_sec(rospy.get_param("~max_time", 60))
         self.number_of_simulations = rospy.get_param("~number_of_simulations", 2)
-        self.yaml_file_path = rospy.get_param("~yaml_file_path")
-        self.parameter_name = rospy.get_param("~parameter")
-
-        # Parses the yaml file into the self.data
-        with open(self.yaml_file_path, "r") as f:
-            self.data = list(yaml.safe_load_all(f))
 
         self.state = AutonomousStatesEnum.ASOFF
 
         self.launcher = Launcher(rospy.get_param("~logging", True))
-        self.tuner = Tuner()
+        self.param = Param(
+            rospy.get_param("~yaml_file_path"), rospy.get_param("~parameter")
+        )
         self.saveData = Data()
 
+        # Subscribers
         rospy.Subscriber("/state", State, self.state_callback)
         rospy.Subscriber("/ugr/car/loopclosure", UInt16, self.loopclosure_callback)
 
@@ -85,7 +81,7 @@ class Main:
 
     def start_simulation(self):
         self.state = AutonomousStatesEnum.ASOFF
-        parameter = self.set_parameter()
+        parameter = self.param.change()
 
         sleep(1)
 
@@ -97,18 +93,6 @@ class Main:
         sleep(1)
         self.launcher.launch_car(self.mission)
         self.start_time = rospy.Time.now()
-
-    def set_parameter(self):
-        parameter = self.tuner.change(self.data[0][self.parameter_name])
-        self.data[0][self.parameter_name] = parameter
-        with open(self.yaml_file_path, "w") as file:
-            yaml.dump_all(self.data, file, sort_keys=False)
-
-        rospy.loginfo(
-            f"Change parameter({self.parameter_name}) to {parameter} in yaml file"
-        )
-
-        return parameter
 
 
 node = Main()
