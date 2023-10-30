@@ -1,5 +1,19 @@
+import enum
+
 import rospy
 import yaml
+
+
+class TunerModes(str, enum.Enum):
+    NONE = "none"
+    SUM = "sum"
+
+
+def getTuner(mode: TunerModes):
+    if mode == TunerModes.SUM:
+        return SumParam
+    else:
+        return Param
 
 
 class Param:
@@ -13,9 +27,11 @@ class Param:
         self.previous = self.get_parameter()
 
     def change(self):
-        self.previous -= 100
-        self.set_parameter(self.previous)
+        self.set_parameter(self.change_tuner(self.previous))
         return self.previous
+
+    def change_tuner(self, p):
+        return p
 
     def get_parameter(self):
         return self.data[0][self.parameter_name]
@@ -28,3 +44,12 @@ class Param:
         rospy.loginfo(
             f"Change parameter({self.parameter_name}) to {parameter} in yaml file"
         )
+
+
+class SumParam(Param):
+    def __init__(self, yaml_path: str, parameter_name: str, value) -> None:
+        Param.__init__(self, yaml_path, parameter_name)
+        self.value = value
+
+    def change_tuner(self, p):
+        return p - self.value

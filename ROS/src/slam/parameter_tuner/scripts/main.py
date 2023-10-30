@@ -5,7 +5,7 @@ import rospy
 from data import Data, SimulationData, SimulationStopEnum
 from launcher import Launcher
 from node_fixture.node_fixture import AutonomousStatesEnum, StateMachineScopeEnum
-from param import Param
+from param import TunerModes, getTuner
 from std_msgs.msg import UInt16
 from ugr_msgs.msg import State
 
@@ -25,8 +25,8 @@ class Main:
         self.state = AutonomousStatesEnum.ASOFF
 
         self.launcher = Launcher(rospy.get_param("~logging", True))
-        self.param = Param(
-            rospy.get_param("~yaml_file_path"), rospy.get_param("~parameter")
+        self.param = getTuner(TunerModes.SUM)(
+            rospy.get_param("~yaml_file_path"), rospy.get_param("~parameter"), 100
         )
         self.saveData = Data()
 
