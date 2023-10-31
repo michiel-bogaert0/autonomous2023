@@ -152,13 +152,7 @@ class PurePursuit:
 
                 # The target point is given in the world frame
                 target_x, target_y, success = self.trajectory.calculate_target_point(
-                    min(
-                        self.minimal_distance * 3,
-                        max(
-                            self.minimal_distance,
-                            self.minimal_distance * self.actual_speed,
-                        ),
-                    ),
+                    self.minimal_distance,
                     self.maximal_distance,
                     [trans.transform.translation.x, trans.transform.translation.y],
                 )
