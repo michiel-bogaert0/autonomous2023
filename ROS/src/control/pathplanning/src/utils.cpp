@@ -229,12 +229,10 @@ namespace pathplanning
         }
 
         // Make sure we are not visiting nodes double
-        for (auto &point : path)
-        {
-            if (std::abs(point[0] - next_pos[0]) < 1e-6 && std::abs(point[1] - next_pos[1]) < 1e-6)
-            {
-                return false;
-            }
+        if (std::any_of(path.begin(), path.end(), [&](const std::array<double, 2>& point) {
+            return std::abs(point[0] - next_pos[0]) < 1e-6 && std::abs(point[1] - next_pos[1]) < 1e-6;
+        })) {
+            return false;
         }
 
         double angle_change = std::atan2(next_pos[1] - parent.y, next_pos[0] - parent.x);
