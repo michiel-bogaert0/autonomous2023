@@ -37,17 +37,17 @@ Triangulator::Triangulator(ros::NodeHandle &n)
           stage1_threshold_center_points_, stage2_rect_width_,
           stage2_threshold_bad_points_, stage2_threshold_center_points_,
           max_depth_, continuous_dist_) {
-  ros::Publisher vis_points_ = ros::Publisher();
-  ros::Publisher vis_lines_ = ros::Publisher();
+  this->vis_points_ = ros::Publisher();
+  this->vis_lines_ = ros::Publisher();
 
-  if (debug_visualisation_) {
-    vis_points_ = n.advertise<visualization_msgs::MarkerArray>(
+  if (this->debug_visualisation_) {
+    this->vis_points_ = n.advertise<visualization_msgs::MarkerArray>(
         "/output/debug/markers", 10);
-    vis_lines_ =
+    this->vis_lines_ =
         n.advertise<geometry_msgs::PoseArray>("/output/debug/poses", 10);
   }
 
-  vis_ = vis_points_ && vis_lines_;
+  this->vis_ = this->vis_points_ && this->vis_lines_;
 }
 
 std::vector<Node *>
