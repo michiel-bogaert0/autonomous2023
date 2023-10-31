@@ -39,7 +39,9 @@ class Trajectory:
         )
         self.closest_index = np.argmin(self.eucl_dist)
 
-    def calculate_target_point(self, minimal_distance, maximal_distance, current_position):
+    def calculate_target_point(
+        self, minimal_distance, maximal_distance, current_position
+    ):
         """
         Calculates a target point by traversing the path
         Returns the first points that matches the conditions given by minimal_distance
