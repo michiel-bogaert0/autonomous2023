@@ -45,8 +45,7 @@ Triangulator::Triangulator(ros::NodeHandle &n)
         "/output/debug/markers", 10);
     this->vis_lines_ =
         n.advertise<geometry_msgs::PoseArray>("/output/debug/poses", 10);
-  }
-  else {
+  } else {
     this->vis_points_ = ros::Publisher();
     this->vis_lines_ = ros::Publisher();
   }
