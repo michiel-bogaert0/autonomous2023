@@ -237,18 +237,19 @@ namespace pathplanning
             }
         }
 
-        double angle_node = std::atan2(next_pos[1] - parent.y, next_pos[0] - parent.x);
-        double angle_change = angle_node - parent.angle;
+        double angle_change = std::atan2(next_pos[1] - parent.y, next_pos[0] - parent.x);
+        double angle_node = angle_change + parent.angle;
         double distance_node = std::pow(parent.x - next_pos[0], 2) + std::pow(parent.y - next_pos[1], 2);
 
         double abs_angle_change = std::min(std::abs(angle_change), 2 * M_PI - std::abs(angle_change));
 
+        
         // Check that the angle change is within bounds
         if (abs_angle_change > max_angle_change)
         {
             return false;
         }
-
+        
         // Check we're not colliding with a cone
         if (!no_collision(parent, next_pos, cones, safety_dist_squared))
         {
