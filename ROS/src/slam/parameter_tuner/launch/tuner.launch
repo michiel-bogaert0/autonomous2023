@@ -1,8 +1,12 @@
 <launch>
    <arg name="map" default="circle_R15" />  <!--zonder .yaml-->
    <arg name="mission" default="trackdrive" />
-   <arg name="max_time" default="500" /> <!--max time simulation can run in seconds -->
+
+   <arg name="max_time" default="150" /> <!--max time simulation can run in seconds -->
    <arg name="number_of_simulations" default="2" />
+
+   <!-- Tuner options -->
+   <arg name="tuner_mode" default="none" />
    
   <node name="parameter_tuner" pkg="parameter_tuner" type="main.py" output="screen">
     <param name="map" value="$(arg map)" />
@@ -15,6 +19,15 @@
     <param name="parameter" value="particle_count" />
 
     <param name="logging" value="False" />
+
+    <!-- Tuner options -->
+    <param name="tuner_mode" value="$(arg tuner_mode)"/>
+
+    <!-- Sum tuner -->
+    <param name="sum_add_value" value="-100"/>
+
+    <!-- List tuner-->
+    <rosparam param="list">[900,950,1000]</rosparam>
   </node>
 
 </launch>
