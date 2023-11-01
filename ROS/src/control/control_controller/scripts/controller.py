@@ -1,14 +1,15 @@
 #! /usr/bin/python3
 from time import sleep
 
+# l
 import rospy
 from node_fixture.node_fixture import (
     AutonomousMission,
+    DiagnosticArray,
+    DiagnosticStatus,
     SLAMStatesEnum,
     StateMachineScopeEnum,
     create_diagnostic_message,
-    DiagnosticArray,
-    DiagnosticStatus,
 )
 from node_launcher.node_launcher import NodeLauncher
 from ugr_msgs.msg import State
@@ -41,7 +42,7 @@ class Controller:
                 self.launcher.run()
                 self.diagnostics_pub.publish(
                     create_diagnostic_message(
-                        level=DiagnosticStatus.OK, 
+                        level=DiagnosticStatus.OK,
                         name="[CTRL CTRL] Node launching",
                         message="",
                     )
@@ -126,5 +127,6 @@ class Controller:
                         message="Node shutting down.",
                     )
                 )
+
 
 node = Controller()

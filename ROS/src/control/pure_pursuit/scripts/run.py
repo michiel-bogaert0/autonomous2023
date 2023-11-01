@@ -4,16 +4,14 @@ import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import PointStamped, PoseStamped
 from nav_msgs.msg import Odometry, Path
-from std_msgs.msg import Float64, Header
-from tf2_geometry_msgs import do_transform_pose
-from trajectory import Trajectory
 from node_fixture.node_fixture import (
-    AddSubscriber,
-    ROSNode,
     DiagnosticArray,
     DiagnosticStatus,
     create_diagnostic_message,
 )
+from std_msgs.msg import Float64, Header
+from tf2_geometry_msgs import do_transform_pose
+from trajectory import Trajectory
 
 
 class PurePursuit:
