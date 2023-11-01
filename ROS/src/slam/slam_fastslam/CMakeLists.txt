@@ -29,7 +29,7 @@ include_directories(
 
 include_directories( /usr/include/eigen3 )
 
-link_directories(${CATKIN_DEVEL_PREFIX}/lib})
+link_directories(${CATKIN_DEVEL_PREFIX}/lib)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -O3")
