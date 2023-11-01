@@ -14,6 +14,8 @@ Pathplanning::Pathplanning(ros::NodeHandle &n)
   this->path_pub_ = n_.advertise<nav_msgs::Path>("/output/path", 10);
   this->map_sub_ = n_.subscribe("/input/local_map", 10,
                                 &Pathplanning::receive_new_map, this);
+  this->diagPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(new node_fixture::DiagnosticPublisher(n, "CTRL PAPL"));
+
 }
 
 void Pathplanning::receive_new_map(
@@ -36,6 +38,9 @@ void Pathplanning::compute(const std::vector<std::vector<double>> &cones,
 
   if (path.empty()) {
     ROS_INFO_STREAM("No path found");
+    this->diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::WARN,
+                                             "Path Compute Status",
+                                             "No path found!");
     return;
   }
 

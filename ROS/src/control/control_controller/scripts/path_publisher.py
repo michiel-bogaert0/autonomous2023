@@ -29,7 +29,7 @@ class PathPublisher:
         )
 
         # Diagnostics Publisher
-        self.diagnostics = rospy.Publisher(
+        self.diagnostics_pub = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
 
@@ -42,7 +42,7 @@ class PathPublisher:
             self.diagnostics.publish(
                 create_diagnostic_message(
                     level=DiagnosticStatus.ERROR,
-                    name="[CTRL] Path Publisher Status",
+                    name="[CTRL CTRL] Path Publisher Status",
                     message="Error publishing path.",
                 )
             )

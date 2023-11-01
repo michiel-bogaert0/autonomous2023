@@ -16,6 +16,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <triangulator.hpp>
+#include <node_fixture/node_fixture.hpp>
 
 
 
@@ -97,10 +98,15 @@ private:
     double min_distance_away_from_start_;
     double max_distance_away_from_start_;
 
+    // Publishers
     ros::Publisher path_pub_;
     ros::Publisher path_stamped_pub_;
 
+    // Subscribers
     ros::Subscriber map_sub_;
+
+    // Diagnostic publisher
+    std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
 
     Triangulator triangulator_;
 
