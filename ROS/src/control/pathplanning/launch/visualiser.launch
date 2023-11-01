@@ -1,0 +1,13 @@
+<launch>
+
+    <arg name="frame" default="ugr/car_base_link"/>
+    <arg name="layout" default= "None" />
+
+  <node name="visualiser" pkg="pathplanning" type="visualiser.py" output="screen" >
+
+    <remap from="/output/local_map" to="/ugr/car/map/fastslam/local" />
+    <remap from="/input/path" to="/pathplanning/path"/>
+
+  </node>
+
+</launch>

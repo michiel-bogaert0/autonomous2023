@@ -1,0 +1,8 @@
+
+<launch>
+  <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true">
+    <arg name="map" default="/ugr/car/map/fastslam/local" />
+  </include>
+  <include file="$(find pathplanning)/launch/visualiser.launch" pass_all_args="true"/>
+  <include file="$(find ugr_launch)/launch/internal/slam.launch" pass_all_args="true"/>
+</launch>
