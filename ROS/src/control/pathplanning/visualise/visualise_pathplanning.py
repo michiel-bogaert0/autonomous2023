@@ -1,9 +1,8 @@
-import argparse
 import copy
 import datetime
 import json
 import math
-import sys
+import pathlib
 from dataclasses import dataclass
 from typing import Dict, Iterator, List, Optional, Tuple
 
@@ -955,7 +954,9 @@ class MainWindow(QtW.QMainWindow):
         # def __init__(self, parent=None):
         super().__init__(None)
         if trackfile_name is not None:
-            with open("layouts/" + trackfile_name, "r") as f:
+            cwd = config_file = pathlib.Path(__file__).absolute().parent
+            config_file = cwd / f"layouts/{trackfile_name}"
+            with open(config_file, "r") as f:
                 dictio = json.load(f)
                 yellow_cones = dictio["cones"]["yellow"]
                 yellows = [QtC.QPointF(c["pos"][0], c["pos"][1]) for c in yellow_cones]
@@ -990,22 +991,3 @@ class MainWindow(QtW.QMainWindow):
         self.setCentralWidget(self.map_widget)
         self.resize(800, 600)
         self.setWindowTitle("Track editor")
-
-
-def main(*args, **kwargs):
-    parser = argparse.ArgumentParser(description="Track editor")
-    parser.add_argument("-t", "--track", type=str, help="Input track (JSON file)")
-    args = parser.parse_args()
-    app = QtW.QApplication(sys.argv)
-
-    if args.track is not None:
-        track_file = args.track
-        widget = MainWindow(track_file)
-    else:
-        widget = MainWindow()
-    widget.show()
-    sys.exit(app.exec_())
-
-
-if __name__ == "__main__":
-    main()

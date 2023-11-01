@@ -26,7 +26,7 @@ class Visualiser:
         app = QtW.QApplication(sys.argv)
 
         self.frame = rospy.get_param("~frame", "ugr/car_base_link")
-        self.track_file = rospy.get_param("~layout", None)
+        self.track_file = rospy.get_param("~layout", "")
 
         if len(self.track_file) > 0:
             self.widget = MainWindow(self.publisher, self.frame, self.track_file)
