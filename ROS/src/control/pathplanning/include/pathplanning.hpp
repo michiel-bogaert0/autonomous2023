@@ -102,7 +102,7 @@ private:
   ros::Subscriber map_sub_;
 
   // Diagnostic publisher
-  std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
+  std::unique_ptr<node_fixture::DiagnosticPublisher> diagnostics_pub;
 
   Triangulator triangulator_;
 

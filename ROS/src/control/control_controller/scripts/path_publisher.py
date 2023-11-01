@@ -39,7 +39,7 @@ class PathPublisher:
             rospy.logerr(
                 f"Error publishing path. Make sure that the file '{self.path}' exists, is readable and is valid YAML!"
             )
-            self.diagnostics.publish(
+            self.diagnostics_pub.publish(
                 create_diagnostic_message(
                     level=DiagnosticStatus.ERROR,
                     name="[CTRL CTRL] Path Publisher Status",
