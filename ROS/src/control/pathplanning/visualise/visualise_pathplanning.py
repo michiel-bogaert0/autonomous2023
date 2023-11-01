@@ -883,7 +883,9 @@ class MapWidget(QtW.QFrame):
             return f"track_{time_string}.json"
 
         track_dict = self.as_dict()
-        with open("layouts/" + get_track_name(), "w") as f:
+        cwd = file_path = pathlib.Path(__file__).absolute().parent
+        file_path = cwd / f"layouts/{get_track_name()}"
+        with open(file_path, "w") as f:
             json.dump(track_dict, f, indent=4)
 
     def as_dict(self):
@@ -954,9 +956,9 @@ class MainWindow(QtW.QMainWindow):
         # def __init__(self, parent=None):
         super().__init__(None)
         if trackfile_name is not None:
-            cwd = config_file = pathlib.Path(__file__).absolute().parent
-            config_file = cwd / f"layouts/{trackfile_name}"
-            with open(config_file, "r") as f:
+            cwd = layout_path = pathlib.Path(__file__).absolute().parent
+            layout_path = cwd / f"layouts/{trackfile_name}"
+            with open(layout_path, "r") as f:
                 dictio = json.load(f)
                 yellow_cones = dictio["cones"]["yellow"]
                 yellows = [QtC.QPointF(c["pos"][0], c["pos"][1]) for c in yellow_cones]
