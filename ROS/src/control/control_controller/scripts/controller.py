@@ -1,7 +1,6 @@
 #! /usr/bin/python3
 from time import sleep
 
-# l
 import rospy
 from node_fixture.node_fixture import (
     AutonomousMission,
