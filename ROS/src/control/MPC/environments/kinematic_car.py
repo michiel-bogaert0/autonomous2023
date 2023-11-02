@@ -36,7 +36,7 @@ class KinematicCar(Env):
         u=[v, δ]
         """
         # x, y, psi, vx, vy, omega, delta = s[0], s[1], s[2], s[3], s[4], s[5], s[6]
-        _, _, psi = s[0], s[1], s[2]
+        psi = s[2]
         v = u[0]
         delta = u[1]
 
