@@ -137,7 +137,7 @@ class ManagedNode(ABC):
 # override the publish method of rospy.Publisher
 class CustomPublisher(rospy.Publisher):
     def __init__(self, topic, msg_type, queue_size, state):
-        super(CustomPublisher, self).__init__(topic, msg_type, queue_size)
+        super().__init__(topic, msg_type, queue_size)
         self.state = state
 
     def set_state(self, state):
@@ -145,4 +145,4 @@ class CustomPublisher(rospy.Publisher):
 
     def publish(self, msg):
         if self.state == NodeManagingStatesEnum.ACTIVE:
-            super(CustomPublisher, self).publish(msg)
+            super().publish(msg)
