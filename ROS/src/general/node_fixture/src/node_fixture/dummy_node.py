@@ -16,14 +16,20 @@ class DummyNode(ManagedNode):
         print(msg.data)
 
     def run(self):
+        counter = 0
         while not rospy.is_shutdown():
+            counter += 1
+            message = "Dit is een dummy bericht " + str(counter)
+            rospy.loginfo("Verzenden: %s", message)
+            self.pub.publish(message)
             self.update()
             rospy.sleep(0.1)
 
     def active(self):
-        message = "Dit is een dummy bericht"
-        rospy.loginfo("Verzenden: %s", message)
-        self.pub.publish(message)
+        # message = "Dit is een dummy bericht"
+        # rospy.loginfo("Verzenden: %s", message)
+        # self.pub.publish(message)
+        pass
 
 
 node = DummyNode()

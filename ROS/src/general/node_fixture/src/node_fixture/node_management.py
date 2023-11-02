@@ -71,8 +71,8 @@ class ManagedNode:  # (ABC):
             self.doError()
             self.state = NodeManagingStatesEnum.FINALIZED
         else:
-            rospy.logerr(
-                f"Invalid state transition from {self.state} to {request.state} for {self.name}"
+            rospy.loginfo(
+                f"Invalid state transition from {self.state} to {request.state}"
             )
             return SetNodeStateResponse(succes=False)
 
