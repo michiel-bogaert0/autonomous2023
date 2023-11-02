@@ -102,7 +102,7 @@ void Pathplanning::compute(const std::vector<std::vector<double>> &cones,
   output.poses = poses;
   output.header.stamp = header.stamp;
 
-  nav_msgs::Path output_transformed = this->frametf_.pose_transform(output);
+  nav_msgs::Path output_transformed = output;
 
   this->path_pub_.publish(output_transformed);
 }
