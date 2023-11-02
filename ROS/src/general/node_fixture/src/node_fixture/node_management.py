@@ -4,7 +4,12 @@ from functools import partialmethod
 
 import rospy
 from fixture import NodeManagingStatesEnum
-from node_fixture.srv import GetNodeState, SetNodeState
+from node_fixture.srv import (
+    GetNodeState,
+    GetNodeStateResponse,
+    SetNodeState,
+    SetNodeStateResponse,
+)
 
 
 class ManagedNode:  # (ABC):
@@ -13,61 +18,68 @@ class ManagedNode:  # (ABC):
         self.handlerlist = []
         self.publishers = []
         rospy.Service(
-            f"/node_managing/{name}/set", GetNodeState, self.handle_service_set
+            f"/node_managing/{name}/set", SetNodeState, self.handle_service_set
         )
         rospy.Service(
-            f"/node_managing/{name}/get", SetNodeState, self.handle_service_get
+            f"/node_managing/{name}/get", GetNodeState, self.handle_service_get
         )
 
-    def handle_service_get(self):
-        return self.state
+    def handle_service_get(self, request):
+        return GetNodeStateResponse(state=self.state)
 
     def handle_service_set(self, request):
         if (
             self.state == NodeManagingStatesEnum.UNCONFIGURED
-            and request == NodeManagingStatesEnum.INACTIVE
+            and request.state == NodeManagingStatesEnum.INACTIVE
         ):
             self.doConfigure()
             self.state = NodeManagingStatesEnum.INACTIVE
         elif (
             self.state == NodeManagingStatesEnum.INACTIVE
-            and request == NodeManagingStatesEnum.UNCONFIGURED
+            and request.state == NodeManagingStatesEnum.UNCONFIGURED
         ):
             self.doCleanup()
             self.state = NodeManagingStatesEnum.UNCONFIGURED
         elif (
             self.state == NodeManagingStatesEnum.INACTIVE
-            and request == NodeManagingStatesEnum.ACTIVE
+            and request.state == NodeManagingStatesEnum.ACTIVE
         ):
             self.doActivate()
             self.state = NodeManagingStatesEnum.ACTIVE
         elif (
             self.state == NodeManagingStatesEnum.ACTIVE
-            and request == NodeManagingStatesEnum.INACTIVE
+            and request.state == NodeManagingStatesEnum.INACTIVE
         ):
             self.doDeactivate()
             self.state = NodeManagingStatesEnum.INACTIVE
         elif (
             self.state == NodeManagingStatesEnum.INACTIVE
-            and request == NodeManagingStatesEnum.FINALIZED
+            and request.state == NodeManagingStatesEnum.FINALIZED
         ):
             self.doShutdown()
             self.state = NodeManagingStatesEnum.FINALIZED
         elif (
             self.state == NodeManagingStatesEnum.ACTIVE
-            and request == NodeManagingStatesEnum.FINALIZED
+            and request.state == NodeManagingStatesEnum.FINALIZED
         ):
             self.doShutdown()
             self.state = NodeManagingStatesEnum.FINALIZED
         elif (
             self.state == NodeManagingStatesEnum.UNCONFIGURED
-            and request == NodeManagingStatesEnum.FINALIZED
+            and request.state == NodeManagingStatesEnum.FINALIZED
         ):
             self.doError()
             self.state = NodeManagingStatesEnum.FINALIZED
+        else:
+            rospy.logerr(
+                f"Invalid state transition from {self.state} to {request.state} for {self.name}"
+            )
+            return SetNodeStateResponse(succes=False)
 
         for pub in self.publishers:
             pub.set_state(self.state)
+
+        return SetNodeStateResponse(succes=True)
 
     # @abstractmethod
     def doConfigure(self):

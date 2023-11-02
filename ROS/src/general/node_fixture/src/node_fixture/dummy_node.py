@@ -24,7 +24,6 @@ class DummyNode(ManagedNode):
         message = "Dit is een dummy bericht"
         rospy.loginfo("Verzenden: %s", message)
         self.pub.publish(message)
-        self.rate.sleep()
 
 
 node = DummyNode()
