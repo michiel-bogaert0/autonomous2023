@@ -63,7 +63,7 @@ class MergeNode:
         Measure time between incoming lidar and camera observations, log to console
         """
 
-        time_now = time.time_ns()*1e-6
+        time_now = time.time_ns() * 1e-6
         rospy.loginfo(f"\n\nSensor: {observations.header.frame_id}\nTime since\n    lidar: {time_now-self.lidar_last_obs_time} ms;\n    camera: {time_now-self.camera_last_obs_time} ms;\n Time: {time_now};\n\n")
 
         if observations.header.frame_id == self.lidar_sensor_name:
@@ -90,15 +90,15 @@ class MergeNode:
 
             # Setup up waiting loop for the other sensor. When time-out is reached, second_observations is set to None
             if observations.header.frame_id == self.lidar_sensor_name:
-                rospy.loginfo(f"\nReceived lidar, waiting for camera...\n")
+                rospy.loginfo("\nReceived lidar, waiting for camera...\n")
                 try:
-                    second_observations = rospy.wait_for_message(self.camera_input_topic, ObservationWithCovarianceArrayStamped, timeout=self.waiting_time_ms*1e-3)
+                    second_observations = rospy.wait_for_message(self.camera_input_topic, ObservationWithCovarianceArrayStamped, timeout=self.waiting_time_ms * 1e-3)
                 except rospy.exceptions.ROSException:
                     second_observations = None
             elif observations.header.frame_id == self.camera_sensor_name:
-                rospy.loginfo(f"\nReceived camera, waiting for lidar...\n")
+                rospy.loginfo("\nReceived camera, waiting for lidar...\n")
                 try:
-                    second_observations = rospy.wait_for_message(self.lidar_input_topic, ObservationWithCovarianceArrayStamped, timeout=self.waiting_time_ms*1e-3)
+                    second_observations = rospy.wait_for_message(self.lidar_input_topic, ObservationWithCovarianceArrayStamped, timeout=self.waiting_time_ms * 1e-3)
                 except rospy.exceptions.ROSException:
                     second_observations = None
             else:
@@ -261,6 +261,6 @@ class MergeNode:
     
     def kalman_filter(self, lidar_observation, camera_observation):
         return
-    
+
 node = MergeNode()
 rospy.spin()
