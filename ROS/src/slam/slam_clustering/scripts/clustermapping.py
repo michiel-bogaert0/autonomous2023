@@ -5,7 +5,7 @@ import rospy
 import tf2_ros as tf
 from clustering.clustering import Clustering
 from geometry_msgs.msg import Point, TransformStamped
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
     ROSNode,

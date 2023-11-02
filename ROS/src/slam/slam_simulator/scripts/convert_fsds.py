@@ -6,7 +6,7 @@ import tf
 from fs_msgs.msg import Track
 from geometry_msgs.msg import TwistStamped, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
     create_diagnostic_message,

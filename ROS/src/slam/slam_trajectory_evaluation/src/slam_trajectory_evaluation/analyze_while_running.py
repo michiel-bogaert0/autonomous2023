@@ -10,7 +10,7 @@ import plot_utils as pu
 import rospkg
 import rospy
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import SLAMStatesEnum, StateMachineScopeEnum
+from node_fixture.fixture import SLAMStatesEnum, StateMachineScopeEnum
 from std_msgs.msg import UInt16
 from std_srvs.srv import Empty, EmptyResponse
 from trajectory import Trajectory

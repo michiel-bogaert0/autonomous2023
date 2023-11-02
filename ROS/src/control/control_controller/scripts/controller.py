@@ -2,7 +2,7 @@
 from time import sleep
 
 import rospy
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     AutonomousMission,
     DiagnosticArray,
     DiagnosticStatus,

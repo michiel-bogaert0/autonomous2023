@@ -4,7 +4,7 @@ from functools import partial
 from time import time_ns
 
 import rospy
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     AddSubscriber,
     DiagnosticArray,
     DiagnosticStatus,
