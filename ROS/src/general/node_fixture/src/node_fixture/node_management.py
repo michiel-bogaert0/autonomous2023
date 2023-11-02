@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # from abc import ABC, abstractmethod
-from functools import partialmethod
+from functools import partial
 
 import rospy
 from fixture import NodeManagingStatesEnum
@@ -132,9 +132,9 @@ class ManagedNode:  # (ABC):
             self.finalized()
 
     def AddSubscriber(self, topic, msg_type, handler):
-        our_handler = partialmethod(self._make_custom_handler, handler)
+        our_handler = partial(self._make_custom_handler, handler)
         self.handlerlist.append(our_handler)
-        return rospy.Subscriber(topic, msg_type, self.handlerlist[-1])
+        return rospy.Subscriber(topic, msg_type, our_handler)
 
     def _make_custom_handler(self, handler, msg):
         if self.state == NodeManagingStatesEnum.ACTIVE:
