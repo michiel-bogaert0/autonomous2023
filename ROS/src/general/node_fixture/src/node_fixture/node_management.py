@@ -1,13 +1,13 @@
 #!/usr/bin/python3
-from abc import ABC, abstractmethod
+# from abc import ABC, abstractmethod
 from functools import partialmethod
 
 import rospy
-from node_fixture import NodeManagingStatesEnum
+from fixture import NodeManagingStatesEnum
 from node_fixture.srv import GetNodeState, SetNodeState
 
 
-class ManagedNode(ABC):
+class ManagedNode:  # (ABC):
     def __init__(self, name):
         self.state = NodeManagingStatesEnum.UNCONFIGURED
         self.handlerlist = []
@@ -69,55 +69,55 @@ class ManagedNode(ABC):
         for pub in self.publishers:
             pub.set_state(self.state)
 
-    @abstractmethod
-    def doConfigure():
+    # @abstractmethod
+    def doConfigure(self):
         pass
 
-    @abstractmethod
-    def doActivate():
+    # @abstractmethod
+    def doActivate(self):
         pass
 
-    @abstractmethod
-    def doCleanup():
+    # @abstractmethod
+    def doCleanup(self):
         pass
 
-    @abstractmethod
-    def doDeactivate():
+    # @abstractmethod
+    def doDeactivate(self):
         pass
 
-    @abstractmethod
-    def doShutdown():
+    # @abstractmethod
+    def doShutdown(self):
         pass
 
-    @abstractmethod
-    def doError():
+    # @abstractmethod
+    def doError(self):
         pass
 
-    @abstractmethod
-    def Active():
+    # @abstractmethod
+    def active(self):
         pass
 
-    @abstractmethod
-    def Inactive():
+    # @abstractmethod
+    def inactive(self):
         pass
 
-    @abstractmethod
-    def Unconfigured():
+    # @abstractmethod
+    def unconfigured(self):
         pass
 
-    @abstractmethod
-    def Finalized():
+    # @abstractmethod
+    def finalized(self):
         pass
 
     def update(self):
         if self.state == NodeManagingStatesEnum.ACTIVE:
-            self.Active()
+            self.active()
         elif self.state == NodeManagingStatesEnum.INACTIVE:
-            self.Inactive()
+            self.inactive()
         elif self.state == NodeManagingStatesEnum.UNCONFIGURED:
-            self.Unconfigured()
+            self.unconfigured()
         elif self.state == NodeManagingStatesEnum.FINALIZED:
-            self.Finalized()
+            self.finalized()
 
     def AddSubscriber(self, topic, msg_type, handler):
         our_handler = partialmethod(self._make_custom_handler, handler)
@@ -137,7 +137,7 @@ class ManagedNode(ABC):
 # override the publish method of rospy.Publisher
 class CustomPublisher(rospy.Publisher):
     def __init__(self, topic, msg_type, queue_size, state):
-        super().__init__(topic, msg_type, queue_size)
+        super().__init__(topic, msg_type, queue_size=queue_size)
         self.state = state
 
     def set_state(self, state):

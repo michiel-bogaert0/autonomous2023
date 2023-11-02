@@ -8,8 +8,9 @@ class DummyNode(ManagedNode):
     def __init__(self):
         super().__init__("dummy_node")
         rospy.init_node("dummy_node")
-        self.pub = self.AddPublisher("/dummy_topic", String)
-        self.sub = self.AddSubscriber("/dummy_topic", String, self.callback)
+        self.pub = self.AddPublisher("/dummy_topic", String, queue_size=10)
+        self.sub = self.AddSubscriber("/dummy_topic2", String, self.callback)
+        self.run()
 
     def callback(self, msg):
         print(msg.data)
@@ -17,9 +18,13 @@ class DummyNode(ManagedNode):
     def run(self):
         while not rospy.is_shutdown():
             self.update()
+            rospy.sleep(0.1)
 
-    def Active(self):
+    def active(self):
         message = "Dit is een dummy bericht"
         rospy.loginfo("Verzenden: %s", message)
         self.pub.publish(message)
         self.rate.sleep()
+
+
+node = DummyNode()
