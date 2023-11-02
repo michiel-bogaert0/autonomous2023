@@ -170,6 +170,7 @@ class MergeNode:
         rospy.loginfo(observations1)
         all_observations = observations1.observations + observations2.observations
         all_points = list(map(lambda obs: [obs.observation.location.x, obs.observation.location.y, obs.observation.location.z], all_observations))
+        kdtree_all = KDTree(all_points)
 
         centers = []
         resulting_observations = []
@@ -185,16 +186,16 @@ class MergeNode:
             sensor = this_sensor_observations.header.frame_id
 
             points = list(map(lambda obs: [obs.observation.location.x, obs.observation.location.y, obs.observation.location.z], current_obs_set))
-            kdtree = KDTree(points)
+            kdtree_observation = KDTree(points)
 
             location = [observation.observation.location.x, observation.observation.location.y, observation.observation.location.z]
-            distance, indices = kdtree.query([location], k=2)
+            distance, indices = kdtree_observation.query([location], k=2)
             index = indices[0][1]
 
-            distance2, indices2 = kdtree.query([points[index]], k=2)
+            distance2, indices2 = kdtree_all.query([points[index]], k=2)
             index2 = indices2[0][1]
 
-            if points[index2] == location and distance[0][1] <= self.merge_distance_threshold:
+            if all_points[index2] == location and distance[0][1] <= self.merge_distance_threshold and location not in centers:
                 if sensor == self.lidar_sensor_name:
                     lidar_observation = observation
                     camera_observation = other_sensor_observations.observations[index-1]
