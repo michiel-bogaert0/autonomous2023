@@ -146,5 +146,3 @@ class CustomPublisher(rospy.Publisher):
     def publish(self, msg):
         if self.state == NodeManagingStatesEnum.ACTIVE:
             super(CustomPublisher, self).publish(msg)
-        else:
-            pass
