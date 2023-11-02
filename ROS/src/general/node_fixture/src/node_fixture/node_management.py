@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# from abc import ABC, abstractmethod
 from functools import partial
 
 import rospy
@@ -12,7 +11,7 @@ from node_fixture.srv import (
 )
 
 
-class ManagedNode:  # (ABC):
+class ManagedNode:
     def __init__(self, name):
         self.state = NodeManagingStatesEnum.UNCONFIGURED
         self.handlerlist = []
@@ -81,43 +80,33 @@ class ManagedNode:  # (ABC):
 
         return SetNodeStateResponse(succes=True)
 
-    # @abstractmethod
     def doConfigure(self):
         pass
 
-    # @abstractmethod
     def doActivate(self):
         pass
 
-    # @abstractmethod
     def doCleanup(self):
         pass
 
-    # @abstractmethod
     def doDeactivate(self):
         pass
 
-    # @abstractmethod
     def doShutdown(self):
         pass
 
-    # @abstractmethod
     def doError(self):
         pass
 
-    # @abstractmethod
     def active(self):
         pass
 
-    # @abstractmethod
     def inactive(self):
         pass
 
-    # @abstractmethod
     def unconfigured(self):
         pass
 
-    # @abstractmethod
     def finalized(self):
         pass
 
