@@ -123,9 +123,8 @@ class MergeNode:
         * * * FUNCTION STILL INCOMPLETE (AND PROBABLY INCORRECT)! * * *
         """
 
-        # Get covariance arrays of all observations
-        early_covariances, late_covariances = [observation.covariance for observation in early_obs.observations], [observation.covariance for observation in late_obs.observations]
-
+        # Get beliefs and covariance arrays of all observations
+        
         try:
             tf_early_to_base: TransformStamped = self.tf_buffer.lookup_transform_full(
                     target_frame=early_obs.header.frame_id,         # Give the transform from this frame,
@@ -154,9 +153,13 @@ class MergeNode:
             )
 
             for i in range(len(time_transformed_early_obs.observations)):
-                time_transformed_early_obs.observations[i].covariance = early_covariances[i]
+                #time_transformed_early_obs.observations[i].covariance = early_covariances[i]
+                time_transformed_early_obs.observations[i].covariance = early_obs.observations[i].covariance
+                time_transformed_early_obs.observations[i].observation.observation_class = early_obs.observations[i].observation.observation_class
             for i in range(len(time_transformed_late_obs.observations)):
-                time_transformed_late_obs.observations[i].covariance = late_covariances[i]
+                #time_transformed_late_obs.observations[i].covariance = late_beliefs[i]
+                time_transformed_late_obs.observations[i].covariance = late_obs.observations[i].covariance
+                time_transformed_late_obs.observations[i].observation.observation_class = late_obs.observations[i].observation.observation_class
             
             self.kd_tree_merger(time_transformed_early_obs, time_transformed_late_obs)
 
