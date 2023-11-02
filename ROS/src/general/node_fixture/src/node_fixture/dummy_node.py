@@ -13,7 +13,7 @@ class DummyNode(ManagedNode):
         self.run()
 
     def callback(self, msg):
-        print(msg.data)
+        rospy.loginfo(msg.data)
 
     def run(self):
         counter = 0
