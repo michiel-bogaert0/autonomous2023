@@ -2,9 +2,8 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
-from std_msgs.msg import Float32
-
 from aggregation.aggregation import Aggregation
+from std_msgs.msg import Float32
 
 
 class plus_aggr(Aggregation):

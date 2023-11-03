@@ -128,8 +128,8 @@ class KeypointDetector(pl.LightningModule):
                     cf https://pytorch-lightning.readthedocs.io/en/stable/common/hyperparameters.html for an overview.
         """
         super().__init__()
-        ## No need to manage devices ourselves, pytorch.lightning does all of that.
-        ## device can be accessed through self.device if required.
+        # No need to manage devices ourselves, pytorch.lightning does all of that.
+        # device can be accessed through self.device if required.
 
         # to add new hyperparameters:
         # 1. define as named arg in the init (and use them)
@@ -255,7 +255,7 @@ class KeypointDetector(pl.LightningModule):
 
         input_images = input_images.to(self.device)
 
-        ## predict and compute losses
+        # predict and compute losses
         predicted_unnormalized_maps = self.forward_unnormalized(input_images)
         predicted_heatmaps = torch.sigmoid(predicted_unnormalized_maps)
         channel_losses = []
@@ -388,7 +388,7 @@ class KeypointDetector(pl.LightningModule):
             image_grids = self.visualize_predictions_channels(result_dict)
             self.log_image_grids(image_grids, mode="validation")
 
-        ## log (defaults to on_epoch, which aggregates the logged values over entire validation set)
+        # log (defaults to on_epoch, which aggregates the logged values over entire validation set)
         self.log("validation/epoch_loss", result_dict["loss"])
         self.log("validation/gt_loss", result_dict["gt_loss"])
 

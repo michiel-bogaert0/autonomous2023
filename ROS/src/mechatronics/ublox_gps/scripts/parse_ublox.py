@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import datetime
 import socket
 import time
 from math import atan2, pi
@@ -9,11 +8,9 @@ import rospy
 import serial
 import utm
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-from geometry_msgs.msg import (PoseWithCovarianceStamped,
-                               TwistWithCovarianceStamped)
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import create_diagnostic_message
-from sensor_msgs.msg import Imu, NavSatFix, TimeReference
+from sensor_msgs.msg import NavSatFix
 from tf.transformations import quaternion_from_euler
 from ubxtranslator.core import Parser
 from ubxtranslator.predefined import ACK_CLS, NAV_CLS
@@ -156,7 +153,7 @@ class ParseUblox:
                         create_diagnostic_message(
                             level=DiagnosticStatus.ERROR,
                             name=f"[GPS {self.source_name}] UBX-NAV-PVT",
-                            message=f"GNSS solution invalid",
+                            message="GNSS solution invalid",
                         )
                     )
 
@@ -167,7 +164,7 @@ class ParseUblox:
                         create_diagnostic_message(
                             level=DiagnosticStatus.WARN,
                             name=f"[GPS {self.source_name}] UBX-NAV-PVT",
-                            message=f"Solution mode: RTK FLOAT",
+                            message="Solution mode: RTK FLOAT",
                         )
                     )
 
@@ -179,11 +176,11 @@ class ParseUblox:
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
                             name=f"[GPS {self.source_name}] UBX-NAV-PVT",
-                            message=f"Solution mode: RTK FIX",
+                            message="Solution mode: RTK FIX",
                         )
                     )
 
-                ## PVT (Position, Velocity, Time)
+                # PVT (Position, Velocity, Time)
                 # Publishes
                 # NavSatFix:
                 # - long/lat
@@ -235,7 +232,7 @@ class ParseUblox:
                         create_diagnostic_message(
                             level=DiagnosticStatus.ERROR,
                             name=f"[GPS {self.source_name}] UBX-NAV-RELPOSNED",
-                            message=f"GNSS solution invalid",
+                            message="GNSS solution invalid",
                         ),
                     )
 
@@ -246,7 +243,7 @@ class ParseUblox:
                         create_diagnostic_message(
                             level=DiagnosticStatus.WARN,
                             name=f"[GPS {self.source_name}] UBX-NAV-RELPOSNED",
-                            message=f"Solution mode: FLOAT",
+                            message="Solution mode: FLOAT",
                         )
                     )
 
@@ -257,11 +254,11 @@ class ParseUblox:
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
                             name=f"[GPS {self.source_name}] UBX-NAV-RELPOSNED",
-                            message=f"Solution mode: FIX",
+                            message="Solution mode: FIX",
                         )
                     )
 
-                ## RELPOSNED
+                # RELPOSNED
                 # Odometry: (relative to base station)
                 # - position
                 # - heading
@@ -294,7 +291,7 @@ class ParseUblox:
 
                 self.relposodom_publisher.publish(rosmsg)
 
-        except (ValueError, IOError) as err:
+        except (ValueError, IOError):
             pass
 
 

@@ -4,21 +4,21 @@ import os
 import rospy
 import yaml
 from genpy.message import fill_message_args
-from geometry_msgs.msg import PoseArray, PoseStamped
+from nav_msgs.msg import Path
 from node_fixture.node_fixture import (
     DiagnosticArray,
     DiagnosticStatus,
     create_diagnostic_message,
 )
 
-from nav_msgs.msg import Path
 
 class PathPublisher:
     def __init__(self):
         rospy.init_node("control_path_publisher")
 
         self.path = rospy.get_param(
-            "~path", f"{os.path.dirname(__file__)}/../paths/straight_L100.yaml")
+            "~path", f"{os.path.dirname(__file__)}/../paths/straight_L100.yaml"
+        )
         self.override_time = rospy.get_param("~override_time", True)
 
         self.path_publisher = rospy.Publisher(
@@ -29,20 +29,20 @@ class PathPublisher:
         )
 
         # Diagnostics Publisher
-        self.diagnostics = rospy.Publisher(
+        self.diagnostics_pub = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
 
         try:
             self.publish_path()
-        except:
+        except Exception:
             rospy.logerr(
                 f"Error publishing path. Make sure that the file '{self.path}' exists, is readable and is valid YAML!"
             )
-            self.diagnostics.publish(
+            self.diagnostics_pub.publish(
                 create_diagnostic_message(
                     level=DiagnosticStatus.ERROR,
-                    name="[CTRL] Path Publisher Status",
+                    name="[CTRL CTRL] Path Publisher Status",
                     message="Error publishing path.",
                 )
             )

@@ -156,11 +156,17 @@ class HeadingEstimation:
         if not msg0 or not msg1:
             return
 
-        if msg0.position_covariance[0] > self.max_covariance or msg1.position_covariance[0] > self.max_covariance:
-            return 
+        if (
+            msg0.position_covariance[0] > self.max_covariance
+            or msg1.position_covariance[0] > self.max_covariance
+        ):
+            return
 
         # Time deviates to much? No heading!
-        if abs(msg0.header.stamp.to_sec() - msg1.header.stamp.to_sec()) > self.max_time_deviation:
+        if (
+            abs(msg0.header.stamp.to_sec() - msg1.header.stamp.to_sec())
+            > self.max_time_deviation
+        ):
             return
 
         # Actually calculate heading

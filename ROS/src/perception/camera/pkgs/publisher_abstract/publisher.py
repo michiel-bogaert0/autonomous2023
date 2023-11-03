@@ -1,11 +1,10 @@
 """
 A perception publisher should have the following structure:
-option 1: with a predefined rate and a publish function -> call the publish_image_data function 
+option 1: with a predefined rate and a publish function -> call the publish_image_data function
 option 2: subscribes to a topic that publishes raw data -> start the child rosnode (by calling node.start())
 """
 import sys
 from abc import ABC, abstractmethod
-from typing import Any
 
 import numpy as np
 import rospy
@@ -20,14 +19,13 @@ class PublishNode(ABC):
 
         self.estimated_latency = rospy.get_param("estimated_latency", 0.27)
 
-        self.raw_sub = rospy.Subscriber("/raw/input",Image,self.publish_sub_data)
+        self.raw_sub = rospy.Subscriber("/raw/input", Image, self.publish_sub_data)
         self.image_publisher = rospy.Publisher("/input/image", Image, queue_size=10)
         self.info_publisher = rospy.Publisher("/input/info", CameraInfo, queue_size=10)
         self.sim_sub = rospy.Subscriber("/raw/input", Image, self.publish_sub_data)
 
         self.rate = rospy.Rate(rospy.get_param("~rate", 10))
         self.frame = f"ugr/car_base_link/{rospy.get_param('~sensor_name','cam0')}"
-        
 
     @abstractmethod
     def get_camera_info(self) -> CameraInfo:
@@ -46,7 +44,6 @@ class PublishNode(ABC):
         returns:
             a ros image (header not required)
         """
-        pass
 
     def np_to_ros_image(self, arr: np.ndarray) -> Image:
         """Creates a ROS image type based on a Numpy array

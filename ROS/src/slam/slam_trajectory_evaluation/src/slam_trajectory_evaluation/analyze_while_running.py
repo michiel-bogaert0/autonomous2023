@@ -7,16 +7,16 @@ import tf2_ros as tf
 
 import tf2_geometry_msgs
 
-from scipy.spatial.transform import Rotation
-
 matplotlib.use("Agg")
 import datetime
 import os
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import plot_utils as pu
-import math
+import rospkg
+import rospy
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import SLAMStatesEnum, StateMachineScopeEnum
 from std_srvs.srv import Empty, EmptyResponse
@@ -65,6 +65,8 @@ class DataCone:
             if(abs(p.x - pos.x) < 0.01 and abs(p.y - pos.y) < 0.01):
                 return True
         return False
+matplotlib.use("Agg")
+
 
 class analyze_while_running:
     align_num_frames = -1
@@ -446,7 +448,7 @@ class analyze_while_running:
         # rel errors position in percentage
         fig = plt.figure(figsize=(6, 2.5))
         ax = fig.add_subplot(
-            111, xlabel="Distance traveled [m]", ylabel="Translation error [\%]"
+            111, xlabel="Distance traveled [m]", ylabel="Translation error [%]"
         )
         pu.boxplot_compare(ax, distances, rel_errors["rel_trans_perc"], labels, colors)
         fig.tight_layout()

@@ -86,14 +86,13 @@ class ConeLogger:
         cone_type_int = self.cone_colors[cone_type]
 
         try:
-
             most_accurate = self.covariances.index(min(self.covariances))
             self.cone_pusher.publish(
                 ConeLocation(
                     location=self.cone_position[most_accurate], cone_type=cone_type_int
                 )
             )
-        except Exception as e:
+        except Exception:
             rospy.logerr(traceback.format_exc())
             rospy.logerr("exception while trying to publish a cone location!")
 

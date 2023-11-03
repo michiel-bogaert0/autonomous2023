@@ -1,6 +1,7 @@
-from car_state import carStateEnum, CarState
-from node_fixture import AutonomousStatesEnum
 import rospy
+from car_state import CarState, CarStateEnum
+from node_fixture import AutonomousStatesEnum
+
 
 class SimulationState(CarState):
 
@@ -13,25 +14,24 @@ class SimulationState(CarState):
     """
 
     def __init__(self) -> None:
-
         self.state = {
-            "TS": carStateEnum.UNKOWN,
-            "ASMS": carStateEnum.UNKOWN,
-            "R2D": carStateEnum.UNKOWN,
-            "ASB": carStateEnum.UNKOWN,
-            "EBS": carStateEnum.UNKOWN,
+            "TS": CarStateEnum.UNKOWN,
+            "ASMS": CarStateEnum.UNKOWN,
+            "R2D": CarStateEnum.UNKOWN,
+            "ASB": CarStateEnum.UNKOWN,
+            "EBS": CarStateEnum.UNKOWN,
         }
 
         self.start_t = rospy.Time.now().to_sec()
 
         self.as_state = AutonomousStatesEnum.ASOFF
-        self.ebs_state = carStateEnum.ON
+        self.ebs_state = CarStateEnum.ON
 
     def update(self, state: AutonomousStatesEnum):
         self.as_state = state
 
     def activate_EBS(self):
-        self.ebs_state = carStateEnum.ACTIVATED
+        self.ebs_state = CarStateEnum.ACTIVATED
 
     def get_state(self):
         """
@@ -41,21 +41,24 @@ class SimulationState(CarState):
         """
 
         # R2D
-        if self.as_state == AutonomousStatesEnum.ASREADY and rospy.Time.now().to_sec() - self.start_t > 5.0:
-            self.state["R2D"] = carStateEnum.ACTIVATED
+        if (
+            self.as_state == AutonomousStatesEnum.ASREADY
+            and rospy.Time.now().to_sec() - self.start_t > 5.0
+        ):
+            self.state["R2D"] = CarStateEnum.ACTIVATED
         elif self.as_state != AutonomousStatesEnum.ASDRIVE:
-            self.state["R2D"] = carStateEnum.OFF
+            self.state["R2D"] = CarStateEnum.OFF
 
         # TS and ASB
-        self.state["TS"] = carStateEnum.ON
+        self.state["TS"] = CarStateEnum.ON
         self.state["ASB"] = (
-            carStateEnum.ACTIVATED
-            if self.state["R2D"] == carStateEnum.OFF
-            else carStateEnum.ON
+            CarStateEnum.ACTIVATED
+            if self.state["R2D"] == CarStateEnum.OFF
+            else CarStateEnum.ON
         )
 
         # ASMS
-        self.state["ASMS"] = carStateEnum.ON
+        self.state["ASMS"] = CarStateEnum.ON
 
         # EBS
         self.state["EBS"] = self.ebs_state

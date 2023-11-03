@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 
 import rospy
 from node_fixture.node_fixture import (
-    ROSNode,
     DiagnosticArray,
     DiagnosticStatus,
+    ROSNode,
     create_diagnostic_message,
 )
 
@@ -51,4 +51,3 @@ class StageSimulator(ROSNode, ABC):
         """
         Dummy function that gets called by rospy.Timer
         """
-        pass

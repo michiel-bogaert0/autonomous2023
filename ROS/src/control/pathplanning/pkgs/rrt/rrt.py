@@ -1,9 +1,9 @@
 import math
 import random
-from pathplanning_dc.node import Node, dataclass
 from typing import List, Tuple
 
 import numpy as np
+from pathplanning_dc.node import Node, dataclass
 
 
 @dataclass()
@@ -401,18 +401,6 @@ class Rrt:
         Returns:
         tuple of color cost, width cost and spacing cost
         """
-        # Maybe average angle change
-        max_angle_changes = np.var(branch[:, self.IDX_ANGLE])
-        max_angle_var = (self.max_cos_change / 2) ** 2
-        angle_cost = (max_angle_changes / max_angle_var) ** 2
-
-        # Choose one of 2:
-        # Absolute distance
-        distance = branch[-1, self.IDX_DIST2ROOT]
-        # Path length from root to leaf
-        distance = branch[-1, self.IDX_PAD2ROOT]
-
-        length_cost = ((self.plan_dist - distance) / self.plan_dist) ** 2
 
         global_left_cones = []
         global_right_cones = []
@@ -449,7 +437,7 @@ class Rrt:
             local_right_cones = relative_cones[relative_cones[:, 1] < 0]
 
             if len(local_left_cones) == 0 or len(local_right_cones) == 0:
-                print(f"No cones on one side, so probably outside of track")
+                print("No cones on one side, so probably outside of track")
                 # Possible problem corner
                 return np.inf, np.inf, np.inf, np.inf, np.inf
 
@@ -814,7 +802,7 @@ class Rrt:
         self.renew(front_cones, (0, 0))
 
         # Iterations should be varied together with threshold of update_params
-        for i in range(self.max_iter):
+        for _ in range(self.max_iter):
             done = False
             new_x, new_y = self.rdm_new_node()
             done = self.add_node(new_x, new_y) == 0

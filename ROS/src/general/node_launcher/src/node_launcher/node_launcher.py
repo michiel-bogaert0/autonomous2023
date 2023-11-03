@@ -1,8 +1,9 @@
 #! /usr/bin/python3
 
+from pathlib import Path
+
 import roslaunch
 import rospkg
-from pathlib import Path
 import rospy
 
 
@@ -19,15 +20,13 @@ class NodeLauncher:
         self.action_to_execute = None
 
     def run(self):
-        
-        if self.action_to_execute == 'start':
+        if self.action_to_execute == "start":
             self.active.start()
 
-        elif self.action_to_execute == 'shutdown':
+        elif self.action_to_execute == "shutdown":
             self.shutdown()
 
-        self.action_to_execute = ''
-
+        self.action_to_execute = ""
 
     def launch_node(self, package: str, launchfile: str) -> None:
         """Launch roslaunch file

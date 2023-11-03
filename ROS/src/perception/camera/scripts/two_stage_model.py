@@ -1,10 +1,10 @@
+import time
 from typing import List, Optional, Tuple
+
 import cv2
 import numpy as np
 import numpy.typing as npt
 import torch
-import time
-import cv2
 import torchvision.transforms as T
 from keypoint_detection.utils.load_checkpoints import load_from_checkpoint
 
@@ -163,8 +163,12 @@ class TwoStageModel:
 
             if self.image_encoding is not None:
                 # Don't forget to undo any image resizing afterwards
-                kpts[i][:, 0] = (kpts[i][:, 0] * original_size[1] / self.image_size[1]).astype(int)
-                kpts[i][:, 1] = (kpts[i][:, 1] * original_size[0] / self.image_size[0]).astype(int)
+                kpts[i][:, 0] = (
+                    kpts[i][:, 0] * original_size[1] / self.image_size[1]
+                ).astype(int)
+                kpts[i][:, 1] = (
+                    kpts[i][:, 1] * original_size[0] / self.image_size[0]
+                ).astype(int)
         latencies.append(1000 * (time.perf_counter() - start))
 
         # Find cone locations
@@ -271,7 +275,6 @@ class TwoStageModel:
             for channel_idx in range(n_channels):
                 candidates = indices[batch_idx, channel_idx]
                 for candidate_idx in range(candidates.shape[0]):
-
                     # these are filtered out directly.
                     if scores[batch_idx, channel_idx, candidate_idx] > threshold:
                         # convert to (u,v)

@@ -1,9 +1,10 @@
+import numpy as np
 import rospy
 import tf_conversions
-import numpy as np
-from geometry_msgs.msg import Vector3, Quaternion
-from sensor_msgs.msg import Imu
 from can_msgs.msg import Frame
+from geometry_msgs.msg import Quaternion, Vector3
+from sensor_msgs.msg import Imu
+
 
 class ImuConverter:
     def __init__(self):
@@ -41,12 +42,8 @@ class ImuConverter:
             queue_size=10,
         )
 
-        self.imu0_frame = rospy.get_param(
-            "~imu0/frame", "ugr/car_base_link/imu0"
-        )
-        self.imu1_frame = rospy.get_param(
-            "~imu1/frame", "ugr/car_base_link/imu1"
-        )
+        self.imu0_frame = rospy.get_param("~imu0/frame", "ugr/car_base_link/imu0")
+        self.imu1_frame = rospy.get_param("~imu1/frame", "ugr/car_base_link/imu1")
 
     def handle_imu_msg(self, msg: Frame, is_front: bool) -> None:
         """Publishes an IMU message to the correct ROS topic
@@ -59,12 +56,12 @@ class ImuConverter:
 
         latency = msg.data[7]
         ts_corrected = rospy.Time.from_sec(
-            msg.header.stamp.to_sec() - 0.0025 if latency == 5 else msg.header.stamp.to_sec()
+            msg.header.stamp.to_sec() - 0.0025
+            if latency == 5
+            else msg.header.stamp.to_sec()
         )  # 2.5 ms latency according to the datasheet
         imu_msg.header.stamp = ts_corrected
-        imu_msg.header.frame_id = (
-            self.imu0_frame if is_front else self.imu1_frame
-        )
+        imu_msg.header.frame_id = self.imu0_frame if is_front else self.imu1_frame
 
         # Decode the ID to figure out the type of message
         # We need the middle 4*8 bits of the ID to determine the type of message
@@ -94,7 +91,7 @@ class ImuConverter:
             # Angular rate
             # IMU reports in deg/s, while ROS expects rad/s (see REP103)
             pitch_raw = (msg.data[1] << 8) + msg.data[0]
-            pitch = (pitch_raw - 32000) / 128 # deg/s
+            pitch = (pitch_raw - 32000) / 128  # deg/s
 
             roll_raw = (msg.data[3] << 8) + msg.data[2]
             roll = (roll_raw - 32000) / 128
@@ -103,7 +100,7 @@ class ImuConverter:
             yaw = (yaw_raw - 32000) / 128
 
             rate = Vector3()
-            rate.x = roll * np.pi / 180 # rad/s
+            rate.x = roll * np.pi / 180  # rad/s
             rate.y = pitch * np.pi / 180
             rate.z = yaw * np.pi / 180
             imu_msg.angular_velocity = rate

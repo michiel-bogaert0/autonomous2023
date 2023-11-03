@@ -80,7 +80,7 @@ def generate_channel_heatmap(
     u_grid = u_grid.unsqueeze(0) - keypoints[..., 0].unsqueeze(-1).unsqueeze(-1)
     v_grid = v_grid.unsqueeze(0) - keypoints[..., 1].unsqueeze(-1).unsqueeze(-1)
 
-    ## create gaussian around the centered 2D grids $ exp ( -0.5 (x**2 + y**2) / sigma**2)$
+    # create gaussian around the centered 2D grids $ exp ( -0.5 (x**2 + y**2) / sigma**2)$
     heatmap = torch.exp(
         -0.5
         * (torch.square(u_grid) + torch.square(v_grid))

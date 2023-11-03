@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-import math
-from tkinter.tix import Tree
 
 import numpy as np
 import rospy
@@ -8,8 +6,11 @@ import tf
 from fs_msgs.msg import Track
 from geometry_msgs.msg import TwistStamped, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import (DiagnosticArray, DiagnosticStatus,
-                                       create_diagnostic_message)
+from node_fixture.node_fixture import (
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
 from sensor_msgs.msg import Imu, NavSatFix
 
 
@@ -89,7 +90,7 @@ class Convert:
     def convertIMU(self, msg: Imu):
         msg.header.frame_id = self.base_link_frame
 
-        self.imu_pub.publish( msg)
+        self.imu_pub.publish(msg)
 
     def convertGTOdometry(self, msg: Odometry):
         msg.header.frame_id = self.gt_world_frame
@@ -113,14 +114,14 @@ class Convert:
             self.gt_world_frame,
         )
 
-        self.gt_odom_pub.publish( msg)
+        self.gt_odom_pub.publish(msg)
 
     def convertTrack(self, msg: Track):
-        self.track_pub.publish( msg)
+        self.track_pub.publish(msg)
 
     def convertGPS(self, msg: NavSatFix):
         msg.header.frame_id = self.base_link_frame
-        self.gps_pub.publish( msg)
+        self.gps_pub.publish(msg)
 
 
 if __name__ == "__main__":

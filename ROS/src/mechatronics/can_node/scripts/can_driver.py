@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 import rospy
-from can_msgs.msg import Frame
 from can.interfaces.serial.serial_can import SerialBus
-from node_fixture import serialcan_to_roscan, roscan_to_serialcan, create_diagnostic_message
+from can_msgs.msg import Frame
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+from node_fixture import (
+    create_diagnostic_message,
+    roscan_to_serialcan,
+    serialcan_to_roscan,
+)
 
-RES_ACTIVATION_MSG = roscan_to_serialcan(Frame(
-    id=0x000,
-    data=[0x1, 0x11, 0, 0, 0, 0, 0, 0]
-))
+RES_ACTIVATION_MSG = roscan_to_serialcan(
+    Frame(id=0x000, data=[0x1, 0x11, 0, 0, 0, 0, 0, 0])
+)
+
 
 class CanBridge:
     def __init__(self):
@@ -24,7 +28,9 @@ class CanBridge:
         self.can_interface = rospy.get_param("~can_interface", "/dev/ttyACM0")
         self.can_bus = SerialBus(self.can_interface)
         self.can_publisher = rospy.Publisher("/output/can", Frame, queue_size=10)
-        self.diagnostics_pub = rospy.Publisher("/diagnostics", DiagnosticArray, queue_size=10)
+        self.diagnostics_pub = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
 
         rospy.Subscriber("/input/can", Frame, self.ros_can_callback)
 
@@ -52,10 +58,18 @@ class CanBridge:
         while not rospy.is_shutdown():
             can_message = self.can_bus.recv()
             ros_message = serialcan_to_roscan(can_message)
-            ros_message.header.stamp = rospy.Time.now() # Override timestamp as it is nonsense anyways
+            ros_message.header.stamp = (
+                rospy.Time.now()
+            )  # Override timestamp as it is nonsense anyways
 
             if not received_first_msg:
-                self.diagnostics_pub.publish(create_diagnostic_message(DiagnosticStatus.OK, "[MECH] CAN: Driver", "Received first CAN message"))
+                self.diagnostics_pub.publish(
+                    create_diagnostic_message(
+                        DiagnosticStatus.OK,
+                        "[MECH] CAN: Driver",
+                        "Received first CAN message",
+                    )
+                )
                 received_first_msg = True
 
             self.can_publisher.publish(ros_message)

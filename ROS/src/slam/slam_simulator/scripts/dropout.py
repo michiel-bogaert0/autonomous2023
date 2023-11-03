@@ -4,9 +4,12 @@ from functools import partial
 from time import time_ns
 
 import rospy
-from node_fixture.node_fixture import (AddSubscriber, DiagnosticArray,
-                                       DiagnosticStatus,
-                                       create_diagnostic_message)
+from node_fixture.node_fixture import (
+    AddSubscriber,
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
 from slam_simulator.srv import Dropout, DropoutRequest, DropoutResponse
 
 

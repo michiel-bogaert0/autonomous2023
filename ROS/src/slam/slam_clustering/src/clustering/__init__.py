@@ -1,1 +1,1 @@
-from .clustering import *
+from .clustering import *  # NOQA

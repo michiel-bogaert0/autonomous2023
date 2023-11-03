@@ -22,6 +22,6 @@ cd /home/ugentracing/autonomous2023
 # Start code
 /home/ugentracing/autonomous2023/run stop
 /home/ugentracing/autonomous2023/run start-headless
-/home/ugentracing/autonomous2023/run pegasus
+/home/ugentracing/autonomous2023/run launch pegasus
 
 exit 0

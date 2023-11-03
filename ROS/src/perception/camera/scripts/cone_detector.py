@@ -1,5 +1,4 @@
 #! /usr/bin/python3
-import os
 from pathlib import Path
 
 import numpy as np
@@ -31,7 +30,9 @@ class ConeDetector:
 
         # Warm-up (YOLO does this automatically, so just run one image through)
         print("YOLO warm-up")
-        self.yolo_model.predict(self.dummy_input, device=self.device, imgsz=self.image_size)
+        self.yolo_model.predict(
+            self.dummy_input, device=self.device, imgsz=self.image_size
+        )
 
     def find_cones(self, image: torch.Tensor, conf: float = 0.25) -> npt.ArrayLike:
         """
@@ -70,5 +71,5 @@ class ConeDetector:
             valid_bboxes,
         )
         bb = bb[valid_bboxes]
-        
+
         return bb

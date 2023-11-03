@@ -3,7 +3,6 @@
 import datetime
 import math
 import socket
-import time
 from time import time
 
 import rospy

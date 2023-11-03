@@ -32,6 +32,7 @@
   <exec_depend>rosparam_shortcuts</exec_depend>
   <exec_depend>ugr_msgs</exec_depend>
   <exec_depend>tf2_geometry_msgs</exec_depend>
+  <depend>node_fixture</depend>
 
   <export></export>
 </package>

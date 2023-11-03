@@ -4,20 +4,22 @@ import numpy as np
 import rospy
 import tf2_ros as tf
 from clustering.clustering import Clustering
-from fs_msgs.msg import Cone
 from geometry_msgs.msg import Point, TransformStamped
 from node_fixture.node_fixture import (
-    ROSNode,
     DiagnosticArray,
     DiagnosticStatus,
+    ROSNode,
     create_diagnostic_message,
 )
 from rosgraph_msgs.msg import Clock
 from slam_clustering.srv import Reset, ResetRequest, ResetResponse
 from tf.transformations import euler_from_quaternion
-from ugr_msgs.msg import (ObservationWithCovariance,
-                          ObservationWithCovarianceArrayStamped, Particle,
-                          Particles)
+from ugr_msgs.msg import (
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+    Particle,
+    Particles,
+)
 
 
 class ClusterMapping:
@@ -53,7 +55,9 @@ class ClusterMapping:
 
         self.eps = rospy.get_param("~clustering/eps", 0.5)
         self.standing_still_delay = rospy.get_param("~standing_still_delay", 1.0)
-        self.standing_still_threshold = rospy.get_param("~standing_still_threshold", 0.002)
+        self.standing_still_threshold = rospy.get_param(
+            "~standing_still_threshold", 0.002
+        )
         self.min_sampling = rospy.get_param("~clustering/min_samples", 5)
         self.mode = rospy.get_param("~clustering/mode", "global")
         self.expected_nr_of_landmarks = rospy.get_param(
@@ -105,7 +109,7 @@ class ClusterMapping:
         # Helpers
         self.previous_clustering_time = rospy.Time.now().to_sec()
         self.initialized = True
-        rospy.loginfo(f"Clustering mapping node initialized!")
+        rospy.loginfo("Clustering mapping node initialized!")
         self.diagnostics.publish(
             create_diagnostic_message(
                 level=DiagnosticStatus.OK,
@@ -250,7 +254,10 @@ class ClusterMapping:
         # Look up the GT base_link frame relative to the world at the time of the observations.
         # This is needed to correctly transform the observations on the "map" (=world frame) before clustering
         transform: TransformStamped = self.tf_buffer.lookup_transform(
-            self.world_frame, self.gt_link_frame, observations.header.stamp, rospy.Duration(0.1)
+            self.world_frame,
+            self.gt_link_frame,
+            observations.header.stamp,
+            rospy.Duration(0.1),
         )
 
         _, _, yaw = euler_from_quaternion(
@@ -272,7 +279,6 @@ class ClusterMapping:
             )
             > self.standing_still_threshold
         ):
-            
             self.standing_still_t = rospy.Time().now().to_sec()
 
             self.particle_state = [
@@ -290,7 +296,10 @@ class ClusterMapping:
             yaw,
         ]
 
-        if rospy.Time().now().to_sec() - self.standing_still_t < self.standing_still_delay:
+        if (
+            rospy.Time().now().to_sec() - self.standing_still_t
+            < self.standing_still_delay
+        ):
             return
 
         observations.header.frame_id = self.gt_link_frame
@@ -299,13 +308,11 @@ class ClusterMapping:
         )
 
         for observation in world_observations.observations:
-            
             distance = (
                 observation.observation.location.x - self.particle_state[0]
             ) ** 2 + (observation.observation.location.y - self.particle_state[1]) ** 2
 
             if distance <= self.max_landmark_range and distance > 0.05:
-                
                 self.clustering.add_sample(
                     np.array(
                         [
@@ -363,7 +370,6 @@ class ClusterMapping:
             distance = (landmark[0] ** 2 + landmark[1] ** 2) ** (1 / 2)
 
             if distance > 0.1:
-
                 new_obs.observation.location.x = x
                 new_obs.observation.location.y = y
 

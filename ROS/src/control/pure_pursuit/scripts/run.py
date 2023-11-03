@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 import numpy as np
 import rospy
-from geometry_msgs.msg import PoseArray, PoseStamped, PointStamped
-from nav_msgs.msg import Path, Odometry
-
+import tf2_ros as tf
+from geometry_msgs.msg import PointStamped, PoseStamped
+from nav_msgs.msg import Odometry, Path
+from node_fixture.node_fixture import (
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
 from std_msgs.msg import Float64, Header
 from tf2_geometry_msgs import do_transform_pose
 from trajectory import Trajectory
-import tf2_ros as tf
 
 
 class PurePursuit:
     def __init__(self):
-
         rospy.init_node("pure_pursuit_control")
 
         self.tf_buffer = tf.Buffer()
@@ -43,16 +46,20 @@ class PurePursuit:
             "/output/steering_position_controller/command", Float64, queue_size=10
         )
         self.vis_pub = rospy.Publisher(
-            "/output/target_point", PointStamped, 
+            "/output/target_point",
+            PointStamped,
+        )
+
+        # Diagnostics Publisher
+        self.diagnostics_pub = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
         )
 
         # Subscriber for path
         self.path_sub = rospy.Subscriber(
             "/input/path", Path, self.getPathplanningUpdate
         )
-        self.odom_sub = rospy.Subscriber(
-            "/input/odom", Odometry, self.get_odom_update
-        )
+        self.odom_sub = rospy.Subscriber("/input/odom", Odometry, self.get_odom_update)
 
         self.current_angle = 0
         self.current_pos = [0, 0]
@@ -63,15 +70,19 @@ class PurePursuit:
         """
           Trajectory parameters and conditions
             - minimal_distance: the minimal required distance between the car and the candidate target point
+            - maximal_distance: the maximal allowed distance between the car and the candidate target point (loop closure)
             - max_angle: the maximal allowed angle difference between the car and the candidate target point
-            - t_step: the t step the alg takes when progressing through the underlying parametric equations 
-                      Indirectly determines how many points are checked per segment. 
+            - t_step: the t step the alg takes when progressing through the underlying parametric equations
+                      Indirectly determines how many points are checked per segment.
         """
         self.minimal_distance = rospy.get_param("~trajectory/minimal_distance", 2)
+        self.maximal_distance = rospy.get_param("~trajectory/maximal_distance", 3)
         self.trajectory = Trajectory()
         self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.speed_target = rospy.get_param("~speed/target", 3.0)
-        self.steering_transmission = rospy.get_param("ugr/car/steering/transmission", 0.25) # Factor from actuator to steering angle
+        self.steering_transmission = rospy.get_param(
+            "ugr/car/steering/transmission", 0.25
+        )  # Factor from actuator to steering angle
 
         # Helpers
         self.start_sender()
@@ -109,7 +120,9 @@ class PurePursuit:
             self.base_link_frame,
             msg.header.stamp,
         )
-        self.trajectory.set_path(current_path, [trans.transform.translation.x,  trans.transform.translation.y])
+        self.trajectory.set_path(
+            current_path, [trans.transform.translation.x, trans.transform.translation.y]
+        )
 
     def symmetrically_bound_angle(self, angle, max_angle):
         """
@@ -123,7 +136,6 @@ class PurePursuit:
         """
         rate = rospy.Rate(self.publish_rate)
         while not rospy.is_shutdown():
-            
             try:
                 self.speed_target = rospy.get_param("~speed/target", 3.0)
 
@@ -135,18 +147,23 @@ class PurePursuit:
                 )
 
                 # First try to get a target point
-
                 # Change the look-ahead distance (minimal_distance)  parameters: self.actual_speed, self.speed_start, self.speed_stop, self.distance_start, self.distance_stop
                 if self.actual_speed < self.speed_start:
                     self.minimal_distance = self.distance_start
                 elif self.actual_speed < self.speed_stop:
-                    self.minimal_distance = self.distance_start + (self.distance_stop - self.distance_start)/(self.speed_stop - self.speed_start) * (self.actual_speed - self.speed_start)
+                    self.minimal_distance = self.distance_start + (
+                        self.distance_stop - self.distance_start
+                    ) / (self.speed_stop - self.speed_start) * (
+                        self.actual_speed - self.speed_start
+                    )
                 else:
                     self.minimal_distance = self.distance_stop
 
                 # The target point is given in the world frame
                 target_x, target_y, success = self.trajectory.calculate_target_point(
-                    min(self.minimal_distance * 3, max(self.minimal_distance, self.minimal_distance * self.actual_speed)), [trans.transform.translation.x,  trans.transform.translation.y]
+                    self.minimal_distance,
+                    self.maximal_distance,
+                    [trans.transform.translation.x, trans.transform.translation.y],
                 )
 
                 # Transform to base_link frame
@@ -155,7 +172,9 @@ class PurePursuit:
                     self.world_frame,
                     rospy.Time(),
                 )
-                target_pose = PoseStamped(header=Header(frame_id=self.base_link_frame, stamp=rospy.Time.now()))
+                target_pose = PoseStamped(
+                    header=Header(frame_id=self.base_link_frame, stamp=rospy.Time.now())
+                )
                 target_pose.pose.position.x = target_x
                 target_pose.pose.position.y = target_y
 
@@ -167,10 +186,16 @@ class PurePursuit:
                 if not success:
                     # BRAKE! We don't know where to drive to!
                     rospy.loginfo("No target point found!")
+                    self.diagnostics_pub.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.ERROR,
+                            name="[CTRL PP] Target Point Status",
+                            message="No target point found!",
+                        )
+                    )
                     self.velocity_cmd.data = 0.0
                     self.steering_cmd.data = 0.0
                 else:
-
                     # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
                     R = (
                         (target_x - self.current_pos[0]) ** 2
@@ -180,7 +205,17 @@ class PurePursuit:
                     self.steering_cmd.data = self.symmetrically_bound_angle(
                         np.arctan2(1.0, R), np.pi / 2
                     )
-                    rospy.loginfo(f"x: {target_x}, y: {target_y} R: {R}, steering angle {self.steering_cmd.data}")
+                    rospy.loginfo(
+                        f"x: {target_x}, y: {target_y} R: {R}, steering angle {self.steering_cmd.data}"
+                    )
+
+                    self.diagnostics_pub.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="[CTRL PP] Target Point Status",
+                            message="Target point found.",
+                        )
+                    )
 
                     # Go ahead and drive. But adjust speed in corners
                     self.velocity_cmd.data = self.speed_target
@@ -189,7 +224,9 @@ class PurePursuit:
                 self.steering_cmd.data /= self.steering_transmission
                 self.steering_pub.publish(self.steering_cmd)
 
-                self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
+                self.velocity_cmd.data /= (
+                    self.wheelradius
+                )  # Velocity to angular velocity
                 self.velocity_pub.publish(self.velocity_cmd)
 
                 point = PointStamped()
