@@ -56,8 +56,6 @@ class PathPublisher:
             path = yaml.safe_load(file)
             fill_message_args(ros_path, path)
 
-            ros_path.header.stamp = rospy.Time.now()
-
             self.path_publisher.publish(ros_path)
 
 

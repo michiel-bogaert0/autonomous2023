@@ -109,6 +109,7 @@ class Controller:
 
                 elif self.state == SLAMStatesEnum.RACING:
                     if self.mission == AutonomousMission.TRACKDRIVE:
+                        # Slow down for 3 seconds to let nodes start up
                         rospy.set_param("/pure_pursuit/speed/target", 0.3)
 
                         sleep(3)

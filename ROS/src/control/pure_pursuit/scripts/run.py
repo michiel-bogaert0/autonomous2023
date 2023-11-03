@@ -204,9 +204,6 @@ class PurePursuit:
                     self.steering_cmd.data = self.symmetrically_bound_angle(
                         np.arctan2(1.0, R), np.pi / 2
                     )
-                    rospy.loginfo(
-                        f"x: {target_x}, y: {target_y} R: {R}, steering angle {self.steering_cmd.data}"
-                    )
 
                     self.diagnostics_pub.publish(
                         create_diagnostic_message(
