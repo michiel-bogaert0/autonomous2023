@@ -26,9 +26,7 @@ class Main:
         self.state = AutonomousStatesEnum.ASOFF
 
         self.launcher = Launcher(rospy.get_param("~logging", True))
-        self.param = getTuner(self.tuner_mode)(
-            rospy.get_param("~yaml_file_path"), rospy.get_param("~parameter")
-        )
+        self.param = getTuner(self.tuner_mode)()
         self.saveData = Data()
 
         # If the tuner mode is list set the number simulations to the lenght of the list

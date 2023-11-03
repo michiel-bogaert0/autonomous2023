@@ -16,7 +16,8 @@
     <param name="number_of_simulations" value="$(arg number_of_simulations)" />
     
     <param name="yaml_file_path" value="$(find slam_fastslam)/config/fastslam1.yaml" />
-    <param name="parameter" value="particle_count" />
+    <param name="parameter" value="measurement_covariance" />
+    <param name="index" value="0" />
 
     <param name="logging" value="False" />
 
@@ -24,7 +25,7 @@
     <param name="tuner_mode" value="$(arg tuner_mode)"/>
 
     <!-- Sum tuner -->
-    <param name="sum_add_value" value="-100"/>
+    <param name="sum_add_value" value="0.1"/>
 
     <!-- List tuner-->
     <rosparam param="list">[900,950,1000]</rosparam>

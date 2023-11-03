@@ -20,9 +20,12 @@ def getTuner(mode: TunerModes):
 
 
 class Param:
-    def __init__(self, yaml_path: str, parameter_name: str) -> None:
-        self.yaml_path = yaml_path
-        self.parameter_name = parameter_name
+    def __init__(self) -> None:
+        self.yaml_path = rospy.get_param("~yaml_file_path")
+        self.parameter_name = rospy.get_param("~parameter")
+        self.index = rospy.get_param("~index", None)
+        if self.index == "None":
+            self.index = None
 
         with open(self.yaml_path, "r") as f:
             self.data = list(yaml.safe_load_all(f))
@@ -39,11 +42,19 @@ class Param:
 
     # get the value from the parameter
     def get_parameter(self):
-        return self.data[0][self.parameter_name]
+        if self.index is None:  # if no index is given its just a parameter
+            return self.data[0][self.parameter_name]
+        # if an index is given its a list
+        rospy.loginfo(f"{self.index} dit is een test")
+        return self.data[0][self.parameter_name][self.index]
 
     # Set the new value of the parameter in the yaml file
     def set_parameter(self, parameter):
-        self.data[0][self.parameter_name] = parameter
+        if self.index is None:  # if no index is given its just a parameter
+            self.data[0][self.parameter_name] = parameter
+        else:
+            self.data[0][self.parameter_name][self.index] = parameter
+
         with open(self.yaml_path, "w") as file:
             yaml.dump_all(self.data, file, sort_keys=False)
 
@@ -54,8 +65,8 @@ class Param:
 
 
 class SumParam(Param):
-    def __init__(self, yaml_path: str, parameter_name: str) -> None:
-        Param.__init__(self, yaml_path, parameter_name)
+    def __init__(self) -> None:
+        Param.__init__(self)
         self.value = rospy.get_param("~sum_add_value", 0)
 
     def change_tuner(self, p):
@@ -63,8 +74,8 @@ class SumParam(Param):
 
 
 class ListParam(Param):
-    def __init__(self, yaml_path: str, parameter_name: str) -> None:
-        Param.__init__(self, yaml_path, parameter_name)
+    def __init__(self) -> None:
+        Param.__init__(self)
         self.list = rospy.get_param("~list", [])
         self.index = 0
 
