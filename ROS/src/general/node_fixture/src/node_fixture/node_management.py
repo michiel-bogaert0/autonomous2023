@@ -103,18 +103,21 @@ class ManagedNode:
         ):
             self.doShutdown()
             self.state = NodeManagingStatesEnum.FINALIZED
+            rospy.signal_shutdown("Node finalized")
         elif (
             self.state == NodeManagingStatesEnum.ACTIVE
             and request.state == NodeManagingStatesEnum.FINALIZED
         ):
             self.doShutdown()
             self.state = NodeManagingStatesEnum.FINALIZED
+            rospy.signal_shutdown("Node finalized")
         elif (
             self.state == NodeManagingStatesEnum.UNCONFIGURED
             and request.state == NodeManagingStatesEnum.FINALIZED
         ):
-            self.doError()
+            self.doShutdown()
             self.state = NodeManagingStatesEnum.FINALIZED
+            rospy.signal_shutdown("Node finalized")
         else:
             # invalid state transition
             rospy.loginfo(
@@ -150,7 +153,7 @@ class ManagedNode:
         # INACTIVE -> FINALIZED
         # ACTIVE -> FINALIZED
         # UNCONFIGURED -> FINALIZED
-        rospy.signal_shutdown("Node is shutting down.")
+        pass
 
     def update(self):
         """
