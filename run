@@ -111,11 +111,6 @@ function _set-docker-runtime {
     echo "Docker daemon configuration updated. Docker has been restarted."
 }
 
-function install-nogpu {
-    build-nogpu
-    post-install
-}
-
 function set-car {
     case $1 in
     (simulation|pegasus) ;; # OK
