@@ -3,10 +3,10 @@ import datetime
 import json
 import math
 import pathlib
-from dataclasses import dataclass
 from typing import Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
+from bezierPoint import BezierPoint
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtGui as QtG
 from PyQt5 import QtWidgets as QtW
@@ -14,28 +14,6 @@ from ugr_msgs.msg import (
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
 )
-
-
-@dataclass
-class BezierPoint:
-    def __init__(self, c1: QtC.QPointF, m: QtC.QPointF, c2: QtC.QPointF):
-        self.m = m
-        self._control_points = [c1, c2]
-
-    @property
-    def c1(self) -> QtC.QPointF:
-        return self._control_points[0]
-
-    @property
-    def c2(self) -> QtC.QPointF:
-        return self._control_points[1]
-
-    def to_dict(self, offset: QtC.QPointF = QtC.QPointF(0, 0)) -> Dict:
-        return {
-            "C1": [(self.c1 + offset).x(), (self.c1 + offset).y()],
-            "M": [(self.m + offset).x(), (self.m + offset).y()],
-            "C2": [(self.c2 + offset).x(), (self.c2 + offset).y()],
-        }
 
 
 class MapWidget(QtW.QFrame):
@@ -87,11 +65,12 @@ class MapWidget(QtW.QFrame):
         loopButton.clicked.connect(self.close_loop_clicked)
         middellineButton.clicked.connect(self.middelline_clicked)
 
+        # Constants
         self.ZOOM = 1.1
         self.MAX_ZOOM = 10
         self.MIN_ZOOM = 0.1
-        self.START_POINT_SIZE = 0.5
-        self.START_HANDLE_SIZE = 15
+        self.CAR_POINT_SIZE = 0.5
+        self.CAR_HANDLE_SIZE = 15
         self.CONE_SIZE = 0.2
 
         self.RASTER_WIDTH = 3
@@ -125,7 +104,7 @@ class MapWidget(QtW.QFrame):
         self.selected_yellow_cones = []
         self.selected_blue_cones = []
 
-        # Set the initial zoom level to 1.0
+        # Set the initial zoom level
         self.zoom_level = 0.5
 
         # Define the scale of the coordinate system in pixels per kilometer
@@ -133,13 +112,13 @@ class MapWidget(QtW.QFrame):
 
         # Start position of the car
         if startpos_x is not None:
-            self.start_pos: QtC.QPointF = QtC.QPointF(startpos_x, startpos_y)
+            self.car_pos: QtC.QPointF = QtC.QPointF(startpos_x, startpos_y)
         else:
-            self.start_pos: QtC.QPointF = QtC.QPointF(0, 0)
-        self.start_rot: float = startrot
-        self.start_rot_handle: QtC.QPointF = self.start_pos + (
-            self.START_POINT_SIZE / 2
-        ) * QtC.QPointF(math.cos(self.start_rot), math.sin(self.start_rot))
+            self.car_pos: QtC.QPointF = QtC.QPointF(0, 0)
+        self.car_rot: float = startrot
+        self.car_rot_handle: QtC.QPointF = self.car_pos + (
+            self.CAR_POINT_SIZE / 2
+        ) * QtC.QPointF(math.cos(self.car_rot), math.sin(self.car_rot))
 
         # Set the initial offset in coördinate system to (0, 0)
         self.offset = QtC.QPointF(0, 0)
@@ -147,7 +126,7 @@ class MapWidget(QtW.QFrame):
         # initialize control_pressed
         self.control_pressed = False
 
-        # initialize list of bezier points wich represent the middle path of the track
+        # initialize list of bezier points wich represent the middle of the track
         self.bezierPoints = []
 
         self.bezier = []
@@ -172,12 +151,12 @@ class MapWidget(QtW.QFrame):
         orig_pos = np.c_[point_array, np.ones(point_array.shape[0])]
 
         trans = np.array(
-            [[1, 0, -self.start_pos.x()], [0, 1, -self.start_pos.y()], [0, 0, 1]]
+            [[1, 0, -self.car_pos.x()], [0, 1, -self.car_pos.y()], [0, 0, 1]]
         )
         rot = np.array(
             [
-                [math.cos(self.start_rot), -math.sin(-self.start_rot), 0],
-                [math.sin(-self.start_rot), math.cos(self.start_rot), 0],
+                [math.cos(self.car_rot), -math.sin(-self.car_rot), 0],
+                [math.sin(-self.car_rot), math.cos(self.car_rot), 0],
                 [0, 0, 1],
             ]
         )
@@ -193,52 +172,17 @@ class MapWidget(QtW.QFrame):
 
         rot = np.array(
             [
-                [math.cos(self.start_rot), -math.sin(self.start_rot), 0],
-                [math.sin(self.start_rot), math.cos(self.start_rot), 0],
+                [math.cos(self.car_rot), -math.sin(self.car_rot), 0],
+                [math.sin(self.car_rot), math.cos(self.car_rot), 0],
                 [0, 0, 1],
             ]
         )
         trans = np.array(
-            [[1, 0, self.start_pos.x()], [0, 1, self.start_pos.y()], [0, 0, 1]]
+            [[1, 0, self.car_pos.x()], [0, 1, self.car_pos.y()], [0, 0, 1]]
         )
         new_pos = (trans @ rot @ orig_pos.T).T
 
         return [QtC.QPointF(coord[0], coord[1]) for coord in new_pos[:, :-1]]
-
-    def update_path(self):
-        yellow_cones = np.empty((0, 3))
-        if len(self.selected_yellow_cones) > 0:
-            yellow_cones = np.column_stack(
-                (
-                    self.real_to_car_transform(self.selected_yellow_cones),
-                    np.ones(len(self.selected_yellow_cones)),
-                )
-            )
-
-        blue_cones = np.empty((0, 3))
-        if len(self.selected_blue_cones) > 0:
-            blue_cones = np.column_stack(
-                (
-                    self.real_to_car_transform(self.selected_blue_cones),
-                    np.zeros(len(self.selected_blue_cones)),
-                )
-            )
-
-        visible_cones = np.vstack((yellow_cones, blue_cones))
-
-        planned_path = None
-        try:
-            planned_path = self.planning_algorithm.get_path(visible_cones)
-            print(planned_path)
-        except Exception as e:
-            # Handling any other exceptions
-            print("A Triangulation error occurred:", str(e))
-        if planned_path is None or len(planned_path) == 0:
-            self.path = None
-        else:
-            rel_path = np.array(planned_path)
-            real_path = self.car_to_real_transform(rel_path)
-            self.path = real_path
 
     def publish_local_map(self):
         """
@@ -254,8 +198,10 @@ class MapWidget(QtW.QFrame):
         for cone in cones:
             local_ob = ObservationWithCovariance()
 
+            # 100% certainty
             local_ob.covariance = np.zeros(9)
             local_ob.observation.belief = 1
+
             local_ob.observation.observation_class = int(cone[2])
             local_ob.observation.location.x = cone[0]
             local_ob.observation.location.y = cone[1]
@@ -301,16 +247,16 @@ class MapWidget(QtW.QFrame):
         press_location = event.pos()
 
         if (
-            self.dist(press_location, self.coordinateToScreen(self.start_rot_handle))
-            < self.START_HANDLE_SIZE * self.zoom_level
+            self.dist(press_location, self.coordinateToScreen(self.car_rot_handle))
+            < self.CAR_HANDLE_SIZE * self.zoom_level
         ):
-            return self.start_rot_handle
+            return self.car_rot_handle
 
         if (
-            self.dist(press_location, self.coordinateToScreen(self.start_pos))
-            < self.START_POINT_SIZE * self.pixels_per_km * self.zoom_level
+            self.dist(press_location, self.coordinateToScreen(self.car_pos))
+            < self.CAR_POINT_SIZE * self.pixels_per_km * self.zoom_level
         ):
-            return self.start_pos
+            return self.car_pos
 
         selectables = self.orange_cones + self.blue_cones + self.yellow_cones
 
@@ -355,7 +301,7 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.append(selected_cone)
                 self.update()
 
-            # Drag a cone
+            # Drag a cone or car_handle
             else:
                 self.selection = selected_cone
                 self.selected_location = event.pos()
@@ -406,21 +352,24 @@ class MapWidget(QtW.QFrame):
         self.selection = None
         self.control_pressed = False
         self.drag_start_pos = None
-        self.update_start()
+        self.update_car()
 
-    def update_start(self):
-        self.start_rot_handle: QtC.QPointF = self.start_pos + (
-            self.START_POINT_SIZE / 2
-        ) * QtC.QPointF(math.cos(self.start_rot), math.sin(self.start_rot))
+        # the only time you're sure that you don't get a transformation fault in the path
+        self.update()
+
+    def update_car(self):
+        self.car_rot_handle: QtC.QPointF = self.car_pos + (
+            self.CAR_POINT_SIZE / 2
+        ) * QtC.QPointF(math.cos(self.car_rot), math.sin(self.car_rot))
         return None
 
     def mouseMoveEvent(self, event):
-        # Drag the selected cone
+        # Drag the selected cone or car_handle
         if self.selection is not None:
-            if self.selection == self.start_rot_handle:
-                self.start_rot = math.atan2(
-                    self.screenToCoordinate(event.pos()).y() - self.start_pos.y(),
-                    self.screenToCoordinate(event.pos()).x() - self.start_pos.x(),
+            if self.selection == self.car_rot_handle:
+                self.car_rot = math.atan2(
+                    self.screenToCoordinate(event.pos()).y() - self.car_pos.y(),
+                    self.screenToCoordinate(event.pos()).x() - self.car_pos.x(),
                 )
             else:
                 drag_distance = self.screenToCoordinate(
@@ -445,6 +394,8 @@ class MapWidget(QtW.QFrame):
 
     # Override the paintEvent method to draw the visual points
     def paintEvent(self, event):
+        self.publish_local_map()
+
         painter = QtG.QPainter(self)
         self.draw_grid(painter)
         # Draw a circle at each visual point
@@ -479,6 +430,7 @@ class MapWidget(QtW.QFrame):
             )
             painter.drawEllipse(circle_rect)
 
+        # Draw a circle at each visual point
         for _index, cone in enumerate(self.selected_yellow_cones):
             color = QtG.QColor(QtC.Qt.yellow)
             pen = QtG.QPen(color, self.CONE_SIZE * self.pixels_per_km * self.zoom_level)
@@ -508,6 +460,7 @@ class MapWidget(QtW.QFrame):
             )
             painter.drawEllipse(circle_rect)
 
+        # Give index to visual point
         for index, cone in enumerate(self.yellow_cones):
             screen_pos = self.coordinateToScreen(cone)
             pen = QtG.QPen(
@@ -527,7 +480,7 @@ class MapWidget(QtW.QFrame):
             )
             painter.drawText(text_rect, QtC.Qt.AlignCenter, str(index))
 
-        # Draw a circle at each visual point
+        # Give index to visual point
         for index, cone in enumerate(self.blue_cones):
             screen_pos = self.coordinateToScreen(cone)
             pen = QtG.QPen(
@@ -547,7 +500,6 @@ class MapWidget(QtW.QFrame):
             )
             painter.drawText(text_rect, QtC.Qt.AlignCenter, str(index))
 
-        # Draw a circle at each visual point
         for index, cone in enumerate(self.orange_cones):
             pen = QtG.QPen(
                 QtG.QColor(255, 165, 0),
@@ -580,7 +532,7 @@ class MapWidget(QtW.QFrame):
                 2 * diameter,
             )
             painter.drawText(text_rect, QtC.Qt.AlignCenter, str(index))
-        # self.update_start()
+
         if self.middelline_on:
             self.make_bezier()
             for _index, cone in enumerate(self.bezierPoints):
@@ -598,31 +550,29 @@ class MapWidget(QtW.QFrame):
 
             self.paint_bezier_path(painter)
 
-        # self.update_path()
         self.draw_path(painter)
 
-        self.publish_local_map()
-
+        # Draw the car
         pen = QtG.QPen(
             QtC.Qt.green,
-            self.START_POINT_SIZE / 2 * self.pixels_per_km * self.zoom_level,
+            self.CAR_POINT_SIZE / 2 * self.pixels_per_km * self.zoom_level,
         )
         painter.setPen(pen)
         painter.drawEllipse(
-            self.coordinateToScreen(self.start_pos),
-            self.START_POINT_SIZE / 2 * self.pixels_per_km * self.zoom_level,
-            self.START_POINT_SIZE / 2 * self.pixels_per_km * self.zoom_level,
+            self.coordinateToScreen(self.car_pos),
+            self.CAR_POINT_SIZE / 2 * self.pixels_per_km * self.zoom_level,
+            self.CAR_POINT_SIZE / 2 * self.pixels_per_km * self.zoom_level,
         )
-        pen = QtG.QPen(QtC.Qt.red, self.START_HANDLE_SIZE * self.zoom_level)
+        pen = QtG.QPen(QtC.Qt.red, self.CAR_HANDLE_SIZE * self.zoom_level)
         painter.setPen(pen)
         painter.drawEllipse(
             self.coordinateToScreen(
-                self.start_pos
-                + (self.START_POINT_SIZE / 2)
-                * QtC.QPointF(math.cos(self.start_rot), math.sin(self.start_rot))
+                self.car_pos
+                + (self.CAR_POINT_SIZE / 2)
+                * QtC.QPointF(math.cos(self.car_rot), math.sin(self.car_rot))
             ),
-            self.START_HANDLE_SIZE * self.zoom_level,
-            self.START_HANDLE_SIZE * self.zoom_level,
+            self.CAR_HANDLE_SIZE * self.zoom_level,
+            self.CAR_HANDLE_SIZE * self.zoom_level,
         )
 
         # schaal meedelen
@@ -634,6 +584,8 @@ class MapWidget(QtW.QFrame):
         y = 30
         painter.drawText(x, y, text)
 
+        painter.end()
+
     def draw_path(self, painter):
         if self.path is not None and len(self.path) > 0:
             for index, pathPoint in enumerate(self.path):
@@ -644,7 +596,7 @@ class MapWidget(QtW.QFrame):
                 pen.setWidthF(3.0)
                 painter.setPen(pen)
                 if index == 0:
-                    start = self.coordinateToScreen(self.start_pos)
+                    start = self.coordinateToScreen(self.car_pos)
                 else:
                     start = self.coordinateToScreen(self.path[index - 1])
                 end = screen_pos
@@ -679,9 +631,6 @@ class MapWidget(QtW.QFrame):
     def make_bezier(self):
         self.bezierPoints = []
         c = 0
-
-        # k = 0
-        # painter = QPainter(self)
 
         for i, yellow_cone in enumerate(self.yellow_cones):
             min_distance = math.inf
@@ -912,9 +861,9 @@ class MapWidget(QtW.QFrame):
         min_point, max_point = get_track_limits()
         width = max_point.x() - min_point.x()
         height = max_point.y() - min_point.y()
-        self.start_rot %= 2 * math.pi
-        if self.start_rot > math.pi:
-            self.start_rot -= 2 * math.pi
+        self.car_rot %= 2 * math.pi
+        if self.car_rot > math.pi:
+            self.car_rot -= 2 * math.pi
 
         def cone_list_to_json_list(
             cone_list: List[QtC.QPointF], offset: QtC.QPointF = QtC.QPointF(0, 0)
@@ -930,9 +879,9 @@ class MapWidget(QtW.QFrame):
                 "is_closed": self.is_closed,
                 "track_x_size": width,
                 "track_y_size": height,
-                "startpos_x": self.start_pos.x() - min_point.x(),
-                "startpos_y": self.start_pos.y() - min_point.y(),
-                "startrot": self.start_rot,
+                "startpos_x": self.car_pos.x() - min_point.x(),
+                "startpos_y": self.car_pos.y() - min_point.y(),
+                "startrot": self.car_rot,
             },
             "middle_line": [
                 bezier_point.to_dict(offset=min_point * -1)
