@@ -40,7 +40,7 @@ class ManagedNode:
             f"/node_managing/{name}/get", GetNodeState, self.handle_service_get
         )
 
-    def handle_service_get(self, request: GetNodeStateRequest):
+    def handle_service_get(self, request: GetNodeStateRequest) -> GetNodeStateResponse:
         """
         Handles a GetNodeState service request.
 
@@ -52,7 +52,7 @@ class ManagedNode:
         """
         return GetNodeStateResponse(state=self.state)
 
-    def handle_service_set(self, request: SetNodeStateRequest):
+    def handle_service_set(self, request: SetNodeStateRequest) -> SetNodeStateResponse:
         """
         Handles a SetNodeState service request.
 
@@ -131,34 +131,26 @@ class ManagedNode:
         return SetNodeStateResponse(succes=True)
 
     def doConfigure(self):
+        # UNCONFIGURED -> INACTIVE
         pass
 
     def doActivate(self):
+        # INACTIVE -> ACTIVE
         pass
 
     def doCleanup(self):
+        # INACTIVE -> UNCONFIGURED
         pass
 
     def doDeactivate(self):
+        # ACTIVE -> INACTIVE
         pass
 
     def doShutdown(self):
-        pass
-
-    def doError(self):
-        pass
-
-    def active(self):
-        pass
-
-    def inactive(self):
-        pass
-
-    def unconfigured(self):
-        pass
-
-    def finalized(self):
-        pass
+        # INACTIVE -> FINALIZED
+        # ACTIVE -> FINALIZED
+        # UNCONFIGURED -> FINALIZED
+        rospy.signal_shutdown("Node is shutting down.")
 
     def update(self):
         """
@@ -172,6 +164,22 @@ class ManagedNode:
             self.unconfigured()
         elif self.state == NodeManagingStatesEnum.FINALIZED:
             self.finalized()
+
+    def active(self):
+        # ACTIVE state
+        pass
+
+    def inactive(self):
+        # INACTIVE state
+        pass
+
+    def unconfigured(self):
+        # UNCONFIGURED state
+        pass
+
+    def finalized(self):
+        # FINALIZED state
+        pass
 
     def AddSubscriber(self, topic: str, msg_type, handler):
         """
@@ -226,7 +234,7 @@ class CustomPublisher(rospy.Publisher):
         super().__init__(topic, msg_type, queue_size=queue_size)
         self.state = state
 
-    def set_state(self, state):
+    def set_state(self, state: str) -> None:
         self.state = state
 
     def publish(self, msg):
