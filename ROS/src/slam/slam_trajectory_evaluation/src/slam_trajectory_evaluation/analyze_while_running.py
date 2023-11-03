@@ -1,14 +1,7 @@
 #!/usr/bin/env python3
 
-import matplotlib
-import rospkg
-import rospy
-import tf2_ros as tf
-
-import tf2_geometry_msgs
-
-matplotlib.use("Agg")
 import datetime
+import math
 import os
 
 import matplotlib
@@ -17,55 +10,60 @@ import numpy as np
 import plot_utils as pu
 import rospkg
 import rospy
+import tf2_geometry_msgs
+import tf2_ros as tf
+from geometry_msgs.msg import Point, PointStamped
 from nav_msgs.msg import Odometry
 from node_fixture.node_fixture import SLAMStatesEnum, StateMachineScopeEnum
-from std_srvs.srv import Empty, EmptyResponse
 from std_msgs.msg import UInt16
-from geometry_msgs.msg import Point, PointStamped
+from std_srvs.srv import Empty, EmptyResponse
 from trajectory import Trajectory
-
-from node_fixture.node_fixture import (
-    ROSNode,)
 from ugr_msgs.msg import (
-    ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
-    TrajectoryInfo,
-    TrajectoryError,
-    Observation,
     State,
+    TrajectoryError,
+    TrajectoryInfo,
 )
-def CalculateDistanceSqr(original: Point, other:Point ) ->float:
-        """
-        Calculate the distance from one point to the next one returning the squared not the root
-        """
-        x = original.x - other.x
-        y = original.y - other.y
-        z = original.z - other.z
-        return x*x + y*y +z*z
+
+matplotlib.use("Agg")
+
+
+def CalculateDistanceSqr(original: Point, other: Point) -> float:
+    """
+    Calculate the distance from one point to the next one returning the squared not the root
+    """
+    x = original.x - other.x
+    y = original.y - other.y
+    z = original.z - other.z
+    return x * x + y * y + z * z
+
 
 class DataCone:
-    pos = Point(0,0,0)
-    
+    pos = Point(0, 0, 0)
+
     def __init__(self, amount):
         self.maxamount = amount
         self.classType = -1
         self.min = 10000
         self.max = 0
-        self.distances=[]
-        self.posEval=[]
+        self.distances = []
+        self.posEval = []
+
     def AddItem(self, distance: float, pos: Point):
-        if distance < self.min: self.min = distance
-        elif distance > self.max: self.max = distance
-        
-        if len(self.distances) < self.maxamount : 
-            self.distances.append(distance) 
+        if distance < self.min:
+            self.min = distance
+        elif distance > self.max:
+            self.max = distance
+
+        if len(self.distances) < self.maxamount:
+            self.distances.append(distance)
             self.posEval.append(pos)
-    def CheckPos(self,pos: Point) -> bool:
+
+    def CheckPos(self, pos: Point) -> bool:
         for p in self.posEval:
-            if(abs(p.x - pos.x) < 0.01 and abs(p.y - pos.y) < 0.01):
+            if abs(p.x - pos.x) < 0.01 and abs(p.y - pos.y) < 0.01:
                 return True
         return False
-matplotlib.use("Agg")
 
 
 class analyze_while_running:
@@ -107,15 +105,23 @@ class analyze_while_running:
 
         if not os.path.exists(self.dirpath):
             os.makedirs(self.dirpath)
-        self.track_sub = rospy.Subscriber("/input/observations",ObservationWithCovarianceArrayStamped,self.track_update)
-        self.slamMap = rospy.Subscriber("/input/obs/fslam",ObservationWithCovarianceArrayStamped,self.SLAMMap)
-        self.gtMap = rospy.Subscriber("/input/map",ObservationWithCovarianceArrayStamped,self.GTmap)
-        self.publishResults = rospy.Publisher("output/trajectorEvaluationMap", TrajectoryInfo,queue_size=10)
+        self.track_sub = rospy.Subscriber(
+            "/input/observations",
+            ObservationWithCovarianceArrayStamped,
+            self.track_update,
+        )
+        self.slamMap = rospy.Subscriber(
+            "/input/obs/fslam", ObservationWithCovarianceArrayStamped, self.SLAMMap
+        )
+        self.gtMap = rospy.Subscriber(
+            "/input/map", ObservationWithCovarianceArrayStamped, self.GTmap
+        )
+        self.publishResults = rospy.Publisher(
+            "output/trajectorEvaluationMap", TrajectoryInfo, queue_size=10
+        )
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
 
-        
-    ### reads the data from the cones and the position of them.
     def track_update(self, track: ObservationWithCovarianceArrayStamped):
         """
         Track update is used to collect the ground truth cones with transformation
@@ -123,14 +129,15 @@ class analyze_while_running:
         # Transform the observations!
         # This only transforms from sensor frame to base link frame, which should be a static transformation in normal conditions
 
-        if(self.aligned): return
+        if self.aligned:
+            return
 
         transform = self.tf_buffer.lookup_transform(
             track.header.frame_id,
             self.base_link_frame,
             rospy.Time(0),
         )
-    
+
         for con in track.observations:
             minDist = 10000
             minidx = 0
@@ -149,7 +156,8 @@ class analyze_while_running:
         """
         read the data from fastslam and pushes it to the SLAMcones
         """
-        if(self.aligned): return
+        if self.aligned:
+            return
         for con in track.observations:
             minDist = 100000
             minidx = 0
@@ -160,14 +168,16 @@ class analyze_while_running:
                     minDist = dist
                     minidx = idx
             if not self.SLAMcones[minidx].CheckPos(con.observation.location):
-                self.SLAMcones[minidx].AddItem(math.sqrt(minDist), con.observation.location)
+                self.SLAMcones[minidx].AddItem(
+                    math.sqrt(minDist), con.observation.location
+                )
 
-            
     def GTmap(self, track: ObservationWithCovarianceArrayStamped):
-        """ 
+        """
         reads the information of the GTmap of the cones and add alle the data of the cones
         """
-        if(self.aligned): return
+        if self.aligned:
+            return
         self.cones = []
         self.SLAMcones = []
 
@@ -181,7 +191,6 @@ class analyze_while_running:
             DaCo.pos = cone.observation.location
             DaCo.classType = cone.observation.observation_class
             self.SLAMcones.append(DaCo)
-   
 
     def run_trajectoryEvaluation(self, msg: Empty):
         """
@@ -204,7 +213,8 @@ class analyze_while_running:
         """
         setting the previous data from odom to add until the gps data has been recieved
         """
-        if(self.aligned): return
+        if self.aligned:
+            return
         self.previousData = [
             rospy.get_time(),
             msg.pose.pose.position.x,
@@ -220,7 +230,8 @@ class analyze_while_running:
         """
         adding the gpsdata as path the same from odomdata as a path
         """
-        if(self.aligned): return
+        if self.aligned:
+            return
         # to make sure that the position is nog 0.0
         if len(self.previousData) > 0 and not (
             msg.pose.pose.position.x == 0.0
@@ -246,7 +257,7 @@ class analyze_while_running:
         when finishing up a lap we start getting information
         this is temporary until the statmachine works
         """
-        if(totalLaps.data == 1 and not self.aligned):
+        if totalLaps.data == 1 and not self.aligned:
             self.aligned = True
             self.analyze_trail()
 
@@ -285,12 +296,11 @@ class analyze_while_running:
 
         rel_errors, distances = traj.get_relative_errors_and_distance_no_ignore()
         rospy.loginfo("printTopic")
-        self.PrintToTopic(cones,slamCones,rel_errors, distances, traj)
+        self.PrintToTopic(cones, slamCones, rel_errors, distances, traj)
         rospy.loginfo("printed")
-        self.print_error_to_file(cones,slamCones,rel_errors, distances, traj)
-        
-        
-    def PrintToTopic(self,cones, slamCones,rel_errors, distances, traj):
+        self.print_error_to_file(cones, slamCones, rel_errors, distances, traj)
+
+    def PrintToTopic(self, cones, slamCones, rel_errors, distances, traj):
         """
         print to the topic for trajectoryinfo
         """
@@ -318,16 +328,17 @@ class analyze_while_running:
         for i in traj.abs_errors["abs_e_trans_vec"][0]:
             info.absTranslationError.append(i * 1000)
         self.publishResults.publish(info)
+
     def printCones(self, c) -> plt.figure:
         """
         returns a figure that prints the data from the cones
         """
-        fig = plt.figure(figsize=(10,10))
+        fig = plt.figure(figsize=(10, 10))
         ax = fig.add_subplot()
-        pos =[[],[],[],[]]
-        colorTruth =['#0000FF', "#FFFF00","#FFA500", "#ff0000"]
-        colorGuess =['#00FFFF', "#FFe600","#fcc662", "#ff6200"]
-        posView = [[[],[]],[[],[]],[[],[]],[[],[]]]
+        pos = [[], [], [], []]
+        colorTruth = ["#0000FF", "#FFFF00", "#FFA500", "#ff0000"]
+        colorGuess = ["#00FFFF", "#FFe600", "#fcc662", "#ff6200"]
+        posView = [[[], []], [[], []], [[], []], [[], []]]
 
         id = 0
         for con in c:
@@ -337,36 +348,42 @@ class analyze_while_running:
                     posView[con.classType][1].append(poss.y)
             if con.classType <= 3:
                 pos[con.classType].append([con.pos.x, con.pos.y, id])
-            id+=1
+            id += 1
 
         size = 20
         for coloridx, color in enumerate(colorTruth):
             for p in pos[coloridx]:
                 if len(p) >= 3:
-                    ax.scatter(p[0],p[1], s=size, color=color)
+                    ax.scatter(p[0], p[1], s=size, color=color)
                     ax.annotate(p[2], (p[0], p[1]))
         for idx, color in enumerate(colorGuess):
             if len(posView[idx]) >= 2:
-                ax.scatter(posView[idx][0], posView[idx][1], s=size/2,marker='x',color=color)
+                ax.scatter(
+                    posView[idx][0],
+                    posView[idx][1],
+                    s=size / 2,
+                    marker="x",
+                    color=color,
+                )
         plt.close(fig)
         return fig
-    
+
     def printDistances(self, c) -> plt.figure:
         """
         prints the distance from the individual cones to a figure
         """
-        fig = plt.figure(figsize=(30,10))
+        fig = plt.figure(figsize=(30, 10))
         ax = fig.add_subplot()
         id = 0
         for i in c:
             for y in i.distances:
-                ax.scatter(id,y)
+                ax.scatter(id, y)
             id += 1
-        
+
         plt.close(fig)
         return fig
-    
-    def print_error_to_file(self,cones, slamCones,rel_errors, distances, traj):
+
+    def print_error_to_file(self, cones, slamCones, rel_errors, distances, traj):
         """
         print all the data to the folder
         """
@@ -377,23 +394,22 @@ class analyze_while_running:
         path = self.dirpath + str(
             str(datetime.datetime.now().date().isoformat())
             + "--"
-            + str(datetime.datetime.now().time().hour) + ":" 
-            + str(datetime.datetime.now().time().minute) + ":" 
+            + str(datetime.datetime.now().time().hour)
+            + ":"
+            + str(datetime.datetime.now().time().minute)
+            + ":"
             + str(datetime.datetime.now().time().second)
         )
         if not os.path.exists(path):
             os.mkdir(path)
-        
-        
+
         # trajectory path
         fig = plt.figure(figsize=(6, 5.5))
         ax = fig.add_subplot(111, aspect="equal", xlabel="x [m]", ylabel="z [m]")
 
         pu.plot_trajectory_top(ax, traj.p_es_aligned, "b", "Estimate")
         pu.plot_trajectory_top(ax, traj.p_gt, "m", "Groundtruth")
-        pu.plot_aligned_top(
-            ax, traj.p_es_aligned, traj.p_gt, traj.align_num_frames
-        )
+        pu.plot_aligned_top(ax, traj.p_es_aligned, traj.p_gt, traj.align_num_frames)
 
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
         fig.tight_layout()
@@ -440,9 +456,7 @@ class analyze_while_running:
         pu.boxplot_compare(ax, distances, rel_errors["rel_trans"], labels, colors)
         ax.legend()
         fig.tight_layout()
-        fig.savefig(
-            path + "/rel_translation_error" + FORMAT, bbox_inches="tight"
-        )
+        fig.savefig(path + "/rel_translation_error" + FORMAT, bbox_inches="tight")
         plt.close(fig)
 
         # rel errors position in percentage
@@ -452,9 +466,7 @@ class analyze_while_running:
         )
         pu.boxplot_compare(ax, distances, rel_errors["rel_trans_perc"], labels, colors)
         fig.tight_layout()
-        fig.savefig(
-            path + "/rel_translation_error_perc" + FORMAT, bbox_inches="tight"
-        )
+        fig.savefig(path + "/rel_translation_error_perc" + FORMAT, bbox_inches="tight")
         plt.close(fig)
 
         # rel errors yaw
@@ -472,8 +484,8 @@ class analyze_while_running:
         figmapD = self.printDistances(slamCones)
         figpercD = self.printDistances(cones)
         rospy.loginfo("exported and ready to save")
-        figC.savefig(path + "/perceptionPos" + FORMAT, bbox_inches="tight") 
-        figCS.savefig(path + "/mapPos" + FORMAT, bbox_inches="tight") 
+        figC.savefig(path + "/perceptionPos" + FORMAT, bbox_inches="tight")
+        figCS.savefig(path + "/mapPos" + FORMAT, bbox_inches="tight")
         figmapD.savefig(path + "/mapDist" + FORMAT, bbox_inches="tight")
         figpercD.savefig(path + "/perceptionDist" + FORMAT, bbox_inches="tight")
 
@@ -481,7 +493,7 @@ class analyze_while_running:
             "finished calculating errors it is saved under the folder:" + self.dirpath
         )
         return
-   
+
 
 node = analyze_while_running()
 rospy.spin()
