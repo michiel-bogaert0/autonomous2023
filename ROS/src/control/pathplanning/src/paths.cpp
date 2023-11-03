@@ -55,9 +55,9 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
 
           double distance_node =
               pow(parent->x - next_pos[0], 2) + pow(parent->y - next_pos[1], 2);
-          double angle_change =
+          double angle_node =
               atan2(next_pos[1] - parent->y, next_pos[0] - parent->x);
-          double angle_node = parent->angle + angle_change;
+          double angle_change = angle_node - parent->angle;
 
           Node *node =
               new Node(next_pos[0], next_pos[1], distance_node, parent,
