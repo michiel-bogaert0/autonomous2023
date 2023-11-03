@@ -237,9 +237,9 @@ bool check_if_feasible_child(
     return false;
   }
 
-  double angle_change =
+  double angle_node =
       std::atan2(next_pos[1] - parent.y, next_pos[0] - parent.x);
-  double angle_node = angle_change + parent.angle;
+  double angle_change = angle_node - parent.angle;
   double distance_node =
       std::pow(parent.x - next_pos[0], 2) + std::pow(parent.y - next_pos[1], 2);
 
