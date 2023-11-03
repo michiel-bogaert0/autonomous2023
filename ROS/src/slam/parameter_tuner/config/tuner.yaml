@@ -1,0 +1,16 @@
+map: circle_R15 # zonder .yaml
+mission: trackdrive
+max_time: 150 # max time simulation can run in seconds
+number_of_simulations: 5 # number of simulations to run
+logging: False
+
+# Tuner options
+tuner_mode: none # none, sum, list
+parameter: measurement_covariance # parameter to change
+index: 0 # index of the list to change (None if not a list)
+
+# Tuner mode 'sum'
+sum_add_value: 0.1 # value to add to the parameter
+
+# Tuner mode 'list'
+list: [900, 950, 1000] # changes the state to the lenght of the list
