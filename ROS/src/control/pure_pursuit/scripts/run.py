@@ -83,35 +83,39 @@ class PurePursuit:
     def getPathplanningUpdate(self, msg: Path):
         """
         Takes in a new exploration path coming from the mapping algorithm.
-        The path should be relative to self.world_frame. Otherwise it will transform to it
+        The path should be relative to self.base_link_frame. Otherwise it will transform to it
         """
         # Transform received message to self.world_frame
-        trans = self.tf_buffer.lookup_transform(
-            self.world_frame,
-            msg.header.frame_id,
-            msg.header.stamp,
-        )
-        new_header = Header(frame_id=self.world_frame, stamp=rospy.Time.now())
-        transformed_path = Path(header=new_header)
-        for pose in msg.poses:
-            pose_t = do_transform_pose(pose, trans)
-            transformed_path.poses.append(pose_t)
+        # trans = self.tf_buffer.lookup_transform(
+        #     self.base_link_frame,
+        #     msg.header.frame_id,
+        #     msg.header.stamp,
+        # )
+        # new_header = Header(frame_id=self.base_link_frame, stamp=rospy.Time.now())
+        # transformed_path = Path(header=new_header)
+        # for pose in msg.poses:
+        #     pose_t = do_transform_pose(pose, trans)
+        #     transformed_path.poses.append(pose_t)
+
+        self.trajectory.frame_id = msg.header.frame_id
+        # self.trajectory.stamp = msg.header.stamp
 
         # Create a new path
         current_path = np.zeros((0, 2))
-        for pose in transformed_path.poses:
+        for pose in msg.poses:
             current_path = np.vstack(
                 (current_path, [pose.pose.position.x, pose.pose.position.y])
             )
 
-        # Fetch current position
-        trans = self.tf_buffer.lookup_transform(
-            self.world_frame,
-            self.base_link_frame,
-            msg.header.stamp,
-        )
+        # # Fetch current position
+        # trans = self.tf_buffer.lookup_transform(
+        #     self.world_frame,
+        #     self.base_link_frame,
+        #     msg.header.stamp,
+        # )
+        # rospy.logerr(f"current_path = {current_path}")
         self.trajectory.set_path(
-            current_path, [trans.transform.translation.x, trans.transform.translation.y]
+            current_path, [0, 0]
         )
 
     def symmetrically_bound_angle(self, angle, max_angle):
@@ -130,11 +134,11 @@ class PurePursuit:
                 self.speed_target = rospy.get_param("~speed/target", 3.0)
 
                 # Lookup position
-                trans = self.tf_buffer.lookup_transform(
-                    self.world_frame,
-                    self.base_link_frame,
-                    rospy.Time(),
-                )
+                # trans = self.tf_buffer.lookup_transform(
+                #     self.world_frame,
+                #     self.base_link_frame,
+                #     rospy.Time(),
+                # )
 
                 # First try to get a target point
 
@@ -154,25 +158,25 @@ class PurePursuit:
                 target_x, target_y, success = self.trajectory.calculate_target_point(
                     self.minimal_distance,
                     self.maximal_distance,
-                    [trans.transform.translation.x, trans.transform.translation.y],
+                    [0, 0],
                 )
 
                 # Transform to base_link frame
-                invtrans = self.tf_buffer.lookup_transform(
-                    self.base_link_frame,
-                    self.world_frame,
-                    rospy.Time(),
-                )
-                target_pose = PoseStamped(
-                    header=Header(frame_id=self.base_link_frame, stamp=rospy.Time.now())
-                )
-                target_pose.pose.position.x = target_x
-                target_pose.pose.position.y = target_y
+                # invtrans = self.tf_buffer.lookup_transform(
+                #     self.base_link_frame,
+                #     self.world_frame,
+                #     rospy.Time(),
+                # )
+                # target_pose = PoseStamped(
+                #     header=Header(frame_id=self.base_link_frame, stamp=rospy.Time.now())
+                # )
+                # target_pose.pose.position.x = target_x
+                # target_pose.pose.position.y = target_y
 
-                target_pose_t = do_transform_pose(target_pose, invtrans)
+                # target_pose_t = do_transform_pose(target_pose, invtrans)
 
-                target_x = target_pose_t.pose.position.x
-                target_y = target_pose_t.pose.position.y
+                # target_x = target_pose_t.pose.position.x
+                # target_y = target_pose_t.pose.position.y
 
                 if not success:
                     # BRAKE! We don't know where to drive to!
