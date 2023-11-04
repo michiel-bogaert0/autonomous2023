@@ -2,11 +2,17 @@ cmake_minimum_required(VERSION 3.0.2)
 project(node_fixture)
 
 find_package(catkin REQUIRED COMPONENTS
+  message_generation
+  std_msgs
   roscpp
   diagnostic_msgs
+  ugr_msgs
 )
 
 catkin_python_setup()
+
+add_service_files(FILES SetNodeState.srv)
+generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package(
 
@@ -25,6 +31,8 @@ include_directories(
 file(GLOB srcs src/*.cpp)
 add_library(${PROJECT_NAME} ${srcs})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+
+
 
 install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

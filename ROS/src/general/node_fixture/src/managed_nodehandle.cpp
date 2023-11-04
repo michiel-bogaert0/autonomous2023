@@ -44,516 +44,82 @@
 #include "ros/topic_manager.h"
 #include "ros/xmlrpc_manager.h"
 
+#include <std_msgs/String.h>
+
 #include <boost/thread.hpp>
 
 namespace ugr {
 
-boost::mutex g_nh_refcount_mutex;
-int32_t g_nh_refcount = 0;
-bool g_node_started_by_nh = false;
+ManagedNodeHandle::ManagedNodeHandle(ros::NodeHandle &n) : n(n) {
 
-class ManagedNodeHandleBackingCollection {
-public:
-  typedef std::vector<Publisher::ImplWPtr> V_PubImpl;
-  typedef std::vector<ServiceServer::ImplWPtr> V_SrvImpl;
-  typedef std::vector<Subscriber::ImplWPtr> V_SubImpl;
-  typedef std::vector<ServiceClient::ImplWPtr> V_SrvCImpl;
-  V_PubImpl pubs_;
-  V_SrvImpl srvs_;
-  V_SubImpl subs_;
-  V_SrvCImpl srv_cs_;
-
-  boost::mutex mutex_;
-};
-
-ManagedNodeHandle::ManagedNodeHandle(const std::string &ns,
-                                     const M_string &remappings)
-    : namespace_(this_node::getNamespace()), callback_queue_(0),
-      collection_(0) {
-  std::string tilde_resolved_ns;
-  if (!ns.empty() && ns[0] == '~') // starts with tilde
-    tilde_resolved_ns = names::resolve(ns);
-  else
-    tilde_resolved_ns = ns;
-
-  construct(tilde_resolved_ns, true);
-
-  initRemappings(remappings);
+  // Create publisher and service
+  this->state_publisher = n.advertise<std_msgs::String>("/state", 1, true);
+  this->state = Unconfigured;
+  FD
 }
 
-ManagedNodeHandle::ManagedNodeHandle(const ManagedNodeHandle &parent,
-                                     const std::string &ns)
-    : collection_(0) {
-  namespace_ = parent.getNamespace();
-  callback_queue_ = parent.callback_queue_;
-
-  remappings_ = parent.remappings_;
-  unresolved_remappings_ = parent.unresolved_remappings_;
-
-  construct(ns, false);
-}
-
-ManagedNodeHandle::ManagedNodeHandle(const ManagedNodeHandle &parent,
-                                     const std::string &ns,
-                                     const M_string &remappings)
-    : collection_(0) {
-  namespace_ = parent.getNamespace();
-  callback_queue_ = parent.callback_queue_;
-
-  remappings_ = parent.remappings_;
-  unresolved_remappings_ = parent.unresolved_remappings_;
-
-  construct(ns, false);
-
-  initRemappings(remappings);
-}
-
-ManagedNodeHandle::ManagedNodeHandle(const ManagedNodeHandle &rhs)
-    : collection_(0) {
-  callback_queue_ = rhs.callback_queue_;
-  remappings_ = rhs.remappings_;
-  unresolved_remappings_ = rhs.unresolved_remappings_;
-
-  construct(rhs.namespace_, true);
-
-  unresolved_namespace_ = rhs.unresolved_namespace_;
-}
-
-ManagedNodeHandle::~ManagedNodeHandle() { destruct(); }
-
-ManagedNodeHandle &ManagedNodeHandle::operator=(const ManagedNodeHandle &rhs) {
-  ROS_ASSERT(collection_);
-  namespace_ = rhs.namespace_;
-  callback_queue_ = rhs.callback_queue_;
-  remappings_ = rhs.remappings_;
-  unresolved_remappings_ = rhs.unresolved_remappings_;
-
-  return *this;
-}
-
-void spinThread() { ros::spin(); }
-
-void ManagedNodeHandle::construct(const std::string &ns, bool validate_name) {
-  if (!ros::isInitialized()) {
-    ROS_FATAL("You must call ros::init() before creating the first "
-              "ManagedNodeHandle");
-    ROS_BREAK();
-  }
-
-  collection_ = new ManagedNodeHandleBackingCollection;
-  unresolved_namespace_ = ns;
-  // if callback_queue_ is nonnull, we are in a non-nullary constructor
-
-  if (validate_name)
-    namespace_ = resolveName(ns, true);
-  else {
-    namespace_ = resolveName(ns, true, no_validate());
-    // FIXME validate namespace_ now
-  }
-  ok_ = true;
-
-  boost::mutex::scoped_lock lock(g_nh_refcount_mutex);
-
-  if (g_nh_refcount == 0 && !ros::isStarted()) {
-    g_node_started_by_nh = true;
-    ros::start();
-  }
-
-  ++g_nh_refcount;
-
-  // Now add a subscriber and publisher to itself for the state machine
-}
-
-void ManagedNodeHandle::destruct() {
-  delete collection_;
-
-  boost::mutex::scoped_lock lock(g_nh_refcount_mutex);
-
-  --g_nh_refcount;
-
-  if (g_nh_refcount == 0 && g_node_started_by_nh) {
-    ros::shutdown();
-  }
-}
-
-void ManagedNodeHandle::initRemappings(const M_string &remappings) {
-  {
-    M_string::const_iterator it = remappings.begin();
-    M_string::const_iterator end = remappings.end();
-    for (; it != end; ++it) {
-      const std::string &from = it->first;
-      const std::string &to = it->second;
-
-      remappings_.insert(
-          std::make_pair(resolveName(from, false), resolveName(to, false)));
-      unresolved_remappings_.insert(std::make_pair(from, to));
-    }
-  }
-}
-
-void ManagedNodeHandle::setCallbackQueue(CallbackQueueInterface *queue) {
-  callback_queue_ = queue;
-}
-
-std::string ManagedNodeHandle::remapName(const std::string &name) const {
-  std::string resolved = resolveName(name, false);
-
-  // First search any remappings that were passed in specifically for this
-  // ManagedNodeHandle
-  M_string::const_iterator it = remappings_.find(resolved);
-  if (it != remappings_.end()) {
-    // ROSCPP_LOG_DEBUG("found 'local' remapping: %s", it->second.c_str());
-    return it->second;
-  }
-
-  // If not in our local remappings, perhaps in the global ones
-  return names::remap(resolved);
-}
-
-std::string ManagedNodeHandle::resolveName(const std::string &name,
-                                           bool remap) const {
-  // ROSCPP_LOG_DEBUG("resolveName(%s, %s)", name.c_str(), remap ? "true" :
-  // "false");
-  std::string error;
-  if (!names::validate(name, error)) {
-    throw InvalidNameException(error);
-  }
-
-  return resolveName(name, remap, no_validate());
-}
-
-std::string ManagedNodeHandle::resolveName(const std::string &name, bool remap,
-                                           no_validate) const {
-  if (name.empty()) {
-    return namespace_;
-  }
-
-  std::string final = name;
-
-  if (final[0] == '~') {
-    std::stringstream ss;
-    ss << "Using ~ names with ManagedNodeHandle methods is not allowed.  If "
-          "you want to use private names with the ManagedNodeHandle ";
-    ss << "interface, construct a ManagedNodeHandle using a private name as "
-          "its namespace.  e.g. ";
-    ss << "ros::ManagedNodeHandle nh(\"~\");  ";
-    ss << "nh.getParam(\"my_private_name\");";
-    ss << " (name = [" << name << "])";
-    throw InvalidNameException(ss.str());
-  } else if (final[0] == '/') {
-    // do nothing
-  } else if (!namespace_.empty()) {
-    // ROSCPP_LOG_DEBUG("Appending namespace_ (%s)", namespace_.c_str());
-    final = names::append(namespace_, final);
-  }
-
-  // ROSCPP_LOG_DEBUG("resolveName, pre-clean: %s", final.c_str());
-  final = names::clean(final);
-  // ROSCPP_LOG_DEBUG("resolveName, post-clean: %s", final.c_str());
-
-  if (remap) {
-    final = remapName(final);
-    // ROSCPP_LOG_DEBUG("resolveName, remapped: %s", final.c_str());
-  }
-
-  return names::resolve(final, false);
-}
-
-Publisher ManagedNodeHandle::advertise(AdvertiseOptions &ops) {
-  ops.topic = resolveName(ops.topic);
-  if (ops.callback_queue == 0) {
-    if (callback_queue_) {
-      ops.callback_queue = callback_queue_;
-    } else {
-      ops.callback_queue = getGlobalCallbackQueue();
-    }
-  }
-
-  SubscriberCallbacksPtr callbacks(
-      new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb,
-                              ops.tracked_object, ops.callback_queue));
-
-  if (TopicManager::instance()->advertise(ops, callbacks)) {
-    Publisher pub(ops.topic, ops.md5sum, ops.datatype, *this, callbacks);
-
-    {
-      boost::mutex::scoped_lock lock(collection_->mutex_);
-      collection_->pubs_.push_back(pub.impl_);
-    }
-
-    return pub;
-  }
-
-  return Publisher();
-}
-
-Subscriber ManagedNodeHandle::subscribe(SubscribeOptions &ops) {
-  ops.topic = resolveName(ops.topic);
-  if (ops.callback_queue == 0) {
-    if (callback_queue_) {
-      ops.callback_queue = callback_queue_;
-    } else {
-      ops.callback_queue = getGlobalCallbackQueue();
-    }
-  }
-
-  if (TopicManager::instance()->subscribe(ops)) {
-    Subscriber sub(ops.topic, *this, ops.helper);
-
-    {
-      boost::mutex::scoped_lock lock(collection_->mutex_);
-      collection_->subs_.push_back(sub.impl_);
-    }
-
-    return sub;
-  }
-
-  return Subscriber();
-}
-
-ServiceServer
-ManagedNodeHandle::advertiseService(AdvertiseServiceOptions &ops) {
-  ops.service = resolveName(ops.service);
-  if (ops.callback_queue == 0) {
-    if (callback_queue_) {
-      ops.callback_queue = callback_queue_;
-    } else {
-      ops.callback_queue = getGlobalCallbackQueue();
-    }
-  }
-
-  if (ServiceManager::instance()->advertiseService(ops)) {
-    ServiceServer srv(ops.service, *this);
-
-    {
-      boost::mutex::scoped_lock lock(collection_->mutex_);
-      collection_->srvs_.push_back(srv.impl_);
-    }
-
-    return srv;
-  }
-
-  return ServiceServer();
-}
-
-ServiceClient ManagedNodeHandle::serviceClient(ServiceClientOptions &ops) {
-  ops.service = resolveName(ops.service);
-  ServiceClient client(ops.service, ops.persistent, ops.header, ops.md5sum);
-
-  if (client) {
-    boost::mutex::scoped_lock lock(collection_->mutex_);
-    collection_->srv_cs_.push_back(client.impl_);
-  }
-
-  return client;
-}
-
-Timer ManagedNodeHandle::createTimer(Duration period,
-                                     const TimerCallback &callback,
-                                     bool oneshot, bool autostart) const {
-  TimerOptions ops;
-  ops.period = period;
-  ops.callback = callback;
-  ops.oneshot = oneshot;
-  ops.autostart = autostart;
-  return createTimer(ops);
-}
-
-Timer ManagedNodeHandle::createTimer(TimerOptions &ops) const {
-  if (ops.callback_queue == 0) {
-    if (callback_queue_) {
-      ops.callback_queue = callback_queue_;
-    } else {
-      ops.callback_queue = getGlobalCallbackQueue();
-    }
-  }
-
-  Timer timer(ops);
-  if (ops.autostart)
-    timer.start();
-  return timer;
-}
-
-WallTimer ManagedNodeHandle::createWallTimer(WallDuration period,
-                                             const WallTimerCallback &callback,
-                                             bool oneshot,
-                                             bool autostart) const {
-  WallTimerOptions ops;
-  ops.period = period;
-  ops.callback = callback;
-  ops.oneshot = oneshot;
-  ops.autostart = autostart;
-  return createWallTimer(ops);
-}
-
-WallTimer ManagedNodeHandle::createWallTimer(WallTimerOptions &ops) const {
-  if (ops.callback_queue == 0) {
-    if (callback_queue_) {
-      ops.callback_queue = callback_queue_;
-    } else {
-      ops.callback_queue = getGlobalCallbackQueue();
-    }
-  }
-
-  WallTimer timer(ops);
-  if (ops.autostart)
-    timer.start();
-  return timer;
-}
-
-void ManagedNodeHandle::shutdown() {
-  {
-    ManagedNodeHandleBackingCollection::V_SubImpl::iterator it =
-        collection_->subs_.begin();
-    ManagedNodeHandleBackingCollection::V_SubImpl::iterator end =
-        collection_->subs_.end();
-    for (; it != end; ++it) {
-      Subscriber::ImplPtr impl = it->lock();
-
-      if (impl) {
-        impl->unsubscribe();
-      }
-    }
-  }
-
-  {
-    ManagedNodeHandleBackingCollection::V_PubImpl::iterator it =
-        collection_->pubs_.begin();
-    ManagedNodeHandleBackingCollection::V_PubImpl::iterator end =
-        collection_->pubs_.end();
-    for (; it != end; ++it) {
-      Publisher::ImplPtr impl = it->lock();
-
-      if (impl) {
-        impl->unadvertise();
-      }
-    }
-  }
-
-  {
-    ManagedNodeHandleBackingCollection::V_SrvImpl::iterator it =
-        collection_->srvs_.begin();
-    ManagedNodeHandleBackingCollection::V_SrvImpl::iterator end =
-        collection_->srvs_.end();
-    for (; it != end; ++it) {
-      ServiceServer::ImplPtr impl = it->lock();
-
-      if (impl) {
-        impl->unadvertise();
-      }
-    }
-  }
-
-  {
-    ManagedNodeHandleBackingCollection::V_SrvCImpl::iterator it =
-        collection_->srv_cs_.begin();
-    ManagedNodeHandleBackingCollection::V_SrvCImpl::iterator end =
-        collection_->srv_cs_.end();
-    for (; it != end; ++it) {
-      ServiceClient::ImplPtr impl = it->lock();
-
-      if (impl) {
-        impl->shutdown();
-      }
-    }
-  }
-
-  ok_ = false;
-}
-
-void ManagedNodeHandle::setParam(const std::string &key,
-                                 const XmlRpc::XmlRpcValue &v) const {
-  return param::set(resolveName(key), v);
-}
-
-void ManagedNodeHandle::setParam(const std::string &key,
-                                 const std::string &s) const {
-  return param::set(resolveName(key), s);
-}
-
-void ManagedNodeHandle::setParam(const std::string &key, const char *s) const {
-  return param::set(resolveName(key), s);
-}
-
-void ManagedNodeHandle::setParam(const std::string &key, double d) const {
-  return param::set(resolveName(key), d);
-}
-
-void ManagedNodeHandle::setParam(const std::string &key, int i) const {
-  return param::set(resolveName(key), i);
-}
-
-void ManagedNodeHandle::setParam(const std::string &key, bool b) const {
-  return param::set(resolveName(key), b);
-}
-
-bool ManagedNodeHandle::hasParam(const std::string &key) const {
-  return param::has(resolveName(key));
-}
-
-bool ManagedNodeHandle::deleteParam(const std::string &key) const {
-  return param::del(resolveName(key));
-}
-
-bool ManagedNodeHandle::getParam(const std::string &key,
-                                 XmlRpc::XmlRpcValue &v) const {
-  return param::get(resolveName(key), v);
-}
-
-bool ManagedNodeHandle::getParam(const std::string &key, std::string &s) const {
-  return param::get(resolveName(key), s);
-}
-
-bool ManagedNodeHandle::getParam(const std::string &key, double &d) const {
-  return param::get(resolveName(key), d);
-}
-
-bool ManagedNodeHandle::getParam(const std::string &key, int &i) const {
-  return param::get(resolveName(key), i);
-}
-
-bool ManagedNodeHandle::getParam(const std::string &key, bool &b) const {
-  return param::get(resolveName(key), b);
-}
-
-bool ManagedNodeHandle::getParamCached(const std::string &key,
-                                       XmlRpc::XmlRpcValue &v) const {
-  return param::getCached(resolveName(key), v);
-}
-
-bool ManagedNodeHandle::getParamCached(const std::string &key,
-                                       std::string &s) const {
-  return param::getCached(resolveName(key), s);
-}
-
-bool ManagedNodeHandle::getParamCached(const std::string &key,
-                                       double &d) const {
-  return param::getCached(resolveName(key), d);
-}
-
-bool ManagedNodeHandle::getParamCached(const std::string &key, int &i) const {
-  return param::getCached(resolveName(key), i);
-}
-
-bool ManagedNodeHandle::getParamCached(const std::string &key, bool &b) const {
-  return param::getCached(resolveName(key), b);
-}
-
-bool ManagedNodeHandle::searchParam(const std::string &key,
-                                    std::string &result_out) const {
-  // searchParam needs a separate form of remapping -- remapping on the
-  // unresolved name, rather than the resolved one.
-
-  std::string remapped = key;
-  M_string::const_iterator it = unresolved_remappings_.find(key);
-  // First try our local remappings
-  if (it != unresolved_remappings_.end()) {
-    remapped = it->second;
-  }
-
-  return param::search(resolveName(""), remapped, result_out);
-}
-
-bool ManagedNodeHandle::ok() const { return ros::ok() && ok_; }
+// Publisher ManagedNodeHandle::advertise(AdvertiseOptions &ops)
+// {
+//   ops.topic = resolveName(ops.topic);
+//   if (ops.callback_queue == 0)
+//   {
+//     if (callback_queue_)
+//     {
+//       ops.callback_queue = callback_queue_;
+//     }
+//     else
+//     {
+//       ops.callback_queue = getGlobalCallbackQueue();
+//     }
+//   }
+
+//   SubscriberCallbacksPtr callbacks(
+//       new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb,
+//                               ops.tracked_object, ops.callback_queue));
+
+//   if (TopicManager::instance()->advertise(ops, callbacks))
+//   {
+//     Publisher pub(ops.topic, ops.md5sum, ops.datatype, *this, callbacks);
+
+//     {
+//       boost::mutex::scoped_lock lock(collection_->mutex_);
+//       collection_->pubs_.push_back(pub.impl_);
+//     }
+
+//     return pub;
+//   }
+
+//   return Publisher();
+// }
+
+// Subscriber ManagedNodeHandle::subscribe(SubscribeOptions &ops)
+// {
+//   ops.topic = resolveName(ops.topic);
+//   if (ops.callback_queue == 0)
+//   {
+//     if (callback_queue_)
+//     {
+//       ops.callback_queue = callback_queue_;
+//     }
+//     else
+//     {
+//       ops.callback_queue = getGlobalCallbackQueue();
+//     }
+//   }
+
+//   if (TopicManager::instance()->subscribe(ops))
+//   {
+//     Subscriber sub(ops.topic, *this, ops.helper);
+
+//     {
+//       boost::mutex::scoped_lock lock(collection_->mutex_);
+//       collection_->subs_.push_back(sub.impl_);
+//     }
+
+//     return sub;
+//   }
+
+//   return Subscriber();
+// }
 
 } // namespace ugr
