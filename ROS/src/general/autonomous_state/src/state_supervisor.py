@@ -3,7 +3,7 @@
 import sys
 
 import rospy
-from node_fixture.node_fixture import AutonomousStatesEnum, StateMachineScopeEnum
+from node_fixture.fixture import AutonomousStatesEnum, StateMachineScopeEnum
 from ugr_msgs.msg import State
 
 

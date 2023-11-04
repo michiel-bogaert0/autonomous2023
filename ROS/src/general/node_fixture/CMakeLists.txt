@@ -3,17 +3,14 @@ project(node_fixture)
 
 find_package(catkin REQUIRED COMPONENTS
   message_generation
-  std_msgs
   roscpp
   diagnostic_msgs
   ugr_msgs
 )
 
 catkin_python_setup()
-
-add_service_files(FILES SetNodeState.srv)
-generate_messages(DEPENDENCIES std_msgs)
-
+add_service_files(DIRECTORY srv FILES GetNodeState.srv SetNodeState.srv)
+generate_messages()
 catkin_package(
 
   INCLUDE_DIRS include
@@ -21,6 +18,7 @@ catkin_package(
   LIBRARIES ${PROJECT_NAME}
 
 )
+
 
 include_directories(
   include

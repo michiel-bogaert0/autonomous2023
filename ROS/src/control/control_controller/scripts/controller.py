@@ -2,9 +2,10 @@
 from time import sleep
 
 import rospy
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     AutonomousMission,
+    DiagnosticArray,
+    DiagnosticStatus,
     SLAMStatesEnum,
     StateMachineScopeEnum,
     create_diagnostic_message,
@@ -30,22 +31,27 @@ class Controller:
 
         rospy.Subscriber("/state", State, self.handle_state_change)
 
-        self.diagnostics_publisher = rospy.Publisher(
+        # Diagnostics Publisher
+        self.diagnostics_pub = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
 
         while not rospy.is_shutdown():
             try:
                 self.launcher.run()
-                self.diagnostics_publisher.publish(
+                self.diagnostics_pub.publish(
                     create_diagnostic_message(
-                        DiagnosticStatus.OK, "[CTRL] Node launching", ""
+                        level=DiagnosticStatus.OK,
+                        name="[CTRL CTRL] Node launching",
+                        message="",
                     )
                 )
             except Exception as e:
-                self.diagnostics_publisher.publish(
+                self.diagnostics_pub.publish(
                     create_diagnostic_message(
-                        DiagnosticStatus.ERROR, "[CTRL] Node launching", str(e)
+                        level=DiagnosticStatus.ERROR,
+                        name="[CTRL CTRL] Node launching",
+                        message=str(e),
                     )
                 )
 
@@ -64,6 +70,13 @@ class Controller:
             self.mission = rospy.get_param("/mission")
         else:
             self.launcher.shutdown()
+            self.diagnostics_pub.publish(
+                create_diagnostic_message(
+                    level=DiagnosticStatus.WARN,
+                    name="[CTRL CTRL] Node Status",
+                    message="Node shutting down.",
+                )
+            )
             return
 
         # Decides what to do based on the received state
@@ -106,6 +119,13 @@ class Controller:
 
             else:
                 self.launcher.shutdown()
+                self.diagnostics_pub.publish(
+                    create_diagnostic_message(
+                        level=DiagnosticStatus.WARN,
+                        name="[CTRL CTRL] Node Status",
+                        message="Node shutting down.",
+                    )
+                )
 
 
 node = Controller()
