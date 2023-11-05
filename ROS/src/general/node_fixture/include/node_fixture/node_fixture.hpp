@@ -3,20 +3,33 @@
 #include <ros/ros.h>
 
 namespace node_fixture {
-    enum DiagnosticStatusEnum { OK, WARN, ERROR, STALE };
 
-    class DiagnosticPublisher {
-        public:
-            DiagnosticPublisher(ros::NodeHandle &n);
-            DiagnosticPublisher(ros::NodeHandle &n, std::string name);
+/**
+ * \brief Enumerator for the managed node state machine
+ */
+enum ManagedNodeState { Unconfigured, Inactive, Active, Finalized };
 
-            void publishDiagnostic(DiagnosticStatusEnum status, std::string name, std::string message);
+/**
+ * \brief Strings corresponding to the state machine enumerator
+ */
+const char *ManagedNodeStateStrings[] = {"Unconfigured", "Inactive", "Active",
+                                         "Finalized"};
 
-        private:
-            std::string name;
-            ros::NodeHandle &n;
+enum DiagnosticStatusEnum { OK, WARN, ERROR, STALE };
 
-            ros::Publisher diagnosticPublisher;
-    };
-}
+class DiagnosticPublisher {
+public:
+  explicit DiagnosticPublisher(ros::NodeHandle &n);
+  DiagnosticPublisher(ros::NodeHandle &n, std::string name);
+
+  void publishDiagnostic(DiagnosticStatusEnum status, std::string name,
+                         std::string message);
+
+private:
+  std::string name;
+  ros::NodeHandle &n;
+
+  ros::Publisher diagnosticPublisher;
+};
+} // namespace node_fixture
 #endif
