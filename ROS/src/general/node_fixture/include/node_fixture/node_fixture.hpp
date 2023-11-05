@@ -12,8 +12,7 @@ enum ManagedNodeState { Unconfigured, Inactive, Active, Finalized };
 /**
  * \brief Strings corresponding to the state machine enumerator
  */
-const char *ManagedNodeStateStrings[] = {"Unconfigured", "Inactive", "Active",
-                                         "Finalized"};
+extern const char *ManagedNodeStateStrings[4];
 
 enum DiagnosticStatusEnum { OK, WARN, ERROR, STALE };
 

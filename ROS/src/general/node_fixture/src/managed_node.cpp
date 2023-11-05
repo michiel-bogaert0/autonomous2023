@@ -18,20 +18,34 @@ ManagedNode::ManagedNode(ros::NodeHandle &n, std::string name)
 bool ManagedNode::handleSetStateService(
     node_fixture::SetNodeStateRequest &req,
     node_fixture::SetNodeStateResponse &res) {
-  if (this->state == Unconfigured && req.state == Inactive) {
+  if (this->state == Unconfigured &&
+      req.state == ManagedNodeStateStrings[Inactive]) {
     this->doConfigure();
-  } else if (this->state == Inactive && req.state == Unconfigured) {
+    this->state = Inactive;
+  } else if (this->state == Inactive &&
+             req.state == ManagedNodeStateStrings[Unconfigured]) {
     this->doCleanup();
-  } else if (this->state == Inactive && req.state == Active) {
+    this->state = Unconfigured;
+  } else if (this->state == Inactive &&
+             req.state == ManagedNodeStateStrings[Active]) {
     this->doActivate();
-  } else if (this->state == Active && req.state == Inactive) {
+    this->state = Active;
+  } else if (this->state == Active &&
+             req.state == ManagedNodeStateStrings[Inactive]) {
     this->doDeactivate();
-  } else if (this->state == Inactive && req.state == Finalized) {
+    this->state = Inactive;
+  } else if (this->state == Inactive &&
+             req.state == ManagedNodeStateStrings[Finalized]) {
     this->doShutdown();
-  } else if (this->state == Active && req.state == Finalized) {
+    this->state = Finalized;
+  } else if (this->state == Active &&
+             req.state == ManagedNodeStateStrings[Finalized]) {
     this->doShutdown();
-  } else if (this->state == Unconfigured && req.state == Finalized) {
+    this->state = Finalized;
+  } else if (this->state == Unconfigured &&
+             req.state == ManagedNodeStateStrings[Finalized]) {
     this->doShutdown();
+    this->state = Finalized;
   } else {
     res.succes = false;
     return true;
@@ -46,7 +60,6 @@ bool ManagedNode::handleSetStateService(
 
   this->statePublisher.publish(stateMsg);
 
-  this->state = req.state;
   res.succes = true;
 
   // The finalized state should make the node exit.
