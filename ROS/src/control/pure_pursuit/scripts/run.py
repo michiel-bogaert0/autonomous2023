@@ -2,10 +2,14 @@
 import numpy as np
 import rospy
 import tf2_ros as tf
-from geometry_msgs.msg import PointStamped, PoseStamped
+from geometry_msgs.msg import PointStamped
 from nav_msgs.msg import Odometry, Path
-from std_msgs.msg import Float64, Header
-from tf2_geometry_msgs import do_transform_pose
+from node_fixture.node_fixture import (
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
+from std_msgs.msg import Float64
 from trajectory import Trajectory
 
 
@@ -43,6 +47,11 @@ class PurePursuit:
         self.vis_pub = rospy.Publisher(
             "/output/target_point",
             PointStamped,
+        )
+
+        # Diagnostics Publisher
+        self.diagnostics_pub = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
         )
 
         # Subscriber for path
@@ -114,9 +123,7 @@ class PurePursuit:
         #     msg.header.stamp,
         # )
         # rospy.logerr(f"current_path = {current_path}")
-        self.trajectory.set_path(
-            current_path, [0, 0]
-        )
+        self.trajectory.set_path(current_path, [0, 0])
 
     def symmetrically_bound_angle(self, angle, max_angle):
         """
@@ -141,7 +148,6 @@ class PurePursuit:
                 # )
 
                 # First try to get a target point
-
                 # Change the look-ahead distance (minimal_distance)  parameters: self.actual_speed, self.speed_start, self.speed_stop, self.distance_start, self.distance_stop
                 if self.actual_speed < self.speed_start:
                     self.minimal_distance = self.distance_start
@@ -181,6 +187,13 @@ class PurePursuit:
                 if not success:
                     # BRAKE! We don't know where to drive to!
                     rospy.loginfo("No target point found!")
+                    self.diagnostics_pub.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.ERROR,
+                            name="[CTRL PP] Target Point Status",
+                            message="No target point found!",
+                        )
+                    )
                     self.velocity_cmd.data = 0.0
                     self.steering_cmd.data = 0.0
                 else:
@@ -193,8 +206,13 @@ class PurePursuit:
                     self.steering_cmd.data = self.symmetrically_bound_angle(
                         np.arctan2(1.0, R), np.pi / 2
                     )
-                    rospy.loginfo(
-                        f"x: {target_x}, y: {target_y} R: {R}, steering angle {self.steering_cmd.data}"
+
+                    self.diagnostics_pub.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="[CTRL PP] Target Point Status",
+                            message="Target point found.",
+                        )
                     )
 
                     # Go ahead and drive. But adjust speed in corners
@@ -210,7 +228,7 @@ class PurePursuit:
                 self.velocity_pub.publish(self.velocity_cmd)
 
                 point = PointStamped()
-                point.header.stamp = rospy.Time.now()
+                point.header.stamp = rospy.Time(0)
                 point.header.frame_id = self.base_link_frame
                 point.point.x = target_x
                 point.point.y = target_y
