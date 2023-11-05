@@ -15,9 +15,14 @@ ManagedNode::ManagedNode(ros::NodeHandle &n, std::string name)
   this->state = Unconfigured;
 }
 
-bool ManagedNode::handleSetStateService(
-    node_fixture::SetNodeStateRequest &req,
-    node_fixture::SetNodeStateResponse &res) {
+bool ManagedNode::handleGetStateService(GetNodeStateRequest &req,
+                                        GetNodeStateResponse &res) {
+  res.state = ManagedNodeStateStrings[this->state];
+  return true;
+}
+
+bool ManagedNode::handleSetStateService(SetNodeStateRequest &req,
+                                        SetNodeStateResponse &res) {
   if (this->state == Unconfigured &&
       req.state == ManagedNodeStateStrings[Inactive]) {
     this->doConfigure();
