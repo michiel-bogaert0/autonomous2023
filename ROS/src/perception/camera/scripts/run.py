@@ -251,7 +251,7 @@ class PerceptionNode:
         """Given an array of cone locations and a message header, create an observation message
 
         Args:
-            cones: Nx4 array of cone locations: belief, category, X, Y, Z
+            cones: Nx5 array of cone locations: belief, category, X, Y, Z
             header: the header of the original image message
 
         Returns:
