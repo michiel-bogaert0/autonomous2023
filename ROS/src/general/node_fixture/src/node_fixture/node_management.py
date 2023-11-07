@@ -123,14 +123,14 @@ class ManagedNode:
             rospy.loginfo(
                 f"Invalid state transition from {self.state} to {request.state}"
             )
-            # response that the transition is unsuccesfull
+            # response that the transition is unsuccesful
             return SetNodeStateResponse(succes=False)
 
         # set the state of all publishers
         for pub in self.publishers:
             pub.set_state(self.state)
 
-        # response that the transition is succesfull
+        # response that the transition is succesful
         return SetNodeStateResponse(succes=True)
 
     def doConfigure(self):
