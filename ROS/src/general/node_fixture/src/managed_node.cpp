@@ -8,9 +8,12 @@ ManagedNode::ManagedNode(ros::NodeHandle &n, std::string name)
 
   // Create publisher and service
   this->statePublisher = n.advertise<ugr_msgs::State>("/state", 1, true);
-  this->serviceServer =
+  this->serviceServer_set =
       n.advertiseService("/node_managing/" + name + "/set",
                          &ManagedNode::handleSetStateService, this);
+  this->serviceServer_get =
+      n.advertiseService("/node_managing/" + name + "/get",
+                         &ManagedNode::handleGetStateService, this);
 
   this->state = Unconfigured;
 }
