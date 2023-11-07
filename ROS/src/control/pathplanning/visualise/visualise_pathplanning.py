@@ -830,13 +830,16 @@ class MapWidget(QtW.QFrame):
     def save_track_layout(self):
         def get_track_name() -> str:
             time_string = datetime.datetime.now().strftime("%d%b_%H%M").lower()
-            return f"track_{time_string}.json"
+            # return f"track_{time_string}.json"
+            return f"track_{time_string}.yaml"
 
-        track_dict = self.as_dict()
+        # track_dict = self.as_dict()
+        track_dict = self.create_yaml()
         cwd = file_path = pathlib.Path(__file__).absolute().parent
         file_path = cwd / f"layouts/{get_track_name()}"
         with open(file_path, "w") as f:
-            json.dump(track_dict, f, indent=4)
+            yaml.dump(track_dict, f)
+            # json.dump(track_dict, f)
 
     def as_dict(self):
         def get_track_limits() -> Tuple[QtC.QPointF, QtC.QPointF]:
@@ -900,6 +903,57 @@ class MapWidget(QtW.QFrame):
         }
         return track_dict
 
+    def create_yaml(self):
+        # Create a list to store all cones
+        all_cones = []
+
+        # Iterate over blue cone locations and create YAML entries
+        for cone in self.blue_cones:
+            cone_entry = {
+                "covariance": [0.0] * 9,
+                "observation": {
+                    "belief": 1,
+                    "location": {"x": cone.x(), "y": cone.y(), "z": 0},
+                    "observation_class": 0,
+                },
+            }
+            all_cones.append(cone_entry)
+
+        # Iterate over yellow cone locations and create YAML entries
+        for cone in self.yellow_cones:
+            cone_entry = {
+                "covariance": [0.0] * 9,
+                "observation": {
+                    "belief": 1,
+                    "location": {"x": cone.x(), "y": cone.y(), "z": 0},
+                    "observation_class": 1,
+                },
+            }
+            all_cones.append(cone_entry)
+
+        # Iterate over orange cone locations and create YAML entries
+        for cone in self.orange_cones:
+            cone_entry = {
+                "covariance": [0.0] * 9,
+                "observation": {
+                    "belief": 1,
+                    "location": {"x": cone.x(), "y": cone.y(), "z": 0},
+                    "observation_class": 2,
+                },
+            }
+            all_cones.append(cone_entry)
+
+        # Create the final YAML data structure
+        data = {
+            "header": {
+                "frame_id": "ugr/map",
+                "seq": 0,
+                "stamp": {"nsecs": 0, "secs": 0},
+            },
+            "observations": all_cones,
+        }
+        return data
+
 
 class MainWindow(QtW.QMainWindow):
     def __init__(self, publisher, frame, trackfile_name=None):
@@ -927,7 +981,6 @@ class MainWindow(QtW.QMainWindow):
                     startpos_x = dictio["parameters"]["startpos_x"]
                     startpos_y = dictio["parameters"]["startpos_y"]
                     startrot = dictio["parameters"]["startrot"]
-                    print(blues)
                 elif trackfile_name.endswith(".yaml"):
                     dictio = yaml.safe_load(f)
                     yellows = [
@@ -958,7 +1011,6 @@ class MainWindow(QtW.QMainWindow):
                     startpos_x = 0
                     startpos_y = 0
                     startrot = 0
-                    print(blues)
                 else:
                     raise ValueError(
                         "Invalid file format. Only JSON and YAML files are supported."
