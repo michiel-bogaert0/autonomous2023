@@ -11,6 +11,7 @@ from node_fixture.srv import (
     SetNodeStateRequest,
     SetNodeStateResponse,
 )
+from ugr_msgs.msg import State
 
 
 class ManagedNode:
@@ -30,9 +31,11 @@ class ManagedNode:
         Parameters:
         - name (str): the name of the node
         """
+        self.name = name
         self.state = NodeManagingStatesEnum.UNCONFIGURED
         self.handlerlist = []
         self.publishers = []
+        self.statePublisher = rospy.Publisher("/state", State, queue_size=1)
         rospy.Service(
             f"/node_managing/{name}/set", SetNodeState, self.handle_service_set
         )
@@ -73,6 +76,7 @@ class ManagedNode:
         Returns:
         - SetNodeStateResponse: the service response indicating whether the request was successful
         """
+        original_state = self.state
         if (
             self.state == NodeManagingStatesEnum.UNCONFIGURED
             and request.state == NodeManagingStatesEnum.INACTIVE
@@ -129,6 +133,14 @@ class ManagedNode:
         # set the state of all publishers
         for pub in self.publishers:
             pub.set_state(self.state)
+
+        # publish the state of the node
+        stateMsg = State()
+        stateMsg.prev_state = original_state
+        stateMsg.curr_state = self.state
+        stateMsg.scope = self.name
+        stateMsg.header.stamp = rospy.Time.now()
+        self.statePublisher.publish(stateMsg)
 
         # response that the transition is succesful
         return SetNodeStateResponse(succes=True)
