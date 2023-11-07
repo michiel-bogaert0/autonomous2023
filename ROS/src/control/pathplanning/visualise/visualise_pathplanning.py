@@ -73,6 +73,7 @@ class MapWidget(QtW.QFrame):
         self.CAR_POINT_SIZE = 0.5
         self.CAR_HANDLE_SIZE = 15
         self.CONE_SIZE = 0.2
+        self.LAYOUT_TYPE = "yaml"
 
         self.RASTER_WIDTH = 3
 
@@ -830,16 +831,22 @@ class MapWidget(QtW.QFrame):
     def save_track_layout(self):
         def get_track_name() -> str:
             time_string = datetime.datetime.now().strftime("%d%b_%H%M").lower()
-            # return f"track_{time_string}.json"
-            return f"track_{time_string}.yaml"
+            if self.LAYOUT_TYPE == "json":
+                return f"track_{time_string}.json"
+            else:
+                return f"track_{time_string}.yaml"
 
-        # track_dict = self.as_dict()
-        track_dict = self.create_yaml()
+        if self.LAYOUT_TYPE == "json":
+            track_dict = self.as_dict()
+        else:
+            track_dict = self.create_yaml()
         cwd = file_path = pathlib.Path(__file__).absolute().parent
         file_path = cwd / f"layouts/{get_track_name()}"
         with open(file_path, "w") as f:
-            yaml.dump(track_dict, f)
-            # json.dump(track_dict, f)
+            if self.LAYOUT_TYPE == "json":
+                json.dump(track_dict, f)
+            else:
+                yaml.dump(track_dict, f)
 
     def as_dict(self):
         def get_track_limits() -> Tuple[QtC.QPointF, QtC.QPointF]:
