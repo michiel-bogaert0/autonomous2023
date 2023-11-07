@@ -6,6 +6,7 @@ import pathlib
 from typing import Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
+import yaml
 from bezierPoint import BezierPoint
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtGui as QtG
@@ -902,28 +903,66 @@ class MapWidget(QtW.QFrame):
 
 class MainWindow(QtW.QMainWindow):
     def __init__(self, publisher, frame, trackfile_name=None):
-        # def __init__(self, parent=None):
         super().__init__(None)
         if trackfile_name is not None:
             cwd = layout_path = pathlib.Path(__file__).absolute().parent
             layout_path = cwd / f"layouts/{trackfile_name}"
             with open(layout_path, "r") as f:
-                dictio = json.load(f)
-                yellow_cones = dictio["cones"]["yellow"]
-                yellows = [QtC.QPointF(c["pos"][0], c["pos"][1]) for c in yellow_cones]
-                blue_cones = dictio["cones"]["blue"]
-                blues = [QtC.QPointF(c["pos"][0], c["pos"][1]) for c in blue_cones]
-                orange_cones = dictio["cones"].get("orange")
-                if orange_cones is not None:
-                    oranges = [
-                        QtC.QPointF(c["pos"][0], c["pos"][1]) for c in orange_cones
+                if trackfile_name.endswith(".json"):
+                    dictio = json.load(f)
+                    yellow_cones = dictio["cones"]["yellow"]
+                    yellows = [
+                        QtC.QPointF(c["pos"][0], c["pos"][1]) for c in yellow_cones
                     ]
+                    blue_cones = dictio["cones"]["blue"]
+                    blues = [QtC.QPointF(c["pos"][0], c["pos"][1]) for c in blue_cones]
+                    orange_cones = dictio["cones"].get("orange")
+                    if orange_cones is not None:
+                        oranges = [
+                            QtC.QPointF(c["pos"][0], c["pos"][1]) for c in orange_cones
+                        ]
+                    else:
+                        oranges = []
+                    is_closed = dictio["parameters"]["is_closed"]
+                    startpos_x = dictio["parameters"]["startpos_x"]
+                    startpos_y = dictio["parameters"]["startpos_y"]
+                    startrot = dictio["parameters"]["startrot"]
+                    print(blues)
+                elif trackfile_name.endswith(".yaml"):
+                    dictio = yaml.safe_load(f)
+                    yellows = [
+                        QtC.QPointF(
+                            pose["observation"]["location"]["x"],
+                            pose["observation"]["location"]["y"],
+                        )
+                        for pose in dictio["observations"]
+                        if pose["observation"]["observation_class"] == 1
+                    ]
+                    blues = [
+                        QtC.QPointF(
+                            pose["observation"]["location"]["x"],
+                            pose["observation"]["location"]["y"],
+                        )
+                        for pose in dictio["observations"]
+                        if pose["observation"]["observation_class"] == 0
+                    ]
+                    oranges = [
+                        QtC.QPointF(
+                            pose["observation"]["location"]["x"],
+                            pose["observation"]["location"]["y"],
+                        )
+                        for pose in dictio["observations"]
+                        if pose["observation"]["observation_class"] == 2
+                    ]
+                    is_closed = False
+                    startpos_x = 0
+                    startpos_y = 0
+                    startrot = 0
+                    print(blues)
                 else:
-                    oranges = []
-                is_closed = dictio["parameters"]["is_closed"]
-                startpos_x = dictio["parameters"]["startpos_x"]
-                startpos_y = dictio["parameters"]["startpos_y"]
-                startrot = dictio["parameters"]["startrot"]
+                    raise ValueError(
+                        "Invalid file format. Only JSON and YAML files are supported."
+                    )
             self.map_widget = MapWidget(
                 publisher,
                 frame,
