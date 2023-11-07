@@ -2,12 +2,14 @@ cmake_minimum_required(VERSION 3.0.2)
 project(node_fixture)
 
 find_package(catkin REQUIRED COMPONENTS
+  message_generation
   roscpp
   diagnostic_msgs
 )
 
 catkin_python_setup()
-
+add_service_files(DIRECTORY srv FILES GetNodeState.srv SetNodeState.srv)
+generate_messages()
 catkin_package(
 
   INCLUDE_DIRS include
@@ -15,6 +17,7 @@ catkin_package(
   LIBRARIES ${PROJECT_NAME}
 
 )
+
 
 include_directories(
   include

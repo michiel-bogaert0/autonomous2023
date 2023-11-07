@@ -5,7 +5,7 @@ import rospy
 import yaml
 from genpy.message import fill_message_args
 from nav_msgs.msg import Path
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
     create_diagnostic_message,
