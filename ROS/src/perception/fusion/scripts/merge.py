@@ -356,7 +356,61 @@ class MergeNode:
         return average_observation
 
     def kalman_filter(self, lidar_observation, camera_observation):
-        return
+        covariance_matrix_lidar = np.reshape(
+            np.array(lidar_observation.covariance), (3, 3)
+        )
+        covariance_matrix_camera = np.reshape(
+            np.array(camera_observation.covariance), (3, 3)
+        )
+        lidar_observation_location = np.reshape(
+            np.array(
+                [
+                    lidar_observation.observation.location.x,
+                    lidar_observation.observation.location.y,
+                    lidar_observation.observation.location.z,
+                ]
+            ),
+            (3, 3),
+        )
+        camera_observation_location = np.reshape(
+            np.array(
+                [
+                    camera_observation.observation.location.x,
+                    camera_observation.observation.location.y,
+                    camera_observation.observation.location.z,
+                ]
+            ),
+            (3, 3),
+        )
+
+        new_covariance = np.linalg.inv(
+            np.linalg.inv(covariance_matrix_lidar)
+            + np.linalg.inv(covariance_matrix_camera)
+        )
+        lidar_weight = np.matmul(new_covariance, np.linalg.inv(covariance_matrix_lidar))
+        camera_weight = np.matmul(
+            new_covariance, np.linalg.inv(covariance_matrix_camera)
+        )
+
+        new_prediction = np.matmul(
+            lidar_weight, lidar_observation_location
+        ) + np.matmul(camera_weight, camera_observation_location)
+        rospy.loginfo("\n\nnew_prediction:")
+        rospy.loginfo(new_prediction)
+
+        fused_observation = ObservationWithCovariance()
+        fused_observation.observation.observation_class = (
+            camera_observation.observation.observation_class
+        )
+        fused_observation.observation.belief = 0.0
+        fused_observation.covariance = tuple(
+            np.reshape(new_covariance, (1, 9)).tolist()[0]
+        )
+        (
+            fused_observation.observation.location.x,
+            fused_observation.observation.location.y,
+            fused_observation.observation.location.z,
+        ) = (new_prediction[0][0], new_prediction[1, 1], new_prediction[2, 2])
 
 
 node = MergeNode()
