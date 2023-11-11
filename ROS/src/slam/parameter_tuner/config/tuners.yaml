@@ -1,0 +1,28 @@
+mode: multi # none, sum, list
+
+param:
+  name: particle_count
+  file: /config/fastslam1.yaml
+  pkg: slam_fastslam
+  index: None
+
+list:
+  values: [900, 950] # changes the state to the lenght of the list
+
+sum:
+  add_value: -100 # value to add to the parameter
+  simulation_count: 3 # number of simulations to run
+
+multi:
+  - param:
+      name: particle_count
+      file: /config/fastslam1.yaml
+      pkg: slam_fastslam
+      index: None
+    values: [1000, 900, 800]
+  - param:
+      name: effective_particle_count
+      file: /config/fastslam1.yaml
+      pkg: slam_fastslam
+      index: None
+    values: [800, 700, 600]

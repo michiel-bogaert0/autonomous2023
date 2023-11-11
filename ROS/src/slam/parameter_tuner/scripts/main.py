@@ -5,8 +5,8 @@ import rospy
 from data import Data, SimulationData, SimulationStopEnum
 from launcher import Launcher
 from node_fixture.node_fixture import AutonomousStatesEnum, StateMachineScopeEnum
-from param import getTuner
 from std_msgs.msg import UInt16
+from tuner import getTuner
 from ugr_msgs.msg import State
 
 
@@ -19,19 +19,13 @@ class Main:
 
         self.map_filename = rospy.get_param("~map", "circle_R15") + ".yaml"
         self.mission = rospy.get_param("~mission", "trackdrive")
-        self.tuner_mode = rospy.get_param("~tuner_mode", "none")
         self.max_time = rospy.Duration.from_sec(rospy.get_param("~max_time", 60))
-        self.number_of_simulations = rospy.get_param("~number_of_simulations", 2)
 
         self.state = AutonomousStatesEnum.ASOFF
 
         self.launcher = Launcher(rospy.get_param("~logging", True))
-        self.param = getTuner(self.tuner_mode)()
         self.saveData = Data()
-
-        # If the tuner mode is list set the number simulations to the lenght of the list
-        if self.tuner_mode == "list":
-            self.number_of_simulations = self.param.get_number_of_simulations()
+        self.tuner = getTuner()
 
         # Subscribers
         rospy.Subscriber("/state", State, self.state_callback)
@@ -64,7 +58,7 @@ class Main:
         self.saveData.add(self.simulation_data)
 
         # Did all the simulations
-        if self.simulation >= self.number_of_simulations:
+        if self.tuner.simulation_finished():
             rospy.loginfo("Finished all simulations")
 
             rospy.loginfo(f"Data:\n{self.saveData.to_str()}")
@@ -76,7 +70,7 @@ class Main:
 
     def start_simulation(self):
         self.state = AutonomousStatesEnum.ASOFF
-        parameter = self.param.change()
+        parameter = self.tuner.change()
         sleep(1)
         self.simulation += 1
         rospy.loginfo("Start simulation %s", self.simulation)
