@@ -14,8 +14,8 @@ class TunerModes(str, enum.Enum):
     MULTI = "multi"
 
 
-def getTuner():
-    with open(rospy.get_param("~params_config_file"), "r") as f:
+def getTuner(config_file: str):
+    with open(config_file, "r") as f:
         data = yaml.safe_load(f)
     mode = data["mode"]
 

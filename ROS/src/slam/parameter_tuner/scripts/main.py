@@ -3,7 +3,7 @@ from time import sleep
 
 import rospy
 from data import Data, SimulationData, SimulationStopEnum
-from launcher import Launcher
+from launcher import getLauncher
 from node_fixture.node_fixture import AutonomousStatesEnum, StateMachineScopeEnum
 from std_msgs.msg import UInt16
 from tuner import getTuner
@@ -23,9 +23,9 @@ class Main:
 
         self.state = AutonomousStatesEnum.ASOFF
 
-        self.launcher = Launcher(rospy.get_param("~logging", True))
+        self.launcher = getLauncher(rospy.get_param("~logging", True))
         self.saveData = Data()
-        self.tuner = getTuner()
+        self.tuner = getTuner(rospy.get_param("~params_config_file"))
 
         # Subscribers
         rospy.Subscriber("/state", State, self.state_callback)
