@@ -7,8 +7,8 @@
 
   <arg name="setup_stand_dev" default="0.1"/>
   
-  <arg name="particle_count" default="1000"/>
-  <arg name="effective_particle_count" default="800"/>
+  <arg name="particle_count" default="600"/>
+  <arg name="effective_particle_count" default="400"/>
 
   <arg name="observe_prob" default="0.99"/>
 
@@ -16,7 +16,7 @@
 
   #Lidar slam options
   <arg name="lidar_eps" default="0.5"/>
-  <arg name="lidar_max_range" default="20"/>
+  <arg name="lidar_max_range" default="15"/>
   <arg name="lidar_max_half_angle" default="1.57"/>
   <arg name="lidar_expected_range" default="15"/>
   <arg name="lidar_expected_half_angle" default="1.57"/>
@@ -27,9 +27,9 @@
 
   #Camera slam options
   <arg name="camera_eps" default="0.5"/>
-  <arg name="camera_max_range" default="20"/>
+  <arg name="camera_max_range" default="12"/>
   <arg name="camera_max_half_angle" default="0.6"/>
-  <arg name="camera_expected_range" default="15"/>
+  <arg name="camera_expected_range" default="12"/>
   <arg name="camera_expected_half_angle" default="0.6"/>
 
   <arg name="camera_acceptance_score" default="5.0"/>
