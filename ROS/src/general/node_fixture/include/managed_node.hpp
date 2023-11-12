@@ -48,7 +48,8 @@ private:
   std::string name;
 
   ros::Publisher statePublisher;
-  ros::ServiceServer serviceServer;
+  ros::ServiceServer serviceServer_set;
+  ros::ServiceServer serviceServer_get;
 
   ManagedNodeState state;
 };
