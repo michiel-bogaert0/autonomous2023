@@ -125,10 +125,6 @@ class LauncherSubprocess(Launcher):
         )
         self.car_running = True
 
-    def shutdown(self):
-        self.shutdown_car()
-        self.shutdown_simulation()
-
     def shutdown_simulation(self):
         if not self.simulation_running:
             return

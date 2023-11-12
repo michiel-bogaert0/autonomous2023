@@ -6,7 +6,7 @@
     <param name="map" value="$(arg map)" /> 
     <param name="mission" value="$(arg mission)" />
 
-    <param name="max_time" value="150" />  <!-- max duration simulation can run in seconds -->
+    <param name="max_time" value="60" />  <!-- max duration simulation can run in seconds -->
     <param name="logging" value="False" />
 
     <param name="params_config_file" value="$(find parameter_tuner)/config/tuners.yaml" />

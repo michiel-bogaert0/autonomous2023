@@ -70,11 +70,11 @@ class Main:
 
     def start_simulation(self):
         self.state = AutonomousStatesEnum.ASOFF
-        parameter = self.tuner.change()
+        parameters = self.tuner.change()
         sleep(1)
         self.simulation += 1
         rospy.loginfo("Start simulation %s", self.simulation)
-        self.simulation_data = SimulationData(self.simulation, parameter)
+        self.simulation_data = SimulationData(self.simulation, parameters)
         self.launcher.launch_simulation(self.map_filename)
         sleep(1)
         self.launcher.launch_car(self.mission)

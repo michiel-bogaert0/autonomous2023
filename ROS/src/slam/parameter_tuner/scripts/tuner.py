@@ -46,7 +46,7 @@ class SingleTuner(Tuner):
         self.param = Param(param_config)
 
     def change(self):
-        return self.param.set_parameter(self.change_tuner())
+        return [self.param.set_parameter(self.change_tuner())]
 
     @abstractmethod
     def change_tuner(self):
@@ -72,15 +72,15 @@ class MultiTuner(Tuner):
         self.counter = 0
 
     def change(self):
+        changes = []
         for i, param in enumerate(self.params):
-            param.set_parameter(self.combinations[self.counter][i])
+            changes.append(param.set_parameter(self.combinations[self.counter][i]))
         self.counter += 1
 
-        # TODO: return all params (has to be implemented in main and data)
-        return 0
+        return changes
 
     def simulation_finished(self):
-        return self.counter >= len(self.combinations) - 1
+        return self.counter >= len(self.combinations)
 
 
 class SumTuner(SingleTuner):
@@ -110,7 +110,7 @@ class ListTuner(SingleTuner):
         return param
 
     def simulation_finished(self):
-        return self.counter >= len(self.values) - 1
+        return self.counter >= len(self.values)
 
 
 class DefaultTuner(SingleTuner):

@@ -38,4 +38,4 @@ class Param:
         rospy.loginfo(
             f"Change parameter({self.parameter_name}) to {parameter} in yaml file"
         )
-        return parameter
+        return (self.parameter_name, parameter)
