@@ -4,7 +4,7 @@ import rospy
 from can_msgs.msg import Frame
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from imu import ImuConverter
-from node_fixture.node_fixture import create_diagnostic_message
+from node_fixture.fixture import create_diagnostic_message
 from odrive import OdriveConverter
 
 

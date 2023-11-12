@@ -11,7 +11,7 @@ import rospy
 import torch
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from geometry_msgs.msg import Point
-from node_fixture.node_fixture import create_diagnostic_message
+from node_fixture.fixture import create_diagnostic_message
 from sensor_msgs.msg import Image
 from std_msgs.msg import Header
 from three_stage_model import ThreeStageModel

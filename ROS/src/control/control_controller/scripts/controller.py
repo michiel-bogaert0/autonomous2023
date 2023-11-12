@@ -2,7 +2,7 @@
 from time import sleep
 
 import rospy
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     AutonomousMission,
     DiagnosticArray,
     DiagnosticStatus,
@@ -28,6 +28,8 @@ class Controller:
         self.car = ""
 
         self.car = rospy.get_param("/car")
+
+        self.switch_time = rospy.Time.now().to_sec()
 
         rospy.Subscriber("/state", State, self.handle_state_change)
 
@@ -106,10 +108,15 @@ class Controller:
                     speed_target = 2.0 if self.car == "simulation" else 1.0
 
                 elif self.state == SLAMStatesEnum.RACING:
-                    if (
-                        self.mission == AutonomousMission.TRACKDRIVE
-                        or self.mission == AutonomousMission.SKIDPAD
-                    ):
+                    if self.mission == AutonomousMission.TRACKDRIVE:
+                        # Slow down for 3 seconds to let nodes start up
+                        rospy.set_param("/pure_pursuit/speed/target", 0.3)
+
+                        sleep(3)
+
+                        speed_target = 10.0 if self.car == "simulation" else 5.0
+
+                    elif self.mission == AutonomousMission.SKIDPAD:
                         speed_target = 10.0 if self.car == "simulation" else 2.0
 
                     elif self.mission == AutonomousMission.ACCELERATION:

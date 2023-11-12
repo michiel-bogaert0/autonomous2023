@@ -268,6 +268,14 @@ class AutonomousStatesEnum(str, enum.Enum):
     ASFINISHED = "asfinished"
 
 
+# States of node managing state
+class NodeManagingStatesEnum(str, enum.Enum):
+    UNCONFIGURED = "unconfigured"
+    INACTIVE = "inactive"
+    ACTIVE = "active"
+    FINALIZED = "finalized"
+
+
 """
 Helper functions for CAN
 """

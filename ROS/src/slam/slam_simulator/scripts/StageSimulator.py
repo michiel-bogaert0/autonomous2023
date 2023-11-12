@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 
 import rospy
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
     ROSNode,
