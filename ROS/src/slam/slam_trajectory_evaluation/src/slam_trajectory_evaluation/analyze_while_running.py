@@ -12,6 +12,7 @@ import rospkg
 import rospy
 import tf2_geometry_msgs
 import tf2_ros as tf
+import DataCone
 from geometry_msgs.msg import Point, PointStamped
 from nav_msgs.msg import Odometry
 from node_fixture.fixture import SLAMStatesEnum
@@ -38,33 +39,6 @@ def CalculateDistanceSqr(original: Point, other: Point) -> float:
     z = original.z - other.z
     return x * x + y * y + z * z
 
-
-class DataCone:
-    pos = Point(0, 0, 0)
-
-    def __init__(self, amount):
-        self.maxamount = amount
-        self.classType = -1
-        self.min = 10000
-        self.max = 0
-        self.distances = []
-        self.posEval = []
-
-    def AddItem(self, distance: float, pos: Point):
-        if distance < self.min:
-            self.min = distance
-        elif distance > self.max:
-            self.max = distance
-
-        if len(self.distances) < self.maxamount:
-            self.distances.append(distance)
-            self.posEval.append(pos)
-
-    def CheckPos(self, pos: Point) -> bool:
-        for p in self.posEval:
-            if abs(p.x - pos.x) < 0.01 and abs(p.y - pos.y) < 0.01:
-                return True
-        return False
 
 
 class analyze_while_running:
