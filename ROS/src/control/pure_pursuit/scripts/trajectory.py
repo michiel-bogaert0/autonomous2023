@@ -39,13 +39,16 @@ class Trajectory:
         )
         self.closest_index = np.argmin(self.eucl_dist)
 
-    def calculate_target_point(self, minimal_distance, current_position):
+    def calculate_target_point(
+        self, minimal_distance, maximal_distance, current_position
+    ):
         """
         Calculates a target point by traversing the path
         Returns the first points that matches the conditions given by minimal_distance
 
         Args:
-            minimal_distance: lookahead distance
+            minimal_distance: minimal lookahead distance
+            maximal_distance: maximal lookahead distance
             current_position: Current position of car
 
         Returns:
@@ -62,6 +65,13 @@ class Trajectory:
             distance = (current_position[0] - self.path[self.closest_index][0]) ** 2 + (
                 current_position[1] - self.path[self.closest_index][1]
             ) ** 2
+            if distance > maximal_distance**2:
+                return (
+                    self.path[self.closest_index][0],
+                    self.path[self.closest_index][1],
+                    False,
+                )
+
             if distance > minimal_distance**2:
                 return (
                     self.path[self.closest_index][0],

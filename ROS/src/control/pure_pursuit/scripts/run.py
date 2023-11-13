@@ -4,6 +4,11 @@ import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import PointStamped, PoseStamped
 from nav_msgs.msg import Odometry, Path
+from node_fixture.fixture import (
+    DiagnosticArray,
+    DiagnosticStatus,
+    create_diagnostic_message,
+)
 from std_msgs.msg import Float64, Header
 from tf2_geometry_msgs import do_transform_pose
 from trajectory import Trajectory
@@ -45,6 +50,11 @@ class PurePursuit:
             PointStamped,
         )
 
+        # Diagnostics Publisher
+        self.diagnostics_pub = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10
+        )
+
         # Subscriber for path
         self.path_sub = rospy.Subscriber(
             "/input/path", Path, self.getPathplanningUpdate
@@ -60,11 +70,13 @@ class PurePursuit:
         """
           Trajectory parameters and conditions
             - minimal_distance: the minimal required distance between the car and the candidate target point
+            - maximal_distance: the maximal allowed distance between the car and the candidate target point (loop closure)
             - max_angle: the maximal allowed angle difference between the car and the candidate target point
             - t_step: the t step the alg takes when progressing through the underlying parametric equations
                       Indirectly determines how many points are checked per segment.
         """
         self.minimal_distance = rospy.get_param("~trajectory/minimal_distance", 2)
+        self.maximal_distance = rospy.get_param("~trajectory/maximal_distance", 3)
         self.trajectory = Trajectory()
         self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.speed_target = rospy.get_param("~speed/target", 3.0)
@@ -85,9 +97,7 @@ class PurePursuit:
         """
         # Transform received message to self.world_frame
         trans = self.tf_buffer.lookup_transform(
-            self.world_frame,
-            msg.header.frame_id,
-            msg.header.stamp,
+            self.world_frame, msg.header.frame_id, msg.header.stamp, rospy.Duration(0.2)
         )
         new_header = Header(frame_id=self.world_frame, stamp=rospy.Time.now())
         transformed_path = Path(header=new_header)
@@ -107,6 +117,7 @@ class PurePursuit:
             self.world_frame,
             self.base_link_frame,
             msg.header.stamp,
+            rospy.Duration(0.2),
         )
         self.trajectory.set_path(
             current_path, [trans.transform.translation.x, trans.transform.translation.y]
@@ -131,11 +142,10 @@ class PurePursuit:
                 trans = self.tf_buffer.lookup_transform(
                     self.world_frame,
                     self.base_link_frame,
-                    rospy.Time(),
+                    rospy.Time(0),
                 )
 
                 # First try to get a target point
-
                 # Change the look-ahead distance (minimal_distance)  parameters: self.actual_speed, self.speed_start, self.speed_stop, self.distance_start, self.distance_stop
                 if self.actual_speed < self.speed_start:
                     self.minimal_distance = self.distance_start
@@ -150,13 +160,8 @@ class PurePursuit:
 
                 # The target point is given in the world frame
                 target_x, target_y, success = self.trajectory.calculate_target_point(
-                    min(
-                        self.minimal_distance * 3,
-                        max(
-                            self.minimal_distance,
-                            self.minimal_distance * self.actual_speed,
-                        ),
-                    ),
+                    self.minimal_distance,
+                    self.maximal_distance,
                     [trans.transform.translation.x, trans.transform.translation.y],
                 )
 
@@ -164,7 +169,7 @@ class PurePursuit:
                 invtrans = self.tf_buffer.lookup_transform(
                     self.base_link_frame,
                     self.world_frame,
-                    rospy.Time(),
+                    rospy.Time(0),
                 )
                 target_pose = PoseStamped(
                     header=Header(frame_id=self.base_link_frame, stamp=rospy.Time.now())
@@ -180,6 +185,13 @@ class PurePursuit:
                 if not success:
                     # BRAKE! We don't know where to drive to!
                     rospy.loginfo("No target point found!")
+                    self.diagnostics_pub.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.ERROR,
+                            name="[CTRL PP] Target Point Status",
+                            message="No target point found!",
+                        )
+                    )
                     self.velocity_cmd.data = 0.0
                     self.steering_cmd.data = 0.0
                 else:
@@ -192,8 +204,13 @@ class PurePursuit:
                     self.steering_cmd.data = self.symmetrically_bound_angle(
                         np.arctan2(1.0, R), np.pi / 2
                     )
-                    rospy.loginfo(
-                        f"x: {target_x}, y: {target_y} R: {R}, steering angle {self.steering_cmd.data}"
+
+                    self.diagnostics_pub.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="[CTRL PP] Target Point Status",
+                            message="Target point found.",
+                        )
                     )
 
                     # Go ahead and drive. But adjust speed in corners
@@ -209,7 +226,7 @@ class PurePursuit:
                 self.velocity_pub.publish(self.velocity_cmd)
 
                 point = PointStamped()
-                point.header.stamp = rospy.Time.now()
+                point.header.stamp = invtrans.header.stamp
                 point.header.frame_id = self.base_link_frame
                 point.point.x = target_x
                 point.point.y = target_y

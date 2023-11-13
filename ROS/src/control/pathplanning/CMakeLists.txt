@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
     rosparam_shortcuts
     ugr_msgs
     tf2_geometry_msgs
+    node_fixture
 )
 
 find_package(Boost REQUIRED)
@@ -35,6 +36,7 @@ catkin_package(
         rosparam_shortcuts
         ugr_msgs
         tf2_geometry_msgs
+        node_fixture
 )
 
 include_directories(
@@ -43,6 +45,8 @@ include_directories(
   ${roscpp_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
 )
+
+link_directories(${CATKIN_DEVEL_PREFIX}/lib)
 
 add_executable(${PROJECT_NAME}
   src/center_points.cpp

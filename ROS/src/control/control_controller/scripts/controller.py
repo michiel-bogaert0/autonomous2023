@@ -2,9 +2,10 @@
 from time import sleep
 
 import rospy
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     AutonomousMission,
+    DiagnosticArray,
+    DiagnosticStatus,
     SLAMStatesEnum,
     StateMachineScopeEnum,
     create_diagnostic_message,
@@ -28,24 +29,31 @@ class Controller:
 
         self.car = rospy.get_param("/car")
 
+        self.switch_time = rospy.Time.now().to_sec()
+
         rospy.Subscriber("/state", State, self.handle_state_change)
 
-        self.diagnostics_publisher = rospy.Publisher(
+        # Diagnostics Publisher
+        self.diagnostics_pub = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
 
         while not rospy.is_shutdown():
             try:
                 self.launcher.run()
-                self.diagnostics_publisher.publish(
+                self.diagnostics_pub.publish(
                     create_diagnostic_message(
-                        DiagnosticStatus.OK, "[CTRL] Node launching", ""
+                        level=DiagnosticStatus.OK,
+                        name="[CTRL CTRL] Node launching",
+                        message="",
                     )
                 )
             except Exception as e:
-                self.diagnostics_publisher.publish(
+                self.diagnostics_pub.publish(
                     create_diagnostic_message(
-                        DiagnosticStatus.ERROR, "[CTRL] Node launching", str(e)
+                        level=DiagnosticStatus.ERROR,
+                        name="[CTRL CTRL] Node launching",
+                        message=str(e),
                     )
                 )
 
@@ -64,6 +72,13 @@ class Controller:
             self.mission = rospy.get_param("/mission")
         else:
             self.launcher.shutdown()
+            self.diagnostics_pub.publish(
+                create_diagnostic_message(
+                    level=DiagnosticStatus.WARN,
+                    name="[CTRL CTRL] Node Status",
+                    message="Node shutting down.",
+                )
+            )
             return
 
         # Decides what to do based on the received state
@@ -93,10 +108,15 @@ class Controller:
                     speed_target = 2.0 if self.car == "simulation" else 1.0
 
                 elif self.state == SLAMStatesEnum.RACING:
-                    if (
-                        self.mission == AutonomousMission.TRACKDRIVE
-                        or self.mission == AutonomousMission.SKIDPAD
-                    ):
+                    if self.mission == AutonomousMission.TRACKDRIVE:
+                        # Slow down for 3 seconds to let nodes start up
+                        rospy.set_param("/pure_pursuit/speed/target", 0.3)
+
+                        sleep(3)
+
+                        speed_target = 10.0 if self.car == "simulation" else 5.0
+
+                    elif self.mission == AutonomousMission.SKIDPAD:
                         speed_target = 10.0 if self.car == "simulation" else 2.0
 
                     elif self.mission == AutonomousMission.ACCELERATION:
@@ -106,6 +126,13 @@ class Controller:
 
             else:
                 self.launcher.shutdown()
+                self.diagnostics_pub.publish(
+                    create_diagnostic_message(
+                        level=DiagnosticStatus.WARN,
+                        name="[CTRL CTRL] Node Status",
+                        message="Node shutting down.",
+                    )
+                )
 
 
 node = Controller()
