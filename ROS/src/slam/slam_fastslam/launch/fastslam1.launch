@@ -15,7 +15,7 @@
   <arg name="yaw_unwrap_threshold" default="4.0"/>
 
   #Lidar slam options
-  <arg name="lidar_eps" default="0.5"/>
+  <arg name="lidar_eps" default="1.2"/>
   <arg name="lidar_max_range" default="15"/>
   <arg name="lidar_max_half_angle" default="1.57"/>
   <arg name="lidar_expected_range" default="15"/>
@@ -26,7 +26,7 @@
   <arg name="lidar_discard_score" default="-2.0"/>
 
   #Camera slam options
-  <arg name="camera_eps" default="0.5"/>
+  <arg name="camera_eps" default="1.2"/>
   <arg name="camera_max_range" default="12"/>
   <arg name="camera_max_half_angle" default="0.6"/>
   <arg name="camera_expected_range" default="12"/>
