@@ -1,4 +1,4 @@
-mode: multi # none, sum, list
+mode: list # none, sum, list
 
 param:
   name: particle_count
@@ -7,7 +7,7 @@ param:
   index: None
 
 list:
-  values: [900, 950] # changes the state to the lenght of the list
+  values: [900, 950, 1000] # changes the state to the lenght of the list
 
 sum:
   add_value: -100 # value to add to the parameter

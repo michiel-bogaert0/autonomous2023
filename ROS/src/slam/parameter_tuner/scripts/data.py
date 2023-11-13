@@ -27,10 +27,11 @@ class SimulationData:
         self.parameters = parameters
         self.duration = 0
         self.stop_reason = SimulationStopEnum.NONE
+        self.avgDistanceToConeSLAM = []
 
     def to_str(self):
         # parameters_str = ""
         # for param in self.parameters:
         #     (name, value) = param
         #     parameters_str += "\n\t\t" + name + ": " + str(value)
-        return f"Simulation: {self.nr}\n\tParameters: {self.parameters}\n\tDuration (sec): {self.duration.to_sec()}\n\tStop reason: {self.stop_reason}\n"
+        return f"Simulation: {self.nr}\n\tParameters: {self.parameters}\n\tDuration (sec): {self.duration.to_sec()}\n\tStop reason: {self.stop_reason}\n\tEvaluation: {self.avgDistanceToConeSLAM}\n"
