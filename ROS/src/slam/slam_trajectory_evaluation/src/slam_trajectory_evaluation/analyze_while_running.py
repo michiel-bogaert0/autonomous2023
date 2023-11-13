@@ -81,6 +81,7 @@ class analyze_while_running:
         self.alignmentType = rospy.get_param("~alignmentType")
         self.sampleSize = rospy.get_param("~sampleSize")
         self.amountLaps = rospy.get_param("~lapsToEval")
+        self.printToFiles = rospy.get_param("~printFiles")
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
         if self.alignmentType == "":
@@ -292,6 +293,7 @@ class analyze_while_running:
             self.resetTrajectoryEvaluation(Empty())
             self.PrintMapToTopic(self.cones, self.SLAMcones)
             self.AnalyzeAndPrintMapToFile(self.cones, self.SLAMcones)
+            rospy.loginfo("PrintedMap")
         elif state.cur_state == SLAMStatesEnum.FINISHED and not self.analizing:
             self.analyze_trail()
 
@@ -320,7 +322,9 @@ class analyze_while_running:
         rospy.loginfo("printTopic")
         self.PrintToTopic(rel_errors, distances, traj)
         rospy.loginfo("printed")
-        self.PrintTrajectoryError(rel_errors, distances, traj)
+
+        if self.printToFiles:
+            self.PrintTrajectoryError(rel_errors, distances, traj)
 
     def PrintMapToTopic(self, cones, slamCones):
         self.mapped = True
@@ -411,6 +415,8 @@ class analyze_while_running:
         return fig
 
     def AnalyzeAndPrintMapToFile(self, cones, slamCones):
+        if not self.printToFiles:
+            return
         cones = self.cones.copy()
         slamCones = self.SLAMcones.copy()
         FORMAT = ".pdf"
@@ -510,7 +516,7 @@ class analyze_while_running:
         plt.close(fig)
 
         rospy.loginfo(
-            "finished calculating errors it is saved under the folder:" + self.zpath
+            "finished calculating errors it is saved under the folder:" + self.path
         )
         return
 
