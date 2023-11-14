@@ -5,7 +5,6 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   roscpp
   diagnostic_msgs
-  ugr_msgs
 )
 
 catkin_python_setup()
