@@ -83,7 +83,7 @@ class MapWidget(QtW.QFrame):
 
         self.is_closed = bool(closed)
 
-        self.middelline_on = True
+        self.middelline_on = False
 
         self.selection: Optional[QtC.QPoint] = None
 
@@ -840,8 +840,10 @@ class MapWidget(QtW.QFrame):
             track_dict = self.as_dict()
         else:
             track_dict = self.create_yaml()
-        cwd = file_path = pathlib.Path(__file__).absolute().parent
-        file_path = cwd / f"layouts/{get_track_name()}"
+        file_path = (
+            pathlib.Path.home()
+            / f"autonomous2023/ROS/src/slam/slam_simulator/maps/{get_track_name()}"
+        )
         with open(file_path, "w") as f:
             if self.LAYOUT_TYPE == "json":
                 json.dump(track_dict, f)
@@ -966,8 +968,10 @@ class MainWindow(QtW.QMainWindow):
     def __init__(self, publisher, frame, trackfile_name=None):
         super().__init__(None)
         if trackfile_name is not None:
-            cwd = layout_path = pathlib.Path(__file__).absolute().parent
-            layout_path = cwd / f"layouts/{trackfile_name}"
+            layout_path = (
+                pathlib.Path.home()
+                / f"autonomous2023/ROS/src/slam/slam_simulator/maps/{trackfile_name}"
+            )
             with open(layout_path, "r") as f:
                 if trackfile_name.endswith(".json"):
                     dictio = json.load(f)
