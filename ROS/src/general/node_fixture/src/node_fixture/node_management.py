@@ -13,6 +13,26 @@ from node_fixture.srv import (
 )
 
 
+def set_state(self, name: str, state: str) -> None:
+    rospy.service_proxy(f"/node_managing/{name}/set", SetNodeState)(state)
+
+
+def set_state_active(self, name: str) -> None:
+    set_state(self, name, NodeManagingStatesEnum.ACTIVE)
+
+
+def set_state_inactive(self, name: str) -> None:
+    set_state(self, name, NodeManagingStatesEnum.INACTIVE)
+
+
+def set_state_unconfigured(self, name: str) -> None:
+    set_state(self, name, NodeManagingStatesEnum.UNCONFIGURED)
+
+
+def set_state_finalized(self, name: str) -> None:
+    set_state(self, name, NodeManagingStatesEnum.FINALIZED)
+
+
 class ManagedNode:
     """
     A class representing a managed node.
