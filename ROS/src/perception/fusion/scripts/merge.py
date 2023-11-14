@@ -5,7 +5,7 @@ import numpy as np
 import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import TransformStamped
-from node_fixture.node_fixture import ROSNode
+from node_fixture.fixture import ROSNode
 from sklearn.neighbors import KDTree
 from ugr_msgs.msg import (
     ObservationWithCovariance,
@@ -283,7 +283,7 @@ class MergeNode:
                     ]
 
                 # Find observation that is at the center of linked observations (either euclidean average or with Kalman filter)
-                center_observation = self.euclidean_average(
+                center_observation = self.kalman_filter(
                     lidar_observation, camera_observation
                 )
                 center_location = [
@@ -370,7 +370,7 @@ class MergeNode:
                     lidar_observation.observation.location.z,
                 ]
             ),
-            (3, 3),
+            (3, 1),
         )
         camera_observation_location = np.reshape(
             np.array(
@@ -380,9 +380,10 @@ class MergeNode:
                     camera_observation.observation.location.z,
                 ]
             ),
-            (3, 3),
+            (3, 1),
         )
 
+        # Calcultate new covariance matrix
         new_covariance = np.linalg.inv(
             np.linalg.inv(covariance_matrix_lidar)
             + np.linalg.inv(covariance_matrix_camera)
@@ -410,7 +411,9 @@ class MergeNode:
             fused_observation.observation.location.x,
             fused_observation.observation.location.y,
             fused_observation.observation.location.z,
-        ) = (new_prediction[0][0], new_prediction[1, 1], new_prediction[2, 2])
+        ) = (new_prediction[0][0], new_prediction[1][0], new_prediction[2][0])
+
+        return fused_observation
 
 
 node = MergeNode()
