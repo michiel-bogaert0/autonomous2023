@@ -4,6 +4,7 @@ import datetime
 import math
 import os
 
+import DataCone
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +13,6 @@ import rospkg
 import rospy
 import tf2_geometry_msgs
 import tf2_ros as tf
-import DataCone
 from geometry_msgs.msg import Point, PointStamped
 from nav_msgs.msg import Odometry
 from node_fixture.fixture import SLAMStatesEnum
@@ -38,7 +38,6 @@ def CalculateDistanceSqr(original: Point, other: Point) -> float:
     y = original.y - other.y
     z = original.z - other.z
     return x * x + y * y + z * z
-
 
 
 class analyze_while_running:
