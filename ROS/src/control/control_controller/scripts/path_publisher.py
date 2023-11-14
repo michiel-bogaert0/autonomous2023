@@ -5,7 +5,7 @@ import rospy
 import yaml
 from genpy.message import fill_message_args
 from nav_msgs.msg import Path
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
     create_diagnostic_message,
@@ -29,7 +29,7 @@ class PathPublisher:
         )
 
         # Diagnostics Publisher
-        self.diagnostics = rospy.Publisher(
+        self.diagnostics_pub = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
 
@@ -39,10 +39,10 @@ class PathPublisher:
             rospy.logerr(
                 f"Error publishing path. Make sure that the file '{self.path}' exists, is readable and is valid YAML!"
             )
-            self.diagnostics.publish(
+            self.diagnostics_pub.publish(
                 create_diagnostic_message(
                     level=DiagnosticStatus.ERROR,
-                    name="[CTRL] Path Publisher Status",
+                    name="[CTRL CTRL] Path Publisher Status",
                     message="Error publishing path.",
                 )
             )

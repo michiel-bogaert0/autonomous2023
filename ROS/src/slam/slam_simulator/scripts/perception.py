@@ -5,7 +5,7 @@ import numpy as np
 import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import Point, Quaternion, TransformStamped
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     DataLatch,
     DiagnosticArray,
     DiagnosticStatus,

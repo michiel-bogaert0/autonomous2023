@@ -9,7 +9,7 @@ import serial
 import utm
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from nav_msgs.msg import Odometry
-from node_fixture.node_fixture import create_diagnostic_message
+from node_fixture.fixture import create_diagnostic_message
 from sensor_msgs.msg import NavSatFix
 from tf.transformations import quaternion_from_euler
 from ubxtranslator.core import Parser
