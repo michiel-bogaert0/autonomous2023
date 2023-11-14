@@ -53,7 +53,7 @@ class ThreeStageModel:
             header: the original ROS header of the image
 
         Returns:
-            - an array of Nx4 containing (cone category, x, y, z)
+            - an array of Nx5 containing (belief, category, x, y, z)
             - the pipeline latencies containing triplets of (pre-processing, bbox inference, kpt inference, post-processing)
             - (optional) a visualisation image
         """
@@ -97,6 +97,10 @@ class ThreeStageModel:
         start = time.perf_counter()
         categories = bboxes[valid_cones, -1]
         cones = self.height_to_pos(categories, heights, bottoms)
+
+        # Add the beliefs back
+        cones = np.hstack((bboxes[valid_cones, 4], cones))
+
         latencies.append(1000 * (time.perf_counter() - start))
 
         vis_img = None
