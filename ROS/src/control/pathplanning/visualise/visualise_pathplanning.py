@@ -6,6 +6,7 @@ import pathlib
 from typing import Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
+import yaml
 from bezierPoint import BezierPoint
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtGui as QtG
@@ -72,6 +73,7 @@ class MapWidget(QtW.QFrame):
         self.CAR_POINT_SIZE = 0.5
         self.CAR_HANDLE_SIZE = 15
         self.CONE_SIZE = 0.2
+        self.LAYOUT_TYPE = "yaml"
 
         self.RASTER_WIDTH = 3
 
@@ -81,7 +83,7 @@ class MapWidget(QtW.QFrame):
 
         self.is_closed = bool(closed)
 
-        self.middelline_on = True
+        self.middelline_on = False
 
         self.selection: Optional[QtC.QPoint] = None
 
@@ -829,13 +831,24 @@ class MapWidget(QtW.QFrame):
     def save_track_layout(self):
         def get_track_name() -> str:
             time_string = datetime.datetime.now().strftime("%d%b_%H%M").lower()
-            return f"track_{time_string}.json"
+            if self.LAYOUT_TYPE == "json":
+                return f"track_{time_string}.json"
+            else:
+                return f"track_{time_string}.yaml"
 
-        track_dict = self.as_dict()
-        cwd = file_path = pathlib.Path(__file__).absolute().parent
-        file_path = cwd / f"layouts/{get_track_name()}"
+        if self.LAYOUT_TYPE == "json":
+            track_dict = self.as_dict()
+        else:
+            track_dict = self.create_yaml()
+        file_path = (
+            pathlib.Path.home()
+            / f"autonomous2023/ROS/src/slam/slam_simulator/maps/{get_track_name()}"
+        )
         with open(file_path, "w") as f:
-            json.dump(track_dict, f, indent=4)
+            if self.LAYOUT_TYPE == "json":
+                json.dump(track_dict, f)
+            else:
+                yaml.dump(track_dict, f)
 
     def as_dict(self):
         def get_track_limits() -> Tuple[QtC.QPointF, QtC.QPointF]:
@@ -899,31 +912,120 @@ class MapWidget(QtW.QFrame):
         }
         return track_dict
 
+    def create_yaml(self):
+        # Create a list to store all cones
+        all_cones = []
+
+        # Iterate over blue cone locations and create YAML entries
+        for cone in self.blue_cones:
+            cone_entry = {
+                "covariance": [0.0] * 9,
+                "observation": {
+                    "belief": 1,
+                    "location": {"x": cone.x(), "y": cone.y(), "z": 0},
+                    "observation_class": 0,
+                },
+            }
+            all_cones.append(cone_entry)
+
+        # Iterate over yellow cone locations and create YAML entries
+        for cone in self.yellow_cones:
+            cone_entry = {
+                "covariance": [0.0] * 9,
+                "observation": {
+                    "belief": 1,
+                    "location": {"x": cone.x(), "y": cone.y(), "z": 0},
+                    "observation_class": 1,
+                },
+            }
+            all_cones.append(cone_entry)
+
+        # Iterate over orange cone locations and create YAML entries
+        for cone in self.orange_cones:
+            cone_entry = {
+                "covariance": [0.0] * 9,
+                "observation": {
+                    "belief": 1,
+                    "location": {"x": cone.x(), "y": cone.y(), "z": 0},
+                    "observation_class": 2,
+                },
+            }
+            all_cones.append(cone_entry)
+
+        # Create the final YAML data structure
+        data = {
+            "header": {
+                "frame_id": "ugr/map",
+                "seq": 0,
+                "stamp": {"nsecs": 0, "secs": 0},
+            },
+            "observations": all_cones,
+        }
+        return data
+
 
 class MainWindow(QtW.QMainWindow):
     def __init__(self, publisher, frame, trackfile_name=None):
-        # def __init__(self, parent=None):
         super().__init__(None)
         if trackfile_name is not None:
-            cwd = layout_path = pathlib.Path(__file__).absolute().parent
-            layout_path = cwd / f"layouts/{trackfile_name}"
+            layout_path = (
+                pathlib.Path.home()
+                / f"autonomous2023/ROS/src/slam/slam_simulator/maps/{trackfile_name}"
+            )
             with open(layout_path, "r") as f:
-                dictio = json.load(f)
-                yellow_cones = dictio["cones"]["yellow"]
-                yellows = [QtC.QPointF(c["pos"][0], c["pos"][1]) for c in yellow_cones]
-                blue_cones = dictio["cones"]["blue"]
-                blues = [QtC.QPointF(c["pos"][0], c["pos"][1]) for c in blue_cones]
-                orange_cones = dictio["cones"].get("orange")
-                if orange_cones is not None:
-                    oranges = [
-                        QtC.QPointF(c["pos"][0], c["pos"][1]) for c in orange_cones
+                if trackfile_name.endswith(".json"):
+                    dictio = json.load(f)
+                    yellow_cones = dictio["cones"]["yellow"]
+                    yellows = [
+                        QtC.QPointF(c["pos"][0], c["pos"][1]) for c in yellow_cones
                     ]
+                    blue_cones = dictio["cones"]["blue"]
+                    blues = [QtC.QPointF(c["pos"][0], c["pos"][1]) for c in blue_cones]
+                    orange_cones = dictio["cones"].get("orange")
+                    if orange_cones is not None:
+                        oranges = [
+                            QtC.QPointF(c["pos"][0], c["pos"][1]) for c in orange_cones
+                        ]
+                    else:
+                        oranges = []
+                    is_closed = dictio["parameters"]["is_closed"]
+                    startpos_x = dictio["parameters"]["startpos_x"]
+                    startpos_y = dictio["parameters"]["startpos_y"]
+                    startrot = dictio["parameters"]["startrot"]
+                elif trackfile_name.endswith(".yaml"):
+                    dictio = yaml.safe_load(f)
+                    yellows = [
+                        QtC.QPointF(
+                            pose["observation"]["location"]["x"],
+                            pose["observation"]["location"]["y"],
+                        )
+                        for pose in dictio["observations"]
+                        if pose["observation"]["observation_class"] == 1
+                    ]
+                    blues = [
+                        QtC.QPointF(
+                            pose["observation"]["location"]["x"],
+                            pose["observation"]["location"]["y"],
+                        )
+                        for pose in dictio["observations"]
+                        if pose["observation"]["observation_class"] == 0
+                    ]
+                    oranges = [
+                        QtC.QPointF(
+                            pose["observation"]["location"]["x"],
+                            pose["observation"]["location"]["y"],
+                        )
+                        for pose in dictio["observations"]
+                        if pose["observation"]["observation_class"] == 2
+                    ]
+                    is_closed = False
+                    startpos_x = 0
+                    startpos_y = 0
+                    startrot = 0
                 else:
-                    oranges = []
-                is_closed = dictio["parameters"]["is_closed"]
-                startpos_x = dictio["parameters"]["startpos_x"]
-                startpos_y = dictio["parameters"]["startpos_y"]
-                startrot = dictio["parameters"]["startrot"]
+                    raise ValueError(
+                        "Invalid file format. Only JSON and YAML files are supported."
+                    )
             self.map_widget = MapWidget(
                 publisher,
                 frame,
