@@ -21,6 +21,7 @@ class TwoStageModel:
         self,
         keypoint_model_path,
         height_to_pos,
+        cone_belief=0.8,
         image_size=None,
         matching_threshold_px=150,
         detection_height_threshold=33,
@@ -32,6 +33,7 @@ class TwoStageModel:
         self.matching_threshold_px = matching_threshold_px
         self.detection_height_threshold = detection_height_threshold
         self.use_vis = visualise
+        self.cone_belief = cone_belief
 
         # Warmup
         self.device = device
@@ -59,7 +61,7 @@ class TwoStageModel:
             category: the cone type
 
         Returns:
-            an array of Nx4 containing (cone category, x, y, z)
+            an array of Nx4 containing (category, x, y, z)
         """
 
         heights, valid_bottom_idx = np.empty(0), []
@@ -114,7 +116,7 @@ class TwoStageModel:
             original_image: the numpy image object of (H, W, 3)
 
         Returns:
-            - an array of Nx4 containing (cone category, x, y, z)
+            - an array of Nx5 containing (belief, category, x, y, z)
             - the pipeline latencies containing triplets of (pre-processing, kpt inference, post-processing)
             - (optional) a visualisation image
         """
@@ -173,13 +175,16 @@ class TwoStageModel:
 
         # Find cone locations
         start = time.perf_counter()
-        cones = np.empty((0, 4))
+        cones = np.empty((0, 5))
         for i in range(4):
             # If there are both top and bottom keypoints, run the processing code
             if kpts[2 * i].shape[0] > 0 and kpts[2 * i + 1].shape[0] > 0:
                 extracted_cones = self.extract_cones(kpts[2 * i], kpts[2 * i + 1], i)
                 if extracted_cones.size > 0:
                     cones = np.vstack((cones, extracted_cones))
+
+        # Add a fixed value as the first column, since we have little idea of the belief
+        cones = np.hstack((np.full((cones.shape[0], 1), self.cone_belief), cones))
         latencies.append(1000 * (time.perf_counter() - start))
 
         vis_img = None
