@@ -4,7 +4,7 @@ import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
-from scipy.interpolate import interp1d, make_interp_spline
+from scipy.interpolate import make_interp_spline
 
 
 class PoseArraySmootherNode:
@@ -18,7 +18,7 @@ class PoseArraySmootherNode:
         self.publisher = rospy.Publisher("/output/path", Path, queue_size=10)
 
     def pose_array_callback(self, msg: Path):
-        try:        
+        try:
             path = np.array([[p.pose.position.x, p.pose.position.y] for p in msg.poses])
 
             alpha = np.linspace(0, 1, len(path))
