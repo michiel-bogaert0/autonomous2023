@@ -161,6 +161,8 @@ class MapWidget(QtW.QFrame):
 
     def select_all_clicked(self):
         # This method will be called when the button is clicked
+        self.selected_blue_cones = []
+        self.selected_yellow_cones = []
         for cone in self.yellow_cones:
             self.selected_yellow_cones.append(cone)
         for cone in self.blue_cones:
