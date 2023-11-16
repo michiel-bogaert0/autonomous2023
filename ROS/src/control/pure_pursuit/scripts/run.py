@@ -4,7 +4,7 @@ import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import PointStamped
 from nav_msgs.msg import Odometry, Path
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
     create_diagnostic_message,

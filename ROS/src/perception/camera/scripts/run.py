@@ -11,7 +11,7 @@ import rospy
 import torch
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from geometry_msgs.msg import Point
-from node_fixture.node_fixture import create_diagnostic_message
+from node_fixture.fixture import create_diagnostic_message
 from sensor_msgs.msg import Image
 from std_msgs.msg import Header
 from three_stage_model import ThreeStageModel
@@ -88,6 +88,17 @@ class PerceptionNode:
         )
         self.use_two_stage = "twostage" in self.keypoint_detector_model
 
+        # Belief of a cone in the two-stage model
+        two_stage_cone_belief = rospy.get_param("~two_stage_cone_belief", 0.8)
+
+        # Covariance factors for the cone positions
+        # The default covar increases with the squared distance to the cone
+        # and passes through the origin and (15m, 0.5)
+        # Use these values to scale the covariance (X is typically lower than Y, Z is not really important)
+        self.covar_x_factor = rospy.get_param("~covar_x_factor", 0.7)
+        self.covar_y_factor = rospy.get_param("~covar_y_factor", 1.0)
+        self.covar_z_factor = rospy.get_param("~covar_z_factor", 0.1)
+
         yolo_model_path = (
             Path(os.getenv("BINARY_LOCATION"))
             / "nn_models"
@@ -106,6 +117,7 @@ class PerceptionNode:
             self.pipeline = TwoStageModel(
                 keypoint_model_path,
                 self.height_to_pos,
+                cone_belief=two_stage_cone_belief,
                 image_size=(1184, 1920),
                 matching_threshold_px=self.matching_threshold_px,
                 detection_height_threshold=self.detection_height_threshold,
@@ -239,7 +251,7 @@ class PerceptionNode:
         """Given an array of cone locations and a message header, create an observation message
 
         Args:
-            cones: Nx4 array of cone locations: category, X, Y, Z
+            cones: Nx5 array of cone locations: belief, category, X, Y, Z
             header: the header of the original image message
 
         Returns:
@@ -249,7 +261,8 @@ class PerceptionNode:
         cone_positions: List[ObservationWithCovariance] = []
 
         for cone in cones:
-            observation_class = int(cone[0])
+            belief = cone[0]
+            observation_class = int(cone[1])
             if (
                 not rospy.get_param("~use_orange_cones", False)
                 and observation_class == 2
@@ -258,11 +271,11 @@ class PerceptionNode:
             cone_positions.append(
                 ObservationWithCovariance(
                     observation=Observation(
-                        belief=1.0,
-                        observation_class=int(cone[0]),
-                        location=Point(*cone[1:]),
+                        belief=belief,
+                        observation_class=observation_class,
+                        location=Point(*cone[2:]),
                     ),
-                    covariance=[0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1],  # TODO: tweak
+                    covariance=self.cone_pos_to_covariance(cone[2:4]),
                 )
             )
 
@@ -271,6 +284,34 @@ class PerceptionNode:
         msg.header = header
 
         return msg
+
+    def cone_pos_to_covariance(self, cone_pos: np.ndarray) -> np.ndarray:
+        """Converts a 2D cone position to a covariance matrix
+
+        Args:
+            cone_pos: array of cone position in X, Y
+
+        Returns:
+            3x3 covariance matrix
+        """
+
+        # Based on Figure 7.15 of Lucas's thesis
+        # At a distance of around 15m, the error should be around 0.5m
+        # The error also increases with the squared distance to the cone
+        uncertainty = 0.0025 * (cone_pos[0] ** 2 + cone_pos[1] ** 2)
+
+        # Since we know the covariance is significantly smaller in the direction toward the cone (view axis),
+        # and it's higher in the perpendicular direction to this view axis,
+        # then we could create a covariance matrix that reflects this,
+        # and then rotate it by the angle between the view axis and X axis.
+        # However, I don't know enough about SLAM to determine whether it's worth the effort.
+        return np.diag(
+            [
+                uncertainty * self.covar_x_factor,
+                uncertainty * self.covar_y_factor,
+                uncertainty * self.covar_z_factor,
+            ]
+        )
 
     def ros_img_to_np(self, image: Image) -> np.ndarray:
         """Converts a ros image into an numpy array

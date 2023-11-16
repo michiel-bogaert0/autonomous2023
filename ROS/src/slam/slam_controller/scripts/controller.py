@@ -3,7 +3,7 @@ from time import sleep
 
 import rospy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-from node_fixture.node_fixture import (
+from node_fixture.fixture import (
     AutonomousMission,
     AutonomousStatesEnum,
     SLAMStatesEnum,
