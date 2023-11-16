@@ -22,7 +22,7 @@ class MapWidget(QtW.QFrame):
         self,
         publisher,
         frame,
-        closed=False,
+        closed=True,
         startpos_x=None,
         startpos_y=None,
         startrot=0,
