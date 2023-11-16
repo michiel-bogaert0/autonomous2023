@@ -61,10 +61,24 @@ class MapWidget(QtW.QFrame):
         layout.addWidget(
             middellineButton
         )  # Align the button to the right and top of the layout
+        # Create a QPushButton and add it to the layout
+        selectAllButton = QtW.QPushButton("select all cones", self)
+        selectAllButton.setFixedSize(120, 30)  # Set the size of the button
+        layout.addWidget(
+            selectAllButton
+        )  # Align the button to the right and top of the layout
+        # Create a QPushButton and add it to the layout
+        deselectAllButton = QtW.QPushButton("deselect all cones", self)
+        deselectAllButton.setFixedSize(120, 30)  # Set the size of the button
+        layout.addWidget(
+            deselectAllButton
+        )  # Align the button to the right and top of the layout
 
         # Connect the button's clicked signal to a slot
         loopButton.clicked.connect(self.close_loop_clicked)
         middellineButton.clicked.connect(self.middelline_clicked)
+        selectAllButton.clicked.connect(self.select_all_clicked)
+        deselectAllButton.clicked.connect(self.deselect_all_clicked)
 
         # Constants
         self.ZOOM = 1.1
@@ -106,6 +120,8 @@ class MapWidget(QtW.QFrame):
         self.selected_yellow_cones = []
         self.selected_blue_cones = []
 
+        self.select_all_clicked()
+
         # Set the initial zoom level
         self.zoom_level = 0.5
 
@@ -141,6 +157,20 @@ class MapWidget(QtW.QFrame):
     def middelline_clicked(self):
         # This method will be called when the button is clicked
         self.middelline_on = not self.middelline_on
+        self.update()
+
+    def select_all_clicked(self):
+        # This method will be called when the button is clicked
+        for cone in self.yellow_cones:
+            self.selected_yellow_cones.append(cone)
+        for cone in self.blue_cones:
+            self.selected_blue_cones.append(cone)
+        self.update()
+
+    def deselect_all_clicked(self):
+        # This method will be called when the button is clicked
+        self.selected_blue_cones = []
+        self.selected_yellow_cones = []
         self.update()
 
     def real_to_car_transform(self, points: list) -> np.ndarray:
@@ -321,7 +351,9 @@ class MapWidget(QtW.QFrame):
             event.modifiers() & QtC.Qt.ShiftModifier
         ):
             # Add a visual point to the list at the position where the user clicked
-            self.yellow_cones.append(self.screenToCoordinate(event.pos()))
+            point = self.screenToCoordinate(event.pos())
+            self.yellow_cones.append(point)
+            self.selected_yellow_cones.append(point)
             # Trigger a repaint of the MapWidget to update the visual points
             self.update()
         # Place a blue cone
@@ -329,7 +361,9 @@ class MapWidget(QtW.QFrame):
             event.modifiers() & QtC.Qt.ShiftModifier
         ):
             # Add a visual point to the list at the position where the user clicked
-            self.blue_cones.append(self.screenToCoordinate(event.pos()))
+            point = self.screenToCoordinate(event.pos())
+            self.blue_cones.append(point)
+            self.selected_blue_cones.append(point)
             # Trigger a repaint of the MapWidget to update the visual points
             self.update()
 
@@ -338,15 +372,15 @@ class MapWidget(QtW.QFrame):
             selected_cone = self.get_selected_cone(event)
             if selected_cone is not None:
                 if selected_cone in self.yellow_cones[:-1]:
+                    point = selected_cone + QtC.QPointF(0.10, 0.10)
                     index = self.yellow_cones.index(selected_cone)
-                    self.yellow_cones.insert(
-                        index, selected_cone + QtC.QPointF(0.10, 0.10)
-                    )
+                    self.yellow_cones.insert(index, point)
+                    self.selected_yellow_cones.append(point)
                 elif selected_cone in self.blue_cones[:-1]:
+                    point = selected_cone + QtC.QPointF(0.10, 0.10)
                     index = self.blue_cones.index(selected_cone)
-                    self.blue_cones.insert(
-                        index, selected_cone + QtC.QPointF(0.10, 0.10)
-                    )
+                    self.blue_cones.insert(index, point)
+                    self.selected_blue_cones.append(point)
                 self.update()
 
     def mouseReleaseEvent(self, event):
@@ -603,32 +637,22 @@ class MapWidget(QtW.QFrame):
                     start = self.coordinateToScreen(self.path[index - 1])
                 end = screen_pos
                 painter.drawLine(start, end)
-                painter.setPen(pen)
-                diameter = self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+
+                diameter = self.CONE_SIZE * self.pixels_per_km * self.zoom_level / 7
                 circle_rect = QtC.QRectF(
                     screen_pos.x() - diameter / 2,
                     screen_pos.y() - diameter / 2,
                     diameter,
                     diameter,
                 )
-                painter.drawEllipse(circle_rect)
-
                 pen = QtG.QPen(
-                    QtC.Qt.white, self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+                    QtC.Qt.red,
+                    self.CONE_SIZE * self.pixels_per_km * self.zoom_level / 10,
                 )
+                brush = QtG.QBrush(QtC.Qt.red)
                 painter.setPen(pen)
-                font = QtG.QFont(
-                    "Arial",
-                    int(0.75 * self.CONE_SIZE * self.pixels_per_km * self.zoom_level),
-                )
-                painter.setFont(font)
-                text_rect = QtC.QRectF(
-                    screen_pos.x() - diameter,
-                    screen_pos.y() - diameter,
-                    2 * diameter,
-                    2 * diameter,
-                )
-                painter.drawText(text_rect, QtC.Qt.AlignCenter, str(index))
+                painter.setBrush(brush)
+                painter.drawEllipse(circle_rect)
 
     def make_bezier(self):
         self.bezierPoints = []
