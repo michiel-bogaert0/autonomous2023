@@ -4,7 +4,6 @@ import datetime
 import math
 import os
 
-import DataCone
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,6 +12,7 @@ import rospkg
 import rospy
 import tf2_geometry_msgs
 import tf2_ros as tf
+from DataCone import DataCone
 from geometry_msgs.msg import Point, PointStamped
 from nav_msgs.msg import Odometry
 from node_fixture.fixture import SLAMStatesEnum
@@ -302,12 +302,18 @@ class analyze_while_running:
     def PrintMapToTopic(self, cones, slamCones):
         self.mapped = True
         info = TrajectoryMapInfo()
+        id = 0
         for i in cones:
             for y in i.distances:
+                info.labelsConesPerc.append(str(id))
                 info.avgDistanceToConePerception.append(y)
+            id += 1
+        id = 0
         for i in slamCones:
             for y in i.distances:
+                info.labelsConesSlam.append(str(id))
                 info.avgDistanceToConeSLAM.append(y)
+            id += 1
         self.publishResultsMap.publish(info)
 
     def PrintToTopic(self, rel_errors, distances, traj):
