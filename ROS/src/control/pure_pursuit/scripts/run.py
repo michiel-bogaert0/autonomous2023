@@ -9,7 +9,8 @@ from node_fixture.node_fixture import (
     DiagnosticStatus,
     create_diagnostic_message,
 )
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Header
+from tf2_geometry_msgs import do_transform_pose
 from trajectory import Trajectory
 
 
@@ -25,7 +26,6 @@ class PurePursuit:
         self.wheelradius = rospy.get_param("~wheelradius", 0.1)
 
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
-        self.world_frame = rospy.get_param("~world_frame", "ugr/car_odom")
 
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
@@ -61,7 +61,7 @@ class PurePursuit:
         self.odom_sub = rospy.Subscriber("/input/odom", Odometry, self.get_odom_update)
 
         self.current_angle = 0
-        self.current_pos = [0, 0]
+        self.current_pos = [0, 0]  # in blf
         self.set_angle = 0
 
         self.current_path = np.zeros((0, 2))
@@ -78,6 +78,7 @@ class PurePursuit:
         self.maximal_distance = rospy.get_param("~trajectory/maximal_distance", 3)
         self.trajectory = Trajectory()
         self.publish_rate = rospy.get_param("~publish_rate", 10)
+
         self.speed_target = rospy.get_param("~speed/target", 3.0)
         self.steering_transmission = rospy.get_param(
             "ugr/car/steering/transmission", 0.25
@@ -94,36 +95,29 @@ class PurePursuit:
         Takes in a new exploration path coming from the mapping algorithm.
         The path should be relative to self.base_link_frame. Otherwise it will transform to it
         """
-        # Transform received message to self.world_frame
-        # trans = self.tf_buffer.lookup_transform(
-        #     self.base_link_frame,
-        #     msg.header.frame_id,
-        #     msg.header.stamp,
-        # )
-        # new_header = Header(frame_id=self.base_link_frame, stamp=rospy.Time.now())
-        # transformed_path = Path(header=new_header)
-        # for pose in msg.poses:
-        #     pose_t = do_transform_pose(pose, trans)
-        #     transformed_path.poses.append(pose_t)
 
-        self.trajectory.frame_id = msg.header.frame_id
-        # self.trajectory.stamp = msg.header.stamp
+        # Transform received message to self.base_link_frame
+        trans = self.tf_buffer.lookup_transform(
+            self.base_link_frame,
+            msg.header.frame_id,
+            msg.header.stamp,
+        )
+        new_header = Header(frame_id=self.base_link_frame, stamp=trans.header.stamp)
+        transformed_path = Path(header=new_header)
+        for pose in msg.poses:
+            pose_t = do_transform_pose(pose, trans)
+            transformed_path.poses.append(pose_t)
 
         # Create a new path
         current_path = np.zeros((0, 2))
-        for pose in msg.poses:
+        for pose in transformed_path.poses:
             current_path = np.vstack(
                 (current_path, [pose.pose.position.x, pose.pose.position.y])
             )
 
-        # # Fetch current position
-        # trans = self.tf_buffer.lookup_transform(
-        #     self.world_frame,
-        #     self.base_link_frame,
-        #     msg.header.stamp,
-        # )
-        # rospy.logerr(f"current_path = {current_path}")
-        self.trajectory.set_path(current_path, [0, 0])
+        # Save current path and time of transformation to self.trajectory
+        self.trajectory.points = current_path
+        self.trajectory.time_source = trans.header.stamp
 
     def symmetrically_bound_angle(self, angle, max_angle):
         """
@@ -140,15 +134,8 @@ class PurePursuit:
             try:
                 self.speed_target = rospy.get_param("~speed/target", 3.0)
 
-                # Lookup position
-                # trans = self.tf_buffer.lookup_transform(
-                #     self.world_frame,
-                #     self.base_link_frame,
-                #     rospy.Time(),
-                # )
-
                 # First try to get a target point
-                # Change the look-ahead distance (minimal_distance)  parameters: self.actual_speed, self.speed_start, self.speed_stop, self.distance_start, self.distance_stop
+                # Change the look-ahead distance (minimal_distance)  based on the current speed
                 if self.actual_speed < self.speed_start:
                     self.minimal_distance = self.distance_start
                 elif self.actual_speed < self.speed_stop:
@@ -160,29 +147,11 @@ class PurePursuit:
                 else:
                     self.minimal_distance = self.distance_stop
 
-                # The target point is given in the world frame
+                # Calculate target point
                 target_x, target_y, success = self.trajectory.calculate_target_point(
                     self.minimal_distance,
                     self.maximal_distance,
-                    [0, 0],
                 )
-
-                # Transform to base_link frame
-                # invtrans = self.tf_buffer.lookup_transform(
-                #     self.base_link_frame,
-                #     self.world_frame,
-                #     rospy.Time(),
-                # )
-                # target_pose = PoseStamped(
-                #     header=Header(frame_id=self.base_link_frame, stamp=rospy.Time.now())
-                # )
-                # target_pose.pose.position.x = target_x
-                # target_pose.pose.position.y = target_y
-
-                # target_pose_t = do_transform_pose(target_pose, invtrans)
-
-                # target_x = target_pose_t.pose.position.x
-                # target_y = target_pose_t.pose.position.y
 
                 if not success:
                     # BRAKE! We don't know where to drive to!
@@ -198,10 +167,9 @@ class PurePursuit:
                     self.steering_cmd.data = 0.0
                 else:
                     # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-                    R = (
-                        (target_x - self.current_pos[0]) ** 2
-                        + (target_y - self.current_pos[1]) ** 2
-                    ) / (2 * (target_y - self.current_pos[1]))
+                    R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (
+                        2 * (target_y - 0)
+                    )
 
                     self.steering_cmd.data = self.symmetrically_bound_angle(
                         np.arctan2(1.0, R), np.pi / 2

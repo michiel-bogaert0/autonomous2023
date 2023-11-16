@@ -50,13 +50,19 @@ class PathPublisher:
         rospy.spin()
 
     def publish_path(self):
-        # Try to parse YAML
         ros_path = Path()
-        with open(self.path, "r") as file:
-            path = yaml.safe_load(file)
-            fill_message_args(ros_path, path)
+        rate = rospy.Rate(0.2)
 
-            self.path_publisher.publish(ros_path)
+        # Publish path (avoid transform buffer to get full )
+        while not rospy.is_shutdown():
+            # Try to parse YAML
+            with open(self.path, "r") as file:
+                path = yaml.safe_load(file)
+                fill_message_args(ros_path, path)
+
+                self.path_publisher.publish(ros_path)
+
+            rate.sleep()
 
 
 node = PathPublisher()
