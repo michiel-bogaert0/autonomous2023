@@ -4,7 +4,7 @@ import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, make_interp_spline
 
 
 class PoseArraySmootherNode:
@@ -18,19 +18,18 @@ class PoseArraySmootherNode:
         self.publisher = rospy.Publisher("/output/path", Path, queue_size=10)
 
     def pose_array_callback(self, msg: Path):
-        try:
+        try:        
             path = np.array([[p.pose.position.x, p.pose.position.y] for p in msg.poses])
 
-            distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
-            distance = np.insert(distance, 0, 0) / distance[-1]
-            alpha = np.linspace(0, 1, len(path) * 10)
-            interpolator = interp1d(distance, path, kind="quadratic", axis=0)
+            alpha = np.linspace(0, 1, len(path))
+            bspline = make_interp_spline(alpha, path, k=2)
 
-            path = interpolator(alpha)
+            alpha_new = np.linspace(0, 1, len(path) * 20)
+            smoothed_path = bspline(alpha_new)
 
             smoothed_msg = msg
             smoothed_msg.poses = []
-            for point in path:
+            for point in smoothed_path:
                 pose = PoseStamped()
                 pose.pose.position.x = point[0]
                 pose.pose.position.y = point[1]
