@@ -20,20 +20,35 @@ class PoseArraySmootherNode:
     def pose_array_callback(self, msg: Path):
         try:
             path = np.array([[p.pose.position.x, p.pose.position.y] for p in msg.poses])
+            away_from_start = False
+
+            max_distance_away_from_start = 9
+            min_distance_away_from_start = 16
+
+            per = 0
+
+            # Determine loop closure and BSpline periodicity
+            for node in path:
+                distance_lc = node[0] ** 2 + node[1] ** 2
+                if away_from_start and (distance_lc < max_distance_away_from_start):
+                    per = 1
+                    break
+                if not away_from_start and (distance_lc > min_distance_away_from_start):
+                    away_from_start = True
+
+            # Linear interpolation between center points to add more points for BSpline smoothing
             distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
             distance = np.insert(distance, 0, 0) / distance[-1]
+
             alpha = np.linspace(0, 1, len(path) * 3)
             interpolator = interp1d(distance, path, kind="linear", axis=0)
             path = interpolator(alpha)
 
-            alpha = np.linspace(0, len(path), 1)
+            # Smooth path with BSpline interpolation
             path = path.T
             w = np.array([1] * len(path[0]))
 
-            # m = len(path[0])
-            # s = m - (2 * m) ** (1 / 2)
-            tck, u = splprep(path, w=w, s=10)
-            print(tck)
+            tck, u = splprep(path, w=w, s=10, per=per)
             smoothed_path = np.array(splev(u, tck)).T
 
             smoothed_msg = msg
