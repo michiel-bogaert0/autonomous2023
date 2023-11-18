@@ -6,11 +6,7 @@ TransformFrames::TransformFrames(ros::NodeHandle &n)
     : nh(n), tfBuffer(), tfListener(tfBuffer) {}
 
 Pathplanning::Pathplanning(ros::NodeHandle &n)
-    : n_(n), frametf_(n), min_distance_away_from_start_(n.param<double>(
-                              "min_distance_away_from_start", 4.0)),
-      max_distance_away_from_start_(
-          n.param<double>("max_distance_away_from_start", 9.0)),
-      triangulator_(n) {
+    : n_(n), frametf_(n), triangulator_(n) {
   this->path_pub_ = n_.advertise<nav_msgs::Path>("/output/path", 10);
   this->map_sub_ = n_.subscribe("/input/local_map", 10,
                                 &Pathplanning::receive_new_map, this);

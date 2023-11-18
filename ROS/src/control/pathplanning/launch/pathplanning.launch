@@ -24,9 +24,6 @@
             <param name="vis_namespace" value="pathplanning_vis" />
             <param name="vis_lifetime" value="0.1" />
 
-            <param name="min_distance_away_from_start" value="16.0" />
-            <param name="max_distance_away_from_start" value="9.0" />
-
             <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
             <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
         </node>
