@@ -2,10 +2,10 @@
 #define __MCL_PARTICLE_H__
 
 #include <iostream>
-#include <vector>
 #include <string>
+#include <vector>
 
-#include "kdtree.h"
+#include "kdtree.hpp"
 
 #include <Eigen/Dense>
 
@@ -17,36 +17,35 @@ using namespace Eigen;
 /**
  * Class representing a Particle in the MCL filter
  */
-class Particle
-{
+class Particle {
 public:
-    Particle();
-    Particle(double);
-    Particle(float &w, VectorXf &pose, MatrixXf &variance);
-    inline ~Particle() {};
+  Particle();
+  explicit Particle(double);
+  Particle(float &w, VectorXf &pose, MatrixXf &variance);
+  inline ~Particle(){};
 
-    // getters
-    float &w();
-    MatrixXf &variance(); // pose variance
-    VectorXf &pose();     // robot pose: x,y,theta (heading dir)
-    float &prevyaw();     // Previous yaw
-    int &rev();           // Revolutions
+  // getters
+  float &w();
+  MatrixXf &variance(); // pose variance
+  VectorXf &pose();     // robot pose: x,y,theta (heading dir)
+  float &prevyaw();     // Previous yaw
+  int &rev();           // Revolutions
 
-    // setters
-    void setW(float w);
-    void setPose(VectorXf &pose);
-    void setPrevyaw(float yaw);
-    void setRev(int rev);
-    void incRev();
-    void decRev();
-    void setVariance(MatrixXf &variance);
+  // setters
+  void setW(float w);
+  void setPose(VectorXf &pose);
+  void setPrevyaw(float yaw);
+  void setRev(int rev);
+  void incRev();
+  void decRev();
+  void setVariance(MatrixXf &variance);
 
 private:
-    float _w;
-    VectorXf _pose;
-    float _prev_yaw;
-    int _rev;
-    MatrixXf _variance;
+  float _w;
+  VectorXf _pose;
+  float _prev_yaw;
+  int _rev;
+  MatrixXf _variance;
 };
 
 #endif

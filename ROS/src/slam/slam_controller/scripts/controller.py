@@ -10,6 +10,11 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
+from node_fixture.node_management import (
+    set_state_active,
+    set_state_finalized,
+    set_state_inactive,
+)
 from node_launcher.node_launcher import NodeLauncher
 from std_msgs.msg import Header, UInt16
 from std_srvs.srv import Empty
@@ -39,6 +44,7 @@ class Controller:
         self.state_publisher = rospy.Publisher(
             "/state", State, queue_size=10, latch=True
         )
+        set_state_inactive("slam_mcl")
 
         while not rospy.is_shutdown():
             try:
@@ -76,6 +82,7 @@ class Controller:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
                 elif self.mission == AutonomousMission.SKIDPAD:
+                    set_state_active("slam_mcl")
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
                 elif self.mission == AutonomousMission.AUTOCROSS:
@@ -94,6 +101,7 @@ class Controller:
             else:
                 self.launcher.shutdown()
         elif not rospy.has_param("/mission"):
+            set_state_finalized("slam_mcl")
             self.launcher.shutdown()
             new_state = SLAMStatesEnum.IDLE
 
