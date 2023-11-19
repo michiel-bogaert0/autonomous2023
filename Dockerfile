@@ -24,13 +24,11 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     wget \
     tzdata \
     keyboard-configuration \
-    git \ 
-    wget \
+    git \
     rsync \
     unzip \
     g++ \
     vim \
-    curl \
     lsb-release \
     mesa-utils \
     htop \

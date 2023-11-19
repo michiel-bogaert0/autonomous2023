@@ -180,26 +180,6 @@ class MergeNode:
                 ROSNode.do_transform_observations(late_obs, tf_late_to_base)
             )
 
-            # Add covariances and beliefs to the transformed observations
-            for i in range(len(early_obs.observations)):
-                time_transformed_early_obs.observations[
-                    i
-                ].covariance = early_obs.observations[i].covariance
-                time_transformed_early_obs.observations[
-                    i
-                ].observation.observation_class = early_obs.observations[
-                    i
-                ].observation.observation_class
-            for i in range(len(time_transformed_late_obs.observations)):
-                time_transformed_late_obs.observations[
-                    i
-                ].covariance = late_obs.observations[i].covariance
-                time_transformed_late_obs.observations[
-                    i
-                ].observation.observation_class = late_obs.observations[
-                    i
-                ].observation.observation_class
-
             # Proceed fusion by matching lidar with camera observations
             self.kd_tree_merger(time_transformed_early_obs, time_transformed_late_obs)
 
