@@ -81,10 +81,11 @@ class Controller:
                 if self.mission == AutonomousMission.ACCELERATION:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
-                elif self.mission == AutonomousMission.SKIDPAD:
                     set_state_active("slam_mcl")
+                elif self.mission == AutonomousMission.SKIDPAD:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
+                    set_state_active("slam_mcl")
                 elif self.mission == AutonomousMission.AUTOCROSS:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.EXPLORATION
