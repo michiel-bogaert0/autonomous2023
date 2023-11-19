@@ -4,8 +4,8 @@
 
 namespace node_fixture {
 
-const char *ManagedNodeStateStrings[4] = {"Unconfigured", "Inactive", "Active",
-                                          "Finalized"};
+const char *ManagedNodeStateStrings[4] = {"unconfigured", "inactive", "active",
+                                          "finalized"};
 
 DiagnosticPublisher::DiagnosticPublisher(ros::NodeHandle &n)
     : DiagnosticPublisher(n, "default") {}

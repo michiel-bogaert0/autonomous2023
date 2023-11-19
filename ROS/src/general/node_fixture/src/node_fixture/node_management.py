@@ -2,7 +2,7 @@
 from functools import partial
 
 import rospy
-from fixture import NodeManagingStatesEnum
+from node_fixture.fixture import NodeManagingStatesEnum
 from node_fixture.srv import (
     GetNodeState,
     GetNodeStateRequest,
@@ -13,24 +13,25 @@ from node_fixture.srv import (
 )
 
 
-def set_state(self, name: str, state: str) -> None:
-    rospy.service_proxy(f"/node_managing/{name}/set", SetNodeState)(state)
+def set_state(name: str, state: str) -> None:
+    rospy.wait_for_service(f"/node_managing/{name}/set")
+    return rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(state)
 
 
-def set_state_active(self, name: str) -> None:
-    set_state(self, name, NodeManagingStatesEnum.ACTIVE)
+def set_state_active(name: str) -> None:
+    return set_state(name, NodeManagingStatesEnum.ACTIVE)
 
 
-def set_state_inactive(self, name: str) -> None:
-    set_state(self, name, NodeManagingStatesEnum.INACTIVE)
+def set_state_inactive(name: str) -> None:
+    return set_state(name, NodeManagingStatesEnum.INACTIVE)
 
 
-def set_state_unconfigured(self, name: str) -> None:
-    set_state(self, name, NodeManagingStatesEnum.UNCONFIGURED)
+def set_state_unconfigured(name: str) -> None:
+    return set_state(name, NodeManagingStatesEnum.UNCONFIGURED)
 
 
-def set_state_finalized(self, name: str) -> None:
-    set_state(self, name, NodeManagingStatesEnum.FINALIZED)
+def set_state_finalized(name: str) -> None:
+    return set_state(name, NodeManagingStatesEnum.FINALIZED)
 
 
 class ManagedNode:
