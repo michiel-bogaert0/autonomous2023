@@ -21,6 +21,7 @@ class Main:
         self.map_filename = rospy.get_param("~map", "circle_R15") + ".yaml"
         self.mission = rospy.get_param("~mission", "trackdrive")
         self.max_time = rospy.Duration.from_sec(rospy.get_param("~max_time", 60))
+        self.iterations = rospy.get_param("~iterations", 1)
         self.state = AutonomousStatesEnum.ASOFF
         self.launcher = getLauncher(rospy.get_param("~logging", True))
         self.saveData = Data()
@@ -34,6 +35,7 @@ class Main:
         rospy.Subscriber("/ugr/car/loopclosure", UInt16, self.loopclosure_callback)
 
         self.simulation = 0
+        self.iterations_counter = 0
         self.evalution_finished = False
         self.simulation_finished = False
         self.start_simulation()
@@ -84,6 +86,12 @@ class Main:
 
         # Did all the simulations
         if self.tuner.simulation_finished():
+            self.iterations_counter += 1
+            if self.iterations_counter < self.iterations:
+                rospy.loginfo("resetting parameters")
+                self.tuner.reset()
+                self.start_simulation()
+                return
             rospy.loginfo("Finished all simulations")
 
             rospy.loginfo(f"Data:\n{self.saveData.to_str()}")

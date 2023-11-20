@@ -15,7 +15,8 @@ class Param:
         with open(self.yaml_path, "r") as f:
             self.data = list(yaml.safe_load_all(f))
 
-        self.previous = self.get_parameter()
+        self.start = self.get_parameter()
+        self.previous = self.start
 
     # get the value from the parameter
     def get_parameter(self):
@@ -39,3 +40,6 @@ class Param:
             f"Change parameter({self.parameter_name}) to {parameter} in yaml file"
         )
         return (self.parameter_name, parameter)
+
+    def reset(self):
+        self.set_parameter(self.start)

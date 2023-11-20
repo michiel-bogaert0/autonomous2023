@@ -40,6 +40,10 @@ class Tuner(ABC):
     def simulation_finished(self):
         pass
 
+    @abstractmethod
+    def reset(self):
+        pass
+
 
 class SingleTuner(Tuner):
     def __init__(self, param_config) -> None:
@@ -55,6 +59,10 @@ class SingleTuner(Tuner):
     @abstractmethod
     def simulation_finished(self):
         pass
+
+    @abstractmethod
+    def reset(self):
+        self.param.reset()
 
 
 class MultiTuner(Tuner):
@@ -82,6 +90,11 @@ class MultiTuner(Tuner):
     def simulation_finished(self):
         return self.counter >= len(self.combinations)
 
+    def reset(self):
+        for param in self.params:
+            param.reset()
+        self.counter = 0
+
 
 class SumTuner(SingleTuner):
     def __init__(self, param_config, sum_config) -> None:
@@ -92,10 +105,14 @@ class SumTuner(SingleTuner):
 
     def change_tuner(self):
         self.counter += 1
-        return self.param.previous + self.sum
+        return self.param.get_parameter() + self.sum
 
     def simulation_finished(self):
         return self.counter >= self.simulation_count
+
+    def reset(self):
+        super().reset()
+        self.counter = 0
 
 
 class ListTuner(SingleTuner):
@@ -112,6 +129,10 @@ class ListTuner(SingleTuner):
     def simulation_finished(self):
         return self.counter >= len(self.values)
 
+    def reset(self):
+        super().reset()
+        self.counter = 0
+
 
 class DefaultTuner(SingleTuner):
     def __init__(self, param_config) -> None:
@@ -122,3 +143,6 @@ class DefaultTuner(SingleTuner):
 
     def simulation_finished(self):
         return True
+
+    def reset(self):
+        super().reset()
