@@ -1,16 +1,16 @@
-mode: multi # none, sum, list
+mode: multi # The tuner mode: none, sum, list, multi
 
 param:
-  name: particle_count
-  file: /config/fastslam1.yaml
-  pkg: slam_fastslam
-  index: None
+  name: particle_count # Name of the parameter to tune
+  file: /config/fastslam1.yaml # The location of the file where the parameter is located
+  pkg: slam_fastslam # The package where the file is located
+  index: None # The index of the parameter, if the parameter is a list (None if not)
 
 list:
-  values: [950, 1000] # changes the state to the lenght of the list
+  values: [950, 1000] # List of values to try
 
 sum:
-  add_value: -100 # value to add to the parameter
+  add_value: -100 # value to add to the parameter each time
   simulation_count: 2 # number of simulations to run
 
 multi:

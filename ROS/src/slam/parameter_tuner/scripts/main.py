@@ -2,7 +2,7 @@
 from time import sleep
 
 import rospy
-from data import Data, SimulationData, SimulationStopEnum
+from data import SimulationData, SimulationStopEnum, getDataHandler
 from evaluation import Evaluation
 from launcher import getLauncher
 from node_fixture.fixture import AutonomousStatesEnum, StateMachineScopeEnum
@@ -24,7 +24,7 @@ class Main:
         self.iterations = rospy.get_param("~iterations", 1)
         self.state = AutonomousStatesEnum.ASOFF
         self.launcher = getLauncher(rospy.get_param("~logging", True))
-        self.saveData = Data()
+        self.saveData = getDataHandler(rospy.get_param("~data", "print"))
         self.tuner = getTuner(rospy.get_param("~params_config_file"))
         self.evalution = Evaluation(
             rospy.get_param("~evaluation", False), self.handle_end_evaluation
@@ -68,6 +68,7 @@ class Main:
 
     def handle_end_evaluation(self, data) -> None:
         self.simulation_data.avgDistanceToConeSLAM = data.avgDistanceToConeSLAM
+        self.simulation_data.labelsConesSlam = data.labelsConesSlam
         self.evalution_finished = True
         self.complete_simulation()
 
@@ -94,7 +95,7 @@ class Main:
                 return
             rospy.loginfo("Finished all simulations")
 
-            rospy.loginfo(f"Data:\n{self.saveData.to_str()}")
+            self.saveData.end()
 
             rospy.signal_shutdown("Finished all simulations")
             return

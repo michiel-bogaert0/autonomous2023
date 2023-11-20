@@ -8,7 +8,7 @@
 
     <param name="evaluation" value="True" />
     <param name="iterations" value="2" />
-
+    <param name="data" value="csv" />  <!-- How to handle the data (print, csv) -->
     <param name="max_time" value="100" />  <!-- max duration simulation can run in seconds -->
     <param name="logging" value="False" />
 
