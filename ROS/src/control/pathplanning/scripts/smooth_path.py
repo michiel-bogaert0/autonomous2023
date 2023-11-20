@@ -11,6 +11,13 @@ class PoseArraySmootherNode:
     def __init__(self):
         rospy.init_node("pose_array_smoother_node", anonymous=True)
 
+        self.max_distance_away_from_start = rospy.get_param(
+            "~max_distance_away_from_start", 9
+        )
+        self.min_distance_away_from_start = rospy.get_param(
+            "~min_distance_away_from_start", 16
+        )
+
         # Subscriber and publisher
         self.subscriber = rospy.Subscriber(
             "/input/path", Path, self.pose_array_callback
@@ -22,18 +29,22 @@ class PoseArraySmootherNode:
             path = np.array([[p.pose.position.x, p.pose.position.y] for p in msg.poses])
             away_from_start = False
 
-            max_distance_away_from_start = 9
-            min_distance_away_from_start = 16
-
-            per = 0
+            per = 0  # BSpline periodicity, 0 = not periodic, 1 = periodic
 
             # Determine loop closure and BSpline periodicity
             for node in path:
                 distance_lc = node[0] ** 2 + node[1] ** 2
-                if away_from_start and (distance_lc < max_distance_away_from_start):
+                if away_from_start and (
+                    distance_lc < self.max_distance_away_from_start
+                ):
                     per = 1
+                    rospy.loginfo(
+                        "Loop closure detected, setting BSpline periodicity to 1"
+                    )
                     break
-                if not away_from_start and (distance_lc > min_distance_away_from_start):
+                if not away_from_start and (
+                    distance_lc > self.min_distance_away_from_start
+                ):
                     away_from_start = True
 
             # Linear interpolation between center points to add more points for BSpline smoothing
@@ -45,11 +56,15 @@ class PoseArraySmootherNode:
             path = interpolator(alpha)
 
             # Smooth path with BSpline interpolation
-            path = path.T
-            w = np.array([1] * len(path[0]))
+            path = (
+                path.T
+            )  # Transpose to get correct shape for BSpline, splprep expects (2, N)
+            w = np.array([1] * len(path[0]))  # Weights for BSpline
 
-            tck, u = splprep(path, w=w, s=10, per=per)
-            smoothed_path = np.array(splev(u, tck)).T
+            tck, u = splprep(path, w=w, s=10, per=per)  # Calculate BSpline
+            smoothed_path = np.array(
+                splev(u, tck)
+            ).T  # Evaluate BSpline and transpose back to (N, 2)
 
             smoothed_msg = msg
             smoothed_msg.poses = []
