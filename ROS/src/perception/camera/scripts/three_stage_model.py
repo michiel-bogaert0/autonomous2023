@@ -3,6 +3,7 @@ import time
 import cv2
 import numpy as np
 import numpy.typing as npt
+import rospy
 import torch
 from cone_detector import ConeDetector
 from keypoint_detector import KeypointDetector
@@ -99,7 +100,15 @@ class ThreeStageModel:
         cones = self.height_to_pos(categories, heights, bottoms)
 
         # Add the beliefs back
-        cones = np.hstack((bboxes[valid_cones, 4], cones))
+        rospy.loginfo("\n\n\n\n\n\n\n***")
+        rospy.loginfo(cones)
+        cones = np.hstack(
+            (
+                np.reshape(bboxes[valid_cones, 4], (len(bboxes[valid_cones, 4]), 1)),
+                cones,
+            )
+        )
+        rospy.loginfo(cones)
 
         latencies.append(1000 * (time.perf_counter() - start))
 
