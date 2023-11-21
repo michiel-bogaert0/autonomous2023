@@ -26,8 +26,11 @@ include_directories(
   ${roscpp_INCLUDE_DIRS}
 )
 
+
+
 file(GLOB srcs src/*.cpp include/*.h*)
 add_library(${PROJECT_NAME} ${srcs})
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
 
