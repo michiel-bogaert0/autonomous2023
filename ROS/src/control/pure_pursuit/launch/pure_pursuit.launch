@@ -4,7 +4,7 @@
 
         <param name="publish_rate" value="50" />
 
-        <param name="trajectory/minimal_distance" value="1.2" />
+        <param name="trajectory/minimal_distance" value="4" />
         <param name="trajectory/t_step" value="0.05" />
         <param name="trajectory/max_angle" value="3" />
 

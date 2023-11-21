@@ -69,7 +69,6 @@ class PurePursuit:
             - t_step: the t step the alg takes when progressing through the underlying parametric equations
                       Indirectly determines how many points are checked per segment.
         """
-        self.minimal_distance = rospy.get_param("~trajectory/minimal_distance", 2)
         self.trajectory = Trajectory()
         self.publish_rate = rospy.get_param("~publish_rate", 10)
 
