@@ -2,7 +2,7 @@
 ugr:
   car:
     steering:
-      transmission: 0.25
+      transmission: 0.2
 
 pure_pursuit:
   speed:

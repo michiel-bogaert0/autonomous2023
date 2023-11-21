@@ -12,7 +12,7 @@
   <node pkg="tf" type="static_transform_publisher" name="ugr_ouster_lidar"
     args="0 0 0 0 0 -0.0087197 0.999962 os_sensor os_lidar 10" />
   <node pkg="tf" type="static_transform_publisher" name="ugr_cam0"
-    args="0.45   0 0.74 0 0 -0.0218149 0.999762 ugr/car_base_link ugr/car_base_link/cam0 10" />
+    args="0.45 0 0.74 0 0 -0.0087197 0.999962 ugr/car_base_link ugr/car_base_link/cam0 10" />
 
   <node pkg="tf" type="static_transform_publisher" name="ugr_imu0"
     args="0.10 0 0.35 0 0 0 1 ugr/car_base_link ugr/car_base_link/imu0 10" />

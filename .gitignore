@@ -32,3 +32,4 @@ tools/camera_calibration/**/*.jpg
 calib_images/
 
 env-vars.sh
+/data-error-correction

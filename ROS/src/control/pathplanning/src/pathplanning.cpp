@@ -6,11 +6,7 @@ TransformFrames::TransformFrames(ros::NodeHandle &n)
     : nh(n), tfBuffer(), tfListener(tfBuffer) {}
 
 Pathplanning::Pathplanning(ros::NodeHandle &n)
-    : n_(n), frametf_(n), min_distance_away_from_start_(n.param<double>(
-                              "min_distance_away_from_start", 4.0)),
-      max_distance_away_from_start_(
-          n.param<double>("max_distance_away_from_start", 9.0)),
-      triangulator_(n) {
+    : n_(n), frametf_(n), triangulator_(n) {
   this->path_pub_ = n_.advertise<nav_msgs::Path>("/output/path", 10);
   this->map_sub_ = n_.subscribe("/input/local_map", 10,
                                 &Pathplanning::receive_new_map, this);
@@ -66,8 +62,6 @@ void Pathplanning::compute(const std::vector<std::vector<double>> &cones,
 
   poses.push_back(zero_pose);
 
-  bool away_from_start = false;
-
   for (const auto &node : path) {
     geometry_msgs::PoseStamped pose;
 
@@ -84,17 +78,6 @@ void Pathplanning::compute(const std::vector<std::vector<double>> &cones,
     pose.header.stamp = header.stamp;
 
     poses.push_back(pose);
-
-    double distance = pow(node->x, 2) + pow(node->y, 2);
-
-    if (away_from_start && distance < max_distance_away_from_start_) {
-      // Close loop
-      poses.push_back(zero_pose);
-      break;
-    }
-    if (!away_from_start && distance > min_distance_away_from_start_) {
-      away_from_start = true;
-    }
   }
 
   nav_msgs::Path output;
@@ -102,7 +85,7 @@ void Pathplanning::compute(const std::vector<std::vector<double>> &cones,
   output.poses = poses;
   output.header.stamp = header.stamp;
 
-  nav_msgs::Path output_transformed = this->frametf_.pose_transform(output);
+  nav_msgs::Path output_transformed = output;
 
   this->path_pub_.publish(output_transformed);
 }
