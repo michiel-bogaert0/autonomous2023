@@ -28,7 +28,7 @@ class NodeLauncher:
 
         self.action_to_execute = ""
 
-    def launch_node(self, package: str, launchfile: str, arguments: [str] = []) -> None:
+    def launch_node(self, package: str, launchfile: str, arguments=None) -> None:
         """Launch roslaunch file
 
         Args:
@@ -37,6 +37,10 @@ class NodeLauncher:
             arguments: list of arguments (for example: ['filename:=chicane.yaml'])
 
         """
+
+        if arguments is None:
+            arguments = []
+
         # Convert str to Path
         launchfile = Path(launchfile)
 
