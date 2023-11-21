@@ -26,19 +26,34 @@ def getDataHandler(method: str):
 
 
 class Data(ABC):
+    """
+    Abstract class to handle data.
+    """
+
     def __init__(self) -> None:
         pass
 
     @abstractmethod
     def add(self, simulation_data):
+        """
+        Adds simulation data to the data handler.
+        """
         pass
 
     @abstractmethod
     def end(self):
+        """
+        This method can be used for any cleanup or finalization tasks.
+        """
         pass
 
 
 class PrintData(Data):
+    """
+    Class to handle data.
+    Just prints the data to the console at the end.
+    """
+
     def __init__(self) -> None:
         self.data = []
 
@@ -46,6 +61,9 @@ class PrintData(Data):
         self.data.append(simulation_data)
 
     def end(self):
+        """
+        Prints the data to the console.
+        """
         str = ""
         for simulation_data in self.data:
             str += simulation_data.to_str()
@@ -53,7 +71,17 @@ class PrintData(Data):
 
 
 class CsvData:
+    """
+    Class to handle CSV data storage and manipulation.
+    """
+
     def __init__(self) -> None:
+        """
+        Initializes the CsvData object.
+
+        Creates a folder to store the CSV files if it doesn't exist.
+        Generates a unique filename based on the current time.
+        """
         folder_path = rospkg.RosPack().get_path("parameter_tuner") + "/tuner_data"
         if not os.path.exists(folder_path):
             # Create the new folder
@@ -66,6 +94,13 @@ class CsvData:
         self.path = folder_path + "/" + filename
 
     def add(self, simulation_data):
+        """
+        Adds simulation data to the CSV file.
+
+        Args:
+            simulation_data: The simulation data to be added.
+
+        """
         data = simulation_data.to_dict()
         file_exists = False
         try:
@@ -86,10 +121,27 @@ class CsvData:
             csv_writer.writerow(data)
 
     def end(self):
+        """
+        Placeholder method.
+
+        This method can be used for any cleanup or finalization tasks.
+        """
         pass
 
 
 class SimulationData:
+    """
+    Class representing simulation data.
+
+    Attributes:
+        nr (int): The simulation number.
+        parameters (list): The parameters used in the simulation.
+        duration (float): The duration of the simulation in seconds.
+        stop_reason (SimulationStopEnum): The reason for stopping the simulation.
+        avgDistanceToConeSLAM (list): The average distance to cones in SLAM.
+        labelsConesSlam (list): The labels of cones in SLAM.
+    """
+
     def __init__(self, nr: int, parameters) -> None:
         self.nr = nr
         self.parameters = parameters
@@ -99,13 +151,21 @@ class SimulationData:
         self.labelsConesSlam = []
 
     def to_str(self):
-        # parameters_str = ""
-        # for param in self.parameters:
-        #     (name, value) = param
-        #     parameters_str += "\n\t\t" + name + ": " + str(value)
+        """
+        Convert the simulation data to a string representation.
+
+        Returns:
+            str: The string representation of the simulation data.
+        """
         return f"Simulation: {self.nr}\n\tParameters: {self.parameters}\n\tDuration (sec): {self.duration.to_sec()}\n\tStop reason: {self.stop_reason}\n"
 
     def to_dict(self):
+        """
+        Convert the simulation data to a dictionary representation.
+
+        Returns:
+            dict: The dictionary representation of the simulation data.
+        """
         params = []
         for param, value in self.parameters:
             params.append({param: value})

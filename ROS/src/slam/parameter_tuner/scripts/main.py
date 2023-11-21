@@ -57,6 +57,12 @@ class Main:
         self.launcher.shutdown()
 
     def handle_end_simulation(self, stop_reason: str) -> None:
+        """
+        Handles the end of the simulation by updating simulation data and completing the simulation.
+
+        Args:
+            stop_reason (str): The reason for stopping the simulation.
+        """
         self.launcher.shutdown()
 
         # Save simulation data
@@ -67,12 +73,27 @@ class Main:
         self.complete_simulation()
 
     def handle_end_evaluation(self, data) -> None:
+        """
+        Handles the end of evaluation by updating simulation data and completing the simulation.
+
+        Args:
+            data: The evaluation data containing average distance to cone SLAM and labels of cones detected by SLAM.
+        """
         self.simulation_data.avgDistanceToConeSLAM = data.avgDistanceToConeSLAM
         self.simulation_data.labelsConesSlam = data.labelsConesSlam
         self.evalution_finished = True
         self.complete_simulation()
 
     def complete_simulation(self):
+        """
+        Completes the simulation process.
+
+        If the simulation is not finished, it waits for the simulation to complete.
+        If the evaluation is not finished and not turned on, it waits for the evaluation to complete.
+        After the simulation and evaluation are finished, it saves the simulation data.
+        If all simulations are completed, it resets the parameters and starts a new simulation.
+        If all iterations are completed, it finishes all simulations and shuts down.
+        """
         if not self.simulation_finished:
             rospy.loginfo("Waiting for simulation")
             return
@@ -103,19 +124,29 @@ class Main:
         self.start_simulation()
 
     def start_simulation(self):
+        """
+        Starts the simulation by changing parameters, launching the simulation, launching the evaluation,
+        launching the car, and recording the start time.
+        """
         self.state = AutonomousStatesEnum.ASOFF
         parameters = self.tuner.change()
-        sleep(1)
+        sleep(0.1)
         self.simulation += 1
         rospy.loginfo("Start simulation %s", self.simulation)
         self.simulation_data = SimulationData(self.simulation, parameters)
         self.launcher.launch_simulation(self.map_filename)
-        sleep(1)
+        sleep(0.1)
         self.evalution.launch()
         self.launcher.launch_car(self.mission)
         self.start_time = rospy.Time.now()
 
     def state_callback(self, data: State):
+        """
+        Callback function for handling state updates.
+
+        Args:
+            data (State): The state data received.
+        """
         rospy.loginfo("Scope: %s, State: %s", data.scope, data.cur_state)
         if data.scope == StateMachineScopeEnum.AUTONOMOUS:
             self.state = data.cur_state

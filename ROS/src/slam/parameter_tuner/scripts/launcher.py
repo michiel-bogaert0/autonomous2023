@@ -8,6 +8,9 @@ from node_launcher.node_launcher import NodeLauncher
 
 
 def getLauncher(logging: bool):
+    """
+    Returns an instance of Launcher based on the logging parameter.
+    """
     if logging:
         return LauncherLogging()
     else:
@@ -15,6 +18,10 @@ def getLauncher(logging: bool):
 
 
 class Launcher(ABC):
+    """
+    This class represents a launcher for simulation and car run in an autonomous system.
+    """
+
     def __init__(self) -> None:
         self.simulation_running = False
         self.car_running = False
@@ -42,6 +49,9 @@ class Launcher(ABC):
         rospy.loginfo("Launch car run")
 
     def shutdown(self):
+        """
+        Shuts down the system by calling the shutdown_car() and shutdown_simulation() methods.
+        """
         self.shutdown_car()
         self.shutdown_simulation()
 
@@ -55,12 +65,19 @@ class Launcher(ABC):
 
 
 class LauncherLogging(Launcher):
+    """A class that extends the Launcher class and provides logging functionality for launching simulation and car nodes."""
+
     def __init__(self) -> None:
         super().__init__()
         self.simulationLauncher = NodeLauncher()
         self.carLauncher = NodeLauncher()
 
     def launch_simulation(self, map_filename: str):
+        """Launches the simulation node with the specified map filename.
+
+        Args:
+            map_filename (str): The filename of the map to be used for simulation.
+        """
         super().launch_simulation(map_filename)
         self.simulationLauncher.launch_node(
             "ugr_launch",
@@ -75,6 +92,11 @@ class LauncherLogging(Launcher):
             self.simulation_running = False
 
     def launch_car(self, mission: str):
+        """Launches the car node with the specified mission.
+
+        Args:
+            mission (str): The mission to be executed by the car.
+        """
         super().launch_car(mission)
         self.carLauncher.launch_node(
             "ugr_launch", "launch/internal/run.launch", [str("mission:=" + mission)]
@@ -87,6 +109,7 @@ class LauncherLogging(Launcher):
             self.car_running = False
 
     def shutdown_simulation(self):
+        """Shuts down the simulation node."""
         if not self.simulation_running:
             return
         super().shutdown_simulation()
@@ -94,6 +117,7 @@ class LauncherLogging(Launcher):
         self.simulation_running = False
 
     def shutdown_car(self):
+        """Shuts down the car node."""
         if not self.car_running:
             return
         super().shutdown_car()
@@ -102,10 +126,20 @@ class LauncherLogging(Launcher):
 
 
 class LauncherSubprocess(Launcher):
+    """
+    A class that extends the Launcher class and provides methods to launch and shutdown simulation and car processes.
+    """
+
     def __init__(self) -> None:
         super().__init__()
 
     def launch_simulation(self, map_filename: str):
+        """
+        Launches the simulation process with the specified map filename.
+
+        Args:
+            map_filename (str): The filename of the map to be used in the simulation.
+        """
         super().launch_simulation(map_filename)
         self.simulationProcess = subprocess.Popen(
             f"roslaunch ugr_launch simulation.launch filename:={map_filename} >/dev/null 2>&1",
@@ -116,6 +150,12 @@ class LauncherSubprocess(Launcher):
         self.simulation_running = True
 
     def launch_car(self, mission: str):
+        """
+        Launches the car process with the specified mission.
+
+        Args:
+            mission (str): The mission to be executed by the car.
+        """
         super().launch_car(mission)
         self.carProcess = subprocess.Popen(
             f"roslaunch ugr_launch run.launch mission:={mission} >/dev/null 2>&1",
@@ -126,6 +166,9 @@ class LauncherSubprocess(Launcher):
         self.car_running = True
 
     def shutdown_simulation(self):
+        """
+        Shuts down the simulation process if it is running.
+        """
         if not self.simulation_running:
             return
         super().shutdown_simulation()
@@ -133,6 +176,9 @@ class LauncherSubprocess(Launcher):
         self.simulation_running = False
 
     def shutdown_car(self):
+        """
+        Shuts down the car process if it is running.
+        """
         if not self.car_running:
             return
         super().shutdown_car()
