@@ -112,7 +112,7 @@ class Trajectory:
 
             if distance > minimal_distance**2:
                 self.target = np.array([target_x, target_y])
-                return (target_x, target_y)
+                return (self.target[0], self.target[1])
 
             self.closest_index = (self.closest_index + 1) % len(self.path_blf)
 
@@ -129,7 +129,5 @@ class Trajectory:
 
                 pose_t = do_transform_pose(pose, self.trans)
 
-                return (
-                    pose_t.pose.position.x,
-                    pose_t.pose.position.y,
-                )
+                self.target = np.array([pose_t.pose.position.x, pose_t.pose.position.y])
+                return (self.target[0], self.target[1])
