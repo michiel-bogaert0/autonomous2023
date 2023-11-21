@@ -59,9 +59,6 @@ class PurePursuit:
         )
         self.odom_sub = rospy.Subscriber("/input/odom", Odometry, self.get_odom_update)
 
-        self.current_pos = [0, 0]  # in blf
-        self.current_path = np.zeros((0, 2))
-
         """
           Trajectory parameters and conditions
             - minimal_distance: the minimal required distance between the car and the candidate target point
