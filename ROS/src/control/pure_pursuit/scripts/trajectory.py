@@ -36,7 +36,7 @@ class Trajectory:
             None, all variables are class variables
 
         """
-        trans = self.tf_buffer.lookup_transform_full(
+        self.trans = self.tf_buffer.lookup_transform_full(
             self.base_link_frame,
             rospy.Time(0),
             self.base_link_frame,
@@ -46,21 +46,25 @@ class Trajectory:
         )
 
         # save time of last transform for next transform
-        self.time_source = trans.header.stamp
+        self.time_source = self.trans.header.stamp
 
         # Transform
-        new_header = Header(frame_id=self.base_link_frame, stamp=trans.header.stamp)
+        new_header = Header(
+            frame_id=self.base_link_frame, stamp=self.trans.header.stamp
+        )
         transformed_path = Path(header=new_header)
 
         for point in self.points:
             pose = PoseStamped(
-                header=Header(frame_id=self.base_link_frame, stamp=trans.header.stamp)
+                header=Header(
+                    frame_id=self.base_link_frame, stamp=self.trans.header.stamp
+                )
             )
 
             pose.pose.position.x = point[0]
             pose.pose.position.y = point[1]
 
-            pose_t = do_transform_pose(pose, trans)
+            pose_t = do_transform_pose(pose, self.trans)
 
             transformed_path.poses.append(pose_t)
 
@@ -108,14 +112,24 @@ class Trajectory:
 
             if distance > minimal_distance**2:
                 self.target = np.array([target_x, target_y])
-                return (target_x, target_y, True)
+                return (target_x, target_y)
 
             self.closest_index = (self.closest_index + 1) % len(self.path_blf)
 
             # for trackdrive/autocross, return latest target point if no point is found further away than minimal_distance
             if self.closest_index == current_position_index:
+                pose = PoseStamped(
+                    header=Header(
+                        frame_id=self.base_link_frame, stamp=self.trans.header.stamp
+                    )
+                )
+
+                pose.pose.position.x = self.target[0]
+                pose.pose.position.y = self.target[1]
+
+                pose_t = do_transform_pose(pose, self.trans)
+
                 return (
-                    self.target[0],
-                    self.target[1],
-                    False,
+                    pose_t.pose.position.x,
+                    pose_t.pose.position.y,
                 )

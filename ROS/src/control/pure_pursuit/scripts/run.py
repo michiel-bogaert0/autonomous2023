@@ -142,42 +142,27 @@ class PurePursuit:
                     self.minimal_distance = self.distance_stop
 
                 # Calculate target point
-                target_x, target_y, success = self.trajectory.calculate_target_point(
+                target_x, target_y = self.trajectory.calculate_target_point(
                     self.minimal_distance,
                 )
 
-                if not success:
-                    # BRAKE! We don't know where to drive to!
-                    rospy.loginfo("No target point found!")
-                    self.diagnostics_pub.publish(
-                        create_diagnostic_message(
-                            level=DiagnosticStatus.ERROR,
-                            name="[CTRL PP] Target Point Status",
-                            message="No target point found!",
-                        )
-                    )
-                    self.velocity_cmd.data = 0.0
-                    self.steering_cmd.data = 0.0
-                else:
-                    # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-                    R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (
-                        2 * (target_y - 0)
-                    )
+                # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
+                R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (2 * (target_y - 0))
 
-                    self.steering_cmd.data = self.symmetrically_bound_angle(
-                        np.arctan2(1.0, R), np.pi / 2
-                    )
+                self.steering_cmd.data = self.symmetrically_bound_angle(
+                    np.arctan2(1.0, R), np.pi / 2
+                )
 
-                    self.diagnostics_pub.publish(
-                        create_diagnostic_message(
-                            level=DiagnosticStatus.OK,
-                            name="[CTRL PP] Target Point Status",
-                            message="Target point found.",
-                        )
+                self.diagnostics_pub.publish(
+                    create_diagnostic_message(
+                        level=DiagnosticStatus.OK,
+                        name="[CTRL PP] Target Point Status",
+                        message="Target point found.",
                     )
+                )
 
-                    # Go ahead and drive. But adjust speed in corners
-                    self.velocity_cmd.data = self.speed_target
+                # Go ahead and drive. But adjust speed in corners
+                self.velocity_cmd.data = self.speed_target
 
                 # Publish to velocity and position steering controller
                 self.steering_cmd.data /= self.steering_transmission
