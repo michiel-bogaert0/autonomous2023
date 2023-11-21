@@ -15,17 +15,17 @@ class Trajectory:
     def __init__(self):
         self.closest_index = 0
         self.points = np.array([])
-        self.change_index = rospy.get_param(
-            "~change_index", True
-        )  # True for trackdrive/autocross, false for skidpad/acc
+        self.target = np.array([0, 0])
+
+        # change indix is True for trackdrive/autocross, false for skidpad/acc
+        self.change_index = rospy.get_param("~change_index", True)
 
         # Transformations
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
-        self.world_frame = rospy.get_param(
-            "~world_frame", "ugr/map"
-        )  # for skidpad/acc use ugr/map, for trackdrive/autocross use ugr/car_odom
+        # for skidpad/acc use ugr/map, for trackdrive/autocross use ugr/car_odom
+        self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.time_source = rospy.Time(0)
 
     def transform_blf(self):
@@ -73,14 +73,13 @@ class Trajectory:
         )
         return self.points
 
-    def calculate_target_point(self, minimal_distance, maximal_distance):
+    def calculate_target_point(self, minimal_distance):
         """
         Calculates a target point by traversing the path
         Returns the first points that matches the conditions given by minimal_distance
 
         Args:
             minimal_distance: minimal lookahead distance
-            maximal_distance: maximal lookahead distance
 
         Returns:
             x {float}: x position of target point
@@ -101,30 +100,22 @@ class Trajectory:
         # Iterate until found
         found = False
         while not found:
+            target_x = self.path_blf[self.closest_index][0]
+            target_y = self.path_blf[self.closest_index][1]
+
             # current position is [0,0] in base_link_frame
-            distance = (0 - self.path_blf[self.closest_index][0]) ** 2 + (
-                0 - self.path_blf[self.closest_index][1]
-            ) ** 2
-            if distance > maximal_distance**2:
-                return (
-                    self.path_blf[self.closest_index][0],
-                    self.path_blf[self.closest_index][1],
-                    False,
-                )
+            distance = (0 - target_x) ** 2 + (0 - target_y) ** 2
 
             if distance > minimal_distance**2:
-                return (
-                    self.path_blf[self.closest_index][0],
-                    self.path_blf[self.closest_index][1],
-                    True,
-                )
+                self.target = np.array([target_x, target_y])
+                return (target_x, target_y, True)
 
             self.closest_index = (self.closest_index + 1) % len(self.path_blf)
 
-            # for trackdrive/autocross, return last point if no point further away than minimal_distance
+            # for trackdrive/autocross, return latest target point if no point is found further away than minimal_distance
             if self.closest_index == current_position_index:
                 return (
-                    self.path_blf[-1][0],
-                    self.path_blf[-1][1],
+                    self.target[0],
+                    self.target[1],
                     False,
                 )

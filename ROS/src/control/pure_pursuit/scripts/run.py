@@ -20,12 +20,11 @@ class PurePursuit:
 
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
+        self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
         self.min_speed = rospy.get_param("~speed/min", 0.3)
         self.min_corner_speed = rospy.get_param("~speed/min_corner_speed", 0.7)
         self.wheelradius = rospy.get_param("~wheelradius", 0.1)
-
-        self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
@@ -60,22 +59,17 @@ class PurePursuit:
         )
         self.odom_sub = rospy.Subscriber("/input/odom", Odometry, self.get_odom_update)
 
-        self.current_angle = 0
         self.current_pos = [0, 0]  # in blf
-        self.set_angle = 0
-
         self.current_path = np.zeros((0, 2))
 
         """
           Trajectory parameters and conditions
             - minimal_distance: the minimal required distance between the car and the candidate target point
-            - maximal_distance: the maximal allowed distance between the car and the candidate target point (loop closure)
             - max_angle: the maximal allowed angle difference between the car and the candidate target point
             - t_step: the t step the alg takes when progressing through the underlying parametric equations
                       Indirectly determines how many points are checked per segment.
         """
         self.minimal_distance = rospy.get_param("~trajectory/minimal_distance", 2)
-        self.maximal_distance = rospy.get_param("~trajectory/maximal_distance", 3)
         self.trajectory = Trajectory()
         self.publish_rate = rospy.get_param("~publish_rate", 10)
 
@@ -150,7 +144,6 @@ class PurePursuit:
                 # Calculate target point
                 target_x, target_y, success = self.trajectory.calculate_target_point(
                     self.minimal_distance,
-                    self.maximal_distance,
                 )
 
                 if not success:
@@ -196,7 +189,7 @@ class PurePursuit:
                 self.velocity_pub.publish(self.velocity_cmd)
 
                 point = PointStamped()
-                point.header.stamp = rospy.Time(0)
+                point.header.stamp = self.trajectory.time_source
                 point.header.frame_id = self.base_link_frame
                 point.point.x = target_x
                 point.point.y = target_y
