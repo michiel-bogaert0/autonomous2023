@@ -1,7 +1,10 @@
 #!/usr/bin/python3
+import os
 from functools import partial
 
+import rospkg
 import rospy
+import yaml
 from node_fixture.fixture import NodeManagingStatesEnum
 from node_fixture.srv import (
     GetNodeState,
@@ -33,6 +36,48 @@ def set_state_unconfigured(name: str) -> None:
 
 def set_state_finalized(name: str) -> None:
     return set_state(name, NodeManagingStatesEnum.FINALIZED)
+
+
+def load_params(controller: str, mission: str) -> None:
+    """
+    Load parameters from a YAML file based on the controller and mission.
+    Also takes the car name from the /car parameter.
+
+    Args:
+        controller (str): The name of the controller.
+        mission (str): The name of the mission.
+
+    Returns:
+        None
+    """
+    pkg_path = rospkg.RosPack().get_path("ugr_launch")
+    car = rospy.get_param("/car")
+    filename = f"{controller}_{mission}.yaml"
+    yaml_path = os.path.join(pkg_path, "config/", car, filename)
+    with open(yaml_path, "r") as f:
+        dic = yaml.safe_load(f)
+    for param_name, param_value in get_params(dic):
+        rospy.logerr(f"Setting param {param_name} to {param_value}")
+        rospy.set_param(param_name, param_value)
+
+
+def get_params(d: dict):
+    """
+    Recursively iterates through a dictionary and yields key-value pairs.
+
+    Args:
+        d (dict): The dictionary to iterate through.
+
+    Yields:
+        tuple: A tuple containing the key-value pair.
+
+    """
+    for key, value in d.items():
+        if isinstance(value, dict):
+            for lkey, lvalue in get_params(value):
+                yield (key + "/" + lkey, lvalue)
+        else:
+            yield (key, value)
 
 
 class ManagedNode:

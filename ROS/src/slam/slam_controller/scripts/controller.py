@@ -11,6 +11,7 @@ from node_fixture.fixture import (
     create_diagnostic_message,
 )
 from node_fixture.node_management import (
+    load_params,
     set_state_active,
     set_state_finalized,
     set_state_inactive,
@@ -44,7 +45,6 @@ class Controller:
         self.state_publisher = rospy.Publisher(
             "/state", State, queue_size=10, latch=True
         )
-        set_state_inactive("slam_mcl")
 
         while not rospy.is_shutdown():
             try:
@@ -64,6 +64,10 @@ class Controller:
 
             sleep(0.1)
 
+    def configure(self, mission: AutonomousMission):
+        load_params("SLAM", mission)
+        set_state_inactive("slam_mcl")
+
     def update(self):
         """
         Updates the internal state and launches or kills nodes if needed
@@ -75,6 +79,9 @@ class Controller:
             if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
                 # Go to state depending on mission
                 self.mission = rospy.get_param("/mission")
+                # Configure parameters after mission is set
+                self.configure(self.mission)
+
                 # Reset loop counter
                 rospy.ServiceProxy("/reset_closure", Empty)
 
