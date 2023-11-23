@@ -56,7 +56,10 @@ def load_params(controller: str, mission: str) -> None:
     yaml_path = os.path.join(pkg_path, "config/", car, filename)
     with open(yaml_path, "r") as f:
         dic = yaml.safe_load(f)
+    if dic is None:
+        return
     for param_name, param_value in get_params(dic):
+        param_name = "/" + param_name
         rospy.logerr(f"Setting param {param_name} to {param_value}")
         rospy.set_param(param_name, param_value)
 

@@ -2,7 +2,7 @@
   
   <!-- ? FastSLAM -->
   <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
-    <arg name="map_prefix" value="fastslam/global"/>
+    <arg name="path_to_map" value="ugr/car/map/fastslam/global"/>
   </include>
 
   <arg name="world_frame" default="ugr/map" />

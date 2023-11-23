@@ -76,7 +76,11 @@ MCL::MCL(ros::NodeHandle &n)
   obs_sub.subscribe(n, "/input/observations", 1);
   tf2_filter.registerCallback(boost::bind(&MCL::handleObservations, this, _1));
 
-  mapSubscriber = n.subscribe("/input/map", 1, &MCL::handleMap, this);
+  // "/input/map" --> changed to param to change topic between missions with
+  // node lifecylce
+  mapSubscriber = n.subscribe(
+      this->n.param<double>("path_to_map", "ugr/car/map/fastslam/global");
+      , 1, &MCL::handleMap, this);
 
   vector<double> QAsVector;
   vector<double> RAsVector;
