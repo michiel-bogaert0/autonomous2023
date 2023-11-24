@@ -24,7 +24,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     wget \
     tzdata \
     keyboard-configuration \
-    git \
+    git \ 
     wget \
     rsync \
     unzip \
