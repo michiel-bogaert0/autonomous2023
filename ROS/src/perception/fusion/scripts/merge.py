@@ -336,6 +336,12 @@ class MergeNode:
         return average_observation
 
     def kalman_filter(self, lidar_observation, camera_observation):
+        """
+        This function provides a basic implementation of a Kalman filter to use for sensor fusion
+        Mainly based on https://arxiv.org/pdf/1710.04055.pdf
+        """
+
+        # Initialize numpy arrays
         covariance_matrix_lidar = np.reshape(
             np.array(lidar_observation.covariance), (3, 3)
         )
@@ -368,22 +374,22 @@ class MergeNode:
             np.linalg.inv(covariance_matrix_lidar)
             + np.linalg.inv(covariance_matrix_camera)
         )
+        # Calculate weights of each sensor's observations
         lidar_weight = np.matmul(new_covariance, np.linalg.inv(covariance_matrix_lidar))
         camera_weight = np.matmul(
             new_covariance, np.linalg.inv(covariance_matrix_camera)
         )
 
+        # Calculate the weighted average of both observations based on lidar_weight and camera_weight
         new_prediction = np.matmul(
             lidar_weight, lidar_observation_location
         ) + np.matmul(camera_weight, camera_observation_location)
-        rospy.loginfo("\n\nnew_prediction:")
-        rospy.loginfo(new_prediction)
 
         fused_observation = ObservationWithCovariance()
         fused_observation.observation.observation_class = (
             camera_observation.observation.observation_class
         )
-        fused_observation.observation.belief = 0.0
+        fused_observation.observation.belief = camera_observation.observation.belief
         fused_observation.covariance = tuple(
             np.reshape(new_covariance, (1, 9)).tolist()[0]
         )
