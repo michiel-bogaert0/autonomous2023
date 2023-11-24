@@ -25,10 +25,12 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     tzdata \
     keyboard-configuration \
     git \
+    wget \
     rsync \
     unzip \
     g++ \
     vim \
+    curl \
     lsb-release \
     mesa-utils \
     htop \
