@@ -191,11 +191,12 @@ class Controller:
                     # Perhaps we have to redo this in the future
                     self.target_lap_count = 9
 
+                    set_state_active("slam_mcl")
+
                     # Relaunch (different) nodes
                     self.launcher.launch_node(
                         "slam_controller", f"launch/{self.mission}_{new_state}.launch"
                     )
-                    set_state_active("slam_mcl")
                 else:
                     new_state = SLAMStatesEnum.FINISHED
             else:

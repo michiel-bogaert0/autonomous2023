@@ -45,10 +45,9 @@ namespace slam {
 MCL::MCL(ros::NodeHandle &n)
     : ManagedNode(n, "slam_mcl"), n(n), tfListener(tfBuffer),
       base_link_frame(n.param<string>("base_link_frame", "ugr/car_base_link")),
-      tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0) {
-  // this->tfListener = tf2_ros::TransformListener(this->tfBuffer);
-  // this->base_link_frame = this->n.param<string>("base_link_frame",
-  // "ugr/car_base_link");
+      tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0) {}
+
+void MCL::doConfigure() {
   this->slam_base_link_frame =
       this->n.param<string>("slam_base_link_frame", "ugr/slam_base_link");
   this->world_frame = this->n.param<string>("world_frame", "ugr/car_odom");
@@ -65,9 +64,6 @@ MCL::MCL(ros::NodeHandle &n)
   this->R = Eigen::MatrixXf(2, 2);
   this->yaw_unwrap_threshold =
       this->n.param<float>("yaw_unwrap_threshold", M_PI * 1.3);
-  // this->tf2_filter =
-  // tf2_ros::MessageFilter<ugr_msgs::ObservationWithCovarianceArrayStamped>(this->obs_sub,
-  // this->tfBuffer, this->base_link_frame, 1, 0);
 
   this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
   this->diagPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(
@@ -169,8 +165,6 @@ MCL::MCL(ros::NodeHandle &n)
   diagPublisher->publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                    "Status", "Started.");
 }
-
-void MCL::doConfigure() { ROS_INFO("DO CONFIGURE!"); }
 
 /**
  * Subscriber handler for a "map". Takes the incoming map and prepares the
