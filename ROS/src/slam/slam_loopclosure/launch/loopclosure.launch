@@ -6,7 +6,7 @@
         <arg name="filename" value="circle_R15.yaml"/>
     </include>
     <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
-        <arg name="path_to_map" value="ugr/car/map/gt"/>
+        <arg name="path_to_map" value="/ugr/car/map/gt"/>
     </include>
     <node pkg="slam_loopclosure" output="screen" respawn="true" type="loopclosure" name="loopclosure">
         <param name="world_frame" value="$(arg world_frame)" />

@@ -3,7 +3,7 @@
   <arg name="world_frame" default="ugr/car_odom" />
   <arg name="base_link_frame" default="ugr/car_base_link" />
   <arg name="slam_base_link_frame" default="ugr/slam_base_link" />
-  <arg name="path_to_map" default="ugr/car/map/fastslam/global"/>
+  <arg name="path_to_map" default="/ugr/car/map/fastslam/global"/>
 
   <arg name="setup_stand_dev" default="0.1"/>
   <arg name="particle_count" default="200" />

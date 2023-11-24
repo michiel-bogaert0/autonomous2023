@@ -11,6 +11,7 @@ from node_fixture.fixture import (
     create_diagnostic_message,
 )
 from node_fixture.node_management import (
+    configure_node,
     load_params,
     set_state_active,
     set_state_finalized,
@@ -64,10 +65,6 @@ class Controller:
 
             sleep(0.1)
 
-    def configure(self, mission: AutonomousMission):
-        load_params("SLAM", mission)
-        set_state_inactive("slam_mcl")
-
     def update(self):
         """
         Updates the internal state and launches or kills nodes if needed
@@ -79,8 +76,11 @@ class Controller:
             if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
                 # Go to state depending on mission
                 self.mission = rospy.get_param("/mission")
+
                 # Configure parameters after mission is set
-                self.configure(self.mission)
+                load_params("SLAM", self.mission)
+                # Confige nodes after mission is set
+                configure_node("slam_mcl")
 
                 # Reset loop counter
                 rospy.ServiceProxy("/reset_closure", Empty)
@@ -96,12 +96,15 @@ class Controller:
                 elif self.mission == AutonomousMission.AUTOCROSS:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.EXPLORATION
+                    set_state_inactive("slam_mcl")
                 elif self.mission == AutonomousMission.TRACKDRIVE:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.EXPLORATION
+                    set_state_inactive("slam_mcl")
                 else:
                     self.target_lap_count = -1
                     new_state = SLAMStatesEnum.EXPLORATION
+                    set_state_inactive("slam_mcl")
 
                 self.launcher.launch_node(
                     "slam_controller", f"launch/{self.mission}_{new_state}.launch"
@@ -192,6 +195,7 @@ class Controller:
                     self.launcher.launch_node(
                         "slam_controller", f"launch/{self.mission}_{new_state}.launch"
                     )
+                    set_state_active("slam_mcl")
                 else:
                     new_state = SLAMStatesEnum.FINISHED
             else:

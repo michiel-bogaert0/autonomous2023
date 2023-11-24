@@ -2,12 +2,11 @@
 
   <!-- Only put nodes here that are related to processing inside SLAM -->
   <!-- There should be NO hardware dependencies! -->
+  <!-- ? MCL -->
+  <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
+    <arg name="path_to_map" value="/ugr/car/map/global"/>
+  </include>
 
-    <!-- ? MCL -->
-    <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
-      <arg name="path_to_map" value="ugr/car/map/global"/>
-    </include>
-
-    <!-- SLAM controller -->
-    <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true" />
+  <!-- SLAM controller -->
+  <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true" />
 </launch>

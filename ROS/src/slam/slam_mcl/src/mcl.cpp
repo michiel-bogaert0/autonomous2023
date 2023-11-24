@@ -79,7 +79,7 @@ MCL::MCL(ros::NodeHandle &n)
   // "/input/map" --> changed to param to change topic between missions with
   // node lifecylce
   mapSubscriber = n.subscribe(
-      this->n.param<string>("path_to_map", "ugr/car/map/fastslam/global"), 1,
+      this->n.param<string>("path_to_map", "/ugr/car/map/fastslam/global"), 1,
       &MCL::handleMap, this);
 
   vector<double> QAsVector;

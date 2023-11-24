@@ -38,6 +38,17 @@ def set_state_finalized(name: str) -> None:
     return set_state(name, NodeManagingStatesEnum.FINALIZED)
 
 
+def configure_node(name: str) -> None:
+    rospy.wait_for_service(f"/node_managing/{name}/get")
+    data = rospy.ServiceProxy(f"/node_managing/{name}/get", GetNodeState)()
+    if data.state == NodeManagingStatesEnum.ACTIVE:
+        set_state_inactive(name)
+        set_state_unconfigured(name)
+    elif data.state == NodeManagingStatesEnum.INACTIVE:
+        set_state_unconfigured(name)
+    set_state_inactive(name)
+
+
 def load_params(controller: str, mission: str) -> None:
     """
     Load parameters from a YAML file based on the controller and mission.
@@ -60,7 +71,6 @@ def load_params(controller: str, mission: str) -> None:
         return
     for param_name, param_value in get_params(dic):
         param_name = "/" + param_name
-        rospy.logerr(f"Setting param {param_name} to {param_value}")
         rospy.set_param(param_name, param_value)
 
 
