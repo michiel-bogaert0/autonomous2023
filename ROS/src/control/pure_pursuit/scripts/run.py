@@ -76,7 +76,7 @@ class PurePursuit(ManagedNode):
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
-        self.start_sender()  # will not work otherwise
+        rospy.spin()  # will not work otherwise
 
     def doConfigure(self):
         # add stuff that needs to be reconfigured when changing missions
@@ -128,12 +128,12 @@ class PurePursuit(ManagedNode):
         Start sending updates. If the data is too old, brake.
         """
         rate = rospy.Rate(self.publish_rate)
-        rospy.loginfo("Starting sending")
+        # rospy.loginfo("Starting sending")
         while not rospy.is_shutdown():
             if self.state == NodeManagingStatesEnum.ACTIVE:
                 try:
                     self.speed_target = rospy.get_param("~speed/target", 3.0)
-                    rospy.loginfo("Starting sending222222")
+                    # rospy.loginfo("Starting sending222222")
                     # First try to get a target point
                     # Change the look-ahead distance (minimal_distance)  based on the current speed
                     if self.actual_speed < self.speed_start:
