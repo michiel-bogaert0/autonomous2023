@@ -1,8 +1,11 @@
 #!/usr/bin/python3
+import os
 from functools import partial
 
+import rospkg
 import rospy
-from fixture import NodeManagingStatesEnum
+import yaml
+from node_fixture.fixture import NodeManagingStatesEnum
 from node_fixture.srv import (
     GetNodeState,
     GetNodeStateRequest,
@@ -12,6 +15,61 @@ from node_fixture.srv import (
     SetNodeStateResponse,
 )
 from ugr_msgs.msg import State
+
+
+def set_state(name: str, state: str) -> None:
+    rospy.wait_for_service(f"/node_managing/{name}/set")
+    return rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(state)
+
+
+def set_state_active(name: str) -> None:
+    return set_state(name, NodeManagingStatesEnum.ACTIVE)
+
+
+def set_state_inactive(name: str) -> None:
+    return set_state(name, NodeManagingStatesEnum.INACTIVE)
+
+
+def set_state_unconfigured(name: str) -> None:
+    return set_state(name, NodeManagingStatesEnum.UNCONFIGURED)
+
+
+def set_state_finalized(name: str) -> None:
+    return set_state(name, NodeManagingStatesEnum.FINALIZED)
+
+
+def configure_node(name: str) -> None:
+    rospy.wait_for_service(f"/node_managing/{name}/get")
+    data = rospy.ServiceProxy(f"/node_managing/{name}/get", GetNodeState)()
+    if data.state == NodeManagingStatesEnum.ACTIVE:
+        set_state_inactive(name)
+        set_state_unconfigured(name)
+    elif data.state == NodeManagingStatesEnum.INACTIVE:
+        set_state_unconfigured(name)
+    set_state_inactive(name)
+
+
+def load_params(controller: str, mission: str) -> None:
+    pkg_path = rospkg.RosPack().get_path("ugr_launch")
+    car = rospy.get_param("/car")
+    filename = f"{controller}_{mission}.yaml"
+    yaml_path = os.path.join(pkg_path, "config/", car, filename)
+    with open(yaml_path, "r") as f:
+        dic = yaml.safe_load(f)
+    if dic is None:
+        return
+    for param_name, param_value in get_params(dic):
+        param_name = "/" + param_name
+        rospy.set_param(param_name, param_value)
+
+
+def get_params(d: dict):
+    for key, value in d.items():
+        if isinstance(value, dict):
+            for lkey, lvalue in get_params(value):
+                yield (key + "/" + lkey, lvalue)
+        else:
+            yield (key, value)
 
 
 class ManagedNode:
@@ -76,51 +134,56 @@ class ManagedNode:
         Returns:
         - SetNodeStateResponse: the service response indicating whether the request was successful
         """
-        original_state = self.state
+
+        # original_state = self.state
         if (
             self.state == NodeManagingStatesEnum.UNCONFIGURED
             and request.state == NodeManagingStatesEnum.INACTIVE
         ):
-            self.doConfigure()
             self.state = NodeManagingStatesEnum.INACTIVE
+            rospy.loginfo(" going to doconfigure")
+            rospy.loginfo(" going to doconfigure")
+            rospy.loginfo(" going to doconfigure")
+            rospy.loginfo(" going to doconfigure")
+            self.doConfigure()
         elif (
             self.state == NodeManagingStatesEnum.INACTIVE
             and request.state == NodeManagingStatesEnum.UNCONFIGURED
         ):
-            self.doCleanup()
             self.state = NodeManagingStatesEnum.UNCONFIGURED
+            self.doCleanup()
         elif (
             self.state == NodeManagingStatesEnum.INACTIVE
             and request.state == NodeManagingStatesEnum.ACTIVE
         ):
-            self.doActivate()
             self.state = NodeManagingStatesEnum.ACTIVE
+            self.doActivate()
         elif (
             self.state == NodeManagingStatesEnum.ACTIVE
             and request.state == NodeManagingStatesEnum.INACTIVE
         ):
-            self.doDeactivate()
             self.state = NodeManagingStatesEnum.INACTIVE
+            self.doDeactivate()
         elif (
             self.state == NodeManagingStatesEnum.INACTIVE
             and request.state == NodeManagingStatesEnum.FINALIZED
         ):
-            self.doShutdown()
             self.state = NodeManagingStatesEnum.FINALIZED
+            self.doShutdown()
             rospy.signal_shutdown("Node finalized")
         elif (
             self.state == NodeManagingStatesEnum.ACTIVE
             and request.state == NodeManagingStatesEnum.FINALIZED
         ):
-            self.doShutdown()
             self.state = NodeManagingStatesEnum.FINALIZED
+            self.doShutdown()
             rospy.signal_shutdown("Node finalized")
         elif (
             self.state == NodeManagingStatesEnum.UNCONFIGURED
             and request.state == NodeManagingStatesEnum.FINALIZED
         ):
-            self.doShutdown()
             self.state = NodeManagingStatesEnum.FINALIZED
+            self.doShutdown()
             rospy.signal_shutdown("Node finalized")
         else:
             # invalid state transition
@@ -134,13 +197,25 @@ class ManagedNode:
         for pub in self.publishers:
             pub.set_state(self.state)
 
-        # publish the state of the node
-        stateMsg = State()
-        stateMsg.prev_state = original_state
-        stateMsg.curr_state = self.state
-        stateMsg.scope = self.name
-        stateMsg.header.stamp = rospy.Time.now()
-        self.statePublisher.publish(stateMsg)
+        rospy.loginfo(f" node in state {self.state}")
+        rospy.loginfo(f" node in state {self.state}")
+        rospy.loginfo(f" node in state {self.state}")
+        rospy.loginfo(f" node in state {self.state}")
+        rospy.loginfo(f" node in state {self.state}")
+        rospy.loginfo(f" node in state {self.state}")
+        rospy.loginfo(f" node in state {self.state}")
+        rospy.loginfo(f" node in state {self.state}")
+        rospy.loginfo(f" node in state {self.state}")
+        rospy.loginfo(f" node in state {self.state}")
+        rospy.loginfo(f" node in state {self.state}")
+        rospy.loginfo(f" node in state {self.state}")
+        # # publish the state of the node
+        # stateMsg = State()
+        # stateMsg.prev_state = original_state
+        # stateMsg.cur_state = self.state
+        # stateMsg.scope = self.name
+        # stateMsg.header.stamp = rospy.Time.now()
+        # self.statePublisher.publish(stateMsg)
 
         # response that the transition is succesful
         return SetNodeStateResponse(succes=True)

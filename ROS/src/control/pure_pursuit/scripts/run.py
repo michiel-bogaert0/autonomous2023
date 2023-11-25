@@ -7,16 +7,19 @@ from nav_msgs.msg import Odometry, Path
 from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
+    NodeManagingStatesEnum,
     create_diagnostic_message,
 )
+from node_fixture.node_management import ManagedNode
 from std_msgs.msg import Float64, Header
 from tf2_geometry_msgs import do_transform_pose
 from trajectory import Trajectory
 
 
-class PurePursuit:
+class PurePursuit(ManagedNode):
     def __init__(self):
         rospy.init_node("pure_pursuit_control")
+        super().__init__("pure_pursuit_control")
 
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
@@ -44,8 +47,7 @@ class PurePursuit:
             "/output/steering_position_controller/command", Float64, queue_size=10
         )
         self.vis_pub = rospy.Publisher(
-            "/output/target_point",
-            PointStamped,
+            "/output/target_point", PointStamped, queue_size=10  # warning otherwise
         )
 
         # Diagnostics Publisher
@@ -74,7 +76,13 @@ class PurePursuit:
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
-        # Helpers
+        self.start_sender()  # will not work otherwise
+
+    def doConfigure(self):
+        # add stuff that needs to be reconfigured when changing missions
+        pass
+
+    def doActivate(self):
         self.start_sender()
 
     def get_odom_update(self, msg: Odometry):
@@ -120,67 +128,71 @@ class PurePursuit:
         Start sending updates. If the data is too old, brake.
         """
         rate = rospy.Rate(self.publish_rate)
+        rospy.loginfo("Starting sending")
         while not rospy.is_shutdown():
-            try:
-                self.speed_target = rospy.get_param("~speed/target", 3.0)
+            if self.state == NodeManagingStatesEnum.ACTIVE:
+                try:
+                    self.speed_target = rospy.get_param("~speed/target", 3.0)
+                    rospy.loginfo("Starting sending222222")
+                    # First try to get a target point
+                    # Change the look-ahead distance (minimal_distance)  based on the current speed
+                    if self.actual_speed < self.speed_start:
+                        self.minimal_distance = self.distance_start
+                    elif self.actual_speed < self.speed_stop:
+                        self.minimal_distance = self.distance_start + (
+                            self.distance_stop - self.distance_start
+                        ) / (self.speed_stop - self.speed_start) * (
+                            self.actual_speed - self.speed_start
+                        )
+                    else:
+                        self.minimal_distance = self.distance_stop
 
-                # First try to get a target point
-                # Change the look-ahead distance (minimal_distance)  based on the current speed
-                if self.actual_speed < self.speed_start:
-                    self.minimal_distance = self.distance_start
-                elif self.actual_speed < self.speed_stop:
-                    self.minimal_distance = self.distance_start + (
-                        self.distance_stop - self.distance_start
-                    ) / (self.speed_stop - self.speed_start) * (
-                        self.actual_speed - self.speed_start
+                    # Calculate target point
+                    target_x, target_y = self.trajectory.calculate_target_point(
+                        self.minimal_distance,
                     )
-                else:
-                    self.minimal_distance = self.distance_stop
 
-                # Calculate target point
-                target_x, target_y = self.trajectory.calculate_target_point(
-                    self.minimal_distance,
-                )
-
-                # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-                R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (2 * (target_y - 0))
-
-                self.steering_cmd.data = self.symmetrically_bound_angle(
-                    np.arctan2(1.0, R), np.pi / 2
-                )
-
-                self.diagnostics_pub.publish(
-                    create_diagnostic_message(
-                        level=DiagnosticStatus.OK,
-                        name="[CTRL PP] Target Point Status",
-                        message="Target point found.",
+                    # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
+                    R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (
+                        2 * (target_y - 0)
                     )
-                )
 
-                # Go ahead and drive. But adjust speed in corners
-                self.velocity_cmd.data = self.speed_target
+                    self.steering_cmd.data = self.symmetrically_bound_angle(
+                        np.arctan2(1.0, R), np.pi / 2
+                    )
 
-                # Publish to velocity and position steering controller
-                self.steering_cmd.data /= self.steering_transmission
-                self.steering_pub.publish(self.steering_cmd)
+                    self.diagnostics_pub.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="[CTRL PP] Target Point Status",
+                            message="Target point found.",
+                        )
+                    )
 
-                self.velocity_cmd.data /= (
-                    self.wheelradius
-                )  # Velocity to angular velocity
-                self.velocity_pub.publish(self.velocity_cmd)
+                    # Go ahead and drive. But adjust speed in corners
+                    self.velocity_cmd.data = self.speed_target
 
-                point = PointStamped()
-                point.header.stamp = self.trajectory.time_source
-                point.header.frame_id = self.base_link_frame
-                point.point.x = target_x
-                point.point.y = target_y
-                self.vis_pub.publish(point)
+                    # Publish to velocity and position steering controller
+                    self.steering_cmd.data /= self.steering_transmission
+                    self.steering_pub.publish(self.steering_cmd)
 
-            except Exception as e:
-                rospy.logwarn(f"PurePursuit has caught an exception: {e}")
-                import traceback
+                    self.velocity_cmd.data /= (
+                        self.wheelradius
+                    )  # Velocity to angular velocity
+                    self.velocity_pub.publish(self.velocity_cmd)
 
-                print(traceback.format_exc())
+                    point = PointStamped()
+                    point.header.stamp = self.trajectory.time_source
+                    point.header.frame_id = self.base_link_frame
+                    point.point.x = target_x
+                    point.point.y = target_y
+                    self.vis_pub.publish(point)
+
+                except Exception as e:
+                    rospy.logwarn(f"PurePursuit has caught an exception: {e}")
+                    import traceback
+
+                    print(traceback.format_exc())
 
             rate.sleep()
 
