@@ -10,7 +10,11 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from node_fixture.node_management import configure_node, set_state_active
+from node_fixture.node_management import (
+    configure_node,
+    set_state_active,
+    set_state_finalized,
+)
 from node_launcher.node_launcher import NodeLauncher
 from ugr_msgs.msg import State
 
@@ -71,7 +75,7 @@ class Controller:
         if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
             # Go to state depending on mission
             self.mission = rospy.get_param("/mission")
-
+            # will have to configure nodes herre
         else:
             self.launcher.shutdown()
             self.diagnostics_pub.publish(
@@ -89,6 +93,7 @@ class Controller:
 
             if self.state == SLAMStatesEnum.FINISHED:
                 rospy.set_param("/pure_pursuit/speed/target", 0.0)
+                set_state_finalized("pure_pursuit_control")
 
             elif (
                 self.state == SLAMStatesEnum.EXPLORATION
@@ -105,25 +110,24 @@ class Controller:
                         f"launch/{self.mission}_{self.state}.launch",
                     )
                     configure_node("pure_pursuit_control")
+                if self.mission == AutonomousMission.TRACKDRIVE:
                     set_state_active("pure_pursuit_control")
-                # if self.mission == AutonomousMission.TRACKDRIVE:
-                #     set_state_active("pure_pursuit_control")
-                # elif (
-                #     self.mission == AutonomousMission.SKIDPAD
-                #     and self.state == SLAMStatesEnum.RACING
-                # ):
-                #     set_state_active("pure_pursuit_control")
-                # elif (
-                #     self.mission == AutonomousMission.AUTOCROSS
-                #     and self.state == SLAMStatesEnum.EXPLORATION
-                # ):
-                #     set_state_active("pure_pursuit_control")
+                elif (
+                    self.mission == AutonomousMission.SKIDPAD
+                    and self.state == SLAMStatesEnum.RACING
+                ):
+                    set_state_active("pure_pursuit_control")
+                elif (
+                    self.mission == AutonomousMission.AUTOCROSS
+                    and self.state == SLAMStatesEnum.EXPLORATION
+                ):
+                    set_state_active("pure_pursuit_control")
 
-                # elif (
-                #     self.mission == AutonomousMission.ACCELERATION
-                #     and self.state == SLAMStatesEnum.RACING
-                # ):
-                #     set_state_active("pure_pursuit_control")
+                elif (
+                    self.mission == AutonomousMission.ACCELERATION
+                    and self.state == SLAMStatesEnum.RACING
+                ):
+                    set_state_active("pure_pursuit_control")
                 speed_target = 0.0
                 if self.state == SLAMStatesEnum.EXPLORATION:
                     speed_target = 2.0 if self.car == "simulation" else 1.0

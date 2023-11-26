@@ -76,7 +76,7 @@ class PurePursuit(ManagedNode):
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
-        rospy.spin()  # will not work otherwise
+        rospy.spin()
 
     def doConfigure(self):
         # add stuff that needs to be reconfigured when changing missions
