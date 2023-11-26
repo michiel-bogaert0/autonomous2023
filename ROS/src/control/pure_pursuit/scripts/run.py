@@ -130,10 +130,11 @@ class PurePursuit(ManagedNode):
         rate = rospy.Rate(self.publish_rate)
         # rospy.loginfo("Starting sending")
         while not rospy.is_shutdown():
+            rospy.loginfo(f"{self.state}")
             if self.state == NodeManagingStatesEnum.ACTIVE:
                 try:
                     self.speed_target = rospy.get_param("~speed/target", 3.0)
-                    # rospy.loginfo("Starting sending222222")
+
                     # First try to get a target point
                     # Change the look-ahead distance (minimal_distance)  based on the current speed
                     if self.actual_speed < self.speed_start:

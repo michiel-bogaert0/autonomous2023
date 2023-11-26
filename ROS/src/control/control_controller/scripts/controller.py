@@ -77,6 +77,7 @@ class Controller:
             self.mission = rospy.get_param("/mission")
             # will have to configure nodes herre
         else:
+            rospy.loginfo("hier1")
             self.launcher.shutdown()
             self.diagnostics_pub.publish(
                 create_diagnostic_message(
@@ -93,6 +94,7 @@ class Controller:
 
             if self.state == SLAMStatesEnum.FINISHED:
                 rospy.set_param("/pure_pursuit/speed/target", 0.0)
+                rospy.loginfo("hier2")
                 set_state_finalized("pure_pursuit_control")
 
             elif (
