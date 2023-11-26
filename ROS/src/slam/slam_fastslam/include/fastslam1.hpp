@@ -16,6 +16,7 @@
 #include "tf2_ros/message_filter.h"
 #include <nav_msgs/Path.h>
 
+#include "managed_node.hpp"
 #include "node_fixture/node_fixture.hpp"
 
 using namespace std;
@@ -32,7 +33,7 @@ struct ObsOptions {
   double minThreshold;
 };
 
-class FastSLAM1 {
+class FastSLAM1 : public node_fixture::ManagedNode {
 public:
   explicit FastSLAM1(ros::NodeHandle &n);
   ~FastSLAM1() { this->particles.clear(); }
@@ -41,6 +42,7 @@ public:
 
   // This functions executes a FastSLAM1.0 step
   void step();
+  void doConfigure() override;
 
 private:
   ObsOptions *options;

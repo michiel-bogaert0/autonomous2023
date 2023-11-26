@@ -81,6 +81,9 @@ class Controller:
                 load_params("SLAM", self.mission)
                 # Confige nodes after mission is set
                 configure_node("slam_mcl")
+                configure_node("fastslam")
+
+                rospy.loginfo(f"Nodes configured and mission set to {self.mission}")
 
                 # Reset loop counter
                 rospy.ServiceProxy("/reset_closure", Empty)
@@ -88,22 +91,27 @@ class Controller:
                 if self.mission == AutonomousMission.ACCELERATION:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
+                    set_state_inactive("fastslam")
                     set_state_active("slam_mcl")
                 elif self.mission == AutonomousMission.SKIDPAD:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
+                    set_state_inactive("fastslam")
                     set_state_active("slam_mcl")
                 elif self.mission == AutonomousMission.AUTOCROSS:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.EXPLORATION
+                    set_state_active("fastslam")
                     set_state_inactive("slam_mcl")
                 elif self.mission == AutonomousMission.TRACKDRIVE:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.EXPLORATION
+                    set_state_active("fastslam")
                     set_state_inactive("slam_mcl")
                 else:
                     self.target_lap_count = -1
                     new_state = SLAMStatesEnum.EXPLORATION
+                    set_state_active("fastslam")
                     set_state_inactive("slam_mcl")
 
                 self.launcher.launch_node(
@@ -113,6 +121,7 @@ class Controller:
                 self.launcher.shutdown()
         elif not rospy.has_param("/mission"):
             set_state_finalized("slam_mcl")
+            set_state_finalized("fastslam")
             self.launcher.shutdown()
             new_state = SLAMStatesEnum.IDLE
 
@@ -192,6 +201,7 @@ class Controller:
                     self.target_lap_count = 9
 
                     set_state_active("slam_mcl")
+                    set_state_inactive("fastslam")
 
                     # Relaunch (different) nodes
                     self.launcher.launch_node(

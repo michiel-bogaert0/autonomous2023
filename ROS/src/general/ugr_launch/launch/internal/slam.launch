@@ -2,6 +2,10 @@
 
   <!-- Only put nodes here that are related to processing inside SLAM -->
   <!-- There should be NO hardware dependencies! -->
+
+  <!-- ? FastSLAM -->
+  <include file="$(find slam_fastslam)/launch/fastslam1.launch" pass_all_args="true" />
+
   <!-- ? MCL -->
   <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
     <arg name="path_to_map" value="/ugr/car/map/global"/>

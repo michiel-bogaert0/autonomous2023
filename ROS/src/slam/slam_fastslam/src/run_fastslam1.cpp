@@ -26,8 +26,8 @@ int main(int argc, char **argv) {
   diagPublisher.publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                   "Status", "running");
 
-  std::chrono::steady_clock::time_point t1;
-  std::chrono::steady_clock::time_point t2;
+  // std::chrono::steady_clock::time_point t1;
+  // std::chrono::steady_clock::time_point t2;
 
   // Spin the node
   while (ros::ok()) {
@@ -35,15 +35,15 @@ int main(int argc, char **argv) {
     ros::spinOnce();
 
     if (!doSynchronous) {
-      t1 = std::chrono::steady_clock::now();
+      // t1 = std::chrono::steady_clock::now();
       fastslam.step();
-      t2 = std::chrono::steady_clock::now();
+      // t2 = std::chrono::steady_clock::now();
 
-      double time_round =
-          std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
-              .count();
+      // double time_round =
+      //     std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
+      //         .count();
 
-      ROS_INFO("Theoretical FPS:  %f \n", 1.0 / time_round);
+      // ROS_INFO("Theoretical FPS:  %f \n", 1.0 / time_round);
     }
 
     loop_rate.sleep();

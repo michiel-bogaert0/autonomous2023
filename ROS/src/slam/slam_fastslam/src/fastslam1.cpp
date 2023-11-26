@@ -45,27 +45,35 @@ using namespace Eigen;
 
 namespace slam {
 FastSLAM1::FastSLAM1(ros::NodeHandle &n)
-    : tfListener(tfBuffer), n(n),
+    : ManagedNode(n, "fastslam"), n(n), tfListener(tfBuffer),
       base_link_frame(n.param<string>("base_link_frame", "ugr/car_base_link")),
-      slam_base_link_frame(
-          n.param<string>("slam_base_link_frame", "ugr/slam_base_link")),
-      world_frame(n.param<string>("world_frame", "ugr/car_odom")),
-      map_frame(n.param<string>("map_frame", "ugr/map")),
-      lidar_frame(n.param<string>("lidar_frame", "os_sensor")),
-      particle_count(n.param<int>("particle_count", 100)),
-      post_clustering(n.param<bool>("post_clustering", false)),
-      doSynchronous(n.param<bool>("synchronous", true)),
-      effective_particle_count(n.param<int>("effective_particle_count", 75)),
-      min_clustering_point_count(
-          n.param<int>("min_clustering_point_count", 30)),
-      clustering_eps(n.param<double>("clustering_eps", 0.5)),
-      belief_factor(n.param<double>("belief_factor", 2.0)),
-      observe_prob(n.param<double>("observe_prob", 0.9)), prev_state({0, 0, 0}),
-      publish_rate(n.param<double>("publish_rate", 3.0)),
-      average_output_pose(n.param<bool>("average_output_pose", true)), Q(3, 3),
-      R(2, 2),
-      yaw_unwrap_threshold(n.param<float>("yaw_unwrap_threshold", M_PI * 1.3)),
-      tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0) {
+      tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0) {}
+
+void FastSLAM1::doConfigure() {
+
+  this->slam_base_link_frame =
+      n.param<string>("slam_base_link_frame", "ugr/slam_base_link");
+  this->world_frame = n.param<string>("world_frame", "ugr/car_odom");
+  this->map_frame = n.param<string>("map_frame", "ugr/map");
+  this->lidar_frame = n.param<string>("lidar_frame", "os_sensor");
+  this->particle_count = n.param<int>("particle_count", 100);
+  this->post_clustering = n.param<bool>("post_clustering", false);
+  this->doSynchronous = n.param<bool>("synchronous", true);
+  this->effective_particle_count = n.param<int>("effective_particle_count", 75);
+  this->min_clustering_point_count =
+      n.param<int>("min_clustering_point_count", 30);
+  this->clustering_eps = n.param<double>("clustering_eps", 0.5);
+  this->belief_factor = n.param<double>("belief_factor", 2.0);
+  this->observe_prob = n.param<double>("observe_prob", 0.9);
+  this->publish_rate = n.param<double>("publish_rate", 3.0);
+  this->average_output_pose = n.param<bool>("average_output_pose", true);
+  this->yaw_unwrap_threshold =
+      n.param<float>("yaw_unwrap_threshold", M_PI * 1.3);
+
+  this->prev_state = {0.0, 0.0, 0.0};
+  this->Q = MatrixXf(3, 3);
+  this->R = MatrixXf(2, 2);
+
   lidarOptions = {};
   lidarOptions.eps = n.param<double>("lidar_eps", 0.5);
   lidarOptions.max_range = n.param<double>("lidar_max_range", 15);
@@ -131,8 +139,11 @@ FastSLAM1::FastSLAM1(ros::NodeHandle &n)
   if (RAsVector.size() != 4)
     throw invalid_argument("R (input_noise) Must be a vector of size 4");
 
-  if (this->options->penalty_score > 0.0)
-    throw invalid_argument("penalty_score should be less than zero");
+  if (this->lidarOptions.penalty_score > 0.0)
+    throw invalid_argument("lidar penalty_score should be less than zero");
+
+  if (this->cameraOptions.penalty_score > 0.0)
+    throw invalid_argument("camera penalty_score should be less than zero");
 
   this->Q(0, 0) = pow(QAsVector[0], 2);
   this->Q(0, 1) = pow(QAsVector[1], 2);
@@ -308,6 +319,11 @@ double FastSLAM1::compute_particle_weight(Particle &particle,
 
 void FastSLAM1::handleObservations(
     const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs) {
+
+  if (!this->isActive()) {
+    return;
+  }
+
   // change options for camera or lidar (simulator geeft base_link_frame mee)
   if (obs->header.frame_id == this->lidar_frame ||
       obs->header.frame_id == this->base_link_frame) {
@@ -349,6 +365,9 @@ void FastSLAM1::handleObservations(
 }
 
 void FastSLAM1::step() {
+  if (!this->isActive()) {
+    return;
+  }
 
   if (!gotFirstObservations)
     return;
