@@ -147,7 +147,8 @@ void compute_steering(const VectorXf &x, MatrixXf &wp, int &iwp, float minD,
 //  find associations (zf) and new features (zn)
 void data_associate_known(const vector<VectorXf> &z, const vector<int> &idz,
                           VectorXf &table, // cppcheck-suppress constParameter
-                          int Nf, vector<int> &idf, vector<VectorXf> &zn) {
+                          vector<VectorXf> &zf, int Nf, vector<int> &idf,
+                          vector<VectorXf> &zn) {
   idf.clear();
   vector<int> idn;
 
