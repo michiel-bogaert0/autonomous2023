@@ -26,7 +26,7 @@
 #include <geometry_msgs/PointStamped.h>
 
 #include "dbscan.hpp"
-#include "kdtree.h"
+#include "kdtree.hpp"
 
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseArray.h>
@@ -225,12 +225,12 @@ void FastSLAM1::build_associations(
     vector<float> &newBeliefs) {
 
   // Make a kdtree of the current particle
-  LandmarkSearchResult result;
+  // LandmarkSearchResult result;
   std::vector<VectorXf> vectorsToConsider;
   std::vector<int> indices;
 
   if (particle.xf().size() == 0) {
-    result.index = -1;
+    // result.index = -1;
   } else {
     for (int i = particle.xf().size() - 1; i >= 0; i--) {
       if (particle.metadata()[i].score > this->options->minThreshold) {

@@ -3,144 +3,151 @@
 
 #include <ros/ros.h>
 #include <ros/service_client.h>
-#include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 #include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
 
 #include "fastslam_core.hpp"
 
 #include <Eigen/Dense>
 
-#include "tf2_ros/message_filter.h"
 #include "message_filters/subscriber.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "tf2_ros/message_filter.h"
 #include <nav_msgs/Path.h>
 
 #include "node_fixture/node_fixture.hpp"
 
 using namespace std;
 
-namespace slam
-{
-  struct ObsOptions {
-    double eps;
-    double max_range;
-    double max_half_fov;
-    double expected_range;
-    double expected_half_fov; // radians, single side 
-    double acceptance_score;
-    double penalty_score;
-    double minThreshold;
-  };
+namespace slam {
+struct ObsOptions {
+  double eps;
+  double max_range;
+  double max_half_fov;
+  double expected_range;
+  double expected_half_fov; // radians, single side
+  double acceptance_score;
+  double penalty_score;
+  double minThreshold;
+};
 
+class FastSLAM1 {
+public:
+  explicit FastSLAM1(ros::NodeHandle &n);
+  ~FastSLAM1() { this->particles.clear(); }
 
-  class FastSLAM1
-  {
-    public: 
-      FastSLAM1(ros::NodeHandle &n);
-      ~FastSLAM1() {
-        this->particles.clear();
-      }
+  static tf2_ros::TransformBroadcaster br;
 
-      static tf2_ros::TransformBroadcaster br;
+  // This functions executes a FastSLAM1.0 step
+  void step();
 
-      // This functions executes a FastSLAM1.0 step
-      void step();
+private:
+  ObsOptions *options;
+  ObsOptions lidarOptions;
+  ObsOptions cameraOptions;
 
-    private:
-      ObsOptions* options;
-      ObsOptions lidarOptions;
-      ObsOptions cameraOptions;
-      
-      // ROS
-      ros::NodeHandle n;
+  // ROS
+  ros::NodeHandle n;
 
-      // ROS parameters
-      string base_link_frame;
-      string world_frame;
-      string map_frame;
-      string slam_base_link_frame;
-      string lidar_frame;
+  // ROS parameters
+  string base_link_frame;
+  string world_frame;
+  string map_frame;
+  string slam_base_link_frame;
+  string lidar_frame;
 
-      bool post_clustering;
-      int particle_count;
-      bool average_output_pose;
-      int effective_particle_count;
-      int min_clustering_point_count;
-      double observe_prob;
-      double clustering_eps;
-      double belief_factor;
+  bool post_clustering;
+  int particle_count;
+  bool average_output_pose;
+  int effective_particle_count;
+  int min_clustering_point_count;
+  double observe_prob;
+  double clustering_eps;
+  double belief_factor;
 
-      double publish_rate;
-      
-      bool doSynchronous;
+  double publish_rate;
 
-      double latestTime;
+  bool doSynchronous;
 
-      bool firstRound;
-      bool gotFirstObservations;
-      bool updateRound;
+  double latestTime;
 
-      ugr_msgs::ObservationWithCovarianceArrayStamped observations;
+  bool firstRound;
+  bool gotFirstObservations;
+  bool updateRound;
 
-      // Subscribers
-      ros::Subscriber observationsSubscriber;
-      
-      // Publishers
-      // ros::Publisher globalPublisher;
-      // ros::Publisher localPublisher;
-      ros::Publisher odomPublisher;
-      ros::Publisher particlePosePublisher;
+  ugr_msgs::ObservationWithCovarianceArrayStamped observations;
 
-      // Diagnostic publisher
-      std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
+  // Subscribers
+  ros::Subscriber observationsSubscriber;
 
-      // Set Map Service Client
-      ros::ServiceClient setmap_srv_client;
-      string globalmap_namespace;
-      string localmap_namespace;
+  // Publishers
+  // ros::Publisher globalPublisher;
+  // ros::Publisher localPublisher;
+  ros::Publisher odomPublisher;
+  ros::Publisher particlePosePublisher;
 
-      // TF2
-      tf2_ros::Buffer tfBuffer;
-      tf2_ros::TransformListener tfListener;
-      message_filters::Subscriber<ugr_msgs::ObservationWithCovarianceArrayStamped> obs_sub;
-      tf2_ros::MessageFilter<ugr_msgs::ObservationWithCovarianceArrayStamped> tf2_filter;
+  // Diagnostic publisher
+  std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
 
-      // Handlers
+  // Set Map Service Client
+  ros::ServiceClient setmap_srv_client;
+  string globalmap_namespace;
+  string localmap_namespace;
 
-      void handleObservations(const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs);
+  // TF2
+  tf2_ros::Buffer tfBuffer;
+  tf2_ros::TransformListener tfListener;
+  message_filters::Subscriber<ugr_msgs::ObservationWithCovarianceArrayStamped>
+      obs_sub;
+  tf2_ros::MessageFilter<ugr_msgs::ObservationWithCovarianceArrayStamped>
+      tf2_filter;
 
-      void publishOutput(ros::Time);
+  // Handlers
 
-      void predict(Particle &particle, double dDist, double dYaw, double dt);
+  void handleObservations(
+      const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs);
 
-      void build_associations(Particle &, ugr_msgs::ObservationWithCovarianceArrayStamped &, vector<VectorXf> &, vector<VectorXf> &, vector<int> &, vector<int>&, vector<int>&, vector<float>&, vector<float>&);
+  void publishOutput(ros::Time);
 
-      double compute_particle_weight(Particle &particle, vector<VectorXf> &z, vector<int> &idf, MatrixXf &R, vector<VectorXf> &zp, vector<MatrixXf> &Hv, vector<MatrixXf> &Hf, vector<MatrixXf> &Sf);
+  void predict(Particle &particle, double dDist, double dYaw, double dt);
 
-      void landmarks_to_observations(vector<VectorXf> &lm, vector<VectorXf> &obs, VectorXf &pose);
-      void landmark_to_observation(VectorXf &lm, VectorXf &obs, VectorXf &pose);
+  void build_associations(Particle &,
+                          ugr_msgs::ObservationWithCovarianceArrayStamped &,
+                          vector<VectorXf> &, vector<VectorXf> &, vector<int> &,
+                          vector<int> &, vector<int> &, vector<float> &,
+                          vector<float> &);
 
-      void observations_to_landmarks(vector<VectorXf> &obs, vector<VectorXf> &lm, VectorXf &pose);
-      void observation_to_landmark(VectorXf &obs, VectorXf & lm, VectorXf &pose);
+  double compute_particle_weight(Particle &particle, vector<VectorXf> &z,
+                                 vector<int> &idf, MatrixXf &R,
+                                 vector<VectorXf> &zp, vector<MatrixXf> &Hv,
+                                 vector<MatrixXf> &Hf, vector<MatrixXf> &Sf);
 
-      // Other stuff
-      array<double, 3> prev_state; // x, y, yaw
+  void landmarks_to_observations(vector<VectorXf> &lm, vector<VectorXf> &obs,
+                                 VectorXf &pose);
+  void landmark_to_observation(VectorXf &lm, VectorXf &obs, VectorXf &pose);
 
-      chrono::steady_clock::time_point  prev_time;
-      chrono::steady_clock::time_point  prev_predict_time;
-      chrono::steady_clock::time_point  prev_publish_time;
+  void observations_to_landmarks(vector<VectorXf> &obs, vector<VectorXf> &lm,
+                                 VectorXf &pose);
+  void observation_to_landmark(VectorXf &obs, VectorXf &lm, VectorXf &pose);
 
-      vector<Particle> particles; 
+  // Other stuff
+  array<double, 3> prev_state; // x, y, yaw
 
-      ros::Time prev_transform_time;
+  chrono::steady_clock::time_point prev_time;
+  chrono::steady_clock::time_point prev_predict_time;
+  chrono::steady_clock::time_point prev_publish_time;
 
-      // Yaw unwrapping threshold
-      float yaw_unwrap_threshold;
+  vector<Particle> particles;
 
-      Eigen::MatrixXf Q;
-      Eigen::MatrixXf R;
-  };
-}
+  ros::Time prev_transform_time;
+
+  // Yaw unwrapping threshold
+  float yaw_unwrap_threshold;
+
+  Eigen::MatrixXf Q;
+  Eigen::MatrixXf R;
+};
+} // namespace slam
 
 #endif
