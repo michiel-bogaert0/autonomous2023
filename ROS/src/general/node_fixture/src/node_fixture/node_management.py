@@ -197,18 +197,6 @@ class ManagedNode:
         for pub in self.publishers:
             pub.set_state(self.state)
 
-        rospy.loginfo(f" node in state {self.state}")
-        rospy.loginfo(f" node in state {self.state}")
-        rospy.loginfo(f" node in state {self.state}")
-        rospy.loginfo(f" node in state {self.state}")
-        rospy.loginfo(f" node in state {self.state}")
-        rospy.loginfo(f" node in state {self.state}")
-        rospy.loginfo(f" node in state {self.state}")
-        rospy.loginfo(f" node in state {self.state}")
-        rospy.loginfo(f" node in state {self.state}")
-        rospy.loginfo(f" node in state {self.state}")
-        rospy.loginfo(f" node in state {self.state}")
-        rospy.loginfo(f" node in state {self.state}")
         # # publish the state of the node
         # stateMsg = State()
         # stateMsg.prev_state = original_state

@@ -10,11 +10,7 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from node_fixture.node_management import (
-    configure_node,
-    set_state_active,
-    set_state_finalized,
-)
+from node_fixture.node_management import configure_node, set_state_active
 from node_launcher.node_launcher import NodeLauncher
 from ugr_msgs.msg import State
 
@@ -77,7 +73,6 @@ class Controller:
             self.mission = rospy.get_param("/mission")
             # will have to configure nodes herre
         else:
-            rospy.loginfo("hier1")
             self.launcher.shutdown()
             self.diagnostics_pub.publish(
                 create_diagnostic_message(
@@ -93,9 +88,8 @@ class Controller:
             self.state = state.cur_state
 
             if self.state == SLAMStatesEnum.FINISHED:
+                rospy.loginfo("Finished")
                 rospy.set_param("/pure_pursuit/speed/target", 0.0)
-                rospy.loginfo("hier2")
-                set_state_finalized("pure_pursuit_control")
 
             elif (
                 self.state == SLAMStatesEnum.EXPLORATION
@@ -160,6 +154,7 @@ class Controller:
                         message="Node shutting down.",
                     )
                 )
+                # finalize nodes here
 
 
 node = Controller()

@@ -75,15 +75,14 @@ class PurePursuit(ManagedNode):
         self.steering_transmission = rospy.get_param(
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
-
-        rospy.spin()
+        self.start_sender()
+        # rospy.spin()
 
     def doConfigure(self):
         # add stuff that needs to be reconfigured when changing missions
         pass
 
-    def doActivate(self):
-        self.start_sender()
+    # def doActivate(self):
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
@@ -130,8 +129,9 @@ class PurePursuit(ManagedNode):
         rate = rospy.Rate(self.publish_rate)
         # rospy.loginfo("Starting sending")
         while not rospy.is_shutdown():
-            rospy.loginfo(f"{self.state}")
+            # rospy.loginfo(f"{self.state}")
             if self.state == NodeManagingStatesEnum.ACTIVE:
+                # rospy.loginfo("still works")
                 try:
                     self.speed_target = rospy.get_param("~speed/target", 3.0)
 
