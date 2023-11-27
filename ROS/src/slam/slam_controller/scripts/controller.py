@@ -82,6 +82,7 @@ class Controller:
                 # Confige nodes after mission is set
                 configure_node("slam_mcl")
                 configure_node("fastslam")
+                configure_node("loopclosure")
 
                 rospy.loginfo(f"Nodes configured and mission set to {self.mission}")
 
@@ -93,26 +94,31 @@ class Controller:
                     new_state = SLAMStatesEnum.RACING
                     set_state_inactive("fastslam")
                     set_state_active("slam_mcl")
+                    set_state_active("loopclosure")
                 elif self.mission == AutonomousMission.SKIDPAD:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
                     set_state_inactive("fastslam")
                     set_state_active("slam_mcl")
+                    set_state_active("loopclosure")
                 elif self.mission == AutonomousMission.AUTOCROSS:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.EXPLORATION
                     set_state_active("fastslam")
                     set_state_inactive("slam_mcl")
+                    set_state_active("loopclosure")
                 elif self.mission == AutonomousMission.TRACKDRIVE:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.EXPLORATION
                     set_state_active("fastslam")
                     set_state_inactive("slam_mcl")
+                    set_state_active("loopclosure")
                 else:
                     self.target_lap_count = -1
                     new_state = SLAMStatesEnum.EXPLORATION
-                    set_state_active("fastslam")
+                    set_state_inactive("fastslam")
                     set_state_inactive("slam_mcl")
+                    set_state_inactive("loopclosure")
 
                 self.launcher.launch_node(
                     "slam_controller", f"launch/{self.mission}_{new_state}.launch"
@@ -122,6 +128,7 @@ class Controller:
         elif not rospy.has_param("/mission"):
             set_state_finalized("slam_mcl")
             set_state_finalized("fastslam")
+            set_state_finalized("loopclosure")
             self.launcher.shutdown()
             new_state = SLAMStatesEnum.IDLE
 
@@ -198,15 +205,16 @@ class Controller:
 
                     # Note that lap count becomes 9, because it restarts counting after exploration
                     # Perhaps we have to redo this in the future
+
                     self.target_lap_count = 9
 
                     set_state_active("slam_mcl")
                     set_state_inactive("fastslam")
 
                     # Relaunch (different) nodes
-                    self.launcher.launch_node(
-                        "slam_controller", f"launch/{self.mission}_{new_state}.launch"
-                    )
+                    # self.launcher.launch_node(
+                    #     "slam_controller", f"launch/{self.mission}_{new_state}.launch"
+                    # )
                 else:
                     new_state = SLAMStatesEnum.FINISHED
             else:

@@ -8,9 +8,13 @@
 
 namespace slam {
 LoopClosure::LoopClosure(ros::NodeHandle &n)
-    : tfListener(tfBuffer), n(n), base_link_frame(n.param<std::string>(
-                                      "base_link_frame", "ugr/car_base_link")),
-      world_frame(n.param<std::string>("world_frame", "ugr/map")) {
+    : ManagedNode(n, "loopclosure"), n(n), tfListener(tfBuffer) {}
+
+void LoopClosure::doConfigure() {
+  this->base_link_frame =
+      n.param<std::string>("base_link_frame", "ugr/car_base_link");
+  this->world_frame = n.param<std::string>("world_frame", "ugr/map");
+
   std::vector<float> point;
   n.param<std::vector<float>>("finishpoint", point, {0, 0, 0});
 
@@ -36,6 +40,10 @@ LoopClosure::LoopClosure(ros::NodeHandle &n)
 }
 
 void LoopClosure::CheckWhenLoopIsClosed() {
+  if (!this->isActive()) {
+    return;
+  }
+
   if (this->latestTime - ros::Time::now().toSec() > 0.5 &&
       this->latestTime > 0.0) {
     ROS_WARN("Time went backwards! Resetting...");
@@ -212,6 +220,10 @@ void LoopClosure::publish() {
 
 bool LoopClosure::handleResetClosureService(
     std_srvs::Empty::Request &request, std_srvs::Empty::Response &response) {
+  if (this->isActive()) {
+    return false;
+  }
+
   this->ResetClosure();
   return true;
 }

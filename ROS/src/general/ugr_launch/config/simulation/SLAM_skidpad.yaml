@@ -1,2 +1,4 @@
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
+loopclosure:
+  finishpoint: [24, 0, 0]
