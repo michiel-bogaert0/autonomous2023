@@ -11,6 +11,9 @@
     <arg name="path_to_map" value="/ugr/car/map/global"/>
   </include>
 
+  <!-- ? ISE -->
+  <include file="$(find slam_controller)/launch/ISE.launch" pass_all_args="true"/>
+
   <!-- SLAM loopclosure -->
   <arg name="world_frame" default="ugr/map" />
   <arg name="base_link_frame" default="ugr/car_base_link" />

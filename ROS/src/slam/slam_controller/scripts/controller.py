@@ -206,9 +206,10 @@ class Controller:
                     # Note that lap count becomes 9, because it restarts counting after exploration
                     # Perhaps we have to redo this in the future
 
-                    self.target_lap_count = 9
+                    self.target_lap_count = 1
 
                     set_state_active("slam_mcl")
+                    sleep(0.2)
                     set_state_inactive("fastslam")
 
                     # Relaunch (different) nodes
