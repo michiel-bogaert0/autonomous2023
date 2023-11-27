@@ -17,7 +17,6 @@ from node_fixture.node_management import (
     set_state_finalized,
     set_state_inactive,
 )
-from node_launcher.node_launcher import NodeLauncher
 from std_msgs.msg import Header, UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
@@ -32,7 +31,6 @@ class Controller:
 
         self.state = SLAMStatesEnum.IDLE
 
-        self.launcher = NodeLauncher()
         self.mission = ""
 
         self.target_lap_count = -1
@@ -48,21 +46,7 @@ class Controller:
         )
 
         while not rospy.is_shutdown():
-            try:
-                self.launcher.run()
-                self.diagnostics_publisher.publish(
-                    create_diagnostic_message(
-                        DiagnosticStatus.OK, "[SLAM] Node launching", ""
-                    )
-                )
-            except Exception as e:
-                self.diagnostics_publisher.publish(
-                    create_diagnostic_message(
-                        DiagnosticStatus.ERROR, "[SLAM] Node launching", str(e)
-                    )
-                )
             self.update()
-
             sleep(0.1)
 
     def update(self):
@@ -110,7 +94,7 @@ class Controller:
                     set_state_active("loopclosure")
                     set_state_inactive("map_publisher")
                 elif self.mission == AutonomousMission.TRACKDRIVE:
-                    self.target_lap_count = 1
+                    self.target_lap_count = 10
                     new_state = SLAMStatesEnum.EXPLORATION
                     set_state_active("fastslam")
                     set_state_inactive("slam_mcl")
@@ -123,17 +107,16 @@ class Controller:
                     set_state_inactive("slam_mcl")
                     set_state_inactive("loopclosure")
                     set_state_inactive("map_publisher")
-                self.launcher.launch_node(
-                    "slam_controller", f"launch/{self.mission}_{new_state}.launch"
-                )
             else:
-                self.launcher.shutdown()
+                set_state_finalized("slam_mcl")
+                set_state_finalized("fastslam")
+                set_state_finalized("loopclosure")
+                set_state_finalized("map_publisher")
         elif not rospy.has_param("/mission"):
             set_state_finalized("slam_mcl")
             set_state_finalized("fastslam")
             set_state_finalized("loopclosure")
             set_state_finalized("map_publisher")
-            self.launcher.shutdown()
             new_state = SLAMStatesEnum.IDLE
 
         self.change_state(new_state)
@@ -201,30 +184,20 @@ class Controller:
         """
 
         if self.target_lap_count <= laps.data:
-            new_state = self.state
+            new_state = SLAMStatesEnum.FINISHED
+            self.change_state(new_state)
+            return
 
-            if self.state == SLAMStatesEnum.EXPLORATION:
-                if self.mission == AutonomousMission.TRACKDRIVE:
-                    new_state = SLAMStatesEnum.RACING
-
-                    # Note that lap count becomes 9, because it restarts counting after exploration
-                    # Perhaps we have to redo this in the future
-
-                    self.target_lap_count = 1
-
-                    set_state_active("slam_mcl")
-                    sleep(0.2)
-                    set_state_inactive("fastslam")
-
-                    # Relaunch (different) nodes
-                    # self.launcher.launch_node(
-                    #     "slam_controller", f"launch/{self.mission}_{new_state}.launch"
-                    # )
-                else:
-                    new_state = SLAMStatesEnum.FINISHED
-            else:
-                new_state = SLAMStatesEnum.FINISHED
-
+        # If we did one lap in trackdrive and exploration, switch to racing
+        if (
+            self.mission == AutonomousMission.TRACKDRIVE
+            and self.state == SLAMStatesEnum.EXPLORATION
+        ):
+            rospy.loginfo("Exploration finished, switching to racing")
+            new_state = SLAMStatesEnum.RACING
+            set_state_active("slam_mcl")
+            sleep(0.2)
+            set_state_inactive("fastslam")
             self.change_state(new_state)
 
 
