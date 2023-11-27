@@ -10,7 +10,11 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from node_fixture.node_management import configure_node, set_state_active
+from node_fixture.node_management import (
+    configure_node,
+    set_state_active,
+    set_state_finalized,
+)
 from node_launcher.node_launcher import NodeLauncher
 from ugr_msgs.msg import State
 
@@ -88,8 +92,8 @@ class Controller:
             self.state = state.cur_state
 
             if self.state == SLAMStatesEnum.FINISHED:
-                rospy.loginfo("Finished")
                 rospy.set_param("/pure_pursuit/speed/target", 0.0)
+                set_state_finalized("control_path_publisher")
 
             elif (
                 self.state == SLAMStatesEnum.EXPLORATION
@@ -106,6 +110,7 @@ class Controller:
                         f"launch/{self.mission}_{self.state}.launch",
                     )
                     configure_node("pure_pursuit_control")
+                    configure_node("control_path_publisher")
                 if self.mission == AutonomousMission.TRACKDRIVE:
                     set_state_active("pure_pursuit_control")
                 elif (
@@ -113,6 +118,7 @@ class Controller:
                     and self.state == SLAMStatesEnum.RACING
                 ):
                     set_state_active("pure_pursuit_control")
+                    set_state_active("control_path_publisher")
                 elif (
                     self.mission == AutonomousMission.AUTOCROSS
                     and self.state == SLAMStatesEnum.EXPLORATION
@@ -124,6 +130,7 @@ class Controller:
                     and self.state == SLAMStatesEnum.RACING
                 ):
                     set_state_active("pure_pursuit_control")
+                    set_state_active("control_path_publisher")
                 speed_target = 0.0
                 if self.state == SLAMStatesEnum.EXPLORATION:
                     speed_target = 2.0 if self.car == "simulation" else 1.0
