@@ -83,8 +83,7 @@ class Controller:
                 configure_node("slam_mcl")
                 configure_node("fastslam")
                 configure_node("loopclosure")
-
-                rospy.loginfo(f"Nodes configured and mission set to {self.mission}")
+                configure_node("map_publisher")
 
                 # Reset loop counter
                 rospy.ServiceProxy("/reset_closure", Empty)
@@ -95,31 +94,35 @@ class Controller:
                     set_state_inactive("fastslam")
                     set_state_active("slam_mcl")
                     set_state_active("loopclosure")
+                    set_state_active("map_publisher")
                 elif self.mission == AutonomousMission.SKIDPAD:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
                     set_state_inactive("fastslam")
                     set_state_active("slam_mcl")
                     set_state_active("loopclosure")
+                    set_state_active("map_publisher")
                 elif self.mission == AutonomousMission.AUTOCROSS:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.EXPLORATION
                     set_state_active("fastslam")
                     set_state_inactive("slam_mcl")
                     set_state_active("loopclosure")
+                    set_state_inactive("map_publisher")
                 elif self.mission == AutonomousMission.TRACKDRIVE:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.EXPLORATION
                     set_state_active("fastslam")
                     set_state_inactive("slam_mcl")
                     set_state_active("loopclosure")
+                    set_state_inactive("map_publisher")
                 else:
                     self.target_lap_count = -1
                     new_state = SLAMStatesEnum.EXPLORATION
                     set_state_inactive("fastslam")
                     set_state_inactive("slam_mcl")
                     set_state_inactive("loopclosure")
-
+                    set_state_inactive("map_publisher")
                 self.launcher.launch_node(
                     "slam_controller", f"launch/{self.mission}_{new_state}.launch"
                 )
@@ -129,6 +132,7 @@ class Controller:
             set_state_finalized("slam_mcl")
             set_state_finalized("fastslam")
             set_state_finalized("loopclosure")
+            set_state_finalized("map_publisher")
             self.launcher.shutdown()
             new_state = SLAMStatesEnum.IDLE
 

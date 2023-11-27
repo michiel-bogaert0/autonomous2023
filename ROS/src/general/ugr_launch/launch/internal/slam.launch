@@ -3,6 +3,11 @@
   <!-- Only put nodes here that are related to processing inside SLAM -->
   <!-- There should be NO hardware dependencies! -->
 
+  <!-- ? Map Publisher -->
+  <node name="map_publisher" pkg="slam_controller" output="screen" type="map_publisher.py">
+    <remap from="/output/map" to="/ugr/car/map/global" />
+  </node>
+
   <!-- ? FastSLAM -->
   <include file="$(find slam_fastslam)/launch/fastslam1.launch" pass_all_args="true" />
 

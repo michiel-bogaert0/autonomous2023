@@ -216,7 +216,7 @@ class ManagedNode:
         # publish the state of the node
         stateMsg = State()
         stateMsg.prev_state = original_state
-        stateMsg.curr_state = self.state
+        stateMsg.cur_state = self.state
         stateMsg.scope = self.name
         stateMsg.header.stamp = rospy.Time.now()
         self.statePublisher.publish(stateMsg)
