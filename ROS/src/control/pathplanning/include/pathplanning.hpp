@@ -88,6 +88,7 @@ public:
   ros::NodeHandle n_;
   explicit Pathplanning(ros::NodeHandle &n);
   void doConfigure() override;
+  void doActivate() override;
 
 private:
   TransformFrames frametf_;
@@ -103,9 +104,6 @@ private:
   std::unique_ptr<node_fixture::DiagnosticPublisher> diagnostics_pub;
 
   Triangulator triangulator_;
-  bool isActive() {
-    return ManagedNode::getState() == node_fixture::ManagedNodeState::Active;
-  }
   void receive_new_map(
       const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr &track);
   void compute(const std::vector<std::vector<double>> &cones,

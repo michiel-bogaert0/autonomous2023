@@ -22,6 +22,7 @@ public:
    * \brief functions that are called during state transitions. See
    * https://design.ros2.org/articles/node_lifecycle.html
    */
+  bool isActive() { return this->state == Active; }
   virtual void doConfigure(){};
   virtual void doCleanup(){};
   virtual void doActivate(){};

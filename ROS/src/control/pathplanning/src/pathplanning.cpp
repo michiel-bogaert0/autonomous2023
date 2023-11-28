@@ -17,11 +17,15 @@ Pathplanning::Pathplanning(ros::NodeHandle &n)
 void Pathplanning::doConfigure() {
   // add stuff that needs to be configured after selecting a (new) mission
 }
+void Pathplanning::doActivate() {
+  //
+}
+
 void Pathplanning::receive_new_map(
     const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr &track) {
-  // if (!this->isActive()){
-  //   return;
-  // }
+  if (!this->isActive()) {
+    return;
+  }
   std::vector<std::vector<double>> cones;
   for (const auto &obs_with_cov : track->observations) {
     std::vector<double> cone;

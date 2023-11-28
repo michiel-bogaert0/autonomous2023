@@ -105,6 +105,7 @@ class Controller:
                             "control_controller", f"launch/{self.mission}.launch"
                         )
                         configure_node("pure_pursuit_control")
+                        configure_node("pathplanning")
                 else:
                     self.launcher.launch_node(
                         "control_controller",
