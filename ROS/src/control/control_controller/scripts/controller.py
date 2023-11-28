@@ -104,6 +104,7 @@ class Controller:
                         self.launcher.launch_node(
                             "control_controller", f"launch/{self.mission}.launch"
                         )
+                        configure_node("pure_pursuit_control")
                 else:
                     self.launcher.launch_node(
                         "control_controller",
@@ -113,6 +114,7 @@ class Controller:
                     configure_node("control_path_publisher")
                 if self.mission == AutonomousMission.TRACKDRIVE:
                     set_state_active("pure_pursuit_control")
+                    set_state_active("pathplanning")
                 elif (
                     self.mission == AutonomousMission.SKIDPAD
                     and self.state == SLAMStatesEnum.RACING

@@ -6,16 +6,22 @@ TransformFrames::TransformFrames(ros::NodeHandle &n)
     : nh(n), tfBuffer(), tfListener(tfBuffer) {}
 
 Pathplanning::Pathplanning(ros::NodeHandle &n)
-    : n_(n), frametf_(n), triangulator_(n) {
+    : ManagedNode(n, "pathplanning"), n_(n), frametf_(n), triangulator_(n) {
+
   this->path_pub_ = n_.advertise<nav_msgs::Path>("/output/path", 10);
   this->map_sub_ = n_.subscribe("/input/local_map", 10,
                                 &Pathplanning::receive_new_map, this);
   this->diagnostics_pub = std::unique_ptr<node_fixture::DiagnosticPublisher>(
       new node_fixture::DiagnosticPublisher(n, "CTRL PATH"));
 }
-
+// void Pathplanning::doConfigure() {
+//   // add stuff that needs to be configured after selecting a (new) mission
+// }
 void Pathplanning::receive_new_map(
     const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr &track) {
+  // if (!this->isActive()){
+  //   return;
+  // }
   std::vector<std::vector<double>> cones;
   for (const auto &obs_with_cov : track->observations) {
     std::vector<double> cone;

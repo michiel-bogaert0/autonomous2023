@@ -79,7 +79,7 @@ class PurePursuit(ManagedNode):
         # rospy.spin()
 
     def doConfigure(self):
-        # add stuff that needs to be reconfigured when changing missions
+        # add stuff that needs to be configured after selecting a (new) mission
         pass
 
     # def doActivate(self):
