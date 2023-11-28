@@ -96,11 +96,6 @@ class Controller:
                 self.state == SLAMStatesEnum.EXPLORATION
                 or self.state == SLAMStatesEnum.RACING
             ):
-                # if self.mission == AutonomousMission.TRACKDRIVE:
-                #     if self.state == SLAMStatesEnum.EXPLORATION:
-                #         self.launcher.launch_node(
-                #             "control_controller", f"launch/{self.mission}.launch"
-                #         )
                 if (
                     self.mission == AutonomousMission.SKIDPAD
                     or self.mission == AutonomousMission.ACCELERATION

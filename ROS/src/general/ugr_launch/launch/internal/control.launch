@@ -6,4 +6,16 @@
   <!-- Control controller -->
   <include file="$(find control_controller)/launch/controller.launch" pass_all_args="true" />
 
+  <!-- Algorithms -->
+  <include file="$(find pure_pursuit)/launch/pure_pursuit.launch" pass_all_args="true">
+    <arg name="reference_frame" default="ugr/map" />
+    <arg name="minimal_distance" value="3"/>
+    <arg name="change_index" default="False" />
+  </include>
+
+  <node name="path_publisher" pkg="control_controller" output="screen" type="path_publisher.py">
+  <param name="path" value="$(find control_controller)/paths/straight_L75.yaml" />
+
+    <remap from="/output/path" to="/pathplanning/path" />
+  </node>
 </launch>
