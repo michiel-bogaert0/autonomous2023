@@ -91,9 +91,6 @@ private:
 
   TransformFrames frametf_;
 
-  double min_distance_away_from_start_;
-  double max_distance_away_from_start_;
-
   // Publishers
   ros::Publisher path_pub_;
   ros::Publisher path_stamped_pub_;

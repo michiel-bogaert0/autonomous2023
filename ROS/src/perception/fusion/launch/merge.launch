@@ -1,8 +1,10 @@
 <launch>
   <!-- Fusion -->
-  <node pkg="fusion" output="log" type="merge.py" name="topic_merger" respawn="False">
-    <remap from="/input/topic1" to="/ugr/car/observations/lidar"/>
-    <remap from="/input/topic2" to="/ugr/car/observations/camera"/>
-    <remap from="/output/topic" to="/ugr/car/observations"/>
+  <node pkg="fusion" output="screen" type="merge.py" name="topic_merger" respawn="False">
+    <param name="base_link_frame" value="ugr/car_base_link" />
+    <param name="world_frame" value="ugr/car_odom" />
+    <remap from="/input/lidar_observations" to="/ugr/car/observations/lidar"/>
+    <remap from="/input/camera_observations" to="/ugr/car/observations/camera"/>
+    <remap from="/output/topic" to="/ugr/car/observations/fused"/>
   </node>
 </launch>
