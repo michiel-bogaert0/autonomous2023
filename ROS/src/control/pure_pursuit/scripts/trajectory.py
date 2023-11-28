@@ -19,13 +19,19 @@ class Trajectory:
 
         # change indix is True for trackdrive/autocross, false for skidpad/acc
         self.change_index = rospy.get_param("~change_index", True)
-
+        rospy.loginfo(f"change: {self.change_index} ")
         # Transformations
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
+
         # for skidpad/acc use ugr/map, for trackdrive/autocross use ugr/car_odom
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
+        # rospy.loginfo(f"world_frame: {self.world_frame} ")
+        # rospy.loginfo(f"world_frame: {self.world_frame} ")
+        # rospy.loginfo(f"world_frame: {self.world_frame} ")
+        # rospy.loginfo(f"world_frame: {self.world_frame} ")
+        # rospy.loginfo(f"world_frame: {self.world_frame} ")
         self.time_source = rospy.Time(0)
 
     def transform_blf(self):

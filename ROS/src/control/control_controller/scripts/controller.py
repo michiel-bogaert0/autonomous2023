@@ -10,7 +10,7 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from node_fixture.node_management import configure_node, set_state_active
+from node_fixture.node_management import configure_node, load_params, set_state_active
 from node_launcher.node_launcher import NodeLauncher
 from ugr_msgs.msg import State
 
@@ -71,9 +71,12 @@ class Controller:
         if rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission:
             # Go to state depending on mission
             self.mission = rospy.get_param("/mission")
-            # will have to configure nodes here
+
+            # will have to configure nodes and load in parameters
+            load_params("control", self.mission)
             configure_node("pure_pursuit_control")
             configure_node("control_path_publisher")
+
         # else:
         #     self.launcher.shutdown()
         #     self.diagnostics_pub.publish(

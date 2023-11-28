@@ -15,7 +15,7 @@
         <param name="distance_start" value="3" />
         <param name="distance_stop" value="7" /> 
 
-        <param name="change_index" value="$(arg change_index)" />"      
+        <!-- <param name="change_index" value="$(arg change_index)" />"       -->
 
         <remap from="/input/path" to="/pathplanning/path" />
         <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>

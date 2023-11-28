@@ -68,7 +68,6 @@ class PurePursuit(ManagedNode):
             - t_step: the t step the alg takes when progressing through the underlying parametric equations
                       Indirectly determines how many points are checked per segment.
         """
-        self.trajectory = Trajectory()
         self.publish_rate = rospy.get_param("~publish_rate", 10)
 
         self.speed_target = rospy.get_param("~speed/target", 3.0)
@@ -80,7 +79,9 @@ class PurePursuit(ManagedNode):
 
     def doConfigure(self):
         # add stuff that needs to be configured after selecting a (new) mission
-        pass
+        # do this here because some parameters are set in the mission yaml files
+
+        self.trajectory = Trajectory()
 
     # def doActivate(self):
 
