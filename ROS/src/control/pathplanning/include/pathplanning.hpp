@@ -87,7 +87,7 @@ class Pathplanning : public node_fixture::ManagedNode {
 public:
   ros::NodeHandle n_;
   explicit Pathplanning(ros::NodeHandle &n);
-  // void doConfigure() override;
+  void doConfigure() override;
 
 private:
   TransformFrames frametf_;

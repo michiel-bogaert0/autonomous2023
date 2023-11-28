@@ -14,9 +14,9 @@ Pathplanning::Pathplanning(ros::NodeHandle &n)
   this->diagnostics_pub = std::unique_ptr<node_fixture::DiagnosticPublisher>(
       new node_fixture::DiagnosticPublisher(n, "CTRL PATH"));
 }
-// void Pathplanning::doConfigure() {
-//   // add stuff that needs to be configured after selecting a (new) mission
-// }
+void Pathplanning::doConfigure() {
+  // add stuff that needs to be configured after selecting a (new) mission
+}
 void Pathplanning::receive_new_map(
     const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr &track) {
   // if (!this->isActive()){
