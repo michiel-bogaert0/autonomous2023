@@ -51,27 +51,33 @@ class MapWidget(QtW.QFrame):
 
         # Create a QPushButton and add it to the layout
         loopButton = QtW.QPushButton("close/unclose loop", self)
-        loopButton.setFixedSize(120, 30)  # Set the size of the button
+        loopButton.setFixedSize(150, 30)  # Set the size of the button
         layout.addWidget(
             loopButton
         )  # Align the button to the right and top of the layout
         # Create a QPushButton and add it to the layout
         middellineButton = QtW.QPushButton("show/hide middelline", self)
-        middellineButton.setFixedSize(120, 30)  # Set the size of the button
+        middellineButton.setFixedSize(150, 30)  # Set the size of the button
         layout.addWidget(
             middellineButton
         )  # Align the button to the right and top of the layout
         # Create a QPushButton and add it to the layout
         selectAllButton = QtW.QPushButton("select all cones", self)
-        selectAllButton.setFixedSize(120, 30)  # Set the size of the button
+        selectAllButton.setFixedSize(150, 30)  # Set the size of the button
         layout.addWidget(
             selectAllButton
         )  # Align the button to the right and top of the layout
         # Create a QPushButton and add it to the layout
         deselectAllButton = QtW.QPushButton("deselect all cones", self)
-        deselectAllButton.setFixedSize(120, 30)  # Set the size of the button
+        deselectAllButton.setFixedSize(150, 30)  # Set the size of the button
         layout.addWidget(
             deselectAllButton
+        )  # Align the button to the right and top of the layout
+        # Create a QPushbutton and add it to the layout
+        trackboundsButton = QtW.QPushButton("show/hide trackbounds", self)
+        trackboundsButton.setFixedSize(150, 30)  # Set the size of the button
+        layout.addWidget(
+            trackboundsButton
         )  # Align the button to the right and top of the layout
 
         # Connect the button's clicked signal to a slot
@@ -79,6 +85,7 @@ class MapWidget(QtW.QFrame):
         middellineButton.clicked.connect(self.middelline_clicked)
         selectAllButton.clicked.connect(self.select_all_clicked)
         deselectAllButton.clicked.connect(self.deselect_all_clicked)
+        trackboundsButton.clicked.connect(self.trackbounds_clicked)
 
         # Constants
         self.ZOOM = 1.1
@@ -98,6 +105,7 @@ class MapWidget(QtW.QFrame):
         self.is_closed = bool(closed)
 
         self.middelline_on = False
+        self.trackbounds_on = False
 
         self.selection: Optional[QtC.QPoint] = None
 
@@ -157,6 +165,11 @@ class MapWidget(QtW.QFrame):
     def middelline_clicked(self):
         # This method will be called when the button is clicked
         self.middelline_on = not self.middelline_on
+        self.update()
+
+    def trackbounds_clicked(self):
+        # This method will be called when the button is clicked
+        self.trackbounds_on = not self.trackbounds_on
         self.update()
 
     def select_all_clicked(self):
@@ -588,6 +601,13 @@ class MapWidget(QtW.QFrame):
 
             self.paint_bezier_path(painter)
 
+        if self.trackbounds_on:
+            self.make_bezier(bounds="yellow")
+            self.paint_bezier_path(painter, color=QtC.Qt.yellow)
+
+            self.make_bezier(bounds="blue")
+            self.paint_bezier_path(painter, color=QtC.Qt.blue)
+
         self.draw_path(painter)
 
         # Draw the car
@@ -656,51 +676,62 @@ class MapWidget(QtW.QFrame):
                 painter.setBrush(brush)
                 painter.drawEllipse(circle_rect)
 
-    def make_bezier(self):
+    def make_bezier(self, bounds=None):
         self.bezierPoints = []
         c = 0
 
-        for i, yellow_cone in enumerate(self.yellow_cones):
-            min_distance = math.inf
-            nearest_blue = None
-            removed = 0
-            for j, blue_cone in enumerate(self.blue_cones[c:]):
-                distance = math.sqrt(
-                    (blue_cone.x() - yellow_cone.x()) ** 2
-                    + (blue_cone.y() - yellow_cone.y()) ** 2
-                )
-                if distance < min_distance:
-                    min_distance = distance
-                    for index, el in enumerate(self.blue_cones[c + removed : c + j]):
-                        if index + removed > 0 or i == 0:
-                            mindis = math.inf
-                            closest = None
-                            for yc in self.yellow_cones[: i + 1]:
-                                dis = math.sqrt(
-                                    (el.x() - yc.x()) ** 2 + (el.y() - yc.y()) ** 2
-                                )
-                                if dis < mindis:
-                                    mindis = dis
-                                    closest = yc
-                            self.bezierPoints.append((el + closest) / 2)
-                    removed = j
-                    nearest_blue = blue_cone
-            if nearest_blue:
-                self.bezierPoints.append((yellow_cone + nearest_blue) / 2)
+        if bounds is None:
+            for i, yellow_cone in enumerate(self.yellow_cones):
+                min_distance = math.inf
+                nearest_blue = None
+                removed = 0
+                for j, blue_cone in enumerate(self.blue_cones[c:]):
+                    distance = math.sqrt(
+                        (blue_cone.x() - yellow_cone.x()) ** 2
+                        + (blue_cone.y() - yellow_cone.y()) ** 2
+                    )
+                    if distance < min_distance:
+                        min_distance = distance
+                        for index, el in enumerate(
+                            self.blue_cones[c + removed : c + j]
+                        ):
+                            if index + removed > 0 or i == 0:
+                                mindis = math.inf
+                                closest = None
+                                for yc in self.yellow_cones[: i + 1]:
+                                    dis = math.sqrt(
+                                        (el.x() - yc.x()) ** 2 + (el.y() - yc.y()) ** 2
+                                    )
+                                    if dis < mindis:
+                                        mindis = dis
+                                        closest = yc
+                                self.bezierPoints.append((el + closest) / 2)
+                        removed = j
+                        nearest_blue = blue_cone
+                if nearest_blue:
+                    self.bezierPoints.append((yellow_cone + nearest_blue) / 2)
 
-            c += removed
+                c += removed
 
-        for index, el in enumerate(self.blue_cones[c:]):
-            if index > 0:  # or i == 0
-                mindis = math.inf
-                closest = None
-                for yc in self.yellow_cones:
-                    dis = math.sqrt((el.x() - yc.x()) ** 2 + (el.y() - yc.y()) ** 2)
-                    if dis < mindis:
-                        mindis = dis
-                        closest = yc
-                if closest is not None:
-                    self.bezierPoints.append((el + closest) / 2)
+            for index, el in enumerate(self.blue_cones[c:]):
+                if index > 0:  # or i == 0
+                    mindis = math.inf
+                    closest = None
+                    for yc in self.yellow_cones:
+                        dis = math.sqrt((el.x() - yc.x()) ** 2 + (el.y() - yc.y()) ** 2)
+                        if dis < mindis:
+                            mindis = dis
+                            closest = yc
+                    if closest is not None:
+                        self.bezierPoints.append((el + closest) / 2)
+
+        elif bounds == "yellow":
+            for yellow_cone in self.yellow_cones:
+                self.bezierPoints.append(yellow_cone)
+
+        elif bounds == "blue":
+            for blue_cone in self.blue_cones:
+                self.bezierPoints.append(blue_cone)
 
         self.make_controlPoints()
         return
@@ -750,9 +781,9 @@ class MapWidget(QtW.QFrame):
         else:
             return zip(self.bezier[:-1], shifted_by_one[:-1])
 
-    def paint_bezier_path(self, painter):
+    def paint_bezier_path(self, painter, color=QtC.Qt.red):
         if self.bezier != []:
-            pen = QtG.QPen(QtG.QColor(255, 0, 0))
+            pen = QtG.QPen(color)
             pen.setWidthF(2.0)
             painter.setPen(pen)
 
