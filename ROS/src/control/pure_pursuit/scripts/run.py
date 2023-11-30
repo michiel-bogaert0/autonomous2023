@@ -128,11 +128,8 @@ class PurePursuit(ManagedNode):
         Start sending updates. If the data is too old, brake.
         """
         rate = rospy.Rate(self.publish_rate)
-        # rospy.loginfo("Starting sending")
         while not rospy.is_shutdown():
-            # rospy.loginfo(f"{self.state}")
             if self.state == NodeManagingStatesEnum.ACTIVE:
-                # rospy.loginfo("still works")
                 try:
                     self.speed_target = rospy.get_param("~speed/target", 3.0)
 

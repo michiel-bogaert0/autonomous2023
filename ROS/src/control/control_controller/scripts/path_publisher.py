@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-import os
-
+import rospkg
 import rospy
 import yaml
 from genpy.message import fill_message_args
@@ -18,9 +17,9 @@ class PathPublisher(ManagedNode):
     def __init__(self):
         rospy.init_node("control_path_publisher")
         super().__init__("control_path_publisher")
-        self.path = rospy.get_param(
-            "~path", f"{os.path.dirname(__file__)}/../paths/straight_L100.yaml"
-        )
+        # self.path = rospy.get_param(
+        #     "~path", f"{os.path.dirname(__file__)}/../paths/straight_L100.yaml"
+        # )
         self.override_time = rospy.get_param("~override_time", True)
 
         self.path_publisher = rospy.Publisher(
@@ -52,7 +51,9 @@ class PathPublisher(ManagedNode):
         rospy.spin()
 
     def doConfigure(self):
-        # add stuff that needs to be reconfigured when changing missions
+        self.path = rospkg.RosPack().get_path(
+            rospy.get_param("~package_path")
+        ) + rospy.get_param("~path")
         pass
 
     def publish_path(self):

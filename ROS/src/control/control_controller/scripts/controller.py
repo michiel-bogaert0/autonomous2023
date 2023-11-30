@@ -73,6 +73,7 @@ class Controller:
             self.mission = rospy.get_param("/mission")
 
             # will have to configure nodes and load in parameters
+            rospy.loginfo(f"Mission: {self.mission}")
             load_params("control", self.mission)
             configure_node("pure_pursuit_control")
             configure_node("control_path_publisher")
