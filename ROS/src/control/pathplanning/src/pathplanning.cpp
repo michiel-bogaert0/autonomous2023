@@ -7,9 +7,8 @@ TransformFrames::TransformFrames(ros::NodeHandle &n)
 
 Pathplanning::Pathplanning(ros::NodeHandle &n)
     : ManagedNode(n, "pathplanning"), n_(n), frametf_(n), triangulator_(n) {}
-void Pathplanning::doConfigure() {
-  // add stuff that needs to be configured after selecting a (new) mission
-}
+
+void Pathplanning::doConfigure() {}
 void Pathplanning::doActivate() {
   this->path_pub_ = n_.advertise<nav_msgs::Path>("/output/path", 10);
   this->map_sub_ = n_.subscribe("/input/local_map", 10,

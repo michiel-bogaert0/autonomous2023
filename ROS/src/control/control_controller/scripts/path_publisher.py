@@ -17,9 +17,10 @@ class PathPublisher(ManagedNode):
     def __init__(self):
         rospy.init_node("control_path_publisher")
         super().__init__("control_path_publisher")
-        # self.path = rospy.get_param(
-        #     "~path", f"{os.path.dirname(__file__)}/../paths/straight_L100.yaml"
-        # )
+
+        rospy.spin()
+
+    def doConfigure(self):
         self.override_time = rospy.get_param("~override_time", True)
 
         self.path_publisher = rospy.Publisher(
@@ -47,8 +48,6 @@ class PathPublisher(ManagedNode):
                     message="Error publishing path.",
                 )
             )
-
-        rospy.spin()
 
     def doActivate(self):
         self.path = rospkg.RosPack().get_path(
