@@ -95,16 +95,6 @@ class Controller:
                     or self.mission == AutonomousMission.ACCELERATION
                 ):
                     set_state_active("pure_pursuit_control")
-                    rospy.loginfo("here")
-                    rospy.loginfo("here")
-                    rospy.loginfo("here")
-                    rospy.loginfo("here")
-                    rospy.loginfo("here")
-                    rospy.loginfo("here")
-                    rospy.loginfo("here")
-                    rospy.loginfo("here")
-                    rospy.loginfo("here")
-                    rospy.loginfo("here")
                     set_state_active("control_path_publisher")
 
                 elif (

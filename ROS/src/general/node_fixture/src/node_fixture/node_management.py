@@ -141,10 +141,6 @@ class ManagedNode:
             and request.state == NodeManagingStatesEnum.INACTIVE
         ):
             self.state = NodeManagingStatesEnum.INACTIVE
-            rospy.loginfo(" going to doconfigure")
-            rospy.loginfo(" going to doconfigure")
-            rospy.loginfo(" going to doconfigure")
-            rospy.loginfo(" going to doconfigure")
             self.doConfigure()
         elif (
             self.state == NodeManagingStatesEnum.INACTIVE
