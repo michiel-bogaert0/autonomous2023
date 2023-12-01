@@ -77,17 +77,7 @@ class Controller:
             load_params("control", self.mission)
             configure_node("pure_pursuit_control")
             configure_node("control_path_publisher")
-
-        # else:
-        #     self.launcher.shutdown()
-        #     self.diagnostics_pub.publish(
-        #         create_diagnostic_message(
-        #             level=DiagnosticStatus.WARN,
-        #             name="[CTRL CTRL] Node Status",
-        #             message="Node shutting down.",
-        #         )
-        #     )
-        #     return
+            configure_node("pathplanning")
 
         # Decides what to do based on the received state
         if state.scope == StateMachineScopeEnum.SLAM:
@@ -106,13 +96,9 @@ class Controller:
                 ):
                     set_state_active("pure_pursuit_control")
                     set_state_active("control_path_publisher")
-                elif self.mission == AutonomousMission.TRACKDRIVE:
-                    set_state_active("pure_pursuit_control")
-                    set_state_active("pathplanning")
-
                 elif (
-                    self.mission == AutonomousMission.AUTOCROSS
-                    and self.state == SLAMStatesEnum.EXPLORATION
+                    self.mission == AutonomousMission.TRACKDRIVE
+                    or self.mission == AutonomousMission.AUTOCROSS
                 ):
                     set_state_active("pure_pursuit_control")
                     set_state_active("pathplanning")

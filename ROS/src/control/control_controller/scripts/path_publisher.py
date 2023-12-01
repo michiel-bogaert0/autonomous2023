@@ -50,7 +50,7 @@ class PathPublisher(ManagedNode):
 
         rospy.spin()
 
-    def doConfigure(self):
+    def doActivate(self):
         self.path = rospkg.RosPack().get_path(
             rospy.get_param("~package_path")
         ) + rospy.get_param("~path")

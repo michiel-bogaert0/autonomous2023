@@ -6,13 +6,15 @@
   <!-- Control controller -->
   <include file="$(find control_controller)/launch/controller.launch" pass_all_args="true" />
 
-  <!-- Algorithms -->
+  <!-- Pure Pursuit -->
   <include file="$(find pure_pursuit)/launch/pure_pursuit.launch" pass_all_args="true">
   </include>
-
+  
+  <!-- Path_publisher -->
   <node name="path_publisher" pkg="control_controller" output="screen" type="path_publisher.py">
     <remap from="/output/path" to="/pathplanning/path" />
   </node>
 
-  
+  <!-- ? Pathplanning -->
+  <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true" />
 </launch>
