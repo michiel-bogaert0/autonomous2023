@@ -21,6 +21,9 @@ class PurePursuit(ManagedNode):
         rospy.init_node("pure_pursuit_control")
         super().__init__("pure_pursuit_control")
 
+        rospy.spin()
+
+    def doConfigure(self):
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
@@ -74,16 +77,10 @@ class PurePursuit(ManagedNode):
         self.steering_transmission = rospy.get_param(
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
-        self.start_sender()
-        # rospy.spin()
 
-    def doConfigure(self):
-        # add stuff that needs to be configured after selecting a (new) mission
-        # do this here because some parameters are set in the mission yaml files
-
+    def doActivate(self):
         self.trajectory = Trajectory()
-
-    # def doActivate(self):
+        self.start_sender()
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
