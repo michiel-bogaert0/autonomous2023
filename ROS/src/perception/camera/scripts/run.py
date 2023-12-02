@@ -311,7 +311,7 @@ class PerceptionNode:
                 uncertainty * self.covar_y_factor,
                 uncertainty * self.covar_z_factor,
             ]
-        )
+        ).flatten()
 
     def ros_img_to_np(self, image: Image) -> np.ndarray:
         """Converts a ros image into an numpy array
