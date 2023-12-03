@@ -60,7 +60,7 @@ class PurePursuit(ManagedNode):
         )
 
         # Subscriber for path
-        self.path_sub = rospy.Subscriber(
+        self.path_sub = super().AddSubscriber(
             "/input/path", Path, self.getPathplanningUpdate
         )
         self.odom_sub = rospy.Subscriber("/input/odom", Odometry, self.get_odom_update)
