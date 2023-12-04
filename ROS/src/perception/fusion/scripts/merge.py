@@ -5,7 +5,7 @@ import numpy as np
 import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import TransformStamped
-from node_fixture.node_fixture import ROSNode
+from node_fixture.fixture import ROSNode
 from sklearn.neighbors import KDTree
 from ugr_msgs.msg import (
     ObservationWithCovariance,
@@ -180,26 +180,6 @@ class MergeNode:
                 ROSNode.do_transform_observations(late_obs, tf_late_to_base)
             )
 
-            # Add covariances and beliefs to the transformed observations
-            for i in range(len(early_obs.observations)):
-                time_transformed_early_obs.observations[
-                    i
-                ].covariance = early_obs.observations[i].covariance
-                time_transformed_early_obs.observations[
-                    i
-                ].observation.observation_class = early_obs.observations[
-                    i
-                ].observation.observation_class
-            for i in range(len(time_transformed_late_obs.observations)):
-                time_transformed_late_obs.observations[
-                    i
-                ].covariance = late_obs.observations[i].covariance
-                time_transformed_late_obs.observations[
-                    i
-                ].observation.observation_class = late_obs.observations[
-                    i
-                ].observation.observation_class
-
             # Proceed fusion by matching lidar with camera observations
             self.kd_tree_merger(time_transformed_early_obs, time_transformed_late_obs)
 
@@ -283,7 +263,7 @@ class MergeNode:
                     ]
 
                 # Find observation that is at the center of linked observations (either euclidean average or with Kalman filter)
-                center_observation = self.euclidean_average(
+                center_observation = self.kalman_filter(
                     lidar_observation, camera_observation
                 )
                 center_location = [
@@ -356,7 +336,70 @@ class MergeNode:
         return average_observation
 
     def kalman_filter(self, lidar_observation, camera_observation):
-        return
+        """
+        This function provides a basic implementation of a Kalman filter to use for sensor fusion
+        Mainly based on https://arxiv.org/pdf/1710.04055.pdf
+        """
+
+        # Initialize numpy arrays
+        covariance_matrix_lidar = np.reshape(
+            np.array(lidar_observation.covariance), (3, 3)
+        )
+        covariance_matrix_camera = np.reshape(
+            np.array(camera_observation.covariance), (3, 3)
+        )
+        lidar_observation_location = np.reshape(
+            np.array(
+                [
+                    lidar_observation.observation.location.x,
+                    lidar_observation.observation.location.y,
+                    lidar_observation.observation.location.z,
+                ]
+            ),
+            (3, 1),
+        )
+        camera_observation_location = np.reshape(
+            np.array(
+                [
+                    camera_observation.observation.location.x,
+                    camera_observation.observation.location.y,
+                    camera_observation.observation.location.z,
+                ]
+            ),
+            (3, 1),
+        )
+
+        # Calcultate new covariance matrix
+        new_covariance = np.linalg.inv(
+            np.linalg.inv(covariance_matrix_lidar)
+            + np.linalg.inv(covariance_matrix_camera)
+        )
+        # Calculate weights of each sensor's observations
+        lidar_weight = np.matmul(new_covariance, np.linalg.inv(covariance_matrix_lidar))
+        camera_weight = np.matmul(
+            new_covariance, np.linalg.inv(covariance_matrix_camera)
+        )
+
+        # Calculate the weighted average of both observations based on lidar_weight and camera_weight
+        new_prediction = np.matmul(
+            lidar_weight, lidar_observation_location
+        ) + np.matmul(camera_weight, camera_observation_location)
+
+        fused_observation = ObservationWithCovariance()
+        fused_observation.observation.observation_class = (
+            camera_observation.observation.observation_class
+        )
+        fused_observation.observation.belief = camera_observation.observation.belief
+        fused_observation.covariance = tuple(
+            np.reshape(new_covariance, (1, 9)).tolist()[0]
+        )
+        (
+            fused_observation.observation.location.x,
+            fused_observation.observation.location.y,
+            fused_observation.observation.location.z,
+        ) = (new_prediction[0][0], new_prediction[1][0], new_prediction[2][0])
+
+        return fused_observation
 
 
 node = MergeNode()

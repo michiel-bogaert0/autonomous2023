@@ -99,7 +99,12 @@ class ThreeStageModel:
         cones = self.height_to_pos(categories, heights, bottoms)
 
         # Add the beliefs back
-        cones = np.hstack((bboxes[valid_cones, 4], cones))
+        cones = np.hstack(
+            (
+                np.reshape(bboxes[valid_cones, 4], (len(bboxes[valid_cones, 4]), 1)),
+                cones,
+            )
+        )
 
         latencies.append(1000 * (time.perf_counter() - start))
 
