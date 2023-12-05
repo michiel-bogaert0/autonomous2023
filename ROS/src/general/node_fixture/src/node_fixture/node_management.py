@@ -49,13 +49,12 @@ def configure_node(name: str) -> None:
     set_state_inactive(name)
 
 
-def load_params(controller: str, mission: str) -> None:
+def load_params(mission: str) -> None:
     """
-    Load parameters from a YAML file based on the controller and mission.
+    Load parameters from a YAML file based the mission.
     Also takes the car name from the /car parameter.
 
     Args:
-        controller (str): The name of the controller.
         mission (str): The name of the mission.
 
     Returns:
@@ -63,7 +62,7 @@ def load_params(controller: str, mission: str) -> None:
     """
     pkg_path = rospkg.RosPack().get_path("ugr_launch")
     car = rospy.get_param("/car")
-    filename = f"{controller}_{mission}.yaml"
+    filename = f"{mission}.yaml"
     yaml_path = os.path.join(pkg_path, "config/", car, filename)
     with open(yaml_path, "r") as f:
         dic = yaml.safe_load(f)

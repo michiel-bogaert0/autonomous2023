@@ -1,4 +1,0 @@
-pure_pursuit:
-  change_index: True
-  minimal_distance: 1.2
-  world_frame: "ugr/map"

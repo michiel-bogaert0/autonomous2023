@@ -1,3 +1,0 @@
-pure_pursuit:
-  change_index: True
-  world_frame: "ugr/map"

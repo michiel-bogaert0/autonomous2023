@@ -210,6 +210,10 @@ void LoopClosure::ResetClosure() {
 }
 
 void LoopClosure::publish() {
+
+  if (!this->isActive()) {
+    return;
+  }
   std_msgs::UInt16 msg1;
   msg1.data = amountOfLaps;
   loopClosedPublisher.publish(msg1);
