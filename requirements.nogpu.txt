@@ -31,3 +31,4 @@ pytest
 autoflake
 mkdocs-material
 pynput
+psutil
