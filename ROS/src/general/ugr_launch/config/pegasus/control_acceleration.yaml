@@ -1,0 +1,8 @@
+pure_pursuit:
+  change_index: False
+  minimal_distance: 3
+  world_frame: "ugr/map"
+
+path_publisher:
+  package_path: "control_controller"
+  path: "/paths/straight_L75.yaml"

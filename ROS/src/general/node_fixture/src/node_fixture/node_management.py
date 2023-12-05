@@ -155,51 +155,52 @@ class ManagedNode:
         Returns:
         - SetNodeStateResponse: the service response indicating whether the request was successful
         """
+
         original_state = self.state
         if (
             self.state == NodeManagingStatesEnum.UNCONFIGURED
             and request.state == NodeManagingStatesEnum.INACTIVE
         ):
-            self.doConfigure()
             self.state = NodeManagingStatesEnum.INACTIVE
+            self.doConfigure()
         elif (
             self.state == NodeManagingStatesEnum.INACTIVE
             and request.state == NodeManagingStatesEnum.UNCONFIGURED
         ):
-            self.doCleanup()
             self.state = NodeManagingStatesEnum.UNCONFIGURED
+            self.doCleanup()
         elif (
             self.state == NodeManagingStatesEnum.INACTIVE
             and request.state == NodeManagingStatesEnum.ACTIVE
         ):
-            self.doActivate()
             self.state = NodeManagingStatesEnum.ACTIVE
+            self.doActivate()
         elif (
             self.state == NodeManagingStatesEnum.ACTIVE
             and request.state == NodeManagingStatesEnum.INACTIVE
         ):
-            self.doDeactivate()
             self.state = NodeManagingStatesEnum.INACTIVE
+            self.doDeactivate()
         elif (
             self.state == NodeManagingStatesEnum.INACTIVE
             and request.state == NodeManagingStatesEnum.FINALIZED
         ):
-            self.doShutdown()
             self.state = NodeManagingStatesEnum.FINALIZED
+            self.doShutdown()
             rospy.signal_shutdown("Node finalized")
         elif (
             self.state == NodeManagingStatesEnum.ACTIVE
             and request.state == NodeManagingStatesEnum.FINALIZED
         ):
-            self.doShutdown()
             self.state = NodeManagingStatesEnum.FINALIZED
+            self.doShutdown()
             rospy.signal_shutdown("Node finalized")
         elif (
             self.state == NodeManagingStatesEnum.UNCONFIGURED
             and request.state == NodeManagingStatesEnum.FINALIZED
         ):
-            self.doShutdown()
             self.state = NodeManagingStatesEnum.FINALIZED
+            self.doShutdown()
             rospy.signal_shutdown("Node finalized")
         else:
             # invalid state transition

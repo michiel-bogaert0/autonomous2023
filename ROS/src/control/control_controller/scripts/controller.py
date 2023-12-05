@@ -10,6 +10,7 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
+from node_fixture.node_management import configure_node, load_params, set_state_active
 from node_launcher.node_launcher import NodeLauncher
 from ugr_msgs.msg import State
 
@@ -64,22 +65,19 @@ class Controller:
         Handles state transition from other state machines
 
         Args:
-            state: the state transition
+            state: the state transitionq
         """
 
-        if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
+        if rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission:
             # Go to state depending on mission
             self.mission = rospy.get_param("/mission")
-        else:
-            self.launcher.shutdown()
-            self.diagnostics_pub.publish(
-                create_diagnostic_message(
-                    level=DiagnosticStatus.WARN,
-                    name="[CTRL CTRL] Node Status",
-                    message="Node shutting down.",
-                )
-            )
-            return
+
+            # will have to configure nodes and load in parameters
+            rospy.loginfo(f"Mission: {self.mission}")
+            load_params("control", self.mission)
+            configure_node("pure_pursuit_control")
+            configure_node("control_path_publisher")
+            configure_node("pathplanning")
 
         # Decides what to do based on the received state
         if state.scope == StateMachineScopeEnum.SLAM:
@@ -92,16 +90,19 @@ class Controller:
                 self.state == SLAMStatesEnum.EXPLORATION
                 or self.state == SLAMStatesEnum.RACING
             ):
-                if self.mission == AutonomousMission.TRACKDRIVE:
-                    if self.state == SLAMStatesEnum.EXPLORATION:
-                        self.launcher.launch_node(
-                            "control_controller", f"launch/{self.mission}.launch"
-                        )
-                else:
-                    self.launcher.launch_node(
-                        "control_controller",
-                        f"launch/{self.mission}_{self.state}.launch",
-                    )
+                if (
+                    self.mission == AutonomousMission.SKIDPAD
+                    or self.mission == AutonomousMission.ACCELERATION
+                ):
+                    set_state_active("pure_pursuit_control")
+                    set_state_active("control_path_publisher")
+
+                elif (
+                    self.mission == AutonomousMission.TRACKDRIVE
+                    or self.mission == AutonomousMission.AUTOCROSS
+                ):
+                    set_state_active("pure_pursuit_control")
+                    set_state_active("pathplanning")
 
                 speed_target = 0.0
                 if self.state == SLAMStatesEnum.EXPLORATION:
@@ -133,6 +134,7 @@ class Controller:
                         message="Node shutting down.",
                     )
                 )
+                # finalize nodes here
 
 
 node = Controller()
