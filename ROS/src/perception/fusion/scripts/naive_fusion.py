@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
-# import numpy as np
+import numpy as np
+
 # import rospy
 from sklearn.neighbors import KDTree
-from ugr_msgs.msg import (  # ObservationWithCovariance,
+from ugr_msgs.msg import (
+    ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
 )
 
@@ -63,48 +65,47 @@ class NaiveFusion:
         kdtree_all = KDTree(all_points)
 
         # Create associations of observations
-        for msg in tf_sensor_msgs:
-            for current_obs in msg.observations:
-                if current_obs in associated_observations:
+        for current_obs in all_observations:
+            if current_obs in associated_observations:
+                continue
+
+            association = [current_obs]
+
+            # For each sensor other than current one, find best match for current_obs
+            for sensor in sensors:
+                if sensor == current_obs.frame_id:
                     continue
 
-                association = [current_obs]
+                potential_matches = self.within_radius_unmatched(
+                    all_observations=all_observations,
+                    kdtree=kdtree_all,
+                    root_obs=current_obs,
+                    sensor=sensor,
+                )
 
-                # For each sensor, find all observations within radius of current_obs
-                for sensor in sensors:
-                    if sensor == current_obs.frame_id:
-                        continue
+                # If no matches of sensor type are found within max radius, continue to next sensor
+                if len(potential_matches) == 0:
+                    continue
 
-                    potential_matches = self.within_radius_unmatched(
+                # If closest match is already associated, continue to next sensor
+                if potential_matches[0] in associated_observations:
+                    continue
+
+                # Check if closest match for current_obs also has current_obs as closest match
+                if (
+                    self.within_radius_unmatched(
                         all_observations=all_observations,
                         kdtree=kdtree_all,
-                        root_obs=current_obs,
-                        sensor=sensor,
-                    )
+                        root_obs=potential_matches[0],
+                        sensor=current_obs.frame_id,
+                    )[0]
+                    == current_obs
+                ):
+                    association.append(potential_matches[0])
 
-                    # If no matches of sensor type are found within max radius, continue to next sensor
-                    if len(potential_matches) == 0:
-                        continue
-
-                    # If closest match is already associated, continue to next sensor
-                    if potential_matches[0] in associated_observations:
-                        continue
-
-                    # Check if closest match for current_obs also has current_obs as closest match
-                    if (
-                        self.within_radius_unmatched(
-                            all_observations=all_observations,
-                            kdtree=kdtree_all,
-                            root_obs=potential_matches[0],
-                            sensor=current_obs.frame_id,
-                        )[0]
-                        == current_obs
-                    ):
-                        association.append(potential_matches[0])
-
-                for obs in association:
-                    associated_observations.append(obs)
-                associations.append(association)
+            for obs in association:
+                associated_observations.append(obs)
+            associations.append(association)
 
         return associations
 
@@ -136,11 +137,72 @@ class NaiveFusion:
             )
         )
 
-    def kalman_filter(self):
+    def kalman_filter(self, association):
         """
         Kalman filter
 
         Associated observations are merged using a Kalman filter
         to find an optimal estimate for cone location, type and covariance.
+        Assumes len(association) > 1
         """
-        return
+
+        # Initialize numpy arrays
+        covariance_matrices = [
+            np.reshape(np.array(obs.covariance), (3, 3)) for obs in association
+        ]
+        observation_locations = [
+            np.reshape(
+                np.array(
+                    [
+                        obs.observation.location.x,
+                        obs.observation.location.y,
+                        obs.observation.location.z,
+                    ]
+                ),
+                (3, 1),
+            )
+            for obs in association
+        ]
+
+        # Calculate new covariance matrix
+        new_covariance = np.zeros((3, 3))
+        inverse_covariances = [
+            np.linalg.inv(covariance) for covariance in covariance_matrices
+        ]
+        for inverse in inverse_covariances:
+            new_covariance += inverse
+        new_covariance = np.linalg.inv(new_covariance)
+
+        # Calculate weights of each observation
+        weights = [
+            np.matmul(new_covariance, inverse_covariance)
+            for inverse_covariance in inverse_covariances
+        ]
+
+        # Calculate new observation location (weighted average)
+        new_location = np.zeros((3, 1))
+        for i in range(len(weights)):
+            new_location += np.matmul(weights[i], observation_locations[i])
+
+        # Create new observation
+        fused_observation = ObservationWithCovariance()
+        fused_observation.observation.observation_class = association[
+            0
+        ].observation.observation_class
+
+        belief = association[0].observation.belief
+        for obs in association:
+            if obs.frame_id == "camera":
+                belief = obs.observation.belief
+                break
+        fused_observation.observation.belief = belief
+        fused_observation.covariance = tuple(
+            np.reshape(new_covariance, (1, 9)).tolist()[0]
+        )
+        (
+            fused_observation.observation.location.x,
+            fused_observation.observation.location.y,
+            fused_observation.observation.location.z,
+        ) = tuple(new_location[0][0], new_location[1][0], new_location[2][0])
+
+        return fused_observation
