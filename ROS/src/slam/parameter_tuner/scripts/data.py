@@ -70,7 +70,7 @@ class PrintData(Data):
         rospy.loginfo(f"Data:\n{str}")
 
 
-class CsvData:
+class CsvData(Data):
     """
     Class to handle CSV data storage and manipulation.
     """
