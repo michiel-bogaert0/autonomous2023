@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
-
-# import rospy
+import rospy
 from sklearn.neighbors import KDTree
 from ugr_msgs.msg import (
     ObservationWithCovariance,
@@ -29,6 +28,8 @@ class NaiveFusion:
                 continue
             fusion_observations.append(self.kalman_filter(association))
 
+        results.observations = fusion_observations
+        results.header.stamp = rospy.Time.now()
         return results
 
     def kd_tree_merger(self, tf_sensor_msgs):
@@ -45,7 +46,6 @@ class NaiveFusion:
         associations = []
 
         # Create list of sensors, observations & points of all incoming messages
-        sensors = [msg.header.frame_id for msg in tf_sensor_msgs]
         all_observations = []
         for msg in tf_sensor_msgs:
             all_observations.extend(msg.observations)
@@ -65,51 +65,54 @@ class NaiveFusion:
         kdtree_all = KDTree(all_points)
 
         # Create associations of observations
-        for current_obs in all_observations:
-            if current_obs in associated_observations:
-                continue
-
-            association = [current_obs]
-
-            # For each sensor other than current one, find best match for current_obs
-            for sensor in sensors:
-                if sensor == current_obs.frame_id:
+        for current_sensor_observations in tf_sensor_msgs:
+            for current_obs in current_sensor_observations.observations:
+                if current_obs in associated_observations:
                     continue
 
-                potential_matches = self.within_radius_unmatched(
-                    all_observations=all_observations,
-                    kdtree=kdtree_all,
-                    root_obs=current_obs,
-                    sensor=sensor,
-                )
+                association = [current_obs]
 
-                # If no matches of sensor type are found within max radius, continue to next sensor
-                if len(potential_matches) == 0:
-                    continue
+                # For each sensor other than current one, find best match for current_obs
+                for sensor_msg in tf_sensor_msgs:
+                    if current_obs in sensor_msg.observations:
+                        continue
 
-                # If closest match is already associated, continue to next sensor
-                if potential_matches[0] in associated_observations:
-                    continue
-
-                # Check if closest match for current_obs also has current_obs as closest match
-                if (
-                    self.within_radius_unmatched(
+                    potential_matches = self.within_radius_unmatched(
                         all_observations=all_observations,
                         kdtree=kdtree_all,
-                        root_obs=potential_matches[0],
-                        sensor=current_obs.frame_id,
-                    )[0]
-                    == current_obs
-                ):
-                    association.append(potential_matches[0])
+                        root_obs=current_obs,
+                        other_sensor_observations=sensor_msg,
+                    )
 
-            for obs in association:
-                associated_observations.append(obs)
-            associations.append(association)
+                    # If no matches of sensor type are found within max radius, continue to next sensor
+                    if len(potential_matches) == 0:
+                        continue
+
+                    # If closest match is already associated, continue to next sensor
+                    if potential_matches[0] in associated_observations:
+                        continue
+
+                    # Check if closest match for current_obs also has current_obs as closest match
+                    if (
+                        self.within_radius_unmatched(
+                            all_observations=all_observations,
+                            kdtree=kdtree_all,
+                            root_obs=potential_matches[0],
+                            other_sensor_observations=current_sensor_observations,
+                        )[0]
+                        == current_obs
+                    ):
+                        association.append(potential_matches[0])
+
+                for obs in association:
+                    associated_observations.append(obs)
+                associations.append(association)
 
         return associations
 
-    def within_radius_unmatched(self, all_observations, kdtree, root_obs, sensor):
+    def within_radius_unmatched(
+        self, all_observations, kdtree, root_obs, other_sensor_observations
+    ):
         """
         Returns an ordered list of observations that are within max_fusion_distance radius of root_obs
         and of specified sensor type
@@ -132,7 +135,7 @@ class NaiveFusion:
         # Filter out observations other than those frome sensor and return an ordered list of potential matches
         return list(
             filter(
-                lambda obs: obs.frame_id == sensor,
+                lambda obs: obs in other_sensor_observations,
                 [all_observations[i] for i in indices[0]],
             )
         )

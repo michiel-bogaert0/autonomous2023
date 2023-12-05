@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# import time
+import time
 
 # import numpy as np
 import rospy
@@ -53,6 +53,8 @@ class MergeNode:
             "os_sensor",
             "ugr/car_base_link/cam0",
         )
+        self.input_sensors = ["os_sensor", "ugr/car_base_link/cam0"]
+
         # Fusion parameters
         self.max_fusion_eucl_distance = rospy.get_param("~fusion_eucl_distance", 2.5)
         self.max_sensor_time_diff = rospy.get_param("~sensor_time_diff_ms", 50)
@@ -69,6 +71,9 @@ class MergeNode:
         self.is_first_received = True
         self.last_received_sensor = None
 
+        # Keep track of previously received messages
+        self.previous_msgs = []
+
     def publish(self, msg):
         """
         Just publishes on the topic
@@ -79,11 +84,19 @@ class MergeNode:
         """
         Measure time between incoming lidar and camera observations, log to console
         """
+        time_now = time.time_ns() * 1e-6
+        rospy.loginfo(f"\nReceived observations from {observations.header.frame_id}")
+        for msg in self.previous_msgs:
+            rospy.loginfo(
+                f"Previous message from {msg.header.frame_id}: {time_now - msg.header.stamp.nsecs * 1e-6} ms\n"
+            )
         return
 
     def handle_observations(self, observations: ObservationWithCovarianceArrayStamped):
         """
         Handle incoming observations and send through pipeline
+        Wait for either all messages specified in self.input_sensors to arrive or for a timeout,
+        then send all received messages through the fusion pipeline
         """
 
         self.run_fusion(observations)
@@ -111,7 +124,7 @@ class MergeNode:
         try:
             transformed_msgs = []
             tf_source_time = sensor_msgs[
-                -1
+                0
             ].header.stamp  # Time to which observations messages are transformed
 
             for sensor_msg in sensor_msgs:
