@@ -57,6 +57,7 @@ add_executable(${PROJECT_NAME}
   src/triangulator.cpp
   src/utils.cpp
   src/boundary_estimation.cpp
+  src/color_conector.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

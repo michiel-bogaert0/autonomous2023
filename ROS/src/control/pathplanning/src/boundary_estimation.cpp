@@ -3,7 +3,7 @@
 namespace pathplanning {
 
 BoundaryEstimation::BoundaryEstimation(ros::NodeHandle &n)
-    : n_(n), frametf_(n) {
+    : n_(n), frametf_(n), color_connector_(n) {
   this->path_pub_ = n_.advertise<nav_msgs::Path>("/output/boundaries", 10);
   this->map_sub_ = n_.subscribe("/input/local_map", 10,
                                 &BoundaryEstimation::receive_new_map, this);
@@ -26,6 +26,9 @@ void BoundaryEstimation::receive_new_map(
 }
 
 void BoundaryEstimation::compute(const std::vector<std::vector<double>> &cones,
-                                 const std_msgs::Header &header) {}
+                                 const std_msgs::Header &header) {
+  // std::pair<std::vector<Node *>, std::vector<Node *>> boundaries =
+  this->color_connector_.get_color_lines(cones, header);
+}
 
 } // namespace pathplanning

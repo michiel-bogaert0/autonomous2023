@@ -15,6 +15,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <color_connector.hpp>
 #include <node_fixture/node_fixture.hpp>
 #include <pathplanning.hpp>
 #include <triangulator.hpp>
@@ -29,6 +30,8 @@ private:
   ros::NodeHandle n_;
 
   TransformFrames frametf_;
+
+  ColorConnector color_connector_;
 
   // Publishers
   ros::Publisher path_pub_;
