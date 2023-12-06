@@ -27,6 +27,7 @@
             <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
             <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
             <remap from="/output/boundaries" to="/pathplanning/debug/boundaries"/>
+            <remap from="/output/debug/all_poses" to="/pathplanning/debug/all_poses"/>
         </node>
 
         <node pkg="pathplanning" type="smooth_path.py" name="path_smoother" respawn="true" output="screen">
@@ -63,6 +64,7 @@
             <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
             <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
             <remap from="/output/boundaries" to="/pathplanning/debug/boundaries"/>
+            <remap from="/output/debug/all_poses" to="/pathplanning/debug/all_poses"/>
         </node>
     </group>
 </launch>

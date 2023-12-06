@@ -20,8 +20,9 @@ class Triangulator {
 public:
   explicit Triangulator(ros::NodeHandle &n);
 
-  std::vector<Node *> get_path(const std::vector<std::vector<double>> &cones,
-                               const std_msgs::Header &header);
+  std::pair<std::vector<Node *>, std::vector<std::vector<Node *>>>
+  get_path(const std::vector<std::vector<double>> &cones,
+           const std_msgs::Header &header);
 
 private:
   ros::NodeHandle &n_;
@@ -58,7 +59,7 @@ private:
   void publish_line(const std::vector<std::vector<double>> &line,
                     const std_msgs::Header &header);
 
-  std::vector<Node *>
+  std::pair<std::vector<Node *>, std::vector<std::vector<Node *>>>
   get_best_path(const std::vector<Node *> &leaves,
                 const std::vector<std::vector<double>> &cones);
 };
