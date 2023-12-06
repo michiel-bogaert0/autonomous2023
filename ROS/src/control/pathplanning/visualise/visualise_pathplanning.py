@@ -33,6 +33,10 @@ class MapWidget(QtW.QFrame):
         super().__init__(None)
         self.setFocus()
 
+        self.nr_paths = 0
+        self.pathnr = 0
+        self.all_paths = []
+
         if yellows is None:
             yellows = []
         if blues is None:
@@ -279,8 +283,10 @@ class MapWidget(QtW.QFrame):
         visible_cones = np.vstack((yellow_cones, blue_cones))
         return visible_cones
 
-    def receive_path(self, rel_path: np.ndarray):
-        real_path = self.car_to_real_transform(rel_path)
+    def receive_path(self, rel_paths: np.ndarray):
+        self.nr_paths = len(rel_paths)
+        self.all_paths = rel_paths
+        real_path = self.car_to_real_transform(rel_paths[self.pathnr])
         self.path = real_path
 
     def dist(self, p1: "QtC.QPoint", p2: "QtC.QPoint") -> float:
@@ -642,6 +648,17 @@ class MapWidget(QtW.QFrame):
         y = 30
         painter.drawText(x, y, text)
 
+        # show path number
+        font = QtG.QFont("Serif", 20)
+        painter.setFont(font)
+        fm = QtG.QFontMetrics(font)
+        painter.setPen(QtC.Qt.black)
+        text = f"Path {self.pathnr + 1} of {self.nr_paths}"
+        text_width = fm.width(text)
+        x = self.width() // 2 - text_width // 2
+        y = 40
+        painter.drawText(x, y, text)
+
         painter.end()
 
     def draw_path(self, painter):
@@ -884,6 +901,38 @@ class MapWidget(QtW.QFrame):
     def keyPressEvent(self, event: QtG.QKeyEvent):
         if event.modifiers() == QtC.Qt.ControlModifier and event.key() == QtC.Qt.Key_S:
             self.save_track_layout()
+        else:
+            # if a number is pressed
+            if event.key() == QtC.Qt.Key_0:
+                self.pathnr = 0
+            elif event.key() == QtC.Qt.Key_1:
+                self.pathnr = 1
+            elif event.key() == QtC.Qt.Key_2:
+                self.pathnr = 2
+            elif event.key() == QtC.Qt.Key_3:
+                self.pathnr = 3
+            elif event.key() == QtC.Qt.Key_4:
+                self.pathnr = 4
+            elif event.key() == QtC.Qt.Key_5:
+                self.pathnr = 5
+            elif event.key() == QtC.Qt.Key_6:
+                self.pathnr = 6
+            elif event.key() == QtC.Qt.Key_7:
+                self.pathnr = 7
+            elif event.key() == QtC.Qt.Key_8:
+                self.pathnr = 8
+            elif event.key() == QtC.Qt.Key_9:
+                self.pathnr = 9
+            elif event.key() == QtC.Qt.Key_Plus:
+                self.pathnr += 1
+            elif event.key() == QtC.Qt.Key_Minus:
+                self.pathnr -= 1
+            if self.pathnr < 0:
+                self.pathnr = 0
+            elif self.pathnr > self.nr_paths - 1:
+                self.pathnr = self.nr_paths - 1
+            self.path = self.car_to_real_transform(self.all_paths[self.pathnr])
+            self.update()
 
     def save_track_layout(self):
         def get_track_name() -> str:
