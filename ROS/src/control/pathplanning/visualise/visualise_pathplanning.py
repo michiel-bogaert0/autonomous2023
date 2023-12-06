@@ -18,147 +18,93 @@ from ugr_msgs.msg import (
 
 
 class MapWidget(QtW.QFrame):
+    # Constants
+    ZOOM = 1.1
+    MAX_ZOOM = 10
+    MIN_ZOOM = 0.1
+    INIT_ZOOM = 0.5
+    INIT_SCALE = 100
+    CAR_POINT_SIZE = 0.5
+    CAR_HANDLE_SIZE = 15
+    CONE_SIZE = 0.2
+    LAYOUT_TYPE = "yaml"
+
+    RASTER_WIDTH = 3
+
+    STEP = 1
+    BEZIERPOINT_SIZE = 5
+    BEZIER_CONTROL = 0.35  # ziet er redelijk smooth uit zo
+
     def __init__(
         self,
         publisher,
         frame,
         closed=True,
-        startpos_x=None,
-        startpos_y=None,
+        startpos_x=0,
+        startpos_y=0,
         startrot=0,
         yellows=None,
         blues=None,
         oranges=None,
     ):
         super().__init__(None)
-        self.setFocus()
+        self.initWidget()
 
+        # publisher used to publish observation messages
+        self.publisher = publisher
+        # frameID used to publish observation messages
+        self.frame = frame
+
+        # initialize all_paths
+        self.path = None
+        self.pathnr = -1
         self.nr_paths = 0
-        self.pathnr = 0
         self.all_paths = []
 
+        # initialize all_cones
         if yellows is None:
             yellows = []
         if blues is None:
             blues = []
         if oranges is None:
             oranges = []
-
-        self.publisher = publisher
-        self.frame = frame
-
-        # Create a QVBoxLayout to hold the button and the map
-        layout = QtW.QVBoxLayout(self)
-        layout.setAlignment(QtC.Qt.AlignTop | QtC.Qt.AlignRight)
-        # Set spacing between buttons
-        layout.setSpacing(10)
-
-        # Create a QPushButton and add it to the layout
-        loopButton = QtW.QPushButton("close/unclose loop", self)
-        loopButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            loopButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushButton and add it to the layout
-        middellineButton = QtW.QPushButton("show/hide middelline", self)
-        middellineButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            middellineButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushButton and add it to the layout
-        selectAllButton = QtW.QPushButton("select all cones", self)
-        selectAllButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            selectAllButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushButton and add it to the layout
-        deselectAllButton = QtW.QPushButton("deselect all cones", self)
-        deselectAllButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            deselectAllButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushbutton and add it to the layout
-        trackboundsButton = QtW.QPushButton("show/hide trackbounds", self)
-        trackboundsButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            trackboundsButton
-        )  # Align the button to the right and top of the layout
-
-        # Connect the button's clicked signal to a slot
-        loopButton.clicked.connect(self.close_loop_clicked)
-        middellineButton.clicked.connect(self.middelline_clicked)
-        selectAllButton.clicked.connect(self.select_all_clicked)
-        deselectAllButton.clicked.connect(self.deselect_all_clicked)
-        trackboundsButton.clicked.connect(self.trackbounds_clicked)
-
-        # Constants
-        self.ZOOM = 1.1
-        self.MAX_ZOOM = 10
-        self.MIN_ZOOM = 0.1
-        self.CAR_POINT_SIZE = 0.5
-        self.CAR_HANDLE_SIZE = 15
-        self.CONE_SIZE = 0.2
-        self.LAYOUT_TYPE = "yaml"
-
-        self.RASTER_WIDTH = 3
-
-        self.STEP = 1
-        self.BEZIERPOINT_SIZE = 5
-        self.BEZIER_CONTROL = 0.35  # ziet er redelijk smooth uit zo
-
-        self.is_closed = bool(closed)
-
-        self.middelline_on = False
-        self.trackbounds_on = False
-
-        self.selection: Optional[QtC.QPoint] = None
-
-        # Set the size policy of the MapWidget to Expanding
-        self.setSizePolicy(QtW.QSizePolicy.Expanding, QtW.QSizePolicy.Expanding)
-
-        # Set the background color of the MapWidget to white
-        self.setAutoFillBackground(True)
-        p = self.palette()
-        p.setColor(self.backgroundRole(), QtC.Qt.white)
-        self.setPalette(p)
-
-        self.path = None
-
         # Create a list to store the cones
         self.yellow_cones = yellows
         self.blue_cones = blues
         self.orange_cones = oranges
-
         self.selected_yellow_cones = []
         self.selected_blue_cones = []
-
         self.select_all_clicked()
 
-        # Set the initial zoom level
-        self.zoom_level = 0.5
+        self.initializeButtons()
 
+        self.is_closed = bool(closed)
+        self.middelline_on = False
+        self.trackbounds_on = False
+
+        # currently selected element
+        self.selection: Optional[QtC.QPoint] = None
+
+        # Set the initial zoom level
+        self.zoom_level = self.INIT_ZOOM
         # Define the scale of the coordinate system in pixels per kilometer
-        self.pixels_per_km = 100
+        self.pixels_per_km = self.INIT_SCALE
+
+        # The offset between the center of the screen and (0,0) of the real_coordinates on the map
+        self.offset = QtC.QPointF(0, 0)
+        # Boolean True when dragging around the map (using ctrl + mouse drag)
+        self.drag_map = False
 
         # Start position of the car
-        if startpos_x is not None:
-            self.car_pos: QtC.QPointF = QtC.QPointF(startpos_x, startpos_y)
-        else:
-            self.car_pos: QtC.QPointF = QtC.QPointF(0, 0)
+        self.car_pos: QtC.QPointF = QtC.QPointF(startpos_x, startpos_y)
         self.car_rot: float = startrot
+        # position of the car rotation handle
         self.car_rot_handle: QtC.QPointF = self.car_pos + (
             self.CAR_POINT_SIZE / 2
         ) * QtC.QPointF(math.cos(self.car_rot), math.sin(self.car_rot))
 
-        # Set the initial offset in coördinate system to (0, 0)
-        self.offset = QtC.QPointF(0, 0)
-
-        # initialize control_pressed
-        self.control_pressed = False
-
         # initialize list of bezier points wich represent the middle of the track
         self.bezierPoints = []
-
         self.bezier = []
 
     def close_loop_clicked(self):
@@ -365,7 +311,7 @@ class MapWidget(QtW.QFrame):
             self.update()
         # Drag the screen
         elif event.modifiers() & QtC.Qt.ControlModifier:
-            self.control_pressed = True
+            self.drag_map = True
             self.drag_start_pos = event.pos()
         # Place a yellow cone
         elif event.button() == QtC.Qt.LeftButton and not (
@@ -407,7 +353,7 @@ class MapWidget(QtW.QFrame):
     def mouseReleaseEvent(self, event):
         # Reset the flag and the drag start position
         self.selection = None
-        self.control_pressed = False
+        self.drag_map = False
         self.drag_start_pos = None
         self.update_car()
 
@@ -437,7 +383,7 @@ class MapWidget(QtW.QFrame):
             self.update()
 
         # If the Control key is pressed and the mouse is dragged, move the map
-        elif self.control_pressed and self.drag_start_pos is not None:
+        elif self.drag_map and self.drag_start_pos is not None:
             # Calculate the distance between the current position and the drag start position
             drag_distance = self.screenToCoordinate(
                 event.pos()
@@ -1068,3 +1014,58 @@ class MapWidget(QtW.QFrame):
             "observations": all_cones,
         }
         return data
+
+    def initWidget(self):
+        self.setFocus()
+        # Set the size policy of the MapWidget to Expanding
+        self.setSizePolicy(QtW.QSizePolicy.Expanding, QtW.QSizePolicy.Expanding)
+        # Set the background color of the MapWidget to white
+        self.setAutoFillBackground(True)
+        p = self.palette()
+        p.setColor(self.backgroundRole(), QtC.Qt.white)
+        self.setPalette(p)
+
+    def initializeButtons(self):
+        # Create a QVBoxLayout to hold the button and the map
+        layout = QtW.QVBoxLayout(self)
+        layout.setAlignment(QtC.Qt.AlignTop | QtC.Qt.AlignRight)
+        # Set spacing between buttons
+        layout.setSpacing(10)
+
+        # Create a QPushButton and add it to the layout
+        loopButton = QtW.QPushButton("close/unclose loop", self)
+        loopButton.setFixedSize(150, 30)  # Set the size of the button
+        layout.addWidget(
+            loopButton
+        )  # Align the button to the right and top of the layout
+        # Create a QPushButton and add it to the layout
+        middellineButton = QtW.QPushButton("show/hide middelline", self)
+        middellineButton.setFixedSize(150, 30)  # Set the size of the button
+        layout.addWidget(
+            middellineButton
+        )  # Align the button to the right and top of the layout
+        # Create a QPushButton and add it to the layout
+        selectAllButton = QtW.QPushButton("select all cones", self)
+        selectAllButton.setFixedSize(150, 30)  # Set the size of the button
+        layout.addWidget(
+            selectAllButton
+        )  # Align the button to the right and top of the layout
+        # Create a QPushButton and add it to the layout
+        deselectAllButton = QtW.QPushButton("deselect all cones", self)
+        deselectAllButton.setFixedSize(150, 30)  # Set the size of the button
+        layout.addWidget(
+            deselectAllButton
+        )  # Align the button to the right and top of the layout
+        # Create a QPushbutton and add it to the layout
+        trackboundsButton = QtW.QPushButton("show/hide trackbounds", self)
+        trackboundsButton.setFixedSize(150, 30)  # Set the size of the button
+        layout.addWidget(
+            trackboundsButton
+        )  # Align the button to the right and top of the layout
+
+        # Connect the button's clicked signal to a slot
+        loopButton.clicked.connect(self.close_loop_clicked)
+        middellineButton.clicked.connect(self.middelline_clicked)
+        selectAllButton.clicked.connect(self.select_all_clicked)
+        deselectAllButton.clicked.connect(self.deselect_all_clicked)
+        trackboundsButton.clicked.connect(self.trackbounds_clicked)
