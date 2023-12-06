@@ -8,6 +8,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/Header.h>
+#include <ugr_msgs/Boundaries.h>
 #include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
 #include <visualization_msgs/MarkerArray.h>
 

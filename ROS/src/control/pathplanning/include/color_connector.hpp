@@ -15,6 +15,8 @@ public:
   std::pair<std::vector<Node *>, std::vector<Node *>>
   get_color_lines(const std::vector<std::vector<double>> &cones,
                   const std_msgs::Header &header);
+  Node *get_closest_node(const std::vector<std::vector<double>> &cones,
+                         const std::vector<Node *> &line, double max_dist);
 
 private:
   ros::NodeHandle n_;

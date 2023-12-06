@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
     geometry_msgs
     sensor_msgs
     fs_msgs
+    nav_msgs
 )
 
 add_message_files(
@@ -34,6 +35,7 @@ add_message_files(
   ObservationWithCovarianceArray.msg
   ObservationWithCovarianceArrayStamped.msg
   ObservationArrayWithCovarianceStamped.msg
+  Boundaries.msg
   TrajectoryError.msg
   TrajectoryInfo.msg
   TrajectoryMapInfo.msg
@@ -45,6 +47,7 @@ generate_messages(
   geometry_msgs
   sensor_msgs
   fs_msgs
+  nav_msgs
 )
 
 catkin_package(
