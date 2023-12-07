@@ -8,6 +8,7 @@ from typing import Dict, Iterator, List, Optional, Tuple
 import numpy as np
 import yaml
 from bezierPoint import BezierPoint
+from buttons import Buttons
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtGui as QtG
 from PyQt5 import QtWidgets as QtW
@@ -50,6 +51,8 @@ class MapWidget(QtW.QFrame):
         super().__init__(None)
         self.initWidget()
 
+        self.buttons = Buttons(self)
+
         # publisher used to publish observation messages
         self.publisher = publisher
         # frameID used to publish observation messages
@@ -74,9 +77,7 @@ class MapWidget(QtW.QFrame):
         self.orange_cones = oranges
         self.selected_yellow_cones = []
         self.selected_blue_cones = []
-        self.select_all_clicked()
-
-        self.initializeButtons()
+        self.buttons.select_all_clicked()
 
         self.is_closed = bool(closed)
         self.middelline_on = False
@@ -106,37 +107,6 @@ class MapWidget(QtW.QFrame):
         # initialize list of bezier points wich represent the middle of the track
         self.bezierPoints = []
         self.bezier = []
-
-    def close_loop_clicked(self):
-        # This method will be called when the button is clicked
-        self.is_closed = not self.is_closed
-        self.update()
-
-    def middelline_clicked(self):
-        # This method will be called when the button is clicked
-        self.middelline_on = not self.middelline_on
-        self.update()
-
-    def trackbounds_clicked(self):
-        # This method will be called when the button is clicked
-        self.trackbounds_on = not self.trackbounds_on
-        self.update()
-
-    def select_all_clicked(self):
-        # This method will be called when the button is clicked
-        self.selected_blue_cones = []
-        self.selected_yellow_cones = []
-        for cone in self.yellow_cones:
-            self.selected_yellow_cones.append(cone)
-        for cone in self.blue_cones:
-            self.selected_blue_cones.append(cone)
-        self.update()
-
-    def deselect_all_clicked(self):
-        # This method will be called when the button is clicked
-        self.selected_blue_cones = []
-        self.selected_yellow_cones = []
-        self.update()
 
     def real_to_car_transform(self, points: list) -> np.ndarray:
         """
@@ -1024,48 +994,3 @@ class MapWidget(QtW.QFrame):
         p = self.palette()
         p.setColor(self.backgroundRole(), QtC.Qt.white)
         self.setPalette(p)
-
-    def initializeButtons(self):
-        # Create a QVBoxLayout to hold the button and the map
-        layout = QtW.QVBoxLayout(self)
-        layout.setAlignment(QtC.Qt.AlignTop | QtC.Qt.AlignRight)
-        # Set spacing between buttons
-        layout.setSpacing(10)
-
-        # Create a QPushButton and add it to the layout
-        loopButton = QtW.QPushButton("close/unclose loop", self)
-        loopButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            loopButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushButton and add it to the layout
-        middellineButton = QtW.QPushButton("show/hide middelline", self)
-        middellineButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            middellineButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushButton and add it to the layout
-        selectAllButton = QtW.QPushButton("select all cones", self)
-        selectAllButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            selectAllButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushButton and add it to the layout
-        deselectAllButton = QtW.QPushButton("deselect all cones", self)
-        deselectAllButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            deselectAllButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushbutton and add it to the layout
-        trackboundsButton = QtW.QPushButton("show/hide trackbounds", self)
-        trackboundsButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            trackboundsButton
-        )  # Align the button to the right and top of the layout
-
-        # Connect the button's clicked signal to a slot
-        loopButton.clicked.connect(self.close_loop_clicked)
-        middellineButton.clicked.connect(self.middelline_clicked)
-        selectAllButton.clicked.connect(self.select_all_clicked)
-        deselectAllButton.clicked.connect(self.deselect_all_clicked)
-        trackboundsButton.clicked.connect(self.trackbounds_clicked)
