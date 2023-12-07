@@ -36,7 +36,7 @@ class MapPublisher(ManagedNode):
         )
 
         # Diagnostics Publisher
-        self.diagnostics = rospy.Publisher(
+        self.diagnostics = super().AddPublisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
 

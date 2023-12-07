@@ -67,6 +67,7 @@ def load_params(mission: str) -> None:
     with open(yaml_path, "r") as f:
         dic = yaml.safe_load(f)
     if dic is None:
+        rospy.logerr(f"Could not load parameters from {yaml_path}")
         return
     for param_name, param_value in get_params(dic):
         param_name = "/" + param_name

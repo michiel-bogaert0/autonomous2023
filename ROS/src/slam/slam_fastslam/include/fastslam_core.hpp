@@ -51,11 +51,6 @@ private:
 // particle class
 ////////////////////////////////////////////////////////////////////////////////
 
-// struct LandmarkSearchResult {
-//   int index;
-//   double distance;
-// };
-
 struct LandmarkMetadata {
   float score = 0.0;
   vector<float> classDetectionCount = vector<float>(LANDMARK_CLASS_COUNT, 0);
@@ -97,10 +92,6 @@ public:
   void setPf(vector<MatrixXf> &Pf);
   void setPfi(unsigned long i, MatrixXf &m);
   void setDa(float *da);
-
-  // NOT USED COMMENTED OUT BECAUSE OF LINTING
-  // LandmarkSearchResult searchClosestLandmark(VectorXf &lm, double
-  // minThreshold);
 
 private:
   kdt::KDTree<KDTreePoint> kdtree;

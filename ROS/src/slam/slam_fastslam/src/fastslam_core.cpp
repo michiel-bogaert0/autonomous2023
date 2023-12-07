@@ -281,7 +281,6 @@ vector<VectorXf> compute_range_bearing(const VectorXf &x, MatrixXf &lm) {
 
   for (int i = 0; i < lm.cols(); i++) {
     VectorXf zvec(2);
-    // zvec << sqrt(pow(dx[i], 2) + pow(dy[i], 2)), atan2(dy[i], dx[i]) - phi;
     zvec(0) = sqrt(pow(dx[i], 2) + pow(dy[i], 2));
     zvec(1) = atan2(dy[i], dx[i]) - phi;
     z.push_back(zvec);
@@ -332,9 +331,6 @@ void KF_joseph_update(VectorXf &x, MatrixXf &P, float v, float R, MatrixXf &H) {
   MatrixXf Si = S.inverse();
   // Si = make_symmetric(Si);
   make_symmetric(Si);
-  // MatrixXf PSD_check = Si.llt().matrixU(); // chol of scalar is sqrt
-  // PSD_check.transpose();
-  // PSD_check.conjugate();
 
   VectorXf W = PHt * Si;
   x = x + W * v;
@@ -349,7 +345,6 @@ void KF_joseph_update(VectorXf &x, MatrixXf &P, float v, float R, MatrixXf &H) {
   P = P + eye * eps;
 
   MatrixXf PSD_check = P.llt().matrixL();
-  // PSD_check = P.llt().matrixL();
   PSD_check.transpose();
   PSD_check.conjugate(); // for upper tri
 }
@@ -625,7 +620,6 @@ void compute_jacobians(
     zp.push_back(zp_vec);
 
     // Jacobian wrt vehicle states
-    // HvMat << -dx / d, -dy / d, 0, dy / d2, -dx / d2, -1;
     HvMat(0, 0) = -dx / d;
     HvMat(1, 0) = -dy / d;
     HvMat(0, 1) = 0;
@@ -634,7 +628,6 @@ void compute_jacobians(
     HvMat(1, 2) = -1;
 
     // Jacobian wrt feature states
-    // HfMat << dx / d, dy / d, -dy / d2, dx / d2;
     HfMat(0, 0) = dx / d;
     HfMat(1, 0) = dy / d;
     HfMat(0, 1) = -dy / d2;
@@ -934,35 +927,6 @@ Particle::~Particle() {
   this->_metadata.clear();
 }
 
-// NOT USED COMMENTED OUT BECAUSE OF LINTING
-// LandmarkSearchResult Particle::searchClosestLandmark(VectorXf &lm,
-//                                                      double minThreshold) {
-//   // Build the KDTree using the current xf vector
-
-//   // No landmarks means that there can be no closest neighbour
-//   if (this->_xf.size() == 0)
-//     return {
-//       index : -1,
-//       distance : 0,
-//     };
-
-//   // Make a vector<KDTreePoint>
-//   vector<KDTreePoint> kdtreePoints;
-//   for (int i = 0; i < this->_xf.size(); i++) {
-
-//     if (this->_metadata[i].score > minThreshold)
-//       kdtreePoints.push_back(KDTreePoint(this->_xf[i], i));
-//   }
-
-//   kdt::KDTree<KDTreePoint> tree(kdtreePoints);
-
-//   double distance;
-//   const KDTreePoint query(lm, -1);
-//   const int index = tree.nnSearch(query, &distance);
-
-//   return {index : kdtreePoints[index].getId(), distance : distance};
-// }
-
 // getters
 float &Particle::w() { return _w; }
 
@@ -1046,8 +1010,6 @@ void ekf_predict(VectorXf &x, // cppcheck-suppress constParameter
   vts = V * dt * s;
   vtc = V * dt * c;
 
-  // Gv << 1, 0, -vts, 0, 1, vtc, 0, 0, 1;
-  // Gu << dt * c, -vts, dt * s, vtc, dt * sin(G) / WB, V * dt * cos(G) / WB;
   // Gv initialization
   Gv(0, 0) = 1;
   Gv(0, 1) = 0;

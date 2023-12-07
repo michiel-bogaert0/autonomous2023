@@ -228,8 +228,9 @@ class Controller:
             set_state_active("slam_mcl")
             speed_target = 10.0 if self.car == "simulation" else 5.0
             rospy.set_param("/pure_pursuit/speed/target", speed_target)
-            sleep(0.2)
+            sleep(0.5)
             set_state_inactive("fastslam")
+            set_state_inactive("pathplanning")
             self.change_state(new_state)
 
 

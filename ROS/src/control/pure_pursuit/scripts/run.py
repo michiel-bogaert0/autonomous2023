@@ -44,18 +44,18 @@ class PurePursuit(ManagedNode):
         # Publishers for the controllers
         # Controllers themselves spawned in the state machines respective launch files
 
-        self.velocity_pub = rospy.Publisher(
+        self.velocity_pub = super().AddPublisher(
             "/output/drive_velocity_controller/command", Float64, queue_size=10
         )
-        self.steering_pub = rospy.Publisher(
+        self.steering_pub = super().AddPublisher(
             "/output/steering_position_controller/command", Float64, queue_size=10
         )
-        self.vis_pub = rospy.Publisher(
+        self.vis_pub = super().AddPublisher(
             "/output/target_point", PointStamped, queue_size=10  # warning otherwise
         )
 
         # Diagnostics Publisher
-        self.diagnostics_pub = rospy.Publisher(
+        self.diagnostics_pub = super().AddPublisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
 
@@ -63,7 +63,9 @@ class PurePursuit(ManagedNode):
         self.path_sub = super().AddSubscriber(
             "/input/path", Path, self.getPathplanningUpdate
         )
-        self.odom_sub = rospy.Subscriber("/input/odom", Odometry, self.get_odom_update)
+        self.odom_sub = super().AddSubscriber(
+            "/input/odom", Odometry, self.get_odom_update
+        )
 
         """
           Trajectory parameters and conditions

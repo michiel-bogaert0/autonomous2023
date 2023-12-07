@@ -31,7 +31,7 @@ class PathPublisher(ManagedNode):
         )
 
         # Diagnostics Publisher
-        self.diagnostics_pub = rospy.Publisher(
+        self.diagnostics_pub = super().AddPublisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
 
