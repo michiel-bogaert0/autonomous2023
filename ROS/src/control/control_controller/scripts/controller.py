@@ -105,14 +105,14 @@ class Controller:
 
                 speed_target = 0.0
                 if self.state == SLAMStatesEnum.EXPLORATION:
-                    speed_target = 2.0 if self.car == "simulation" else 1.0
+                    speed_target = 3.0 if self.car == "simulation" else 1.0
 
                 elif self.state == SLAMStatesEnum.RACING:
                     if self.mission == AutonomousMission.TRACKDRIVE:
                         # Slow down for 3 seconds to let nodes start up
-                        rospy.set_param("/pure_pursuit/speed/target", 0.3)
+                        # rospy.set_param("/mpc/speed/target", 0.3)
 
-                        sleep(3)
+                        # sleep(3)
 
                         speed_target = 10.0 if self.car == "simulation" else 5.0
 
@@ -122,7 +122,7 @@ class Controller:
                     elif self.mission == AutonomousMission.ACCELERATION:
                         speed_target = 10.0 if self.car == "simulation" else 3.0
 
-                rospy.set_param("/pure_pursuit/speed/target", speed_target)
+                rospy.set_param("/mpc/speed/target", speed_target)
 
             else:
                 self.launcher.shutdown()

@@ -1,0 +1,26 @@
+<launch>
+
+    <node pkg="mpc" type="run.py" name="mpc" output="screen" respawn="true">
+
+        <param name="publish_rate" value="20" />
+
+        <param name="trajectory/t_step" value="0.05" />
+        <param name="trajectory/max_angle" value="3" />
+
+        <param name="base_link_frame" value="ugr/car_base_link" />
+        <param name="world_frame" value="$(arg reference_frame)" />
+
+        <param name="speed_start" value="2" />
+        <param name="speed_stop" value="12" />
+        <param name="distance_start" value="5" />
+        <param name="distance_stop" value="7" /> 
+
+        <param name="change_index" value="$(arg change_index)" />"      
+
+        <remap from="/input/path" to="/pathplanning/path" />
+        <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>
+        <remap from="/output/drive_velocity_controller/command" to="/ugr/car/drive_velocity_controller/command" />
+        <remap from="/output/steering_position_controller/command" to="/ugr/car/steering_position_controller/command" />
+        <remap from="/output/target_point" to="/pure_pursuit/target_point"/>
+    </node>
+</launch>

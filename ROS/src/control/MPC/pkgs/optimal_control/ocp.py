@@ -18,7 +18,6 @@ class Ocp:
         nu: int,
         N: int,
         T: float = None,
-        f: Callable = None,
         F: Callable = None,
         M=1,
         terminal_constraint=False,
@@ -47,13 +46,7 @@ class Ocp:
         self.nu = nu
         self.N = N
         self.T = T
-
-        if f is not None:
-            self.F = self.discretize(f, T / self.N, M, integrator=integrator)
-        elif F is not None:
-            self.F = F
-        else:
-            raise Exception("no dynamics are provided")
+        self.F = F
 
         self.opti = casadi.Opti()
 
@@ -150,6 +143,7 @@ class Ocp:
             self.cost_fun = cost_fun
             L_run = 0  # cost over the horizon
             for i in range(self.N):
+                # get distance to closest point on x_ref?
                 L_run += cost_fun(self.X[:, i], self.U[:, i], self._x_ref)
             self.cost["run"] = L_run
 
@@ -169,6 +163,17 @@ class Ocp:
 
     @running_cost.setter
     def running_cost(self, symbolic_cost):
+        cost_fun = casadi.Function(
+            "cost_fun", [self.x, self.u, self.x_ref], [symbolic_cost]
+        )
+        self.set_cost(cost_fun=cost_fun)
+
+    @property
+    def difference_cost(self):
+        return self.cost["run"]
+
+    @difference_cost.setter
+    def difference_cost(self, symbolic_cost):
         cost_fun = casadi.Function(
             "cost_fun", [self.x, self.u, self.x_ref], [symbolic_cost]
         )
