@@ -3,9 +3,8 @@ import sys
 
 import numpy as np
 import rospy
-from nav_msgs.msg import Path
 from PyQt5 import QtWidgets as QtW
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, PathArray
 from visualise_pathplanning import MainWindow
 
 
@@ -20,7 +19,7 @@ class Visualiser:
 
         # Handler voor path_received subscription
         self.subscriber = rospy.Subscriber(
-            "/input/path", Path, self.handle_path_received
+            "/input/debug/all_poses", PathArray, self.handle_path_received
         )
 
         app = QtW.QApplication(sys.argv)
@@ -35,16 +34,19 @@ class Visualiser:
         self.widget.show()
         sys.exit(app.exec_())
 
-    def handle_path_received(self, path: Path):
+    def handle_path_received(self, paths: PathArray):
         """
-        Handles path received from pathplanning
+        Handles paths received from pathplanning
 
         Args:
-            path: the path received
+            paths: the paths received
         """
-        self.widget.map_widget.receive_path(
-            np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
-        )
+        all_paths = []
+        for path in paths.paths:
+            all_paths.append(
+                np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
+            )
+        self.widget.map_widget.receive_path(all_paths)
 
 
 if __name__ == "__main__":
