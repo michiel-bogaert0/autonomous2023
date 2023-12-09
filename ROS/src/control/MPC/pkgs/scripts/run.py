@@ -78,6 +78,7 @@ class MPC:
         )  # Factor from actuator to steering angle
 
         car = KinematicCar(dt=0.05)  # dt = publish rate?
+        # car = BicycleModel(dt=0.05)  # dt = publish rate?
 
         self.N = 10
         self.ocp = Ocp(
@@ -91,10 +92,9 @@ class MPC:
         )
 
         Q = np.diag([1e-2, 1e-2, 0, 1e-2])
-        R = np.diag([1e-4, 1e-1])
+        R = np.diag([1e-4, 2e-1])
 
         # Weight matrices for the terminal cost
-        # P = np.diag([1e2, 1e2, 0])
         P = np.diag([0, 0, 0, 0])
 
         self.ocp.running_cost = (self.ocp.x - self.ocp.x_ref).T @ Q @ (
@@ -162,8 +162,20 @@ class MPC:
         rate = rospy.Rate(self.publish_rate)
         while not rospy.is_shutdown():
             try:
-                self.speed_target = rospy.get_param("~speed/target", 3.0)
+                speed_target = rospy.get_param("~speed/target", 3.0)
                 rospy.loginfo(f"Speed target: {self.speed_target}")
+
+                # Change velocity constraints when speed target changes
+                if speed_target != self.speed_target:
+                    self.speed_target = speed_target
+                    self.ocp.opti.subject_to()
+                    self.ocp.opti.subject_to(
+                        self.ocp.opti.bounded(0, self.ocp.U[0, :], self.speed_target)
+                    )
+                    self.ocp.opti.subject_to(
+                        self.ocp.opti.bounded(-1, self.ocp.U[1, :], 1)
+                    )
+                    self.ocp._set_continuity(1)
 
                 # First try to get a target point
                 # Change the look-ahead distance (minimal_distance)  based on the current speed
@@ -195,17 +207,15 @@ class MPC:
                 u, info = self.mpc(current_state, goal_state)
                 # current_state = info["X_sol"][:, 1]
 
-                # X_closed_loop = np.array(self.mpc.X_trajectory)
+                X_closed_loop = np.array(self.mpc.X_trajectory)
                 U_closed_loop = np.array(self.mpc.U_trajectory)
 
-                # rospy.loginfo(f"X_closed_loop: {X_closed_loop}")
+                rospy.loginfo(f"X_closed_loop: {X_closed_loop}")
                 rospy.loginfo(f"U_closed_loop: {U_closed_loop}")
 
                 # self.steering_cmd.data = self.steering_cmd.data * self.steering_transmission + U_closed_loop[0, 1]
                 self.steering_cmd.data = U_closed_loop[0, 1]
                 self.velocity_cmd.data = U_closed_loop[0, 0]
-                if self.velocity_cmd.data > self.speed_target:
-                    self.velocity_cmd.data = self.speed_target
 
                 self.diagnostics_pub.publish(
                     create_diagnostic_message(
