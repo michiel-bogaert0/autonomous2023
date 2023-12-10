@@ -8,7 +8,7 @@
   </include>
   
   <!-- Path_publisher -->
-  <node name="path_publisher" pkg="control_controller" output="screen" type="path_publisher.py">
+  <node name="path_publisher" pkg="slam_controller" output="screen" type="path_publisher.py">
     <remap from="/output/path" to="/pathplanning/path" />
   </node>
 

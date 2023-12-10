@@ -12,5 +12,5 @@ pure_pursuit:
   speed:
     target: 3.0
 path_publisher:
-  package_path: "control_controller"
+  package_path: "slam_controller"
   path: "/paths/straight_L75.yaml"

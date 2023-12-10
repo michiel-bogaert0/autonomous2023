@@ -11,5 +11,5 @@ pure_pursuit:
   speed:
     target: 10.0
 path_publisher:
-  package_path: "control_controller"
+  package_path: "slam_controller"
   path: "/paths/skidpad.yaml"
