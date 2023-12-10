@@ -1,4 +1,3 @@
-import casadi
 import numpy as np
 from environments.Env import Env
 from environments.env_utils import Space
@@ -15,7 +14,6 @@ class KinematicCar(Env):
     ) -> None:
         self.l_r = l_r
         self.L = L
-        self.v = 0
 
         self.dt = dt
 
@@ -34,24 +32,17 @@ class KinematicCar(Env):
         s=[x, y, ψ]
         u=[v, δ]
         """
-        # x, y, psi, vx, vy, omega, delta = s[0], s[1], s[2], s[3], s[4], s[5], s[6]
         psi = s[2]
-        # v = u[0]
-        # TODO just get this from state?
-        dv = casadi.if_else(
-            u[0] > self.v, u[0] * 0.5, -u[0] * 0.5
-        )  # 0.5 is randomly chosen
-        self.v += dv
-
+        v = u[0]
         delta = u[1]
 
         beta = np.arctan(self.l_r * np.tan(delta) / self.L)
 
-        dx = self.v * np.cos(beta + psi)
-        dy = self.v * np.sin(beta + psi)
-        dpsi = self.v / self.L * np.cos(beta) * np.tan(delta)
+        dx = v * np.cos(beta + psi)
+        dy = v * np.sin(beta + psi)
+        dpsi = v / self.L * np.cos(beta) * np.tan(delta)
 
-        return np.array([dx, dy, dpsi, dv])
+        return np.array([dx, dy, dpsi, v])
 
     def reset(self):
         pass
