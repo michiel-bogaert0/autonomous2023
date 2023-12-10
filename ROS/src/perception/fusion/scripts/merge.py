@@ -66,13 +66,11 @@ class MergeNode:
         if self.fusion_method == "naive":
             self.fusion_pipeline = NaiveFusion(self.max_fusion_eucl_distance)
 
-        # Random helpers
-        self.camera_last_obs_time, self.lidar_last_obs_time = 0.0, 0.0
+        # Helpers
         self.is_first_received = True
-        self.last_received_sensor = None
-
-        # Keep track of previously received messages
-        self.previous_msgs = []
+        self.msg_buffer = []
+        self.sensors_received = []
+        self.msg_wait_timer = None
 
     def publish(self, msg):
         """
@@ -86,7 +84,7 @@ class MergeNode:
         """
         time_now = time.time_ns() * 1e-6
         rospy.loginfo(f"\nReceived observations from {observations.header.frame_id}")
-        for msg in self.previous_msgs:
+        for msg in self.msg_buffer:
             rospy.loginfo(
                 f"Previous message from {msg.header.frame_id}: {time_now - msg.header.stamp.nsecs * 1e-6} ms\n"
             )
@@ -98,8 +96,37 @@ class MergeNode:
         Wait for either all messages specified in self.input_sensors to arrive or for a timeout,
         then send all received messages through the fusion pipeline
         """
+        self.msg_buffer.append(observations)
+        self.sensors_received.append(observations.header.frame_id)
 
-        self.run_fusion(observations)
+        if self.is_first_received:
+            self.is_first_received = False
+            self.msg_wait_timer = rospy.Timer(
+                period=rospy.Duration(self.max_sensor_time_diff * 1e-3),
+                callback=self.handle_timeout,
+                oneshot=True,
+            )
+            return
+
+        # Check if messages from all sensors have been received
+        all_received = True
+        for sensor in self.input_sensors:
+            if sensor not in self.sensors_received:
+                all_received = False
+                break
+
+        # If all messages have been received, send through pipeline
+        if all_received:
+            self.msg_wait_timer.shutdown()
+            self.handle_timeout()
+            return
+        return
+
+    def handle_timeout(self, event=None):
+        self.run_fusion(self.msg_buffer)
+        self.msg_buffer = []
+        self.sensors_received = []
+        self.is_first_received = True
         return
 
     def run_fusion(self, sensor_msgs):
