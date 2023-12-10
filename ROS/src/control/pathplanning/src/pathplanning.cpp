@@ -15,7 +15,7 @@ void Pathplanning::doActivate() {
   this->map_sub_ = n_.subscribe("/input/local_map", 10,
                                 &Pathplanning::receive_new_map, this);
   this->vis_paths_ =
-      n.advertise<ugr_msgs::PathArray>("/output/debug/all_poses", 10);
+      n_.advertise<ugr_msgs::PathArray>("/output/debug/all_poses", 10);
   this->diagnostics_pub = std::unique_ptr<node_fixture::DiagnosticPublisher>(
       new node_fixture::DiagnosticPublisher(n_, "CTRL PATH"));
 }
