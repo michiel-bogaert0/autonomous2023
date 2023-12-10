@@ -9,6 +9,7 @@
 #include <nav_msgs/Path.h>
 #include <std_msgs/Header.h>
 #include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
+#include <ugr_msgs/PathArray.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -93,9 +94,12 @@ public:
 private:
   TransformFrames frametf_;
 
+  bool debug_visualisation_;
+
   // Publishers
   ros::Publisher path_pub_;
   ros::Publisher path_stamped_pub_;
+  ros::Publisher vis_paths_;
 
   // Subscribers
   ros::Subscriber map_sub_;
