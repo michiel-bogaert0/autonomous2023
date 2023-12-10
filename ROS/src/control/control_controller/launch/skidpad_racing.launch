@@ -7,7 +7,7 @@
   </node>
 
   <!-- Control node (generates output commands) -->
-  <include file="$(find pure_pursuit)/launch/pure_pursuit.launch" pass_all_args="true">
+  <include file="$(find mpc)/launch/mpc.launch" pass_all_args="true">
     <arg name="reference_frame" default="ugr/map" />
     <arg name="change_index" default="False" />
   </include>

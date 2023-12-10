@@ -107,7 +107,7 @@ class MPC:
         # constraints
         max_steering_angle = 1
         # max_steering_rate = np.pi / 4 / (5 * car.dt)
-        max_v = 3  # TODO: get from speed param
+        max_v = self.speed_target
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.U[0, :], max_v))
         self.ocp.subject_to(
             self.ocp.bounded(-max_steering_angle, self.ocp.U[1, :], max_steering_angle)
