@@ -787,10 +787,11 @@ class MapWidget(QtW.QFrame):
                 self.pathnr += 1
             elif event.key() == QtC.Qt.Key_Minus:
                 self.pathnr -= 1
-            if self.pathnr < 0:
-                self.pathnr = 0
-            elif self.pathnr > self.nr_paths - 1:
-                self.pathnr = self.nr_paths - 1
+            self.pathnr = min(self.pathnr, self.nr_paths - 1)
+            if self.nr_paths == 0:
+                self.pathnr = -1
+            else:
+                self.pathnr = max(self.pathnr, 0)
             self.path = self.all_paths[self.pathnr]
             self.update()
 
