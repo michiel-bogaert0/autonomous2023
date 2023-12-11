@@ -155,7 +155,8 @@ class MapWidget(QtW.QFrame):
             car_to_real_transform(rel_path, self.car_pos, self.car_rot)
             for rel_path in rel_paths
         ]
-        self.path = self.all_paths[self.pathnr]
+        if self.pathnr >= 0:
+            self.path = self.all_paths[self.pathnr]
         self.update()
 
     def receive_centerPoints(self, centerPoints: np.ndarray):
@@ -376,7 +377,9 @@ class MapWidget(QtW.QFrame):
                 self.pathnr = -1
             else:
                 self.pathnr = max(self.pathnr, 0)
-            self.path = self.all_paths[self.pathnr]
+
+            if self.pathnr >= 0:
+                self.path = self.all_paths[self.pathnr]
             self.update()
 
     def empty_pathplanning_input(self):
