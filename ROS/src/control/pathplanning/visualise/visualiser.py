@@ -108,7 +108,7 @@ class MainWindow(QtW.QMainWindow):
                         for pose in dictio["observations"]
                         if pose["observation"]["observation_class"] == 2
                     ]
-                    is_closed = False
+                    is_closed = True
                     startpos_x = 0
                     startpos_y = 0
                     startrot = 0

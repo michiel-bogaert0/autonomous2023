@@ -35,7 +35,7 @@ class MapWidget(QtW.QFrame):
         self,
         publisher,
         frame,
-        closed=True,
+        closed=False,
         startpos_x=0,
         startpos_y=0,
         startrot=0,
@@ -148,6 +148,7 @@ class MapWidget(QtW.QFrame):
             for rel_path in rel_paths
         ]
         self.path = self.all_paths[self.pathnr]
+        self.update()
 
     def get_selected_element(self, event) -> Optional[QtC.QPoint]:
         # This is the position on the screen where the user clicked
@@ -194,6 +195,7 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                 elif selected_cone in self.orange_cones:
                     self.orange_cones.remove(selected_cone)
+                self.empty_path()
                 self.update()
             elif event.modifiers() == QtC.Qt.AltModifier:
                 if selected_cone in self.yellow_cones:
@@ -206,6 +208,7 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                     else:
                         self.selected_blue_cones.append(selected_cone)
+                self.empty_path()
                 self.update()
 
             # Drag a cone or car_handle
@@ -221,7 +224,6 @@ class MapWidget(QtW.QFrame):
             # orange cones with alt key
             if event.modifiers() == QtC.Qt.AltModifier:
                 self.orange_cones.append(self.screenToCoordinate(event.pos()))
-                self.update()
             # Place a yellow cone
             elif event.button() == QtC.Qt.LeftButton and not (
                 event.modifiers() & QtC.Qt.ShiftModifier
@@ -231,7 +233,6 @@ class MapWidget(QtW.QFrame):
                 self.yellow_cones.append(point)
                 self.selected_yellow_cones.append(point)
                 # Trigger a repaint of the MapWidget to update the visual points
-                self.update()
             # Place a blue cone
             elif event.button() == QtC.Qt.RightButton and not (
                 event.modifiers() & QtC.Qt.ShiftModifier
@@ -241,7 +242,8 @@ class MapWidget(QtW.QFrame):
                 self.blue_cones.append(point)
                 self.selected_blue_cones.append(point)
                 # Trigger a repaint of the MapWidget to update the visual points
-                self.update()
+            self.empty_path()
+            self.update()
 
     def mouseDoubleClickEvent(self, event):
         if event.button() == QtC.Qt.LeftButton:
@@ -257,23 +259,8 @@ class MapWidget(QtW.QFrame):
                     index = self.blue_cones.index(selected_cone)
                     self.blue_cones.insert(index, point)
                     self.selected_blue_cones.append(point)
+                self.empty_path()
                 self.update()
-
-    def mouseReleaseEvent(self, event):
-        # Reset the flag and the drag start position
-        self.selection = None
-        self.drag_map = False
-        self.drag_start_pos = None
-        self.update_car()
-
-        # the only time you're sure that you don't get a transformation fault in the path
-        self.update()
-
-    def update_car(self):
-        self.car_rot_handle: QtC.QPointF = self.car_pos + (
-            self.CAR_POINT_SIZE / 2
-        ) * QtC.QPointF(math.cos(self.car_rot), math.sin(self.car_rot))
-        return None
 
     def mouseMoveEvent(self, event):
         # Drag the selected cone or car_handle
@@ -306,39 +293,16 @@ class MapWidget(QtW.QFrame):
             # Trigger a repaint of the MapWidget to update the visual
             self.update()
 
-    # Override the paintEvent method to draw the visual points
-    def paintEvent(self, event):
-        self.publish_local_map()
+    def mouseReleaseEvent(self, event):
+        # Reset the flag and the drag start position
+        self.selection = None
+        self.drag_map = False
+        self.drag_start_pos = None
+        self.update_car()
 
-        painter = QtG.QPainter(self)
-        self.draw.draw_grid(painter)
-
-        if self.middelline_on:
-            self.middelPoints = make_middelline(self.blue_cones, self.yellow_cones)
-            self.middel_bezier = make_bezier(self.middelPoints, self.is_closed)
-            self.draw.draw_bezier_line(
-                self.middel_bezier, painter, QtG.QColor(255, 0, 0, 70)
-            )
-            self.draw.draw_points(self.middelPoints, painter, QtG.QColor(255, 0, 0, 70))
-
-        if self.trackbounds_on:
-            self.blue_bezier = make_bezier(self.blue_cones, self.is_closed)
-            self.draw.draw_bezier_line(
-                self.blue_bezier, painter, QtG.QColor(QtC.Qt.blue)
-            )
-
-            self.yellow_bezier = make_bezier(self.yellow_cones, self.is_closed)
-            self.draw.draw_bezier_line(
-                self.yellow_bezier, painter, QtG.QColor(QtC.Qt.yellow)
-            )
-
-        self.draw.draw_cones(painter)
-        self.draw.draw_path(painter)
-        self.draw.draw_car(painter)
-        self.draw.draw_scale(painter)
-        self.draw.draw_pathnr(painter)
-
-        painter.end()
+        # the only time you're sure that you don't get a transformation fault in the path
+        self.empty_path()
+        self.update()
 
     # Override the wheelEvent method to handle scrolling events
     def wheelEvent(self, event):
@@ -357,29 +321,8 @@ class MapWidget(QtW.QFrame):
                 if self.zoom_level > self.MIN_ZOOM:
                     self.zoom_level /= self.ZOOM
                     self.offset = s + r * self.ZOOM
+            self.empty_path()
             self.update()
-
-    def coordinateToScreen(self, coordinate):
-        # Calculate the screen position of a given coordinate, taking zoom level and scroll position into account
-        x = (
-            coordinate.x() - self.offset.x()
-        ) * self.zoom_level + self.rect().width() / 2
-        y = (
-            -(coordinate.y() - self.offset.y()) * self.zoom_level
-            + self.rect().height() / 2
-        )
-        return QtC.QPoint(int(x), int(y))
-
-    def screenToCoordinate(self, screen_pos):
-        # Calculate the coordinate of a given screen position, taking zoom level and scroll position into account
-        x = (screen_pos.x() - self.rect().width() / 2) / (
-            self.zoom_level
-        ) + self.offset.x()
-        y = (
-            -(screen_pos.y() - self.rect().height() / 2) / (self.zoom_level)
-            + self.offset.y()
-        )
-        return QtC.QPointF(x, y)
 
     def keyPressEvent(self, event: QtG.QKeyEvent):
         if event.modifiers() == QtC.Qt.ControlModifier and event.key() == QtC.Qt.Key_S:
@@ -417,6 +360,72 @@ class MapWidget(QtW.QFrame):
                 self.pathnr = max(self.pathnr, 0)
             self.path = self.all_paths[self.pathnr]
             self.update()
+
+    def empty_path(self):
+        self.all_paths = []
+        self.path = None
+
+    def update_car(self):
+        self.car_rot_handle: QtC.QPointF = self.car_pos + (
+            self.CAR_POINT_SIZE / 2
+        ) * QtC.QPointF(math.cos(self.car_rot), math.sin(self.car_rot))
+        return None
+
+    # Override the paintEvent method to draw the visual points
+    def paintEvent(self, event):
+        self.publish_local_map()
+
+        painter = QtG.QPainter(self)
+        self.draw.draw_grid(painter)
+
+        if self.middelline_on:
+            self.middelPoints = make_middelline(self.blue_cones, self.yellow_cones)
+            self.middel_bezier = make_bezier(self.middelPoints, self.is_closed)
+            self.draw.draw_bezier_line(
+                self.middel_bezier, painter, QtG.QColor(255, 0, 0, 70)
+            )
+            self.draw.draw_points(self.middelPoints, painter, QtG.QColor(255, 0, 0, 70))
+
+        if self.trackbounds_on:
+            self.blue_bezier = make_bezier(self.blue_cones, self.is_closed)
+            self.draw.draw_bezier_line(
+                self.blue_bezier, painter, QtG.QColor(QtC.Qt.blue)
+            )
+
+            self.yellow_bezier = make_bezier(self.yellow_cones, self.is_closed)
+            self.draw.draw_bezier_line(
+                self.yellow_bezier, painter, QtG.QColor(QtC.Qt.yellow)
+            )
+
+        self.draw.draw_cones(painter)
+        self.draw.draw_path(painter)
+        self.draw.draw_car(painter)
+        self.draw.draw_scale(painter)
+        self.draw.draw_pathnr(painter)
+
+        painter.end()
+
+    def coordinateToScreen(self, coordinate):
+        # Calculate the screen position of a given coordinate, taking zoom level and scroll position into account
+        x = (
+            coordinate.x() - self.offset.x()
+        ) * self.zoom_level + self.rect().width() / 2
+        y = (
+            -(coordinate.y() - self.offset.y()) * self.zoom_level
+            + self.rect().height() / 2
+        )
+        return QtC.QPoint(int(x), int(y))
+
+    def screenToCoordinate(self, screen_pos):
+        # Calculate the coordinate of a given screen position, taking zoom level and scroll position into account
+        x = (screen_pos.x() - self.rect().width() / 2) / (
+            self.zoom_level
+        ) + self.offset.x()
+        y = (
+            -(screen_pos.y() - self.rect().height() / 2) / (self.zoom_level)
+            + self.offset.y()
+        )
+        return QtC.QPointF(x, y)
 
     def save_track_layout(self):
         def get_track_name() -> str:

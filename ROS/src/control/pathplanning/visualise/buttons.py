@@ -82,15 +82,16 @@ class Buttons:
             self.widget.selected_yellow_cones.append(cone)
         for cone in self.widget.blue_cones:
             self.widget.selected_blue_cones.append(cone)
+        self.widget.empty_path()
         self.widget.update()
 
     def deselect_all_clicked(self):
         # This method will be called when the button is clicked
         self.widget.selected_blue_cones = []
         self.widget.selected_yellow_cones = []
+        self.widget.empty_path()
         self.widget.update()
 
     def place_cones_clicked(self):
         # This method will be called when the button is clicked
         self.widget.place_cones = not self.widget.place_cones
-        self.widget.update()
