@@ -16,6 +16,7 @@ from ugr_msgs.msg import (
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
 )
+from utils import car_to_real_transform, dist, get_local_poses
 
 
 class MapWidget(QtW.QFrame):
@@ -26,7 +27,7 @@ class MapWidget(QtW.QFrame):
     INIT_ZOOM = 0.5
     INIT_SCALE = 100
     CAR_POINT_SIZE = 0.5
-    CAR_HANDLE_SIZE = 15
+    CAR_HANDLE_SIZE = 0.15
     CONE_SIZE = 0.2
     LAYOUT_TYPE = "yaml"
 
@@ -58,13 +59,13 @@ class MapWidget(QtW.QFrame):
         # frameID used to publish observation messages
         self.frame = frame
 
-        # initialize all_paths
+        # initialize paths
         self.path = None
         self.pathnr = -1
         self.nr_paths = 0
         self.all_paths = []
 
-        # initialize all_cones
+        # initialize cone lists
         if yellows is None:
             yellows = []
         if blues is None:
@@ -82,14 +83,13 @@ class MapWidget(QtW.QFrame):
         self.is_closed = bool(closed)
         self.middelline_on = False
         self.trackbounds_on = False
+        self.place_cones = False
 
         # currently selected element
         self.selection: Optional[QtC.QPoint] = None
 
         # Set the initial zoom level
         self.zoom_level = self.INIT_ZOOM
-        # Define the scale of the coordinate system in pixels per kilometer
-        self.pixels_per_km = self.INIT_SCALE
 
         # The offset between the center of the screen and (0,0) of the real_coordinates on the map
         self.offset = QtC.QPointF(0, 0)
@@ -108,55 +108,17 @@ class MapWidget(QtW.QFrame):
         self.bezierPoints = []
         self.bezier = []
 
-    def real_to_car_transform(self, points: list) -> np.ndarray:
-        """
-        Returns an array of objects that are converted from global reference space to car reference space.
-        """
-        # Convert the QtC.QPointF points to a 2D NumPy array
-        point_array = np.array([[point.x(), point.y()] for point in points])
-
-        orig_pos = np.c_[point_array, np.ones(point_array.shape[0])]
-
-        trans = np.array(
-            [[1, 0, -self.car_pos.x()], [0, 1, -self.car_pos.y()], [0, 0, 1]]
-        )
-        rot = np.array(
-            [
-                [math.cos(self.car_rot), -math.sin(-self.car_rot), 0],
-                [math.sin(-self.car_rot), math.cos(self.car_rot), 0],
-                [0, 0, 1],
-            ]
-        )
-        new_pos = (rot @ trans @ orig_pos.T).T
-
-        return new_pos[:, :-1]
-
-    def car_to_real_transform(self, objects: np.ndarray) -> list:
-        """
-        Returns an array of objects that are converted from car reference space to global reference space.
-        """
-        orig_pos = np.c_[objects, np.ones(objects.shape[0])]
-
-        rot = np.array(
-            [
-                [math.cos(self.car_rot), -math.sin(self.car_rot), 0],
-                [math.sin(self.car_rot), math.cos(self.car_rot), 0],
-                [0, 0, 1],
-            ]
-        )
-        trans = np.array(
-            [[1, 0, self.car_pos.x()], [0, 1, self.car_pos.y()], [0, 0, 1]]
-        )
-        new_pos = (trans @ rot @ orig_pos.T).T
-
-        return [QtC.QPointF(coord[0], coord[1]) for coord in new_pos[:, :-1]]
-
     def publish_local_map(self):
         """
         Publishes local map of the selected cones
 
         """
-        cones = self.get_visible_cones()
+        cones = get_local_poses(
+            self.selected_blue_cones,
+            self.selected_yellow_cones,
+            self.car_pos,
+            self.car_rot,
+        )
 
         local = ObservationWithCovarianceArrayStamped()
 
@@ -177,53 +139,32 @@ class MapWidget(QtW.QFrame):
 
         self.publisher.publish(local)
 
-    def get_visible_cones(self) -> np.ndarray:
-        yellow_cones = np.empty((0, 3))
-        if len(self.selected_yellow_cones) > 0:
-            yellow_cones = np.column_stack(
-                (
-                    self.real_to_car_transform(self.selected_yellow_cones),
-                    np.ones(len(self.selected_yellow_cones)),
-                )
-            )
-
-        blue_cones = np.empty((0, 3))
-        if len(self.selected_blue_cones) > 0:
-            blue_cones = np.column_stack(
-                (
-                    self.real_to_car_transform(self.selected_blue_cones),
-                    np.zeros(len(self.selected_blue_cones)),
-                )
-            )
-
-        visible_cones = np.vstack((yellow_cones, blue_cones))
-        return visible_cones
-
     def receive_path(self, rel_paths: np.ndarray):
         self.nr_paths = len(rel_paths)
-        self.all_paths = rel_paths
-        real_path = self.car_to_real_transform(rel_paths[self.pathnr])
-        self.path = real_path
+        self.pathnr = min(self.pathnr, self.nr_paths - 1)
+        if self.nr_paths == 0:
+            self.pathnr = -1
+        else:
+            self.pathnr = max(self.pathnr, 0)
+        self.all_paths = [
+            car_to_real_transform(rel_path, self.car_pos, self.car_rot)
+            for rel_path in rel_paths
+        ]
+        self.path = self.all_paths[self.pathnr]
 
-    def dist(self, p1: "QtC.QPoint", p2: "QtC.QPoint") -> float:
-        def L2Dist(x1: float, y1: float, x2: float, y2: float) -> float:
-            return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
-
-        return L2Dist(p1.x(), p1.y(), p2.x(), p2.y())
-
-    def get_selected_cone(self, event) -> Optional[QtC.QPoint]:
-        # This is in canvas co
+    def get_selected_element(self, event) -> Optional[QtC.QPoint]:
+        # This is the position on the screen where the user clicked
         press_location = event.pos()
 
         if (
-            self.dist(press_location, self.coordinateToScreen(self.car_rot_handle))
-            < self.CAR_HANDLE_SIZE * self.zoom_level
+            dist(press_location, self.coordinateToScreen(self.car_rot_handle))
+            < self.CAR_HANDLE_SIZE * self.INIT_SCALE * self.zoom_level
         ):
             return self.car_rot_handle
 
         if (
-            self.dist(press_location, self.coordinateToScreen(self.car_pos))
-            < self.CAR_POINT_SIZE * self.pixels_per_km * self.zoom_level
+            dist(press_location, self.coordinateToScreen(self.car_pos))
+            < self.CAR_POINT_SIZE * self.INIT_SCALE * self.zoom_level
         ):
             return self.car_pos
 
@@ -233,8 +174,8 @@ class MapWidget(QtW.QFrame):
             control_point_canvas = self.coordinateToScreen(selectable)
 
             if (
-                self.dist(press_location, control_point_canvas)
-                < self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+                dist(press_location, control_point_canvas)
+                < self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
             ):
                 return selectable
 
@@ -242,7 +183,7 @@ class MapWidget(QtW.QFrame):
 
     # Override the mousePressEvent method to handle mouse click events
     def mousePressEvent(self, event):
-        selected_cone = self.get_selected_cone(event)
+        selected_cone = self.get_selected_element(event)
         if selected_cone is not None:
             # Remove a cone with SHIFT + click
             if event.modifiers() & QtC.Qt.ShiftModifier:
@@ -275,38 +216,39 @@ class MapWidget(QtW.QFrame):
                 self.selection = selected_cone
                 self.selected_location = event.pos()
                 self.drag_start_pos = event.pos()
-        # orange cones with alt key
-        elif event.modifiers() == QtC.Qt.AltModifier:
-            self.orange_cones.append(self.screenToCoordinate(event.pos()))
-            self.update()
         # Drag the screen
         elif event.modifiers() & QtC.Qt.ControlModifier:
             self.drag_map = True
             self.drag_start_pos = event.pos()
-        # Place a yellow cone
-        elif event.button() == QtC.Qt.LeftButton and not (
-            event.modifiers() & QtC.Qt.ShiftModifier
-        ):
-            # Add a visual point to the list at the position where the user clicked
-            point = self.screenToCoordinate(event.pos())
-            self.yellow_cones.append(point)
-            self.selected_yellow_cones.append(point)
-            # Trigger a repaint of the MapWidget to update the visual points
-            self.update()
-        # Place a blue cone
-        elif event.button() == QtC.Qt.RightButton and not (
-            event.modifiers() & QtC.Qt.ShiftModifier
-        ):
-            # Add a visual point to the list at the position where the user clicked
-            point = self.screenToCoordinate(event.pos())
-            self.blue_cones.append(point)
-            self.selected_blue_cones.append(point)
-            # Trigger a repaint of the MapWidget to update the visual points
-            self.update()
+        elif self.place_cones:
+            # orange cones with alt key
+            if event.modifiers() == QtC.Qt.AltModifier:
+                self.orange_cones.append(self.screenToCoordinate(event.pos()))
+                self.update()
+            # Place a yellow cone
+            elif event.button() == QtC.Qt.LeftButton and not (
+                event.modifiers() & QtC.Qt.ShiftModifier
+            ):
+                # Add a visual point to the list at the position where the user clicked
+                point = self.screenToCoordinate(event.pos())
+                self.yellow_cones.append(point)
+                self.selected_yellow_cones.append(point)
+                # Trigger a repaint of the MapWidget to update the visual points
+                self.update()
+            # Place a blue cone
+            elif event.button() == QtC.Qt.RightButton and not (
+                event.modifiers() & QtC.Qt.ShiftModifier
+            ):
+                # Add a visual point to the list at the position where the user clicked
+                point = self.screenToCoordinate(event.pos())
+                self.blue_cones.append(point)
+                self.selected_blue_cones.append(point)
+                # Trigger a repaint of the MapWidget to update the visual points
+                self.update()
 
     def mouseDoubleClickEvent(self, event):
         if event.button() == QtC.Qt.LeftButton:
-            selected_cone = self.get_selected_cone(event)
+            selected_cone = self.get_selected_element(event)
             if selected_cone is not None:
                 if selected_cone in self.yellow_cones[:-1]:
                     point = selected_cone + QtC.QPointF(0.10, 0.10)
@@ -348,7 +290,7 @@ class MapWidget(QtW.QFrame):
                 drag_distance = self.screenToCoordinate(
                     event.pos()
                 ) - self.screenToCoordinate(self.drag_start_pos)
-                self.selection += drag_distance  # QtC.QPointF(drag_distance)/(self.pixels_per_km * self.zoom_level)
+                self.selection += drag_distance  # QtC.QPointF(drag_distance)/(self.INIT_SCALE * self.zoom_level)
                 self.drag_start_pos = event.pos()
             self.update()
 
@@ -375,10 +317,10 @@ class MapWidget(QtW.QFrame):
         for _index, cone in enumerate(self.yellow_cones):
             color = QtG.QColor(QtC.Qt.yellow)
             color.setAlpha(50)
-            pen = QtG.QPen(color, self.CONE_SIZE * self.pixels_per_km * self.zoom_level)
+            pen = QtG.QPen(color, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level)
             painter.setPen(pen)
             screen_pos = self.coordinateToScreen(cone)
-            diameter = self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+            diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
             circle_rect = QtC.QRectF(
                 screen_pos.x() - diameter / 2,
                 screen_pos.y() - diameter / 2,
@@ -391,10 +333,10 @@ class MapWidget(QtW.QFrame):
         for _index, cone in enumerate(self.blue_cones):
             color = QtG.QColor(QtC.Qt.blue)
             color.setAlpha(50)
-            pen = QtG.QPen(color, self.CONE_SIZE * self.pixels_per_km * self.zoom_level)
+            pen = QtG.QPen(color, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level)
             painter.setPen(pen)
             screen_pos = self.coordinateToScreen(cone)
-            diameter = self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+            diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
             circle_rect = QtC.QRectF(
                 screen_pos.x() - diameter / 2,
                 screen_pos.y() - diameter / 2,
@@ -406,10 +348,10 @@ class MapWidget(QtW.QFrame):
         # Draw a circle at each visual point
         for _index, cone in enumerate(self.selected_yellow_cones):
             color = QtG.QColor(QtC.Qt.yellow)
-            pen = QtG.QPen(color, self.CONE_SIZE * self.pixels_per_km * self.zoom_level)
+            pen = QtG.QPen(color, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level)
             painter.setPen(pen)
             screen_pos = self.coordinateToScreen(cone)
-            diameter = self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+            diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
             circle_rect = QtC.QRectF(
                 screen_pos.x() - diameter / 2,
                 screen_pos.y() - diameter / 2,
@@ -421,10 +363,10 @@ class MapWidget(QtW.QFrame):
         # Draw a circle at each visual point
         for _index, cone in enumerate(self.selected_blue_cones):
             color = QtG.QColor(QtC.Qt.blue)
-            pen = QtG.QPen(color, self.CONE_SIZE * self.pixels_per_km * self.zoom_level)
+            pen = QtG.QPen(color, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level)
             painter.setPen(pen)
             screen_pos = self.coordinateToScreen(cone)
-            diameter = self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+            diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
             circle_rect = QtC.QRectF(
                 screen_pos.x() - diameter / 2,
                 screen_pos.y() - diameter / 2,
@@ -437,12 +379,12 @@ class MapWidget(QtW.QFrame):
         for index, cone in enumerate(self.yellow_cones):
             screen_pos = self.coordinateToScreen(cone)
             pen = QtG.QPen(
-                QtC.Qt.black, self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+                QtC.Qt.black, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
             )
             painter.setPen(pen)
             font = QtG.QFont(
                 "Arial",
-                int(0.75 * self.CONE_SIZE * self.pixels_per_km * self.zoom_level),
+                int(0.75 * self.CONE_SIZE * self.INIT_SCALE * self.zoom_level),
             )
             painter.setFont(font)
             text_rect = QtC.QRectF(
@@ -457,12 +399,12 @@ class MapWidget(QtW.QFrame):
         for index, cone in enumerate(self.blue_cones):
             screen_pos = self.coordinateToScreen(cone)
             pen = QtG.QPen(
-                QtC.Qt.white, self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+                QtC.Qt.white, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
             )
             painter.setPen(pen)
             font = QtG.QFont(
                 "Arial",
-                int(0.75 * self.CONE_SIZE * self.pixels_per_km * self.zoom_level),
+                int(0.75 * self.CONE_SIZE * self.INIT_SCALE * self.zoom_level),
             )
             painter.setFont(font)
             text_rect = QtC.QRectF(
@@ -476,11 +418,11 @@ class MapWidget(QtW.QFrame):
         for index, cone in enumerate(self.orange_cones):
             pen = QtG.QPen(
                 QtG.QColor(255, 165, 0),
-                self.CONE_SIZE * self.pixels_per_km * self.zoom_level,
+                self.CONE_SIZE * self.INIT_SCALE * self.zoom_level,
             )
             painter.setPen(pen)
             screen_pos = self.coordinateToScreen(cone)
-            diameter = self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+            diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
             circle_rect = QtC.QRectF(
                 screen_pos.x() - diameter / 2,
                 screen_pos.y() - diameter / 2,
@@ -490,12 +432,12 @@ class MapWidget(QtW.QFrame):
             painter.drawEllipse(circle_rect)
 
             pen = QtG.QPen(
-                QtC.Qt.white, self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+                QtC.Qt.white, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
             )
             painter.setPen(pen)
             font = QtG.QFont(
                 "Arial",
-                int(0.75 * self.CONE_SIZE * self.pixels_per_km * self.zoom_level),
+                int(0.75 * self.CONE_SIZE * self.INIT_SCALE * self.zoom_level),
             )
             painter.setFont(font)
             text_rect = QtC.QRectF(
@@ -535,15 +477,17 @@ class MapWidget(QtW.QFrame):
         # Draw the car
         pen = QtG.QPen(
             QtC.Qt.green,
-            self.CAR_POINT_SIZE / 2 * self.pixels_per_km * self.zoom_level,
+            self.CAR_POINT_SIZE / 2 * self.INIT_SCALE * self.zoom_level,
         )
         painter.setPen(pen)
         painter.drawEllipse(
             self.coordinateToScreen(self.car_pos),
-            self.CAR_POINT_SIZE / 2 * self.pixels_per_km * self.zoom_level,
-            self.CAR_POINT_SIZE / 2 * self.pixels_per_km * self.zoom_level,
+            self.CAR_POINT_SIZE / 2 * self.INIT_SCALE * self.zoom_level,
+            self.CAR_POINT_SIZE / 2 * self.INIT_SCALE * self.zoom_level,
         )
-        pen = QtG.QPen(QtC.Qt.red, self.CAR_HANDLE_SIZE * self.zoom_level)
+        pen = QtG.QPen(
+            QtC.Qt.red, self.CAR_HANDLE_SIZE * self.INIT_SCALE * self.zoom_level
+        )
         painter.setPen(pen)
         painter.drawEllipse(
             self.coordinateToScreen(
@@ -551,8 +495,8 @@ class MapWidget(QtW.QFrame):
                 + (self.CAR_POINT_SIZE / 2)
                 * QtC.QPointF(math.cos(self.car_rot), math.sin(self.car_rot))
             ),
-            self.CAR_HANDLE_SIZE * self.zoom_level,
-            self.CAR_HANDLE_SIZE * self.zoom_level,
+            self.CAR_HANDLE_SIZE * self.INIT_SCALE * self.zoom_level,
+            self.CAR_HANDLE_SIZE * self.INIT_SCALE * self.zoom_level,
         )
 
         # schaal meedelen
@@ -582,7 +526,7 @@ class MapWidget(QtW.QFrame):
             for index, pathPoint in enumerate(self.path):
                 screen_pos = self.coordinateToScreen(pathPoint)
                 pen = QtG.QPen(
-                    QtC.Qt.green, self.CONE_SIZE * self.pixels_per_km * self.zoom_level
+                    QtC.Qt.green, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
                 )
                 pen.setWidthF(3.0)
                 painter.setPen(pen)
@@ -593,7 +537,7 @@ class MapWidget(QtW.QFrame):
                 end = screen_pos
                 painter.drawLine(start, end)
 
-                diameter = self.CONE_SIZE * self.pixels_per_km * self.zoom_level / 7
+                diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level / 7
                 circle_rect = QtC.QRectF(
                     screen_pos.x() - diameter / 2,
                     screen_pos.y() - diameter / 2,
@@ -602,7 +546,7 @@ class MapWidget(QtW.QFrame):
                 )
                 pen = QtG.QPen(
                     QtC.Qt.red,
-                    self.CONE_SIZE * self.pixels_per_km * self.zoom_level / 10,
+                    self.CONE_SIZE * self.INIT_SCALE * self.zoom_level / 10,
                 )
                 brush = QtG.QBrush(QtC.Qt.red)
                 painter.setPen(pen)
@@ -736,13 +680,13 @@ class MapWidget(QtW.QFrame):
     def draw_grid(self, painter):
         painter.setPen(QtG.QPen(QtG.QColor(0, 0, 0)))
         vertical_line_count = int(
-            self.width() / self.pixels_per_km / self.zoom_level / self.RASTER_WIDTH + 1
+            self.width() / self.INIT_SCALE / self.zoom_level / self.RASTER_WIDTH + 1
         )
         horizontal_line_count = int(
-            self.height() / self.pixels_per_km / self.zoom_level / self.RASTER_WIDTH + 1
+            self.height() / self.INIT_SCALE / self.zoom_level / self.RASTER_WIDTH + 1
         )
 
-        px_width = self.pixels_per_km * self.zoom_level * self.RASTER_WIDTH
+        px_width = self.INIT_SCALE * self.zoom_level * self.RASTER_WIDTH
 
         painter.drawLine(
             QtC.QPointF(self.width() // 2, 0),
@@ -795,9 +739,9 @@ class MapWidget(QtW.QFrame):
         # Calculate the screen position of a given coordinate, taking zoom level and scroll position into account
         x = (
             coordinate.x() - self.offset.x()
-        ) * self.pixels_per_km * self.zoom_level + self.rect().width() / 2
+        ) * self.INIT_SCALE * self.zoom_level + self.rect().width() / 2
         y = (
-            -(coordinate.y() - self.offset.y()) * self.pixels_per_km * self.zoom_level
+            -(coordinate.y() - self.offset.y()) * self.INIT_SCALE * self.zoom_level
             + self.rect().height() / 2
         )
         return QtC.QPoint(int(x), int(y))
@@ -805,11 +749,11 @@ class MapWidget(QtW.QFrame):
     def screenToCoordinate(self, screen_pos):
         # Calculate the coordinate of a given screen position, taking zoom level and scroll position into account
         x = (screen_pos.x() - self.rect().width() / 2) / (
-            self.pixels_per_km * self.zoom_level
+            self.INIT_SCALE * self.zoom_level
         ) + self.offset.x()
         y = (
             -(screen_pos.y() - self.rect().height() / 2)
-            / (self.pixels_per_km * self.zoom_level)
+            / (self.INIT_SCALE * self.zoom_level)
             + self.offset.y()
         )
         return QtC.QPointF(x, y)
@@ -847,7 +791,7 @@ class MapWidget(QtW.QFrame):
                 self.pathnr = 0
             elif self.pathnr > self.nr_paths - 1:
                 self.pathnr = self.nr_paths - 1
-            self.path = self.car_to_real_transform(self.all_paths[self.pathnr])
+            self.path = self.all_paths[self.pathnr]
             self.update()
 
     def save_track_layout(self):

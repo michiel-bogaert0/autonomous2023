@@ -44,6 +44,12 @@ class Buttons:
         layout.addWidget(
             trackboundsButton
         )  # Align the button to the right and top of the layout
+        # Create a QPushbutton and add it to the layout
+        placeConesButton = QtW.QPushButton("enable/disable placing cones", self.widget)
+        placeConesButton.setFixedSize(150, 30)  # Set the size of the button
+        layout.addWidget(
+            placeConesButton
+        )  # Align the button to the right and top of the layout
 
         # Connect the button's clicked signal to a slot
         loopButton.clicked.connect(self.close_loop_clicked)
@@ -51,6 +57,7 @@ class Buttons:
         selectAllButton.clicked.connect(self.select_all_clicked)
         deselectAllButton.clicked.connect(self.deselect_all_clicked)
         trackboundsButton.clicked.connect(self.trackbounds_clicked)
+        placeConesButton.clicked.connect(self.place_cones_clicked)
 
     def close_loop_clicked(self):
         # This method will be called when the button is clicked
@@ -81,4 +88,9 @@ class Buttons:
         # This method will be called when the button is clicked
         self.widget.selected_blue_cones = []
         self.widget.selected_yellow_cones = []
+        self.widget.update()
+
+    def place_cones_clicked(self):
+        # This method will be called when the button is clicked
+        self.widget.place_cones = not self.widget.place_cones
         self.widget.update()
