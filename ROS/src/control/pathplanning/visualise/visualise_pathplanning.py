@@ -28,7 +28,7 @@ class MapWidget(QtW.QFrame):
     INIT_ZOOM = 50
     CAR_POINT_SIZE = 0.5
     CAR_HANDLE_SIZE = 0.15
-    CONE_SIZE = 0.2
+    CONE_SIZE = 0.4
     LAYOUT_TYPE = "yaml"
 
     RASTER_WIDTH = 3

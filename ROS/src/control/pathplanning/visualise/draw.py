@@ -66,8 +66,8 @@ class Draw:
     ):
         # Draw a circle at each cone
         color.setAlpha(50)
-        pen = QtG.QPen(color, self.widget.CONE_SIZE * self.widget.zoom_level)
-        painter.setPen(pen)
+        painter.setPen(QtG.QPen(color))
+        painter.setBrush(QtG.QBrush(color))
         diameter = self.widget.CONE_SIZE * self.widget.zoom_level
         for cone in cones:
             screen_pos = self.widget.coordinateToScreen(cone)
@@ -83,8 +83,8 @@ class Draw:
         self, cones: List[QtC.QPointF], painter: QtG.QPainter, color: QtG.QColor
     ):
         # Draw a circle at each visible cone
-        pen = QtG.QPen(color, self.widget.CONE_SIZE * self.widget.zoom_level)
-        painter.setPen(pen)
+        painter.setPen(QtG.QPen(color))
+        painter.setBrush(QtG.QBrush(color))
         diameter = self.widget.CONE_SIZE * self.widget.zoom_level
         for cone in cones:
             screen_pos = self.widget.coordinateToScreen(cone)
@@ -102,11 +102,12 @@ class Draw:
         pen = QtG.QPen(color, self.widget.CONE_SIZE * self.widget.zoom_level)
         painter.setPen(pen)
         diameter = self.widget.CONE_SIZE * self.widget.zoom_level
-        font = QtG.QFont(
-            "Arial",
-            int(0.75 * diameter),
+        painter.setFont(
+            QtG.QFont(
+                "Arial",
+                int(0.4 * diameter),
+            )
         )
-        painter.setFont(font)
         for index, cone in enumerate(cones):
             screen_pos = self.widget.coordinateToScreen(cone)
             text_rect = QtC.QRectF(
