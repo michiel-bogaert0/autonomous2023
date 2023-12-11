@@ -41,7 +41,7 @@ class NaiveFusion:
         Isolated cones are treated seperately and are not linked to any other cone.
         """
 
-        # Create lists for coupled observations, actual associations and isolated observations
+        # Create lists for all observations that have been coupled and the associations themselves
         associated_observations = []
         associations = []
 

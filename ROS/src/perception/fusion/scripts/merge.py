@@ -19,6 +19,7 @@ class MergeNode:
         """
         rospy.init_node("observation_merger_node", anonymous=True)
 
+        # Set up subscribers and publisher to receive/send observations
         rospy.Subscriber(
             "/input/lidar_observations",
             ObservationWithCovarianceArrayStamped,
@@ -39,12 +40,11 @@ class MergeNode:
         self.tf_listener = tf.TransformListener(self.tf_buffer)
 
         # Parameters
-        #
-        # Frames
+        #   Frames
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
 
-        # Topics
+        #   Topics
         self.lidar_input_topic, self.camera_input_topic = (
             "/input/lidar_observations",
             "/input/camera_observations",
@@ -55,18 +55,18 @@ class MergeNode:
         )
         self.input_sensors = ["os_sensor", "ugr/car_base_link/cam0"]
 
-        # Fusion parameters
+        #   Fusion parameters
         self.max_fusion_eucl_distance = rospy.get_param("~fusion_eucl_distance", 2.5)
         self.max_sensor_time_diff = rospy.get_param("~sensor_time_diff_ms", 50)
 
-        # Initialize fusion pipeline
+        #   Initialize fusion pipeline
         self.fusion_pipeline = None
         self.fusion_method = rospy.get_param("~fusion_method", "naive")
 
         if self.fusion_method == "naive":
             self.fusion_pipeline = NaiveFusion(self.max_fusion_eucl_distance)
 
-        # Helpers
+        # Helper variables
         self.is_first_received = True
         self.msg_buffer = []
         self.sensors_received = []
@@ -96,6 +96,7 @@ class MergeNode:
         Wait for either all messages specified in self.input_sensors to arrive or for a timeout,
         then send all received messages through the fusion pipeline
         """
+        self.detect_observations(observations)
         self.msg_buffer.append(observations)
         self.sensors_received.append(observations.header.frame_id)
 
@@ -123,7 +124,10 @@ class MergeNode:
         return
 
     def handle_timeout(self, event=None):
-        self.run_fusion(self.msg_buffer)
+        rospy.loginfo("\n\n * Send through fusion pipeline:\n")
+        for sensormsg in self.msg_buffer:
+            rospy.loginfo(f"    * {sensormsg.header.frame_id}\n")
+        # self.run_fusion(self.msg_buffer)
         self.msg_buffer = []
         self.sensors_received = []
         self.is_first_received = True
