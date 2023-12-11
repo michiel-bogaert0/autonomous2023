@@ -50,6 +50,8 @@ class NaiveFusion:
         for msg in tf_sensor_msgs:
             all_observations.extend(msg.observations)
 
+        if len(all_observations) < 1:
+            return []
         all_points = list(
             map(
                 lambda obs: [
@@ -81,7 +83,7 @@ class NaiveFusion:
                         all_observations=all_observations,
                         kdtree=kdtree_all,
                         root_obs=current_obs,
-                        other_sensor_observations=sensor_msg,
+                        other_sensor_observations=sensor_msg.observations,
                     )
 
                     # If no matches of sensor type are found within max radius, continue to next sensor
@@ -98,7 +100,7 @@ class NaiveFusion:
                             all_observations=all_observations,
                             kdtree=kdtree_all,
                             root_obs=potential_matches[0],
-                            other_sensor_observations=current_sensor_observations,
+                            other_sensor_observations=current_sensor_observations.observations,
                         )[0]
                         == current_obs
                     ):
@@ -119,7 +121,7 @@ class NaiveFusion:
         """
 
         # Find observations within max_fusion_distance radius
-        _, indices = kdtree.query_radius(
+        indices, _ = kdtree.query_radius(
             [
                 [
                     root_obs.observation.location.x,
@@ -195,7 +197,7 @@ class NaiveFusion:
 
         belief = association[0].observation.belief
         for obs in association:
-            if obs.frame_id == "camera":
+            if obs == "camera":
                 belief = obs.observation.belief
                 break
         fused_observation.observation.belief = belief
@@ -206,6 +208,6 @@ class NaiveFusion:
             fused_observation.observation.location.x,
             fused_observation.observation.location.y,
             fused_observation.observation.location.z,
-        ) = tuple(new_location[0][0], new_location[1][0], new_location[2][0])
+        ) = tuple((new_location[0][0], new_location[1][0], new_location[2][0]))
 
         return fused_observation

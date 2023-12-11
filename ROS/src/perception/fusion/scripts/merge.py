@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-import time
 
-# import numpy as np
 import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import TransformStamped
 from naive_fusion import NaiveFusion
-from node_fixture.node_fixture import ROSNode
+from node_fixture.fixture import ROSNode
 from ugr_msgs.msg import (  # ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
 )
@@ -67,6 +65,7 @@ class MergeNode:
             self.fusion_pipeline = NaiveFusion(self.max_fusion_eucl_distance)
 
         # Helper variables
+        self.last_received = 0
         self.is_first_received = True
         self.msg_buffer = []
         self.sensors_received = []
@@ -78,25 +77,12 @@ class MergeNode:
         """
         self.result_publisher.publish(msg)
 
-    def detect_observations(self, observations: ObservationWithCovarianceArrayStamped):
-        """
-        Measure time between incoming lidar and camera observations, log to console
-        """
-        time_now = time.time_ns() * 1e-6
-        rospy.loginfo(f"\nReceived observations from {observations.header.frame_id}")
-        for msg in self.msg_buffer:
-            rospy.loginfo(
-                f"Previous message from {msg.header.frame_id}: {time_now - msg.header.stamp.nsecs * 1e-6} ms\n"
-            )
-        return
-
     def handle_observations(self, observations: ObservationWithCovarianceArrayStamped):
         """
         Handle incoming observations and send through pipeline
         Wait for either all messages specified in self.input_sensors to arrive or for a timeout,
         then send all received messages through the fusion pipeline
         """
-        self.detect_observations(observations)
         self.msg_buffer.append(observations)
         self.sensors_received.append(observations.header.frame_id)
 
@@ -107,7 +93,6 @@ class MergeNode:
                 callback=self.handle_timeout,
                 oneshot=True,
             )
-            return
 
         # Check if messages from all sensors have been received
         all_received = True
@@ -119,18 +104,22 @@ class MergeNode:
         # If all messages have been received, send through pipeline
         if all_received:
             self.msg_wait_timer.shutdown()
+            rospy.loginfo("All msgs received")
             self.handle_timeout()
             return
         return
 
     def handle_timeout(self, event=None):
-        rospy.loginfo("\n\n * Send through fusion pipeline:\n")
-        for sensormsg in self.msg_buffer:
-            rospy.loginfo(f"    * {sensormsg.header.frame_id}\n")
-        # self.run_fusion(self.msg_buffer)
-        self.msg_buffer = []
         self.sensors_received = []
         self.is_first_received = True
+        send_msgs = self.msg_buffer.copy()
+        self.msg_buffer = []
+
+        rospy.loginfo("\n\n * Send through fusion pipeline:\n")
+        for sensormsg in send_msgs:
+            rospy.loginfo(f"    * {sensormsg.header.frame_id}\n")
+        if len(send_msgs) >= 1:
+            self.run_fusion(send_msgs)
         return
 
     def run_fusion(self, sensor_msgs):
@@ -163,12 +152,12 @@ class MergeNode:
                     target_frame=sensor_msg.header.frame_id,  # Transform from this frame,
                     target_time=sensor_msg.header.stamp,  # at this time ...
                     source_frame=self.base_link_frame,  # ... to this frame,
-                    source_time=tf_source_time.header.stamp,  # at this time.
+                    source_time=tf_source_time,  # at this time.
                     fixed_frame=self.world_frame,  # Frame that does not change over time, in this case the "/world" frame
                     timeout=rospy.Duration(0),  # Time-out
                 )
                 tf_sensor_msg: ObservationWithCovarianceArrayStamped = (
-                    ROSNode.do_transform_observation(sensor_msg, transform)
+                    ROSNode.do_transform_observations(sensor_msg, transform)
                 )
                 transformed_msgs.append(tf_sensor_msg)
 
@@ -178,6 +167,7 @@ class MergeNode:
             rospy.logerr(
                 f"Mergenode has caught an exception during transformation. Exception: {e}"
             )
+        return []
 
 
 node = MergeNode()
