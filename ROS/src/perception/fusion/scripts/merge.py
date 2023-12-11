@@ -132,7 +132,9 @@ class MergeNode:
 
         # Fuse transformed observations
         results = self.fusion_pipeline.fuse_observations(transformed_msgs)
-        self.publish(results)
+
+        self.log_plot_info(sensor_msgs, results)
+        # self.publish(results)
         return
 
     def transform_observations(self, sensor_msgs):
@@ -168,6 +170,41 @@ class MergeNode:
                 f"Mergenode has caught an exception during transformation. Exception: {e}"
             )
         return []
+
+    def log_plot_info(self, msgs, fused_obs):
+        """ """
+        # Create list of sensors, observations & points of all incoming messages
+        all_observations = []
+        for msg in msgs:
+            all_observations.extend(msg.observations)
+        all_points = list(
+            map(
+                lambda obs: [
+                    obs.observation.location.x,
+                    obs.observation.location.y,
+                    obs.observation.location.z,
+                ],
+                all_observations,
+            )
+        )
+        centers = list(
+            map(
+                lambda obs: [
+                    obs.observation.location.x,
+                    obs.observation.location.y,
+                    obs.observation.location.z,
+                ],
+                fused_obs.observations,
+            )
+        )
+
+        # Print location of all observations, predicted colors and fused observation locations
+        rospy.loginfo("\n\n\n***\nPlot data:\n")
+        rospy.loginfo(f"\npoints = {all_points}")
+        rospy.loginfo(
+            f"\ncolors = {[observation.observation.observation_class for observation in all_observations]}"
+        )
+        rospy.loginfo(f"\ncenters = {centers}")
 
 
 node = MergeNode()

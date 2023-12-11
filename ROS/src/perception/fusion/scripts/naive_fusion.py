@@ -109,7 +109,6 @@ class NaiveFusion:
                 for obs in association:
                     associated_observations.append(obs)
                 associations.append(association)
-
         return associations
 
     def within_radius_unmatched(
