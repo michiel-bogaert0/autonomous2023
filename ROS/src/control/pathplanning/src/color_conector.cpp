@@ -36,7 +36,7 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
   // create blue line
   blue_line.push_back(root_node);
   // get closest blue cone to the car
-  while (true) {
+  for (int i = 0; i < 3; i++) {
     Node *next_cone = get_closest_node(blue_cones, blue_line, max_dist);
     if (next_cone == nullptr) {
       break;
@@ -47,7 +47,7 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
   // create yellow line
   yellow_line.push_back(root_node);
   // get closest yellow cone to the car
-  while (true) {
+  for (int i = 0; i < 3; i++) {
     Node *next_cone = get_closest_node(yellow_cones, yellow_line, max_dist);
     if (next_cone == nullptr) {
       break;
