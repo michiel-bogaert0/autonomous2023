@@ -16,13 +16,13 @@ class Draw:
     def draw_grid(self, painter: QtG.QPainter):
         painter.setPen(QtG.QPen(QtG.QColor(0, 0, 0)))
         vertical_line_count = int(
-            self.widget.width() / self.widget.zoom_level / self.widget.RASTER_WIDTH + 1
+            self.widget.width() / self.widget.zoom_level / self.RASTER_WIDTH + 1
         )
         horizontal_line_count = int(
-            self.widget.height() / self.widget.zoom_level / self.widget.RASTER_WIDTH + 1
+            self.widget.height() / self.widget.zoom_level / self.RASTER_WIDTH + 1
         )
 
-        px_width = self.widget.zoom_level * self.widget.RASTER_WIDTH
+        px_width = self.widget.zoom_level * self.RASTER_WIDTH
 
         painter.drawLine(
             QtC.QPointF(self.widget.width() // 2, 0),

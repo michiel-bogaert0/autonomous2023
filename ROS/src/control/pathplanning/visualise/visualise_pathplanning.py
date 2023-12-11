@@ -25,6 +25,7 @@ class MapWidget(QtW.QFrame):
     MAX_ZOOM = 1000
     MIN_ZOOM = 10
     INIT_ZOOM = 50
+    # sizes in meters
     CAR_POINT_SIZE = 0.8
     CAR_HANDLE_SIZE = 0.5
     CONE_SIZE = 0.4
