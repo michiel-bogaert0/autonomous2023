@@ -8,7 +8,7 @@ import rospy
 import yaml
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, PathArray
+from ugr_msgs.msg import Boundaries, ObservationWithCovarianceArrayStamped, PathArray
 from visualise_pathplanning import MapWidget
 from visualization_msgs.msg import MarkerArray
 
@@ -25,6 +25,10 @@ class Visualiser:
         # Handler voor path_received subscription
         self.path_subscriber = rospy.Subscriber(
             "/input/debug/all_poses", PathArray, self.handle_path_received
+        )
+
+        self.boundaries_subscriber = rospy.Subscriber(
+            "/input/boundaries", Boundaries, self.handle_boundaries_received
         )
 
         self.points_subscriber = rospy.Subscriber(
@@ -57,6 +61,21 @@ class Visualiser:
                 np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
             )
         self.window.map_widget.receive_path(all_paths)
+
+    def handle_boundaries_received(self, boundaries: Boundaries):
+        relBlue = np.array(
+            [
+                [p.pose.position.x, p.pose.position.y]
+                for p in boundaries.left_boundary.poses
+            ]
+        )
+        relYellow = np.array(
+            [
+                [p.pose.position.x, p.pose.position.y]
+                for p in boundaries.right_boundary.poses
+            ]
+        )
+        self.window.map_widget.receive_boundaries(relBlue, relYellow)
 
     def handle_markers_received(self, markers: MarkerArray):
         relCenterPoints = np.array(

@@ -61,6 +61,10 @@ class MapWidget(QtW.QFrame):
         self.nr_paths = 0
         self.all_paths = []
 
+        # initialize boundaries
+        self.blue_boundary = []
+        self.yellow_boundary = []
+
         # markers for centerPoints and badPoints
         self.centerPoints = []
         self.badPoints = []
@@ -157,6 +161,13 @@ class MapWidget(QtW.QFrame):
         ]
         if self.pathnr >= 0:
             self.path = self.all_paths[self.pathnr]
+        self.update()
+
+    def receive_boundaries(self, relBlue: np.ndarray, relYellow: np.ndarray):
+        self.blue_boundary = car_to_real_transform(relBlue, self.car_pos, self.car_rot)
+        self.yellow_boundary = car_to_real_transform(
+            relYellow, self.car_pos, self.car_rot
+        )
         self.update()
 
     def receive_centerPoints(self, centerPoints: np.ndarray):
@@ -427,7 +438,21 @@ class MapWidget(QtW.QFrame):
         if self.debug_badPoints:
             self.draw.draw_points(self.badPoints, painter, QtG.QColor(255, 0, 255))
 
-        self.draw.draw_path(painter)
+        self.draw.draw_line(
+            self.blue_boundary,
+            painter,
+            QtG.QColor(QtC.Qt.blue),
+            QtG.QColor(QtC.Qt.blue),
+        )
+        self.draw.draw_line(
+            self.yellow_boundary,
+            painter,
+            QtG.QColor(QtC.Qt.yellow),
+            QtG.QColor(QtC.Qt.yellow),
+        )
+        self.draw.draw_line(
+            self.path, painter, QtG.QColor(QtC.Qt.green), QtG.QColor(QtC.Qt.red)
+        )
         self.draw.draw_car(painter)
         self.draw.draw_scale(painter)
         self.draw.draw_pathnr(painter)

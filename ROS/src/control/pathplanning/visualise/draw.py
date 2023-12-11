@@ -178,23 +178,29 @@ class Draw:
             )
             painter.drawEllipse(circle_rect)
 
-    def draw_path(self, painter):
-        if self.widget.path is not None and len(self.widget.path) > 0:
-            painter.setPen(QtG.QPen(QtC.Qt.green, 3.0))
+    def draw_line(
+        self,
+        points: List[QtC.QPointF],
+        painter: QtG.QPainter,
+        line_color: QtG.QColor,
+        point_color: QtG.QColor,
+    ):
+        if points is not None and len(points) > 0:
+            painter.setPen(QtG.QPen(line_color, 3.0))
             painter.setBrush(QtG.QBrush())
-            for index, pathPoint in enumerate(self.widget.path):
+            for index, pathPoint in enumerate(points):
                 screen_pos = self.widget.coordinateToScreen(pathPoint)
                 if index == 0:
                     start = self.widget.coordinateToScreen(self.widget.car_pos)
                 else:
-                    start = self.widget.coordinateToScreen(self.widget.path[index - 1])
+                    start = self.widget.coordinateToScreen(points[index - 1])
                 end = screen_pos
                 painter.drawLine(start, end)
 
-            painter.setPen(QtG.QPen(QtC.Qt.red))
-            painter.setBrush(QtG.QBrush(QtC.Qt.red))
+            painter.setPen(QtG.QPen(point_color))
+            painter.setBrush(QtG.QBrush(point_color))
             diameter = self.POINT_SIZE * self.widget.zoom_level
-            for pathPoint in self.widget.path:
+            for pathPoint in points:
                 screen_pos = self.widget.coordinateToScreen(pathPoint)
                 circle_rect = QtC.QRectF(
                     screen_pos.x() - diameter / 2,

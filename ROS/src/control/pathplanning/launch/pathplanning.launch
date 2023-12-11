@@ -26,7 +26,7 @@
 
             <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
             <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
-            <remap from="/output/boundaries" to="/pathplanning/debug/boundaries"/>
+            <remap from="/output/boundaries" to="/pathplanning/boundaries"/>
             <remap from="/output/debug/all_poses" to="/pathplanning/debug/all_poses"/>
         </node>
 
@@ -63,7 +63,7 @@
             <param name="vis_lifetime" value="0.2" />
             <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
             <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
-            <remap from="/output/boundaries" to="/pathplanning/debug/boundaries"/>
+            <remap from="/output/boundaries" to="/pathplanning/boundaries"/>
             <remap from="/output/debug/all_poses" to="/pathplanning/debug/all_poses"/>
         </node>
     </group>
