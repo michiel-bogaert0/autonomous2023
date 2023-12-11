@@ -1,68 +1,36 @@
 <launch>
-    <arg name="pathplanning_type" default="triangulation" />
-    <arg name="map" default="/ugr/car/map/fastslam/local" />
+    <node pkg="pathplanning" type="pathplanning" name="pathplanning" respawn="true" output="screen">
+        <param name="output_frame" value="ugr/car_base_link" />
+        <param name="algorithm" value="tri" />
+        <param name="max_iter" value="1000" />
+        <param name="triangulation_min_var" value="200" />
+        <param name="triangulation_var_threshold" value="1.2" />
+        <param name="max_angle_change" value="1.5" />
+        <param name="max_path_distance" value="10" />
+        <param name="safety_dist" value="0.3" />
 
-    <group if="$(eval arg('pathplanning_type') == 'triangulation')">
-        <node pkg="pathplanning" type="pathplanning" name="pathplanning" respawn="true" output="screen">
-            <param name="output_frame" value="ugr/car_base_link" />
-            <param name="algorithm" value="tri" />
-            <param name="max_iter" value="1000" />
-            <param name="triangulation_min_var" value="200" />
-            <param name="triangulation_var_threshold" value="1.2" />
-            <param name="max_angle_change" value="1.5" />
-            <param name="max_path_distance" value="10" />
-            <param name="safety_dist" value="0.3" />
+        <param name="range_front" value="100" />
+        <param name="range_sides" value="100" />
+        <param name="range_behind" value="100" />
+        
+        <remap from="/input/local_map" to="/ugr/car/map/fastslam/local"/>
+        <remap from="/output/path" to="/pathplanning/poses"/>
 
-            <param name="range_front" value="100" />
-            <param name="range_sides" value="100" />
-            <param name="range_behind" value="100" />
-            
-            <remap from="/input/local_map" to="$(arg map)"/>
-            <remap from="/output/path" to="/pathplanning/poses"/>
+        <param name="debug_visualisation" value="true" />
+        <param name="vis_namespace" value="pathplanning_vis" />
+        <param name="vis_lifetime" value="0.1" />
 
-            <param name="debug_visualisation" value="true" />
-            <param name="vis_namespace" value="pathplanning_vis" />
-            <param name="vis_lifetime" value="0.1" />
+        <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
+        <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
+        <remap from="/output/debug/all_poses" to="/pathplanning/debug/all_poses"/>
+    </node>
 
-            <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
-            <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
-            <remap from="/output/debug/all_poses" to="/pathplanning/debug/all_poses"/>
-        </node>
+    <node pkg="pathplanning" type="smooth_path.py" name="path_smoother" respawn="true" output="screen">
+        <param name="max_distance_away_from_start" value="9" />
+        <param name="min_distance_away_from_start" value="16" />
 
-        <node pkg="pathplanning" type="smooth_path.py" name="path_smoother" respawn="true" output="screen">
-            <param name="max_distance_away_from_start" value="9" />
-            <param name="min_distance_away_from_start" value="16" />
+        <remap from="/input/path" to="/pathplanning/poses"/>
+        <remap from="/output/path" to="/pathplanning/path"/>
+    </node>
 
-            <remap from="/input/path" to="/pathplanning/poses"/>
-            <remap from="/output/path" to="/pathplanning/path"/>
-        </node>
-    </group>
-    <group if="$(eval arg('pathplanning_type') == 'rrt')">
-        <node pkg="pathplanning" type="run_node.py" name="rrt" respawn="true" output="screen">
-            <param name="output_frame" value="ugr/car_odom" />
-            <param name="algorithm" value="rrt" />
-            <param name="expand_dist" value="1" />
-            <param name="plan_dist" value="12.0" />
-            <param name="max_iter" value="100" />
-            <param name="max_angle_change" value="0.5" />
-            <param name="safety_dist" value="0.5" />
-            <param name="track_width" value="3" />
-            <param name="max_track_width" value="4" />
-            <param name="search_rad" value="None" />
-            <param name="iter_threshold" value="560" />
-            <param name="angle_inc" value="0.2" />
-            <param name="angle_fac" value="1.5" />
-            
-            <remap from="/input/local_map" to="/ugr/car/observations/fastslam"/>
-            <remap from="/output/path" to="/pathplanning/path"/>
-            <remap from="/output/path_stamped" to="/pathplanning/path_stamped"/>
-
-            <param name="debug_visualisation" value="false" />
-            <param name="vis_namespace" value="pathplanning_vis" />
-            <param name="vis_lifetime" value="0.2" />
-            <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
-            <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
-            <remap from="/output/debug/all_poses" to="/pathplanning/debug/all_poses"/>
-        </node>
-    </group>
 </launch>
