@@ -766,23 +766,23 @@ class MapWidget(QtW.QFrame):
             if event.key() == QtC.Qt.Key_0:
                 self.pathnr = 0
             elif event.key() == QtC.Qt.Key_1:
-                self.pathnr = 1
+                self.pathnr = 0
             elif event.key() == QtC.Qt.Key_2:
-                self.pathnr = 2
+                self.pathnr = 1
             elif event.key() == QtC.Qt.Key_3:
-                self.pathnr = 3
+                self.pathnr = 2
             elif event.key() == QtC.Qt.Key_4:
-                self.pathnr = 4
+                self.pathnr = 3
             elif event.key() == QtC.Qt.Key_5:
-                self.pathnr = 5
+                self.pathnr = 4
             elif event.key() == QtC.Qt.Key_6:
-                self.pathnr = 6
+                self.pathnr = 5
             elif event.key() == QtC.Qt.Key_7:
-                self.pathnr = 7
+                self.pathnr = 6
             elif event.key() == QtC.Qt.Key_8:
-                self.pathnr = 8
+                self.pathnr = 7
             elif event.key() == QtC.Qt.Key_9:
-                self.pathnr = 9
+                self.pathnr = 8
             elif event.key() == QtC.Qt.Key_Plus:
                 self.pathnr += 1
             elif event.key() == QtC.Qt.Key_Minus:
