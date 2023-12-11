@@ -234,7 +234,7 @@ class MapWidget(QtW.QFrame):
                 self.selected_location = event.pos()
                 self.drag_start_pos = event.pos()
         # Drag the screen
-        elif event.modifiers() & QtC.Qt.ControlModifier:
+        elif event.modifiers() & QtC.Qt.ControlModifier or not self.place_cones:
             self.drag_map = True
             self.drag_start_pos = event.pos()
         elif self.place_cones:
