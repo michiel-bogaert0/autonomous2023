@@ -86,6 +86,7 @@ class MapWidget(QtW.QFrame):
         self.trackbounds_on = False
         self.debug_badPoints = True
         self.debug_centerPoints = True
+        self.buttons.set_buttons()
 
         # currently selected element
         self.selection: Optional[QtC.QPoint] = None
