@@ -35,13 +35,14 @@ class MapWidget(QtW.QFrame):
         self,
         publisher,
         frame,
-        closed=False,
         startpos_x=0,
         startpos_y=0,
         startrot=0,
         yellows=None,
         blues=None,
         oranges=None,
+        closed=False,
+        place_cones=True,
     ):
         super().__init__(None)
         self.initWidget()
@@ -60,6 +61,10 @@ class MapWidget(QtW.QFrame):
         self.nr_paths = 0
         self.all_paths = []
 
+        # markers for centerPoints and badPoints
+        self.centerPoints = []
+        self.badPoints = []
+
         # initialize cone lists
         if yellows is None:
             yellows = []
@@ -76,9 +81,11 @@ class MapWidget(QtW.QFrame):
         self.buttons.select_all_clicked()
 
         self.is_closed = bool(closed)
+        self.place_cones = bool(place_cones)
         self.middelline_on = False
         self.trackbounds_on = False
-        self.place_cones = False
+        self.debug_badPoints = True
+        self.debug_centerPoints = True
 
         # currently selected element
         self.selection: Optional[QtC.QPoint] = None
@@ -136,7 +143,7 @@ class MapWidget(QtW.QFrame):
 
         self.publisher.publish(local)
 
-    def receive_path(self, rel_paths: np.ndarray):
+    def receive_path(self, rel_paths: List[np.ndarray]):
         self.nr_paths = len(rel_paths)
         self.pathnr = min(self.pathnr, self.nr_paths - 1)
         if self.nr_paths == 0:
@@ -148,6 +155,16 @@ class MapWidget(QtW.QFrame):
             for rel_path in rel_paths
         ]
         self.path = self.all_paths[self.pathnr]
+        self.update()
+
+    def receive_centerPoints(self, centerPoints: np.ndarray):
+        self.centerPoints = car_to_real_transform(
+            centerPoints, self.car_pos, self.car_rot
+        )
+        self.update()
+
+    def receive_badPoints(self, badPoints: np.ndarray):
+        self.badPoints = car_to_real_transform(badPoints, self.car_pos, self.car_rot)
         self.update()
 
     def get_selected_element(self, event) -> Optional[QtC.QPoint]:
@@ -195,7 +212,7 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                 elif selected_cone in self.orange_cones:
                     self.orange_cones.remove(selected_cone)
-                self.empty_path()
+                self.empty_pathplanning_input()
                 self.update()
             elif event.modifiers() == QtC.Qt.AltModifier:
                 if selected_cone in self.yellow_cones:
@@ -208,7 +225,7 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                     else:
                         self.selected_blue_cones.append(selected_cone)
-                self.empty_path()
+                self.empty_pathplanning_input()
                 self.update()
 
             # Drag a cone or car_handle
@@ -242,7 +259,7 @@ class MapWidget(QtW.QFrame):
                 self.blue_cones.append(point)
                 self.selected_blue_cones.append(point)
                 # Trigger a repaint of the MapWidget to update the visual points
-            self.empty_path()
+            self.empty_pathplanning_input()
             self.update()
 
     def mouseDoubleClickEvent(self, event):
@@ -259,7 +276,7 @@ class MapWidget(QtW.QFrame):
                     index = self.blue_cones.index(selected_cone)
                     self.blue_cones.insert(index, point)
                     self.selected_blue_cones.append(point)
-                self.empty_path()
+                self.empty_pathplanning_input()
                 self.update()
 
     def mouseMoveEvent(self, event):
@@ -301,7 +318,7 @@ class MapWidget(QtW.QFrame):
         self.update_car()
 
         # the only time you're sure that you don't get a transformation fault in the path
-        self.empty_path()
+        self.empty_pathplanning_input()
         self.update()
 
     # Override the wheelEvent method to handle scrolling events
@@ -321,7 +338,7 @@ class MapWidget(QtW.QFrame):
                 if self.zoom_level > self.MIN_ZOOM:
                     self.zoom_level /= self.ZOOM
                     self.offset = s + r * self.ZOOM
-            self.empty_path()
+            self.empty_pathplanning_input()
             self.update()
 
     def keyPressEvent(self, event: QtG.QKeyEvent):
@@ -361,9 +378,11 @@ class MapWidget(QtW.QFrame):
             self.path = self.all_paths[self.pathnr]
             self.update()
 
-    def empty_path(self):
+    def empty_pathplanning_input(self):
         self.all_paths = []
         self.path = None
+        self.centerPoints = []
+        self.badPoints = []
 
     def update_car(self):
         self.car_rot_handle: QtC.QPointF = self.car_pos + (
@@ -382,9 +401,9 @@ class MapWidget(QtW.QFrame):
             self.middelPoints = make_middelline(self.blue_cones, self.yellow_cones)
             self.middel_bezier = make_bezier(self.middelPoints, self.is_closed)
             self.draw.draw_bezier_line(
-                self.middel_bezier, painter, QtG.QColor(255, 0, 0, 70)
+                self.middel_bezier, painter, QtG.QColor(0, 0, 0, 70)
             )
-            self.draw.draw_points(self.middelPoints, painter, QtG.QColor(255, 0, 0, 70))
+            self.draw.draw_points(self.middelPoints, painter, QtG.QColor(0, 0, 0, 70))
 
         if self.trackbounds_on:
             self.blue_bezier = make_bezier(self.blue_cones, self.is_closed)
@@ -398,6 +417,12 @@ class MapWidget(QtW.QFrame):
             )
 
         self.draw.draw_cones(painter)
+
+        if self.debug_centerPoints:
+            self.draw.draw_points(self.centerPoints, painter, QtG.QColor(255, 215, 0))
+        if self.debug_badPoints:
+            self.draw.draw_points(self.badPoints, painter, QtG.QColor(255, 0, 255))
+
         self.draw.draw_path(painter)
         self.draw.draw_car(painter)
         self.draw.draw_scale(painter)

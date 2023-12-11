@@ -16,37 +16,30 @@ class Buttons:
 
         # Create a QPushButton and add it to the layout
         loopButton = QtW.QPushButton("close/unclose loop", self.widget)
-        loopButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            loopButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushButton and add it to the layout
+        loopButton.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(loopButton)
         middellineButton = QtW.QPushButton("show/hide middelline", self.widget)
-        middellineButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            middellineButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushButton and add it to the layout
-        selectAllButton = QtW.QPushButton("select all cones", self.widget)
-        selectAllButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            selectAllButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushButton and add it to the layout
-        deselectAllButton = QtW.QPushButton("deselect all cones", self.widget)
-        deselectAllButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            deselectAllButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushbutton and add it to the layout
+        middellineButton.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(middellineButton)
         trackboundsButton = QtW.QPushButton("show/hide trackbounds", self.widget)
-        trackboundsButton.setFixedSize(150, 30)  # Set the size of the button
-        layout.addWidget(
-            trackboundsButton
-        )  # Align the button to the right and top of the layout
-        # Create a QPushbutton and add it to the layout
+        trackboundsButton.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(trackboundsButton)
+        debugCenterPoints = QtW.QPushButton(
+            "enable/disable debug center points", self.widget
+        )
+        debugCenterPoints.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(debugCenterPoints)
+        debugBadPoints = QtW.QPushButton("enable/disable debug bad points", self.widget)
+        debugBadPoints.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(debugBadPoints)
+        selectAllButton = QtW.QPushButton("select all cones", self.widget)
+        selectAllButton.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(selectAllButton)
+        deselectAllButton = QtW.QPushButton("deselect all cones", self.widget)
+        deselectAllButton.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(deselectAllButton)
         placeConesButton = QtW.QPushButton("enable/disable placing cones", self.widget)
-        placeConesButton.setFixedSize(150, 30)  # Set the size of the button
+        placeConesButton.setFixedSize(250, 30)  # Set the size of the button
         layout.addWidget(
             placeConesButton
         )  # Align the button to the right and top of the layout
@@ -58,40 +51,44 @@ class Buttons:
         deselectAllButton.clicked.connect(self.deselect_all_clicked)
         trackboundsButton.clicked.connect(self.trackbounds_clicked)
         placeConesButton.clicked.connect(self.place_cones_clicked)
+        debugCenterPoints.clicked.connect(self.debug_center_points_clicked)
+        debugBadPoints.clicked.connect(self.debug_bad_points_clicked)
 
     def close_loop_clicked(self):
-        # This method will be called when the button is clicked
         self.widget.is_closed = not self.widget.is_closed
         self.widget.update()
 
     def middelline_clicked(self):
-        # This method will be called when the button is clicked
         self.widget.middelline_on = not self.widget.middelline_on
         self.widget.update()
 
     def trackbounds_clicked(self):
-        # This method will be called when the button is clicked
         self.widget.trackbounds_on = not self.widget.trackbounds_on
         self.widget.update()
 
     def select_all_clicked(self):
-        # This method will be called when the button is clicked
         self.widget.selected_blue_cones = []
         self.widget.selected_yellow_cones = []
         for cone in self.widget.yellow_cones:
             self.widget.selected_yellow_cones.append(cone)
         for cone in self.widget.blue_cones:
             self.widget.selected_blue_cones.append(cone)
-        self.widget.empty_path()
+        self.widget.empty_pathplanning_input()
         self.widget.update()
 
     def deselect_all_clicked(self):
-        # This method will be called when the button is clicked
         self.widget.selected_blue_cones = []
         self.widget.selected_yellow_cones = []
-        self.widget.empty_path()
+        self.widget.empty_pathplanning_input()
         self.widget.update()
 
     def place_cones_clicked(self):
-        # This method will be called when the button is clicked
         self.widget.place_cones = not self.widget.place_cones
+
+    def debug_center_points_clicked(self):
+        self.widget.debug_centerPoints = not self.widget.debug_centerPoints
+        self.widget.update()
+
+    def debug_bad_points_clicked(self):
+        self.widget.debug_badPoints = not self.widget.debug_badPoints
+        self.widget.update()

@@ -10,6 +10,7 @@ from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, PathArray
 from visualise_pathplanning import MapWidget
+from visualization_msgs.msg import MarkerArray
 
 
 class Visualiser:
@@ -22,8 +23,12 @@ class Visualiser:
         )
 
         # Handler voor path_received subscription
-        self.subscriber = rospy.Subscriber(
+        self.path_subscriber = rospy.Subscriber(
             "/input/debug/all_poses", PathArray, self.handle_path_received
+        )
+
+        self.points_subscriber = rospy.Subscriber(
+            "/input/debug/markers", MarkerArray, self.handle_markers_received
         )
 
         self.frame = rospy.get_param("~frame", "ugr/car_base_link")
@@ -33,10 +38,10 @@ class Visualiser:
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
             # If a track file is specified
-            self.widget = MainWindow(self.publisher, self.frame, self.track_file)
+            self.window = MainWindow(self.publisher, self.frame, self.track_file)
         else:
-            self.widget = MainWindow(self.publisher, self.frame)
-        self.widget.show()
+            self.window = MainWindow(self.publisher, self.frame)
+        self.window.show()
         sys.exit(app.exec_())
 
     def handle_path_received(self, paths: PathArray):
@@ -51,7 +56,27 @@ class Visualiser:
             all_paths.append(
                 np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
             )
-        self.widget.map_widget.receive_path(all_paths)
+        self.window.map_widget.receive_path(all_paths)
+
+    def handle_markers_received(self, markers: MarkerArray):
+        relCenterPoints = np.array(
+            [
+                [marker.pose.position.x, marker.pose.position.y]
+                for marker in markers.markers
+                if marker.ns == "pathplanning_vis/center_points"
+            ]
+        )
+        relBadPoints = np.array(
+            [
+                [marker.pose.position.x, marker.pose.position.y]
+                for marker in markers.markers
+                if marker.ns == "pathplanning_vis/bad_points"
+            ]
+        )
+        if len(relCenterPoints) > 0:
+            self.window.map_widget.receive_centerPoints(relCenterPoints)
+        if len(relBadPoints) > 0:
+            self.window.map_widget.receive_badPoints(relBadPoints)
 
 
 class MainWindow(QtW.QMainWindow):
@@ -108,10 +133,11 @@ class MainWindow(QtW.QMainWindow):
                         for pose in dictio["observations"]
                         if pose["observation"]["observation_class"] == 2
                     ]
-                    is_closed = True
                     startpos_x = 0
                     startpos_y = 0
                     startrot = 0
+                    is_closed = True
+                    place_cones = False
                 else:
                     raise ValueError(
                         "Invalid file format. Only JSON and YAML files are supported."
@@ -120,13 +146,14 @@ class MainWindow(QtW.QMainWindow):
             self.map_widget = MapWidget(
                 publisher,
                 frame,
-                is_closed,
                 startpos_x,
                 startpos_y,
                 startrot,
                 yellows,
                 blues,
                 oranges,
+                is_closed,
+                place_cones,
             )
         else:
             # Create a new instance of MapWidget
