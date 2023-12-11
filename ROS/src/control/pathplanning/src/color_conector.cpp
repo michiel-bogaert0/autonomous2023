@@ -9,7 +9,7 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
                                 const std_msgs::Header &header) {
 
   // maximum distance between two cones
-  double max_dist = 5;
+  double max_dist = 5 * 5;
 
   std::vector<Node *> blue_line;
   std::vector<Node *> yellow_line;
@@ -36,7 +36,7 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
   // create blue line
   blue_line.push_back(root_node);
   // get closest blue cone to the car
-  for (int i = 0; i < 3; i++) {
+  while (true) {
     Node *next_cone = get_closest_node(blue_cones, blue_line, max_dist);
     if (next_cone == nullptr) {
       break;
@@ -47,7 +47,7 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
   // create yellow line
   yellow_line.push_back(root_node);
   // get closest yellow cone to the car
-  for (int i = 0; i < 3; i++) {
+  while (true) {
     Node *next_cone = get_closest_node(yellow_cones, yellow_line, max_dist);
     if (next_cone == nullptr) {
       break;
@@ -65,12 +65,19 @@ ColorConnector::get_closest_node(const std::vector<std::vector<double>> &cones,
   Node *closest_node = nullptr;
   double closest_dist = 1000000;
   for (const auto &cone : cones) {
-    double dist =
-        distance_squared(line.back()->x, line.back()->y, cone[0], cone[1]);
-    if (dist < closest_dist && dist < max_dist) {
-      closest_dist = dist;
-      closest_node = new Node(cone[0], cone[1], 0, line.back(),
-                              std::vector<Node *>(), 0, 0);
+
+    bool isInLine =
+        std::any_of(line.begin(), line.end(), [&cone](Node *node) -> bool {
+          return node->x == cone[0] && node->y == cone[1];
+        });
+    if (!isInLine) {
+      double dist =
+          distance_squared(line.back()->x, line.back()->y, cone[0], cone[1]);
+      if (dist < closest_dist && dist < max_dist) {
+        closest_dist = dist;
+        closest_node = new Node(cone[0], cone[1], 0, line.back(),
+                                std::vector<Node *>(), 0, 0);
+      }
     }
   }
   return closest_node;
