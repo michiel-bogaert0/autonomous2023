@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import yaml
-from bezier import BezierPoint, get_bezier_curve_iterator, make_bezier, make_middelline
+from bezier import make_bezier, make_middelline
 from buttons import Buttons
 from draw import Draw
 from PyQt5 import QtCore as QtC
@@ -25,16 +25,10 @@ class MapWidget(QtW.QFrame):
     MAX_ZOOM = 1000
     MIN_ZOOM = 10
     INIT_ZOOM = 50
-    CAR_POINT_SIZE = 0.5
-    CAR_HANDLE_SIZE = 0.15
+    CAR_POINT_SIZE = 0.8
+    CAR_HANDLE_SIZE = 0.5
     CONE_SIZE = 0.4
     LAYOUT_TYPE = "yaml"
-
-    RASTER_WIDTH = 3
-
-    STEP = 1
-    BEZIERPOINT_SIZE = 0.05
-    BEZIER_CONTROL = 0.35  # ziet er redelijk smooth uit zo
 
     def __init__(
         self,
@@ -160,13 +154,13 @@ class MapWidget(QtW.QFrame):
 
         if (
             dist(press_location, self.coordinateToScreen(self.car_rot_handle))
-            < self.CAR_HANDLE_SIZE * self.zoom_level
+            < self.CAR_HANDLE_SIZE / 2 * self.zoom_level
         ):
             return self.car_rot_handle
 
         if (
             dist(press_location, self.coordinateToScreen(self.car_pos))
-            < self.CAR_POINT_SIZE * self.zoom_level
+            < self.CAR_POINT_SIZE / 2 * self.zoom_level
         ):
             return self.car_pos
 
@@ -177,7 +171,7 @@ class MapWidget(QtW.QFrame):
 
             if (
                 dist(press_location, control_point_canvas)
-                < self.CONE_SIZE * self.zoom_level
+                < self.CONE_SIZE / 2 * self.zoom_level
             ):
                 return selectable
 
@@ -317,133 +311,33 @@ class MapWidget(QtW.QFrame):
 
         painter = QtG.QPainter(self)
         self.draw.draw_grid(painter)
-        self.draw.draw_cones(painter)
 
         if self.middelline_on:
             self.middelPoints = make_middelline(self.blue_cones, self.yellow_cones)
             self.middel_bezier = make_bezier(self.middelPoints, self.is_closed)
-            for _index, cone in enumerate(self.middelPoints):
-                pen = QtG.QPen(QtC.Qt.red, self.BEZIERPOINT_SIZE * self.zoom_level)
-                painter.setPen(pen)
-                painter.setBrush(QtG.QBrush())
-                screen_pos = self.coordinateToScreen(cone)
-                diameter = self.BEZIERPOINT_SIZE * self.zoom_level
-                circle_rect = QtC.QRectF(
-                    screen_pos.x() - diameter / 2,
-                    screen_pos.y() - diameter / 2,
-                    diameter,
-                    diameter,
-                )
-                painter.drawEllipse(circle_rect)
-
-            self.paint_bezier_path(self.middel_bezier, painter)
+            self.draw.draw_bezier_line(
+                self.middel_bezier, painter, QtG.QColor(255, 0, 0, 70)
+            )
+            self.draw.draw_points(self.middelPoints, painter, QtG.QColor(255, 0, 0, 70))
 
         if self.trackbounds_on:
             self.blue_bezier = make_bezier(self.blue_cones, self.is_closed)
-            self.paint_bezier_path(self.blue_bezier, painter, color=QtC.Qt.blue)
+            self.draw.draw_bezier_line(
+                self.blue_bezier, painter, QtG.QColor(QtC.Qt.blue)
+            )
 
             self.yellow_bezier = make_bezier(self.yellow_cones, self.is_closed)
-            self.paint_bezier_path(self.yellow_bezier, painter, color=QtC.Qt.yellow)
+            self.draw.draw_bezier_line(
+                self.yellow_bezier, painter, QtG.QColor(QtC.Qt.yellow)
+            )
 
-        self.draw_path(painter)
-
-        # Draw the car
-        pen = QtG.QPen(
-            QtC.Qt.green,
-            self.CAR_POINT_SIZE / 2 * self.zoom_level,
-        )
-        painter.setPen(pen)
-        painter.drawEllipse(
-            self.coordinateToScreen(self.car_pos),
-            self.CAR_POINT_SIZE / 2 * self.zoom_level,
-            self.CAR_POINT_SIZE / 2 * self.zoom_level,
-        )
-        pen = QtG.QPen(QtC.Qt.red, self.CAR_HANDLE_SIZE * self.zoom_level)
-        painter.setPen(pen)
-        painter.drawEllipse(
-            self.coordinateToScreen(
-                self.car_pos
-                + (self.CAR_POINT_SIZE / 2)
-                * QtC.QPointF(math.cos(self.car_rot), math.sin(self.car_rot))
-            ),
-            self.CAR_HANDLE_SIZE * self.zoom_level,
-            self.CAR_HANDLE_SIZE * self.zoom_level,
-        )
-
-        # schaal meedelen
-        font = QtG.QFont("Serif", 12)
-        painter.setFont(font)
-        painter.setPen(QtC.Qt.black)
-        text = "Raster breedte:   " + str(self.RASTER_WIDTH) + " meter"
-        x = 20
-        y = 30
-        painter.drawText(x, y, text)
-
-        # show path number
-        font = QtG.QFont("Serif", 20)
-        painter.setFont(font)
-        fm = QtG.QFontMetrics(font)
-        painter.setPen(QtC.Qt.black)
-        text = f"Path {self.pathnr + 1} of {self.nr_paths}"
-        text_width = fm.width(text)
-        x = self.width() // 2 - text_width // 2
-        y = 40
-        painter.drawText(x, y, text)
+        self.draw.draw_cones(painter)
+        self.draw.draw_path(painter)
+        self.draw.draw_car(painter)
+        self.draw.draw_scale(painter)
+        self.draw.draw_pathnr(painter)
 
         painter.end()
-
-    def draw_path(self, painter):
-        if self.path is not None and len(self.path) > 0:
-            for index, pathPoint in enumerate(self.path):
-                screen_pos = self.coordinateToScreen(pathPoint)
-                pen = QtG.QPen(QtC.Qt.green, self.CONE_SIZE * self.zoom_level)
-                pen.setWidthF(3.0)
-                painter.setPen(pen)
-                if index == 0:
-                    start = self.coordinateToScreen(self.car_pos)
-                else:
-                    start = self.coordinateToScreen(self.path[index - 1])
-                end = screen_pos
-                painter.drawLine(start, end)
-
-                diameter = self.CONE_SIZE * self.zoom_level / 7
-                circle_rect = QtC.QRectF(
-                    screen_pos.x() - diameter / 2,
-                    screen_pos.y() - diameter / 2,
-                    diameter,
-                    diameter,
-                )
-                pen = QtG.QPen(
-                    QtC.Qt.red,
-                    self.CONE_SIZE * self.zoom_level / 10,
-                )
-                brush = QtG.QBrush(QtC.Qt.red)
-                painter.setPen(pen)
-                painter.setBrush(brush)
-                painter.drawEllipse(circle_rect)
-
-    def paint_bezier_path(
-        self, bezierPoints: List[BezierPoint], painter, color=QtC.Qt.red
-    ):
-        if bezierPoints != []:
-            pen = QtG.QPen(color)
-            pen.setWidthF(2.0)
-            painter.setPen(pen)
-
-            path = QtG.QPainterPath()
-            path.moveTo(self.coordinateToScreen(bezierPoints[0].m))
-
-            for current_point, next_point in get_bezier_curve_iterator(
-                bezierPoints, self.is_closed
-            ):
-                path.cubicTo(
-                    self.coordinateToScreen(current_point.c2),
-                    self.coordinateToScreen(next_point.c1),
-                    self.coordinateToScreen(next_point.m),
-                )
-
-                painter.drawPath(path)
-        return
 
     # Override the wheelEvent method to handle scrolling events
     def wheelEvent(self, event):
