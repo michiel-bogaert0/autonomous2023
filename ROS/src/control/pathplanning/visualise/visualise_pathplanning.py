@@ -1,13 +1,12 @@
-import copy
 import datetime
 import json
 import math
 import pathlib
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import yaml
-from bezierPoint import BezierPoint
+from bezier import BezierPoint, get_bezier_curve_iterator, make_bezier, make_middelline
 from buttons import Buttons
 from draw import Draw
 from PyQt5 import QtCore as QtC
@@ -106,8 +105,10 @@ class MapWidget(QtW.QFrame):
         ) * QtC.QPointF(math.cos(self.car_rot), math.sin(self.car_rot))
 
         # initialize list of bezier points wich represent the middle of the track
-        self.bezierPoints = []
-        self.bezier = []
+        self.middelPoints = []
+        self.middel_bezier = []
+        self.blue_bezier = []
+        self.yellow_bezier = []
 
     def publish_local_map(self):
         """
@@ -319,10 +320,12 @@ class MapWidget(QtW.QFrame):
         self.draw.draw_cones(painter)
 
         if self.middelline_on:
-            self.make_bezier()
-            for _index, cone in enumerate(self.bezierPoints):
+            self.middelPoints = make_middelline(self.blue_cones, self.yellow_cones)
+            self.middel_bezier = make_bezier(self.middelPoints, self.is_closed)
+            for _index, cone in enumerate(self.middelPoints):
                 pen = QtG.QPen(QtC.Qt.red, self.BEZIERPOINT_SIZE * self.zoom_level)
                 painter.setPen(pen)
+                painter.setBrush(QtG.QBrush())
                 screen_pos = self.coordinateToScreen(cone)
                 diameter = self.BEZIERPOINT_SIZE * self.zoom_level
                 circle_rect = QtC.QRectF(
@@ -333,14 +336,14 @@ class MapWidget(QtW.QFrame):
                 )
                 painter.drawEllipse(circle_rect)
 
-            self.paint_bezier_path(painter)
+            self.paint_bezier_path(self.middel_bezier, painter)
 
         if self.trackbounds_on:
-            self.make_bezier(bounds="yellow")
-            self.paint_bezier_path(painter, color=QtC.Qt.yellow)
+            self.blue_bezier = make_bezier(self.blue_cones, self.is_closed)
+            self.paint_bezier_path(self.blue_bezier, painter, color=QtC.Qt.blue)
 
-            self.make_bezier(bounds="blue")
-            self.paint_bezier_path(painter, color=QtC.Qt.blue)
+            self.yellow_bezier = make_bezier(self.yellow_cones, self.is_closed)
+            self.paint_bezier_path(self.yellow_bezier, painter, color=QtC.Qt.yellow)
 
         self.draw_path(painter)
 
@@ -419,121 +422,20 @@ class MapWidget(QtW.QFrame):
                 painter.setBrush(brush)
                 painter.drawEllipse(circle_rect)
 
-    def make_bezier(self, bounds=None):
-        self.bezierPoints = []
-        c = 0
-
-        if bounds is None:
-            for i, yellow_cone in enumerate(self.yellow_cones):
-                min_distance = math.inf
-                nearest_blue = None
-                removed = 0
-                for j, blue_cone in enumerate(self.blue_cones[c:]):
-                    distance = math.sqrt(
-                        (blue_cone.x() - yellow_cone.x()) ** 2
-                        + (blue_cone.y() - yellow_cone.y()) ** 2
-                    )
-                    if distance < min_distance:
-                        min_distance = distance
-                        for index, el in enumerate(
-                            self.blue_cones[c + removed : c + j]
-                        ):
-                            if index + removed > 0 or i == 0:
-                                mindis = math.inf
-                                closest = None
-                                for yc in self.yellow_cones[: i + 1]:
-                                    dis = math.sqrt(
-                                        (el.x() - yc.x()) ** 2 + (el.y() - yc.y()) ** 2
-                                    )
-                                    if dis < mindis:
-                                        mindis = dis
-                                        closest = yc
-                                self.bezierPoints.append((el + closest) / 2)
-                        removed = j
-                        nearest_blue = blue_cone
-                if nearest_blue:
-                    self.bezierPoints.append((yellow_cone + nearest_blue) / 2)
-
-                c += removed
-
-            for index, el in enumerate(self.blue_cones[c:]):
-                if index > 0:  # or i == 0
-                    mindis = math.inf
-                    closest = None
-                    for yc in self.yellow_cones:
-                        dis = math.sqrt((el.x() - yc.x()) ** 2 + (el.y() - yc.y()) ** 2)
-                        if dis < mindis:
-                            mindis = dis
-                            closest = yc
-                    if closest is not None:
-                        self.bezierPoints.append((el + closest) / 2)
-
-        elif bounds == "yellow":
-            for yellow_cone in self.yellow_cones:
-                self.bezierPoints.append(yellow_cone)
-
-        elif bounds == "blue":
-            for blue_cone in self.blue_cones:
-                self.bezierPoints.append(blue_cone)
-
-        self.make_controlPoints()
-        return
-
-    def make_controlPoints(self):
-        self.bezier = []
-        if len(self.bezierPoints) > 2:
-            for i, m in enumerate(self.bezierPoints[:: self.STEP]):
-                if self.STEP * i == len(self.bezierPoints) - 1:
-                    next = self.bezierPoints[0] * self.is_closed + m * (
-                        not self.is_closed
-                    )
-                else:
-                    next = self.bezierPoints[self.STEP * i + 1]
-
-                if i == 0:
-                    prev = self.bezierPoints[-1] * self.is_closed + m * (
-                        not self.is_closed
-                    )
-                else:
-                    prev = self.bezierPoints[self.STEP * i - 1]
-
-                rico = next - prev
-                ricoN = rico / math.sqrt(rico.x() ** 2 + rico.y() ** 2)
-
-                l2 = next - m
-                dist2 = math.sqrt(l2.x() ** 2 + l2.y() ** 2)
-
-                l1 = m - prev
-                dist1 = math.sqrt(l1.x() ** 2 + l1.y() ** 2)
-
-                c2 = m + ricoN * self.BEZIER_CONTROL * dist2
-                c1 = m - ricoN * self.BEZIER_CONTROL * dist1
-
-                self.bezier.append(BezierPoint(c1, m, c2))
-        return
-
-    def get_bezier_curve_iterator(self) -> Iterator[Tuple[BezierPoint, BezierPoint]]:
-        if len(self.bezier) == 0:
-            return iter(())
-        shifted_by_one = copy.deepcopy(self.bezier)
-        first_item = shifted_by_one.pop(0)
-        shifted_by_one += [first_item]
-
-        if self.is_closed:
-            return zip(self.bezier, shifted_by_one)
-        else:
-            return zip(self.bezier[:-1], shifted_by_one[:-1])
-
-    def paint_bezier_path(self, painter, color=QtC.Qt.red):
-        if self.bezier != []:
+    def paint_bezier_path(
+        self, bezierPoints: List[BezierPoint], painter, color=QtC.Qt.red
+    ):
+        if bezierPoints != []:
             pen = QtG.QPen(color)
             pen.setWidthF(2.0)
             painter.setPen(pen)
 
             path = QtG.QPainterPath()
-            path.moveTo(self.coordinateToScreen(self.bezier[0].m))
+            path.moveTo(self.coordinateToScreen(bezierPoints[0].m))
 
-            for current_point, next_point in self.get_bezier_curve_iterator():
+            for current_point, next_point in get_bezier_curve_iterator(
+                bezierPoints, self.is_closed
+            ):
                 path.cubicTo(
                     self.coordinateToScreen(current_point.c2),
                     self.coordinateToScreen(next_point.c1),
@@ -691,7 +593,7 @@ class MapWidget(QtW.QFrame):
             },
             "middle_line": [
                 bezier_point.to_dict(offset=min_point * -1)
-                for bezier_point in self.bezier
+                for bezier_point in self.middel_bezier
             ],
             "cones": {
                 "yellow": cone_list_to_json_list(
