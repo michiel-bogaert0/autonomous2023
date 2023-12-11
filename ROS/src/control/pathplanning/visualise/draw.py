@@ -7,7 +7,7 @@ from PyQt5 import QtGui as QtG
 
 
 class Draw:
-    POINT_SIZE = 0.1
+    POINT_SIZE = 0.2
     RASTER_WIDTH = 3
 
     def __init__(self, widget):
