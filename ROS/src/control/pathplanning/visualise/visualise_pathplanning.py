@@ -9,6 +9,7 @@ import numpy as np
 import yaml
 from bezierPoint import BezierPoint
 from buttons import Buttons
+from draw import Draw
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtGui as QtG
 from PyQt5 import QtWidgets as QtW
@@ -22,10 +23,9 @@ from utils import car_to_real_transform, dist, get_local_poses
 class MapWidget(QtW.QFrame):
     # Constants
     ZOOM = 1.1
-    MAX_ZOOM = 10
-    MIN_ZOOM = 0.1
-    INIT_ZOOM = 0.5
-    INIT_SCALE = 100
+    MAX_ZOOM = 1000
+    MIN_ZOOM = 10
+    INIT_ZOOM = 50
     CAR_POINT_SIZE = 0.5
     CAR_HANDLE_SIZE = 0.15
     CONE_SIZE = 0.2
@@ -34,7 +34,7 @@ class MapWidget(QtW.QFrame):
     RASTER_WIDTH = 3
 
     STEP = 1
-    BEZIERPOINT_SIZE = 5
+    BEZIERPOINT_SIZE = 0.05
     BEZIER_CONTROL = 0.35  # ziet er redelijk smooth uit zo
 
     def __init__(
@@ -53,6 +53,7 @@ class MapWidget(QtW.QFrame):
         self.initWidget()
 
         self.buttons = Buttons(self)
+        self.draw = Draw(self)
 
         # publisher used to publish observation messages
         self.publisher = publisher
@@ -158,13 +159,13 @@ class MapWidget(QtW.QFrame):
 
         if (
             dist(press_location, self.coordinateToScreen(self.car_rot_handle))
-            < self.CAR_HANDLE_SIZE * self.INIT_SCALE * self.zoom_level
+            < self.CAR_HANDLE_SIZE * self.zoom_level
         ):
             return self.car_rot_handle
 
         if (
             dist(press_location, self.coordinateToScreen(self.car_pos))
-            < self.CAR_POINT_SIZE * self.INIT_SCALE * self.zoom_level
+            < self.CAR_POINT_SIZE * self.zoom_level
         ):
             return self.car_pos
 
@@ -175,7 +176,7 @@ class MapWidget(QtW.QFrame):
 
             if (
                 dist(press_location, control_point_canvas)
-                < self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
+                < self.CONE_SIZE * self.zoom_level
             ):
                 return selectable
 
@@ -290,7 +291,9 @@ class MapWidget(QtW.QFrame):
                 drag_distance = self.screenToCoordinate(
                     event.pos()
                 ) - self.screenToCoordinate(self.drag_start_pos)
-                self.selection += drag_distance  # QtC.QPointF(drag_distance)/(self.INIT_SCALE * self.zoom_level)
+                self.selection += (
+                    drag_distance  # QtC.QPointF(drag_distance)/(self.zoom_level)
+                )
                 self.drag_start_pos = event.pos()
             self.update()
 
@@ -312,15 +315,15 @@ class MapWidget(QtW.QFrame):
         self.publish_local_map()
 
         painter = QtG.QPainter(self)
-        self.draw_grid(painter)
+        self.draw.draw_grid(painter)
         # Draw a circle at each visual point
         for _index, cone in enumerate(self.yellow_cones):
             color = QtG.QColor(QtC.Qt.yellow)
             color.setAlpha(50)
-            pen = QtG.QPen(color, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level)
+            pen = QtG.QPen(color, self.CONE_SIZE * self.zoom_level)
             painter.setPen(pen)
             screen_pos = self.coordinateToScreen(cone)
-            diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
+            diameter = self.CONE_SIZE * self.zoom_level
             circle_rect = QtC.QRectF(
                 screen_pos.x() - diameter / 2,
                 screen_pos.y() - diameter / 2,
@@ -333,10 +336,10 @@ class MapWidget(QtW.QFrame):
         for _index, cone in enumerate(self.blue_cones):
             color = QtG.QColor(QtC.Qt.blue)
             color.setAlpha(50)
-            pen = QtG.QPen(color, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level)
+            pen = QtG.QPen(color, self.CONE_SIZE * self.zoom_level)
             painter.setPen(pen)
             screen_pos = self.coordinateToScreen(cone)
-            diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
+            diameter = self.CONE_SIZE * self.zoom_level
             circle_rect = QtC.QRectF(
                 screen_pos.x() - diameter / 2,
                 screen_pos.y() - diameter / 2,
@@ -348,10 +351,10 @@ class MapWidget(QtW.QFrame):
         # Draw a circle at each visual point
         for _index, cone in enumerate(self.selected_yellow_cones):
             color = QtG.QColor(QtC.Qt.yellow)
-            pen = QtG.QPen(color, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level)
+            pen = QtG.QPen(color, self.CONE_SIZE * self.zoom_level)
             painter.setPen(pen)
             screen_pos = self.coordinateToScreen(cone)
-            diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
+            diameter = self.CONE_SIZE * self.zoom_level
             circle_rect = QtC.QRectF(
                 screen_pos.x() - diameter / 2,
                 screen_pos.y() - diameter / 2,
@@ -363,10 +366,10 @@ class MapWidget(QtW.QFrame):
         # Draw a circle at each visual point
         for _index, cone in enumerate(self.selected_blue_cones):
             color = QtG.QColor(QtC.Qt.blue)
-            pen = QtG.QPen(color, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level)
+            pen = QtG.QPen(color, self.CONE_SIZE * self.zoom_level)
             painter.setPen(pen)
             screen_pos = self.coordinateToScreen(cone)
-            diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
+            diameter = self.CONE_SIZE * self.zoom_level
             circle_rect = QtC.QRectF(
                 screen_pos.x() - diameter / 2,
                 screen_pos.y() - diameter / 2,
@@ -378,13 +381,11 @@ class MapWidget(QtW.QFrame):
         # Give index to visual point
         for index, cone in enumerate(self.yellow_cones):
             screen_pos = self.coordinateToScreen(cone)
-            pen = QtG.QPen(
-                QtC.Qt.black, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
-            )
+            pen = QtG.QPen(QtC.Qt.black, self.CONE_SIZE * self.zoom_level)
             painter.setPen(pen)
             font = QtG.QFont(
                 "Arial",
-                int(0.75 * self.CONE_SIZE * self.INIT_SCALE * self.zoom_level),
+                int(0.75 * self.CONE_SIZE * self.zoom_level),
             )
             painter.setFont(font)
             text_rect = QtC.QRectF(
@@ -398,13 +399,11 @@ class MapWidget(QtW.QFrame):
         # Give index to visual point
         for index, cone in enumerate(self.blue_cones):
             screen_pos = self.coordinateToScreen(cone)
-            pen = QtG.QPen(
-                QtC.Qt.white, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
-            )
+            pen = QtG.QPen(QtC.Qt.white, self.CONE_SIZE * self.zoom_level)
             painter.setPen(pen)
             font = QtG.QFont(
                 "Arial",
-                int(0.75 * self.CONE_SIZE * self.INIT_SCALE * self.zoom_level),
+                int(0.75 * self.CONE_SIZE * self.zoom_level),
             )
             painter.setFont(font)
             text_rect = QtC.QRectF(
@@ -418,11 +417,11 @@ class MapWidget(QtW.QFrame):
         for index, cone in enumerate(self.orange_cones):
             pen = QtG.QPen(
                 QtG.QColor(255, 165, 0),
-                self.CONE_SIZE * self.INIT_SCALE * self.zoom_level,
+                self.CONE_SIZE * self.zoom_level,
             )
             painter.setPen(pen)
             screen_pos = self.coordinateToScreen(cone)
-            diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
+            diameter = self.CONE_SIZE * self.zoom_level
             circle_rect = QtC.QRectF(
                 screen_pos.x() - diameter / 2,
                 screen_pos.y() - diameter / 2,
@@ -431,13 +430,11 @@ class MapWidget(QtW.QFrame):
             )
             painter.drawEllipse(circle_rect)
 
-            pen = QtG.QPen(
-                QtC.Qt.white, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
-            )
+            pen = QtG.QPen(QtC.Qt.white, self.CONE_SIZE * self.zoom_level)
             painter.setPen(pen)
             font = QtG.QFont(
                 "Arial",
-                int(0.75 * self.CONE_SIZE * self.INIT_SCALE * self.zoom_level),
+                int(0.75 * self.CONE_SIZE * self.zoom_level),
             )
             painter.setFont(font)
             text_rect = QtC.QRectF(
@@ -477,17 +474,15 @@ class MapWidget(QtW.QFrame):
         # Draw the car
         pen = QtG.QPen(
             QtC.Qt.green,
-            self.CAR_POINT_SIZE / 2 * self.INIT_SCALE * self.zoom_level,
+            self.CAR_POINT_SIZE / 2 * self.zoom_level,
         )
         painter.setPen(pen)
         painter.drawEllipse(
             self.coordinateToScreen(self.car_pos),
-            self.CAR_POINT_SIZE / 2 * self.INIT_SCALE * self.zoom_level,
-            self.CAR_POINT_SIZE / 2 * self.INIT_SCALE * self.zoom_level,
+            self.CAR_POINT_SIZE / 2 * self.zoom_level,
+            self.CAR_POINT_SIZE / 2 * self.zoom_level,
         )
-        pen = QtG.QPen(
-            QtC.Qt.red, self.CAR_HANDLE_SIZE * self.INIT_SCALE * self.zoom_level
-        )
+        pen = QtG.QPen(QtC.Qt.red, self.CAR_HANDLE_SIZE * self.zoom_level)
         painter.setPen(pen)
         painter.drawEllipse(
             self.coordinateToScreen(
@@ -495,8 +490,8 @@ class MapWidget(QtW.QFrame):
                 + (self.CAR_POINT_SIZE / 2)
                 * QtC.QPointF(math.cos(self.car_rot), math.sin(self.car_rot))
             ),
-            self.CAR_HANDLE_SIZE * self.INIT_SCALE * self.zoom_level,
-            self.CAR_HANDLE_SIZE * self.INIT_SCALE * self.zoom_level,
+            self.CAR_HANDLE_SIZE * self.zoom_level,
+            self.CAR_HANDLE_SIZE * self.zoom_level,
         )
 
         # schaal meedelen
@@ -525,9 +520,7 @@ class MapWidget(QtW.QFrame):
         if self.path is not None and len(self.path) > 0:
             for index, pathPoint in enumerate(self.path):
                 screen_pos = self.coordinateToScreen(pathPoint)
-                pen = QtG.QPen(
-                    QtC.Qt.green, self.CONE_SIZE * self.INIT_SCALE * self.zoom_level
-                )
+                pen = QtG.QPen(QtC.Qt.green, self.CONE_SIZE * self.zoom_level)
                 pen.setWidthF(3.0)
                 painter.setPen(pen)
                 if index == 0:
@@ -537,7 +530,7 @@ class MapWidget(QtW.QFrame):
                 end = screen_pos
                 painter.drawLine(start, end)
 
-                diameter = self.CONE_SIZE * self.INIT_SCALE * self.zoom_level / 7
+                diameter = self.CONE_SIZE * self.zoom_level / 7
                 circle_rect = QtC.QRectF(
                     screen_pos.x() - diameter / 2,
                     screen_pos.y() - diameter / 2,
@@ -546,7 +539,7 @@ class MapWidget(QtW.QFrame):
                 )
                 pen = QtG.QPen(
                     QtC.Qt.red,
-                    self.CONE_SIZE * self.INIT_SCALE * self.zoom_level / 10,
+                    self.CONE_SIZE * self.zoom_level / 10,
                 )
                 brush = QtG.QBrush(QtC.Qt.red)
                 painter.setPen(pen)
@@ -677,45 +670,6 @@ class MapWidget(QtW.QFrame):
                 painter.drawPath(path)
         return
 
-    def draw_grid(self, painter):
-        painter.setPen(QtG.QPen(QtG.QColor(0, 0, 0)))
-        vertical_line_count = int(
-            self.width() / self.INIT_SCALE / self.zoom_level / self.RASTER_WIDTH + 1
-        )
-        horizontal_line_count = int(
-            self.height() / self.INIT_SCALE / self.zoom_level / self.RASTER_WIDTH + 1
-        )
-
-        px_width = self.INIT_SCALE * self.zoom_level * self.RASTER_WIDTH
-
-        painter.drawLine(
-            QtC.QPointF(self.width() // 2, 0),
-            QtC.QPointF(self.width() // 2, self.height()),
-        )
-        for line_index in range((vertical_line_count + 1) // 2):
-            painter.drawLine(
-                QtC.QPointF(self.width() // 2 + line_index * px_width, 0),
-                QtC.QPointF(self.width() // 2 + line_index * px_width, self.height()),
-            )
-            painter.drawLine(
-                QtC.QPointF(self.width() // 2 - line_index * px_width, 0),
-                QtC.QPointF(self.width() // 2 - line_index * px_width, self.height()),
-            )
-
-        painter.drawLine(
-            QtC.QPointF(0, self.height() // 2),
-            QtC.QPointF(self.width(), self.height() // 2),
-        )
-        for line_index in range((horizontal_line_count + 1) // 2):
-            painter.drawLine(
-                QtC.QPointF(0, self.height() // 2 + line_index * px_width),
-                QtC.QPointF(self.width(), self.height() // 2 + line_index * px_width),
-            )
-            painter.drawLine(
-                QtC.QPointF(0, self.height() // 2 - line_index * px_width),
-                QtC.QPointF(self.width(), self.height() // 2 - line_index * px_width),
-            )
-
     # Override the wheelEvent method to handle scrolling events
     def wheelEvent(self, event):
         if event.angleDelta().y() != 0:
@@ -739,9 +693,9 @@ class MapWidget(QtW.QFrame):
         # Calculate the screen position of a given coordinate, taking zoom level and scroll position into account
         x = (
             coordinate.x() - self.offset.x()
-        ) * self.INIT_SCALE * self.zoom_level + self.rect().width() / 2
+        ) * self.zoom_level + self.rect().width() / 2
         y = (
-            -(coordinate.y() - self.offset.y()) * self.INIT_SCALE * self.zoom_level
+            -(coordinate.y() - self.offset.y()) * self.zoom_level
             + self.rect().height() / 2
         )
         return QtC.QPoint(int(x), int(y))
@@ -749,11 +703,10 @@ class MapWidget(QtW.QFrame):
     def screenToCoordinate(self, screen_pos):
         # Calculate the coordinate of a given screen position, taking zoom level and scroll position into account
         x = (screen_pos.x() - self.rect().width() / 2) / (
-            self.INIT_SCALE * self.zoom_level
+            self.zoom_level
         ) + self.offset.x()
         y = (
-            -(screen_pos.y() - self.rect().height() / 2)
-            / (self.INIT_SCALE * self.zoom_level)
+            -(screen_pos.y() - self.rect().height() / 2) / (self.zoom_level)
             + self.offset.y()
         )
         return QtC.QPointF(x, y)
