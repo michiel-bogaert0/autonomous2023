@@ -30,6 +30,8 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
       yellow_cones.push_back(cone);
     }
   }
+  // TODO: It might be necessary to also put the orange cones in the lists of
+  // blue and yellow cones, in order to bridge the gap at the finish
 
   // node at position of the car, distance 0, angle 0
   // children NOT IMPLEMENTED
@@ -67,8 +69,8 @@ ColorConnector::get_next_node(const std::vector<std::vector<double>> &cones,
                               const std::vector<Node *> &line, double max_dist,
                               double min_dist = 0,
                               double max_angle_change = M_PI) {
-  // The next improvement will be to try out the different possible cones, and
-  // for example choose the most restricting cone when two cones are near
+  // TODO: The next improvement will be to try out the different possible cones,
+  // and for example choose the most restricting cone when two cones are near
   // eachother, and also take into account the consequence of choosing a cone:
   // bad cones may lead to a dead end.
   Node *best_node = nullptr;
