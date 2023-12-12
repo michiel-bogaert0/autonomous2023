@@ -3,7 +3,7 @@
         <param name="output_frame" value="ugr/car_base_link" />
         <param name="algorithm" value="tri" />
         <param name="max_iter" value="1000" />
-        <param name="triangulation_min_var" value="200" />
+        <param name="triangulation_max_var" value="4" />
         <param name="triangulation_var_threshold" value="1.2" />
         <param name="max_angle_change" value="1.5" />
         <param name="max_path_distance" value="10" />
