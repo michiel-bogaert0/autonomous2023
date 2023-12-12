@@ -26,7 +26,7 @@ public:
 
 private:
   ros::NodeHandle &n_;
-  double triangulation_min_var_;
+  double triangulation_max_var_;
   double triangulation_var_threshold_;
   int max_iter_;
   double max_angle_change_;
