@@ -16,6 +16,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
+#include "managed_node.hpp"
 #include <node_fixture/node_fixture.hpp>
 #include <triangulator.hpp>
 
@@ -82,14 +83,15 @@ private:
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener;
 };
-class Pathplanning {
+class Pathplanning : public node_fixture::ManagedNode {
 
 public:
+  ros::NodeHandle n_;
   explicit Pathplanning(ros::NodeHandle &n);
+  void doConfigure() override;
+  void doActivate() override;
 
 private:
-  ros::NodeHandle n_;
-
   TransformFrames frametf_;
 
   bool debug_visualisation_;
@@ -106,7 +108,6 @@ private:
   std::unique_ptr<node_fixture::DiagnosticPublisher> diagnostics_pub;
 
   Triangulator triangulator_;
-
   void receive_new_map(
       const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr &track);
   void compute(const std::vector<std::vector<double>> &cones,

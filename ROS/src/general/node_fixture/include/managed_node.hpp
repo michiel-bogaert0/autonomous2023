@@ -22,16 +22,17 @@ public:
    * \brief functions that are called during state transitions. See
    * https://design.ros2.org/articles/node_lifecycle.html
    */
-  void doConfigure() {}
-  void doCleanup() {}
-  void doActivate() {}
-  void doDeactivate() {}
-  void doShutdown() {}
+  virtual void doConfigure() {}
+  virtual void doCleanup() {}
+  virtual void doActivate() {}
+  virtual void doDeactivate() {}
+  virtual void doShutdown() {}
 
   /**
    * \brief Returns current state
    */
   ManagedNodeState getState() { return this->state; }
+  bool isActive() { return this->state == Active; }
 
 private:
   /**
