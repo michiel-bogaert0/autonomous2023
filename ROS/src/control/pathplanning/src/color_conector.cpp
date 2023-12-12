@@ -8,8 +8,8 @@ std::pair<std::vector<Node *>, std::vector<Node *>>
 ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
                                 const std_msgs::Header &header) {
 
-  // maximum distance between two cones
-  double max_dist = 5 * 5;
+  // maximum distance between two cones in meter squared
+  double max_dist = pow(6, 2);
 
   std::vector<Node *> blue_line;
   std::vector<Node *> yellow_line;
@@ -37,7 +37,7 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
   blue_line.push_back(root_node);
   // get closest blue cone to the car
   while (true) {
-    Node *next_cone = get_closest_node(blue_cones, blue_line, max_dist);
+    Node *next_cone = get_next_node(blue_cones, blue_line, max_dist);
     if (next_cone == nullptr) {
       break;
     }
@@ -48,7 +48,7 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
   yellow_line.push_back(root_node);
   // get closest yellow cone to the car
   while (true) {
-    Node *next_cone = get_closest_node(yellow_cones, yellow_line, max_dist);
+    Node *next_cone = get_next_node(yellow_cones, yellow_line, max_dist);
     if (next_cone == nullptr) {
       break;
     }
@@ -59,13 +59,14 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
 }
 
 Node *
-ColorConnector::get_closest_node(const std::vector<std::vector<double>> &cones,
-                                 const std::vector<Node *> &line,
-                                 double max_dist) {
-  Node *closest_node = nullptr;
-  double closest_dist = 1000000;
+ColorConnector::get_next_node(const std::vector<std::vector<double>> &cones,
+                              const std::vector<Node *> &line,
+                              double max_dist) {
+  Node *best_node = nullptr;
+  double smallest_angle_change = M_PI;
+  double angle_change;
+  double angle;
   for (const auto &cone : cones) {
-
     bool isInLine =
         std::any_of(line.begin(), line.end(), [&cone](Node *node) -> bool {
           return node->x == cone[0] && node->y == cone[1];
@@ -73,14 +74,18 @@ ColorConnector::get_closest_node(const std::vector<std::vector<double>> &cones,
     if (!isInLine) {
       double dist =
           distance_squared(line.back()->x, line.back()->y, cone[0], cone[1]);
-      if (dist < closest_dist && dist < max_dist) {
-        closest_dist = dist;
-        closest_node = new Node(cone[0], cone[1], 0, line.back(),
-                                std::vector<Node *>(), 0, 0);
+      if (dist < max_dist) {
+        angle = angle_between(line.back()->x, line.back()->y, cone[0], cone[1]);
+        angle_change = angle_difference(angle, line.back()->angle);
+        if (angle_change < smallest_angle_change) {
+          smallest_angle_change = angle_change;
+          best_node = new Node(cone[0], cone[1], dist, line.back(),
+                               std::vector<Node *>(), angle, angle_change);
+        }
       }
     }
   }
-  return closest_node;
+  return best_node;
 }
 
 } // namespace pathplanning

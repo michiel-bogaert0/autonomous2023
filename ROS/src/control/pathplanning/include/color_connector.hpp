@@ -1,10 +1,10 @@
 #ifndef COLOR_CONNECTOR_HPP
 #define COLOR_CONNECTOR_HPP
 
+#include <cmath>
 #include <ros/ros.h>
 #include <std_msgs/Header.h>
 #include <utils.hpp>
-
 namespace pathplanning {
 
 class ColorConnector {
@@ -15,8 +15,8 @@ public:
   std::pair<std::vector<Node *>, std::vector<Node *>>
   get_color_lines(const std::vector<std::vector<double>> &cones,
                   const std_msgs::Header &header);
-  Node *get_closest_node(const std::vector<std::vector<double>> &cones,
-                         const std::vector<Node *> &line, double max_dist);
+  Node *get_next_node(const std::vector<std::vector<double>> &cones,
+                      const std::vector<Node *> &line, double max_dist);
 
 private:
   ros::NodeHandle n_;
