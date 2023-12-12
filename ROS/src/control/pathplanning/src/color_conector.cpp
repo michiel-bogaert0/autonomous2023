@@ -79,8 +79,13 @@ ColorConnector::get_next_node(const std::vector<std::vector<double>> &cones,
         angle_change = angle_difference(angle, line.back()->angle);
         if (angle_change < smallest_angle_change) {
           smallest_angle_change = angle_change;
-          best_node = new Node(cone[0], cone[1], dist, line.back(),
-                               std::vector<Node *>(), angle, angle_change);
+          if (line.size() == 1) {
+            best_node = new Node(cone[0], cone[1], dist, line.back(),
+                                 std::vector<Node *>(), 0, 0);
+          } else {
+            best_node = new Node(cone[0], cone[1], dist, line.back(),
+                                 std::vector<Node *>(), angle, angle_change);
+          }
         }
       }
     }
