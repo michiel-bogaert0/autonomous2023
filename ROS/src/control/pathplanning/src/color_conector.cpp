@@ -10,6 +10,8 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
 
   // maximum distance between two cones in meter squared
   double max_dist = pow(6, 2);
+  double min_dist = pow(1, 2);
+  double max_angle_change = M_PI / 2;
 
   std::vector<Node *> blue_line;
   std::vector<Node *> yellow_line;
@@ -37,7 +39,8 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
   blue_line.push_back(root_node);
   // get closest blue cone to the car
   while (true) {
-    Node *next_cone = get_next_node(blue_cones, blue_line, max_dist);
+    Node *next_cone = get_next_node(blue_cones, blue_line, max_dist, min_dist,
+                                    max_angle_change);
     if (next_cone == nullptr) {
       break;
     }
@@ -48,7 +51,8 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
   yellow_line.push_back(root_node);
   // get closest yellow cone to the car
   while (true) {
-    Node *next_cone = get_next_node(yellow_cones, yellow_line, max_dist);
+    Node *next_cone = get_next_node(yellow_cones, yellow_line, max_dist,
+                                    min_dist, max_angle_change);
     if (next_cone == nullptr) {
       break;
     }
@@ -60,10 +64,15 @@ ColorConnector::get_color_lines(const std::vector<std::vector<double>> &cones,
 
 Node *
 ColorConnector::get_next_node(const std::vector<std::vector<double>> &cones,
-                              const std::vector<Node *> &line,
-                              double max_dist) {
+                              const std::vector<Node *> &line, double max_dist,
+                              double min_dist = 0,
+                              double max_angle_change = M_PI) {
+  // The next improvement will be to try out the different possible cones, and
+  // for example choose the most restricting cone when two cones are near
+  // eachother, and also take into account the consequence of choosing a cone:
+  // bad cones may lead to a dead end.
   Node *best_node = nullptr;
-  double smallest_angle_change = M_PI;
+  double smallest_angle_change = max_angle_change;
   double angle_change;
   double angle;
   for (const auto &cone : cones) {
@@ -74,7 +83,7 @@ ColorConnector::get_next_node(const std::vector<std::vector<double>> &cones,
     if (!isInLine) {
       double dist =
           distance_squared(line.back()->x, line.back()->y, cone[0], cone[1]);
-      if (dist < max_dist) {
+      if (dist < max_dist && dist > min_dist) {
         angle = angle_between(line.back()->x, line.back()->y, cone[0], cone[1]);
         angle_change = angle_difference(angle, line.back()->angle);
         if (angle_change < smallest_angle_change) {

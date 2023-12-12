@@ -16,7 +16,8 @@ public:
   get_color_lines(const std::vector<std::vector<double>> &cones,
                   const std_msgs::Header &header);
   Node *get_next_node(const std::vector<std::vector<double>> &cones,
-                      const std::vector<Node *> &line, double max_dist);
+                      const std::vector<Node *> &line, double max_dist,
+                      double min_dist, double max_angle_change);
 
 private:
   ros::NodeHandle n_;
