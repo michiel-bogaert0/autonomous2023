@@ -6,6 +6,7 @@ import sys
 import numpy as np
 import rospy
 import yaml
+from node_fixture.node_management import configure_node, set_state_active
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, PathArray
@@ -33,7 +34,8 @@ class Visualiser:
 
         self.frame = rospy.get_param("~frame", "ugr/car_base_link")
         self.track_file = rospy.get_param("~layout", "")
-
+        configure_node("pathplanning")
+        set_state_active("pathplanning")
         # Initialize and start Qt application
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
