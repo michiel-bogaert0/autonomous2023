@@ -54,7 +54,9 @@ class MergeNode:
         self.input_sensors = ["os_sensor", "ugr/car_base_link/cam0"]
 
         #   Fusion parameters
-        self.max_fusion_eucl_distance = rospy.get_param("~fusion_eucl_distance", 2.5)
+        self.max_fusion_eucl_distance = float(
+            rospy.get_param("~fusion_eucl_distance", 2.5)
+        )
         self.max_sensor_time_diff = rospy.get_param("~sensor_time_diff_ms", 50)
 
         #   Initialize fusion pipeline
@@ -133,7 +135,7 @@ class MergeNode:
         # Fuse transformed observations
         results = self.fusion_pipeline.fuse_observations(transformed_msgs)
 
-        self.log_plot_info(sensor_msgs, results)
+        self.log_plot_info(transformed_msgs, results)
         # self.publish(results)
         return
 
@@ -146,7 +148,7 @@ class MergeNode:
         try:
             transformed_msgs = []
             tf_source_time = sensor_msgs[
-                0
+                -1
             ].header.stamp  # Time to which observations messages are transformed
 
             for sensor_msg in sensor_msgs:

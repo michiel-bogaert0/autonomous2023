@@ -21,12 +21,16 @@ class NaiveFusion:
         results = ObservationWithCovarianceArrayStamped()
 
         associations = self.kd_tree_merger(tf_sensor_msgs)
+        rospy.loginfo(
+            f"\n\n\n*-*-*-*-*\n\nassociations = {[[[obs.observation.location.x, obs.observation.location.y, obs.observation.location.z] for obs in association] for association in associations]}\n"
+        )
         fusion_observations = []
         for association in associations:
             if len(association) == 1:
                 fusion_observations.append(association[0])
                 continue
             fusion_observations.append(self.kalman_filter(association))
+            # fusion_observations.append(self.euclidean_average(association))   # Use euclidean average instead of kalman filter
 
         results.observations = fusion_observations
         results.header.stamp = rospy.Time.now()
@@ -210,3 +214,24 @@ class NaiveFusion:
         ) = tuple((new_location[0][0], new_location[1][0], new_location[2][0]))
 
         return fused_observation
+
+    def euclidean_average(self, association):
+        average_observation = ObservationWithCovariance()
+        average_observation.covariance = tuple(list(association[0].covariance).copy())
+
+        (
+            average_observation.observation.location.x,
+            average_observation.observation.location.y,
+            average_observation.observation.location.z,
+        ) = tuple(
+            (
+                sum([obs.observation.location.x for obs in association])
+                / len(association),
+                sum([obs.observation.location.y for obs in association])
+                / len(association),
+                sum([obs.observation.location.z for obs in association])
+                / len(association),
+            )
+        )
+
+        return average_observation
