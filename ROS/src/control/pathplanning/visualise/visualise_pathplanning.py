@@ -64,7 +64,6 @@ class MapWidget(QtW.QFrame):
         # initialize boundaries
         self.blue_boundary = []
         self.yellow_boundary = []
-
         # markers for centerPoints and badPoints
         self.centerPoints = []
         self.badPoints = []

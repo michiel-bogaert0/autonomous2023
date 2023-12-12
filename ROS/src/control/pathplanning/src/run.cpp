@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
   // Spin the node
   while (ros::ok()) {
     // Keep the node alive
-    ros::spinOnce();
+    ros::spin();
   }
 
   return 0;
