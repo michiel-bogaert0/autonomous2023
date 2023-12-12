@@ -10,9 +10,6 @@ from node_fixture.node_management import configure_node, set_state_active
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
 from ugr_msgs.msg import Boundaries, ObservationWithCovarianceArrayStamped, PathArray
-from PyQt5 import QtCore as QtC
-from PyQt5 import QtWidgets as QtW
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, PathArray
 from visualise_pathplanning import MapWidget
 from visualization_msgs.msg import MarkerArray
 
