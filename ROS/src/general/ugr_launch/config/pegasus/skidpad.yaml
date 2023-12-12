@@ -10,6 +10,11 @@ pure_pursuit:
   world_frame: "ugr/map"
   speed:
     target: 2.0
+mpc:
+  change_index: False
+  world_frame: "ugr/map"
+  speed:
+    target: 2.0
 path_publisher:
   package_path: "slam_controller"
   path: "/paths/skidpad.yaml"

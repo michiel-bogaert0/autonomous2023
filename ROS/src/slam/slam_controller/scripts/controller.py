@@ -73,6 +73,7 @@ class Controller:
                 configure_node("map_publisher")
                 # Control
                 configure_node("pure_pursuit_control")
+                configure_node("MPC_tracking_control")
                 configure_node("control_path_publisher")
                 configure_node("pathplanning")
 
@@ -86,7 +87,8 @@ class Controller:
                     set_state_active("loopclosure")
                     set_state_active("map_publisher")
 
-                    set_state_active("pure_pursuit_control")
+                    # set_state_active("pure_pursuit_control")
+                    set_state_active("MPC_tracking_control")
                     set_state_active("control_path_publisher")
                 elif self.mission == AutonomousMission.SKIDPAD:
                     self.target_lap_count = 1
@@ -95,7 +97,8 @@ class Controller:
                     set_state_active("loopclosure")
                     set_state_active("map_publisher")
 
-                    set_state_active("pure_pursuit_control")
+                    # set_state_active("pure_pursuit_control")
+                    set_state_active("MPC_tracking_control")
                     set_state_active("control_path_publisher")
                 elif self.mission == AutonomousMission.AUTOCROSS:
                     self.target_lap_count = 1
@@ -103,7 +106,8 @@ class Controller:
                     set_state_active("fastslam")
                     set_state_active("loopclosure")
 
-                    set_state_active("pure_pursuit_control")
+                    # set_state_active("pure_pursuit_control")
+                    set_state_active("MPC_tracking_control")
                     set_state_active("pathplanning")
                 elif self.mission == AutonomousMission.TRACKDRIVE:
                     self.target_lap_count = 10
@@ -111,7 +115,8 @@ class Controller:
                     set_state_active("fastslam")
                     set_state_active("loopclosure")
 
-                    set_state_active("pure_pursuit_control")
+                    # set_state_active("pure_pursuit_control")
+                    set_state_active("MPC_tracking_control")
                     set_state_active("pathplanning")
                 else:
                     self.target_lap_count = -1
@@ -122,6 +127,7 @@ class Controller:
                     set_state_inactive("map_publisher")
 
                     set_state_inactive("pure_pursuit_control")
+                    set_state_inactive("MPC_tracking_control")
                     set_state_inactive("control_path_publisher")
                     set_state_inactive("pathplanning")
             else:
@@ -131,9 +137,11 @@ class Controller:
                 set_state_finalized("map_publisher")
 
                 set_state_finalized("pure_pursuit_control")
+                set_state_finalized("MPC_tracking_control")
                 set_state_finalized("control_path_publisher")
                 set_state_finalized("pathplanning")
                 rospy.set_param("/pure_pursuit/speed/target", 0.0)
+                rospy.set_param("/mpc/speed/target", 0.0)
 
         elif not rospy.has_param("/mission"):
             set_state_finalized("slam_mcl")
@@ -142,9 +150,11 @@ class Controller:
             set_state_finalized("map_publisher")
 
             set_state_finalized("pure_pursuit_control")
+            set_state_finalized("MPC_tracking_control")
             set_state_finalized("control_path_publisher")
             set_state_finalized("pathplanning")
             rospy.set_param("/pure_pursuit/speed/target", 0.0)
+            rospy.set_param("/mpc/speed/target", 0.0)
             new_state = SLAMStatesEnum.IDLE
 
         self.change_state(new_state)
@@ -215,6 +225,7 @@ class Controller:
         if self.target_lap_count <= laps.data:
             new_state = SLAMStatesEnum.FINISHED
             rospy.set_param("/pure_pursuit/speed/target", 0.0)
+            rospy.set_param("/mpc/speed/target", 0.0)
             self.change_state(new_state)
             return
 
@@ -228,6 +239,7 @@ class Controller:
             set_state_active("slam_mcl")
             speed_target = 10.0 if self.car == "simulation" else 5.0
             rospy.set_param("/pure_pursuit/speed/target", speed_target)
+            rospy.set_param("/mpc/speed/target", speed_target)
             sleep(0.5)
             set_state_inactive("fastslam")
             set_state_inactive("pathplanning")

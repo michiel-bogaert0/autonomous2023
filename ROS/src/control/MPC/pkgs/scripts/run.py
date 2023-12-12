@@ -8,8 +8,10 @@ from nav_msgs.msg import Odometry, Path
 from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
+    NodeManagingStatesEnum,
     create_diagnostic_message,
 )
+from node_fixture.node_management import ManagedNode
 from optimal_control.MPC_tracking import MPC_tracking
 from optimal_control.ocp import Ocp
 from std_msgs.msg import Float64, Header
@@ -17,10 +19,15 @@ from tf2_geometry_msgs import do_transform_pose
 from trajectory import Trajectory
 
 
-class MPC:
+class MPC(ManagedNode):
     def __init__(self):
         rospy.init_node("MPC_tracking_control")
+        super().__init__("MPC_tracking_control")
+        self.publish_rate = rospy.get_param("~publish_rate", 10)
+        self.start_sender()
+        rospy.spin()
 
+    def doConfigure(self):
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
@@ -40,37 +47,30 @@ class MPC:
         # Publishers for the controllers
         # Controllers themselves spawned in the state machines respective launch files
 
-        self.velocity_pub = rospy.Publisher(
+        self.velocity_pub = super().AddPublisher(
             "/output/drive_velocity_controller/command", Float64, queue_size=10
         )
-        self.steering_pub = rospy.Publisher(
+        self.steering_pub = super().AddPublisher(
             "/output/steering_position_controller/command", Float64, queue_size=10
         )
-        self.vis_pub = rospy.Publisher(
+        self.vis_pub = super().AddPublisher(
             "/output/target_point",
             PointStamped,
+            queue_size=10,  # warning otherwise
         )
 
         # Diagnostics Publisher
-        self.diagnostics_pub = rospy.Publisher(
+        self.diagnostics_pub = super().AddPublisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
 
         # Subscriber for path
-        self.path_sub = rospy.Subscriber(
+        self.path_sub = super().AddSubscriber(
             "/input/path", Path, self.getPathplanningUpdate
         )
-        self.odom_sub = rospy.Subscriber("/input/odom", Odometry, self.get_odom_update)
-
-        """
-          Trajectory parameters and conditions
-            - minimal_distance: the minimal required distance between the car and the candidate target point
-            - max_angle: the maximal allowed angle difference between the car and the candidate target point
-            - t_step: the t step the alg takes when progressing through the underlying parametric equations
-                      Indirectly determines how many points are checked per segment.
-        """
-        self.trajectory = Trajectory()
-        self.publish_rate = rospy.get_param("~publish_rate", 10)
+        self.odom_sub = super().AddSubscriber(
+            "/input/odom", Odometry, self.get_odom_update
+        )
 
         self.speed_target = rospy.get_param("~speed/target", 3.0)
         self.steering_transmission = rospy.get_param(
@@ -114,8 +114,8 @@ class MPC:
         )
         self.mpc = MPC_tracking(self.ocp)
 
-        # Helpers
-        self.start_sender()
+    def doActivate(self):
+        self.trajectory = Trajectory()
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
@@ -161,94 +161,97 @@ class MPC:
         """
         rate = rospy.Rate(self.publish_rate)
         while not rospy.is_shutdown():
-            try:
-                speed_target = rospy.get_param("~speed/target", 3.0)
-                rospy.loginfo(f"Speed target: {self.speed_target}")
+            if self.state == NodeManagingStatesEnum.ACTIVE:
+                try:
+                    speed_target = rospy.get_param("~speed/target", 3.0)
+                    rospy.loginfo(f"Speed target: {self.speed_target}")
 
-                # Change velocity constraints when speed target changes
-                if speed_target != self.speed_target:
-                    self.speed_target = speed_target
-                    self.ocp.opti.subject_to()
-                    self.ocp.opti.subject_to(
-                        self.ocp.opti.bounded(0, self.ocp.U[0, :], self.speed_target)
+                    # Change velocity constraints when speed target changes
+                    if speed_target != self.speed_target:
+                        self.speed_target = speed_target
+                        self.ocp.opti.subject_to()
+                        self.ocp.opti.subject_to(
+                            self.ocp.opti.bounded(
+                                0, self.ocp.U[0, :], self.speed_target
+                            )
+                        )
+                        self.ocp.opti.subject_to(
+                            self.ocp.opti.bounded(-1, self.ocp.U[1, :], 1)
+                        )
+                        self.ocp._set_continuity(1)
+
+                    # First try to get a target point
+                    # Change the look-ahead distance (minimal_distance)  based on the current speed
+                    if self.actual_speed < self.speed_start:
+                        self.minimal_distance = self.distance_start
+                    elif self.actual_speed < self.speed_stop:
+                        self.minimal_distance = self.distance_start + (
+                            self.distance_stop - self.distance_start
+                        ) / (self.speed_stop - self.speed_start) * (
+                            self.actual_speed - self.speed_start
+                        )
+                    else:
+                        self.minimal_distance = self.distance_stop
+
+                    # Calculate target point
+                    target_x, target_y = self.trajectory.calculate_target_point(
+                        self.minimal_distance,
                     )
-                    self.ocp.opti.subject_to(
-                        self.ocp.opti.bounded(-1, self.ocp.U[1, :], 1)
+                    self.mpc.reset()
+                    init_state = [0, 0, 0, self.actual_speed]
+                    goal_state = [target_x, target_y, 0, self.speed_target]
+
+                    # goal_state = self.trajectory.points[:self.N+1, :].T
+                    # goal_state = np.pad(goal_state, ((0, 2), (0, 0)), mode='constant', constant_values=(0, self.speed_target))
+
+                    self.mpc.X_init_guess = target_x
+                    current_state = init_state
+
+                    u, info = self.mpc(current_state, goal_state)
+                    # current_state = info["X_sol"][:, 1]
+
+                    X_closed_loop = np.array(self.mpc.X_trajectory)
+                    U_closed_loop = np.array(self.mpc.U_trajectory)
+
+                    rospy.loginfo(f"X_closed_loop: {X_closed_loop}")
+                    rospy.loginfo(f"U_closed_loop: {U_closed_loop}")
+
+                    # self.steering_cmd.data = self.steering_cmd.data * self.steering_transmission + U_closed_loop[0, 1]
+                    self.steering_cmd.data = U_closed_loop[0, 1]
+                    self.velocity_cmd.data = U_closed_loop[0, 0]
+
+                    self.diagnostics_pub.publish(
+                        create_diagnostic_message(
+                            level=DiagnosticStatus.OK,
+                            name="[CTRL PP] Target Point Status",
+                            message="Target point found.",
+                        )
                     )
-                    self.ocp._set_continuity(1)
 
-                # First try to get a target point
-                # Change the look-ahead distance (minimal_distance)  based on the current speed
-                if self.actual_speed < self.speed_start:
-                    self.minimal_distance = self.distance_start
-                elif self.actual_speed < self.speed_stop:
-                    self.minimal_distance = self.distance_start + (
-                        self.distance_stop - self.distance_start
-                    ) / (self.speed_stop - self.speed_start) * (
-                        self.actual_speed - self.speed_start
-                    )
-                else:
-                    self.minimal_distance = self.distance_stop
+                    # Go ahead and drive. But adjust speed in corners
+                    # self.velocity_cmd.data = self.speed_target
 
-                # Calculate target point
-                target_x, target_y = self.trajectory.calculate_target_point(
-                    self.minimal_distance,
-                )
-                self.mpc.reset()
-                init_state = [0, 0, 0, self.actual_speed]
-                goal_state = [target_x, target_y, 0, self.speed_target]
+                    # Publish to velocity and position steering controller
+                    self.steering_cmd.data /= self.steering_transmission
+                    self.steering_pub.publish(self.steering_cmd)
 
-                # goal_state = self.trajectory.points[:self.N+1, :].T
-                # goal_state = np.pad(goal_state, ((0, 2), (0, 0)), mode='constant', constant_values=(0, self.speed_target))
+                    self.velocity_cmd.data /= (
+                        self.wheelradius
+                    )  # Velocity to angular velocity
+                    self.velocity_pub.publish(self.velocity_cmd)
 
-                self.mpc.X_init_guess = target_x
-                current_state = init_state
+                    point = PointStamped()
+                    point.header.stamp = self.trajectory.time_source
+                    point.header.frame_id = self.base_link_frame
+                    point.point.x = target_x
+                    point.point.y = target_y
+                    self.vis_pub.publish(point)
 
-                u, info = self.mpc(current_state, goal_state)
-                # current_state = info["X_sol"][:, 1]
+                except Exception as e:
+                    rospy.logwarn(f"MPC has caught an exception: {e}")
+                    import traceback
 
-                X_closed_loop = np.array(self.mpc.X_trajectory)
-                U_closed_loop = np.array(self.mpc.U_trajectory)
-
-                rospy.loginfo(f"X_closed_loop: {X_closed_loop}")
-                rospy.loginfo(f"U_closed_loop: {U_closed_loop}")
-
-                # self.steering_cmd.data = self.steering_cmd.data * self.steering_transmission + U_closed_loop[0, 1]
-                self.steering_cmd.data = U_closed_loop[0, 1]
-                self.velocity_cmd.data = U_closed_loop[0, 0]
-
-                self.diagnostics_pub.publish(
-                    create_diagnostic_message(
-                        level=DiagnosticStatus.OK,
-                        name="[CTRL PP] Target Point Status",
-                        message="Target point found.",
-                    )
-                )
-
-                # Go ahead and drive. But adjust speed in corners
-                # self.velocity_cmd.data = self.speed_target
-
-                # Publish to velocity and position steering controller
-                self.steering_cmd.data /= self.steering_transmission
-                self.steering_pub.publish(self.steering_cmd)
-
-                self.velocity_cmd.data /= (
-                    self.wheelradius
-                )  # Velocity to angular velocity
-                self.velocity_pub.publish(self.velocity_cmd)
-
-                point = PointStamped()
-                point.header.stamp = self.trajectory.time_source
-                point.header.frame_id = self.base_link_frame
-                point.point.x = target_x
-                point.point.y = target_y
-                self.vis_pub.publish(point)
-
-            except Exception as e:
-                rospy.logwarn(f"MPC has caught an exception: {e}")
-                import traceback
-
-                print(traceback.format_exc())
+                    print(traceback.format_exc())
 
             rate.sleep()
 

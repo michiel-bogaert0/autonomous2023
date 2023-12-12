@@ -7,3 +7,8 @@ pure_pursuit:
   world_frame: "ugr/map"
   speed:
     target: 2.0
+mpc:
+  change_index: True
+  world_frame: "ugr/map"
+  speed:
+    target: 2.0

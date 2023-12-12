@@ -28,9 +28,6 @@ class Trajectory:
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.time_source = rospy.Time(0)
 
-        self.transformed_path = Path()
-        self.path_pub = rospy.Publisher("/pure_pursuit/path_blf", Path, queue_size=10)
-
     def transform_blf(self):
         """
         transforms a path, given in points (N,2) from base_link_frame to base_link_frame at current time
@@ -135,6 +132,5 @@ class Trajectory:
                 pose_t = do_transform_pose(pose, self.trans)
 
                 self.target = np.array([pose_t.pose.position.x, pose_t.pose.position.y])
-                self.path_pub.publish(self.transformed_path)
 
                 return (self.target[0], self.target[1])

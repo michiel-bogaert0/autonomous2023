@@ -3,7 +3,9 @@ ugr:
   car:
     steering:
       transmission: 1.0
-
 pure_pursuit:
+  speed:
+    target: 3.0
+mpc:
   speed:
     target: 3.0

@@ -11,6 +11,12 @@ pure_pursuit:
   world_frame: "ugr/map"
   speed:
     target: 10.0
+mpc:
+  change_index: False
+  minimal_distance: 3
+  world_frame: "ugr/map"
+  speed:
+    target: 10.0
 path_publisher:
   package_path: "slam_controller"
   path: "/paths/straight_L75.yaml"
