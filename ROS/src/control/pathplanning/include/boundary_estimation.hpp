@@ -35,7 +35,9 @@ private:
   ColorConnector color_connector_;
 
   // Publishers
-  ros::Publisher path_pub_;
+  ros::Publisher boundary_pub_;
+  ros::Publisher left_boundary_pub_;
+  ros::Publisher right_boundary_pub_;
   ros::Publisher path_stamped_pub_;
 
   // Diagnostic publisher

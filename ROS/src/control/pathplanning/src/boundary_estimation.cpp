@@ -4,8 +4,12 @@ namespace pathplanning {
 
 BoundaryEstimation::BoundaryEstimation(ros::NodeHandle &n)
     : n_(n), frametf_(n), color_connector_(n) {
-  this->path_pub_ =
+  this->boundary_pub_ =
       n_.advertise<ugr_msgs::Boundaries>("/output/boundaries", 10);
+  this->left_boundary_pub_ =
+      n_.advertise<nav_msgs::Path>("/output/debug/left_boundary", 10);
+  this->right_boundary_pub_ =
+      n_.advertise<nav_msgs::Path>("/output/debug/right_boundary", 10);
   this->map_sub_ = n_.subscribe("/input/local_map", 10,
                                 &BoundaryEstimation::receive_new_map, this);
   this->diagnostics_pub = std::unique_ptr<node_fixture::DiagnosticPublisher>(
@@ -82,7 +86,9 @@ void BoundaryEstimation::compute(const std::vector<std::vector<double>> &cones,
   boundaries_msg.left_boundary = left;
   boundaries_msg.right_boundary = right;
 
-  this->path_pub_.publish(boundaries_msg);
+  this->boundary_pub_.publish(boundaries_msg);
+  this->left_boundary_pub_.publish(left);
+  this->right_boundary_pub_.publish(right);
 }
 
 } // namespace pathplanning

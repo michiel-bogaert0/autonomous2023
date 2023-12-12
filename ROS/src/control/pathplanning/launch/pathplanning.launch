@@ -26,6 +26,8 @@
 
             <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
             <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>
+            <remap from="/output/debug/left_boundary" to="/pathplanning/debug/left_boundary"/>
+            <remap from="/output/debug/right_boundary" to="/pathplanning/debug/right_boundary"/>
             <remap from="/output/boundaries" to="/pathplanning/boundaries"/>
             <remap from="/output/debug/all_poses" to="/pathplanning/debug/all_poses"/>
         </node>
