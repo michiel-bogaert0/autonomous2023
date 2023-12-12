@@ -230,7 +230,7 @@ class Controller:
             rospy.set_param("/pure_pursuit/speed/target", speed_target)
             sleep(0.5)
             set_state_inactive("fastslam")
-            # set_state_inactive("pathplanning")
+            set_state_inactive("pathplanning")
             self.change_state(new_state)
 
 
