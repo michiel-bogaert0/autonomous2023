@@ -71,9 +71,9 @@ class MergeNode:
         """
 
         time_now = time.time_ns() * 1e-6
-        rospy.loginfo(
-            f"\n\nSensor: {observations.header.frame_id}\nTime since\n    lidar: {time_now - self.lidar_last_obs_time} ms;\n    camera: {time_now - self.camera_last_obs_time} ms;\n Time: {time_now};\n\n"
-        )
+        # rospy.loginfo(
+        #     f"\n\nSensor: {observations.header.frame_id}\nTime since\n    lidar: {time_now - self.lidar_last_obs_time} ms;\n    camera: {time_now - self.camera_last_obs_time} ms;\n Time: {time_now};\n\n"
+        # )
 
         if observations.header.frame_id == self.lidar_sensor_name:
             self.lidar_last_obs_time = time_now
@@ -120,7 +120,7 @@ class MergeNode:
                 except rospy.exceptions.ROSException:
                     second_observations = None
             else:
-                rospy.logerr("Could not recognize sensor name...")
+                # rospy.logerr("Could not recognize sensor name...")
                 return
         # If the observations are of the second sensor received, the helper variables are set to their initial states.
         # This same sensor data is also received by the wait_for_message() function above

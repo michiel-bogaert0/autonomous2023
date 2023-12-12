@@ -93,6 +93,8 @@ class PurePursuit(ManagedNode):
         Takes in a new exploration path coming from the mapping algorithm.
         The path should be relative to self.base_link_frame. Otherwise it will transform to it
         """
+        if Path is None:
+            return
 
         # Transform received message to self.base_link_frame
         trans = self.tf_buffer.lookup_transform(
@@ -150,6 +152,20 @@ class PurePursuit(ManagedNode):
                     target_x, target_y = self.trajectory.calculate_target_point(
                         self.minimal_distance,
                     )
+
+                    if target_x == 0 and target_y == 0:
+                        self.diagnostics_pub.publish(
+                            create_diagnostic_message(
+                                level=DiagnosticStatus.ERROR,
+                                name="[CTRL PP] Target Point Status",
+                                message="No target point found.",
+                            )
+                        )
+                        self.velocity_cmd.data = 0.0
+                        self.steering_cmd.data = 0.0
+                        self.velocity_pub.publish(self.velocity_cmd)
+                        self.steering_pub.publish(self.steering_cmd)
+                        continue
 
                     # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
                     R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (
