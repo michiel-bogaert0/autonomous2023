@@ -60,7 +60,7 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
 
     // If below variance threshold, get center points
     if (variances[i] < triangulation_max_var ||
-        variances[i] < (triangulation_var_threshold * median_variance)) {
+        variances[i] < triangulation_var_threshold * median_variance) {
       for (size_t j = 0; j < 3; j++) {
 
         size_t index1 = 2 * triangles[3 * i + j];
