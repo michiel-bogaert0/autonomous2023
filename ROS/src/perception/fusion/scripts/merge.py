@@ -5,9 +5,7 @@ import tf2_ros as tf
 from geometry_msgs.msg import TransformStamped
 from naive_fusion import NaiveFusion
 from node_fixture.fixture import ROSNode
-from ugr_msgs.msg import (  # ObservationWithCovariance,
-    ObservationWithCovarianceArrayStamped,
-)
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
 
 class MergeNode:
@@ -201,7 +199,6 @@ class MergeNode:
         )
 
         # Print location of all observations, predicted colors and fused observation locations
-        rospy.loginfo("\n\n\n***\nPlot data:\n")
         rospy.loginfo(f"\npoints = {all_points}")
         rospy.loginfo(
             f"\ncolors = {[observation.observation.observation_class for observation in all_observations]}"

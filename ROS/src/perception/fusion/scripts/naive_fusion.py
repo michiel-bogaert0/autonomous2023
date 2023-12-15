@@ -22,7 +22,7 @@ class NaiveFusion:
 
         associations = self.kd_tree_merger(tf_sensor_msgs)
         rospy.loginfo(
-            f"\n\n\n*-*-*-*-*\n\nassociations = {[[[obs.observation.location.x, obs.observation.location.y, obs.observation.location.z] for obs in association] for association in associations]}\n"
+            f"\nassociations = {[[[obs.observation.location.x, obs.observation.location.y, obs.observation.location.z] for obs in association] for association in associations]}\n"
         )
         fusion_observations = []
         for association in associations:
