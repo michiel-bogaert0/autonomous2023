@@ -15,9 +15,6 @@
     <param name="topic_prefix" value="/ugr/car/map" />
   </node>
 
-  <!-- ? ISE -->
-  <include file="$(find slam_controller)/launch/ISE.launch" pass_all_args="true"/>
-
   <!-- ? TF service -->
   <node name="tf_service" pkg="tf_service" type="server" ></node>
 </launch>

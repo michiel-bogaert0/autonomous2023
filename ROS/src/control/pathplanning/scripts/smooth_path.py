@@ -38,9 +38,6 @@ class PoseArraySmootherNode:
                     distance_lc < self.max_distance_away_from_start
                 ):
                     per = 1
-                    rospy.loginfo(
-                        "Loop closure detected, setting BSpline periodicity to 1"
-                    )
                     break
                 if not away_from_start and (
                     distance_lc > self.min_distance_away_from_start

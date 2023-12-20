@@ -4,7 +4,7 @@
 namespace pathplanning {
 Triangulator::Triangulator(ros::NodeHandle &n)
     : n_(n),
-      triangulation_min_var_(n.param<double>("triangulation_min_var", 100.0)),
+      triangulation_max_var_(n.param<double>("triangulation_max_var", 10.0)),
       triangulation_var_threshold_(
           n.param<double>("triangulation_var_threshold", 1.2)),
       max_iter_(n.param<int>("max_iter", 100)),
@@ -50,7 +50,7 @@ Triangulator::Triangulator(ros::NodeHandle &n)
   this->vis_ = this->vis_points_ && this->vis_lines_;
 }
 
-std::vector<Node *>
+std::pair<std::vector<Node *>, std::vector<std::vector<Node *>>>
 Triangulator::get_path(const std::vector<std::vector<double>> &cones,
                        const std_msgs::Header &header) {
   double range_behind = range_behind_;
@@ -97,7 +97,7 @@ Triangulator::get_path(const std::vector<std::vector<double>> &cones,
 
   // Perform triangulation and get the (useful) center points
   auto result_center_points = get_center_points(
-      filtered_cones, cone_classes, this->triangulation_min_var_,
+      filtered_cones, cone_classes, this->triangulation_max_var_,
       this->triangulation_var_threshold_, this->range_front_);
   //   auto triangulation_centers = std::get<0>(result_center_points);
   auto center_points = std::get<1>(result_center_points);
@@ -128,7 +128,7 @@ Triangulator::get_path(const std::vector<std::vector<double>> &cones,
   return get_best_path(leaves, cones);
 }
 
-std::vector<Node *>
+std::pair<std::vector<Node *>, std::vector<std::vector<Node *>>>
 Triangulator::get_best_path(const std::vector<Node *> &leaves,
                             const std::vector<std::vector<double>> &cones) {
 
@@ -192,11 +192,34 @@ Triangulator::get_best_path(const std::vector<Node *> &leaves,
     total_cost.push_back(cost[0] + cost[1]);
   }
 
+  std::vector<std::vector<Node *>> sorted_paths;
+  if (this->debug_visualisation_) {
+    // order the paths by their total cost low to high
+    std::vector<size_t> indices(total_cost.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(),
+              [&total_cost](size_t i1, size_t i2) {
+                return total_cost[i1] < total_cost[i2];
+              });
+
+    // Sort paths by their total cost
+    for (const auto &index : indices) {
+      sorted_paths.push_back(paths[index]);
+    }
+  }
+
   // Get the index of the least-cost path
   auto idx = std::min_element(total_cost.begin(), total_cost.end());
   size_t index = std::distance(total_cost.begin(), idx);
 
-  return paths[index];
+  std::pair<std::vector<pathplanning::Node *>,
+            std::vector<std::vector<pathplanning::Node *>>>
+      path_pair;
+  path_pair.first = paths[index];  // First element: array of nodes (best path)
+  path_pair.second = sorted_paths; // Second element: array of arrays of nodes
+                                   // (all paths sorted by cost)
+
+  return path_pair;
 }
 
 void Triangulator::publish_points(
