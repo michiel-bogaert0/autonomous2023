@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(pathplanning)
+project(boundary_estimation)
 
 # C++ 11
 if(NOT "${CMAKE_CXX_STANDARD}")
@@ -49,13 +49,10 @@ include_directories(
 link_directories(${CATKIN_DEVEL_PREFIX}/lib)
 
 add_executable(${PROJECT_NAME}
-  src/center_points.cpp
-  src/delaunay.cpp
-  src/pathplanning.cpp
-  src/paths.cpp
   src/run.cpp
-  src/triangulator.cpp
   src/utils.cpp
+  src/boundary_estimation.cpp
+  src/color_connector.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

@@ -1,13 +1,13 @@
-#include "pathplanning.hpp"
+#include "boundary_estimation.hpp"
 #include <ros/ros.h>
 
 int main(int argc, char **argv) {
   // Initialise the node
-  ros::init(argc, argv, "pathplanning");
+  ros::init(argc, argv, "boundary_estimation");
   ros::NodeHandle n("~");
 
   // Create a pathplanning class object
-  pathplanning::Pathplanning pathplanning(n);
+  boundaryestimation::BoundaryEstimation boundary_estimation(n);
 
   // Spin the node
   while (ros::ok()) {

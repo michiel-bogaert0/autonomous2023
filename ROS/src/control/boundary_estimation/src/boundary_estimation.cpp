@@ -1,6 +1,6 @@
 #include "boundary_estimation.hpp"
 
-namespace pathplanning {
+namespace boundaryestimation {
 
 BoundaryEstimation::BoundaryEstimation(ros::NodeHandle &n)
     : ManagedNode(n, "boundary_estimation"), n_(n), color_connector_(n) {}
@@ -94,4 +94,4 @@ void BoundaryEstimation::compute(const std::vector<std::vector<double>> &cones,
   this->right_boundary_pub_.publish(right);
 }
 
-} // namespace pathplanning
+} // namespace boundaryestimation

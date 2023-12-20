@@ -1,6 +1,6 @@
 #include "color_connector.hpp"
 
-namespace pathplanning {
+namespace boundaryestimation {
 
 ColorConnector::ColorConnector(ros::NodeHandle &n) : n_(n) {}
 
@@ -104,4 +104,4 @@ ColorConnector::get_next_node(const std::vector<std::vector<double>> &cones,
   return best_node;
 }
 
-} // namespace pathplanning
+} // namespace boundaryestimation

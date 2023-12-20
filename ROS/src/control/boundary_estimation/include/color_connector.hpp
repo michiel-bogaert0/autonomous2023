@@ -5,7 +5,7 @@
 #include <ros/ros.h>
 #include <std_msgs/Header.h>
 #include <utils.hpp>
-namespace pathplanning {
+namespace boundaryestimation {
 
 class ColorConnector {
 public:
@@ -23,5 +23,5 @@ private:
   ros::NodeHandle n_;
 };
 
-} // namespace pathplanning
+} // namespace boundaryestimation
 #endif

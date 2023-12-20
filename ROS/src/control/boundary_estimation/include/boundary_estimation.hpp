@@ -20,7 +20,7 @@
 #include <color_connector.hpp>
 #include <node_fixture/node_fixture.hpp>
 
-namespace pathplanning {
+namespace boundaryestimation {
 
 class BoundaryEstimation : public node_fixture::ManagedNode {
 public:
@@ -51,6 +51,6 @@ private:
                const std_msgs::Header &header);
 };
 
-} // namespace pathplanning
+} // namespace boundaryestimation
 
 #endif
