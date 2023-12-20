@@ -84,7 +84,7 @@
     <param name="localmap_namespace" value="fastslam/local" />
 
     # Input/output remapping
-    <remap from="/input/observations" to="ugr/car/observations/lidar" />
+    <remap from="/input/observations" to="/ugr/car/observations/fused" />
 
     <remap from="/output/observations" to="/ugr/car/observations/fastslam" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/fastslam" />

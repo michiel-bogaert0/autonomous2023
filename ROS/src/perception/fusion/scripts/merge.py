@@ -134,7 +134,7 @@ class MergeNode:
         results = self.fusion_pipeline.fuse_observations(transformed_msgs)
 
         self.log_plot_info(transformed_msgs, results)
-        # self.publish(results)
+        self.publish(results)
         return
 
     def transform_observations(self, sensor_msgs):
