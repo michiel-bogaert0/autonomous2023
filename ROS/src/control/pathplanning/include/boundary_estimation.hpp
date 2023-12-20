@@ -16,21 +16,20 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
+#include "managed_node.hpp"
 #include <color_connector.hpp>
 #include <node_fixture/node_fixture.hpp>
-#include <pathplanning.hpp>
-#include <triangulator.hpp>
 
 namespace pathplanning {
 
-class BoundaryEstimation {
+class BoundaryEstimation : public node_fixture::ManagedNode {
 public:
   explicit BoundaryEstimation(ros::NodeHandle &n);
+  void doConfigure() override;
+  void doActivate() override;
 
 private:
   ros::NodeHandle n_;
-
-  TransformFrames frametf_;
 
   ColorConnector color_connector_;
 

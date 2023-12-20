@@ -3,7 +3,10 @@
 namespace pathplanning {
 
 BoundaryEstimation::BoundaryEstimation(ros::NodeHandle &n)
-    : n_(n), frametf_(n), color_connector_(n) {
+    : ManagedNode(n, "boundary_estimation"), n_(n), color_connector_(n) {}
+
+void BoundaryEstimation::doConfigure() {}
+void BoundaryEstimation::doActivate() {
   this->boundary_pub_ =
       n_.advertise<ugr_msgs::Boundaries>("/output/boundaries", 10);
   this->left_boundary_pub_ =
@@ -13,7 +16,7 @@ BoundaryEstimation::BoundaryEstimation(ros::NodeHandle &n)
   this->map_sub_ = n_.subscribe("/input/local_map", 10,
                                 &BoundaryEstimation::receive_new_map, this);
   this->diagnostics_pub = std::unique_ptr<node_fixture::DiagnosticPublisher>(
-      new node_fixture::DiagnosticPublisher(n, "CTRL BOUNDARY"));
+      new node_fixture::DiagnosticPublisher(n_, "CTRL BOUNDARY"));
 }
 
 void BoundaryEstimation::receive_new_map(

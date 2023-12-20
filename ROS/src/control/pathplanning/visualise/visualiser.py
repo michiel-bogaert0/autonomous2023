@@ -40,6 +40,8 @@ class Visualiser:
         self.track_file = rospy.get_param("~layout", "")
         configure_node("pathplanning")
         set_state_active("pathplanning")
+        configure_node("boundary_estimation")
+        set_state_active("boundary_estimation")
         # Initialize and start Qt application
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
