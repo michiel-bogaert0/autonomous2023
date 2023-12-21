@@ -6,7 +6,7 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "boundary_estimation");
   ros::NodeHandle n("~");
 
-  // Create a pathplanning class object
+  // Create a boundary estimation class object
   boundaryestimation::BoundaryEstimation boundary_estimation(n);
 
   // Spin the node
