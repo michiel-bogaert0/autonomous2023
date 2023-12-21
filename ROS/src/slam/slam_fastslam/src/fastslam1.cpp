@@ -508,7 +508,7 @@ void FastSLAM1::step() {
                     // - this->prev_predict_time).count();
   prev_transform_time = car_pose.header.stamp;
 
-  ROS_INFO("dt %f; dDist %f", dt, dDist);
+  // ROS_INFO("dt %f; dDist %f", dt, dDist);
 
   if (doObserve) {
     double time_predict = 0.0;
@@ -644,7 +644,7 @@ void FastSLAM1::step() {
   // Finalizing
   this->prev_state = {x, y, yaw};
   this->updateRound = false;
-  int size = this->observations.observations.size();
+  // int size = this->observations.observations.size();
   this->observations.observations.clear();
   t2 = std::chrono::steady_clock::now();
   times.push_back(
@@ -659,13 +659,13 @@ void FastSLAM1::step() {
   times.push_back(
       std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
           .count());
-  double totalTime = std::accumulate(times.begin(), times.end(), 0.0);
+  // double totalTime = std::accumulate(times.begin(), times.end(), 0.0);
 
-  ROS_INFO("Timetable (%d observations, %d particles):", size,
-           this->particles.size());
-  for (auto const &time : times) {
-    ROS_INFO("%.3fms (%.3f%)", time * 1000.0, time * 100.0 / totalTime);
-  }
+  // ROS_INFO("Timetable (%d observations, %d particles):", size,
+  //          this->particles.size());
+  // for (auto const &time : times) {
+  //   ROS_INFO("%.3fms (%.3f%)", time * 1000.0, time * 100.0 / totalTime);
+  // }
 }
 
 void FastSLAM1::publishOutput(ros::Time lookupTime) {
@@ -791,7 +791,7 @@ void FastSLAM1::publishOutput(ros::Time lookupTime) {
   lmMetadatas = bestParticle.metadata();
   positionCovariances = bestParticle.Pf();
 
-  ROS_INFO("Number of landmarks (total): %d", lmMeans.size());
+  // ROS_INFO("Number of landmarks (total): %d", lmMeans.size());
   this->diagPublisher->publishDiagnostic(
       node_fixture::DiagnosticStatusEnum::OK, "Total landmarks",
       "#landmarks: " + std::to_string(lmMeans.size()));
@@ -811,7 +811,7 @@ void FastSLAM1::publishOutput(ros::Time lookupTime) {
     }
   }
 
-  ROS_INFO("Number of actual landmarks: %d", filteredLandmarks.size());
+  // ROS_INFO("Number of actual landmarks: %d", filteredLandmarks.size());
   this->diagPublisher->publishDiagnostic(
       node_fixture::DiagnosticStatusEnum::OK, "Actual landmarks",
       "#landmarks: " + std::to_string(filteredLandmarks.size()));

@@ -76,6 +76,7 @@ class Controller:
                 configure_node("MPC_tracking_control")
                 configure_node("control_path_publisher")
                 configure_node("pathplanning")
+                configure_node("boundary_estimation")
 
                 # Reset loop counter
                 rospy.ServiceProxy("/reset_closure", Empty)
@@ -109,6 +110,7 @@ class Controller:
                     # set_state_active("pure_pursuit_control")
                     set_state_active("MPC_tracking_control")
                     set_state_active("pathplanning")
+                    set_state_active("boundary_estimation")
                 elif self.mission == AutonomousMission.TRACKDRIVE:
                     self.target_lap_count = 10
                     new_state = SLAMStatesEnum.EXPLORATION
@@ -118,6 +120,7 @@ class Controller:
                     # set_state_active("pure_pursuit_control")
                     set_state_active("MPC_tracking_control")
                     set_state_active("pathplanning")
+                    set_state_active("boundary_estimation")
                 else:
                     self.target_lap_count = -1
                     new_state = SLAMStatesEnum.EXPLORATION
@@ -130,6 +133,7 @@ class Controller:
                     set_state_inactive("MPC_tracking_control")
                     set_state_inactive("control_path_publisher")
                     set_state_inactive("pathplanning")
+                    set_state_inactive("boundary_estimation")
             else:
                 set_state_finalized("slam_mcl")
                 set_state_finalized("fastslam")
@@ -140,6 +144,7 @@ class Controller:
                 set_state_finalized("MPC_tracking_control")
                 set_state_finalized("control_path_publisher")
                 set_state_finalized("pathplanning")
+                set_state_finalized("boundary_estimation")
                 rospy.set_param("/pure_pursuit/speed/target", 0.0)
                 rospy.set_param("/mpc/speed/target", 0.0)
 
@@ -153,6 +158,7 @@ class Controller:
             set_state_finalized("MPC_tracking_control")
             set_state_finalized("control_path_publisher")
             set_state_finalized("pathplanning")
+            set_state_finalized("boundary_estimation")
             rospy.set_param("/pure_pursuit/speed/target", 0.0)
             rospy.set_param("/mpc/speed/target", 0.0)
             new_state = SLAMStatesEnum.IDLE

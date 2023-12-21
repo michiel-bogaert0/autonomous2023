@@ -4,7 +4,7 @@
 namespace pathplanning {
 Triangulator::Triangulator(ros::NodeHandle &n)
     : n_(n),
-      triangulation_min_var_(n.param<double>("triangulation_min_var", 100.0)),
+      triangulation_max_var_(n.param<double>("triangulation_max_var", 10.0)),
       triangulation_var_threshold_(
           n.param<double>("triangulation_var_threshold", 1.2)),
       max_iter_(n.param<int>("max_iter", 100)),
@@ -97,7 +97,7 @@ Triangulator::get_path(const std::vector<std::vector<double>> &cones,
 
   // Perform triangulation and get the (useful) center points
   auto result_center_points = get_center_points(
-      filtered_cones, cone_classes, this->triangulation_min_var_,
+      filtered_cones, cone_classes, this->triangulation_max_var_,
       this->triangulation_var_threshold_, this->range_front_);
   //   auto triangulation_centers = std::get<0>(result_center_points);
   auto center_points = std::get<1>(result_center_points);

@@ -16,6 +16,9 @@
     <remap from="/output/path" to="/pathplanning/path" />
   </node>
 
-  <!-- ? Pathplanning -->
+  <!-- Pathplanning -->
   <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true" />
+
+  <!-- Boundary Estimation -->
+  <include file="$(find boundary_estimation)/launch/boundary_estimation.launch" pass_all_args="true" />
 </launch>
