@@ -37,12 +37,6 @@ public:
 // Define a utility function to calculate squared distance between 2 points
 double distance_squared(double x1, double y1, double x2, double y2);
 
-// Define a utility function to calculate distance between 2 points
-double angle_between(double x1, double y1, double x2, double y2);
-
-// Define a utility function to calculate difference between 2 angles
-double angle_difference(double angle1, double angle2);
-
 // Function to check if there is no collision between a node and a point with
 // safety distance around cones
 bool no_collision(const Node &parent, const std::vector<double> &point,
