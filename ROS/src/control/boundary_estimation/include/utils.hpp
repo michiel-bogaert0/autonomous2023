@@ -1,12 +1,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-#include <algorithm>
-#include <array>
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics.hpp>
 #include <cmath>
-#include <numeric>
 #include <vector>
 
 namespace boundaryestimation {
