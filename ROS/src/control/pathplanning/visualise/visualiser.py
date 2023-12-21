@@ -9,7 +9,7 @@ import yaml
 from node_fixture.node_management import configure_node, set_state_active
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, PathArray
+from ugr_msgs.msg import Boundaries, ObservationWithCovarianceArrayStamped, PathArray
 from visualise_pathplanning import MapWidget
 from visualization_msgs.msg import MarkerArray
 
@@ -28,6 +28,10 @@ class Visualiser:
             "/input/debug/all_poses", PathArray, self.handle_path_received
         )
 
+        self.boundaries_subscriber = rospy.Subscriber(
+            "/input/boundaries", Boundaries, self.handle_boundaries_received
+        )
+
         self.points_subscriber = rospy.Subscriber(
             "/input/debug/markers", MarkerArray, self.handle_markers_received
         )
@@ -36,6 +40,8 @@ class Visualiser:
         self.track_file = rospy.get_param("~layout", "")
         configure_node("pathplanning")
         set_state_active("pathplanning")
+        configure_node("boundary_estimation")
+        set_state_active("boundary_estimation")
         # Initialize and start Qt application
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
@@ -59,6 +65,21 @@ class Visualiser:
                 np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
             )
         self.window.map_widget.receive_path(all_paths)
+
+    def handle_boundaries_received(self, boundaries: Boundaries):
+        relBlue = np.array(
+            [
+                [p.pose.position.x, p.pose.position.y]
+                for p in boundaries.left_boundary.poses
+            ]
+        )
+        relYellow = np.array(
+            [
+                [p.pose.position.x, p.pose.position.y]
+                for p in boundaries.right_boundary.poses
+            ]
+        )
+        self.window.map_widget.receive_boundaries(relBlue, relYellow)
 
     def handle_markers_received(self, markers: MarkerArray):
         relCenterPoints = np.array(

@@ -9,6 +9,7 @@
 
     <remap from="/output/local_map" to="/ugr/car/map/fastslam/local" />
     <remap from="/input/path" to="/pathplanning/path"/>
+    <remap from="/input/boundaries" to="/boundary_estimation/boundaries"/>
     <remap from="/input/debug/all_poses" to="/pathplanning/debug/all_poses"/>
     <remap from="/input/debug/markers" to="/pathplanning/debug/markers"/>
 
