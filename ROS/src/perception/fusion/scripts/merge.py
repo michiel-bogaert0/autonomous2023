@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+
 import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import TransformStamped
@@ -128,16 +129,20 @@ class MergeNode:
         """
 
         # Transform all observations to a common frame and time
-        transformed_msgs = self.transform_observations(sensor_msgs)
+        transformed_msgs, results_time = self.transform_observations(sensor_msgs)
 
         # Fuse transformed observations
         results = self.fusion_pipeline.fuse_observations(transformed_msgs)
 
         self.log_plot_info(transformed_msgs, results)
+
+        # Publish fused observations
+        results.header.stamp = results_time
+
         self.publish(results)
         return
 
-    def transform_observations(self, sensor_msgs):
+    def transform_observations(self, sensor_msgs, tf_source_time):
         """
         Transform all sensor observations to a common frame (self.base_link_frame)
         and time (timestamp of observation last received)
@@ -163,13 +168,13 @@ class MergeNode:
                 )
                 transformed_msgs.append(tf_sensor_msg)
 
-            return transformed_msgs
+            return transformed_msgs, tf_source_time
 
         except Exception as e:
             rospy.logerr(
                 f"Mergenode has caught an exception during transformation. Exception: {e}"
             )
-        return []
+        return [], None
 
     def log_plot_info(self, msgs, fused_obs):
         """ """
