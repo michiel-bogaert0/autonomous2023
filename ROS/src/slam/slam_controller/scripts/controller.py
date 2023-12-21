@@ -10,7 +10,13 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from node_launcher.node_launcher import NodeLauncher
+from node_fixture.node_management import (
+    configure_node,
+    load_params,
+    set_state_active,
+    set_state_finalized,
+    set_state_inactive,
+)
 from std_msgs.msg import Header, UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
@@ -25,8 +31,8 @@ class Controller:
 
         self.state = SLAMStatesEnum.IDLE
 
-        self.launcher = NodeLauncher()
         self.mission = ""
+        self.car = rospy.get_param("/car")
 
         self.target_lap_count = -1
 
@@ -41,21 +47,7 @@ class Controller:
         )
 
         while not rospy.is_shutdown():
-            try:
-                self.launcher.run()
-                self.diagnostics_publisher.publish(
-                    create_diagnostic_message(
-                        DiagnosticStatus.OK, "[SLAM] Node launching", ""
-                    )
-                )
-            except Exception as e:
-                self.diagnostics_publisher.publish(
-                    create_diagnostic_message(
-                        DiagnosticStatus.ERROR, "[SLAM] Node launching", str(e)
-                    )
-                )
             self.update()
-
             sleep(0.1)
 
     def update(self):
@@ -63,38 +55,102 @@ class Controller:
         Updates the internal state and launches or kills nodes if needed
         """
         new_state = self.state
+
         if self.state == SLAMStatesEnum.IDLE or (
             rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission
         ):
             if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
                 # Go to state depending on mission
                 self.mission = rospy.get_param("/mission")
+
+                # Configure parameters after mission is set
+                load_params(self.mission)
+                # Confige nodes after mission is set
+                # SLAM
+                configure_node("slam_mcl")
+                configure_node("fastslam")
+                configure_node("loopclosure")
+                configure_node("map_publisher")
+                # Control
+                configure_node("pure_pursuit_control")
+                configure_node("control_path_publisher")
+                configure_node("pathplanning")
+                configure_node("boundary_estimation")
+
                 # Reset loop counter
                 rospy.ServiceProxy("/reset_closure", Empty)
 
                 if self.mission == AutonomousMission.ACCELERATION:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
+                    set_state_active("slam_mcl")
+                    set_state_active("loopclosure")
+                    set_state_active("map_publisher")
+
+                    set_state_active("pure_pursuit_control")
+                    set_state_active("control_path_publisher")
                 elif self.mission == AutonomousMission.SKIDPAD:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.RACING
+                    set_state_active("slam_mcl")
+                    set_state_active("loopclosure")
+                    set_state_active("map_publisher")
+
+                    set_state_active("pure_pursuit_control")
+                    set_state_active("control_path_publisher")
                 elif self.mission == AutonomousMission.AUTOCROSS:
                     self.target_lap_count = 1
                     new_state = SLAMStatesEnum.EXPLORATION
+                    set_state_active("fastslam")
+                    set_state_active("loopclosure")
+
+                    set_state_active("pure_pursuit_control")
+                    set_state_active("pathplanning")
+                    set_state_active("boundary_estimation")
                 elif self.mission == AutonomousMission.TRACKDRIVE:
-                    self.target_lap_count = 1
+                    self.target_lap_count = 10
                     new_state = SLAMStatesEnum.EXPLORATION
+                    set_state_active("fastslam")
+                    set_state_active("loopclosure")
+
+                    set_state_active("pure_pursuit_control")
+                    set_state_active("pathplanning")
+                    set_state_active("boundary_estimation")
                 else:
                     self.target_lap_count = -1
                     new_state = SLAMStatesEnum.EXPLORATION
+                    set_state_inactive("fastslam")
+                    set_state_inactive("slam_mcl")
+                    set_state_inactive("loopclosure")
+                    set_state_inactive("map_publisher")
 
-                self.launcher.launch_node(
-                    "slam_controller", f"launch/{self.mission}_{new_state}.launch"
-                )
+                    set_state_inactive("pure_pursuit_control")
+                    set_state_inactive("control_path_publisher")
+                    set_state_inactive("pathplanning")
+                    set_state_inactive("boundary_estimation")
             else:
-                self.launcher.shutdown()
+                set_state_finalized("slam_mcl")
+                set_state_finalized("fastslam")
+                set_state_finalized("loopclosure")
+                set_state_finalized("map_publisher")
+
+                set_state_finalized("pure_pursuit_control")
+                set_state_finalized("control_path_publisher")
+                set_state_finalized("pathplanning")
+                set_state_finalized("boundary_estimation")
+                rospy.set_param("/pure_pursuit/speed/target", 0.0)
+
         elif not rospy.has_param("/mission"):
-            self.launcher.shutdown()
+            set_state_finalized("slam_mcl")
+            set_state_finalized("fastslam")
+            set_state_finalized("loopclosure")
+            set_state_finalized("map_publisher")
+
+            set_state_finalized("pure_pursuit_control")
+            set_state_finalized("control_path_publisher")
+            set_state_finalized("pathplanning")
+            set_state_finalized("boundary_estimation")
+            rospy.set_param("/pure_pursuit/speed/target", 0.0)
             new_state = SLAMStatesEnum.IDLE
 
         self.change_state(new_state)
@@ -161,26 +217,26 @@ class Controller:
             laps: the UInt16 message containing the lap count
         """
 
+        # If we did enough laps, switch to finished
         if self.target_lap_count <= laps.data:
-            new_state = self.state
+            new_state = SLAMStatesEnum.FINISHED
+            rospy.set_param("/pure_pursuit/speed/target", 0.0)
+            self.change_state(new_state)
+            return
 
-            if self.state == SLAMStatesEnum.EXPLORATION:
-                if self.mission == AutonomousMission.TRACKDRIVE:
-                    new_state = SLAMStatesEnum.RACING
-
-                    # Note that lap count becomes 9, because it restarts counting after exploration
-                    # Perhaps we have to redo this in the future
-                    self.target_lap_count = 9
-
-                    # Relaunch (different) nodes
-                    self.launcher.launch_node(
-                        "slam_controller", f"launch/{self.mission}_{new_state}.launch"
-                    )
-                else:
-                    new_state = SLAMStatesEnum.FINISHED
-            else:
-                new_state = SLAMStatesEnum.FINISHED
-
+        # If we did one lap in trackdrive and exploration, switch to racing
+        if (
+            self.mission == AutonomousMission.TRACKDRIVE
+            and self.state == SLAMStatesEnum.EXPLORATION
+        ):
+            rospy.loginfo("Exploration finished, switching to racing")
+            new_state = SLAMStatesEnum.RACING
+            set_state_active("slam_mcl")
+            speed_target = 10.0 if self.car == "simulation" else 5.0
+            rospy.set_param("/pure_pursuit/speed/target", speed_target)
+            sleep(0.5)
+            set_state_inactive("fastslam")
+            set_state_inactive("pathplanning")
             self.change_state(new_state)
 
 

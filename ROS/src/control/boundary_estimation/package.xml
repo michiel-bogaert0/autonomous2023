@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>boundary_estimation</name>
+  <version>0.0.1</version>
+  <description> This package contains the boundary_estimation algorithm
+  </description>
+
+  <maintainer email="zander.daninck@ugentracing.be">Zander</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>trajectory_msgs</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>rosparam_shortcuts</build_depend>
+  <build_depend>ugr_msgs</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>trajectory_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>rosparam_shortcuts</exec_depend>
+  <exec_depend>ugr_msgs</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+  <depend>node_fixture</depend>
+
+  <export></export>
+</package>

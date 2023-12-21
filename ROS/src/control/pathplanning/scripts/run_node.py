@@ -52,8 +52,8 @@ class PathPlanning:
         # Extra parameters for triangulation
         # The minimal variance each allowed set of triangle edge lengths can always have.
         #   So it's the minimal maximum variance
-        self.params["triangulation_min_var"] = rospy.get_param(
-            "~triangulation_min_var", 200
+        self.params["triangulation_max_var"] = rospy.get_param(
+            "~triangulation_max_var", 200
         )
         # Factor multiplied to the median of the variance of triangle lengths in order to filter bad triangles
         self.params["triangulation_var_threshold"] = rospy.get_param(
@@ -150,7 +150,7 @@ class PathPlanning:
             )
         else:
             self.algorithm = Triangulator(
-                self.params["triangulation_min_var"],
+                self.params["triangulation_max_var"],
                 self.params["triangulation_var_threshold"],
                 self.params["max_iter"],
                 self.params["max_angle_change"],

@@ -3,7 +3,7 @@
   <arg name="world_frame" default="ugr/car_odom" />
   <arg name="base_link_frame" default="ugr/car_base_link" />
   <arg name="slam_base_link_frame" default="ugr/slam_base_link" />
-  <arg name="map_prefix" default="fastslam/global"/>
+  <arg name="path_to_map" default="/ugr/car/map/fastslam/global"/>
 
   <arg name="setup_stand_dev" default="0.1"/>
   <arg name="particle_count" default="200" />
@@ -34,9 +34,12 @@
     <rosparam param="measurement_covariance">[0.3, 0.0, 0.0, 0.05]</rosparam>
     <rosparam param="input_noise">[0.2, 0.0, 0.0, 0.1]</rosparam>
     # Input/output remapping
-    <remap from="/input/observations" to="ugr/car/observations/lidar" />
-    <remap from="/input/map" to="ugr/car/map/$(arg map_prefix)" />
 
+    <!-- Changed to param because it has to be changed between missions -->
+    <param name="path_to_map" value="$(arg path_to_map)" />
+    <!-- <remap from="/input/map" to="ugr/car/map/$(arg map_prefix)" /> -->
+
+    <remap from="/input/observations" to="ugr/car/observations/lidar" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/mcl" />
   </node>
 </launch>
