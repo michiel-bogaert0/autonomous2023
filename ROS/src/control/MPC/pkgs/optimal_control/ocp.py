@@ -55,12 +55,14 @@ class Ocp:
         self.x0 = self.opti.parameter(self.nx)
 
         self._x_ref = self.opti.parameter(self.nx)
+        self._x_ref_mid = self.opti.parameter(self.nx)
         self.params = []  # additional parameters
 
         # symbolic params to define cost functions
         self.x = casadi.SX.sym("symbolic_x", self.nx)
         self.u = casadi.SX.sym("symbolic_u", self.nu)
         self.x_ref = casadi.SX.sym("symbolic_x_ref", self.nx)
+        self.x_ref_mid = casadi.SX.sym("symbolic_x_ref_mid", self.nx)
 
         self._set_continuity(threads)
         if terminal_constraint:
@@ -144,7 +146,9 @@ class Ocp:
             L_run = 0  # cost over the horizon
             for i in range(self.N):
                 # get distance to closest point on x_ref?
-                L_run += cost_fun(self.X[:, i], self.U[:, i], self._x_ref)
+                L_run += cost_fun(
+                    self.X[:, i], self.U[:, i], self._x_ref, self._x_ref_mid
+                )
             self.cost["run"] = L_run
 
         if terminal_cost_fun is not None:
@@ -164,7 +168,7 @@ class Ocp:
     @running_cost.setter
     def running_cost(self, symbolic_cost):
         cost_fun = casadi.Function(
-            "cost_fun", [self.x, self.u, self.x_ref], [symbolic_cost]
+            "cost_fun", [self.x, self.u, self.x_ref, self.x_ref_mid], [symbolic_cost]
         )
         self.set_cost(cost_fun=cost_fun)
 
@@ -232,6 +236,7 @@ class Ocp:
         self,
         state,
         goal_state,
+        goal_state_mid,
         X0=None,
         U0=None,
         lin_interpol=False,
@@ -251,6 +256,7 @@ class Ocp:
         """
         self.opti.set_value(self.x0, state)
         self.opti.set_value(self._x_ref, goal_state)
+        self.opti.set_value(self._x_ref_mid, goal_state_mid)
 
         if lin_interpol and (X0 is None):
             # X0 = interpol(state, goal_state, self.N+1)

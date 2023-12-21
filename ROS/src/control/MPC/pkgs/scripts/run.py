@@ -92,14 +92,19 @@ class MPC(ManagedNode):
         )
 
         Q = np.diag([1e-2, 1e-2, 0, 1e-2])
+        Q2 = np.diag([1e-2, 1e-2, 0, 1e-2])
         R = np.diag([1e-4, 2e-1])
 
         # Weight matrices for the terminal cost
         P = np.diag([0, 0, 0, 0])
 
-        self.ocp.running_cost = (self.ocp.x - self.ocp.x_ref).T @ Q @ (
-            self.ocp.x - self.ocp.x_ref
-        ) + self.ocp.u.T @ R @ self.ocp.u
+        self.ocp.running_cost = (
+            (self.ocp.x - self.ocp.x_ref).T @ Q @ (self.ocp.x - self.ocp.x_ref)
+            + (self.ocp.x - self.ocp.x_ref_mid).T
+            @ Q2
+            @ (self.ocp.x - self.ocp.x_ref_mid)
+            + self.ocp.u.T @ R @ self.ocp.u
+        )
         self.ocp.terminal_cost = (
             (self.ocp.x - self.ocp.x_ref).T @ P @ (self.ocp.x - self.ocp.x_ref)
         )
@@ -197,9 +202,13 @@ class MPC(ManagedNode):
                     target_x, target_y = self.trajectory.calculate_target_point(
                         self.minimal_distance,
                     )
+                    target_x_mid, target_y_mid = self.trajectory.calculate_target_point(
+                        self.minimal_distance / 2,
+                    )
                     self.mpc.reset()
                     init_state = [0, 0, 0, self.actual_speed]
                     goal_state = [target_x, target_y, 0, self.speed_target]
+                    goal_state_mid = [target_x_mid, target_y_mid, 0, self.speed_target]
 
                     # goal_state = self.trajectory.points[:self.N+1, :].T
                     # goal_state = np.pad(goal_state, ((0, 2), (0, 0)), mode='constant', constant_values=(0, self.speed_target))
@@ -207,7 +216,7 @@ class MPC(ManagedNode):
                     self.mpc.X_init_guess = target_x
                     current_state = init_state
 
-                    u, info = self.mpc(current_state, goal_state)
+                    u, info = self.mpc(current_state, goal_state, goal_state_mid)
                     # current_state = info["X_sol"][:, 1]
 
                     X_closed_loop = np.array(self.mpc.X_trajectory)
