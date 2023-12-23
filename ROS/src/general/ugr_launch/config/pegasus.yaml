@@ -1,5 +1,0 @@
-# Use this file to override paramters for Pegasus
-ugr:
-  car:
-    steering:
-      transmission: 0.2
