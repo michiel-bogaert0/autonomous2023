@@ -1,0 +1,3 @@
+[submodule "ROS/src/common"]
+	path = ROS/src/common
+	url = https://github.com/UgentRacing/common_ros_pkgs

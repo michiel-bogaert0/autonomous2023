@@ -1,1 +1,0 @@
-geometry_msgs/Point[] exploration_path
