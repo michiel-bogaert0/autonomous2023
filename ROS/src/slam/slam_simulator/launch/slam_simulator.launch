@@ -20,7 +20,7 @@
     <param name="add_noise" value="true" />
     <param name="cone_noise" value="0.02" />
 
-    <remap from="/output/observations" to="/ugr/car/observations/fused" />
+    <remap from="/output/observations" to="/ugr/car/observations/lidar" />
     <remap from="/input/track" to="$(arg gt_map_topic)" />
   </node>
 

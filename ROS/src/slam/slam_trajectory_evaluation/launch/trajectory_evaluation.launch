@@ -13,7 +13,7 @@
         <remap from="/input/odometry" to="/ugr/car/odometry/filtered/odom"/>
         <remap from="/input/gps" to="/ugr/car/odometry/filtered/gps"/>
         <remap from="/input/loopClosure" to="/ugr/car/loopclosure"/>
-        <remap from="/input/observations" to="/ugr/car/observations/fused" />
+        <remap from="/input/observations" to="/ugr/car/observations/lidar" />
         <remap from="/input/map" to="/ugr/car/map/gt" />
         <remap from="/input/obs/fslam" to="/ugr/car/map/fastslam/global"/>
 
