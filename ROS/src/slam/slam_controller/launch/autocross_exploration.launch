@@ -1,6 +1,0 @@
-<launch>
-  
-  <!-- ? FastSLAM -->
-  <include file="$(find slam_fastslam)/launch/fastslam1.launch" pass_all_args="true" />
-
-</launch>

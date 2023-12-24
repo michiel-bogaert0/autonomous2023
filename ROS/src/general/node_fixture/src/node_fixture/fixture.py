@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Type, get_type_hints
 
 import can
+import numpy as np
 import PyKDL
 import roslib.message
 import rospy
@@ -127,6 +128,14 @@ class ROSNode:
           A transformed ObservationWithCovarianceArrayStamped message
         """
         kdl_transform = transform_to_kdl(transform)
+        rotation_matrix = np.array(
+            [
+                [kdl_transform.M[0, 0], kdl_transform.M[0, 1], kdl_transform.M[0, 2]],
+                [kdl_transform.M[1, 0], kdl_transform.M[1, 1], kdl_transform.M[1, 2]],
+                [kdl_transform.M[2, 0], kdl_transform.M[2, 1], kdl_transform.M[2, 2]],
+            ]
+        )
+
         res = ObservationWithCovarianceArrayStamped()
         for obs in observations.observations:
             p = kdl_transform * PyKDL.Vector(
@@ -144,6 +153,10 @@ class ROSNode:
             )
             new_observation.observation.belief = obs.observation.belief
 
+            original_covariance = np.reshape(np.array(obs.covariance), (3, 3))
+            new_observation.covariance = (
+                rotation_matrix @ original_covariance @ rotation_matrix.T
+            ).tolist()
             res.observations.append(new_observation)
 
         res.header = transform.header

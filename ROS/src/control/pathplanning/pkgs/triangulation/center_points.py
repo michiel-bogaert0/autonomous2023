@@ -8,7 +8,7 @@ from scipy.spatial import Delaunay
 def get_center_points(
     position_cones: np.ndarray,
     classes,
-    triangulation_min_var: float,
+    triangulation_max_var: float,
     triangulation_var_threshold: float,
     range_front: float,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -18,8 +18,7 @@ def get_center_points(
 
     Args:
         position_cones: position of the cones
-        triangulation_min_var: the minimum variance each allowed set of triangle edge lengths can always have.
-            So it's the minimal maximum variance
+        triangulation_max_var: the maximum variance each allowed set of triangle edge lengths can always have.
         triangulation_var_threshold: Factor multiplied to the median of the variance of triangle lengths in order to filter bad triangles
         range_front: The lookahead distance for sorting points
 
@@ -41,7 +40,7 @@ def get_center_points(
     # We assume the triangles between the cones on the racing path to be much more equilateral than the useless triangles
     # We use the median variance to have a dynamic threshold
     var_filter = max(
-        triangulation_min_var, np.median(variances) * triangulation_var_threshold
+        triangulation_max_var, np.median(variances) * triangulation_var_threshold
     )
     triangles = triangles[variances < var_filter, :]
     triangle_points_classes = triangle_points_classes[variances < var_filter]

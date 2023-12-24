@@ -6,13 +6,13 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "pathplanning");
   ros::NodeHandle n("~");
 
-  // Create a LIDAR class object
+  // Create a pathplanning class object
   pathplanning::Pathplanning pathplanning(n);
 
   // Spin the node
   while (ros::ok()) {
     // Keep the node alive
-    ros::spinOnce();
+    ros::spin();
   }
 
   return 0;

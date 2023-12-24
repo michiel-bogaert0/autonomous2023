@@ -2,7 +2,17 @@
   <arg name="world_frame" default="ugr/car_odom" />
   <arg name="base_link_frame" default="ugr/car_base_link" />
   <arg name="slam_base_link_frame" default="ugr/slam_base_link" />
-  <arg name="map_prefix" default="fastslam/global"/>
+  <arg name="path_to_map" default="/ugr/car/map/fastslam/global"/>
+
+  <arg name="setup_stand_dev" default="0.1"/>
+  <arg name="particle_count" default="200" />
+  <arg name="effective_particle_count" default="150" />
+  <arg name="eps" default="0.5" />
+  <arg name="max_range" default="15" />
+  <arg name="max_half_angle" default="1.5" />
+  <arg name="observe_dt" default="0.0" />
+
+  <arg name="yaw_unwrap_threshold" default="4.0" />
 
   <node pkg="slam_mcl" output="screen" type="slam_mcl" name="slam_mcl" respawn="False">
     # Parameters
@@ -14,8 +24,12 @@
     <rosparam file="$(find slam_mcl)/config/mcl.yaml" command="load" />
 
     # Input/output remapping
+
+    <!-- Changed to param because it has to be changed between missions -->
+    <param name="path_to_map" value="$(arg path_to_map)" />
+    <!-- <remap from="/input/map" to="ugr/car/map/$(arg map_prefix)" /> -->
+
     <remap from="/input/observations" to="ugr/car/observations/lidar" />
-    <remap from="/input/map" to="ugr/car/map/$(arg map_prefix)" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/mcl" />
   </node>
 </launch>
