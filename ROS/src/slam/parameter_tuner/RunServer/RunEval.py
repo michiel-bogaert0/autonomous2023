@@ -14,9 +14,9 @@ file = ""
 fname = ""
 
 if not os.path.isdir(direct):
-     os.makedirs(direct)
+    os.makedirs(direct)
 if not os.path.isdir(directold):
-     os.makedirs(directold)
+    os.makedirs(directold)
 
 
 def readFromFile():
