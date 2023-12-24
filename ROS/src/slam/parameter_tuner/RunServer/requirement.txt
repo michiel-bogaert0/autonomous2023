@@ -1,6 +1,5 @@
 pandas
 numpy
-ast
 counter
 matplotlib
 seaborn

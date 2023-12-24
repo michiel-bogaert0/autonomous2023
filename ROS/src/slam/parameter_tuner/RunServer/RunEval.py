@@ -8,14 +8,15 @@ import numpy as np
 import pandas as pd
 import requests
 
-direct = "../tuner_data/"
-directold = direct + "old/"
+direct = "../tuner_data"
+directold = direct + "/old"
 file = ""
 fname = ""
-if not os.path.exist(direct):
-    os.makedirs(direct)
-if not os.path.exist(directold):
-    os.makedirs(directold)
+
+if not os.path.isdir(direct):
+     os.makedirs(direct)
+if not os.path.isdir(directold):
+     os.makedirs(directold)
 
 
 def readFromFile():
@@ -45,12 +46,16 @@ def readFromFile():
 
     for i in range(df.shape[0]):
         maxLabel.append(Counter(df["labelsConesSlam"][i]))
+    list_len = [len(i) for i in maxLabel]
     maxCols = []
-    for i in range(len(maxLabel[0])):
+    for i in range(max(list_len)):
         maxCol = 0
         for j in range(len(maxLabel)):
-            maxCol = max(maxLabel[j][f"{i}"], maxCol)
+            if len(maxLabel[j]) > i:
+                maxCol = max(maxLabel[j][f"{i}"], maxCol)
+
         maxCols.append(maxCol)
+
     labelsAndData = {}
 
     # create a dictionary every element is cone label [0] , [1] inside there is a list of the simulations and in that there is a list of the values of each label
