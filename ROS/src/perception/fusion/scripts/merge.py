@@ -142,7 +142,7 @@ class MergeNode:
         self.publish(results)
         return
 
-    def transform_observations(self, sensor_msgs, tf_source_time):
+    def transform_observations(self, sensor_msgs):
         """
         Transform all sensor observations to a common frame (self.base_link_frame)
         and time (timestamp of observation last received)
