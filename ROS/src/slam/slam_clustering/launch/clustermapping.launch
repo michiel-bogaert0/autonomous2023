@@ -16,7 +16,7 @@
     <param name="clustering/expected_nr_of_landmarks" value="1000" />
     <param name="clustering/rate" value="10" />
 
-    <remap from="/input/observations" to="/ugr/car/observations/fused"/> 
+    <remap from="/input/observations" to="/ugr/car/observations/lidar"/> 
 
     <remap from="/output/map" to="/ugr/car/map/gt" />
     <remap from="/output/samples" to="/ugr/car/map/gt/samples" />
