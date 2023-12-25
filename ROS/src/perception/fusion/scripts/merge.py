@@ -51,6 +51,7 @@ class MergeNode:
             "ugr/car_base_link/cam0",
         )
         self.input_sensors = ["os_sensor", "ugr/car_base_link/cam0"]
+        self.fusion_frame_id = "late_fusion"
 
         #   Fusion parameters
         self.max_fusion_eucl_distance = float(
@@ -138,6 +139,7 @@ class MergeNode:
 
         # Publish fused observations
         results.header.stamp = results_time
+        results.header.frame_id = self.fusion_frame_id
 
         self.publish(results)
         return

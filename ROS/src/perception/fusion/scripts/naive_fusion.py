@@ -27,13 +27,15 @@ class NaiveFusion:
         fusion_observations = []
         for association in associations:
             if len(association) == 1:
+                # Reshape covariance matrix from 3x3 to 1x9
+                association[0].covariance = tuple(
+                    np.reshape(np.array(association[0].covariance), (1, 9))[0].tolist()
+                )
                 fusion_observations.append(association[0])
                 continue
             fusion_observations.append(self.kalman_filter(association))
             # fusion_observations.append(self.euclidean_average(association))   # Use euclidean average instead of kalman filter
-
         results.observations = fusion_observations
-        results.header.stamp = rospy.Time.now()
         return results
 
     def kd_tree_merger(self, tf_sensor_msgs):
@@ -212,7 +214,6 @@ class NaiveFusion:
             fused_observation.observation.location.y,
             fused_observation.observation.location.z,
         ) = tuple((new_location[0][0], new_location[1][0], new_location[2][0]))
-
         return fused_observation
 
     def euclidean_average(self, association):
