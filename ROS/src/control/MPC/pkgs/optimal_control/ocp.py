@@ -16,6 +16,7 @@ class Ocp:
         self,
         nx: int,
         nu: int,
+        np: int,
         N: int,
         T: float = None,
         F: Callable = None,
@@ -48,6 +49,8 @@ class Ocp:
         self.T = T
         self.F = F
 
+        self.np = np  # Number of control points on path
+
         self.opti = casadi.Opti()
 
         self.X = self.opti.variable(self.nx, N + 1)
@@ -55,13 +58,14 @@ class Ocp:
         self.x0 = self.opti.parameter(self.nx)
 
         self._x_ref = self.opti.parameter(self.nx)
-        self._x_ref_mid = self.opti.parameter(self.nx)
+        self._x_control = self.opti.parameter(self.nx, self.np)
         self.params = []  # additional parameters
 
         # symbolic params to define cost functions
         self.x = casadi.SX.sym("symbolic_x", self.nx)
         self.u = casadi.SX.sym("symbolic_u", self.nu)
         self.x_ref = casadi.SX.sym("symbolic_x_ref", self.nx)
+        self.x_control = casadi.SX.sym("symbolic_x_control_", self.nx)
         self.x_ref_mid = casadi.SX.sym("symbolic_x_ref_mid", self.nx)
 
         self._set_continuity(threads)
@@ -145,10 +149,10 @@ class Ocp:
             self.cost_fun = cost_fun
             L_run = 0  # cost over the horizon
             for i in range(self.N):
-                # get distance to closest point on x_ref?
-                L_run += cost_fun(
-                    self.X[:, i], self.U[:, i], self._x_ref, self._x_ref_mid
-                )
+                for j in range(self.np):
+                    L_run += cost_fun(
+                        self.X[:, i], self.U[:, i], self._x_ref, self._x_control[:, j]
+                    )
             self.cost["run"] = L_run
 
         if terminal_cost_fun is not None:
@@ -168,7 +172,7 @@ class Ocp:
     @running_cost.setter
     def running_cost(self, symbolic_cost):
         cost_fun = casadi.Function(
-            "cost_fun", [self.x, self.u, self.x_ref, self.x_ref_mid], [symbolic_cost]
+            "cost_fun", [self.x, self.u, self.x_ref, self.x_control], [symbolic_cost]
         )
         self.set_cost(cost_fun=cost_fun)
 
@@ -236,7 +240,7 @@ class Ocp:
         self,
         state,
         goal_state,
-        goal_state_mid,
+        control_states,
         X0=None,
         U0=None,
         lin_interpol=False,
@@ -256,7 +260,8 @@ class Ocp:
         """
         self.opti.set_value(self.x0, state)
         self.opti.set_value(self._x_ref, goal_state)
-        self.opti.set_value(self._x_ref_mid, goal_state_mid)
+        for i in range(self.np):
+            self.opti.set_value(self._x_control[:, i], control_states[i])
 
         if lin_interpol and (X0 is None):
             # X0 = interpol(state, goal_state, self.N+1)

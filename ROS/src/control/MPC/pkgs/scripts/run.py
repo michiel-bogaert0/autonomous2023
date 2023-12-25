@@ -81,9 +81,11 @@ class MPC(ManagedNode):
         # car = BicycleModel(dt=0.05)  # dt = publish rate?
 
         self.N = 10
+        self.np = 5
         self.ocp = Ocp(
             car.nx,
             car.nu,
+            np=self.np,
             N=self.N,
             F=car.F,
             T=car.dt * self.N,
@@ -100,9 +102,9 @@ class MPC(ManagedNode):
 
         self.ocp.running_cost = (
             (self.ocp.x - self.ocp.x_ref).T @ Q @ (self.ocp.x - self.ocp.x_ref)
-            + (self.ocp.x - self.ocp.x_ref_mid).T
+            + (self.ocp.x - self.ocp.x_control).T
             @ Q2
-            @ (self.ocp.x - self.ocp.x_ref_mid)
+            @ (self.ocp.x - self.ocp.x_control)
             + self.ocp.u.T @ R @ self.ocp.u
         )
         self.ocp.terminal_cost = (
@@ -202,22 +204,26 @@ class MPC(ManagedNode):
                     target_x, target_y = self.trajectory.calculate_target_point(
                         self.minimal_distance,
                     )
-                    target_x_mid, target_y_mid = self.trajectory.calculate_target_point(
-                        self.minimal_distance / 2,
-                    )
+                    control_targets = []
+                    for _ in np.linspace(0, self.N, self.np):
+                        (
+                            target_x_mid,
+                            target_y_mid,
+                        ) = self.trajectory.calculate_target_point(
+                            self.minimal_distance / 2,
+                        )
+                        control_targets.append(
+                            [target_x_mid, target_y_mid, 0.0, self.speed_target]
+                        )
+
                     self.mpc.reset()
                     init_state = [0, 0, 0, self.actual_speed]
                     goal_state = [target_x, target_y, 0, self.speed_target]
-                    goal_state_mid = [target_x_mid, target_y_mid, 0, self.speed_target]
-
-                    # goal_state = self.trajectory.points[:self.N+1, :].T
-                    # goal_state = np.pad(goal_state, ((0, 2), (0, 0)), mode='constant', constant_values=(0, self.speed_target))
 
                     self.mpc.X_init_guess = target_x
                     current_state = init_state
 
-                    u, info = self.mpc(current_state, goal_state, goal_state_mid)
-                    # current_state = info["X_sol"][:, 1]
+                    u, info = self.mpc(current_state, goal_state, control_targets)
 
                     X_closed_loop = np.array(self.mpc.X_trajectory)
                     U_closed_loop = np.array(self.mpc.U_trajectory)
@@ -225,7 +231,6 @@ class MPC(ManagedNode):
                     rospy.loginfo(f"X_closed_loop: {X_closed_loop}")
                     rospy.loginfo(f"U_closed_loop: {U_closed_loop}")
 
-                    # self.steering_cmd.data = self.steering_cmd.data * self.steering_transmission + U_closed_loop[0, 1]
                     self.steering_cmd.data = U_closed_loop[0, 1]
                     self.velocity_cmd.data = U_closed_loop[0, 0]
 
@@ -236,9 +241,6 @@ class MPC(ManagedNode):
                             message="Target point found.",
                         )
                     )
-
-                    # Go ahead and drive. But adjust speed in corners
-                    # self.velocity_cmd.data = self.speed_target
 
                     # Publish to velocity and position steering controller
                     self.steering_cmd.data /= self.steering_transmission
