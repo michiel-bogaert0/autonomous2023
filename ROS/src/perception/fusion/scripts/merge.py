@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
-import time
 
-import numpy as np
+
 import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import TransformStamped
+from naive_fusion import NaiveFusion
 from node_fixture.fixture import ROSNode
-from sklearn.neighbors import KDTree
-from ugr_msgs.msg import (
-    ObservationWithCovariance,
-    ObservationWithCovarianceArrayStamped,
-)
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
 
 class MergeNode:
@@ -20,6 +16,7 @@ class MergeNode:
         """
         rospy.init_node("observation_merger_node", anonymous=True)
 
+        # Set up subscribers and publisher to receive/send observations
         rospy.Subscriber(
             "/input/lidar_observations",
             ObservationWithCovarianceArrayStamped,
@@ -40,8 +37,11 @@ class MergeNode:
         self.tf_listener = tf.TransformListener(self.tf_buffer)
 
         # Parameters
+        #   Frames
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
+
+        #   Topics
         self.lidar_input_topic, self.camera_input_topic = (
             "/input/lidar_observations",
             "/input/camera_observations",
@@ -50,14 +50,28 @@ class MergeNode:
             "os_sensor",
             "ugr/car_base_link/cam0",
         )
+        self.input_sensors = ["os_sensor", "ugr/car_base_link/cam0"]
+        self.fusion_frame_id = "late_fusion"
 
-        self.waiting_time_ms = 50
-        self.merge_distance_threshold = 2.5
+        #   Fusion parameters
+        self.max_fusion_eucl_distance = float(
+            rospy.get_param("~fusion_eucl_distance", 2.5)
+        )
+        self.max_sensor_time_diff = rospy.get_param("~sensor_time_diff_ms", 50)
 
-        # Random helpers
-        self.camera_last_obs_time, self.lidar_last_obs_time = 0.0, 0.0
+        #   Initialize fusion pipeline
+        self.fusion_pipeline = None
+        self.fusion_method = rospy.get_param("~fusion_method", "naive")
+
+        if self.fusion_method == "naive":
+            self.fusion_pipeline = NaiveFusion(self.max_fusion_eucl_distance)
+
+        # Helper variables
+        self.last_received = 0
         self.is_first_received = True
-        self.last_received_sensor = None
+        self.msg_buffer = []
+        self.sensors_received = []
+        self.msg_wait_timer = None
 
     def publish(self, msg):
         """
@@ -65,134 +79,111 @@ class MergeNode:
         """
         self.result_publisher.publish(msg)
 
-    def detect_observations(self, observations: ObservationWithCovarianceArrayStamped):
-        """
-        Measure time between incoming lidar and camera observations, log to console
-        """
-
-        time_now = time.time_ns() * 1e-6
-        # rospy.loginfo(
-        #     f"\n\nSensor: {observations.header.frame_id}\nTime since\n    lidar: {time_now - self.lidar_last_obs_time} ms;\n    camera: {time_now - self.camera_last_obs_time} ms;\n Time: {time_now};\n\n"
-        # )
-
-        if observations.header.frame_id == self.lidar_sensor_name:
-            self.lidar_last_obs_time = time_now
-        else:
-            self.camera_last_obs_time = time_now
-
     def handle_observations(self, observations: ObservationWithCovarianceArrayStamped):
         """
-        Process incoming lidar and camera observations
-        This function is called every time a message is received by one of the subscribers
-        The following algorithm provides a fairly robust way of handling the observations without putting too much delays on the pipeline
+        Handle incoming observations and send through pipeline
+        Wait for either all messages specified in self.input_sensors to arrive or for a timeout,
+        then send all received messages through the fusion pipeline
         """
+        self.msg_buffer.append(observations)
+        self.sensors_received.append(observations.header.frame_id)
 
-        # Log observations to console
-        self.detect_observations(observations)
-
-        # If the observations are the first ones received after processing the last cycle, a cycle is initiated
-        if (
-            self.is_first_received
-            or observations.header.frame_id == self.last_received_sensor
-        ):
+        if self.is_first_received:
             self.is_first_received = False
-            self.last_received_sensor = observations.header.frame_id
-
-            # Setup up waiting loop for the other sensor. When time-out is reached, second_observations is set to None
-            if observations.header.frame_id == self.lidar_sensor_name:
-                rospy.loginfo("\nReceived lidar, waiting for camera...\n")
-                try:
-                    second_observations = rospy.wait_for_message(
-                        self.camera_input_topic,
-                        ObservationWithCovarianceArrayStamped,
-                        timeout=self.waiting_time_ms * 1e-3,
-                    )
-                except rospy.exceptions.ROSException:
-                    second_observations = None
-            elif observations.header.frame_id == self.camera_sensor_name:
-                rospy.loginfo("\nReceived camera, waiting for lidar...\n")
-                try:
-                    second_observations = rospy.wait_for_message(
-                        self.lidar_input_topic,
-                        ObservationWithCovarianceArrayStamped,
-                        timeout=self.waiting_time_ms * 1e-3,
-                    )
-                except rospy.exceptions.ROSException:
-                    second_observations = None
-            else:
-                # rospy.logerr("Could not recognize sensor name...")
-                return
-        # If the observations are of the second sensor received, the helper variables are set to their initial states.
-        # This same sensor data is also received by the wait_for_message() function above
-        else:
-            self.is_first_received = True
-            self.last_received_sensor = observations.header.frame_id
-            return
-
-        # If waiting time is exceeded, only the sensor observations of the first sensor are published (other sensor will start new cycle when received)
-        if second_observations is None:
-            rospy.logwarn(
-                f"Did not find second observations, publishing {observations.header.frame_id}"
+            self.msg_wait_timer = rospy.Timer(
+                period=rospy.Duration(self.max_sensor_time_diff * 1e-3),
+                callback=self.handle_timeout,
+                oneshot=True,
             )
-            self.publish(observations)
-            self.is_first_received = True
+
+        # Check if messages from all sensors have been received
+        all_received = True
+        for sensor in self.input_sensors:
+            if sensor not in self.sensors_received:
+                all_received = False
+                break
+
+        # If all messages have been received, send through pipeline
+        if all_received:
+            self.msg_wait_timer.shutdown()
+            rospy.loginfo("All msgs received")
+            self.handle_timeout()
             return
+        return
 
-        # Transform observations of both sensors (transformation of both coordinate frame and time)
-        self.transform_observations(observations, second_observations)
+    def handle_timeout(self, event=None):
+        self.sensors_received = []
         self.is_first_received = True
+        send_msgs = self.msg_buffer.copy()
+        self.msg_buffer = []
 
-    def transform_observations(
-        self,
-        early_obs: ObservationWithCovarianceArrayStamped,
-        late_obs: ObservationWithCovarianceArrayStamped,
-    ):
+        rospy.loginfo("\n\n * Send through fusion pipeline:\n")
+        for sensormsg in send_msgs:
+            rospy.loginfo(f"    * {sensormsg.header.frame_id}\n")
+        if len(send_msgs) >= 1:
+            self.run_fusion(send_msgs)
+        return
+
+    def run_fusion(self, sensor_msgs):
         """
-        Transform both lidar and camera observations to a common frame (self.base_link_frame)
-        and time (timestamp of first observation received)
+        Process incoming messages through fusion pipeline
+        """
+
+        # Transform all observations to a common frame and time
+        transformed_msgs, results_time = self.transform_observations(sensor_msgs)
+
+        # Fuse transformed observations
+        results = self.fusion_pipeline.fuse_observations(transformed_msgs)
+
+        self.log_plot_info(transformed_msgs, results)
+
+        # Publish fused observations
+        results.header.stamp = results_time
+        results.header.frame_id = self.fusion_frame_id
+
+        self.publish(results)
+        return
+
+    def transform_observations(self, sensor_msgs):
+        """
+        Transform all sensor observations to a common frame (self.base_link_frame)
+        and time (timestamp of observation last received)
         """
 
         try:
-            # Find transform for both sensors
-            tf_early_to_base: TransformStamped = self.tf_buffer.lookup_transform_full(
-                target_frame=early_obs.header.frame_id,  # Transform from this frame,
-                target_time=early_obs.header.stamp,  # at this time ...
-                source_frame=self.base_link_frame,  # ... to this frame,
-                source_time=late_obs.header.stamp,  # at this time.
-                fixed_frame=self.world_frame,  # Frame that does not change over time, in this case the "/world" frame
-                timeout=rospy.Duration(0),  # Time-out (not specified -> )
-            )
+            transformed_msgs = []
+            tf_source_time = sensor_msgs[
+                -1
+            ].header.stamp  # Time to which observations messages are transformed
 
-            tf_late_to_base: TransformStamped = self.tf_buffer.lookup_transform_full(
-                target_frame=late_obs.header.frame_id,  # Idem
-                target_time=late_obs.header.stamp,
-                source_frame=self.base_link_frame,
-                source_time=late_obs.header.stamp,
-                fixed_frame=self.world_frame,
-                timeout=rospy.Duration(0),
-            )
+            for sensor_msg in sensor_msgs:
+                transform: TransformStamped = self.tf_buffer.lookup_transform_full(
+                    target_frame=sensor_msg.header.frame_id,  # Transform from this frame,
+                    target_time=sensor_msg.header.stamp,  # at this time ...
+                    source_frame=self.base_link_frame,  # ... to this frame,
+                    source_time=tf_source_time,  # at this time.
+                    fixed_frame=self.world_frame,  # Frame that does not change over time, in this case the "/world" frame
+                    timeout=rospy.Duration(0),  # Time-out
+                )
+                tf_sensor_msg: ObservationWithCovarianceArrayStamped = (
+                    ROSNode.do_transform_observations(sensor_msg, transform)
+                )
+                transformed_msgs.append(tf_sensor_msg)
 
-            # Apply transformations to observations
-            time_transformed_early_obs: ObservationWithCovarianceArrayStamped = (
-                ROSNode.do_transform_observations(early_obs, tf_early_to_base)
-            )
-            time_transformed_late_obs: ObservationWithCovarianceArrayStamped = (
-                ROSNode.do_transform_observations(late_obs, tf_late_to_base)
-            )
-
-            # Proceed fusion by matching lidar with camera observations
-            self.kd_tree_merger(time_transformed_early_obs, time_transformed_late_obs)
+            return transformed_msgs, tf_source_time
 
         except Exception as e:
             rospy.logerr(
-                f"Mergenode has caught an exception. Ignoring ObservationWithCovarianceArrayStamped messages... Exception: {e}"
+                f"Mergenode has caught an exception during transformation. Exception: {e}"
             )
+        return [], None
 
-    def kd_tree_merger(self, observations1, observations2):
-        """
-        Link lidar observations with camera observations based on euclidean distance (with a KDTree)
-        """
-        all_observations = observations1.observations + observations2.observations
+    def log_plot_info(self, msgs, fused_obs):
+        """ """
+        # Create list of sensors, observations & points of all incoming messages
+        all_observations = []
+        for msg in msgs:
+            all_observations.extend(msg.observations)
         all_points = list(
             map(
                 lambda obs: [
@@ -203,203 +194,23 @@ class MergeNode:
                 all_observations,
             )
         )
-        kdtree_all = KDTree(all_points)
-
-        centers = []
-        resulting_observations = []
-
-        # Loop through observations
-        for observation in all_observations:
-            if observation in observations1.observations:
-                this_sensor_observations = observations1
-                other_sensor_observations = observations2
-            else:
-                this_sensor_observations = observations2
-                other_sensor_observations = observations1
-
-            # Use set of observations of other sensor + this observations to avoid linking observations of the same sensor
-            current_obs_set = [observation] + other_sensor_observations.observations
-            sensor = this_sensor_observations.header.frame_id
-
-            points = list(
-                map(
-                    lambda obs: [
-                        obs.observation.location.x,
-                        obs.observation.location.y,
-                        obs.observation.location.z,
-                    ],
-                    current_obs_set,
-                )
+        centers = list(
+            map(
+                lambda obs: [
+                    obs.observation.location.x,
+                    obs.observation.location.y,
+                    obs.observation.location.z,
+                ],
+                fused_obs.observations,
             )
-            kdtree_observation = KDTree(points)
+        )
 
-            location = [
-                observation.observation.location.x,
-                observation.observation.location.y,
-                observation.observation.location.z,
-            ]
-            distance, indices = kdtree_observation.query([location], k=2)
-            index = indices[0][1]
-
-            # Make KDTree for all points to avoid multiple use of one observation
-            distance2, indices2 = kdtree_all.query([points[index]], k=2)
-            index2 = indices2[0][1]
-
-            # Make sure both found observations have each other as nearest neighbor, and only match observations if the distance is smaller then the given threshold
-            if (
-                all_points[index2] == location
-                and distance[0][1] <= self.merge_distance_threshold
-                and location not in centers
-            ):
-                if sensor == self.lidar_sensor_name:
-                    lidar_observation = observation
-                    camera_observation = other_sensor_observations.observations[
-                        index - 1
-                    ]
-                else:
-                    camera_observation = observation
-                    lidar_observation = other_sensor_observations.observations[
-                        index - 1
-                    ]
-
-                # Find observation that is at the center of linked observations (either euclidean average or with Kalman filter)
-                center_observation = self.kalman_filter(
-                    lidar_observation, camera_observation
-                )
-                center_location = [
-                    center_observation.observation.location.x,
-                    center_observation.observation.location.y,
-                    center_observation.observation.location.z,
-                ]
-                if center_location not in centers:
-                    centers.append(center_location)
-                    resulting_observations.append(center_observation)
-
-            # Add isolated cones to results
-            elif location not in centers:
-                centers.append(location)
-                resulting_observations.append(observation)
-
-        # Print location of all observations (both lidar and camera), predicted colors and fused observation locations
+        # Print location of all observations, predicted colors and fused observation locations
         rospy.loginfo(f"\npoints = {all_points}")
         rospy.loginfo(
             f"\ncolors = {[observation.observation.observation_class for observation in all_observations]}"
         )
         rospy.loginfo(f"\ncenters = {centers}")
-
-        # Create and publish new ObservationWithCovarianceArrayStamped object with fusion data
-        result = ObservationWithCovarianceArrayStamped()
-        result.header.seq = observations1.header.seq
-        result.header.stamp.secs, result.header.stamp.nsecs = (
-            observations1.header.stamp.secs,
-            observations1.header.stamp.nsecs,
-        )
-        result.header.frame_id = observations1.header.frame_id
-        result.observations = resulting_observations
-        self.publish(result)
-
-    def euclidean_average(self, lidar_observation, camera_observation):
-        """
-        Find euclidean average of lidar and camera observations for fusion
-        """
-        average_observation = ObservationWithCovariance()
-        average_observation.observation.observation_class = (
-            lidar_observation.observation.observation_class
-        )
-        average_observation.observation.belief = lidar_observation.observation.belief
-        average_observation.covariance = tuple(
-            list(lidar_observation.covariance).copy()
-        )
-
-        lidar_observation_location = [
-            lidar_observation.observation.location.x,
-            lidar_observation.observation.location.y,
-            lidar_observation.observation.location.z,
-        ]
-        camera_observation_location = [
-            camera_observation.observation.location.x,
-            camera_observation.observation.location.y,
-            camera_observation.observation.location.z,
-        ]
-        (
-            average_observation.observation.location.x,
-            average_observation.observation.location.y,
-            average_observation.observation.location.z,
-        ) = list(
-            (
-                np.array(lidar_observation_location)
-                + np.array(camera_observation_location)
-            )
-            / 2
-        )
-
-        return average_observation
-
-    def kalman_filter(self, lidar_observation, camera_observation):
-        """
-        This function provides a basic implementation of a Kalman filter to use for sensor fusion
-        Mainly based on https://arxiv.org/pdf/1710.04055.pdf
-        """
-
-        # Initialize numpy arrays
-        covariance_matrix_lidar = np.reshape(
-            np.array(lidar_observation.covariance), (3, 3)
-        )
-        covariance_matrix_camera = np.reshape(
-            np.array(camera_observation.covariance), (3, 3)
-        )
-        lidar_observation_location = np.reshape(
-            np.array(
-                [
-                    lidar_observation.observation.location.x,
-                    lidar_observation.observation.location.y,
-                    lidar_observation.observation.location.z,
-                ]
-            ),
-            (3, 1),
-        )
-        camera_observation_location = np.reshape(
-            np.array(
-                [
-                    camera_observation.observation.location.x,
-                    camera_observation.observation.location.y,
-                    camera_observation.observation.location.z,
-                ]
-            ),
-            (3, 1),
-        )
-
-        # Calcultate new covariance matrix
-        new_covariance = np.linalg.inv(
-            np.linalg.inv(covariance_matrix_lidar)
-            + np.linalg.inv(covariance_matrix_camera)
-        )
-        # Calculate weights of each sensor's observations
-        lidar_weight = np.matmul(new_covariance, np.linalg.inv(covariance_matrix_lidar))
-        camera_weight = np.matmul(
-            new_covariance, np.linalg.inv(covariance_matrix_camera)
-        )
-
-        # Calculate the weighted average of both observations based on lidar_weight and camera_weight
-        new_prediction = np.matmul(
-            lidar_weight, lidar_observation_location
-        ) + np.matmul(camera_weight, camera_observation_location)
-
-        fused_observation = ObservationWithCovariance()
-        fused_observation.observation.observation_class = (
-            camera_observation.observation.observation_class
-        )
-        fused_observation.observation.belief = camera_observation.observation.belief
-        fused_observation.covariance = tuple(
-            np.reshape(new_covariance, (1, 9)).tolist()[0]
-        )
-        (
-            fused_observation.observation.location.x,
-            fused_observation.observation.location.y,
-            fused_observation.observation.location.z,
-        ) = (new_prediction[0][0], new_prediction[1][0], new_prediction[2][0])
-
-        return fused_observation
 
 
 node = MergeNode()
