@@ -88,8 +88,8 @@ class Controller:
                     set_state_active("loopclosure")
                     set_state_active("map_publisher")
 
-                    # set_state_active("pure_pursuit_control")
-                    set_state_active("MPC_tracking_control")
+                    set_state_active("pure_pursuit_control")
+                    # set_state_active("MPC_tracking_control")
                     set_state_active("control_path_publisher")
                 elif self.mission == AutonomousMission.SKIDPAD:
                     self.target_lap_count = 1
@@ -98,8 +98,8 @@ class Controller:
                     set_state_active("loopclosure")
                     set_state_active("map_publisher")
 
-                    # set_state_active("pure_pursuit_control")
-                    set_state_active("MPC_tracking_control")
+                    set_state_active("pure_pursuit_control")
+                    # set_state_active("MPC_tracking_control")
                     set_state_active("control_path_publisher")
                 elif self.mission == AutonomousMission.AUTOCROSS:
                     self.target_lap_count = 1
