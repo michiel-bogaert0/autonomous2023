@@ -121,7 +121,7 @@ class ROSNode:
 
         f = transform_to_kdl(transform)
 
-        for pose in enumerate(path.poses):
+        for pose in path.poses:
             p = f * PyKDL.Vector(
                 pose.pose.position.x, pose.pose.position.y, pose.pose.position.z
             )

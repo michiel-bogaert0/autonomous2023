@@ -2,6 +2,7 @@ import numpy as np
 import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Path
 from node_fixture.fixture import ROSNode
 from std_msgs.msg import Header
 from tf2_geometry_msgs import do_transform_pose
@@ -27,6 +28,8 @@ class Trajectory:
         # for skidpad/acc use ugr/map, for trackdrive/autocross use ugr/car_odom
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.time_source = rospy.Time(0)
+
+        self.path = Path()
 
     def transform_blf(self):
         """
