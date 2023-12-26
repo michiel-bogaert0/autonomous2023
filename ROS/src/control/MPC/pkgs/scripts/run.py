@@ -94,8 +94,8 @@ class MPC(ManagedNode):
         )
 
         Q = np.diag([1e-2, 1e-2, 0, 1e-2])
-        Q2 = np.diag([1e-2, 1e-2, 0, 1e-2])
-        R = np.diag([1e-4, 2e-1])
+        Q2 = np.diag([2e-2, 2e-2, 0, 5e-3])
+        R = np.diag([1e-4, 5e-2])
 
         # Weight matrices for the terminal cost
         P = np.diag([0, 0, 0, 0])
