@@ -2,7 +2,6 @@
 import enum
 from collections import deque
 from functools import partial
-from pathlib import Path
 from typing import Any, Type, get_type_hints
 
 import can
@@ -14,7 +13,8 @@ import rostopic
 from can_msgs.msg import Frame
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from fs_msgs.msg import Cone
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import PoseStamped, TransformStamped
+from nav_msgs.msg import Path
 from rospy.impl.tcpros import DEFAULT_BUFF_SIZE
 from rospy.rostime import Time
 from tf2_kdl import transform_to_kdl
@@ -113,6 +113,29 @@ class ROSNode:
             self.add_subscribers()
 
         self.publishers = {}
+
+    @staticmethod
+    def do_transform_path(path: Path, transform: TransformStamped) -> Path:
+        new_path = Path()
+        new_path.poses = []
+
+        f = transform_to_kdl(transform)
+
+        for pose in enumerate(path.poses):
+            p = f * PyKDL.Vector(
+                pose.pose.position.x, pose.pose.position.y, pose.pose.position.z
+            )
+
+            new_pose = PoseStamped()
+            new_pose.pose.position.x = p[0]
+            new_pose.pose.position.y = p[1]
+            new_pose.pose.position.z = p[2]
+
+            new_path.poses.append(new_pose)
+
+        new_path.header = transform.header
+
+        return new_path
 
     @staticmethod
     def do_transform_observations(

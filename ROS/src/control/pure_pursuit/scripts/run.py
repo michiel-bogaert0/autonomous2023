@@ -8,11 +8,11 @@ from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
     NodeManagingStatesEnum,
+    ROSNode,
     create_diagnostic_message,
 )
 from node_fixture.node_management import ManagedNode
-from std_msgs.msg import Float64, Header
-from tf2_geometry_msgs import do_transform_pose
+from std_msgs.msg import Float64
 from trajectory import Trajectory
 
 
@@ -63,6 +63,9 @@ class PurePursuit(ManagedNode):
         self.path_sub = super().AddSubscriber(
             "/input/path", Path, self.getPathplanningUpdate
         )
+
+        self.received_path = None
+
         self.odom_sub = super().AddSubscriber(
             "/input/odom", Odometry, self.get_odom_update
         )
@@ -91,22 +94,29 @@ class PurePursuit(ManagedNode):
     def getPathplanningUpdate(self, msg: Path):
         """
         Takes in a new exploration path coming from the mapping algorithm.
+        Does not do anything with it, unless the control loop is active
+        """
+        if msg is None:
+            return
+
+        self.received_path = msg
+
+    def doUpdate(self):
+        """
+        Actually processes a new path
         The path should be relative to self.base_link_frame. Otherwise it will transform to it
         """
-        if Path is None:
+
+        if self.received_path is None:
             return
+
+        msg = self.received_path
 
         # Transform received message to self.base_link_frame
         trans = self.tf_buffer.lookup_transform(
-            self.base_link_frame,
-            msg.header.frame_id,
-            msg.header.stamp,
+            self.base_link_frame, msg.header.frame_id, msg.header.stamp
         )
-        new_header = Header(frame_id=self.base_link_frame, stamp=trans.header.stamp)
-        transformed_path = Path(header=new_header)
-        for pose in msg.poses:
-            pose_t = do_transform_pose(pose, trans)
-            transformed_path.poses.append(pose_t)
+        transformed_path = ROSNode.do_transform_path(msg, trans)
 
         # Create a new path
         current_path = np.zeros((0, 2))
@@ -118,6 +128,9 @@ class PurePursuit(ManagedNode):
         # Save current path and time of transformation to self.trajectory
         self.trajectory.points = current_path
         self.trajectory.time_source = trans.header.stamp
+        self.trajectory.path = transformed_path
+
+        self.received_path = None
 
     def symmetrically_bound_angle(self, angle, max_angle):
         """
@@ -133,6 +146,8 @@ class PurePursuit(ManagedNode):
         while not rospy.is_shutdown():
             if self.state == NodeManagingStatesEnum.ACTIVE:
                 try:
+                    self.doUpdate()
+
                     self.speed_target = rospy.get_param("~speed/target", 3.0)
 
                     # First try to get a target point
