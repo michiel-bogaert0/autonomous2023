@@ -18,8 +18,11 @@ from ugr_msgs.msg import State
 
 
 def set_state(name: str, state: str) -> None:
-    rospy.wait_for_service(f"/node_managing/{name}/set")
-    return rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(state)
+    try:
+        rospy.wait_for_service(f"/node_managing/{name}/set", timeout=1)
+        return rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(state)
+    except BaseException:
+        rospy.logerr(f"Could not set state of {name} to {state}")
 
 
 def set_state_active(name: str) -> None:
@@ -39,14 +42,17 @@ def set_state_finalized(name: str) -> None:
 
 
 def configure_node(name: str) -> None:
-    rospy.wait_for_service(f"/node_managing/{name}/get")
-    data = rospy.ServiceProxy(f"/node_managing/{name}/get", GetNodeState)()
-    if data.state == NodeManagingStatesEnum.ACTIVE:
+    try:
+        rospy.wait_for_service(f"/node_managing/{name}/get", timeout=1)
+        data = rospy.ServiceProxy(f"/node_managing/{name}/get", GetNodeState)()
+        if data.state == NodeManagingStatesEnum.ACTIVE:
+            set_state_inactive(name)
+            set_state_unconfigured(name)
+        elif data.state == NodeManagingStatesEnum.INACTIVE:
+            set_state_unconfigured(name)
         set_state_inactive(name)
-        set_state_unconfigured(name)
-    elif data.state == NodeManagingStatesEnum.INACTIVE:
-        set_state_unconfigured(name)
-    set_state_inactive(name)
+    except BaseException:
+        rospy.logerr(f"Could not configure {name}")
 
 
 def load_params(mission: str) -> None:

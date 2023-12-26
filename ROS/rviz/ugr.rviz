@@ -7,13 +7,22 @@ Panels:
         - /Global Options1
         - /Status1
         - /Perception1/Lidar Raw1
+        - /Perception1/Observations1
+        - /SLAM1
         - /SLAM1/TF1
-        - /SLAM1/TF1/Frames1
         - /SLAM1/TF1/Tree1
+        - /SLAM1/Particles1/Status1
+        - /SLAM1/ISE1
+        - /SLAM1/GT (sim)1
+        - /SLAM1/MCL1
         - /SLAM1/MCL1/Shape1
         - /Control1
-      Splitter Ratio: 0.4060402810573578
-    Tree Height: 696
+        - /Control1/Path1
+        - /Path1
+        - /Path1/Status1
+        - /Path2
+      Splitter Ratio: 0.7911764979362488
+    Tree Height: 923
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -72,8 +81,8 @@ Visualization Manager:
     - Class: rviz/Group
       Displays:
         - Class: rviz/Image
-          Enabled: true
-          Image Topic: /perception/camera/image
+          Enabled: false
+          Image Topic: /ugr/car/sensors/cam0/image
           Max Value: 1
           Median window: 5
           Min Value: 0
@@ -82,7 +91,7 @@ Visualization Manager:
           Queue Size: 2
           Transport Hint: raw
           Unreliable: false
-          Value: true
+          Value: false
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -95,7 +104,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -103,14 +112,14 @@ Visualization Manager:
           Position Transformer: XYZ
           Queue Size: 1
           Selectable: true
-          Size (Pixels): 1
+          Size (Pixels): 2
           Size (m): 0.019999999552965164
           Style: Points
           Topic: /ugr/car/sensors/lidar
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -132,9 +141,9 @@ Visualization Manager:
           Queue Size: 10
           Selectable: true
           Size (Pixels): 3
-          Size (m): 0.029999999329447746
+          Size (m): 0.10000000149011612
           Style: Spheres
-          Topic: /ugr/vis/lidar/groundremoval_pc
+          Topic: /ugr/car/sensors/lidar
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
@@ -172,6 +181,38 @@ Visualization Manager:
           Frame Timeout: 15
           Frames:
             All Enabled: true
+            os_imu:
+              Value: true
+            os_lidar:
+              Value: true
+            os_sensor:
+              Value: true
+            ugr/car_base_link:
+              Value: true
+            ugr/car_base_link/axis0:
+              Value: true
+            ugr/car_base_link/axis1:
+              Value: true
+            ugr/car_base_link/cam0:
+              Value: true
+            ugr/car_base_link/gps0:
+              Value: true
+            ugr/car_base_link/gps1:
+              Value: true
+            ugr/car_base_link/imu0:
+              Value: true
+            ugr/car_base_link/imu1:
+              Value: true
+            ugr/car_base_link/lidar0:
+              Value: true
+            ugr/car_odom:
+              Value: true
+            ugr/gt_base_link:
+              Value: true
+            ugr/map:
+              Value: true
+            ugr/slam_base_link:
+              Value: true
           Marker Alpha: 1
           Marker Scale: 1
           Name: TF
@@ -179,20 +220,46 @@ Visualization Manager:
           Show Axes: true
           Show Names: true
           Tree:
-            {}
+            ugr/map:
+              ugr/car_odom:
+                ugr/car_base_link:
+                  ugr/car_base_link/axis0:
+                    {}
+                  ugr/car_base_link/axis1:
+                    {}
+                  ugr/car_base_link/cam0:
+                    {}
+                  ugr/car_base_link/gps0:
+                    {}
+                  ugr/car_base_link/gps1:
+                    {}
+                  ugr/car_base_link/imu0:
+                    {}
+                  ugr/car_base_link/imu1:
+                    {}
+                  ugr/car_base_link/lidar0:
+                    os_sensor:
+                      os_imu:
+                        {}
+                      os_lidar:
+                        {}
+              ugr/gt_base_link:
+                {}
+            ugr/slam_base_link:
+              {}
           Update Interval: 0
           Value: true
         - Alpha: 1
           Class: rviz_observations_visualization/ObservationWithCovarianceStamped
-          Class 0 color: 0; 0; 255
-          Class 1 color: 255; 214; 0
+          Class 0 color: 0; 0; 0
+          Class 1 color: 0; 0; 0
           Class 2 color: 255; 140; 0
           Class 3 color: 255; 69; 0
           Class 4 color: 0; 0; 0
           Enabled: true
           Name: GT
           Queue Size: 10
-          Realistic: true
+          Realistic: false
           Topic: /ugr/car/map/gt
           Unreliable: false
           Value: true
@@ -203,13 +270,13 @@ Visualization Manager:
           Class 2 color: 255; 140; 0
           Class 3 color: 255; 69; 0
           Class 4 color: 0; 0; 0
-          Enabled: true
+          Enabled: false
           Name: Map MCL
           Queue Size: 10
           Realistic: true
-          Topic: /ugr/car/map/global
+          Topic: /ugr/car/map/fastslam/global
           Unreliable: false
-          Value: true
+          Value: false
         - Alpha: 1
           Class: rviz_observations_visualization/ObservationWithCovarianceStamped
           Class 0 color: 0; 0; 255
@@ -229,7 +296,7 @@ Visualization Manager:
           Axes Length: 0.30000001192092896
           Axes Radius: 0.009999999776482582
           Class: rviz/PoseArray
-          Color: 31; 255; 6
+          Color: 255; 0; 0
           Enabled: true
           Head Length: 0.07000000029802322
           Head Radius: 0.029999999329447746
@@ -258,7 +325,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: false
-          Enabled: false
+          Enabled: true
           Keep: 20
           Name: SLAM
           Position Tolerance: 0.10000000149011612
@@ -275,7 +342,7 @@ Visualization Manager:
             Value: Arrow
           Topic: /ugr/car/odometry/filtered/fastslam
           Unreliable: false
-          Value: false
+          Value: true
         - Angle Tolerance: 0.10000000149011612
           Class: rviz/Odometry
           Covariance:
@@ -294,7 +361,7 @@ Visualization Manager:
               Value: true
             Value: false
           Enabled: true
-          Keep: 50
+          Keep: 20
           Name: ISE
           Position Tolerance: 0.10000000149011612
           Queue Size: 10
@@ -329,7 +396,7 @@ Visualization Manager:
               Value: true
             Value: false
           Enabled: true
-          Keep: 20
+          Keep: 10
           Name: GT (sim)
           Position Tolerance: 0.10000000149011612
           Queue Size: 10
@@ -364,7 +431,7 @@ Visualization Manager:
               Value: true
             Value: false
           Enabled: true
-          Keep: 20
+          Keep: 2000
           Name: MCL
           Position Tolerance: 0.10000000149011612
           Queue Size: 10
@@ -467,7 +534,7 @@ Visualization Manager:
           Buffer Length: 1
           Class: rviz/Path
           Color: 0; 0; 255
-          Enabled: true
+          Enabled: false
           Head Diameter: 0.30000001192092896
           Head Length: 0.20000000298023224
           Length: 0.30000001192092896
@@ -486,12 +553,12 @@ Visualization Manager:
           Shaft Length: 0.10000000149011612
           Topic: /boundary_estimation/debug/left_boundary
           Unreliable: false
-          Value: true
+          Value: false
         - Alpha: 1
           Buffer Length: 1
           Class: rviz/Path
           Color: 255; 255; 0
-          Enabled: true
+          Enabled: false
           Head Diameter: 0.30000001192092896
           Head Length: 0.20000000298023224
           Length: 0.30000001192092896
@@ -510,9 +577,57 @@ Visualization Manager:
           Shaft Length: 0.10000000149011612
           Topic: /boundary_estimation/debug/right_boundary
           Unreliable: false
-          Value: true
+          Value: false
       Enabled: true
       Name: Control
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 255; 0; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /output/p
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 85; 0; 255
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /output/p2
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 121; 121; 121
@@ -538,20 +653,26 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 4.709981441497803
-      Class: rviz/TopDownOrtho
+      Class: rviz/ThirdPersonFollower
+      Distance: 51.759788513183594
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Field of View: 0.7853981852531433
+      Focal Point:
+        X: 5.02194881439209
+        Y: -2.3789217472076416
+        Z: 0
+      Focal Shape Fixed Size: false
+      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 34.67988204956055
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
-      X: 12.532259941101074
-      Y: 0.8977147340774536
+      Yaw: 3.1453983783721924
     Saved: ~
 Window Geometry:
   Camera:
@@ -561,7 +682,7 @@ Window Geometry:
   Height: 1136
   Hide Left Dock: false
   Hide Right Dock: true
-  QMainWindow State: 000000ff00000000fd000000040000000000000206000003d6fc020000000ffb0000001200530065006c0065006300740069006f006e000000003d000000cd0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003b000002f3000000c700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000c00430061006d0065007200610100000334000000dd0000001600fffffffb0000000a0049006d00610067006500000001a60000013d0000000000000000fb0000001200530065006c0065006300740069006f006e0000000361000000ae0000005c00fffffffb0000000c00540065006c0065006f0070000000035c000000b30000004500fffffffb000000100044006900730070006c00610079007300000002e20000012d000000c700fffffffb0000000a0049006d0061006700650000000349000000e10000000000000000fb0000000c00430061006d00650072006100000003230000010700000000000000000000000100000186000003d6fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003b000003d6000000a000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007800000003efc0100000002fb0000000800540069006d00650100000000000007800000030700fffffffb0000000800540069006d0065010000000000000450000000000000000000000574000003d600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000020b000003d6fc020000000ffb0000001200530065006c0065006300740069006f006e000000003d000000cd0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003b000003d6000000c700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000c00430061006d0065007200610000000334000000dd0000001600fffffffb0000000a0049006d00610067006500000001a60000013d0000000000000000fb0000001200530065006c0065006300740069006f006e0000000361000000ae0000005c00fffffffb0000000c00540065006c0065006f0070000000035c000000b30000004500fffffffb000000100044006900730070006c00610079007300000002e20000012d000000c700fffffffb0000000a0049006d0061006700650000000349000000e10000000000000000fb0000000c00430061006d00650072006100000003230000010700000000000000000000000100000186000003d6fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003b000003d6000000a000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007800000003efc0100000002fb0000000800540069006d00650100000000000007800000030700fffffffb0000000800540069006d006501000000000000045000000000000000000000056f000003d600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Teleop:
