@@ -9,6 +9,11 @@ function build-nogpu {
 }
 
 function post-install {
+
+    # Load submodules
+    git submodule init
+	git submodule update
+
     # Install pre-commit hook
     sudo apt-get install cppcheck llvm
     pip3 install pre-commit clang-format
