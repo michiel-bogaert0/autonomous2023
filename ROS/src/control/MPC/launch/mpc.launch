@@ -12,7 +12,7 @@
         <param name="speed_start" value="2" />
         <param name="speed_stop" value="12" />
         <param name="distance_start" value="5" />
-        <param name="distance_stop" value="7" />     
+        <param name="distance_stop" value="8" />     
 
         <remap from="/input/path" to="/pathplanning/path" />
         <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>
