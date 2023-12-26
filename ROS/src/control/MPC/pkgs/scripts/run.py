@@ -90,7 +90,8 @@ class MPC(ManagedNode):
             F=car.F,
             T=car.dt * self.N,
             terminal_constraint=False,
-            integrator="euler",
+            show_execution_time=False,
+            silent=True,
         )
 
         Q = np.diag([1e-2, 1e-2, 0, 1e-2])
@@ -171,7 +172,6 @@ class MPC(ManagedNode):
             if self.state == NodeManagingStatesEnum.ACTIVE:
                 try:
                     speed_target = rospy.get_param("~speed/target", 3.0)
-                    rospy.loginfo(f"Speed target: {self.speed_target}")
 
                     # Change velocity constraints when speed target changes
                     if speed_target != self.speed_target:
@@ -225,11 +225,11 @@ class MPC(ManagedNode):
 
                     u, info = self.mpc(current_state, goal_state, control_targets)
 
-                    X_closed_loop = np.array(self.mpc.X_trajectory)
+                    # X_closed_loop = np.array(self.mpc.X_trajectory)
                     U_closed_loop = np.array(self.mpc.U_trajectory)
 
-                    rospy.loginfo(f"X_closed_loop: {X_closed_loop}")
-                    rospy.loginfo(f"U_closed_loop: {U_closed_loop}")
+                    # rospy.loginfo(f"X_closed_loop: {X_closed_loop}")
+                    # rospy.loginfo(f"U_closed_loop: {U_closed_loop}")
 
                     self.steering_cmd.data = U_closed_loop[0, 1]
                     self.velocity_cmd.data = U_closed_loop[0, 0]

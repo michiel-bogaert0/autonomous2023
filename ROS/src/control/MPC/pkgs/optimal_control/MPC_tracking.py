@@ -23,7 +23,6 @@ class MPC_tracking:
 
     def __init__(self, ocp: Ocp, silent=True, store_intermediate=False):
         self.ocp = ocp
-        self.ocp.set_solver(silent)
 
         self.X_sol = None
         self.U_sol = None

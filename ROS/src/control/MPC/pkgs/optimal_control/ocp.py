@@ -25,7 +25,6 @@ class Ocp:
         silent=False,
         show_execution_time=True,
         store_intermediate=False,
-        integrator="rk4",
         threads=1,
     ):
         """optimal control abstraction
@@ -291,7 +290,6 @@ class Ocp:
             if "t_proc_total" in self.sol.stats().keys():
                 time = self.sol.stats()["t_proc_total"]
             else:
-                print("using outer execution time")
                 time = self.timer.time
                 # time = (
                 #     self.sol.stats()["t_proc_nlp_f"]
