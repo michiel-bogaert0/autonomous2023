@@ -1,6 +1,0 @@
-
-<launch>
-  <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true" />
-  <include file="$(find boundary_estimation)/launch/boundary_estimation.launch" pass_all_args="true" />
-  <include file="$(find pathplanning)/launch/visualiser.launch" pass_all_args="true"/>
-</launch>
