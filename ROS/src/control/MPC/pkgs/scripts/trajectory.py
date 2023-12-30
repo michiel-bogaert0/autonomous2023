@@ -18,7 +18,7 @@ class Trajectory:
         self.points = np.array([])
         self.target = np.array([0, 0])
 
-        # change indix is True for trackdrive/autocross, false for skidpad/acc
+        # change index is True for trackdrive/autocross, false for skidpad/acc
         self.change_index = rospy.get_param("~change_index", True)
 
         # Transformations

@@ -16,7 +16,6 @@ from node_fixture.node_management import ManagedNode
 from optimal_control.MPC_tracking import MPC_tracking
 from optimal_control.ocp import Ocp
 from std_msgs.msg import Float64
-from tf2_geometry_msgs import do_transform_pose
 from trajectory import Trajectory
 
 
@@ -160,11 +159,7 @@ class MPC(ManagedNode):
             msg.header.frame_id,
             msg.header.stamp,
         )
-
         transformed_path = ROSNode.do_transform_path(msg, trans)
-        for pose in msg.poses:
-            pose_t = do_transform_pose(pose, trans)
-            transformed_path.poses.append(pose_t)
 
         # Create a new path
         current_path = np.zeros((0, 2))
