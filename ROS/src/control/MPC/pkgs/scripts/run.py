@@ -97,7 +97,7 @@ class MPC(ManagedNode):
         )
 
         Q = np.diag([1e-2, 1e-2, 0, 1e-2])
-        Q2 = np.diag([2e-2, 2e-2, 0, 5e-3])
+        Q2 = np.diag([1e-2, 1e-2, 0, 5e-3])
         R = np.diag([1e-4, 5e-2])
 
         # Weight matrices for the terminal cost
@@ -241,15 +241,15 @@ class MPC(ManagedNode):
                         continue
 
                     control_targets = []
-                    for _ in np.linspace(0, self.N, self.np):
+                    for n in np.linspace(self.N, 0, self.np, endpoint=False):
                         (
-                            target_x_mid,
-                            target_y_mid,
+                            control_x,
+                            control_y,
                         ) = self.trajectory.calculate_target_point(
-                            self.minimal_distance / 2
+                            self.minimal_distance / n
                         )
                         control_targets.append(
-                            [target_x_mid, target_y_mid, 0.0, self.speed_target]
+                            [control_x, control_y, 0.0, self.speed_target]
                         )
 
                     self.mpc.reset()
