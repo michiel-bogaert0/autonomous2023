@@ -29,7 +29,7 @@
     <param name="path_to_map" value="$(arg path_to_map)" />
     <!-- <remap from="/input/map" to="ugr/car/map/$(arg map_prefix)" /> -->
 
-    <remap from="/input/observations" to="ugr/car/observations/lidar" />
+    <remap from="/input/observations" to="/ugr/car/observations/lidar" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/mcl" />
   </node>
 </launch>

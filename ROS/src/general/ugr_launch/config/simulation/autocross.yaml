@@ -1,9 +1,0 @@
-slam_mcl:
-  path_to_map: "/ugr/car/map/fastslam/global"
-loopclosure:
-  finishpoint: [0, 0, 0]
-pure_pursuit:
-  change_index: True
-  world_frame: "ugr/map"
-  speed:
-    target: 2.0
