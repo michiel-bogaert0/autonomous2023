@@ -7,7 +7,6 @@ from nav_msgs.msg import Path
 from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
-    NodeManagingStatesEnum,
     create_diagnostic_message,
 )
 from node_fixture.node_management import ManagedNode
@@ -17,7 +16,6 @@ class PathPublisher(ManagedNode):
     def __init__(self):
         rospy.init_node("control_path_publisher")
         super().__init__("control_path_publisher")
-        self.publish_path()
         rospy.spin()
 
     def doConfigure(self):
@@ -39,23 +37,17 @@ class PathPublisher(ManagedNode):
         self.path = rospkg.RosPack().get_path(
             rospy.get_param("~package_path")
         ) + rospy.get_param("~path")
-        pass
+        self.publish_path()
 
     def publish_path(self):
         ros_path = Path()
-        rate = rospy.Rate(0.2)
         try:
-            # Publish path (avoid transform buffer to get full )
-            while not rospy.is_shutdown():
-                if self.state == NodeManagingStatesEnum.ACTIVE:
-                    # Try to parse YAML
-                    with open(self.path, "r") as file:
-                        path = yaml.safe_load(file)
-                        fill_message_args(ros_path, path)
+            # Try to parse YAML
+            with open(self.path, "r") as file:
+                path = yaml.safe_load(file)
+                fill_message_args(ros_path, path)
 
-                        self.path_publisher.publish(ros_path)
-
-                rate.sleep()
+                self.path_publisher.publish(ros_path)
 
         except Exception:
             rospy.logerr(

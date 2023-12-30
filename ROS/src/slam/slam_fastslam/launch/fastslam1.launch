@@ -42,8 +42,10 @@
     <param name="base_link_frame" value="$(arg base_link_frame)" />
     <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
     <param name="lidar_frame" value="$(arg lidar_frame)" />
+    <param name="average_output_pose" value="false" />
     
     <param name="setup_stand_dev" value="$(arg setup_stand_dev)" />
+    <param name="publish_rate" value="10"/>
     
     <param name="particle_count" value="$(arg particle_count)" />
     <param name="effective_particle_count" value="$(arg effective_particle_count)" />
@@ -84,7 +86,7 @@
     <param name="localmap_namespace" value="fastslam/local" />
 
     # Input/output remapping
-    <remap from="/input/observations" to="ugr/car/observations/lidar" />
+    <remap from="/input/observations" to="/ugr/car/observations/lidar" />
 
     <remap from="/output/observations" to="/ugr/car/observations/fastslam" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/fastslam" />
