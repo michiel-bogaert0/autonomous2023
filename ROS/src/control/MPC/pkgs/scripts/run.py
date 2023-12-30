@@ -32,8 +32,6 @@ class MPC(ManagedNode):
         self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
-        self.min_speed = rospy.get_param("~speed/min", 0.3)
-        self.min_corner_speed = rospy.get_param("~speed/min_corner_speed", 0.7)
         self.wheelradius = rospy.get_param("~wheelradius", 0.1)
 
         self.velocity_cmd = Float64(0.0)
@@ -53,6 +51,7 @@ class MPC(ManagedNode):
         self.steering_pub = super().AddPublisher(
             "/output/steering_position_controller/command", Float64, queue_size=10
         )
+        # For visualization
         self.vis_pub = super().AddPublisher(
             "/output/target_point",
             PointStamped,
@@ -126,6 +125,7 @@ class MPC(ManagedNode):
         self.mpc = MPC_tracking(self.ocp)
 
     def doActivate(self):
+        # Do this here because some parameters are set in the mission yaml files
         self.trajectory = Trajectory()
 
     def get_odom_update(self, msg: Odometry):
@@ -222,7 +222,7 @@ class MPC(ManagedNode):
 
                     # Calculate target point
                     target_x, target_y = self.trajectory.calculate_target_point(
-                        self.minimal_distance,
+                        self.minimal_distance
                     )
 
                     if target_x == 0 and target_y == 0:
@@ -246,7 +246,7 @@ class MPC(ManagedNode):
                             target_x_mid,
                             target_y_mid,
                         ) = self.trajectory.calculate_target_point(
-                            self.minimal_distance / 2,
+                            self.minimal_distance / 2
                         )
                         control_targets.append(
                             [target_x_mid, target_y_mid, 0.0, self.speed_target]
@@ -287,6 +287,7 @@ class MPC(ManagedNode):
                     )  # Velocity to angular velocity
                     self.velocity_pub.publish(self.velocity_cmd)
 
+                    # Publish target point for visualization
                     point = PointStamped()
                     point.header.stamp = self.trajectory.time_source
                     point.header.frame_id = self.base_link_frame
