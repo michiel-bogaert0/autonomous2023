@@ -3,6 +3,7 @@ import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
+from node_fixture.fixture import ROSNode
 from std_msgs.msg import Header
 from tf2_geometry_msgs import do_transform_pose
 
@@ -28,6 +29,8 @@ class Trajectory:
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.time_source = rospy.Time(0)
 
+        self.path = Path()
+
     def transform_blf(self):
         """
         transforms a path, given in points (N,2) from base_link_frame to base_link_frame at current time
@@ -45,35 +48,14 @@ class Trajectory:
             timeout=rospy.Duration(0.2),
         )
 
-        # save time of last transform for next transform
         self.time_source = self.trans.header.stamp
 
-        # Transform
-        new_header = Header(
-            frame_id=self.base_link_frame, stamp=self.trans.header.stamp
-        )
-        transformed_path = Path(header=new_header)
-
-        for point in self.points:
-            pose = PoseStamped(
-                header=Header(
-                    frame_id=self.base_link_frame, stamp=self.trans.header.stamp
-                )
-            )
-
-            pose.pose.position.x = point[0]
-            pose.pose.position.y = point[1]
-
-            pose_t = do_transform_pose(pose, self.trans)
-
-            transformed_path.poses.append(pose_t)
+        # Transform path
+        self.path = ROSNode.do_transform_path(self.path, self.trans)
 
         # save points for next transform
         self.points = np.array(
-            [
-                [pose.pose.position.x, pose.pose.position.y]
-                for pose in transformed_path.poses
-            ]
+            [[pose.pose.position.x, pose.pose.position.y] for pose in self.path.poses]
         )
         return self.points
 
