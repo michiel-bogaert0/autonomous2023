@@ -3,21 +3,11 @@ particle_count: 600
 effective_particle_count: 400
 observe_prob: 0.99
 yaw_unwrap_threshold: 4.0
-measurement_covariance:
-- 0.1
-- 0.0
-- 0.0
-- 1
-input_noise:
-- 0.1
-- 0.0
-- 0.0
-- 0.0
-- 0.03
-- 0.0
-- 0.0
-- 0.0
-- 0.01
+
+measurement_covariance: [0.1, 0.0, 0.0, 0.1]
+input_noise: [0.1, 0.0, 0.0, 0.0, 0.03, 0.0, 0.0, 0.0, 0.01]
+
+#Lidar slam options
 lidar_eps: 0.5
 lidar_max_range: 15
 lidar_max_half_angle: 1.57
@@ -26,6 +16,8 @@ lidar_expected_half_angle: 1.57
 lidar_acceptance_score: 5.0
 lidar_penalty_score: -0.5
 lidar_discard_score: -2.0
+
+#Camera slam options
 camera_eps: 0.5
 camera_max_range: 12
 camera_max_half_angle: 0.6
