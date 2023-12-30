@@ -70,13 +70,6 @@ class PurePursuit(ManagedNode):
             "/input/odom", Odometry, self.get_odom_update
         )
 
-        """
-          Trajectory parameters and conditions
-            - minimal_distance: the minimal required distance between the car and the candidate target point
-            - max_angle: the maximal allowed angle difference between the car and the candidate target point
-            - t_step: the t step the alg takes when progressing through the underlying parametric equations
-                      Indirectly determines how many points are checked per segment.
-        """
         self.publish_rate = rospy.get_param("~publish_rate", 10)
 
         self.speed_target = rospy.get_param("~speed/target", 3.0)

@@ -9,12 +9,13 @@ from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
     NodeManagingStatesEnum,
+    ROSNode,
     create_diagnostic_message,
 )
 from node_fixture.node_management import ManagedNode
 from optimal_control.MPC_tracking import MPC_tracking
 from optimal_control.ocp import Ocp
-from std_msgs.msg import Float64, Header
+from std_msgs.msg import Float64
 from tf2_geometry_msgs import do_transform_pose
 from trajectory import Trajectory
 
@@ -68,6 +69,9 @@ class MPC(ManagedNode):
         self.path_sub = super().AddSubscriber(
             "/input/path", Path, self.getPathplanningUpdate
         )
+
+        self.received_path = None
+
         self.odom_sub = super().AddSubscriber(
             "/input/odom", Odometry, self.get_odom_update
         )
@@ -81,7 +85,7 @@ class MPC(ManagedNode):
         # car = BicycleModel(dt=0.05)  # dt = publish rate?
 
         self.N = 10
-        self.np = 5
+        self.np = 5  # Number of control points to keep car close to path
         self.ocp = Ocp(
             car.nx,
             car.nu,
@@ -134,14 +138,30 @@ class MPC(ManagedNode):
         The path should be relative to self.base_link_frame. Otherwise it will transform to it
         """
 
+        if msg is None:
+            return
+
+        self.received_path = msg
+
+    def doUpdate(self):
+        """
+        Actually processes a new path
+        The path should be relative to self.base_link_frame. Otherwise it will transform to it
+        """
+
+        if self.received_path is None:
+            return
+
+        msg = self.received_path
+
         # Transform received message to self.base_link_frame
         trans = self.tf_buffer.lookup_transform(
             self.base_link_frame,
             msg.header.frame_id,
             msg.header.stamp,
         )
-        new_header = Header(frame_id=self.base_link_frame, stamp=msg.header.stamp)
-        transformed_path = Path(header=new_header)
+
+        transformed_path = ROSNode.do_transform_path(msg, trans)
         for pose in msg.poses:
             pose_t = do_transform_pose(pose, trans)
             transformed_path.poses.append(pose_t)
@@ -156,6 +176,9 @@ class MPC(ManagedNode):
         # Save current path and time of transformation to self.trajectory
         self.trajectory.points = current_path
         self.trajectory.time_source = msg.header.stamp
+        self.trajectory.path = transformed_path
+
+        self.received_path = None
 
     def symmetrically_bound_angle(self, angle, max_angle):
         """
@@ -171,6 +194,8 @@ class MPC(ManagedNode):
         while not rospy.is_shutdown():
             if self.state == NodeManagingStatesEnum.ACTIVE:
                 try:
+                    self.doUpdate()
+
                     speed_target = rospy.get_param("~speed/target", 3.0)
 
                     # Change velocity constraints when speed target changes
