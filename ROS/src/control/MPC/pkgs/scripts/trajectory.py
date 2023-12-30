@@ -76,6 +76,10 @@ class Trajectory:
         # transform path to most recent blf
         self.path_blf = self.transform_blf()
 
+        # No path received
+        if len(self.path_blf) == 0:
+            return (0, 0)
+
         # Only calculate closest index as index of point with smallest distance to current position if working in trakdrive/autocross
         current_position_index = (
             np.argmin(np.sum((self.path_blf - [0, 0]) ** 2, axis=1))

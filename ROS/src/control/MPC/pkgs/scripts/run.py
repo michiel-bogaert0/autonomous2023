@@ -224,6 +224,22 @@ class MPC(ManagedNode):
                     target_x, target_y = self.trajectory.calculate_target_point(
                         self.minimal_distance,
                     )
+
+                    if target_x == 0 and target_y == 0:
+                        self.diagnostics_pub.publish(
+                            create_diagnostic_message(
+                                level=DiagnosticStatus.WARN,
+                                name="[CTRL MPC] Target Point Status",
+                                message="Target point not found.",
+                            )
+                        )
+                        self.velocity_cmd.data = 0.0
+                        self.steering_cmd.data = 0.0
+                        self.velocity_pub.publish(self.velocity_cmd)
+                        self.steering_pub.publish(self.steering_cmd)
+                        rate.sleep()
+                        continue
+
                     control_targets = []
                     for _ in np.linspace(0, self.N, self.np):
                         (
@@ -257,7 +273,7 @@ class MPC(ManagedNode):
                     self.diagnostics_pub.publish(
                         create_diagnostic_message(
                             level=DiagnosticStatus.OK,
-                            name="[CTRL PP] Target Point Status",
+                            name="[CTRL MPC] Target Point Status",
                             message="Target point found.",
                         )
                     )

@@ -173,6 +173,7 @@ class PurePursuit(ManagedNode):
                         self.steering_cmd.data = 0.0
                         self.velocity_pub.publish(self.velocity_cmd)
                         self.steering_pub.publish(self.steering_cmd)
+                        rate.sleep()
                         continue
 
                     # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
