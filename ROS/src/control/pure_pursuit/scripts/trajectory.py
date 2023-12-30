@@ -18,14 +18,15 @@ class Trajectory:
         self.points = np.array([])
         self.target = np.array([0, 0])
 
-        # change indix is True for trackdrive/autocross, false for skidpad/acc
+        # True for trackdrive/autocross, False for skidpad/acceleration
         self.change_index = rospy.get_param("~change_index", True)
+
         # Transformations
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
-        # for skidpad/acc use ugr/map, for trackdrive/autocross use ugr/car_odom
+        # For skidpad/acceleration use ugr/map, for trackdrive/autocross use ugr/car_odom
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.time_source = rospy.Time(0)
 
@@ -70,7 +71,6 @@ class Trajectory:
         Returns:
             x {float}: x position of target point
             y {float}: y position of target point
-            success {bool}: True when target point was found
         """
         # transform path to most recent blf
         self.path_blf = self.transform_blf()
@@ -87,13 +87,11 @@ class Trajectory:
         )
         self.closest_index = current_position_index
 
-        # Iterate until found
-        found = False
-        while not found:
+        for _ in range(len(self.path_blf) + 1):
             target_x = self.path_blf[self.closest_index][0]
             target_y = self.path_blf[self.closest_index][1]
 
-            # current position is [0,0] in base_link_frame
+            # Current position is [0,0] in base_link_frame
             distance = (0 - target_x) ** 2 + (0 - target_y) ** 2
 
             if distance > minimal_distance**2:
@@ -102,7 +100,7 @@ class Trajectory:
 
             self.closest_index = (self.closest_index + 1) % len(self.path_blf)
 
-            # for trackdrive/autocross, return latest target point if no point is found further away than minimal_distance
+            # If no new target point, return last target point
             if self.closest_index == current_position_index:
                 pose = PoseStamped(
                     header=Header(
