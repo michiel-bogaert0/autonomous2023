@@ -83,7 +83,7 @@ class MPC(ManagedNode):
         # car = BicycleModel(dt=0.05)  # dt = publish rate?
 
         self.N = 10
-        self.np = 5  # Number of control points to keep car close to path
+        self.np = 2  # Number of control points to keep car close to path
         self.ocp = Ocp(
             car.nx,
             car.nu,
@@ -97,7 +97,8 @@ class MPC(ManagedNode):
         )
 
         Q = np.diag([1e-2, 1e-2, 0, 1e-2])
-        Q2 = np.diag([1e-2, 1e-2, 0, 5e-3])
+        Q2 = np.diag([2e-2, 2e-2, 0, 5e-3])
+        # Q2 = np.diag([0,0,0,0])
         R = np.diag([1e-4, 5e-2])
 
         # Weight matrices for the terminal cost
@@ -207,7 +208,6 @@ class MPC(ManagedNode):
                         )
                         self.ocp._set_continuity(1)
 
-                    # First try to get a target point
                     # Change the look-ahead distance (minimal_distance)  based on the current speed
                     if self.actual_speed < self.speed_start:
                         self.minimal_distance = self.distance_start
@@ -241,16 +241,18 @@ class MPC(ManagedNode):
                         continue
 
                     control_targets = []
-                    for n in np.linspace(self.N, 0, self.np, endpoint=False):
+                    for n in np.linspace(0, 1, self.np + 2)[1:-1]:
                         (
                             control_x,
                             control_y,
                         ) = self.trajectory.calculate_target_point(
-                            self.minimal_distance / n
+                            self.minimal_distance * n
                         )
                         control_targets.append(
                             [control_x, control_y, 0.0, self.speed_target]
                         )
+                    rospy.loginfo(f"target_x: {target_x}, target_y: {target_y}")
+                    # rospy.loginfo(f"control_targets: {control_targets}")
 
                     self.mpc.reset()
                     init_state = [0, 0, 0, self.actual_speed]
@@ -264,8 +266,8 @@ class MPC(ManagedNode):
                     # X_closed_loop = np.array(self.mpc.X_trajectory)
                     U_closed_loop = np.array(self.mpc.U_trajectory)
 
-                    # rospy.loginfo(f"X_closed_loop: {X_closed_loop}")
-                    # rospy.loginfo(f"U_closed_loop: {U_closed_loop}")
+                    rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
+                    rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
 
                     self.steering_cmd.data = U_closed_loop[0, 1]
                     self.velocity_cmd.data = U_closed_loop[0, 0]
