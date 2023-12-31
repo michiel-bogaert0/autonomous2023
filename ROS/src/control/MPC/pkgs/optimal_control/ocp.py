@@ -148,18 +148,10 @@ class Ocp:
             self.cost_fun = cost_fun
             L_run = 0  # cost over the horizon
             for i in range(self.N):
-                # penalty = 10
                 for j in range(self.np):
-                    # penalty = casadi.fmin(casadi.if_else(
-                    #     casadi.norm_2(self.X[:, i] - self._x_control[:, j]) < 0.5,
-                    #     0,
-                    #     np.inf,
-                    # ), penalty)
                     L_run += cost_fun(
                         self.X[:, i], self.U[:, i], self._x_ref, self._x_control[:, j]
                     )
-                # L_run += penalty
-                # L_run += cost_fun(self.X[:, i], self.U[:, i], self._x_ref, self.X[:, i])
             self.cost["run"] = L_run
 
         if terminal_cost_fun is not None:

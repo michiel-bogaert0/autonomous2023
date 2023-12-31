@@ -83,7 +83,7 @@ class MPC(ManagedNode):
         # car = BicycleModel(dt=0.05)  # dt = publish rate?
 
         self.N = 10
-        self.np = 2  # Number of control points to keep car close to path
+        self.np = 3  # Number of control points to keep car close to path
         self.ocp = Ocp(
             car.nx,
             car.nu,
@@ -97,8 +97,7 @@ class MPC(ManagedNode):
         )
 
         Q = np.diag([1e-2, 1e-2, 0, 1e-2])
-        Q2 = np.diag([2e-2, 2e-2, 0, 5e-3])
-        # Q2 = np.diag([0,0,0,0])
+        Qn = np.diag([5e-2, 5e-2, 0, 5e-3])
         R = np.diag([1e-4, 5e-2])
 
         # Weight matrices for the terminal cost
@@ -107,7 +106,7 @@ class MPC(ManagedNode):
         self.ocp.running_cost = (
             (self.ocp.x - self.ocp.x_ref).T @ Q @ (self.ocp.x - self.ocp.x_ref)
             + (self.ocp.x - self.ocp.x_control).T
-            @ Q2
+            @ Qn
             @ (self.ocp.x - self.ocp.x_control)
             + self.ocp.u.T @ R @ self.ocp.u
         )
@@ -117,7 +116,6 @@ class MPC(ManagedNode):
 
         # constraints
         max_steering_angle = 1
-        # max_steering_rate = np.pi / 4 / (5 * car.dt)
         max_v = self.speed_target
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.U[0, :], max_v))
         self.ocp.subject_to(
@@ -251,7 +249,7 @@ class MPC(ManagedNode):
                         control_targets.append(
                             [control_x, control_y, 0.0, self.speed_target]
                         )
-                    rospy.loginfo(f"target_x: {target_x}, target_y: {target_y}")
+                    # rospy.loginfo(f"target_x: {target_x}, target_y: {target_y}")
                     # rospy.loginfo(f"control_targets: {control_targets}")
 
                     self.mpc.reset()
@@ -266,8 +264,8 @@ class MPC(ManagedNode):
                     # X_closed_loop = np.array(self.mpc.X_trajectory)
                     U_closed_loop = np.array(self.mpc.U_trajectory)
 
-                    rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
-                    rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
+                    # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
+                    # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
 
                     self.steering_cmd.data = U_closed_loop[0, 1]
                     self.velocity_cmd.data = U_closed_loop[0, 0]
