@@ -6,10 +6,6 @@ import numpy as np
 from optimal_control.integrator import euler, rk4
 from utils.common_utils import Timer
 
-__copyright__ = "Copyright 2023, Ghent University"
-__credits__ = ["Thomas Neve"]
-__author__ = "Thomas Neve <thomas.neve@ugent.be>"
-
 
 class Ocp:
     def __init__(

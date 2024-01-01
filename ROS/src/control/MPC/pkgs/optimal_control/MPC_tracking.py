@@ -4,16 +4,10 @@ from casadi import casadi
 from optimal_control.ocp import Ocp
 from utils.common_utils import Timer
 
-# TODO: modify the shape of the return array, squeeze return state
-
-__copyright__ = "Copyright 2023, Ghent University"
-__credits__ = ["Thomas Neve"]
-__author__ = "Thomas Neve <thomas.neve@ugent.be>"
-
 
 class MPC_tracking:
     """
-    Abstraction of MPC, can be called to run trajectory optimisation. Uses casadi
+    Abstraction of MPC, can be called to run trajectory tracking. Uses casadi
     formulation to run the dynamic optimisation.
 
     Kwargs:
