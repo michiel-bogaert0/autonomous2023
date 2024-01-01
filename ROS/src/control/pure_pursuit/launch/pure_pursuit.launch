@@ -4,15 +4,14 @@
 
         <param name="publish_rate" value="50" />
 
-        <param name="trajectory/t_step" value="0.05" />
-        <param name="trajectory/max_angle" value="3" />
-
         <param name="base_link_frame" value="ugr/car_base_link" />
 
         <param name="speed_start" value="2" />
         <param name="speed_stop" value="12" />
         <param name="distance_start" value="3" />
         <param name="distance_stop" value="7" /> 
+
+        <param name="wheelradius" value="0.1" />
 
         <remap from="/input/path" to="/pathplanning/path" />
         <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>

@@ -29,8 +29,6 @@ class PurePursuit(ManagedNode):
         self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
-        self.min_speed = rospy.get_param("~speed/min", 0.3)
-        self.min_corner_speed = rospy.get_param("~speed/min_corner_speed", 0.7)
         self.wheelradius = rospy.get_param("~wheelradius", 0.1)
 
         self.velocity_cmd = Float64(0.0)
@@ -50,6 +48,8 @@ class PurePursuit(ManagedNode):
         self.steering_pub = super().AddPublisher(
             "/output/steering_position_controller/command", Float64, queue_size=10
         )
+
+        # For visualization
         self.vis_pub = super().AddPublisher(
             "/output/target_point", PointStamped, queue_size=10  # warning otherwise
         )
@@ -70,15 +70,13 @@ class PurePursuit(ManagedNode):
             "/input/odom", Odometry, self.get_odom_update
         )
 
-        self.publish_rate = rospy.get_param("~publish_rate", 10)
-
         self.speed_target = rospy.get_param("~speed/target", 3.0)
         self.steering_transmission = rospy.get_param(
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
     def doActivate(self):
-        # do this here because some parameters are set in the mission yaml files
+        # Do this here because some parameters are set in the mission yaml files
         self.trajectory = Trajectory()
 
     def get_odom_update(self, msg: Odometry):
@@ -143,7 +141,6 @@ class PurePursuit(ManagedNode):
 
                     self.speed_target = rospy.get_param("~speed/target", 3.0)
 
-                    # First try to get a target point
                     # Change the look-ahead distance (minimal_distance)  based on the current speed
                     if self.actual_speed < self.speed_start:
                         self.minimal_distance = self.distance_start
@@ -158,7 +155,7 @@ class PurePursuit(ManagedNode):
 
                     # Calculate target point
                     target_x, target_y = self.trajectory.calculate_target_point(
-                        self.minimal_distance,
+                        self.minimal_distance
                     )
 
                     if target_x == 0 and target_y == 0:
@@ -192,8 +189,6 @@ class PurePursuit(ManagedNode):
                             message="Target point found.",
                         )
                     )
-
-                    # Go ahead and drive. But adjust speed in corners
                     self.velocity_cmd.data = self.speed_target
 
                     # Publish to velocity and position steering controller
@@ -205,6 +200,7 @@ class PurePursuit(ManagedNode):
                     )  # Velocity to angular velocity
                     self.velocity_pub.publish(self.velocity_cmd)
 
+                    # Publish target point for visualization
                     point = PointStamped()
                     point.header.stamp = self.trajectory.time_source
                     point.header.frame_id = self.base_link_frame
