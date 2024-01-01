@@ -79,18 +79,18 @@ class MPC(ManagedNode):
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
-        car = KinematicCar(dt=0.05)  # dt = publish rate?
+        self.car = KinematicCar(dt=0.05)  # dt = publish rate?
         # car = BicycleModel(dt=0.05)  # dt = publish rate?
 
         self.N = 10
         self.np = 3  # Number of control points to keep car close to path
         self.ocp = Ocp(
-            car.nx,
-            car.nu,
+            self.car.nx,
+            self.car.nu,
             np=self.np,
             N=self.N,
-            F=car.F,
-            T=car.dt * self.N,
+            F=self.car.F,
+            T=self.car.dt * self.N,
             terminal_constraint=False,
             show_execution_time=False,
             silent=True,
@@ -195,6 +195,8 @@ class MPC(ManagedNode):
                     # Change velocity constraints when speed target changes
                     if speed_target != self.speed_target:
                         self.speed_target = speed_target
+
+                        # Reset constraints
                         self.ocp.opti.subject_to()
                         self.ocp.opti.subject_to(
                             self.ocp.opti.bounded(
@@ -206,7 +208,7 @@ class MPC(ManagedNode):
                         )
                         self.ocp._set_continuity(1)
 
-                    # Change the look-ahead distance (minimal_distance)  based on the current speed
+                    # Change the look-ahead distance (minimal_distance) based on the current speed
                     if self.actual_speed < self.speed_start:
                         self.minimal_distance = self.distance_start
                     elif self.actual_speed < self.speed_stop:
@@ -238,6 +240,7 @@ class MPC(ManagedNode):
                         rate.sleep()
                         continue
 
+                    # Calculate control points to keep car close to center line
                     control_targets = []
                     for n in np.linspace(0, 1, self.np + 2)[1:-1]:
                         (
@@ -259,6 +262,7 @@ class MPC(ManagedNode):
                     self.mpc.X_init_guess = target_x
                     current_state = init_state
 
+                    # Run MPC
                     u, info = self.mpc(current_state, goal_state, control_targets)
 
                     # X_closed_loop = np.array(self.mpc.X_trajectory)
@@ -269,6 +273,18 @@ class MPC(ManagedNode):
 
                     self.steering_cmd.data = U_closed_loop[0, 1]
                     self.velocity_cmd.data = U_closed_loop[0, 0]
+
+                    # Use Pure Pursuit if target speed is 0
+                    if self.speed_target == 0.0:
+                        R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (
+                            2 * (target_y - 0)
+                        )
+
+                        self.steering_cmd.data = self.symmetrically_bound_angle(
+                            np.arctan2(1.0, R), np.pi / 2
+                        )
+
+                        self.velocity_cmd.data = 0.0
 
                     self.diagnostics_pub.publish(
                         create_diagnostic_message(
