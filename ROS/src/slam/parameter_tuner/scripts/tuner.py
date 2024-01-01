@@ -9,7 +9,7 @@ from param import Param
 
 class TunerModes(str, enum.Enum):
     NONE = "none"
-    SUM = "sum"
+    INCREMENT = "increment"
     LIST = "list"
     MULTI = "multi"
 
@@ -28,8 +28,8 @@ def getTuner(config_file: str):
         data = yaml.safe_load(f)
     mode = data["mode"]
 
-    if mode == TunerModes.SUM:
-        return SumTuner(data["param"], data[mode])
+    if mode == TunerModes.INCREMENT:
+        return IncrementTuner(data["param"], data[mode])
     elif mode == TunerModes.LIST:
         return ListTuner(data["param"], data[mode])
     elif mode == TunerModes.MULTI:
@@ -129,23 +129,23 @@ class MultiTuner(Tuner):
         self.counter = 0
 
 
-class SumTuner(SingleTuner):
-    def __init__(self, param_config, sum_config) -> None:
+class IncrementTuner(SingleTuner):
+    def __init__(self, param_config, increment_config) -> None:
         """
-        Initializes a SumTuner object.
+        Initializes a IncrementTuner object.
 
         Args:
             param_config (dict): Configuration parameters for the SingleTuner base class.
-            sum_config (dict): Configuration parameters for the SumTuner.
+            increment_config (dict): Configuration parameters for the IncrementTuner.
 
         Attributes:
-            sum (int): The value to be added to the parameter.
+            incrementer (int): The value to be added to the parameter.
             simulation_count (int): The number of simulations to be performed.
             counter (int): The counter to keep track of the number of simulations performed.
         """
         SingleTuner.__init__(self, param_config)
-        self.sum = sum_config["add_value"]
-        self.simulation_count = sum_config["simulation_count"]
+        self.incrementer = increment_config["add_value"]
+        self.simulation_count = increment_config["simulation_count"]
         self.counter = 0
 
     def change_tuner(self):
@@ -156,7 +156,7 @@ class SumTuner(SingleTuner):
             int: The updated parameter value.
         """
         self.counter += 1
-        return self.param.get_parameter() + self.sum
+        return self.param.get_parameter() + self.incrementer
 
     def simulation_finished(self):
         """
