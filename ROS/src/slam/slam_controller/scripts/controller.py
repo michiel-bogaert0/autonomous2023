@@ -107,8 +107,8 @@ class Controller:
                     set_state_active("fastslam")
                     set_state_active("loopclosure")
 
-                    # set_state_active("pure_pursuit_control")
-                    set_state_active("MPC_tracking_control")
+                    set_state_active("pure_pursuit_control")
+                    # set_state_active("MPC_tracking_control")
                     set_state_active("pathplanning")
                     set_state_active("boundary_estimation")
                 elif self.mission == AutonomousMission.TRACKDRIVE:
@@ -117,8 +117,8 @@ class Controller:
                     set_state_active("fastslam")
                     set_state_active("loopclosure")
 
-                    # set_state_active("pure_pursuit_control")
-                    set_state_active("MPC_tracking_control")
+                    set_state_active("pure_pursuit_control")
+                    # set_state_active("MPC_tracking_control")
                     set_state_active("pathplanning")
                     set_state_active("boundary_estimation")
                 else:

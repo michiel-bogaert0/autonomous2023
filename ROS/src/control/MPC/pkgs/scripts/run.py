@@ -262,6 +262,8 @@ class MPC(ManagedNode):
                     self.mpc.X_init_guess = target_x
                     current_state = init_state
 
+                    # TODO: Add track constraints
+
                     # Run MPC
                     u, info = self.mpc(current_state, goal_state, control_targets)
 
