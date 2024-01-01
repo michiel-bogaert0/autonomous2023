@@ -3,7 +3,7 @@ import numpy as np
 import rospy
 import tf2_ros as tf
 from environments.kinematic_car import KinematicCar
-from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
 from nav_msgs.msg import Odometry, Path
 from node_fixture.fixture import (
     DiagnosticArray,
@@ -55,6 +55,12 @@ class MPC(ManagedNode):
         self.vis_pub = super().AddPublisher(
             "/output/target_point",
             PointStamped,
+            queue_size=10,  # warning otherwise
+        )
+
+        self.x_vis_pub = super().AddPublisher(
+            "/output/x_prediction",
+            Path,
             queue_size=10,  # warning otherwise
         )
 
@@ -262,8 +268,6 @@ class MPC(ManagedNode):
                     self.mpc.X_init_guess = target_x
                     current_state = init_state
 
-                    # TODO: Add track constraints
-
                     # Run MPC
                     u, info = self.mpc(current_state, goal_state, control_targets)
 
@@ -272,6 +276,19 @@ class MPC(ManagedNode):
 
                     # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
                     # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
+                    # rospy.loginfo(f"u closed loop: {U_closed_loop}")
+
+                    # Publish MPC prediction for visualization
+                    x_pred = Path()
+                    x_pred.header.stamp = self.trajectory.time_source
+                    x_pred.header.frame_id = self.base_link_frame
+                    for x, y in zip(info["X_sol"][:][0], info["X_sol"][:][1]):
+                        pose = PoseStamped()
+                        pose.pose.position.x = x
+                        pose.pose.position.y = y
+                        x_pred.poses.append(pose)
+
+                    self.x_vis_pub.publish(x_pred)
 
                     self.steering_cmd.data = U_closed_loop[0, 1]
                     self.velocity_cmd.data = U_closed_loop[0, 0]
