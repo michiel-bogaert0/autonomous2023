@@ -28,6 +28,7 @@ class Ocp:
         Args:
             nx (int): state size
             nu (int): action size
+            np (int): number of control points on path
             N (int): number of control intervals
             T (float): time horizon, Defaults to None
             f (callable): dynamics x_dot=f(x, u) which returns the derivative of the state x_dot
@@ -246,6 +247,7 @@ class Ocp:
         Args:
             state (array): initial state
             goal_state (array): the goal state
+            control_states (array): the control states
             X0 (array, optional): the initial state sequence guess. Defaults to None.
             U0 (array, optional): the initial action sequence guess. Defaults to None.
             lin_interpol (bool, optional): build a linear interpolation between the init and goal state. Defaults to False.

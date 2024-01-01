@@ -63,6 +63,7 @@ class MPC_tracking:
         Args:
             state (array): initial state
             ref_state (array): goal state
+            control_states (array): control states
             X0 (array, optional): initial guess of the state sequence over the horizon [nx, N+1]. Defaults to None.
             U0 (array, optional): initial guess of the action sequence over the whole horizon [nu, N]. Defaults to None.
             warm_start (bool, optional): shift the previous solution one timestep to warm start the current problem. Defaults to True.
