@@ -89,7 +89,7 @@ class MPC(ManagedNode):
         # car = BicycleModel(dt=0.05)  # dt = publish rate?
 
         self.N = 10
-        self.np = 3  # Number of control points to keep car close to path
+        self.np = 2  # Number of control points to keep car close to path
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
@@ -103,7 +103,7 @@ class MPC(ManagedNode):
         )
 
         Q = np.diag([1e-2, 1e-2, 0, 1e-2])
-        Qn = np.diag([5e-2, 5e-2, 0, 5e-3])
+        Qn = np.diag([8e-3, 8e-3, 0, 5e-3])
         R = np.diag([1e-4, 5e-2])
 
         # Weight matrices for the terminal cost
