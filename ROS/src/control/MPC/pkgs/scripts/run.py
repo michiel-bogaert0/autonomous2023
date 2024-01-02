@@ -102,12 +102,12 @@ class MPC(ManagedNode):
             silent=True,
         )
 
-        Q = np.diag([1e-2, 1e-2, 0, 1e-2])
-        Qn = np.diag([8e-3, 8e-3, 0, 5e-3])
-        R = np.diag([1e-4, 5e-2])
+        Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
+        Qn = np.diag([8e-3, 8e-3, 0, 0, 5e-3])
+        R = np.diag([1e-4, 1e-2])
 
         # Weight matrices for the terminal cost
-        P = np.diag([0, 0, 0, 0])
+        P = np.diag([0, 0, 0, 0, 0])
 
         self.ocp.running_cost = (
             (self.ocp.x - self.ocp.x_ref).T @ Q @ (self.ocp.x - self.ocp.x_ref)
@@ -202,6 +202,30 @@ class MPC(ManagedNode):
                     if speed_target != self.speed_target:
                         self.speed_target = speed_target
 
+                        # Change input cost at higher speed
+                        if speed_target == 10.0:  # TODO: not hardcode this
+                            Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
+                            Qn = np.diag([8e-3, 8e-3, 0, 0, 5e-3])
+                            R = np.diag([1e-4, 1e-1])
+
+                            # Weight matrices for the terminal cost
+                            P = np.diag([0, 0, 0, 0, 0])
+
+                            self.ocp.running_cost = (
+                                (self.ocp.x - self.ocp.x_ref).T
+                                @ Q
+                                @ (self.ocp.x - self.ocp.x_ref)
+                                + (self.ocp.x - self.ocp.x_control).T
+                                @ Qn
+                                @ (self.ocp.x - self.ocp.x_control)
+                                + self.ocp.u.T @ R @ self.ocp.u
+                            )
+                            self.ocp.terminal_cost = (
+                                (self.ocp.x - self.ocp.x_ref).T
+                                @ P
+                                @ (self.ocp.x - self.ocp.x_ref)
+                            )
+
                         # Reset constraints
                         self.ocp.opti.subject_to()
                         self.ocp.opti.subject_to(
@@ -256,14 +280,14 @@ class MPC(ManagedNode):
                             self.minimal_distance * n, transform_path=False
                         )
                         control_targets.append(
-                            [control_x, control_y, 0.0, self.speed_target]
+                            [control_x, control_y, 0.0, 0, self.speed_target]
                         )
                     # rospy.loginfo(f"target_x: {target_x}, target_y: {target_y}")
                     # rospy.loginfo(f"control_targets: {control_targets}")
 
                     self.mpc.reset()
-                    init_state = [0, 0, 0, self.actual_speed]
-                    goal_state = [target_x, target_y, 0, self.speed_target]
+                    init_state = [0, 0, 0, 0, self.actual_speed]
+                    goal_state = [target_x, target_y, 0, 0, self.speed_target]
 
                     self.mpc.X_init_guess = target_x
                     current_state = init_state
