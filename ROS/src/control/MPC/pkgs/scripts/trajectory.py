@@ -60,7 +60,7 @@ class Trajectory:
         )
         return self.points
 
-    def calculate_target_point(self, minimal_distance):
+    def calculate_target_point(self, minimal_distance, transform_path=True):
         """
         Calculates a target point by traversing the path
         Returns the first points that matches the conditions given by minimal_distance
@@ -73,7 +73,8 @@ class Trajectory:
             y {float}: y position of target point
         """
         # transform path to most recent blf
-        self.path_blf = self.transform_blf()
+        if transform_path:
+            self.path_blf = self.transform_blf()
 
         # No path received
         if len(self.path_blf) == 0:

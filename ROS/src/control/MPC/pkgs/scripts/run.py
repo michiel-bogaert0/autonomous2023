@@ -228,7 +228,7 @@ class MPC(ManagedNode):
 
                     # Calculate target point
                     target_x, target_y = self.trajectory.calculate_target_point(
-                        self.minimal_distance
+                        self.minimal_distance, transform_path=True
                     )
 
                     if target_x == 0 and target_y == 0:
@@ -253,7 +253,7 @@ class MPC(ManagedNode):
                             control_x,
                             control_y,
                         ) = self.trajectory.calculate_target_point(
-                            self.minimal_distance * n
+                            self.minimal_distance * n, transform_path=False
                         )
                         control_targets.append(
                             [control_x, control_y, 0.0, self.speed_target]
