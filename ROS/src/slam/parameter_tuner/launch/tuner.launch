@@ -12,8 +12,7 @@
     <param name="max_time" value="300" />  <!-- max duration simulation can run in seconds -->
     <param name="logging" value="False" />
 
-    <param name="params_config_file" value="$(find parameter_tuner)/config/tuners.yaml" />
-    
+    <param name="params_config_file" value="$(find parameter_tuner)/config/example_tuner.yaml" />
   </node>
 </launch>
 
