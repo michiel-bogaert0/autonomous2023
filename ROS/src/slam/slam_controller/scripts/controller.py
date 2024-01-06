@@ -138,7 +138,7 @@ class Controller:
                 set_state_finalized("control_path_publisher")
                 set_state_finalized("pathplanning")
                 set_state_finalized("boundary_estimation")
-                rospy.set_param("/pure_pursuit/speed/target", 0.0)
+                rospy.set_param("/speed/target", 0.0)
 
         elif not rospy.has_param("/mission"):
             set_state_finalized("slam_mcl")
@@ -150,7 +150,7 @@ class Controller:
             set_state_finalized("control_path_publisher")
             set_state_finalized("pathplanning")
             set_state_finalized("boundary_estimation")
-            rospy.set_param("/pure_pursuit/speed/target", 0.0)
+            rospy.set_param("/speed/target", 0.0)
             new_state = SLAMStatesEnum.IDLE
 
         self.change_state(new_state)
@@ -220,7 +220,7 @@ class Controller:
         # If we did enough laps, switch to finished
         if self.target_lap_count <= laps.data:
             new_state = SLAMStatesEnum.FINISHED
-            rospy.set_param("/pure_pursuit/speed/target", 0.0)
+            rospy.set_param("/speed/target", 0.0)
             self.change_state(new_state)
             return
 
@@ -232,8 +232,8 @@ class Controller:
             rospy.loginfo("Exploration finished, switching to racing")
             new_state = SLAMStatesEnum.RACING
             set_state_active("slam_mcl")
-            speed_target = 10.0 if self.car == "simulation" else 5.0
-            rospy.set_param("/pure_pursuit/speed/target", speed_target)
+            speed_target = rospy.get_param("/speed/target_racing")
+            rospy.set_param("/speed/target", speed_target)
             sleep(0.5)
             set_state_inactive("fastslam")
             set_state_inactive("pathplanning")
