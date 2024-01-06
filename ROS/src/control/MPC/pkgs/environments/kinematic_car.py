@@ -17,7 +17,7 @@ class KinematicCar(Env):
 
         self.dt = dt
 
-        self.action_space = Space(low=[0, -np.pi], high=[2000, np.pi])
+        self.action_space = Space(low=[0, -np.pi], high=[20, np.pi])
 
         high_state_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf])
         self.state_space = Space(low=-high_state_space, high=high_state_space)
@@ -30,14 +30,14 @@ class KinematicCar(Env):
     def dynamics(self, s, u):
         """
         s=[x, y, theta, delta, v]
-        u=[v, psi]
+        u=[v_target, psi]
         """
         # x = s[0]
         # y = s[1]
         theta = s[2]
         delta = s[3]
         v = s[4]
-        v = u[0]
+        v_new = u[0]
         psi = u[1]
 
         beta = np.arctan(self.l_r * np.tan(delta) / self.L)
@@ -46,8 +46,9 @@ class KinematicCar(Env):
         dy = v * np.sin(beta + theta)
         dtheta = v / self.L * np.tan(delta) * np.cos(beta)
         ddelta = psi
+        dv = v_new - v
 
-        return np.array([dx, dy, dtheta, ddelta, v])
+        return np.array([dx, dy, dtheta, ddelta, dv])
 
     def reset(self):
         pass
