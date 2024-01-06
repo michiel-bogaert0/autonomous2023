@@ -4,17 +4,17 @@ import numpy as np
 from environments.kinematic_car import KinematicCar
 
 # %%
-car = KinematicCar(dt=0.01)
+car = KinematicCar(dt=0.05)
 car.state = [0, 0, 0, 0, 0]  # [x, y, ψ, vx, vy, ω, δ]
 
 state = car.state
 states = [state]
 
-for i in range(500):
+for i in range(100):
     if i < 50:
         u = [10, 0.0]  # [v, psi]
     elif i < 100:
-        u = [0, 1]
+        u = [-5, 1]
     else:
         u = [0.1, 0.0]
 

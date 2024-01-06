@@ -30,14 +30,14 @@ class KinematicCar(Env):
     def dynamics(self, s, u):
         """
         s=[x, y, theta, delta, v]
-        u=[v_target, psi]
+        u=[a, psi]
         """
         # x = s[0]
         # y = s[1]
         theta = s[2]
         delta = s[3]
         v = s[4]
-        v_new = u[0]
+        a = u[0]
         psi = u[1]
 
         beta = np.arctan(self.l_r * np.tan(delta) / self.L)
@@ -46,7 +46,7 @@ class KinematicCar(Env):
         dy = v * np.sin(beta + theta)
         dtheta = v / self.L * np.tan(delta) * np.cos(beta)
         ddelta = psi
-        dv = v_new - v
+        dv = a
 
         return np.array([dx, dy, dtheta, ddelta, dv])
 
