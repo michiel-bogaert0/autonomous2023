@@ -2,7 +2,7 @@
 import numpy as np
 import rospy
 import tf2_ros as tf
-from environments.kinematic_car import KinematicCar
+from environments.bicycle_model import BicycleModel
 from geometry_msgs.msg import PointStamped, PoseStamped
 from nav_msgs.msg import Odometry, Path
 from node_fixture.fixture import (
@@ -85,8 +85,7 @@ class MPC(ManagedNode):
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
-        self.car = KinematicCar(dt=0.05)  # dt = publish rate?
-        # car = BicycleModel(dt=0.05)  # dt = publish rate?
+        self.car = BicycleModel(dt=0.05)  # dt = publish rate?
 
         self.N = 10
         self.np = 2  # Number of control points to keep car close to path
@@ -102,9 +101,9 @@ class MPC(ManagedNode):
             silent=True,
         )
 
-        Q = np.diag([1e-2, 1e-2, 0, 0, 5e-2])
+        Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
         Qn = np.diag([8e-3, 8e-3, 0, 0, 1e-2])
-        R = np.diag([5e-3, 1e-2])
+        R = np.diag([1e-2, 6e-3])
 
         # Weight matrices for the terminal cost
         P = np.diag([0, 0, 0, 0, 0])
@@ -203,28 +202,7 @@ class MPC(ManagedNode):
                         self.speed_target = speed_target
 
                         # Change input cost at higher speed
-                        if speed_target == 10.0:  # TODO: not hardcode this
-                            Q = np.diag([1e-2, 1e-2, 0, 0, 5e-2])
-                            Qn = np.diag([5e-3, 5e-3, 0, 0, 1e-2])
-                            R = np.diag([1e-4, 3e-1])
-
-                            # Weight matrices for the terminal cost
-                            P = np.diag([0, 0, 0, 0, 0])
-
-                            self.ocp.running_cost = (
-                                (self.ocp.x - self.ocp.x_ref).T
-                                @ Q
-                                @ (self.ocp.x - self.ocp.x_ref)
-                                + (self.ocp.x - self.ocp.x_control).T
-                                @ Qn
-                                @ (self.ocp.x - self.ocp.x_control)
-                                + self.ocp.u.T @ R @ self.ocp.u
-                            )
-                            self.ocp.terminal_cost = (
-                                (self.ocp.x - self.ocp.x_ref).T
-                                @ P
-                                @ (self.ocp.x - self.ocp.x_ref)
-                            )
+                        # if speed_target == 10.0:  # TODO: not hardcode this
 
                         # Reset constraints
                         self.ocp.opti.subject_to()
@@ -233,6 +211,32 @@ class MPC(ManagedNode):
                             self.ocp.opti.bounded(-1, self.ocp.U[1, :], 1)
                         )
                         self.ocp._set_continuity(1)
+
+                    if speed_target == 10.0:
+                        # Scale steering penalty based on current speed
+                        Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
+                        Qn = np.diag([8e-3, 8e-3, 0, 0, 1e-2])
+                        R = np.diag(
+                            [1e-2, 2e-1 * self.actual_speed / self.speed_target]
+                        )
+
+                        # Weight matrices for the terminal cost
+                        P = np.diag([0, 0, 0, 0, 0])
+
+                        self.ocp.running_cost = (
+                            (self.ocp.x - self.ocp.x_ref).T
+                            @ Q
+                            @ (self.ocp.x - self.ocp.x_ref)
+                            + (self.ocp.x - self.ocp.x_control).T
+                            @ Qn
+                            @ (self.ocp.x - self.ocp.x_control)
+                            + self.ocp.u.T @ R @ self.ocp.u
+                        )
+                        self.ocp.terminal_cost = (
+                            (self.ocp.x - self.ocp.x_ref).T
+                            @ P
+                            @ (self.ocp.x - self.ocp.x_ref)
+                        )
 
                     # Change the look-ahead distance (minimal_distance) based on the current speed
                     if self.actual_speed < self.speed_start:
@@ -276,7 +280,7 @@ class MPC(ManagedNode):
                             self.minimal_distance * n, transform_path=False
                         )
                         control_targets.append(
-                            [control_x, control_y, 0.0, 0, self.speed_target]
+                            [control_x, control_y, 0, 0, self.speed_target]
                         )
                     # rospy.loginfo(f"target_x: {target_x}, target_y: {target_y}")
                     # rospy.loginfo(f"control_targets: {control_targets}")
