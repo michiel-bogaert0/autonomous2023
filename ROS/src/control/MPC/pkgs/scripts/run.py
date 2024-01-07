@@ -81,6 +81,7 @@ class MPC(ManagedNode):
         )
 
         self.speed_target = rospy.get_param("/speed/target", 3.0)
+        self.speed_target_racing = rospy.get_param("/speed/target_racing", 10.0)
         self.steering_transmission = rospy.get_param(
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
@@ -206,9 +207,6 @@ class MPC(ManagedNode):
                     if speed_target != self.speed_target:
                         self.speed_target = speed_target
 
-                        # Change input cost at higher speed
-                        # if speed_target == 10.0:  # TODO: not hardcode this
-
                         # Reset constraints
                         self.ocp.opti.subject_to()
                         self.ocp.subject_to(
@@ -223,7 +221,7 @@ class MPC(ManagedNode):
                         )
                         self.ocp._set_continuity(1)
 
-                    if speed_target == 10.0:
+                    if self.speed_target == self.speed_target_racing:
                         # Scale steering penalty based on current speed
                         Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
                         Qn = np.diag([8e-3, 8e-3, 0, 0, 1e-2])

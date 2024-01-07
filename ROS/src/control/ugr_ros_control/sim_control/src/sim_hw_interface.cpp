@@ -130,13 +130,6 @@ void SimHWInterface::write(ros::Duration& elapsed_time)
   // TODO add logic for when using a feedforward velocity controller instead of effort interface / joint velocity controller
 
   // Feed to bicycle model
-  ROS_INFO_STREAM("Applying effort " << joint_effort_command_[drive_joint_id] << " and steering "
-                                     << joint_velocity_command_[steering_joint_id] << " elapsed time "
-                                     << elapsed_time.toSec());
-  if (fabs(joint_velocity_command_[steering_joint_id]) > 1.0)
-  {
-    ROS_INFO_STREAM("Steering velocity command too high, clamping to 1.0");
-  }
   this->model->update(elapsed_time.toSec(), joint_effort_command_[drive_joint_id],
                       joint_velocity_command_[steering_joint_id]);
 }
