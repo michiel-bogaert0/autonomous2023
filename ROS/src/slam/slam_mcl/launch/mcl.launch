@@ -1,19 +1,9 @@
 <launch>
-
   <arg name="world_frame" default="ugr/car_odom" />
   <arg name="base_link_frame" default="ugr/car_base_link" />
   <arg name="slam_base_link_frame" default="ugr/slam_base_link" />
+  
   <arg name="path_to_map" default="/ugr/car/map/fastslam/global"/>
-
-  <arg name="setup_stand_dev" default="0.1"/>
-  <arg name="particle_count" default="200" />
-  <arg name="effective_particle_count" default="150" />
-  <arg name="eps" default="0.5" />
-  <arg name="max_range" default="15" />
-  <arg name="max_half_angle" default="1.5" />
-  <arg name="observe_dt" default="0.0" />
-
-  <arg name="yaw_unwrap_threshold" default="4.0" />
 
   <node pkg="slam_mcl" output="screen" type="slam_mcl" name="slam_mcl" respawn="False">
     # Parameters
@@ -21,20 +11,10 @@
     <param name="base_link_frame" value="$(arg base_link_frame)" />
     <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
 
-    <param name="setup_stand_dev" value="$(arg setup_stand_dev)" />
-    <param name="particle_count" value="$(arg particle_count)" />
-    <param name="effective_particle_count" value="$(arg effective_particle_count)" />
-    <param name="eps" value="$(arg eps)" />
-    <param name="max_range" value="$(arg max_range)" />
-    <param name="max_half_angle" value="$(arg max_half_angle)" />
-    <param name="observe_dt" value="$(arg observe_dt)" />
+    #Parameters from config yaml file
+    <rosparam file="$(find slam_mcl)/config/mcl.yaml" command="load" />
 
-    <param name="yaw_unwrap_threshold" value="$(arg yaw_unwrap_threshold)" />
-
-    <rosparam param="measurement_covariance">[0.3, 0.0, 0.0, 0.05]</rosparam>
-    <rosparam param="input_noise">[0.2, 0.0, 0.0, 0.1]</rosparam>
     # Input/output remapping
-
     <!-- Changed to param because it has to be changed between missions -->
     <param name="path_to_map" value="$(arg path_to_map)" />
     <!-- <remap from="/input/map" to="ugr/car/map/$(arg map_prefix)" /> -->
