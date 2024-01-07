@@ -37,7 +37,7 @@
    hardware interface using MONOTOIC system time
 */
 
-#include <ugr_ros_control/generic_hw_control_loop.h>
+#include <ugr_ros_control/generic_hw_control_loop.hpp>
 
 // ROS parameter loading
 #include <rosparam_shortcuts/rosparam_shortcuts.h>

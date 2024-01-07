@@ -30,247 +30,214 @@
 
 #include <string.h>
 
-#include "pegasus_control/cantools.h"
+#include "pegasus_control/cantools.hpp"
 
-namespace cantools{
-static inline uint8_t pack_left_shift_u8(
-    uint8_t value,
-    uint8_t shift,
-    uint8_t mask)
+namespace cantools
 {
-    return (uint8_t)((uint8_t)(value << shift) & mask);
-}
-
-static inline uint8_t pack_left_shift_u16(
-    uint16_t value,
-    uint8_t shift,
-    uint8_t mask)
+static inline uint8_t pack_left_shift_u8(uint8_t value, uint8_t shift, uint8_t mask)
 {
-    return (uint8_t)((uint8_t)(value << shift) & mask);
+  return (uint8_t)((uint8_t)(value << shift) & mask);
 }
 
-static inline uint8_t pack_left_shift_u32(
-    uint32_t value,
-    uint8_t shift,
-    uint8_t mask)
+static inline uint8_t pack_left_shift_u16(uint16_t value, uint8_t shift, uint8_t mask)
 {
-    return (uint8_t)((uint8_t)(value << shift) & mask);
+  return (uint8_t)((uint8_t)(value << shift) & mask);
 }
 
-static inline uint8_t pack_right_shift_u16(
-    uint16_t value,
-    uint8_t shift,
-    uint8_t mask)
+static inline uint8_t pack_left_shift_u32(uint32_t value, uint8_t shift, uint8_t mask)
 {
-    return (uint8_t)((uint8_t)(value >> shift) & mask);
+  return (uint8_t)((uint8_t)(value << shift) & mask);
 }
 
-static inline uint8_t pack_right_shift_u32(
-    uint32_t value,
-    uint8_t shift,
-    uint8_t mask)
+static inline uint8_t pack_right_shift_u16(uint16_t value, uint8_t shift, uint8_t mask)
 {
-    return (uint8_t)((uint8_t)(value >> shift) & mask);
+  return (uint8_t)((uint8_t)(value >> shift) & mask);
 }
 
-static inline uint16_t unpack_left_shift_u16(
-    uint8_t value,
-    uint8_t shift,
-    uint8_t mask)
+static inline uint8_t pack_right_shift_u32(uint32_t value, uint8_t shift, uint8_t mask)
 {
-    return (uint16_t)((uint16_t)(value & mask) << shift);
+  return (uint8_t)((uint8_t)(value >> shift) & mask);
 }
 
-static inline uint32_t unpack_left_shift_u32(
-    uint8_t value,
-    uint8_t shift,
-    uint8_t mask)
+static inline uint16_t unpack_left_shift_u16(uint8_t value, uint8_t shift, uint8_t mask)
 {
-    return (uint32_t)((uint32_t)(value & mask) << shift);
+  return (uint16_t)((uint16_t)(value & mask) << shift);
 }
 
-static inline uint8_t unpack_right_shift_u8(
-    uint8_t value,
-    uint8_t shift,
-    uint8_t mask)
+static inline uint32_t unpack_left_shift_u32(uint8_t value, uint8_t shift, uint8_t mask)
 {
-    return (uint8_t)((uint8_t)(value & mask) >> shift);
+  return (uint32_t)((uint32_t)(value & mask) << shift);
 }
 
-static inline uint16_t unpack_right_shift_u16(
-    uint8_t value,
-    uint8_t shift,
-    uint8_t mask)
+static inline uint8_t unpack_right_shift_u8(uint8_t value, uint8_t shift, uint8_t mask)
 {
-    return (uint16_t)((uint16_t)(value & mask) >> shift);
+  return (uint8_t)((uint8_t)(value & mask) >> shift);
 }
 
-static inline uint32_t unpack_right_shift_u32(
-    uint8_t value,
-    uint8_t shift,
-    uint8_t mask)
+static inline uint16_t unpack_right_shift_u16(uint8_t value, uint8_t shift, uint8_t mask)
 {
-    return (uint32_t)((uint32_t)(value & mask) >> shift);
+  return (uint16_t)((uint16_t)(value & mask) >> shift);
 }
 
-
-int odrive_set_input_steering_init(struct cantools::odrive_set_input_steering_t *msg_p)
+static inline uint32_t unpack_right_shift_u32(uint8_t value, uint8_t shift, uint8_t mask)
 {
-    if (msg_p == NULL) return -1;
-
-    memset(msg_p, 0, sizeof(struct cantools::odrive_set_input_steering_t));
-
-    return 0;
+  return (uint32_t)((uint32_t)(value & mask) >> shift);
 }
 
-int odrive_set_input_steering_pack(
-    uint8_t *dst_p,
-    const struct cantools::odrive_set_input_steering_t *src_p,
-    size_t size)
+int odrive_set_input_steering_init(struct cantools::odrive_set_input_steering_t* msg_p)
 {
-    uint32_t input_steering;
+  if (msg_p == NULL)
+    return -1;
 
-    if (size < 8u) {
-        return (-EINVAL);
-    }
+  memset(msg_p, 0, sizeof(struct cantools::odrive_set_input_steering_t));
 
-    memset(&dst_p[0], 0, 8);
-
-    memcpy(&input_steering, &src_p->input_steering, sizeof(input_steering));
-    dst_p[0] |= pack_left_shift_u32(input_steering, 0u, 0xffu);
-    dst_p[1] |= pack_right_shift_u32(input_steering, 8u, 0xffu);
-
-    return (8);
+  return 0;
 }
 
-int odrive_set_input_vel_init(struct cantools::odrive_set_input_vel_t *msg_p)
+int odrive_set_input_steering_pack(uint8_t* dst_p, const struct cantools::odrive_set_input_steering_t* src_p,
+                                   size_t size)
 {
-    if (msg_p == NULL) return -1;
+  uint32_t input_steering;
 
-    memset(msg_p, 0, sizeof(struct cantools::odrive_set_input_vel_t));
+  if (size < 8u)
+  {
+    return (-EINVAL);
+  }
 
-    return 0;
+  memset(&dst_p[0], 0, 8);
+
+  memcpy(&input_steering, &src_p->input_steering, sizeof(input_steering));
+  dst_p[0] |= pack_left_shift_u32(input_steering, 0u, 0xffu);
+  dst_p[1] |= pack_right_shift_u32(input_steering, 8u, 0xffu);
+
+  return (8);
 }
 
-int odrive_set_input_vel_pack(
-    uint8_t *dst_p,
-    const struct cantools::odrive_set_input_vel_t *src_p,
-    size_t size)
+int odrive_set_input_vel_init(struct cantools::odrive_set_input_vel_t* msg_p)
 {
-    uint32_t input_torque_ff;
-    uint32_t input_vel;
+  if (msg_p == NULL)
+    return -1;
 
-    if (size < 8u) {
-        return (-EINVAL);
-    }
+  memset(msg_p, 0, sizeof(struct cantools::odrive_set_input_vel_t));
 
-    memset(&dst_p[0], 0, 8);
-
-    memcpy(&input_vel, &src_p->input_vel, sizeof(input_vel));
-    dst_p[0] |= pack_left_shift_u32(input_vel, 0u, 0xffu);
-    dst_p[1] |= pack_right_shift_u32(input_vel, 8u, 0xffu);
-    dst_p[2] |= pack_right_shift_u32(input_vel, 16u, 0xffu);
-    dst_p[3] |= pack_right_shift_u32(input_vel, 24u, 0xffu);
-    memcpy(&input_torque_ff, &src_p->input_torque_ff, sizeof(input_torque_ff));
-    dst_p[4] |= pack_left_shift_u32(input_torque_ff, 0u, 0xffu);
-    dst_p[5] |= pack_right_shift_u32(input_torque_ff, 8u, 0xffu);
-    dst_p[6] |= pack_right_shift_u32(input_torque_ff, 16u, 0xffu);
-    dst_p[7] |= pack_right_shift_u32(input_torque_ff, 24u, 0xffu);
-
-    return (8);
+  return 0;
 }
 
-int odrive_set_input_vel_unpack(
-    struct cantools::odrive_set_input_vel_t *dst_p,
-    const uint8_t *src_p,
-    size_t size)
+int odrive_set_input_vel_pack(uint8_t* dst_p, const struct cantools::odrive_set_input_vel_t* src_p, size_t size)
 {
-    uint32_t input_torque_ff;
-    uint32_t input_vel;
+  uint32_t input_torque_ff;
+  uint32_t input_vel;
 
-    if (size < 8u) {
-        return (-EINVAL);
-    }
+  if (size < 8u)
+  {
+    return (-EINVAL);
+  }
 
-    input_vel = unpack_right_shift_u32(src_p[0], 0u, 0xffu);
-    input_vel |= unpack_left_shift_u32(src_p[1], 8u, 0xffu);
-    input_vel |= unpack_left_shift_u32(src_p[2], 16u, 0xffu);
-    input_vel |= unpack_left_shift_u32(src_p[3], 24u, 0xffu);
-    memcpy(&dst_p->input_vel, &input_vel, sizeof(dst_p->input_vel));
-    input_torque_ff = unpack_right_shift_u32(src_p[4], 0u, 0xffu);
-    input_torque_ff |= unpack_left_shift_u32(src_p[5], 8u, 0xffu);
-    input_torque_ff |= unpack_left_shift_u32(src_p[6], 16u, 0xffu);
-    input_torque_ff |= unpack_left_shift_u32(src_p[7], 24u, 0xffu);
-    memcpy(&dst_p->input_torque_ff, &input_torque_ff, sizeof(dst_p->input_torque_ff));
+  memset(&dst_p[0], 0, 8);
 
-    return (0);
+  memcpy(&input_vel, &src_p->input_vel, sizeof(input_vel));
+  dst_p[0] |= pack_left_shift_u32(input_vel, 0u, 0xffu);
+  dst_p[1] |= pack_right_shift_u32(input_vel, 8u, 0xffu);
+  dst_p[2] |= pack_right_shift_u32(input_vel, 16u, 0xffu);
+  dst_p[3] |= pack_right_shift_u32(input_vel, 24u, 0xffu);
+  memcpy(&input_torque_ff, &src_p->input_torque_ff, sizeof(input_torque_ff));
+  dst_p[4] |= pack_left_shift_u32(input_torque_ff, 0u, 0xffu);
+  dst_p[5] |= pack_right_shift_u32(input_torque_ff, 8u, 0xffu);
+  dst_p[6] |= pack_right_shift_u32(input_torque_ff, 16u, 0xffu);
+  dst_p[7] |= pack_right_shift_u32(input_torque_ff, 24u, 0xffu);
+
+  return (8);
 }
 
-int odrive_set_controller_mode_pack(
-    uint8_t *dst_p,
-    const struct cantools::odrive_set_controller_mode_t *src_p,
-    size_t size)
+int odrive_set_input_vel_unpack(struct cantools::odrive_set_input_vel_t* dst_p, const uint8_t* src_p, size_t size)
 {
-    if (size < 8u) {
-        return (-EINVAL);
-    }
+  uint32_t input_torque_ff;
+  uint32_t input_vel;
 
-    memset(&dst_p[0], 0, 8);
+  if (size < 8u)
+  {
+    return (-EINVAL);
+  }
 
-    dst_p[0] |= pack_left_shift_u32(src_p->control_mode, 0u, 0xffu);
-    dst_p[1] |= pack_right_shift_u32(src_p->control_mode, 8u, 0xffu);
-    dst_p[2] |= pack_right_shift_u32(src_p->control_mode, 16u, 0xffu);
-    dst_p[3] |= pack_right_shift_u32(src_p->control_mode, 24u, 0xffu);
-    dst_p[4] |= pack_left_shift_u32(src_p->input_mode, 0u, 0xffu);
-    dst_p[5] |= pack_right_shift_u32(src_p->input_mode, 8u, 0xffu);
-    dst_p[6] |= pack_right_shift_u32(src_p->input_mode, 16u, 0xffu);
-    dst_p[7] |= pack_right_shift_u32(src_p->input_mode, 24u, 0xffu);
+  input_vel = unpack_right_shift_u32(src_p[0], 0u, 0xffu);
+  input_vel |= unpack_left_shift_u32(src_p[1], 8u, 0xffu);
+  input_vel |= unpack_left_shift_u32(src_p[2], 16u, 0xffu);
+  input_vel |= unpack_left_shift_u32(src_p[3], 24u, 0xffu);
+  memcpy(&dst_p->input_vel, &input_vel, sizeof(dst_p->input_vel));
+  input_torque_ff = unpack_right_shift_u32(src_p[4], 0u, 0xffu);
+  input_torque_ff |= unpack_left_shift_u32(src_p[5], 8u, 0xffu);
+  input_torque_ff |= unpack_left_shift_u32(src_p[6], 16u, 0xffu);
+  input_torque_ff |= unpack_left_shift_u32(src_p[7], 24u, 0xffu);
+  memcpy(&dst_p->input_torque_ff, &input_torque_ff, sizeof(dst_p->input_torque_ff));
 
-    return (8);
+  return (0);
 }
 
-int odrive_set_controller_mode_init(struct odrive_set_controller_mode_t *msg_p)
+int odrive_set_controller_mode_pack(uint8_t* dst_p, const struct cantools::odrive_set_controller_mode_t* src_p,
+                                    size_t size)
 {
-    if (msg_p == NULL) return -1;
+  if (size < 8u)
+  {
+    return (-EINVAL);
+  }
 
-    memset(msg_p, 0, sizeof(struct odrive_set_controller_mode_t));
+  memset(&dst_p[0], 0, 8);
 
-    return 0;
+  dst_p[0] |= pack_left_shift_u32(src_p->control_mode, 0u, 0xffu);
+  dst_p[1] |= pack_right_shift_u32(src_p->control_mode, 8u, 0xffu);
+  dst_p[2] |= pack_right_shift_u32(src_p->control_mode, 16u, 0xffu);
+  dst_p[3] |= pack_right_shift_u32(src_p->control_mode, 24u, 0xffu);
+  dst_p[4] |= pack_left_shift_u32(src_p->input_mode, 0u, 0xffu);
+  dst_p[5] |= pack_right_shift_u32(src_p->input_mode, 8u, 0xffu);
+  dst_p[6] |= pack_right_shift_u32(src_p->input_mode, 16u, 0xffu);
+  dst_p[7] |= pack_right_shift_u32(src_p->input_mode, 24u, 0xffu);
+
+  return (8);
 }
 
-int odrive_get_encoder_estimates_unpack(
-    struct cantools::odrive_get_encoder_estimates_t *dst_p,
-    const uint8_t *src_p,
-    size_t size)
+int odrive_set_controller_mode_init(struct odrive_set_controller_mode_t* msg_p)
 {
-    uint32_t pos_estimate;
-    uint32_t vel_estimate;
+  if (msg_p == NULL)
+    return -1;
 
-    if (size < 8u) {
-        return (-EINVAL);
-    }
+  memset(msg_p, 0, sizeof(struct odrive_set_controller_mode_t));
 
-    pos_estimate = unpack_right_shift_u32(src_p[0], 0u, 0xffu);
-    pos_estimate |= unpack_left_shift_u32(src_p[1], 8u, 0xffu);
-    pos_estimate |= unpack_left_shift_u32(src_p[2], 16u, 0xffu);
-    pos_estimate |= unpack_left_shift_u32(src_p[3], 24u, 0xffu);
-    memcpy(&dst_p->pos_estimate, &pos_estimate, sizeof(dst_p->pos_estimate));
-    vel_estimate = unpack_right_shift_u32(src_p[4], 0u, 0xffu);
-    vel_estimate |= unpack_left_shift_u32(src_p[5], 8u, 0xffu);
-    vel_estimate |= unpack_left_shift_u32(src_p[6], 16u, 0xffu);
-    vel_estimate |= unpack_left_shift_u32(src_p[7], 24u, 0xffu);
-    memcpy(&dst_p->vel_estimate, &vel_estimate, sizeof(dst_p->vel_estimate));
-
-    return (0);
+  return 0;
 }
 
-int odrive_get_encoder_estimates_init(struct cantools::odrive_get_encoder_estimates_t *msg_p)
+int odrive_get_encoder_estimates_unpack(struct cantools::odrive_get_encoder_estimates_t* dst_p, const uint8_t* src_p,
+                                        size_t size)
 {
-    if (msg_p == NULL) return -1;
+  uint32_t pos_estimate;
+  uint32_t vel_estimate;
 
-    memset(msg_p, 0, sizeof(struct cantools::odrive_get_encoder_estimates_t));
+  if (size < 8u)
+  {
+    return (-EINVAL);
+  }
 
-    return 0;
+  pos_estimate = unpack_right_shift_u32(src_p[0], 0u, 0xffu);
+  pos_estimate |= unpack_left_shift_u32(src_p[1], 8u, 0xffu);
+  pos_estimate |= unpack_left_shift_u32(src_p[2], 16u, 0xffu);
+  pos_estimate |= unpack_left_shift_u32(src_p[3], 24u, 0xffu);
+  memcpy(&dst_p->pos_estimate, &pos_estimate, sizeof(dst_p->pos_estimate));
+  vel_estimate = unpack_right_shift_u32(src_p[4], 0u, 0xffu);
+  vel_estimate |= unpack_left_shift_u32(src_p[5], 8u, 0xffu);
+  vel_estimate |= unpack_left_shift_u32(src_p[6], 16u, 0xffu);
+  vel_estimate |= unpack_left_shift_u32(src_p[7], 24u, 0xffu);
+  memcpy(&dst_p->vel_estimate, &vel_estimate, sizeof(dst_p->vel_estimate));
+
+  return (0);
 }
 
+int odrive_get_encoder_estimates_init(struct cantools::odrive_get_encoder_estimates_t* msg_p)
+{
+  if (msg_p == NULL)
+    return -1;
+
+  memset(msg_p, 0, sizeof(struct cantools::odrive_get_encoder_estimates_t));
+
+  return 0;
 }
+
+}  // namespace cantools
