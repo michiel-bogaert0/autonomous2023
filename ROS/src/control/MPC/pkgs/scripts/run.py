@@ -80,7 +80,7 @@ class MPC(ManagedNode):
             "/input/odom", Odometry, self.get_odom_update
         )
 
-        self.speed_target = rospy.get_param("~speed/target", 3.0)
+        self.speed_target = rospy.get_param("/speed/target", 3.0)
         self.steering_transmission = rospy.get_param(
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
@@ -121,7 +121,6 @@ class MPC(ManagedNode):
 
         # constraints
         max_steering_angle = 1
-        # max_v = self.speed_target
         self.ocp.subject_to(
             self.ocp.bounded(
                 -self.speed_target / self.wheelradius,
@@ -201,7 +200,7 @@ class MPC(ManagedNode):
                 try:
                     self.doUpdate()
 
-                    speed_target = rospy.get_param("~speed/target", 3.0)
+                    speed_target = rospy.get_param("/speed/target", 3.0)
 
                     # Change velocity constraints when speed target changes
                     if speed_target != self.speed_target:
