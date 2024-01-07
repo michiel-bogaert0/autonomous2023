@@ -51,9 +51,6 @@ void BicycleModel::update(double dt, double in_alpha, double in_phi)
 
   ang_vel = v / R;
 
-  ROS_DEBUG_STREAM("phi " << phi << " alpha " << alpha << " ang_vel " << ang_vel << " zeta " << zeta);
-  ROS_DEBUG_STREAM("v " << v << " a " << a << " dt " << dt << " drag acc " << drag_acc);
-
   // Outputs (and intermediates)
   omega = v * tan(zeta) / L;
 

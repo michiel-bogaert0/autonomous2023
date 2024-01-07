@@ -103,7 +103,7 @@ class MPC(ManagedNode):
 
         Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
         Qn = np.diag([8e-3, 8e-3, 0, 0, 1e-2])
-        R = np.diag([1e-2, 6e-3])
+        R = np.diag([1e-4, 6e-3])
 
         # Weight matrices for the terminal cost
         P = np.diag([0, 0, 0, 0, 0])
@@ -122,7 +122,13 @@ class MPC(ManagedNode):
         # constraints
         max_steering_angle = 1
         # max_v = self.speed_target
-        self.ocp.subject_to(self.ocp.bounded(-20, self.ocp.U[0, :], 20))
+        self.ocp.subject_to(
+            self.ocp.bounded(
+                -self.speed_target / self.wheelradius,
+                self.ocp.U[0, :],
+                self.speed_target / self.wheelradius,
+            )
+        )
         self.ocp.subject_to(
             self.ocp.bounded(-max_steering_angle, self.ocp.U[1, :], max_steering_angle)
         )
@@ -206,7 +212,13 @@ class MPC(ManagedNode):
 
                         # Reset constraints
                         self.ocp.opti.subject_to()
-                        self.ocp.subject_to(self.ocp.bounded(-20, self.ocp.U[0, :], 20))
+                        self.ocp.subject_to(
+                            self.ocp.bounded(
+                                -self.speed_target / self.wheelradius,
+                                self.ocp.U[0, :],
+                                self.speed_target / self.wheelradius,
+                            )
+                        )
                         self.ocp.opti.subject_to(
                             self.ocp.opti.bounded(-1, self.ocp.U[1, :], 1)
                         )
@@ -217,7 +229,7 @@ class MPC(ManagedNode):
                         Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
                         Qn = np.diag([8e-3, 8e-3, 0, 0, 1e-2])
                         R = np.diag(
-                            [1e-2, 2e-1 * self.actual_speed / self.speed_target]
+                            [1e-5, 3e-1 * self.actual_speed / self.speed_target]
                         )
 
                         # Weight matrices for the terminal cost
@@ -295,14 +307,14 @@ class MPC(ManagedNode):
                     # Run MPC
                     u, info = self.mpc(current_state, goal_state, control_targets)
 
-                    X_closed_loop = np.array(self.mpc.X_trajectory)
+                    # X_closed_loop = np.array(self.mpc.X_trajectory)
                     U_closed_loop = np.array(self.mpc.U_trajectory)
 
-                    rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
-                    rospy.loginfo(f"x closed loop: {X_closed_loop}")
-                    rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
-                    rospy.loginfo(f"u closed loop: {U_closed_loop}")
-                    rospy.loginfo(f"actual speed: {self.actual_speed}")
+                    # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
+                    # rospy.loginfo(f"x closed loop: {X_closed_loop}")
+                    # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
+                    # rospy.loginfo(f"u closed loop: {U_closed_loop}")
+                    # rospy.loginfo(f"actual speed: {self.actual_speed}")
 
                     # Publish MPC prediction for visualization
                     x_pred = Path()
@@ -318,7 +330,8 @@ class MPC(ManagedNode):
 
                     self.steering_cmd.data = U_closed_loop[0, 1]
                     self.velocity_cmd.data = (
-                        self.actual_speed + U_closed_loop[0, 0] * self.car.dt
+                        self.actual_speed
+                        + U_closed_loop[0, 0] * self.wheelradius * self.car.dt
                     )  # Input is acceleration
 
                     # Use Pure Pursuit if target speed is 0
