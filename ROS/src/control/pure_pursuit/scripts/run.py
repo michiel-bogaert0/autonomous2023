@@ -70,7 +70,7 @@ class PurePursuit(ManagedNode):
             "/input/odom", Odometry, self.get_odom_update
         )
 
-        self.speed_target = rospy.get_param("~speed/target", 3.0)
+        self.speed_target = rospy.get_param("/speed/target", 3.0)
         self.steering_transmission = rospy.get_param(
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
@@ -139,7 +139,7 @@ class PurePursuit(ManagedNode):
                 try:
                     self.doUpdate()
 
-                    self.speed_target = rospy.get_param("~speed/target", 3.0)
+                    self.speed_target = rospy.get_param("/speed/target", 3.0)
 
                     # Change the look-ahead distance (minimal_distance)  based on the current speed
                     if self.actual_speed < self.speed_start:
