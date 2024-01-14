@@ -1,6 +1,6 @@
 <launch>
 
-    <node pkg="pure_pursuit" type="run.py" name="pure_pursuit" output="screen" respawn="true">
+    <node pkg="kinematic_path_tracking" type="pure_pursuit.py" name="pure_pursuit" output="screen" respawn="true">
 
         <param name="publish_rate" value="50" />
 

@@ -32,6 +32,18 @@ class Trajectory:
 
         self.path = Path()
 
+    def set_path(self, path):
+        self.path = path
+        self.time_source = path.header.stamp
+
+        current_path = np.zeros((0, 2))
+        for pose in path.poses:
+            current_path = np.vstack(
+                (current_path, [pose.pose.position.x, pose.pose.position.y])
+            )
+
+        self.points = current_path
+
     def transform_blf(self):
         """
         transforms a path, given in points (N,2) from base_link_frame to base_link_frame at current time
