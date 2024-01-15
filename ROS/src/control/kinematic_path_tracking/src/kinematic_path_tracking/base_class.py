@@ -6,13 +6,13 @@ from node_fixture.fixture import DiagnosticArray, NodeManagingStatesEnum, ROSNod
 from node_fixture.node_management import ManagedNode
 from std_msgs.msg import Float64
 
-from ROS.src.control.kinematic_path_tracking.src.trajectory import Trajectory
+from .trajectory import Trajectory
 
 
 class KinematicTrackingNode(ManagedNode):
-    def __init__(self):
-        rospy.init_node("pure_pursuit_control")
-        super().__init__("pure_pursuit_control")
+    def __init__(self, name):
+        rospy.init_node(name)
+        super().__init__(name)
 
         self.publish_rate = rospy.get_param("~publish_rate", 10)
 
@@ -40,9 +40,6 @@ class KinematicTrackingNode(ManagedNode):
             "/input/odom", Odometry, self.get_odom_update
         )
 
-        # Start!
-        self.start_sender()
-
     def doConfigure(self):
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
@@ -53,10 +50,6 @@ class KinematicTrackingNode(ManagedNode):
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
         self.actual_speed = 0.0
-        self.speed_start = rospy.get_param("~speed_start", 10)
-        self.speed_stop = rospy.get_param("~speed_stop", 50)
-        self.distance_start = rospy.get_param("~distance_start", 1.2)
-        self.distance_stop = rospy.get_param("~distance_stop", 2.4)
 
         self.received_path = None
 

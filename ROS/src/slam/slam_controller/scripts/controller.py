@@ -73,6 +73,7 @@ class Controller:
                 configure_node("map_publisher")
                 # Control
                 configure_node("pure_pursuit_control")
+                configure_node("front_wheel_feedback_control")
                 configure_node("control_path_publisher")
                 configure_node("pathplanning")
                 configure_node("boundary_estimation")
@@ -134,6 +135,7 @@ class Controller:
                 set_state_finalized("loopclosure")
                 set_state_finalized("map_publisher")
 
+                set_state_finalized("front_wheel_feedback_control")
                 set_state_finalized("pure_pursuit_control")
                 set_state_finalized("control_path_publisher")
                 set_state_finalized("pathplanning")
@@ -147,6 +149,7 @@ class Controller:
             set_state_finalized("map_publisher")
 
             set_state_finalized("pure_pursuit_control")
+            set_state_finalized("front_wheel_feedback_control")
             set_state_finalized("control_path_publisher")
             set_state_finalized("pathplanning")
             set_state_finalized("boundary_estimation")

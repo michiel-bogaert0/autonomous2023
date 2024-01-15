@@ -1,19 +1,30 @@
+#! /usr/bin/python3
 import numpy as np
 import rospy
 from geometry_msgs.msg import PointStamped
-from kinematic_path_tracking.src.base_class import KinematicTrackingNode
+from kinematic_path_tracking.base_class import KinematicTrackingNode
 from node_fixture.fixture import DiagnosticStatus, create_diagnostic_message
 
 
 class PurePursuit(KinematicTrackingNode):
     def __init__(self):
+        super().__init__("pure_pursuit_control")
+
         # For visualization
         self.vis_pub = super().AddPublisher(
             "/output/target_point", PointStamped, queue_size=10  # warning otherwise
         )
 
-        # This call starts main loop, so blocks
-        super().__init__()
+        # Start!
+        self.start_sender()
+
+    def doConfigure(self):
+        super().doConfigure()
+
+        self.speed_start = rospy.get_param("~speed_start", 10)
+        self.speed_stop = rospy.get_param("~speed_stop", 50)
+        self.distance_start = rospy.get_param("~distance_start", 1.2)
+        self.distance_stop = rospy.get_param("~distance_stop", 2.4)
 
     def __process__(self):
         """
