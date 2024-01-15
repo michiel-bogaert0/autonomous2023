@@ -86,7 +86,7 @@ class Trajectory:
         if len(self.path_blf) == 0:
             return 0, 0
 
-        # Iterate over index until distance is minimal
+        # Catch up to current position (if needed) by checking if distance to next point on path is increasing
         prev_distance = (0 - self.path_blf[self.closest_index][0]) ** 2 + (
             0 - self.path_blf[self.closest_index][1]
         ) ** 2
@@ -107,9 +107,9 @@ class Trajectory:
 
         tangent = np.array(
             [
-                self.path_blf[self.closest_index + 1][0]
+                self.path_blf[(self.closest_index + 1) % len(self.path_blf)][0]
                 - self.path_blf[self.closest_index][0],
-                self.path_blf[self.closest_index + 1][1]
+                self.path_blf[(self.closest_index + 1) % len(self.path_blf)][1]
                 - self.path_blf[self.closest_index][1],
             ]
         )
@@ -117,20 +117,13 @@ class Trajectory:
 
         target_vector = np.array(
             [
-                self.path_blf[self.closest_index + 1][0],
-                self.path_blf[self.closest_index + 1][1],
+                self.path_blf[self.closest_index][0],
+                self.path_blf[self.closest_index][1],
             ]
         )
 
         transverse_error = np.cross(normalized_tangent, target_vector)
         heading_error = np.arctan2(normalized_tangent[1], normalized_tangent[0])
-
-        # print(f"Target vector: {target_vector}")
-        # print(f"Normalized tangent: {normalized_tangent}")
-        # print(f"Transverse error: {transverse_error}")
-        # print(f"Heading error: {heading_error}")
-        # print(f"Index {self.closest_index}")
-        # print(f"")
 
         self.target_vector = target_vector
 

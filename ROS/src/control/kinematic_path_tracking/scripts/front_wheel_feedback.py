@@ -35,12 +35,12 @@ class FrontWheelFeedback(KinematicTrackingNode):
         Processes the current path and calculates the target point for the car to follow
         """
 
-        # Calculate the transversal error
-        trans_error, heading_error = self.trajectory.calculate_transversal_error()
-
         # Calculate the steering angle
         dt = rospy.Time.now().to_sec() - self.t
         self.t = rospy.Time.now().to_sec()
+
+        # Calculate the transversal error
+        trans_error, heading_error = self.trajectory.calculate_transversal_error()
 
         # Steering transmission is already being applied here, as the error is related to the steering angle (arcsin or arctan)
         pid_e = (trans_error / self.actual_speed) / self.steering_transmission

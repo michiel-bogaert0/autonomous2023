@@ -6,8 +6,8 @@
 
         <param name="base_link_frame" value="ugr/car_base_link/front_axle" />
 
-        <param name="Kp" value="0.5" />
-        <param name="Ki" value="1.0" />
+        <param name="Kp" value="1.0" />
+        <param name="Ki" value="0.0" />
         <param name="Kd" value="0.0" />
 
         <param name="wheelradius" value="0.1" />
