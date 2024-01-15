@@ -267,10 +267,25 @@ class MPC(ManagedNode):
                     else:
                         self.minimal_distance = self.distance_stop
 
-                    # Calculate target point
-                    target_x, target_y = self.trajectory.calculate_target_point(
-                        self.minimal_distance, transform_path=True
-                    )
+                    # Calculate target points
+                    distances = [
+                        self.minimal_distance * n
+                        for n in np.linspace(0, 1, self.np + 2)[1:]
+                    ]
+                    target_points = self.trajectory.calculate_target_points(distances)
+
+                    target_x, target_y = target_points[-1]
+                    control_targets = []
+                    for control_target in target_points[:-1]:
+                        control_targets.append(
+                            [
+                                control_target[0],
+                                control_target[1],
+                                0,
+                                0,
+                                self.speed_target,
+                            ]
+                        )
 
                     if target_x == 0 and target_y == 0:
                         self.diagnostics_pub.publish(
@@ -287,18 +302,6 @@ class MPC(ManagedNode):
                         rate.sleep()
                         continue
 
-                    # Calculate control points to keep car close to center line
-                    control_targets = []
-                    for n in np.linspace(0, 1, self.np + 2)[1:-1]:
-                        (
-                            control_x,
-                            control_y,
-                        ) = self.trajectory.calculate_target_point(
-                            self.minimal_distance * n, transform_path=False
-                        )
-                        control_targets.append(
-                            [control_x, control_y, 0, 0, self.speed_target]
-                        )
                     # rospy.loginfo(f"target_x: {target_x}, target_y: {target_y}")
                     # rospy.loginfo(f"control_targets: {control_targets}")
 
@@ -306,7 +309,6 @@ class MPC(ManagedNode):
                     init_state = [0, 0, 0, 0, self.actual_speed]
                     goal_state = [target_x, target_y, 0, 0, self.speed_target]
 
-                    # self.mpc.X_init_guess = target_x
                     current_state = init_state
 
                     # Run MPC

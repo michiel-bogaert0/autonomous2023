@@ -16,7 +16,7 @@ class Trajectory:
     def __init__(self):
         self.closest_index = 0
         self.points = np.array([])
-        self.target = np.array([0, 0])
+        self.targets = []
 
         # True for trackdrive/autocross, False for skidpad/acceleration
         self.change_index = rospy.get_param("~change_index", True)
@@ -60,7 +60,7 @@ class Trajectory:
         )
         return self.points
 
-    def calculate_target_point(self, minimal_distance, transform_path=True):
+    def calculate_target_points(self, minimal_distances):
         """
         Calculates a target point by traversing the path
         Returns the first points that matches the conditions given by minimal_distance
@@ -73,8 +73,7 @@ class Trajectory:
             y {float}: y position of target point
         """
         # transform path to most recent blf
-        if transform_path:
-            self.path_blf = self.transform_blf()
+        self.path_blf = self.transform_blf()
 
         # No path received
         if len(self.path_blf) == 0:
@@ -88,33 +87,41 @@ class Trajectory:
         )
         self.closest_index = current_position_index
 
-        # Iterate until found
-        for _ in range(len(self.path_blf) + 1):
-            target_x = self.path_blf[self.closest_index][0]
-            target_y = self.path_blf[self.closest_index][1]
+        targets = []
+        indexes = []
 
-            # Current position is [0,0] in base_link_frame
-            distance = (0 - target_x) ** 2 + (0 - target_y) ** 2
+        for i, dist in enumerate(minimal_distances):
+            # Iterate until found
+            for _ in range(len(self.path_blf) + 1):
+                target_x = self.path_blf[self.closest_index][0]
+                target_y = self.path_blf[self.closest_index][1]
 
-            if distance > minimal_distance**2:
-                self.target = np.array([target_x, target_y])
-                return (self.target[0], self.target[1])
+                # Current position is [0,0] in base_link_frame
+                distance = (0 - target_x) ** 2 + (0 - target_y) ** 2
 
-            self.closest_index = (self.closest_index + 1) % len(self.path_blf)
+                if distance > dist**2:
+                    targets.append([target_x, target_y])
+                    indexes.append(self.closest_index)
+                    break
 
-            # If no new point was found, use the last point
-            if self.closest_index == current_position_index:
-                pose = PoseStamped(
-                    header=Header(
-                        frame_id=self.base_link_frame, stamp=self.trans.header.stamp
+                self.closest_index = (self.closest_index + 1) % len(self.path_blf)
+
+                # If no new point was found, use the last point
+                if self.closest_index == current_position_index:
+                    pose = PoseStamped(
+                        header=Header(
+                            frame_id=self.base_link_frame, stamp=self.trans.header.stamp
+                        )
                     )
-                )
 
-                pose.pose.position.x = self.target[0]
-                pose.pose.position.y = self.target[1]
+                    pose.pose.position.x = self.targets[i][0]
+                    pose.pose.position.y = self.targets[i][1]
 
-                pose_t = do_transform_pose(pose, self.trans)
+                    pose_t = do_transform_pose(pose, self.trans)
 
-                self.target = np.array([pose_t.pose.position.x, pose_t.pose.position.y])
-
-                return (self.target[0], self.target[1])
+                    targets.append([pose_t.pose.position.x, pose_t.pose.position.y])
+                    indexes.append(self.closest_index)
+                    break
+        self.targets = targets
+        self.closest_index = indexes[0]
+        return self.targets
