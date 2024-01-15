@@ -10,6 +10,8 @@ from node_fixture.fixture import (
     DiagnosticStatus,
     NodeManagingStatesEnum,
     ROSNode,
+    SLAMStatesEnum,
+    StateMachineScopeEnum,
     create_diagnostic_message,
 )
 from node_fixture.node_management import ManagedNode
@@ -17,6 +19,7 @@ from optimal_control.MPC_tracking import MPC_tracking
 from optimal_control.ocp import Ocp
 from std_msgs.msg import Float64
 from trajectory import Trajectory
+from ugr_msgs.msg import State
 
 
 class MPC(ManagedNode):
@@ -24,6 +27,8 @@ class MPC(ManagedNode):
         rospy.init_node("MPC_tracking_control")
         super().__init__("MPC_tracking_control")
         self.publish_rate = rospy.get_param("~publish_rate", 10)
+        self.slam_state = SLAMStatesEnum.IDLE
+        rospy.Subscriber("/state", State, self.handle_state_change)
         self.start_sender()
         rospy.spin()
 
@@ -81,7 +86,6 @@ class MPC(ManagedNode):
         )
 
         self.speed_target = rospy.get_param("/speed/target", 3.0)
-        self.speed_target_racing = rospy.get_param("/speed/target_racing", 10.0)
         self.steering_transmission = rospy.get_param(
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
@@ -140,6 +144,10 @@ class MPC(ManagedNode):
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
+
+    def handle_state_change(self, msg: State):
+        if msg.scope == StateMachineScopeEnum.SLAM:
+            self.slam_state = msg.cur_state
 
     def getPathplanningUpdate(self, msg: Path):
         """
@@ -221,7 +229,7 @@ class MPC(ManagedNode):
                         )
                         self.ocp._set_continuity(1)
 
-                    if self.speed_target == self.speed_target_racing:
+                    if self.slam_state == SLAMStatesEnum.RACING:
                         # Scale steering penalty based on current speed
                         Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
                         Qn = np.diag([8e-3, 8e-3, 0, 0, 1e-2])
