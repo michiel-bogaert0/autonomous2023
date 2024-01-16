@@ -39,9 +39,8 @@ extern "C" {
 #include <stdbool.h>
 #include <stddef.h>
 
-
 #ifndef EINVAL
-#    define EINVAL 22
+#define EINVAL 22
 #endif
 
 namespace cantools
@@ -51,20 +50,21 @@ namespace cantools
  *
  * All signal values are as on the CAN bus.
  */
-struct odrive_set_input_vel_t {
-    /**
-     * Range: -
-     * Scale: 1
-     * Offset: 0
-     */
-    float input_vel;
+struct odrive_set_input_vel_t
+{
+  /**
+   * Range: -
+   * Scale: 1
+   * Offset: 0
+   */
+  float input_vel;
 
-    /**
-     * Range: -
-     * Scale: 1
-     * Offset: 0
-     */
-    float input_torque_ff;
+  /**
+   * Range: -
+   * Scale: 1
+   * Offset: 0
+   */
+  float input_torque_ff;
 };
 
 /**
@@ -72,13 +72,14 @@ struct odrive_set_input_vel_t {
  *
  * All signal values are as on the CAN bus.
  */
-struct odrive_set_input_steering_t {
-    /**
-     * Range: [-steer_max_step, steer_max_step]
-     * Scale: 1
-     * Offset: 0
-     */
-    int input_steering;
+struct odrive_set_input_steering_t
+{
+  /**
+   * Range: [-steer_max_step, steer_max_step]
+   * Scale: 1
+   * Offset: 0
+   */
+  int input_steering;
 };
 
 /**
@@ -86,20 +87,21 @@ struct odrive_set_input_steering_t {
  *
  * All signal values are as on the CAN bus.
  */
-struct odrive_set_controller_mode_t {
-    /**
-     * Range: -
-     * Scale: 1
-     * Offset: 0
-     */
-    uint32_t control_mode;
+struct odrive_set_controller_mode_t
+{
+  /**
+   * Range: -
+   * Scale: 1
+   * Offset: 0
+   */
+  uint32_t control_mode;
 
-    /**
-     * Range: -
-     * Scale: 1
-     * Offset: 0
-     */
-    uint32_t input_mode;
+  /**
+   * Range: -
+   * Scale: 1
+   * Offset: 0
+   */
+  uint32_t input_mode;
 };
 
 /**
@@ -111,11 +113,7 @@ struct odrive_set_controller_mode_t {
  *
  * @return Size of packed data, or negative error code.
  */
-int odrive_set_input_vel_pack(
-    uint8_t *dst_p, 
-    const struct odrive_set_input_vel_t *src_p,
-    size_t size
-);
+int odrive_set_input_vel_pack(uint8_t* dst_p, const struct odrive_set_input_vel_t* src_p, size_t size);
 
 /**
  * Unpack message Set_Input_Vel.
@@ -126,11 +124,7 @@ int odrive_set_input_vel_pack(
  *
  * @return zero(0) or negative error code.
  */
-int odrive_set_input_vel_unpack(
-    struct odrive_set_input_vel_t *dst_p,
-    const uint8_t *src_p,
-    size_t size
-);
+int odrive_set_input_vel_unpack(struct odrive_set_input_vel_t* dst_p, const uint8_t* src_p, size_t size);
 
 /**
  * Init message fields to default values from Set_Input_Vel.
@@ -139,8 +133,7 @@ int odrive_set_input_vel_unpack(
  *
  * @return zero(0) on success or (-1) in case of nullptr argument.
  */
-int odrive_set_input_vel_init(struct odrive_set_input_vel_t *msg_p);
-
+int odrive_set_input_vel_init(struct odrive_set_input_vel_t* msg_p);
 
 /**
  * Pack message Set_Input_Steering.
@@ -151,11 +144,7 @@ int odrive_set_input_vel_init(struct odrive_set_input_vel_t *msg_p);
  *
  * @return Size of packed data, or negative error code.
  */
-int odrive_set_input_steering_pack(
-    uint8_t *dst_p, 
-    const struct odrive_set_input_steering_t *src_p,
-    size_t size
-);
+int odrive_set_input_steering_pack(uint8_t* dst_p, const struct odrive_set_input_steering_t* src_p, size_t size);
 
 /**
  * Init message fields to default values from Set_Input_Steering.
@@ -164,7 +153,7 @@ int odrive_set_input_steering_pack(
  *
  * @return zero(0) on success or (-1) in case of nullptr argument.
  */
-int odrive_set_input_steering_init(struct odrive_set_input_steering_t *msg_p);
+int odrive_set_input_steering_init(struct odrive_set_input_steering_t* msg_p);
 
 /**
  * Pack message Set_Controller_Mode.
@@ -175,10 +164,7 @@ int odrive_set_input_steering_init(struct odrive_set_input_steering_t *msg_p);
  *
  * @return Size of packed data, or negative error code.
  */
-int odrive_set_controller_mode_pack(
-    uint8_t *dst_p,
-    const struct odrive_set_controller_mode_t *src_p,
-    size_t size);
+int odrive_set_controller_mode_pack(uint8_t* dst_p, const struct odrive_set_controller_mode_t* src_p, size_t size);
 
 /**
  * Init message fields to default values from Set_Controller_Mode.
@@ -187,27 +173,28 @@ int odrive_set_controller_mode_pack(
  *
  * @return zero(0) on success or (-1) in case of nullptr argument.
  */
-int odrive_set_controller_mode_init(struct odrive_set_controller_mode_t *msg_p);
+int odrive_set_controller_mode_init(struct odrive_set_controller_mode_t* msg_p);
 
 /**
  * Signals in message Get_Encoder_Estimates.
  *
  * All signal values are as on the CAN bus.
  */
-struct odrive_get_encoder_estimates_t {
-    /**
-     * Range: -
-     * Scale: 1
-     * Offset: 0
-     */
-    float pos_estimate;
+struct odrive_get_encoder_estimates_t
+{
+  /**
+   * Range: -
+   * Scale: 1
+   * Offset: 0
+   */
+  float pos_estimate;
 
-    /**
-     * Range: -
-     * Scale: 1
-     * Offset: 0
-     */
-    float vel_estimate;
+  /**
+   * Range: -
+   * Scale: 1
+   * Offset: 0
+   */
+  float vel_estimate;
 };
 
 /**
@@ -219,10 +206,7 @@ struct odrive_get_encoder_estimates_t {
  *
  * @return Size of packed data, or negative error code.
  */
-int odrive_get_encoder_estimates_pack(
-    uint8_t *dst_p,
-    const struct odrive_get_encoder_estimates_t *src_p,
-    size_t size);
+int odrive_get_encoder_estimates_pack(uint8_t* dst_p, const struct odrive_get_encoder_estimates_t* src_p, size_t size);
 
 /**
  * Unpack message Get_Encoder_Estimates.
@@ -233,10 +217,7 @@ int odrive_get_encoder_estimates_pack(
  *
  * @return zero(0) or negative error code.
  */
-int odrive_get_encoder_estimates_unpack(
-    struct odrive_get_encoder_estimates_t *dst_p,
-    const uint8_t *src_p,
-    size_t size);
+int odrive_get_encoder_estimates_unpack(struct odrive_get_encoder_estimates_t* dst_p, const uint8_t* src_p, size_t size);
 
 /**
  * Init message fields to default values from Get_Encoder_Estimates.
@@ -245,9 +226,9 @@ int odrive_get_encoder_estimates_unpack(
  *
  * @return zero(0) on success or (-1) in case of nullptr argument.
  */
-int odrive_get_encoder_estimates_init(struct odrive_get_encoder_estimates_t *msg_p);
+int odrive_get_encoder_estimates_init(struct odrive_get_encoder_estimates_t* msg_p);
 
-} // namespace cantools
+}  // namespace cantools
 
 #ifdef __cplusplus
 }

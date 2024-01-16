@@ -36,8 +36,8 @@
    Desc:   Example ros_control main() entry point for controlling robots in ROS
 */
 
-#include <ugr_ros_control/generic_hw_control_loop.h>
-#include <pegasus_control/pegasus_hw_interface.h>
+#include <ugr_ros_control/generic_hw_control_loop.hpp>
+#include <pegasus_control/pegasus_hw_interface.hpp>
 #include <ros/ros.h>
 
 int main(int argc, char** argv)

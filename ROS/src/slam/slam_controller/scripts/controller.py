@@ -73,6 +73,7 @@ class Controller:
                 configure_node("map_publisher")
                 # Control
                 configure_node("pure_pursuit_control")
+                configure_node("MPC_tracking_control")
                 configure_node("control_path_publisher")
                 configure_node("pathplanning")
                 configure_node("boundary_estimation")
@@ -125,6 +126,7 @@ class Controller:
                     set_state_inactive("map_publisher")
 
                     set_state_inactive("pure_pursuit_control")
+                    set_state_inactive("MPC_tracking_control")
                     set_state_inactive("control_path_publisher")
                     set_state_inactive("pathplanning")
                     set_state_inactive("boundary_estimation")
@@ -135,6 +137,7 @@ class Controller:
                 set_state_finalized("map_publisher")
 
                 set_state_finalized("pure_pursuit_control")
+                set_state_finalized("MPC_tracking_control")
                 set_state_finalized("control_path_publisher")
                 set_state_finalized("pathplanning")
                 set_state_finalized("boundary_estimation")
@@ -147,6 +150,7 @@ class Controller:
             set_state_finalized("map_publisher")
 
             set_state_finalized("pure_pursuit_control")
+            set_state_finalized("MPC_tracking_control")
             set_state_finalized("control_path_publisher")
             set_state_finalized("pathplanning")
             set_state_finalized("boundary_estimation")

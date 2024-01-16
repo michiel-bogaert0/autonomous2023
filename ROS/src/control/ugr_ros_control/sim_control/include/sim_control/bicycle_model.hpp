@@ -7,11 +7,6 @@
 class BicycleModel
 {
 public:
-  /**
-   * Based on
-   * "https://thef1clan.com/2020/09/21/vehicle-dynamics-the-kinematic-bicycle-model/#:~:text=What%20is%20the%20kinematic%20bicycle,wheels%20and%201%20steering%20angle."
-   * But with added simple model for acceleration (drive effort) -> velocity instead of velocity as input
-   */
   BicycleModel(double R, double L, double Lr, double mu, double DC);
 
   /**
@@ -57,7 +52,7 @@ public:
    *
    * Args:
    *    dt: time since last update
-   *    driving_intention: the intention of driving. +1 is "drive forward", -1 is "drive backwards". Can be anything inbetween
+   *    Acceleration: Rotational acceleration of wheel
    *    steering_intention: the intention of steering. +1 is "steer left", -1 is "steer right". Can be anything inbetween
    */
   void update(double dt, double in_a, double in_phi);

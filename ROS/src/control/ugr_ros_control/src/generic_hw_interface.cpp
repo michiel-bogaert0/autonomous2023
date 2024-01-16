@@ -36,7 +36,7 @@
    Desc:   Helper ros_control hardware interface that loads configurations
 */
 
-#include <ugr_ros_control/generic_hw_interface.h>
+#include <ugr_ros_control/generic_hw_interface.hpp>
 #include <limits>
 
 // ROS parameter loading
@@ -92,7 +92,8 @@ void GenericHWInterface::init()
 
     // Fetch what interfaces should be enabled
     std::vector<std::string> joint_interfaces;
-    rosparam_shortcuts::get(name_, nh_, "hardware_interface/joints_config/" + joint_names_[joint_id] + "/interfaces", joint_interfaces);
+    rosparam_shortcuts::get(name_, nh_, "hardware_interface/joints_config/" + joint_names_[joint_id] + "/interfaces",
+                            joint_interfaces);
 
     // Add command interfaces to joints
     hardware_interface::JointHandle joint_handle_position = hardware_interface::JointHandle(
@@ -104,11 +105,14 @@ void GenericHWInterface::init()
     hardware_interface::JointHandle joint_handle_effort = hardware_interface::JointHandle(
         joint_state_interface_.getHandle(joint_names_[joint_id]), &joint_effort_command_[joint_id]);
 
-    position_enabled = std::find(joint_interfaces.begin(), joint_interfaces.end(), "position") != joint_interfaces.end();
-    velocity_enabled = std::find(joint_interfaces.begin(), joint_interfaces.end(), "velocity") != joint_interfaces.end();
+    position_enabled =
+        std::find(joint_interfaces.begin(), joint_interfaces.end(), "position") != joint_interfaces.end();
+    velocity_enabled =
+        std::find(joint_interfaces.begin(), joint_interfaces.end(), "velocity") != joint_interfaces.end();
     effort_enabled = std::find(joint_interfaces.begin(), joint_interfaces.end(), "effort") != joint_interfaces.end();
 
-    ROS_INFO_STREAM("(Position, Velocity, Effort) enabled: (" << position_enabled << ", " << velocity_enabled << ", " << effort_enabled << ")");
+    ROS_INFO_STREAM("(Position, Velocity, Effort) enabled: (" << position_enabled << ", " << velocity_enabled << ", "
+                                                              << effort_enabled << ")");
 
     if (position_enabled)
     {
@@ -126,7 +130,7 @@ void GenericHWInterface::init()
     }
     // Load the joint limits
     registerJointLimits(joint_handle_position, joint_handle_velocity, joint_handle_effort, joint_id);
-  }                                               // end for each joint
+  }  // end for each joint
 
   registerInterface(&joint_state_interface_);     // From RobotHW base class.
   registerInterface(&position_joint_interface_);  // From RobotHW base class.
@@ -175,14 +179,14 @@ void GenericHWInterface::registerJointLimits(const hardware_interface::JointHand
   {
     has_joint_limits = true;
     ROS_INFO_STREAM_NAMED(name_, "Joint " << joint_names_[joint_id] << " has URDF position limits ["
-                                           << joint_limits.min_position << ", " << joint_limits.max_position << "]");
+                                          << joint_limits.min_position << ", " << joint_limits.max_position << "]");
     if (joint_limits.has_velocity_limits)
       ROS_INFO_STREAM_NAMED(name_, "Joint " << joint_names_[joint_id] << " has URDF velocity limit ["
-                                             << joint_limits.max_velocity << "]");
-    
+                                            << joint_limits.max_velocity << "]");
+
     if (joint_limits.has_effort_limits)
       ROS_INFO_STREAM_NAMED(name_, "Joint " << joint_names_[joint_id] << " has URDF effort limit ["
-                                             << joint_limits.max_effort << "]");
+                                            << joint_limits.max_effort << "]");
   }
   else
   {
@@ -199,10 +203,10 @@ void GenericHWInterface::registerJointLimits(const hardware_interface::JointHand
     {
       has_joint_limits = true;
       ROS_INFO_STREAM_NAMED(name_, "Joint " << joint_names_[joint_id] << " has rosparam position limits ["
-                                             << joint_limits.min_position << ", " << joint_limits.max_position << "]");
+                                            << joint_limits.min_position << ", " << joint_limits.max_position << "]");
       if (joint_limits.has_velocity_limits)
         ROS_INFO_STREAM_NAMED(name_, "Joint " << joint_names_[joint_id] << " has rosparam velocity limit ["
-                                               << joint_limits.max_velocity << "]");
+                                              << joint_limits.max_velocity << "]");
     }  // the else debug message provided internally by joint_limits_interface
   }
 
@@ -217,8 +221,8 @@ void GenericHWInterface::registerJointLimits(const hardware_interface::JointHand
     else
     {
       ROS_INFO_STREAM_NAMED(name_, "Joint " << joint_names_[joint_id]
-                                             << " does not have soft joint "
-                                                "limits");
+                                            << " does not have soft joint "
+                                               "limits");
     }
   }
 
@@ -353,13 +357,12 @@ void GenericHWInterface::loadURDF(const ros::NodeHandle& nh, std::string param_n
     if (nh.searchParam(param_name, search_param_name))
     {
       ROS_INFO_STREAM("Waiting for model URDF on the ROS param server at location: " << nh.getNamespace()
-                                                                                                  << search_param_name);
+                                                                                     << search_param_name);
       nh.getParam(search_param_name, urdf_string);
     }
     else
     {
-      ROS_INFO_STREAM("Waiting for model URDF on the ROS param server at location: " << nh.getNamespace()
-                                                                                                  << param_name);
+      ROS_INFO_STREAM("Waiting for model URDF on the ROS param server at location: " << nh.getNamespace() << param_name);
       nh.getParam(param_name, urdf_string);
     }
 

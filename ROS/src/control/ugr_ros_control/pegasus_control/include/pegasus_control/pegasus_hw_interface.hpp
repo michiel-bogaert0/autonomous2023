@@ -40,8 +40,8 @@
 #ifndef PEGASYS_CONTROL__PEGASUS_HW_INTERFACE_H
 #define PEGASUS_CONTROL__PEGASUS_HW_INTERFACE_H
 
-#include <ugr_ros_control/generic_hw_interface.h>
-#include <pegasus_control/cantools.h>
+#include <ugr_ros_control/generic_hw_interface.hpp>
+#include <pegasus_control/cantools.hpp>
 #include <ros/ros.h>
 
 #include <nav_msgs/Odometry.h>
@@ -64,7 +64,7 @@ public:
    * \brief Constructor
    * \param nh - Node handle for topics.
    */
-  PegasusHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model = NULL);
+  explicit PegasusHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model = NULL);
 
   virtual void init();
 
@@ -113,7 +113,7 @@ private:
 
   bool is_running = false;
 
-  int IMU_ids[2] = {0xE2, 0xE3};
+  int IMU_ids[2] = { 0xE2, 0xE3 };
 
   ros::Publisher can_pub;
   ros::Subscriber can_sub;
