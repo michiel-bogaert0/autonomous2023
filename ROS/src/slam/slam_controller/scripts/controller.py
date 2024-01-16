@@ -45,6 +45,7 @@ class Controller(NodeManager):
 
         while not rospy.is_shutdown():
             self.update()
+            self.monitor()
             sleep(0.1)
 
     def update(self):
@@ -60,11 +61,12 @@ class Controller(NodeManager):
                 # Go to state depending on mission
                 self.mission = rospy.get_param("/mission")
 
-                # Configure parameters after mission is set
+                # Configure parameters after mission is set. Also loads in the parameter for the node manager
                 load_params(self.mission)
 
-                # Confige nodes after mission is set
-                self.configure_nodes()
+                # Confige nodes after mission is set (but wait for all nodes to be available)
+                while not self.configure_nodes() and not rospy.is_shutdown():
+                    sleep(1)
 
                 # Reset loop counter
                 rospy.ServiceProxy("/reset_closure", Empty)
