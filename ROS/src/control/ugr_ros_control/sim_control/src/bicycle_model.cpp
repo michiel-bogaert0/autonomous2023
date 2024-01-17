@@ -62,4 +62,6 @@ void BicycleModel::update(double dt, double in_alpha, double in_phi)
   v += a * dt;          // v of CoG (+ drag + friction)
   theta += omega * dt;  // Heading
   zeta += phi * dt;     // Of STEERING JOINT
+
+  zeta = std::min(std::max(zeta, -M_PI / 4), M_PI / 4);
 };
