@@ -163,7 +163,7 @@ class MergeNode:
                     source_frame=self.base_link_frame,  # ... to this frame,
                     source_time=tf_source_time,  # at this time.
                     fixed_frame=self.world_frame,  # Frame that does not change over time, in this case the "/world" frame
-                    timeout=rospy.Duration(0),  # Time-out
+                    timeout=rospy.Duration(0.1),  # Time-out
                 )
                 tf_sensor_msg: ObservationWithCovarianceArrayStamped = (
                     ROSNode.do_transform_observations(sensor_msg, transform)
