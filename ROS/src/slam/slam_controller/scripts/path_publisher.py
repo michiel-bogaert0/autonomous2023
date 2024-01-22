@@ -14,9 +14,8 @@ from node_fixture.node_management import ManagedNode
 
 class PathPublisher(ManagedNode):
     def __init__(self):
-        rospy.init_node("control_path_publisher")
-        super().__init__("control_path_publisher")
-        rospy.spin()
+        super().__init__("path_publisher")
+        self.spin()
 
     def doConfigure(self):
         self.override_time = rospy.get_param("~override_time", True)

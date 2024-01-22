@@ -26,7 +26,7 @@ class Controller(NodeManager):
 
         rospy.init_node("slam_controller")
 
-        self.state = SLAMStatesEnum.IDLE
+        self.slam_state = SLAMStatesEnum.IDLE
 
         self.mission = ""
         self.car = rospy.get_param("/car")
@@ -42,19 +42,18 @@ class Controller(NodeManager):
         self.state_publisher = rospy.Publisher(
             "/state", State, queue_size=10, latch=True
         )
+        self.spin()
 
-        while not rospy.is_shutdown():
-            self.update()
-            self.monitor()
-            sleep(0.1)
-
-    def update(self):
+    def active(self):
         """
         Updates the internal state and launches or kills nodes if needed
         """
-        new_state = self.state
 
-        if self.state == SLAMStatesEnum.IDLE or (
+        super().active()
+
+        new_state = self.slam_state
+
+        if self.slam_state == SLAMStatesEnum.IDLE or (
             rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission
         ):
             if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
@@ -87,7 +86,7 @@ class Controller(NodeManager):
                     self.target_lap_count = -1
                     new_state = SLAMStatesEnum.EXPLORATION
 
-                self.activate_nodes(new_state, self.state)
+                self.activate_nodes(new_state, self.slam_state)
 
             else:
                 self.finalize_nodes()
@@ -104,7 +103,7 @@ class Controller(NodeManager):
         # Diagnostics
         self.diagnostics_publisher.publish(
             create_diagnostic_message(
-                DiagnosticStatus.OK, "[GNRL] STATE: SLAM state", str(self.state)
+                DiagnosticStatus.OK, "[GNRL] STATE: SLAM state", str(self.slam_state)
             )
         )
         self.diagnostics_publisher.publish(
@@ -126,7 +125,7 @@ class Controller(NodeManager):
             state: the state transition
         """
 
-        new_state = self.state
+        new_state = self.slam_state
 
         if state.scope == StateMachineScopeEnum.AUTONOMOUS:
             if state.cur_state == AutonomousStatesEnum.ASREADY:
@@ -142,18 +141,18 @@ class Controller(NodeManager):
             new_state: state to switch to.
         """
 
-        if new_state == self.state:
+        if new_state == self.slam_state:
             return
 
         self.state_publisher.publish(
             State(
                 header=Header(stamp=rospy.Time.now()),
                 scope=StateMachineScopeEnum.SLAM,
-                prev_state=self.state,
+                prev_state=self.slam_state,
                 cur_state=new_state,
             )
         )
-        self.state = new_state
+        self.slam_state = new_state
 
     def lapFinished(self, laps):
         """
@@ -173,14 +172,14 @@ class Controller(NodeManager):
         # If we did one lap in trackdrive and exploration, switch to racing
         if (
             self.mission == AutonomousMission.TRACKDRIVE
-            and self.state == SLAMStatesEnum.EXPLORATION
+            and self.slam_state == SLAMStatesEnum.EXPLORATION
         ):
             rospy.loginfo("Exploration finished, switching to racing")
             new_state = SLAMStatesEnum.RACING
             speed_target = rospy.get_param("/speed/target_racing")
             rospy.set_param("/speed/target", speed_target)
 
-            self.activate_nodes(new_state, self.state)
+            self.activate_nodes(new_state, self.slam_state)
 
             self.change_state(new_state)
 
