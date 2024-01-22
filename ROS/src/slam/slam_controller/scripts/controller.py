@@ -42,6 +42,9 @@ class Controller(NodeManager):
         self.state_publisher = rospy.Publisher(
             "/state", State, queue_size=10, latch=True
         )
+        self.slam_state_publisher = rospy.Publisher(
+            "/state/slam", State, queue_size=10, latch=True
+        )
         self.spin()
 
     def active(self):
@@ -145,6 +148,14 @@ class Controller(NodeManager):
             return
 
         self.state_publisher.publish(
+            State(
+                header=Header(stamp=rospy.Time.now()),
+                scope=StateMachineScopeEnum.SLAM,
+                prev_state=self.slam_state,
+                cur_state=new_state,
+            )
+        )
+        self.slam_state_publisher.publish(
             State(
                 header=Header(stamp=rospy.Time.now()),
                 scope=StateMachineScopeEnum.SLAM,

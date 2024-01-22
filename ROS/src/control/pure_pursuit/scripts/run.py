@@ -125,7 +125,7 @@ class PurePursuit(ManagedNode):
         """
         return (angle + max_angle) % (2 * max_angle) - max_angle
 
-    def onActive(self):
+    def active(self):
         """
         Start sending updates. If the data is too old, brake.
         """
