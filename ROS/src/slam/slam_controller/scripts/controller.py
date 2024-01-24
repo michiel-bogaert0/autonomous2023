@@ -52,8 +52,6 @@ class Controller(NodeManager):
         Updates the internal state and launches or kills nodes if needed
         """
 
-        super().active()
-
         new_state = self.slam_state
 
         if self.slam_state == SLAMStatesEnum.IDLE or (
