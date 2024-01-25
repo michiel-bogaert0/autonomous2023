@@ -49,6 +49,7 @@ public:
 
   void step();
   void doConfigure() override;
+  void active() override;
 
 private:
   // ROS
