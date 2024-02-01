@@ -17,13 +17,10 @@ from ugr_msgs.msg import BoundingBoxesStamped
 class EarlyFusion:
     def __init__(self):
         rospy.init_node("early_fusion")
-        self.device = "cuda:0"
         self.pc_header = None
         self.pc = None
         self.bbox_header = None
         self.bboxes = None
-        self.max_angle = 35  # in degrees
-        self.max_ratio = np.tan(np.radians(self.max_angle))
         camcal_location = rospy.get_param(
             "/perception/camera/camcal_location", "camera_calibration_baumer.npz"
         )
@@ -33,22 +30,6 @@ class EarlyFusion:
 
         self.camera_matrix = camera_cal_archive["camera_matrix"]
         self.distortion_matrix = camera_cal_archive["distortion_matrix"]
-
-        self.orig_rotation_matrix2 = np.array(
-            [
-                [0.9998479, -0.0174387, 0.0000000],
-                [0.0174387, 0.9998479, 0.0000000],
-                [0.0000000, 0.0000000, 1.0000000],
-            ]
-        )
-        # deze gaf goeie results
-        # self.orig_rotation_matrix = np.array(
-        #     [
-        #         [0.9998479, -0.0436194, 0.0000000],
-        #         [0.0436194, 0.9998479, 0.0000000],
-        #         [0.0000000, 0.0000000, 1.0000000],
-        #     ]
-        # )
 
         self.orig_rotation_matrix = np.array(
             [
@@ -86,10 +67,10 @@ class EarlyFusion:
             # ratios = np.abs(self.pc[:, 1] / self.pc[:, 0])
             # self.pc = self.pc[ratios < self.max_ratio]
             transformed = self.transform_points(self.pc)
-            for p in transformed:
-                if p[0][0] > 0 and p[0][0] < 1920 and p[0][1] > 0 and p[0][1] < 1200:
-                    print(list(p[0]))
-                    print(",")
+            # for p in transformed:
+            #     if p[0][0] > 0 and p[0][0] < 1920 and p[0][1] > 0 and p[0][1] < 1200:
+            #         print(list(p[0]))
+            #         print(",")
             # print(transformed[:,0])
 
             total = []
@@ -121,7 +102,6 @@ class EarlyFusion:
             self.pc = None
 
     def transform_points(self, points):
-        # points = points @ self.orig_rotation_matrix2
         points += self.orig_translation_vector
         points = points @ self.orig_rotation_matrix.T
 
