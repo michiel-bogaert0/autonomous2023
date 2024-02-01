@@ -1,0 +1,11 @@
+<launch>
+  <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries"/>
+
+  <node pkg="fusion" output="screen" type="early_fusion.py" name="early_fusion" respawn="False">
+    <param name="base_link_frame" value="ugr/car_base_link" />
+    <param name="world_frame" value="ugr/car_odom" />
+    <remap from="/input/camera_bboxes" to="/ugr/car/observations/camera/bounding_boxes"/>
+    <remap from="/input/lidar_groundremoval" to="ugr/vis/lidar/groundremoval_pc"/>
+    <remap from="/output/topic" to="/ugr/car/observations/early_fused"/>
+  </node>
+</launch>
