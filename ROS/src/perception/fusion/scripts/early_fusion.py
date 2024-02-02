@@ -83,28 +83,32 @@ class EarlyFusion:
     def run_fusion(self):
         transformed = self.transform_points(self.pc)
         results = ObservationWithCovarianceArrayStamped()
-        # used_points = []
+        used_points = []
         for box in self.bboxes:
             inside_pts = []
             distances = []
+            indices = []
             for i, point in enumerate(transformed):
                 if (
-                    point[0][0] > box.left
+                    i not in used_points
+                    and point[0][0] > box.left
                     and point[0][0] < box.left + box.width
                     and point[0][1] > box.top
                     and point[0][1] < box.top + box.height
                 ):
                     inside_pts.append(self.pc[i])
                     distances.append(np.linalg.norm(self.pc[i]))
+                    indices.append(i)
 
             if inside_pts == []:
                 continue
             closest_distance = min(distances)
             closest_pt = inside_pts[distances.index(closest_distance)]
             filtered_pts = []
-            for point in inside_pts:
+            for i, point in enumerate(inside_pts):
                 if np.linalg.norm(point - closest_pt) < 0.5:
                     filtered_pts.append(point)
+                    used_points.append(indices[i])
             if not filtered_pts:
                 continue
             centroid = np.mean(filtered_pts, axis=0)
