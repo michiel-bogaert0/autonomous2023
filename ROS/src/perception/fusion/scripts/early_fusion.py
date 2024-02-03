@@ -26,9 +26,22 @@ class EarlyFusion:
         self.pc = None
         self.bbox_header = None
         self.bboxes = None
+        self.covariance = [0.2, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.8]
+        self.belief = 0.8
         self.new_pc_available = False
         self.pc_lock = threading.Lock()
         self.cone_width = 0.232
+        self.orig_rotation_matrix = np.array(
+            [
+                [0.9998479, -0.038, 0.0000000],
+                [0.038, 0.9998479, -0.03],
+                [0.0000000, 0.03, 1.0000000],
+            ]
+        )
+        self.orig_translation_vector = np.array(
+            [-0.09, 0, -0.40]
+        )  # original [-0.09, 0, -0.37]
+
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         camcal_location = rospy.get_param(
@@ -41,14 +54,6 @@ class EarlyFusion:
         self.camera_matrix = camera_cal_archive["camera_matrix"]
         self.distortion_matrix = camera_cal_archive["distortion_matrix"]
 
-        self.orig_rotation_matrix = np.array(
-            [
-                [0.9998479, -0.038, 0.0000000],
-                [0.038, 0.9998479, -0.03],
-                [0.0000000, 0.03, 1.0000000],
-            ]
-        )
-
         rospy.Subscriber("/input/lidar_groundremoval", PointCloud2, self.handle_pc)
         rospy.Subscriber(
             "/input/camera_bboxes",
@@ -59,10 +64,6 @@ class EarlyFusion:
             "/output/topic", ObservationWithCovarianceArrayStamped, queue_size=10
         )
 
-        self.orig_translation_vector = np.array(
-            [-0.09, 0, -0.40]
-        )  # original [-0.09, 0, -0.37]
-
     def publish(self, msg):
         """
         Just publishes on the topic
@@ -70,6 +71,9 @@ class EarlyFusion:
         self.result_publisher.publish(msg)
 
     def handle_pc(self, msg: PointCloud2):
+        """
+        Callback for the lidar point cloud topic. Stores the point cloud data and sets a flag indicating new data is available.
+        """
         with self.pc_lock:
             self.pc_header = msg.header
             rospy.loginfo("Got pointcloud")
@@ -84,59 +88,100 @@ class EarlyFusion:
                 self.new_pc_available = True
 
     def handle_bbox(self, msg: BoundingBoxesStamped):
+        """
+        Callback for the bounding boxes topic. Stores the bounding box data and runs the fusion process.
+        """
         self.bbox_header = msg.header
         self.bboxes = msg.bounding_boxes
         rospy.loginfo("Got bboxes")
-        if self.pc is not None:
-            self.run_fusion()
+        self.run_fusion()
 
     def run_fusion(self):
+        """
+        Performs the fusion process. Transforms the point cloud data, filters points inside each bounding box,
+        calculates the centroid of the filtered points, and publishes the results.
+        """
         with self.pc_lock:
             if self.new_pc_available:
                 transformed = self.transform_points(self.pc)
-                results = ObservationWithCovarianceArrayStamped()
+                observations = []
                 for box in self.bboxes:
-                    inside_pts = []
-                    indices = []
-                    for i, point in enumerate(transformed):
-                        if (
-                            point[0][0] > box.left
-                            and point[0][0] < box.left + box.width
-                            and point[0][1] > box.top
-                            and point[0][1] < box.top + box.height
-                        ):
-                            inside_pts.append(self.pc[i])
-                            indices.append(i)
-
+                    inside_pts = self.filter_points_inside_bbox(transformed, box)
                     if inside_pts == []:
                         continue
-                    mean_point = np.median(inside_pts, axis=0)
-                    filtered_pts = []
-                    for point in inside_pts:
-                        if np.linalg.norm(point - mean_point) < 1:
-                            filtered_pts.append(point)
-                    if filtered_pts == []:
+                    centroid = self.calculate_centroid(inside_pts)
+                    if centroid is None:
                         continue
-                    centroid = np.mean(filtered_pts, axis=0)
-                    direction_vector = centroid / np.linalg.norm(centroid)
-                    centroid += direction_vector * (1 / 6 * self.cone_width)
-                    cone = ObservationWithCovariance()
-                    cone.observation.location.x = centroid[0]
-                    cone.observation.location.y = centroid[1]
-                    cone.observation.location.z = centroid[2]
-                    cone.covariance = [0.2, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.8]
-                    # cone.covariance = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-                    cone.observation.observation_class = box.cone_type
-                    cone.observation.belief = 0.8
-                    results.observations.append(cone)
-
-                self.pc = None
-                self.new_pc_available = False
-                results.header.stamp = self.bbox_header.stamp
-                results.header.frame_id = self.pc_header.frame_id
+                    observations.append(
+                        self.create_observation(centroid, box.cone_type)
+                    )
+                results = self.create_results(observations)
                 self.publish(results)
+                self.new_pc_available = False
+
+    def create_results(self, observations):
+        """
+        Creates an ObservationWithCovarianceArrayStamped message from a list of observations
+        """
+        results = ObservationWithCovarianceArrayStamped()
+        results.observations = observations
+        results.header.stamp = (
+            self.bbox_header.stamp
+        )  # take the timestamp from the latest bounding box message
+        results.header.frame_id = self.pc_header.frame_id  # take the lidar frame id
+        return results
+
+    def calculate_centroid(self, points):
+        """
+        Calculates the centroid of a set of points
+        """
+        mean_point = np.median(
+            points, axis=0
+        )  # calculate the median point, this should always be a point on the cone
+        filtered_pts = [
+            point for point in points if np.linalg.norm(point - mean_point) < 0.5
+        ]  # filter out points that are too far from the mean
+        if filtered_pts == []:
+            return None
+        centroid = np.mean(filtered_pts, axis=0)
+        direction_vector = centroid / np.linalg.norm(centroid)
+        centroid += direction_vector * (1 / 6 * self.cone_width)
+        return centroid
+
+    def filter_points_inside_bbox(self, points, bbox):
+        """
+        Filters the points inside the bounding box
+        """
+        inside_pts = []
+        for i, point in enumerate(points):
+            if (
+                point[0][0] > bbox.left
+                and point[0][0] < bbox.left + bbox.width
+                and point[0][1] > bbox.top
+                and point[0][1] < bbox.top + bbox.height
+            ):
+                inside_pts.append(self.pc[i])
+        return inside_pts
+
+    def create_observation(self, centroid, cone_type):
+        """
+        Creates an ObservationWithCovariance message from a centroid and color
+        """
+        if centroid is None:
+            return
+        cone = ObservationWithCovariance()
+        cone.observation.location.x = centroid[0]
+        cone.observation.location.y = centroid[1]
+        cone.observation.location.z = centroid[2]
+        cone.covariance = self.covariance
+        cone.observation.observation_class = cone_type
+        cone.observation.belief = self.belief
+        return cone
 
     def transform_points(self, points):
+        """
+        Transforms the 3D point cloud data from the lidar frame to the 2D camera frame
+        """
         points += self.orig_translation_vector
         points = points @ self.orig_rotation_matrix.T
 
