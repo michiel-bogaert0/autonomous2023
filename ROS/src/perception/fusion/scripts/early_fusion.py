@@ -33,14 +33,12 @@ class EarlyFusion:
         self.cone_width = 0.232
         self.orig_rotation_matrix = np.array(
             [
-                [0.9998479, -0.038, 0.0000000],
-                [0.038, 0.9998479, -0.03],
-                [0.0000000, 0.03, 1.0000000],
+                [0.9998479, 0.038, 0.0000000],
+                [-0.038, 0.9998479, 0.03],
+                [0.0000000, -0.03, 1.0000000],
             ]
         )
-        self.orig_translation_vector = np.array(
-            [-0.09, 0, -0.40]
-        )  # original [-0.09, 0, -0.37]
+        self.orig_translation_vector = np.array([-0.09, 0, -0.40])
 
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
@@ -103,10 +101,10 @@ class EarlyFusion:
         """
         with self.pc_lock:
             if self.new_pc_available:
-                transformed = self.transform_points(self.pc)
+                projections = self.project_points(self.pc)
                 observations = []
                 for box in self.bboxes:
-                    inside_pts = self.filter_points_inside_bbox(transformed, box)
+                    inside_pts = self.filter_points_inside_bbox(projections, box)
                     if inside_pts == []:
                         continue
                     centroid = self.calculate_centroid(inside_pts)
@@ -137,7 +135,7 @@ class EarlyFusion:
         """
         mean_point = np.median(
             points, axis=0
-        )  # calculate the median point, this should always be a point on the cone
+        )  # calculate the median point, this should always be a point very close to the cone
         filtered_pts = [
             point for point in points if np.linalg.norm(point - mean_point) < 0.5
         ]  # filter out points that are too far from the mean
@@ -145,20 +143,22 @@ class EarlyFusion:
             return None
         centroid = np.mean(filtered_pts, axis=0)
         direction_vector = centroid / np.linalg.norm(centroid)
-        centroid += direction_vector * (1 / 6 * self.cone_width)
+        centroid += direction_vector * (
+            1 / 6 * self.cone_width
+        )  # compensation for only seeing the front of the cone
         return centroid
 
-    def filter_points_inside_bbox(self, points, bbox):
+    def filter_points_inside_bbox(self, projections, bbox):
         """
-        Filters the points inside the bounding box
+        Filters the projected points inside the bounding box
         """
         inside_pts = []
-        for i, point in enumerate(points):
+        for i, projection in enumerate(projections):
             if (
-                point[0][0] > bbox.left
-                and point[0][0] < bbox.left + bbox.width
-                and point[0][1] > bbox.top
-                and point[0][1] < bbox.top + bbox.height
+                projection[0][0] > bbox.left
+                and projection[0][0] < bbox.left + bbox.width
+                and projection[0][1] > bbox.top
+                and projection[0][1] < bbox.top + bbox.height
             ):
                 inside_pts.append(self.pc[i])
         return inside_pts
@@ -167,8 +167,6 @@ class EarlyFusion:
         """
         Creates an ObservationWithCovariance message from a centroid and color
         """
-        if centroid is None:
-            return
         cone = ObservationWithCovariance()
         cone.observation.location.x = centroid[0]
         cone.observation.location.y = centroid[1]
@@ -178,26 +176,26 @@ class EarlyFusion:
         cone.observation.belief = self.belief
         return cone
 
-    def transform_points(self, points):
+    def project_points(self, points):
         """
         Transforms the 3D point cloud data from the lidar frame to the 2D camera frame
         """
-        points += self.orig_translation_vector
-        points = points @ self.orig_rotation_matrix.T
-
         transformed_points = np.copy(points)
+        points += self.orig_translation_vector
+        points = points @ self.orig_rotation_matrix
 
+        # change the axis to match the opencv coordinate system
         transformed_points[:, 0] = -points[:, 1]
         transformed_points[:, 1] = -points[:, 2]
         transformed_points[:, 2] = points[:, 0]
-        transformed_points = cv.projectPoints(
+        projections = cv.projectPoints(
             transformed_points,
             np.array([0, 0, 0], dtype=np.float32),
             np.array([0, 0, 0], dtype=np.float32),
             self.camera_matrix,
             np.zeros((1, 5)),
         )[0]
-        return transformed_points
+        return projections
 
 
 node = EarlyFusion()
