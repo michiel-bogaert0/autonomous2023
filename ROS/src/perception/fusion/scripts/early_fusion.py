@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import threading
 from pathlib import Path
 
 import cv2 as cv
@@ -30,8 +29,6 @@ class EarlyFusion:
             "~covariance", [0.2, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.8]
         )
         self.belief = rospy.get_param("~belief", 0.8)
-        self.new_pc_available = False
-        self.pc_lock = threading.Lock()
         self.cone_width = rospy.get_param("~cone_width", 0.232)
         self.rotation_matrix = np.array(
             [
@@ -75,50 +72,41 @@ class EarlyFusion:
         """
         Callback for the lidar point cloud topic. Stores the point cloud data and sets a flag indicating new data is available.
         """
-        with self.pc_lock:
-            self.pc_header = msg.header
-            # rospy.loginfo("Got pointcloud")
-            if not self.new_pc_available:
-                self.pc = np.array(
-                    list(
-                        pc2.read_points(
-                            msg, skip_nans=True, field_names=("x", "y", "z")
-                        )
-                    )
-                )
-                self.new_pc_available = True
+        # rospy.loginfo("Got pointcloud")
+        self.pc_header = msg.header
+        self.pc = np.array(
+            list(pc2.read_points(msg, skip_nans=True, field_names=("x", "y", "z")))
+        )
 
     def handle_bbox(self, msg: BoundingBoxesStamped):
         """
         Callback for the bounding boxes topic. Stores the bounding box data and runs the fusion process.
         """
+        # rospy.loginfo("Got bboxes")
         self.bbox_header = msg.header
         self.bboxes = msg.bounding_boxes
-        # rospy.loginfo("Got bboxes")
-        self.run_fusion()
+        if self.pc is not None:
+            self.run_fusion()
 
     def run_fusion(self):
         """
         Performs the fusion process. Transforms the point cloud data, filters points inside each bounding box,
         calculates the centroid of the filtered points, and publishes the results.
         """
-        with self.pc_lock:
-            if self.new_pc_available:
-                projections = self.project_points(self.pc)
-                observations = []
-                for box in self.bboxes:
-                    inside_pts = self.filter_points_inside_bbox(projections, box)
-                    if inside_pts == []:
-                        continue
-                    centroid = self.calculate_centroid(inside_pts)
-                    if centroid is None:
-                        continue
-                    observations.append(
-                        self.create_observation(centroid, box.cone_type)
-                    )
-                results = self.create_results(observations)
-                self.publish(results)
-                self.new_pc_available = False
+        pointcloud = np.copy(self.pc)
+        self.pc = None  # the same pc cannot be used twice (pc's are received at almost double the rate of bboxes)
+        projections = self.project_points(pointcloud)
+        observations = []
+        for box in self.bboxes:
+            inside_pts = self.filter_points_inside_bbox(pointcloud, projections, box)
+            if inside_pts == []:
+                continue
+            centroid = self.calculate_centroid(inside_pts)
+            if centroid is None:
+                continue
+            observations.append(self.create_observation(centroid, box.cone_type))
+        results = self.create_results(observations)
+        self.publish(results)
 
     def create_results(self, observations):
         """
@@ -151,7 +139,7 @@ class EarlyFusion:
         )  # compensation for only seeing the front of the cone
         return centroid
 
-    def filter_points_inside_bbox(self, projections, bbox):
+    def filter_points_inside_bbox(self, pc, projections, bbox):
         """
         Filters the projected points inside the bounding box
         """
@@ -163,7 +151,7 @@ class EarlyFusion:
                 and projection[0][1] > bbox.top
                 and projection[0][1] < bbox.top + bbox.height
             ):
-                inside_pts.append(self.pc[i])
+                inside_pts.append(pc[i])
         return inside_pts
 
     def create_observation(self, centroid, cone_type):
