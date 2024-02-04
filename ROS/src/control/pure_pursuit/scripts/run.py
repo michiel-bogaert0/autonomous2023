@@ -187,7 +187,6 @@ class PurePursuit(ManagedNode):
             self.steering_pub.publish(self.steering_cmd)
 
             self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
-            self.velocity_cmd.data = 0
             self.velocity_pub.publish(self.velocity_cmd)
 
             # Publish target point for visualization
