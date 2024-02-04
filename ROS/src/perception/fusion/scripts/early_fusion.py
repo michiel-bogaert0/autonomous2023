@@ -26,20 +26,23 @@ class EarlyFusion:
         self.pc = None
         self.bbox_header = None
         self.bboxes = None
-        self.covariance = [0.2, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.8]
-        self.belief = 0.8
+        self.covariance = rospy.get_param(
+            "~covariance", [0.2, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.8]
+        )
+        self.belief = rospy.get_param("~belief", 0.8)
         self.new_pc_available = False
         self.pc_lock = threading.Lock()
-        self.cone_width = 0.232
-        self.orig_rotation_matrix = np.array(
+        self.cone_width = rospy.get_param("~cone_width", 0.232)
+        self.rotation_matrix = np.array(
             [
                 [0.9998479, 0.038, 0.0000000],
                 [-0.038, 0.9998479, 0.03],
                 [0.0000000, -0.03, 1.0000000],
             ]
         )
-        self.orig_translation_vector = np.array([-0.09, 0, -0.40])
-
+        self.translation_vector = np.array(
+            rospy.get_param("~translation_vector", [-0.09, 0, -0.40])
+        )
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         camcal_location = rospy.get_param(
@@ -74,7 +77,7 @@ class EarlyFusion:
         """
         with self.pc_lock:
             self.pc_header = msg.header
-            rospy.loginfo("Got pointcloud")
+            # rospy.loginfo("Got pointcloud")
             if not self.new_pc_available:
                 self.pc = np.array(
                     list(
@@ -91,7 +94,7 @@ class EarlyFusion:
         """
         self.bbox_header = msg.header
         self.bboxes = msg.bounding_boxes
-        rospy.loginfo("Got bboxes")
+        # rospy.loginfo("Got bboxes")
         self.run_fusion()
 
     def run_fusion(self):
@@ -181,8 +184,8 @@ class EarlyFusion:
         Transforms the 3D point cloud data from the lidar frame to the 2D camera frame
         """
         transformed_points = np.copy(points)
-        points += self.orig_translation_vector
-        points = points @ self.orig_rotation_matrix
+        points += self.translation_vector
+        points = points @ self.rotation_matrix
 
         # change the axis to match the opencv coordinate system
         transformed_points[:, 0] = -points[:, 1]
