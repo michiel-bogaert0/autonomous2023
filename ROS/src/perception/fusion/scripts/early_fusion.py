@@ -30,6 +30,7 @@ class EarlyFusion:
         )
         self.belief = rospy.get_param("~belief", 0.8)
         self.cone_width = rospy.get_param("~cone_width", 0.232)
+        self.fusion_ready = False
         self.rotation_matrix = np.array(
             [
                 [0.9998479, 0.038, 0.0000000],
@@ -62,6 +63,20 @@ class EarlyFusion:
             "/output/topic", ObservationWithCovarianceArrayStamped, queue_size=10
         )
 
+        rate = rospy.Rate(rospy.get_param("~rate", 5))
+
+        while not rospy.is_shutdown():
+            self.run()
+            rate.sleep()
+
+    def run(self):
+        """
+        Runs the fusion process
+        """
+        if self.fusion_ready:
+            self.run_fusion()
+            self.fusion_ready = False
+
     def publish(self, msg):
         """
         Just publishes on the topic
@@ -86,7 +101,7 @@ class EarlyFusion:
         self.bbox_header = msg.header
         self.bboxes = msg.bounding_boxes
         if self.pc is not None:
-            self.run_fusion()
+            self.fusion_ready = True
 
     def run_fusion(self):
         """
