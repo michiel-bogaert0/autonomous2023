@@ -114,7 +114,7 @@ class EarlyFusion:
         observations = []
         for box in self.bboxes:
             inside_pts = self.filter_points_inside_bbox(pointcloud, projections, box)
-            if inside_pts == []:
+            if len(inside_pts) == 0:
                 continue
             centroid = self.calculate_centroid(inside_pts)
             if centroid is None:
@@ -142,10 +142,10 @@ class EarlyFusion:
         mean_point = np.median(
             points, axis=0
         )  # calculate the median point, this should always be a point very close to the cone
-        filtered_pts = [
-            point for point in points if np.linalg.norm(point - mean_point) < 0.5
-        ]  # filter out points that are too far from the mean
-        if filtered_pts == []:
+        filtered_pts = np.array(
+            [point for point in points if np.linalg.norm(point - mean_point) < 0.5]
+        )  # filter out points that are too far from the mean
+        if len(filtered_pts) == 0:
             return None
         centroid = np.mean(filtered_pts, axis=0)
         direction_vector = centroid / np.linalg.norm(centroid)
@@ -158,15 +158,18 @@ class EarlyFusion:
         """
         Filters the projected points inside the bounding box
         """
-        inside_pts = []
-        for i, projection in enumerate(projections):
-            if (
-                projection[0][0] > bbox.left
-                and projection[0][0] < bbox.left + bbox.width
-                and projection[0][1] > bbox.top
-                and projection[0][1] < bbox.top + bbox.height
-            ):
-                inside_pts.append(pc[i])
+        pc = np.array(pc)
+        projections = np.array(projections)
+
+        mask = (
+            (projections[:, 0, 0] > bbox.left)
+            & (projections[:, 0, 0] < bbox.left + bbox.width)
+            & (projections[:, 0, 1] > bbox.top)
+            & (projections[:, 0, 1] < bbox.top + bbox.height)
+        )
+
+        inside_pts = pc[mask]
+
         return inside_pts
 
     def create_observation(self, centroid, cone_type):
