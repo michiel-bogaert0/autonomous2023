@@ -10,7 +10,7 @@ from node_fixture.fixture import (
     ROSNode,
     create_diagnostic_message,
 )
-from node_fixture.node_management import ManagedNode
+from node_fixture.managed_node import ManagedNode
 from std_msgs.msg import Float64
 from trajectory import Trajectory
 

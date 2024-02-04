@@ -8,7 +8,7 @@ from node_fixture.fixture import (
     DiagnosticStatus,
     create_diagnostic_message,
 )
-from node_fixture.node_management import ManagedNode
+from node_fixture.managed_node import ManagedNode
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
 

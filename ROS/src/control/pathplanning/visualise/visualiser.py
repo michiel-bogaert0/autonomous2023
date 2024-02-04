@@ -6,7 +6,7 @@ import sys
 import numpy as np
 import rospy
 import yaml
-from node_fixture.node_management import configure_node, set_state_active
+from node_fixture.node_manager import configure_node, set_state_active
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
 from ugr_msgs.msg import Boundaries, ObservationWithCovarianceArrayStamped, PathArray

@@ -10,7 +10,7 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from node_fixture.node_management import NodeManager, load_params
+from node_fixture.node_manager import NodeManager, load_params
 from std_msgs.msg import Header, UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
