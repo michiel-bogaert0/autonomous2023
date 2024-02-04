@@ -25,6 +25,14 @@ class EarlyFusion:
         self.pc = None
         self.bbox_header = None
         self.bboxes = None
+        self.max_angle = (
+            rospy.get_param("~fov", "70") / 2
+        )  # in degrees, half of the field of view of the camera
+        self.max_ratio = np.tan(
+            np.radians(self.max_angle)
+        )  # points with a higher ratio (y/x) are outside the fov
+        self.resolution_x = rospy.get_param("~resolution_x", 1920)
+        self.resolution_y = rospy.get_param("~resolution_y", 1200)
         self.covariance = rospy.get_param(
             "~covariance", [0.2, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.8]
         )
@@ -64,7 +72,6 @@ class EarlyFusion:
         )
 
         rate = rospy.Rate(rospy.get_param("~rate", 5))
-
         while not rospy.is_shutdown():
             self.run()
             rate.sleep()
@@ -108,9 +115,9 @@ class EarlyFusion:
         Performs the fusion process. Transforms the point cloud data, filters points inside each bounding box,
         calculates the centroid of the filtered points, and publishes the results.
         """
-        pointcloud = np.copy(self.pc)
+        pointcloud = self.fov_filter(np.copy(self.pc))
         self.pc = None  # the same pc cannot be used twice (pc's are received at almost double the rate of bboxes)
-        projections = self.project_points(pointcloud)
+        projections, pointcloud = self.project_points(pointcloud)
         observations = []
         for box in self.bboxes:
             inside_pts = self.filter_points_inside_bbox(pointcloud, projections, box)
@@ -122,6 +129,12 @@ class EarlyFusion:
             observations.append(self.create_observation(centroid, box.cone_type))
         results = self.create_results(observations)
         self.publish(results)
+
+    def fov_filter(self, points):
+        """
+        Filters the points that are within the field of view of the camera
+        """
+        return points[np.abs(points[:, 1] / points[:, 0]) < self.max_ratio]
 
     def create_results(self, observations):
         """
@@ -187,13 +200,14 @@ class EarlyFusion:
 
     def project_points(self, points):
         """
-        Transforms the 3D point cloud data from the lidar frame to the 2D camera frame
+        Transforms the 3D point cloud data from the lidar frame to the 2D camera frame and filters out the points that are outside of the camera's frame
         """
-        transformed_points = np.copy(points)
+        points_copy = np.copy(points)
         points += self.translation_vector
         points = points @ self.rotation_matrix
-
-        # change the axis to match the opencv coordinate system
+        transformed_points = np.copy(
+            points
+        )  # change the axis to match the opencv coordinate system
         transformed_points[:, 0] = -points[:, 1]
         transformed_points[:, 1] = -points[:, 2]
         transformed_points[:, 2] = points[:, 0]
@@ -204,7 +218,18 @@ class EarlyFusion:
             self.camera_matrix,
             np.zeros((1, 5)),
         )[0]
-        return projections
+
+        valid_mask = (
+            (projections[:, 0, 0] >= 0)
+            & (projections[:, 0, 0] <= self.resolution_x)
+            & (projections[:, 0, 1] >= 0)
+            & (projections[:, 0, 1] <= self.resolution_y)
+        )  # extra check, most will have been filtered out by the fov filter
+
+        projections = projections[valid_mask]
+        points_copy = points_copy[valid_mask.squeeze()]
+
+        return projections, points_copy
 
 
 node = EarlyFusion()

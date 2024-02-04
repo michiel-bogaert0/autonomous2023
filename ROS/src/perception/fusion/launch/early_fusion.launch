@@ -6,6 +6,9 @@
     <param name="world_frame" value="ugr/car_odom" />
     <param name="cone_width" value="0.232" />
     <param name="belief" value="0.8" />
+    <param name="fov" value="70" />
+    <param name="resolution_x" value="1920" />
+    <param name="resolution_y" value="1200" />
     <rosparam param="covariance">[0.2, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.8]</rosparam>
     <rosparam param="translation_vector">[-0.09, 0, -0.40]</rosparam>
     <remap from="/input/camera_bboxes" to="/ugr/car/observations/camera/bounding_boxes"/>
