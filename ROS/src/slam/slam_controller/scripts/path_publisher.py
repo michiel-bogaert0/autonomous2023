@@ -15,10 +15,6 @@ from node_fixture.node_management import ManagedNode
 class PathPublisher(ManagedNode):
     def __init__(self):
         super().__init__("path_publisher")
-        self.spin()
-
-    def doConfigure(self):
-        self.override_time = rospy.get_param("~override_time", True)
 
         self.path_publisher = rospy.Publisher(
             "/output/path",
@@ -31,6 +27,11 @@ class PathPublisher(ManagedNode):
         self.diagnostics_pub = super().AddPublisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
+
+        self.spin()
+
+    def doConfigure(self):
+        self.override_time = rospy.get_param("~override_time", True)
 
     def doActivate(self):
         self.path = rospkg.RosPack().get_path(
