@@ -7,6 +7,7 @@
     <param name="cone_width" value="0.232" />
     <param name="belief" value="0.8" />
     <param name="fov" value="70" />
+    <param name="rate" value="20" />
     <param name="resolution_x" value="1920" />
     <param name="resolution_y" value="1200" />
     <rosparam param="covariance">[0.2, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.8]</rosparam>

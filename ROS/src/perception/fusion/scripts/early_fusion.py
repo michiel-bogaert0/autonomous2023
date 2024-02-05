@@ -71,7 +71,7 @@ class EarlyFusion:
             "/output/topic", ObservationWithCovarianceArrayStamped, queue_size=10
         )
 
-        rate = rospy.Rate(rospy.get_param("~rate", 5))
+        rate = rospy.Rate(rospy.get_param("~rate", 20))
         while not rospy.is_shutdown():
             self.run()
             rate.sleep()
@@ -116,7 +116,7 @@ class EarlyFusion:
         calculates the centroid of the filtered points, and publishes the results.
         """
         pointcloud = self.fov_filter(np.copy(self.pc))
-        self.pc = None  # the same pc cannot be used twice (pc's are received at almost double the rate of bboxes)
+        self.pc = None  # the same pc cannot be used twice
         projections, pointcloud = self.project_points(pointcloud)
         observations = []
         for box in self.bboxes:
