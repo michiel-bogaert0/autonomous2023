@@ -41,6 +41,12 @@
 #include "g2o/core/sparse_optimizer.h"
 #include "g2o/solvers/eigen/linear_solver_eigen.h"
 
+#include "edge_se2.hpp"
+#include "edge_se2_pointxy.hpp"
+#include "se2.hpp"
+#include "vertex_point_xy.hpp"
+#include "vertex_se2.hpp"
+
 using namespace std;
 using namespace Eigen;
 using namespace g2o;
@@ -82,6 +88,8 @@ void GraphSLAM::doConfigure() {
   // Initialize variables
   this->gotFirstObservations = false;
   this->prev_state = {0.0, 0.0, 0.0};
+  this->poseIndex = 0;
+  this->landmarkIndex = 0;
 
   //----------------------------------------------------------------------------
   //------------------------------ Set Optimizer -------------------------------
@@ -193,7 +201,7 @@ void GraphSLAM::step() {
   // --------------------------------------------------------------------
   // Fetch the current pose estimate (current in: equal to the one of the
   // observations) so that we can estimate dDist and dYaw
-  double dDist, dYaw = 0;
+  double dX, dY, dYaw = 0; //, dDist;
 
   geometry_msgs::TransformStamped car_pose;
   try {
@@ -216,26 +224,101 @@ void GraphSLAM::step() {
   y = car_pose.transform.translation.y;
   tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 
+  dX = x - this->prev_state[0];
+  dY = y - this->prev_state[1];
   dYaw = yaw - this->prev_state[2];
 
   // Check for reverse
-  double drivingAngle = atan2(y - this->prev_state[1], x - this->prev_state[0]);
-  double angleDifference = abs(drivingAngle - yaw);
-  if (angleDifference > M_PI) {
-    angleDifference = 2 * M_PI - angleDifference;
-  }
+  // double drivingAngle = atan2(y - this->prev_state[1], x -
+  // this->prev_state[0]); double angleDifference = abs(drivingAngle - yaw); if
+  // (angleDifference > M_PI) {
+  //   angleDifference = 2 * M_PI - angleDifference;
+  // }
 
-  bool forward = angleDifference < M_PI_2;
-  dDist = (forward ? 1 : -1) *
-          pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1], 2),
-              0.5);
+  // bool forward = angleDifference < M_PI_2;
+  // dDist = (forward ? 1 : -1) *
+  //         pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1],
+  //         2),
+  //             0.5);
 
   this->prev_state = {x, y, yaw};
-  //--------------------------------------------------------------------------------
 
-  this->diagPublisher->publishDiagnostic(
-      node_fixture::DiagnosticStatusEnum::OK, "Pose estimate",
-      "#Dist: " + std::to_string(dDist) + ", yaw: " + std::to_string(dYaw));
+  // this->diagPublisher->publishDiagnostic(
+  //     node_fixture::DiagnosticStatusEnum::OK, "Pose estimate",
+  //     "#Dist: " + std::to_string(dDist) + ", yaw: " + std::to_string(dYaw));
+
+  // --------------------------------------------------------------------
+  // ---------------------- Add odometry to graph -----------------------
+  // --------------------------------------------------------------------
+
+  VertexSE2 *pose = new VertexSE2;
+  pose->setId(this->poseIndex);
+  pose->setEstimate(SE2(x, y, yaw));
+  optimizer.addVertex(pose);
+
+  // add odometry contraint
+  if (this->poseIndex > 0) {
+    EdgeSE2 *odometry = new EdgeSE2;
+    odometry->vertices()[0] = optimizer.vertex(this->poseIndex - 1); // from
+    odometry->vertices()[1] = optimizer.vertex(this->poseIndex);     // to
+    odometry->setMeasurement(SE2(dX, dY, dYaw));
+    odometry->setInformation(
+        Matrix3d::Identity()); // ??????????????????????????
+    optimizer.addEdge(odometry);
+  } else {
+    // First pose
+    pose->setFixed(true);
+  }
+  // --------------------------------------------------------------------
+  // ---------------------- Add observations to graph -------------------
+  // --------------------------------------------------------------------
+  for (auto observation : transformed_obs.observations) {
+    VertexPointXY *landmark = new VertexPointXY;
+    landmark->setId(this->landmarkIndex);
+    landmark->setEstimate(Vector2d(x + observation.observation.location.x,
+                                   y + observation.observation.location.y));
+    optimizer.addVertex(landmark);
+
+    EdgeSE2PointXY *landmarkObservation = new EdgeSE2PointXY;
+    landmarkObservation->vertices()[0] =
+        optimizer.vertex(this->poseIndex); // pose
+    landmarkObservation->vertices()[1] = optimizer.vertex(this->landmarkIndex);
+    landmarkObservation->setMeasurement(
+        Vector2d(observation.observation.location.x,
+                 observation.observation.location.y));
+
+    // Eigen::Matrix3f covarianceMatrix;
+    // covarianceMatrix << observation.covariance[0], observation.covariance[1],
+    //     observation.covariance[2], observation.covariance[3],
+    //     observation.covariance[4], observation.covariance[5],
+    //     observation.covariance[6], observation.covariance[7],
+    //     observation.covariance[8];
+    // landmarkObservation->setInformation(covarianceMatrix.inverse());
+    landmarkObservation->setInformation(Matrix2d::Identity());
+    optimizer.addEdge(landmarkObservation);
+
+    this->landmarkIndex++;
+  }
+  this->poseIndex++;
+
+  // --------------------------------------------------------------------
+  // ------------------------ Optimization ------------------------------
+  // --------------------------------------------------------------------
+
+  // optimizer.setVerbose(true); //The setVerbose(true) function call is used to
+  // set the verbosity level of the optimizer object. When verbosity is set to
+  // true, the optimizer will output more detailed information about its
+  // progress and operations. This can be useful for debugging and understanding
+  // how the optimization process is proceeding.
+
+  optimizer.initializeOptimization();
+  optimizer.optimize(10);
+
+  // --------------------------------------------------------------------
+  // ------------------------ Publish -----------------------------------
+  // --------------------------------------------------------------------
+
+  // this->publishOutput(transformed_obs.header.stamp);
 }
 
 void GraphSLAM::publishOutput(ros::Time lookupTime) {

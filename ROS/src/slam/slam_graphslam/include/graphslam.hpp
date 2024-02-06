@@ -54,9 +54,9 @@ private:
   double latestTime;
   bool gotFirstObservations;
   array<double, 3> prev_state; // x, y, yaw
-
+  int poseIndex;
+  int landmarkIndex;
   ugr_msgs::ObservationWithCovarianceArrayStamped observations;
-
   g2o::SparseOptimizer optimizer;
 
   // Subscribers
