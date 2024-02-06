@@ -3,9 +3,11 @@
 
   <node pkg="fusion" output="screen" type="early_fusion.py" name="early_fusion" respawn="False">
     <param name="base_link_frame" value="ugr/car_base_link" />
+    <param name="sensor_frame" value="os_sensor" />
     <param name="world_frame" value="ugr/car_odom" />
     <param name="cone_width" value="0.232" />
     <param name="belief" value="0.8" />
+    <param name="max_distance" value="0.5" />
     <param name="fov" value="70" />
     <param name="rate" value="20" />
     <param name="resolution_x" value="1920" />
