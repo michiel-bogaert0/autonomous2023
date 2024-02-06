@@ -24,10 +24,27 @@ set(g2o_LIBRARY_DIR ${g2o_DIR}/build/lib)
 # From other implementation
 SET(G2O_LIBS g2o_cli g2o_ext_freeglut_minimal g2o_simulator g2o_solver_slam2d_linear g2o_types_icp g2o_types_slam2d g2o_core g2o_interface g2o_solver_csparse g2o_solver_structure_only g2o_types_sba g2o_types_slam3d g2o_csparse_extension g2o_opengl_helper g2o_solver_dense g2o_stuff g2o_types_sclam2d g2o_parser g2o_solver_pcg g2o_types_data g2o_types_sim3 cxsparse g2o_types_slam2d_addons)
 
-find_library(g2o_LIBRARIES
-  NAMES ${G2O_LIBS}
-  PATHS ${g2o_LIBRARY_DIR}
-)
+# Find all g2o libraries
+set(g2o_LIBRARIES "")
+
+foreach(LIB ${G2O_LIBS})
+  # Find library
+  find_library(g2o_PATH_${LIB} ${LIB} ${g2o_LIBRARY_DIR})
+
+  # Check if the library is found
+  if(g2o_PATH_${LIB})
+      # Add the library path to the list
+      list(APPEND g2o_LIBRARIES ${g2o_PATH_${LIB}})
+  else()
+      message(WARNING "Library ${LIB} not found")
+  endif()
+endforeach()
+
+# find_library(g2o_LIBRARIES
+#   NAMES ${G2O_LIBS}
+#   PATHS ${g2o_LIBRARY_DIR}
+#   REQUIRED
+# )
 
 catkin_package(
   CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf2 tf2_ros node_fixture
