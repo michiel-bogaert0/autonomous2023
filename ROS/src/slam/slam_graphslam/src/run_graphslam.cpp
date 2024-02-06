@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 
   ROS_INFO("Graphslam running in %s mode!",
            doSynchronous ? "synchronous" : "asynchronous");
-  node_fixture::DiagnosticPublisher diagPublisher(n, "SLAM Graphslam");
+  node_fixture::DiagnosticPublisher diagPublisher(n, "SLAM GraphSLAM");
   diagPublisher.publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                   "Status", "running");
 

@@ -17,6 +17,8 @@
 #include "managed_node.hpp"
 #include "node_fixture/node_fixture.hpp"
 
+#include "g2o/core/sparse_optimizer.h"
+
 using namespace std;
 
 namespace slam {
@@ -45,10 +47,17 @@ private:
 
   double publish_rate;
   bool doSynchronous;
+
+  double max_range;
+  double max_half_fov;
+
   double latestTime;
   bool gotFirstObservations;
+  array<double, 3> prev_state; // x, y, yaw
 
   ugr_msgs::ObservationWithCovarianceArrayStamped observations;
+
+  g2o::SparseOptimizer optimizer;
 
   // Subscribers
   ros::Subscriber observationsSubscriber;
@@ -82,4 +91,4 @@ private:
 };
 } // namespace slam
 
-#endif
+#endif // GraphSLAM_HPP

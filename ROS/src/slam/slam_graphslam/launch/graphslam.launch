@@ -4,7 +4,7 @@
   <arg name="slam_base_link_frame" default="ugr/slam_base_link"/>
   <arg name="lidar_frame" default="os_sensor"/>
 
-  <node pkg="slam_graphslam" output="screen" type="graphslam" name="grapgslam" respawn="False">
+  <node pkg="slam_graphslam" output="screen" type="graphslam" name="graphslam" respawn="False">
     # Parameters
     <param name="world_frame" value="$(arg world_frame)" />
     <param name="base_link_frame" value="$(arg base_link_frame)" />
@@ -13,12 +13,6 @@
 
     <param name="target_rate" value="50.0"/>
     <param name="synchronous" value="false"/>
-    
-    
-    # Map service Parameters
-    <param name="SetMap_service" value="/ugr/srv/slam_map_server/set" />
-    <param name="globalmap_namespace" value="slam/global" />
-    <param name="localmap_namespace" value="slam/local" />
 
     # Input/output remapping
     <remap from="/input/observations" to="ugr/car/observations/lidar" />

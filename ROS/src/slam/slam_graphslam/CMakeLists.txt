@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED)
 
 set(g2o_DIR /home/ugr/g2o)
-set(g2o_INCLUDE_DIRS ${g2o_DIR}/include)
+set(g2o_INCLUDE_DIRS ${g2o_DIR} ${g2o_DIR}/build)
 set(g2o_BINARY_DIR ${g2o_DIR}/build/bin)
 set(g2o_LIBRARY_DIR ${g2o_DIR}/build/lib)
 
