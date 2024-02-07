@@ -41,6 +41,7 @@ public:
   static tf2_ros::TransformBroadcaster br;
 
   // This functions executes a FastSLAM1.0 step
+  void active() override;
   void step();
   void doConfigure() override;
 

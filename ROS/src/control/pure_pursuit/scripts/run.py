@@ -7,22 +7,18 @@ from nav_msgs.msg import Odometry, Path
 from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
-    NodeManagingStatesEnum,
     ROSNode,
     create_diagnostic_message,
 )
-from node_fixture.node_management import ManagedNode
+from node_fixture.managed_node import ManagedNode
 from std_msgs.msg import Float64
 from trajectory import Trajectory
 
 
 class PurePursuit(ManagedNode):
     def __init__(self):
-        rospy.init_node("pure_pursuit_control")
-        super().__init__("pure_pursuit_control")
-        self.publish_rate = rospy.get_param("~publish_rate", 10)
-        self.start_sender()
-        rospy.spin()
+        super().__init__("pure_pursuit")
+        self.spin()
 
     def doConfigure(self):
         self.tf_buffer = tf.Buffer()
@@ -129,92 +125,83 @@ class PurePursuit(ManagedNode):
         """
         return (angle + max_angle) % (2 * max_angle) - max_angle
 
-    def start_sender(self):
+    def active(self):
         """
         Start sending updates. If the data is too old, brake.
         """
-        rate = rospy.Rate(self.publish_rate)
-        while not rospy.is_shutdown():
-            if self.state == NodeManagingStatesEnum.ACTIVE:
-                try:
-                    self.doUpdate()
 
-                    self.speed_target = rospy.get_param("/speed/target", 3.0)
+        try:
+            self.doUpdate()
 
-                    # Change the look-ahead distance (minimal_distance)  based on the current speed
-                    if self.actual_speed < self.speed_start:
-                        self.minimal_distance = self.distance_start
-                    elif self.actual_speed < self.speed_stop:
-                        self.minimal_distance = self.distance_start + (
-                            self.distance_stop - self.distance_start
-                        ) / (self.speed_stop - self.speed_start) * (
-                            self.actual_speed - self.speed_start
-                        )
-                    else:
-                        self.minimal_distance = self.distance_stop
+            self.speed_target = rospy.get_param("/speed/target", 3.0)
 
-                    # Calculate target point
-                    target_x, target_y = self.trajectory.calculate_target_point(
-                        self.minimal_distance
+            # Change the look-ahead distance (minimal_distance)  based on the current speed
+            if self.actual_speed < self.speed_start:
+                self.minimal_distance = self.distance_start
+            elif self.actual_speed < self.speed_stop:
+                self.minimal_distance = self.distance_start + (
+                    self.distance_stop - self.distance_start
+                ) / (self.speed_stop - self.speed_start) * (
+                    self.actual_speed - self.speed_start
+                )
+            else:
+                self.minimal_distance = self.distance_stop
+
+            # Calculate target point
+            target_x, target_y = self.trajectory.calculate_target_point(
+                self.minimal_distance
+            )
+
+            if target_x == 0 and target_y == 0:
+                self.diagnostics_pub.publish(
+                    create_diagnostic_message(
+                        level=DiagnosticStatus.ERROR,
+                        name="[CTRL PP] Target Point Status",
+                        message="No target point found.",
                     )
+                )
+                self.velocity_cmd.data = 0.0
+                self.steering_cmd.data = 0.0
+                self.velocity_pub.publish(self.velocity_cmd)
+                self.steering_pub.publish(self.steering_cmd)
+                return
 
-                    if target_x == 0 and target_y == 0:
-                        self.diagnostics_pub.publish(
-                            create_diagnostic_message(
-                                level=DiagnosticStatus.ERROR,
-                                name="[CTRL PP] Target Point Status",
-                                message="No target point found.",
-                            )
-                        )
-                        self.velocity_cmd.data = 0.0
-                        self.steering_cmd.data = 0.0
-                        self.velocity_pub.publish(self.velocity_cmd)
-                        self.steering_pub.publish(self.steering_cmd)
-                        rate.sleep()
-                        continue
+            # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
+            R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (2 * (target_y - 0))
 
-                    # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-                    R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (
-                        2 * (target_y - 0)
-                    )
+            self.steering_cmd.data = self.symmetrically_bound_angle(
+                np.arctan2(1.0, R), np.pi / 2
+            )
 
-                    self.steering_cmd.data = self.symmetrically_bound_angle(
-                        np.arctan2(1.0, R), np.pi / 2
-                    )
+            self.diagnostics_pub.publish(
+                create_diagnostic_message(
+                    level=DiagnosticStatus.OK,
+                    name="[CTRL PP] Target Point Status",
+                    message="Target point found.",
+                )
+            )
+            self.velocity_cmd.data = self.speed_target
 
-                    self.diagnostics_pub.publish(
-                        create_diagnostic_message(
-                            level=DiagnosticStatus.OK,
-                            name="[CTRL PP] Target Point Status",
-                            message="Target point found.",
-                        )
-                    )
-                    self.velocity_cmd.data = self.speed_target
+            # Publish to velocity and position steering controller
+            self.steering_cmd.data /= self.steering_transmission
+            self.steering_pub.publish(self.steering_cmd)
 
-                    # Publish to velocity and position steering controller
-                    self.steering_cmd.data /= self.steering_transmission
-                    self.steering_pub.publish(self.steering_cmd)
+            self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
+            self.velocity_pub.publish(self.velocity_cmd)
 
-                    self.velocity_cmd.data /= (
-                        self.wheelradius
-                    )  # Velocity to angular velocity
-                    self.velocity_pub.publish(self.velocity_cmd)
+            # Publish target point for visualization
+            point = PointStamped()
+            point.header.stamp = self.trajectory.time_source
+            point.header.frame_id = self.base_link_frame
+            point.point.x = target_x
+            point.point.y = target_y
+            self.vis_pub.publish(point)
 
-                    # Publish target point for visualization
-                    point = PointStamped()
-                    point.header.stamp = self.trajectory.time_source
-                    point.header.frame_id = self.base_link_frame
-                    point.point.x = target_x
-                    point.point.y = target_y
-                    self.vis_pub.publish(point)
+        except Exception as e:
+            rospy.logwarn(f"PurePursuit has caught an exception: {e}")
+            import traceback
 
-                except Exception as e:
-                    rospy.logwarn(f"PurePursuit has caught an exception: {e}")
-                    import traceback
-
-                    print(traceback.format_exc())
-
-            rate.sleep()
+            print(traceback.format_exc())
 
 
 node = PurePursuit()

@@ -14,7 +14,7 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from node_fixture.node_management import ManagedNode
+from node_fixture.managed_node import ManagedNode
 from optimal_control.MPC_tracking import MPC_tracking
 from optimal_control.ocp import Ocp
 from std_msgs.msg import Float64

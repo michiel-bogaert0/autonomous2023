@@ -241,6 +241,14 @@ function pegasus {
 
 function simulation {
 
+    # Default value for use_sim_time
+    use_sim_time=false
+
+    # Check for the third argument and update use_sim_time if provided
+    if [ ! -z "$3" ]; then
+    use_sim_time=$3
+    fi
+
     if [ -z "$2" ] 
     then
       echo "Error: the second argument (ground truth map) is empty. This will crash the simulator. Please give a valid map from slam_simulator/maps ";
@@ -249,7 +257,7 @@ function simulation {
 
     clean ugr
     launch simulation filename:=$2.yaml
-    launch run mission:=$1
+    launch run mission:=$1 use_sim_time:=$use_sim_time
 }
 
 function default {

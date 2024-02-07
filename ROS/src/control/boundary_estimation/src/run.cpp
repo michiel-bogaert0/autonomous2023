@@ -9,11 +9,7 @@ int main(int argc, char **argv) {
   // Create a boundary estimation class object
   boundaryestimation::BoundaryEstimation boundary_estimation(n);
 
-  // Spin the node
-  while (ros::ok()) {
-    // Keep the node alive
-    ros::spin();
-  }
+  boundary_estimation.spin();
 
   return 0;
 }

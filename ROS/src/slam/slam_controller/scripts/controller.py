@@ -1,5 +1,5 @@
 #! /usr/bin/python3
-from time import sleep
+from threading import Thread
 
 import rospy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
@@ -10,31 +10,28 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from node_fixture.node_management import (
-    configure_node,
-    load_params,
-    set_state_active,
-    set_state_finalized,
-    set_state_inactive,
-)
+from node_fixture.node_manager import NodeManager, load_params
 from std_msgs.msg import Header, UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 
 
-class Controller:
+class Controller(NodeManager):
     def __init__(self) -> None:
         """
         SLAM controller
         """
-        rospy.init_node("slam_controller")
 
-        self.state = SLAMStatesEnum.IDLE
+        super().__init__("slam_controller")
+
+        self.slam_state = None
 
         self.mission = ""
         self.car = rospy.get_param("/car")
 
         self.target_lap_count = -1
+
+        self.change_mission_thread = Thread(target=self.change_mission)
 
         rospy.Subscriber("/state", State, self.handle_state_change)
         rospy.Subscriber("/input/loopclosure", UInt16, self.lapFinished)
@@ -45,115 +42,79 @@ class Controller:
         self.state_publisher = rospy.Publisher(
             "/state", State, queue_size=10, latch=True
         )
+        self.slam_state_publisher = rospy.Publisher(
+            "/state/slam", State, queue_size=10, latch=True
+        )
 
-        while not rospy.is_shutdown():
-            self.update()
-            sleep(0.1)
+        self.change_state(SLAMStatesEnum.IDLE)
 
-    def update(self):
+        self.spin()
+
+    def change_mission(self):
+        """
+        Changes the mission of the car
+        """
+        # Go to state depending on mission
+        self.mission = rospy.get_param("/mission")
+
+        # Configure parameters after mission is set. Also loads in the parameter for the node manager
+        load_params(self.mission)
+
+        # Configure nodes after mission is set
+        # When this doesn't work, the thread joins, so the mission change is not executed
+        # But the health state will reflect that and the state machine will try again next loop iteration
+        if not self.configure_nodes():
+            return
+
+        # Reset loop counter
+        rospy.ServiceProxy("/reset_closure", Empty)
+
+        if self.mission == AutonomousMission.ACCELERATION:
+            self.target_lap_count = 1
+            new_state = SLAMStatesEnum.RACING
+        elif self.mission == AutonomousMission.SKIDPAD:
+            self.target_lap_count = 1
+            new_state = SLAMStatesEnum.RACING
+        elif self.mission == AutonomousMission.AUTOCROSS:
+            self.target_lap_count = 1
+            new_state = SLAMStatesEnum.EXPLORATION
+        elif self.mission == AutonomousMission.TRACKDRIVE:
+            self.target_lap_count = 10
+            new_state = SLAMStatesEnum.EXPLORATION
+        else:
+            self.target_lap_count = -1
+            new_state = SLAMStatesEnum.EXPLORATION
+
+        # Same logic as in configure nodes
+        if not self.activate_nodes(new_state, self.slam_state):
+            return
+
+        # Only if that worked, change state
+        self.change_state(new_state)
+
+    def active(self):
         """
         Updates the internal state and launches or kills nodes if needed
         """
-        new_state = self.state
 
-        if self.state == SLAMStatesEnum.IDLE or (
+        new_state = self.slam_state
+
+        if self.slam_state == SLAMStatesEnum.IDLE or (
             rospy.has_param("/mission") and rospy.get_param("/mission") != self.mission
         ):
             if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
-                # Go to state depending on mission
-                self.mission = rospy.get_param("/mission")
+                if not self.change_mission_thread.is_alive():
+                    # You cannot 'restart' a thread, so we make a new one after the other one is not alive anymore
+                    self.change_mission_thread = Thread(target=self.change_mission)
+                    self.change_mission_thread.start()
 
-                # Configure parameters after mission is set
-                load_params(self.mission)
-                # Confige nodes after mission is set
-                # SLAM
-                configure_node("slam_mcl")
-                configure_node("fastslam")
-                configure_node("loopclosure")
-                configure_node("map_publisher")
-                # Control
-                configure_node("pure_pursuit_control")
-                configure_node("MPC_tracking_control")
-                configure_node("control_path_publisher")
-                configure_node("pathplanning")
-                configure_node("boundary_estimation")
-
-                # Reset loop counter
-                rospy.ServiceProxy("/reset_closure", Empty)
-
-                if self.mission == AutonomousMission.ACCELERATION:
-                    self.target_lap_count = 1
-                    new_state = SLAMStatesEnum.RACING
-                    set_state_active("slam_mcl")
-                    set_state_active("loopclosure")
-                    set_state_active("map_publisher")
-
-                    set_state_active("pure_pursuit_control")
-                    set_state_active("control_path_publisher")
-                elif self.mission == AutonomousMission.SKIDPAD:
-                    self.target_lap_count = 1
-                    new_state = SLAMStatesEnum.RACING
-                    set_state_active("slam_mcl")
-                    set_state_active("loopclosure")
-                    set_state_active("map_publisher")
-
-                    set_state_active("pure_pursuit_control")
-                    set_state_active("control_path_publisher")
-                elif self.mission == AutonomousMission.AUTOCROSS:
-                    self.target_lap_count = 1
-                    new_state = SLAMStatesEnum.EXPLORATION
-                    set_state_active("fastslam")
-                    set_state_active("loopclosure")
-
-                    set_state_active("pure_pursuit_control")
-                    set_state_active("pathplanning")
-                    set_state_active("boundary_estimation")
-                elif self.mission == AutonomousMission.TRACKDRIVE:
-                    self.target_lap_count = 10
-                    new_state = SLAMStatesEnum.EXPLORATION
-                    set_state_active("fastslam")
-                    set_state_active("loopclosure")
-
-                    set_state_active("pure_pursuit_control")
-                    set_state_active("pathplanning")
-                    set_state_active("boundary_estimation")
-                else:
-                    self.target_lap_count = -1
-                    new_state = SLAMStatesEnum.EXPLORATION
-                    set_state_inactive("fastslam")
-                    set_state_inactive("slam_mcl")
-                    set_state_inactive("loopclosure")
-                    set_state_inactive("map_publisher")
-
-                    set_state_inactive("pure_pursuit_control")
-                    set_state_inactive("MPC_tracking_control")
-                    set_state_inactive("control_path_publisher")
-                    set_state_inactive("pathplanning")
-                    set_state_inactive("boundary_estimation")
             else:
-                set_state_finalized("slam_mcl")
-                set_state_finalized("fastslam")
-                set_state_finalized("loopclosure")
-                set_state_finalized("map_publisher")
-
-                set_state_finalized("pure_pursuit_control")
-                set_state_finalized("MPC_tracking_control")
-                set_state_finalized("control_path_publisher")
-                set_state_finalized("pathplanning")
-                set_state_finalized("boundary_estimation")
+                self.unconfigure_nodes()
                 rospy.set_param("/speed/target", 0.0)
 
         elif not rospy.has_param("/mission"):
-            set_state_finalized("slam_mcl")
-            set_state_finalized("fastslam")
-            set_state_finalized("loopclosure")
-            set_state_finalized("map_publisher")
+            self.unconfigure_nodes()
 
-            set_state_finalized("pure_pursuit_control")
-            set_state_finalized("MPC_tracking_control")
-            set_state_finalized("control_path_publisher")
-            set_state_finalized("pathplanning")
-            set_state_finalized("boundary_estimation")
             rospy.set_param("/speed/target", 0.0)
             new_state = SLAMStatesEnum.IDLE
 
@@ -162,7 +123,7 @@ class Controller:
         # Diagnostics
         self.diagnostics_publisher.publish(
             create_diagnostic_message(
-                DiagnosticStatus.OK, "[GNRL] STATE: SLAM state", str(self.state)
+                DiagnosticStatus.OK, "[GNRL] STATE: SLAM state", str(self.slam_state)
             )
         )
         self.diagnostics_publisher.publish(
@@ -184,7 +145,7 @@ class Controller:
             state: the state transition
         """
 
-        new_state = self.state
+        new_state = self.slam_state
 
         if state.scope == StateMachineScopeEnum.AUTONOMOUS:
             if state.cur_state == AutonomousStatesEnum.ASREADY:
@@ -200,18 +161,26 @@ class Controller:
             new_state: state to switch to.
         """
 
-        if new_state == self.state:
+        if new_state == self.slam_state:
             return
 
         self.state_publisher.publish(
             State(
                 header=Header(stamp=rospy.Time.now()),
                 scope=StateMachineScopeEnum.SLAM,
-                prev_state=self.state,
+                prev_state=self.slam_state,
                 cur_state=new_state,
             )
         )
-        self.state = new_state
+        self.slam_state_publisher.publish(
+            State(
+                header=Header(stamp=rospy.Time.now()),
+                scope=StateMachineScopeEnum.SLAM,
+                prev_state=self.slam_state,
+                cur_state=new_state,
+            )
+        )
+        self.slam_state = new_state
 
     def lapFinished(self, laps):
         """
@@ -231,17 +200,21 @@ class Controller:
         # If we did one lap in trackdrive and exploration, switch to racing
         if (
             self.mission == AutonomousMission.TRACKDRIVE
-            and self.state == SLAMStatesEnum.EXPLORATION
+            and self.slam_state == SLAMStatesEnum.EXPLORATION
         ):
             rospy.loginfo("Exploration finished, switching to racing")
             new_state = SLAMStatesEnum.RACING
-            set_state_active("slam_mcl")
             speed_target = rospy.get_param("/speed/target_racing")
             rospy.set_param("/speed/target", speed_target)
-            sleep(0.5)
-            set_state_inactive("fastslam")
-            set_state_inactive("pathplanning")
+
+            self.activate_nodes(new_state, self.slam_state)
+
             self.change_state(new_state)
 
 
 node = Controller()
+
+# Comes here when rospy.is_shutdown() == True (breaks out of spin())
+# So make sure to join the mission thread
+if node.change_mission_thread.is_alive():
+    node.change_mission_thread.join()

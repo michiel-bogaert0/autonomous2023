@@ -39,10 +39,7 @@ void LoopClosure::doConfigure() {
   ROS_INFO("Loop closure detection started!");
 }
 
-void LoopClosure::CheckWhenLoopIsClosed() {
-  if (!this->isActive()) {
-    return;
-  }
+void LoopClosure::active() {
 
   if (this->latestTime - ros::Time::now().toSec() > 0.5 &&
       this->latestTime > 0.0) {

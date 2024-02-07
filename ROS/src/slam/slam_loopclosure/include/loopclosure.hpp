@@ -24,7 +24,7 @@ public:
   handleAdjustTargetPoint(slam_loopclosure::FinishPoint::Request &request,
                           slam_loopclosure::FinishPoint::Response &response);
 
-  void CheckWhenLoopIsClosed();
+  void active() override;
 
   void doConfigure() override;
 

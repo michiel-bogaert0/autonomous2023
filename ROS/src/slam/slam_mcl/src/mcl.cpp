@@ -466,10 +466,7 @@ void MCL::handleObservations(
   this->observations = *obs;
 }
 
-void MCL::step() {
-  if (!this->isActive()) {
-    return;
-  }
+void MCL::active() {
 
   // Should the particle filter ignore the observations or not?
   chrono::steady_clock::time_point time = chrono::steady_clock::now();
