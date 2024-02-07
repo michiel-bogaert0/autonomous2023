@@ -2,7 +2,7 @@
 
     <node pkg="kinematic_path_tracking" type="front_wheel_feedback.py" name="front_wheel_feedback" output="screen" respawn="true">
 
-        <param name="publish_rate" value="50" />
+        <param name="rate" value="50" />
 
         <param name="base_link_frame" value="ugr/car_base_link/front_axle" />
 
