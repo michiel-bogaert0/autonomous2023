@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+import traceback
+
 import rospy
 import tf2_ros as tf
 from nav_msgs.msg import Odometry, Path
-from node_fixture.fixture import DiagnosticArray, NodeManagingStatesEnum, ROSNode
-from node_fixture.node_management import ManagedNode
+from node_fixture.fixture import DiagnosticArray, ROSNode
+from node_fixture.managed_node import ManagedNode
 from std_msgs.msg import Float64
 
 from .trajectory import Trajectory
@@ -106,22 +108,16 @@ class KinematicTrackingNode(ManagedNode):
     def __process__(self):
         raise NotImplementedError
 
-    def start_sender(self):
+    def active(self):
         """
         Start sending updates. If the data is too old, brake.
         """
-        rate = rospy.Rate(self.publish_rate)
-        while not rospy.is_shutdown():
-            if self.state == NodeManagingStatesEnum.ACTIVE:
-                try:
-                    # First fetch new paths, then process current path
-                    self.doUpdate()
-                    self.__process__()
 
-                except Exception as e:
-                    rospy.logwarn(f"PurePursuit has caught an exception: {e}")
-                    import traceback
+        try:
+            # First fetch new paths, then process current path
+            self.doUpdate()
+            self.__process__()
 
-                    print(traceback.format_exc())
-
-            rate.sleep()
+        except Exception as e:
+            rospy.logwarn(f"{rospy.get_name()} has caught an exception: {e}")
+            rospy.logwarn(traceback.format_exc())
