@@ -24,8 +24,6 @@ class Controller(NodeManager):
 
         super().__init__("slam_controller")
 
-        rospy.init_node("slam_controller")
-
         self.slam_state = None
 
         self.mission = ""
