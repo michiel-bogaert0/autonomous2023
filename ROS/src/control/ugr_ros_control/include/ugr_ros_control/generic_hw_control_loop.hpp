@@ -80,11 +80,14 @@ protected:
   ros::Duration desired_update_period_;
   double cycle_time_error_threshold_;
 
+  bool use_sim_time;
+
   // Timing
   ros::Duration elapsed_time_;
   double loop_hz_;
   struct timespec last_time_;
   struct timespec current_time_;
+  ros::Time now;
 
   /** \brief ROS Controller Manager and Runner
    *

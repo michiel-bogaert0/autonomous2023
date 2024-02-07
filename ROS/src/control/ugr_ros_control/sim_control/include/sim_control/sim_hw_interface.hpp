@@ -40,8 +40,8 @@
 #ifndef SIM_CONTROL__SIM_HW_INTERFACE_H
 #define SIM_CONTROL__SIM_HW_INTERFACE_H
 
-#include <ugr_ros_control/generic_hw_interface.h>
-#include <sim_control/bicycle_model.h>
+#include <ugr_ros_control/generic_hw_interface.hpp>
+#include <sim_control/bicycle_model.hpp>
 #include <ros/ros.h>
 
 #include <nav_msgs/Odometry.h>
@@ -49,7 +49,6 @@
 #include <sensor_msgs/Imu.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
-
 
 namespace sim_control
 {
@@ -61,7 +60,7 @@ public:
    * \brief Constructor
    * \param nh - Node handle for topics.
    */
-  SimHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model = NULL);
+  explicit SimHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model = NULL);
 
   virtual void init();
 

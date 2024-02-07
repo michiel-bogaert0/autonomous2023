@@ -359,15 +359,18 @@ void FastSLAM1::handleObservations(
   this->gotFirstObservations = true;
   this->updateRound = true;
 
-  if (this->doSynchronous) {
+  if (this->doSynchronous && this->isActive()) {
+    this->step();
+  }
+}
+
+void FastSLAM1::active() {
+  if (!this->doSynchronous) {
     this->step();
   }
 }
 
 void FastSLAM1::step() {
-  if (!this->isActive()) {
-    return;
-  }
 
   if (!gotFirstObservations)
     return;

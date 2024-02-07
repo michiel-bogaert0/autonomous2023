@@ -37,7 +37,7 @@
    hardware interface using MONOTOIC system time
 */
 
-#include <ugr_ros_control/generic_hw_control_loop.h>
+#include <ugr_ros_control/generic_hw_control_loop.hpp>
 
 // ROS parameter loading
 #include <rosparam_shortcuts/rosparam_shortcuts.h>
@@ -58,8 +58,11 @@ GenericHWControlLoop::GenericHWControlLoop(ros::NodeHandle& nh,
   error += !rosparam_shortcuts::get(name_, rpsnh, "cycle_time_error_threshold", cycle_time_error_threshold_);
   rosparam_shortcuts::shutdownIfError(name_, error);
 
+  this->use_sim_time = this->nh_.param<bool>("/use_sim_time", false);
+
   // Get current time for use with first update
   clock_gettime(CLOCK_MONOTONIC, &last_time_);
+  this->now = ros::Time::now();
 
   desired_update_period_ = ros::Duration(1 / loop_hz_);
 }
@@ -83,31 +86,40 @@ void GenericHWControlLoop::run()
 void GenericHWControlLoop::update()
 {
   // Get change in time
-  clock_gettime(CLOCK_MONOTONIC, &current_time_);
-  elapsed_time_ =
-      ros::Duration(current_time_.tv_sec - last_time_.tv_sec + (current_time_.tv_nsec - last_time_.tv_nsec) / BILLION);
-  last_time_ = current_time_;
-  ros::Time now = ros::Time::now();
-  // ROS_DEBUG_STREAM_THROTTLE_NAMED(1, "generic_hw_main","Sampled update loop
-  // with elapsed time " << elapsed_time_.toSec());
-
-  // Error check cycle time
-  const double cycle_time_error = (elapsed_time_ - desired_update_period_).toSec();
-  if (cycle_time_error > cycle_time_error_threshold_)
+  if (this->use_sim_time)
   {
-    ROS_WARN_STREAM_NAMED(name_, "Cycle time exceeded error threshold by: "
-                                     << cycle_time_error << ", cycle time: " << elapsed_time_
-                                     << ", threshold: " << cycle_time_error_threshold_);
+    elapsed_time_ = ros::Time::now() - this->now;
+  }
+  else
+  {
+    clock_gettime(CLOCK_MONOTONIC, &current_time_);
+    elapsed_time_ = ros::Duration(current_time_.tv_sec - last_time_.tv_sec +
+                                  (current_time_.tv_nsec - last_time_.tv_nsec) / BILLION);
+    last_time_ = current_time_;
+
+    // ROS_DEBUG_STREAM_THROTTLE_NAMED(1, "generic_hw_main","Sampled update loop
+    // with elapsed time " << elapsed_time_.toSec());
+
+    // Error check cycle time
+    const double cycle_time_error = (elapsed_time_ - desired_update_period_).toSec();
+    if (cycle_time_error > cycle_time_error_threshold_)
+    {
+      ROS_WARN_STREAM_NAMED(name_, "Cycle time exceeded error threshold by: "
+                                       << cycle_time_error << ", cycle time: " << elapsed_time_
+                                       << ", threshold: " << cycle_time_error_threshold_);
+    }
   }
 
+  this->now = ros::Time::now();
+
   // Input
-  hardware_interface_->read(now, elapsed_time_);
+  hardware_interface_->read(this->now, elapsed_time_);
 
   // Control
-  controller_manager_->update(now, elapsed_time_);
+  controller_manager_->update(this->now, elapsed_time_);
 
   // Output
-  hardware_interface_->write(now, elapsed_time_);
+  hardware_interface_->write(this->now, elapsed_time_);
 }
 
 }  // namespace ugr_ros_control

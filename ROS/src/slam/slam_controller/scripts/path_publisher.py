@@ -9,17 +9,12 @@ from node_fixture.fixture import (
     DiagnosticStatus,
     create_diagnostic_message,
 )
-from node_fixture.node_management import ManagedNode
+from node_fixture.managed_node import ManagedNode
 
 
 class PathPublisher(ManagedNode):
     def __init__(self):
-        rospy.init_node("control_path_publisher")
-        super().__init__("control_path_publisher")
-        rospy.spin()
-
-    def doConfigure(self):
-        self.override_time = rospy.get_param("~override_time", True)
+        super().__init__("path_publisher")
 
         self.path_publisher = rospy.Publisher(
             "/output/path",
@@ -32,6 +27,11 @@ class PathPublisher(ManagedNode):
         self.diagnostics_pub = super().AddPublisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
+
+        self.spin()
+
+    def doConfigure(self):
+        self.override_time = rospy.get_param("~override_time", True)
 
     def doActivate(self):
         self.path = rospkg.RosPack().get_path(

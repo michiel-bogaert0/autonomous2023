@@ -1,0 +1,21 @@
+<launch>
+  <env name="BINARY_LOCATION" value="$(env HOME)/autonomous2023_binaries"/>
+
+  <node pkg="fusion" output="screen" type="early_fusion.py" name="early_fusion" respawn="False">
+    <param name="base_link_frame" value="ugr/car_base_link" />
+    <param name="sensor_frame" value="os_sensor" />
+    <param name="world_frame" value="ugr/car_odom" />
+    <param name="cone_width" value="0.232" />
+    <param name="belief" value="0.8" />
+    <param name="max_distance" value="0.5" />
+    <param name="fov" value="70" />
+    <param name="rate" value="20" />
+    <param name="resolution_x" value="1920" />
+    <param name="resolution_y" value="1200" />
+    <rosparam param="covariance">[0.2, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.8]</rosparam>
+    <rosparam param="translation_vector">[-0.09, 0, -0.40]</rosparam>
+    <remap from="/input/camera_bboxes" to="/ugr/car/observations/camera/bounding_boxes"/>
+    <remap from="/input/lidar_groundremoval" to="ugr/vis/lidar/groundremoval_pc"/>
+    <remap from="/output/topic" to="/ugr/car/observations/early_fused"/>
+  </node>
+</launch>

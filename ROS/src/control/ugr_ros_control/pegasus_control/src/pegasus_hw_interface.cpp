@@ -37,7 +37,7 @@
            For a more detailed simulation example, see sim_hw_interface.cpp
 */
 
-#include <pegasus_control/pegasus_hw_interface.h>
+#include <pegasus_control/pegasus_hw_interface.hpp>
 #include <random>
 #include <tuple>
 #include <math.h>
@@ -116,17 +116,18 @@ void PegasusHWInterface::write(ros::Duration& elapsed_time)
   // Open loop steering so just couple back
   joint_position_[steering_joint_id] = joint_position_command_[steering_joint_id];
 
-  if (this->is_running == true){
+  if (this->is_running == true)
+  {
     publish_steering_msg(joint_position_command_[steering_joint_id]);
 
     publish_vel_msg(joint_velocity_command_[drive_joint_id], 1);
     publish_vel_msg(-joint_velocity_command_[drive_joint_id], 2);
   }
-  else {
+  else
+  {
     publish_vel_msg(0, 1);
     publish_vel_msg(0, 2);
   }
-  
 }
 
 bool PegasusHWInterface::canSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
@@ -180,9 +181,12 @@ void PegasusHWInterface::enforceLimits(ros::Duration& period)
 
 void PegasusHWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
 {
-  if (msg->scope == "autonomous"){
+  if (msg->scope == "autonomous")
+  {
     this->is_running = msg->cur_state == "asdrive";
-  } else if (msg->scope == "slam" && msg->cur_state == "finished") {
+  }
+  else if (msg->scope == "slam" && msg->cur_state == "finished")
+  {
     this->is_running = false;
   }
 }
@@ -230,12 +234,14 @@ void PegasusHWInterface::handle_vel_msg(const can_msgs::Frame::ConstPtr& msg, ui
   twist_msg.twist.twist.linear.x = (axis_id == 1) ? speed : -speed;  // The left wheel is inverted
 
   if (axis_id == 1)
+  {
     this->cur_velocity = vel_msg.vel_estimate * 2 * M_PI;
-
-  if (axis_id == 1)
     vel_right_pub.publish(twist_msg);
+  }
   else if (axis_id == 2)
+  {
     vel_left_pub.publish(twist_msg);
+  }
 }
 
 void PegasusHWInterface::publish_steering_msg(float steering)

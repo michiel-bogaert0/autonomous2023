@@ -37,7 +37,7 @@
            For a more detailed simulation example, see sim_hw_interface.cpp
 */
 
-#include <sim_control/sim_hw_interface.h>
+#include <sim_control/sim_hw_interface.hpp>
 #include <random>
 #include <tuple>
 

@@ -1,5 +1,5 @@
 
-#include <sim_control/bicycle_model.h>
+#include <sim_control/bicycle_model.hpp>
 #include <rosparam_shortcuts/rosparam_shortcuts.h>
 #include <math.h>
 #include <tuple>
@@ -39,29 +39,29 @@ void BicycleModel::update(double dt, double in_alpha, double in_phi)
   }
 
   // Inputs
-  phi = in_phi;
   alpha = in_alpha;
+  phi = in_phi;
 
   // Angular velocity (of wheel) and steering angle
-  zeta += phi * dt;       // Of STEERING JOINT
 
-  double drag_acc = DC * pow(v, 2);
-  double friction_acc = fabs(v) > 0.001 ? mu : 0.0;
+  double drag_acc = v > 0.1 ? DC * pow(v, 2) : 0.0;
+  double friction_acc = v > 0.1 ? mu : 0.0;
 
   a = alpha * R - drag_acc - friction_acc;
 
-  v += a * dt;  // v of CoG (+ drag + friction)
   ang_vel = v / R;
-
-  ROS_DEBUG_STREAM("phi " << phi << " alpha " << alpha << " ang_vel " << ang_vel << " zeta " << zeta);
-  ROS_DEBUG_STREAM("v " << v << " a " << a << " dt " << dt << " drag acc " << drag_acc);
 
   // Outputs (and intermediates)
   omega = v * tan(zeta) / L;
-  theta += omega * dt;
+
   double x_vel = v * cos(theta);
   double y_vel = v * sin(theta);
 
   x += x_vel * dt;
   y += y_vel * dt;
+  v += a * dt;          // v of CoG (+ drag + friction)
+  theta += omega * dt;  // Heading
+  zeta += phi * dt;     // Of STEERING JOINT
+
+  zeta = std::min(std::max(zeta, -M_PI / 4), M_PI / 4);
 };

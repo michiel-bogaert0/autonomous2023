@@ -8,16 +8,14 @@ from node_fixture.fixture import (
     DiagnosticStatus,
     create_diagnostic_message,
 )
-from node_fixture.node_management import ManagedNode
+from node_fixture.managed_node import ManagedNode
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
 
 class MapPublisher(ManagedNode):
     def __init__(self):
         super().__init__("map_publisher")
-        rospy.init_node("slam_map_publisher")
-
-        rospy.spin()
+        self.spin()
 
     def doConfigure(self):
         self.mappkg = rospy.get_param("~map_pkg", "slam_simulator")

@@ -11,7 +11,6 @@ from .trajectory import Trajectory
 
 class KinematicTrackingNode(ManagedNode):
     def __init__(self, name):
-        rospy.init_node(name)
         super().__init__(name)
 
         self.publish_rate = rospy.get_param("~publish_rate", 10)
@@ -39,6 +38,8 @@ class KinematicTrackingNode(ManagedNode):
         self.odom_sub = super().AddSubscriber(
             "/input/odom", Odometry, self.get_odom_update
         )
+
+        self.spin()
 
     def doConfigure(self):
         self.tf_buffer = tf.Buffer()
