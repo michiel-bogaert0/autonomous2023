@@ -257,8 +257,16 @@ Visualization Manager:
           Value: true
         - Class: rviz/Marker
           Enabled: true
-          Marker Topic: /graphslam/debug/edges
-          Name: GraphSLAM edges
+          Marker Topic: /graphslam/debug/edges/poses
+          Name: GraphSLAM edges poses
+          Namespaces:
+            {}
+          Queue Size: 10
+          Value: true
+        - Class: rviz/Marker
+          Enabled: true
+          Marker Topic: /graphslam/debug/edges/landmarks
+          Name: GraphSLAM edges landmarks
           Namespaces:
             {}
           Queue Size: 10

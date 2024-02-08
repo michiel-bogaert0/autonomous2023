@@ -69,7 +69,8 @@ private:
   ros::Publisher odomPublisher;
   ros::Publisher landmarkPublisher;
   ros::Publisher posesPublisher;
-  ros::Publisher edgePublisher;
+  ros::Publisher edgePosesPublisher;
+  ros::Publisher edgeLandmarksPublisher;
   // Diagnostic publisher
   std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
 

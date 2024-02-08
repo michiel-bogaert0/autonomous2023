@@ -99,8 +99,10 @@ void GraphSLAM::doConfigure() {
           "/graphslam/debug/vertices/landmarks", 0);
   this->posesPublisher = n.advertise<geometry_msgs::PoseArray>(
       "/graphslam/debug/vertices/poses", 0);
-  // this->edgePublisher =
-  // n.advertise<visualization_msgs::Marker>("/graphslam/debug/edges",0);
+  this->edgePosesPublisher = n.advertise<visualization_msgs::Marker>(
+      "/graphslam/debug/edges/poses", 0);
+  this->edgeLandmarksPublisher = n.advertise<visualization_msgs::Marker>(
+      "/graphslam/debug/edges/landmarks", 0);
 
   // Initialize subscribers
   obs_sub.subscribe(n, "/input/observations", 1);
@@ -250,24 +252,7 @@ void GraphSLAM::step() {
   dY = y - this->prev_state[1];
   dYaw = yaw - this->prev_state[2];
 
-  // // Check for reverse
-  // double drivingAngle = atan2(y - this->prev_state[1], x -
-  // this->prev_state[0]); double angleDifference = abs(drivingAngle - yaw); if
-  // (angleDifference > M_PI) {
-  //   angleDifference = 2 * M_PI - angleDifference;
-  // }
-
-  // bool forward = angleDifference < M_PI_2;
-  // dDist = (forward ? 1 : -1) *
-  //         pow(pow(x - this->prev_state[0], 2) + pow(y - this->prev_state[1],
-  //         2),
-  //             0.5);
-
   this->prev_state = {x, y, yaw};
-
-  // this->diagPublisher->publishDiagnostic(
-  //     node_fixture::DiagnosticStatusEnum::OK, "Pose estimate",
-  //     "#Dist: " + std::to_string(dDist) + ", yaw: " + std::to_string(dYaw));
 
   // --------------------------------------------------------------------
   // ---------------------- Add odometry to graph -----------------------
@@ -393,36 +378,76 @@ void GraphSLAM::step() {
   this->posesPublisher.publish(poses);
 
   // Publish edges
-  // visualization_msgs::Marker edges;
-  // edges.header.frame_id = this->map_frame;
-  // edges.header.stamp = transformed_obs.header.stamp;
-  // edges.ns = "graphslam";
-  // edges.type = visualization_msgs::Marker::LINE_LIST;
-  // edges.action = visualization_msgs::Marker::ADD;
-  // edges.id = this->prevPoseIndex;
+  visualization_msgs::Marker poseEdges;
+  poseEdges.header.frame_id = this->map_frame;
+  poseEdges.header.stamp = transformed_obs.header.stamp;
+  poseEdges.ns = "graphslam";
+  poseEdges.type = visualization_msgs::Marker::LINE_LIST;
+  poseEdges.action = visualization_msgs::Marker::ADD;
+  poseEdges.id = this->prevPoseIndex;
+  poseEdges.color.a = 1.0;
+  poseEdges.color.r = 1.0;
+  poseEdges.color.g = 0.0;
+  poseEdges.color.b = 0.0;
+  poseEdges.scale.x = 0.1;
+  poseEdges.scale.y = 0.1;
+  poseEdges.scale.z = 0.1;
 
-  // for(const auto &pair : this->optimizer.edges()){
-  //   pair->vertices()[0]->id();
-  //   EdgeSE2 *edge = dynamic_cast<EdgeSE2 *>(pair);
-  //   if(edge){
-  //     geometry_msgs::Point p1;
-  //     VertexSE2 *v1 = dynamic_cast<VertexSE2 *>(edge->vertices()[0]);
-  //     p1.x = v1->estimate().translation().x();
-  //     p1.y = v1->estimate().translation().y();
-  //     p1.z = 0.0;
+  visualization_msgs::Marker landmarkEdges;
+  landmarkEdges.header.frame_id = this->map_frame;
+  landmarkEdges.header.stamp = transformed_obs.header.stamp;
+  landmarkEdges.ns = "graphslam";
+  landmarkEdges.type = visualization_msgs::Marker::LINE_LIST;
+  landmarkEdges.action = visualization_msgs::Marker::ADD;
+  landmarkEdges.id = this->prevPoseIndex;
+  landmarkEdges.color.a = 1.0;
+  landmarkEdges.color.r = 0.0;
+  landmarkEdges.color.g = 1.0;
+  landmarkEdges.color.b = 0.0;
+  landmarkEdges.scale.x = 0.05;
+  landmarkEdges.scale.y = 0.05;
+  landmarkEdges.scale.z = 0.05;
 
-  //     geometry_msgs::Point p2;
-  //     VertexSE2 *v2 = dynamic_cast<VertexSE2 *>(edge->vertices()[1]);
-  //     p2.x = v2->estimate().translation().x();
-  //     p2.y = v2->estimate().translation().y();
-  //     p2.z = 0.0;
+  for (const auto &pair : this->optimizer.edges()) {
+    pair->vertices()[0]->id();
+    EdgeSE2 *edge = dynamic_cast<EdgeSE2 *>(pair);
+    if (edge) {
+      geometry_msgs::Point p1;
+      VertexSE2 *v1 = dynamic_cast<VertexSE2 *>(edge->vertices()[0]);
+      p1.x = v1->estimate().translation().x();
+      p1.y = v1->estimate().translation().y();
+      p1.z = 0.0;
 
-  //     edges.points.push_back(p1);
-  //     edges.points.push_back(p2);
-  //   }
-  // }
+      geometry_msgs::Point p2;
+      VertexSE2 *v2 = dynamic_cast<VertexSE2 *>(edge->vertices()[1]);
+      p2.x = v2->estimate().translation().x();
+      p2.y = v2->estimate().translation().y();
+      p2.z = 0.0;
 
-  // this->edgePublisher.publish(edges);
+      poseEdges.points.push_back(p1);
+      poseEdges.points.push_back(p2);
+    }
+    EdgeSE2PointXY *edge2 = dynamic_cast<EdgeSE2PointXY *>(pair);
+    if (edge2) {
+      geometry_msgs::Point p1;
+      VertexSE2 *v1 = dynamic_cast<VertexSE2 *>(edge2->vertices()[0]);
+      p1.x = v1->estimate().translation().x();
+      p1.y = v1->estimate().translation().y();
+      p1.z = 0.0;
+
+      geometry_msgs::Point p2;
+      VertexPointXY *v2 = dynamic_cast<VertexPointXY *>(edge2->vertices()[1]);
+      p2.x = v2->estimate().x();
+      p2.y = v2->estimate().y();
+      p2.z = 0.0;
+
+      landmarkEdges.points.push_back(p1);
+      landmarkEdges.points.push_back(p2);
+    }
+  }
+
+  this->edgeLandmarksPublisher.publish(landmarkEdges);
+  this->edgePosesPublisher.publish(poseEdges);
 }
 
 void GraphSLAM::publishOutput(ros::Time lookupTime) {
