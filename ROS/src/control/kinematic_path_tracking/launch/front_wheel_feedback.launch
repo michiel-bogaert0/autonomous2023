@@ -1,15 +1,14 @@
 <launch>
 
-    <node pkg="pure_pursuit" type="run.py" name="pure_pursuit" output="screen" respawn="true">
+    <node pkg="kinematic_path_tracking" type="front_wheel_feedback.py" name="front_wheel_feedback" output="screen" respawn="true">
 
         <param name="rate" value="50" />
 
-        <param name="base_link_frame" value="ugr/car_base_link" />
+        <param name="base_link_frame" value="ugr/car_base_link/front_axle" />
 
-        <param name="speed_start" value="2" />
-        <param name="speed_stop" value="12" />
-        <param name="distance_start" value="3" />
-        <param name="distance_stop" value="7" /> 
+        <param name="Kp" value="1.0" />
+        <param name="Ki" value="0.0" />
+        <param name="Kd" value="0.0" />
 
         <param name="wheelradius" value="0.1" />
 
@@ -17,6 +16,5 @@
         <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>
         <remap from="/output/drive_velocity_controller/command" to="/ugr/car/drive_velocity_controller/command" />
         <remap from="/output/steering_position_controller/command" to="/ugr/car/steering_position_controller/command" />
-        <remap from="/output/target_point" to="/pure_pursuit/target_point"/>
     </node>
 </launch>

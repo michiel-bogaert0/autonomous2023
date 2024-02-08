@@ -1,6 +1,7 @@
 import casadi as cd
 import numpy as np
 from matplotlib import pyplot as plt
+
 from utils import spline as spl
 
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(pure_pursuit)
+project(kinematic_path_tracking)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -9,6 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 
 )
+
+catkin_python_setup()
 
 include_directories(
 

@@ -48,7 +48,7 @@ SimHWInterface::SimHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
 {
   ros::NodeHandle n("~");
 
-  this->model = new BicycleModel(n.param<double>("R", 0.1), n.param<double>("L", 1.0), n.param<double>("Lr", 0.5),
+  this->model = new BicycleModel(n.param<double>("R", 0.1), n.param<double>("L", 0.72), n.param<double>("Lr", 0.5),
                                  n.param<double>("mu", 0.1), n.param<double>("DC", 0.025));
 
   ROS_INFO_NAMED("sim_hw_interface", "SimHWInterface Ready.");
