@@ -25,6 +25,7 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseArray.h>
 #include <nav_msgs/Odometry.h>
+#include <visualization_msgs/Marker.h>
 
 #include <string>
 
@@ -76,6 +77,17 @@ void GraphSLAM::doConfigure() {
   // Todo: set from parameters
   this->max_range = 15;
   this->max_half_fov = 60 * 0.0174533;
+  // this->covariance_pose << 0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1; // pre-commit
+  // doesn't like this
+  this->covariance_pose(0, 0) = 0.1;
+  this->covariance_pose(0, 1) = 0;
+  this->covariance_pose(0, 2) = 0;
+  this->covariance_pose(1, 0) = 0;
+  this->covariance_pose(1, 1) = 0.1;
+  this->covariance_pose(1, 2) = 0;
+  this->covariance_pose(2, 0) = 0;
+  this->covariance_pose(2, 1) = 0;
+  this->covariance_pose(2, 2) = 0.1;
 
   // Initialize publishers
   this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
@@ -87,6 +99,8 @@ void GraphSLAM::doConfigure() {
           "/graphslam/debug/vertices/landmarks", 0);
   this->posesPublisher = n.advertise<geometry_msgs::PoseArray>(
       "/graphslam/debug/vertices/poses", 0);
+  // this->edgePublisher =
+  // n.advertise<visualization_msgs::Marker>("/graphslam/debug/edges",0);
 
   // Initialize subscribers
   obs_sub.subscribe(n, "/input/observations", 1);
@@ -271,8 +285,8 @@ void GraphSLAM::step() {
         this->optimizer.vertex(this->prevPoseIndex); // from
     odometry->vertices()[1] = this->optimizer.vertex(this->vertexCounter); // to
     odometry->setMeasurement(SE2(dX, dY, dYaw));
-    odometry->setInformation(
-        Matrix3d::Identity()); // ??????????????????????????
+    odometry->setInformation(this->covariance_pose.inverse());
+
     this->optimizer.addEdge(odometry);
   } else {
     // First pose
@@ -307,15 +321,12 @@ void GraphSLAM::step() {
         Vector2d(observation.observation.location.x,
                  observation.observation.location.y));
 
-    // Eigen::Matrix3f covarianceMatrix;
-    // covarianceMatrix << observation.covariance[0], observation.covariance[1],
-    //     observation.covariance[2], observation.covariance[3],
-    //     observation.covariance[4], observation.covariance[5],
-    //     observation.covariance[6], observation.covariance[7],
-    //     observation.covariance[8];
-    // landmarkObservation->setInformation(covarianceMatrix.inverse()); // te
-    // groot moet 2d zijn is 3d ???
-    landmarkObservation->setInformation(Matrix2d::Identity());
+    Eigen::Matrix2d covarianceMatrix;
+    covarianceMatrix << observation.covariance[0], observation.covariance[1],
+        observation.covariance[3],
+        observation.covariance[4]; // observation gives 3x3 matrix only first 2
+                                   // rows and columns are used
+    landmarkObservation->setInformation(covarianceMatrix.inverse());
     this->optimizer.addEdge(landmarkObservation);
 
     this->vertexCounter++;
@@ -330,8 +341,8 @@ void GraphSLAM::step() {
   // progress and operations. This can be useful for debugging and understanding
   // how the optimization process is proceeding.
 
-  this->optimizer.initializeOptimization();
-  this->optimizer.optimize(this->max_iterations);
+  // this->optimizer.initializeOptimization();
+  // this->optimizer.optimize(this->max_iterations);
 
   // --------------------------------------------------------------------
   // ------------------------ Publish -----------------------------------
@@ -366,28 +377,52 @@ void GraphSLAM::step() {
       poses.poses.push_back(pose);
     }
 
-    VertexPointXY *vertex2 = dynamic_cast<VertexPointXY *>(pair.second);
-    if (vertex2) {
+    VertexPointXY *landmarkVertex = dynamic_cast<VertexPointXY *>(pair.second);
+    if (landmarkVertex) {
       ugr_msgs::ObservationWithCovariance map_ob;
-      map_ob.observation.location.x = vertex2->estimate().x();
-      map_ob.observation.location.y = vertex2->estimate().y();
+      map_ob.observation.location.x = landmarkVertex->estimate().x();
+      map_ob.observation.location.y = landmarkVertex->estimate().y();
       map_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
       map_ob.observation.observation_class = 3;
       map_ob.observation.belief = 0;
       landmarks.observations.push_back(map_ob);
     }
-    // if (vertex) {
-    //   this->diagPublisher->publishDiagnostic(
-    //     node_fixture::DiagnosticStatusEnum::OK, "GRAPHSLAM",
-    //     "id: " + std::to_string(pair.first) + ", id2: " +
-    //     std::to_string(vertex->id()) + ", x: " +
-    //     std::to_string(vertex->estimate().translation().x()) + ", y: " +
-    //     std::to_string(vertex->estimate().translation().y()) + ", yaw: " +
-    //     std::to_string(vertex->estimate().rotation().angle()));
-    // }
   }
+
   this->landmarkPublisher.publish(landmarks);
   this->posesPublisher.publish(poses);
+
+  // Publish edges
+  // visualization_msgs::Marker edges;
+  // edges.header.frame_id = this->map_frame;
+  // edges.header.stamp = transformed_obs.header.stamp;
+  // edges.ns = "graphslam";
+  // edges.type = visualization_msgs::Marker::LINE_LIST;
+  // edges.action = visualization_msgs::Marker::ADD;
+  // edges.id = this->prevPoseIndex;
+
+  // for(const auto &pair : this->optimizer.edges()){
+  //   pair->vertices()[0]->id();
+  //   EdgeSE2 *edge = dynamic_cast<EdgeSE2 *>(pair);
+  //   if(edge){
+  //     geometry_msgs::Point p1;
+  //     VertexSE2 *v1 = dynamic_cast<VertexSE2 *>(edge->vertices()[0]);
+  //     p1.x = v1->estimate().translation().x();
+  //     p1.y = v1->estimate().translation().y();
+  //     p1.z = 0.0;
+
+  //     geometry_msgs::Point p2;
+  //     VertexSE2 *v2 = dynamic_cast<VertexSE2 *>(edge->vertices()[1]);
+  //     p2.x = v2->estimate().translation().x();
+  //     p2.y = v2->estimate().translation().y();
+  //     p2.z = 0.0;
+
+  //     edges.points.push_back(p1);
+  //     edges.points.push_back(p2);
+  //   }
+  // }
+
+  // this->edgePublisher.publish(edges);
 }
 
 void GraphSLAM::publishOutput(ros::Time lookupTime) {

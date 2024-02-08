@@ -51,6 +51,7 @@ private:
   int max_iterations;
   double max_range;
   double max_half_fov;
+  Eigen::Matrix3d covariance_pose;
 
   // GraphSLAM variables
   double latestTime;
@@ -68,6 +69,7 @@ private:
   ros::Publisher odomPublisher;
   ros::Publisher landmarkPublisher;
   ros::Publisher posesPublisher;
+  ros::Publisher edgePublisher;
   // Diagnostic publisher
   std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
 
