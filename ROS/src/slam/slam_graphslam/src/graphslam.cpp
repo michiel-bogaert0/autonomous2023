@@ -77,17 +77,6 @@ void GraphSLAM::doConfigure() {
   // Todo: set from parameters
   this->max_range = 15;
   this->max_half_fov = 60 * 0.0174533;
-  // this->covariance_pose << 0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1; // pre-commit
-  // doesn't like this
-  this->covariance_pose(0, 0) = 0.1;
-  this->covariance_pose(0, 1) = 0;
-  this->covariance_pose(0, 2) = 0;
-  this->covariance_pose(1, 0) = 0;
-  this->covariance_pose(1, 1) = 0.1;
-  this->covariance_pose(1, 2) = 0;
-  this->covariance_pose(2, 0) = 0;
-  this->covariance_pose(2, 1) = 0;
-  this->covariance_pose(2, 2) = 0.1;
 
   // Initialize publishers
   this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
@@ -109,6 +98,9 @@ void GraphSLAM::doConfigure() {
   tf2_filter.registerCallback(
       boost::bind(&GraphSLAM::handleObservations, this, _1));
 
+  odomSubscriber =
+      n.subscribe("/input/odom", 1000, &GraphSLAM::odomCallback, this);
+
   // Initialize variables
   this->gotFirstObservations = false;
   this->prev_state = {0.0, 0.0, 0.0};
@@ -129,6 +121,20 @@ void GraphSLAM::doConfigure() {
 
   this->optimizer.setAlgorithm(solver);
   //-----------------------------------------------------------------------------
+}
+
+void GraphSLAM::odomCallback(const nav_msgs::OdometryConstPtr &msg) {
+  ROS_INFO("Received odometry");
+  // Update pose covariance
+  this->covariance_pose(0, 0) = msg->pose.covariance[0];
+  this->covariance_pose(0, 1) = msg->pose.covariance[1];
+  this->covariance_pose(0, 2) = msg->pose.covariance[5];
+  this->covariance_pose(1, 0) = msg->pose.covariance[6];
+  this->covariance_pose(1, 1) = msg->pose.covariance[7];
+  this->covariance_pose(1, 2) = msg->pose.covariance[11];
+  this->covariance_pose(2, 0) = msg->pose.covariance[30];
+  this->covariance_pose(2, 1) = msg->pose.covariance[31];
+  this->covariance_pose(2, 2) = msg->pose.covariance[35];
 }
 
 void GraphSLAM::handleObservations(

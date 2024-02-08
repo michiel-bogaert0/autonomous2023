@@ -12,7 +12,7 @@
 #include "message_filters/subscriber.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2_ros/message_filter.h"
-#include <nav_msgs/Path.h>
+#include <nav_msgs/Odometry.h>
 
 #include "managed_node.hpp"
 #include "node_fixture/node_fixture.hpp"
@@ -63,7 +63,7 @@ private:
   g2o::SparseOptimizer optimizer;
 
   // Subscribers
-  ros::Subscriber observationsSubscriber;
+  ros::Subscriber odomSubscriber;
 
   // Publishers
   ros::Publisher odomPublisher;
@@ -82,6 +82,7 @@ private:
   tf2_ros::MessageFilter<ugr_msgs::ObservationWithCovarianceArrayStamped>
       tf2_filter;
 
+  void odomCallback(const nav_msgs::OdometryConstPtr &);
   // Handlers
   void handleObservations(
       const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs);

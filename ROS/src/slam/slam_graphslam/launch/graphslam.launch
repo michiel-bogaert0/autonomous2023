@@ -11,14 +11,15 @@
     <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
     <param name="lidar_frame" value="$(arg lidar_frame)" />
 
-    <param name="target_rate" value="0.5"/>
-    <param name="publish_rate" value="3.0"/>
-    <param name="synchronous" value="false"/>
+    <param name="target_rate" value="1"/> <!-- Hz -->
+    <param name="publish_rate" value="3.0"/> <!-- Hz -->
+    <param name="synchronous" value="false"/> 
 
-    <param name="max_iterations" value="10"/>
+    <param name="max_iterations" value="10"/> 
 
     # Input/output remapping
-    <remap from="/input/observations" to="ugr/car/observations/lidar" />
+    <remap from="/input/observations" to="/ugr/car/observations/lidar" />
+    <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom" />
 
     <remap from="/output/observations" to="/ugr/car/observations/slam" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/slam" />
