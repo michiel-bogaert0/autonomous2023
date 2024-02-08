@@ -9,16 +9,16 @@
 namespace ns_lidar {
 typedef struct {
   geometry_msgs::Point32 pos;
-  bool is_cone;
-  float color;
-  double bounds[3];
-  double cone_metric;
+  // bool is_cone;
+  // float color;
+  // double bounds[3];
+  // double cone_metric;
 } ConeCheck;
 
 typedef struct {
-  double x;
-  double y;
-  double floor;
+  // double x;
+  // double y;
+  // double floor;
   double height_cone = 0.325;
   double half_width_cone = 0.114;
 } ConeModel;
@@ -28,7 +28,7 @@ float hypot3d(float a, float b, float c);
 class ConeClassification {
 
 public:
-  ConeClassification(ros::NodeHandle &n);
+  explicit ConeClassification(ros::NodeHandle &n);
 
   ConeCheck classifyCone(const pcl::PointCloud<pcl::PointXYZINormal> cloud);
 
@@ -54,13 +54,13 @@ private:
   double threshold_white_cones_; // distance where the lidar will stop
                                  // determining color and set the color to white
 
-  double first_tipping_distance_; // distance(m) which marks the transition
-                                  // between first linear and non-linear region
+  double first_tipping_distance_;  // distance(m) which marks the transition
+                                   // between first linear and non-linear region
   double second_tipping_distance_; // distance(m) which marks the transition
-                                   // between non-linear region and second linear
-                                   // region
-  double zero_value_distance_; // distance(m) after which the belief is 0
-  double value_start_;         // belief at 0m
+                                   // between non-linear region and second
+                                   // linear region
+  double zero_value_distance_;     // distance(m) after which the belief is 0
+  double value_start_;             // belief at 0m
   double value_first_tipping_distance_;  // belief at start non-linear region
   double value_second_tipping_distance_; // belief at end non-linear region
 
