@@ -45,17 +45,19 @@ private:
   string slam_base_link_frame;
   string lidar_frame;
 
+  // GraphSLAM parameters
   double publish_rate;
   bool doSynchronous;
-
+  int max_iterations;
   double max_range;
   double max_half_fov;
 
+  // GraphSLAM variables
   double latestTime;
   bool gotFirstObservations;
   array<double, 3> prev_state; // x, y, yaw
-  int poseIndex;
-  int landmarkIndex;
+  int vertexCounter;
+  int prevPoseIndex;
   ugr_msgs::ObservationWithCovarianceArrayStamped observations;
   g2o::SparseOptimizer optimizer;
 
@@ -64,14 +66,10 @@ private:
 
   // Publishers
   ros::Publisher odomPublisher;
-
+  ros::Publisher landmarkPublisher;
+  ros::Publisher posesPublisher;
   // Diagnostic publisher
   std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
-
-  // Set Map Service Client
-  ros::ServiceClient setmap_srv_client;
-  string globalmap_namespace;
-  string localmap_namespace;
 
   // TF2
   tf2_ros::Buffer tfBuffer;

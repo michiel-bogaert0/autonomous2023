@@ -11,8 +11,11 @@
     <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
     <param name="lidar_frame" value="$(arg lidar_frame)" />
 
-    <param name="target_rate" value="50.0"/>
+    <param name="target_rate" value="0.5"/>
+    <param name="publish_rate" value="3.0"/>
     <param name="synchronous" value="false"/>
+
+    <param name="max_iterations" value="10"/>
 
     # Input/output remapping
     <remap from="/input/observations" to="ugr/car/observations/lidar" />

@@ -72,6 +72,8 @@ void GraphSLAM::doConfigure() {
   this->doSynchronous = n.param<bool>("synchronous", true);
   this->publish_rate = n.param<double>("publish_rate", 3.0);
 
+  this->max_iterations = n.param<int>("max_iterations", 10);
+  // Todo: set from parameters
   this->max_range = 15;
   this->max_half_fov = 60 * 0.0174533;
 
@@ -79,6 +81,12 @@ void GraphSLAM::doConfigure() {
   this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
   this->diagPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(
       new node_fixture::DiagnosticPublisher(n, "SLAM GrapSLAM"));
+
+  this->landmarkPublisher =
+      n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>(
+          "/graphslam/debug/vertices/landmarks", 0);
+  this->posesPublisher = n.advertise<geometry_msgs::PoseArray>(
+      "/graphslam/debug/vertices/poses", 0);
 
   // Initialize subscribers
   obs_sub.subscribe(n, "/input/observations", 1);
@@ -88,8 +96,8 @@ void GraphSLAM::doConfigure() {
   // Initialize variables
   this->gotFirstObservations = false;
   this->prev_state = {0.0, 0.0, 0.0};
-  this->poseIndex = 0;
-  this->landmarkIndex = 0;
+  this->vertexCounter = 0;
+  this->prevPoseIndex = -1;
 
   //----------------------------------------------------------------------------
   //------------------------------ Set Optimizer -------------------------------
@@ -228,7 +236,7 @@ void GraphSLAM::step() {
   dY = y - this->prev_state[1];
   dYaw = yaw - this->prev_state[2];
 
-  // Check for reverse
+  // // Check for reverse
   // double drivingAngle = atan2(y - this->prev_state[1], x -
   // this->prev_state[0]); double angleDifference = abs(drivingAngle - yaw); if
   // (angleDifference > M_PI) {
@@ -251,38 +259,50 @@ void GraphSLAM::step() {
   // ---------------------- Add odometry to graph -----------------------
   // --------------------------------------------------------------------
 
-  VertexSE2 *pose = new VertexSE2;
-  pose->setId(this->poseIndex);
-  pose->setEstimate(SE2(x, y, yaw));
-  optimizer.addVertex(pose);
+  VertexSE2 *newPoseVertex = new VertexSE2;
+  newPoseVertex->setId(this->vertexCounter);
+  newPoseVertex->setEstimate(SE2(x, y, yaw));
+  this->optimizer.addVertex(newPoseVertex);
 
   // add odometry contraint
-  if (this->poseIndex > 0) {
+  if (this->prevPoseIndex >= 0) {
     EdgeSE2 *odometry = new EdgeSE2;
-    odometry->vertices()[0] = optimizer.vertex(this->poseIndex - 1); // from
-    odometry->vertices()[1] = optimizer.vertex(this->poseIndex);     // to
+    odometry->vertices()[0] =
+        this->optimizer.vertex(this->prevPoseIndex); // from
+    odometry->vertices()[1] = this->optimizer.vertex(this->vertexCounter); // to
     odometry->setMeasurement(SE2(dX, dY, dYaw));
     odometry->setInformation(
         Matrix3d::Identity()); // ??????????????????????????
-    optimizer.addEdge(odometry);
+    this->optimizer.addEdge(odometry);
   } else {
     // First pose
-    pose->setFixed(true);
+    newPoseVertex->setFixed(true);
   }
+  this->prevPoseIndex = this->vertexCounter;
+  this->vertexCounter++;
   // --------------------------------------------------------------------
   // ---------------------- Add observations to graph -------------------
   // --------------------------------------------------------------------
   for (auto observation : transformed_obs.observations) {
     VertexPointXY *landmark = new VertexPointXY;
-    landmark->setId(this->landmarkIndex);
-    landmark->setEstimate(Vector2d(x + observation.observation.location.x,
-                                   y + observation.observation.location.y));
-    optimizer.addVertex(landmark);
+    landmark->setId(this->vertexCounter);
+
+    VectorXf obs(2);
+    obs << pow(pow(observation.observation.location.x, 2) +
+                   pow(observation.observation.location.y, 2),
+               0.5),
+        atan2(observation.observation.location.y,
+              observation.observation.location.x);
+
+    landmark->setEstimate(Vector2d(x + obs(0) * cos(yaw + obs(1)),
+                                   y + obs(0) * sin(yaw + obs(1))));
+    this->optimizer.addVertex(landmark);
 
     EdgeSE2PointXY *landmarkObservation = new EdgeSE2PointXY;
     landmarkObservation->vertices()[0] =
-        optimizer.vertex(this->poseIndex); // pose
-    landmarkObservation->vertices()[1] = optimizer.vertex(this->landmarkIndex);
+        this->optimizer.vertex(this->prevPoseIndex); // pose
+    landmarkObservation->vertices()[1] =
+        this->optimizer.vertex(this->vertexCounter); // landmark
     landmarkObservation->setMeasurement(
         Vector2d(observation.observation.location.x,
                  observation.observation.location.y));
@@ -293,14 +313,13 @@ void GraphSLAM::step() {
     //     observation.covariance[4], observation.covariance[5],
     //     observation.covariance[6], observation.covariance[7],
     //     observation.covariance[8];
-    // landmarkObservation->setInformation(covarianceMatrix.inverse());
+    // landmarkObservation->setInformation(covarianceMatrix.inverse()); // te
+    // groot moet 2d zijn is 3d ???
     landmarkObservation->setInformation(Matrix2d::Identity());
-    optimizer.addEdge(landmarkObservation);
+    this->optimizer.addEdge(landmarkObservation);
 
-    this->landmarkIndex++;
+    this->vertexCounter++;
   }
-  this->poseIndex++;
-
   // --------------------------------------------------------------------
   // ------------------------ Optimization ------------------------------
   // --------------------------------------------------------------------
@@ -311,14 +330,64 @@ void GraphSLAM::step() {
   // progress and operations. This can be useful for debugging and understanding
   // how the optimization process is proceeding.
 
-  optimizer.initializeOptimization();
-  optimizer.optimize(10);
+  this->optimizer.initializeOptimization();
+  this->optimizer.optimize(this->max_iterations);
 
   // --------------------------------------------------------------------
   // ------------------------ Publish -----------------------------------
   // --------------------------------------------------------------------
 
   // this->publishOutput(transformed_obs.header.stamp);
+
+  ugr_msgs::ObservationWithCovarianceArrayStamped landmarks;
+  landmarks.header.frame_id = this->map_frame;
+  landmarks.header.stamp = transformed_obs.header.stamp;
+
+  geometry_msgs::PoseArray poses;
+  poses.header.frame_id = this->map_frame;
+
+  for (const auto &pair :
+       this->optimizer.vertices()) { // unordered_map<int, Vertex*>
+
+    VertexSE2 *poseVertex = dynamic_cast<VertexSE2 *>(pair.second);
+    if (poseVertex) {
+      geometry_msgs::Pose pose;
+      pose.position.x = poseVertex->estimate().translation().x();
+      pose.position.y = poseVertex->estimate().translation().y();
+
+      tf2::Quaternion q;
+      q.setRPY(0, 0, poseVertex->estimate().rotation().angle());
+
+      pose.orientation.x = q.x();
+      pose.orientation.y = q.y();
+      pose.orientation.z = q.z();
+      pose.orientation.w = q.w();
+
+      poses.poses.push_back(pose);
+    }
+
+    VertexPointXY *vertex2 = dynamic_cast<VertexPointXY *>(pair.second);
+    if (vertex2) {
+      ugr_msgs::ObservationWithCovariance map_ob;
+      map_ob.observation.location.x = vertex2->estimate().x();
+      map_ob.observation.location.y = vertex2->estimate().y();
+      map_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+      map_ob.observation.observation_class = 3;
+      map_ob.observation.belief = 0;
+      landmarks.observations.push_back(map_ob);
+    }
+    // if (vertex) {
+    //   this->diagPublisher->publishDiagnostic(
+    //     node_fixture::DiagnosticStatusEnum::OK, "GRAPHSLAM",
+    //     "id: " + std::to_string(pair.first) + ", id2: " +
+    //     std::to_string(vertex->id()) + ", x: " +
+    //     std::to_string(vertex->estimate().translation().x()) + ", y: " +
+    //     std::to_string(vertex->estimate().translation().y()) + ", yaw: " +
+    //     std::to_string(vertex->estimate().rotation().angle()));
+    // }
+  }
+  this->landmarkPublisher.publish(landmarks);
+  this->posesPublisher.publish(poses);
 }
 
 void GraphSLAM::publishOutput(ros::Time lookupTime) {
