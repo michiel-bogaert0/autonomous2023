@@ -72,7 +72,7 @@ Visualization Manager:
       Displays:
         - Class: rviz/Image
           Enabled: true
-          Image Topic: /perception/camera/image
+          Image Topic: /ugr/car/sensors/cam0/image
           Max Value: 1
           Median window: 5
           Min Value: 0

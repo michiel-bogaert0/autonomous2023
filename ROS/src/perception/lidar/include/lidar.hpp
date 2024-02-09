@@ -20,7 +20,7 @@ enum DiagnosticStatusEnum { OK, WARN, ERROR, STALE };
 class Lidar {
 
 public:
-  Lidar(ros::NodeHandle &n);
+  explicit Lidar(ros::NodeHandle &n);
 
 private:
   ros::NodeHandle n_;
@@ -36,8 +36,6 @@ private:
 
   ConeClustering cone_clustering_;
   GroundRemoval ground_removal_;
-
-  double estimated_latency_; // Latency between capture of data and actual ROS arrival (estimated)
 
   bool publish_preprocessing_; // publish the preprocessed pointcloud
   bool publish_ground_;        // publish the debug ground pointclouds

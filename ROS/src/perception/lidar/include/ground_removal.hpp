@@ -26,7 +26,7 @@ struct {
 class GroundRemoval {
 
 public:
-  GroundRemoval(ros::NodeHandle &n);
+  explicit GroundRemoval(ros::NodeHandle &n);
 
   void
   groundRemoval(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in,
@@ -56,11 +56,14 @@ private:
   double small_radial_bucket_length_;  // length of small buckets
   double big_radial_bucket_length_;    // length of big buckets
   bool use_slope_;                     // Is the slope used for GR or not
-  bool noisy_environment_; // whether the lidar is used in a busy/noisy room (more points)
-  double max_bucket_height_;           // maximum height difference between top points 
-                                       // and lower points in bin for noisy environments
-  int min_points_per_bucket_;      // minimum points allowed in a bucket for noisy environments
-  int max_points_per_bucket_;      // maximum points allowed in a bucket for noisy environments
+  bool noisy_environment_;    // whether the lidar is used in a busy/noisy room
+                              // (more points)
+  double max_bucket_height_;  // maximum height difference between top points
+                              // and lower points in bin for noisy environments
+  int min_points_per_bucket_; // minimum points allowed in a bucket for noisy
+                              // environments
+  int max_points_per_bucket_; // maximum points allowed in a bucket for noisy
+                              // environments
 
   int factor_color_; // number of consecutive points that get the same color
 
