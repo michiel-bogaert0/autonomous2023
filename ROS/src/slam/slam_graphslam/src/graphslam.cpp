@@ -42,11 +42,9 @@
 #include "g2o/core/sparse_optimizer.h"
 #include "g2o/solvers/eigen/linear_solver_eigen.h"
 
-#include "edge_se2.hpp"
-#include "edge_se2_pointxy.hpp"
+#include "edge.hpp"
 #include "se2.hpp"
-#include "vertex_point_xy.hpp"
-#include "vertex_se2.hpp"
+#include "vertex.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -124,8 +122,8 @@ void GraphSLAM::doConfigure() {
 }
 
 void GraphSLAM::odomCallback(const nav_msgs::OdometryConstPtr &msg) {
-  ROS_INFO("Received odometry");
   // Update pose covariance
+  // approximation
   this->covariance_pose(0, 0) = msg->pose.covariance[0];
   this->covariance_pose(0, 1) = msg->pose.covariance[1];
   this->covariance_pose(0, 2) = msg->pose.covariance[5];
@@ -264,14 +262,14 @@ void GraphSLAM::step() {
   // ---------------------- Add odometry to graph -----------------------
   // --------------------------------------------------------------------
 
-  VertexSE2 *newPoseVertex = new VertexSE2;
+  PoseVertex *newPoseVertex = new PoseVertex;
   newPoseVertex->setId(this->vertexCounter);
   newPoseVertex->setEstimate(SE2(x, y, yaw));
   this->optimizer.addVertex(newPoseVertex);
 
   // add odometry contraint
   if (this->prevPoseIndex >= 0) {
-    EdgeSE2 *odometry = new EdgeSE2;
+    PoseEdge *odometry = new PoseEdge;
     odometry->vertices()[0] =
         this->optimizer.vertex(this->prevPoseIndex); // from
     odometry->vertices()[1] = this->optimizer.vertex(this->vertexCounter); // to
@@ -289,7 +287,7 @@ void GraphSLAM::step() {
   // ---------------------- Add observations to graph -------------------
   // --------------------------------------------------------------------
   for (auto observation : transformed_obs.observations) {
-    VertexPointXY *landmark = new VertexPointXY;
+    LandmarkVertex *landmark = new LandmarkVertex;
     landmark->setId(this->vertexCounter);
 
     VectorXf obs(2);
@@ -303,7 +301,7 @@ void GraphSLAM::step() {
                                    y + obs(0) * sin(yaw + obs(1))));
     this->optimizer.addVertex(landmark);
 
-    EdgeSE2PointXY *landmarkObservation = new EdgeSE2PointXY;
+    LandmarkEdge *landmarkObservation = new LandmarkEdge;
     landmarkObservation->vertices()[0] =
         this->optimizer.vertex(this->prevPoseIndex); // pose
     landmarkObservation->vertices()[1] =
@@ -351,7 +349,7 @@ void GraphSLAM::step() {
   for (const auto &pair :
        this->optimizer.vertices()) { // unordered_map<int, Vertex*>
 
-    VertexSE2 *poseVertex = dynamic_cast<VertexSE2 *>(pair.second);
+    PoseVertex *poseVertex = dynamic_cast<PoseVertex *>(pair.second);
     if (poseVertex) {
       geometry_msgs::Pose pose;
       pose.position.x = poseVertex->estimate().translation().x();
@@ -368,7 +366,8 @@ void GraphSLAM::step() {
       poses.poses.push_back(pose);
     }
 
-    VertexPointXY *landmarkVertex = dynamic_cast<VertexPointXY *>(pair.second);
+    LandmarkVertex *landmarkVertex =
+        dynamic_cast<LandmarkVertex *>(pair.second);
     if (landmarkVertex) {
       ugr_msgs::ObservationWithCovariance map_ob;
       map_ob.observation.location.x = landmarkVertex->estimate().x();
@@ -416,16 +415,16 @@ void GraphSLAM::step() {
 
   for (const auto &pair : this->optimizer.edges()) {
     pair->vertices()[0]->id();
-    EdgeSE2 *edge = dynamic_cast<EdgeSE2 *>(pair);
+    PoseEdge *edge = dynamic_cast<PoseEdge *>(pair);
     if (edge) {
       geometry_msgs::Point p1;
-      VertexSE2 *v1 = dynamic_cast<VertexSE2 *>(edge->vertices()[0]);
+      PoseVertex *v1 = dynamic_cast<PoseVertex *>(edge->vertices()[0]);
       p1.x = v1->estimate().translation().x();
       p1.y = v1->estimate().translation().y();
       p1.z = 0.0;
 
       geometry_msgs::Point p2;
-      VertexSE2 *v2 = dynamic_cast<VertexSE2 *>(edge->vertices()[1]);
+      PoseVertex *v2 = dynamic_cast<PoseVertex *>(edge->vertices()[1]);
       p2.x = v2->estimate().translation().x();
       p2.y = v2->estimate().translation().y();
       p2.z = 0.0;
@@ -433,16 +432,16 @@ void GraphSLAM::step() {
       poseEdges.points.push_back(p1);
       poseEdges.points.push_back(p2);
     }
-    EdgeSE2PointXY *edge2 = dynamic_cast<EdgeSE2PointXY *>(pair);
+    LandmarkEdge *edge2 = dynamic_cast<LandmarkEdge *>(pair);
     if (edge2) {
       geometry_msgs::Point p1;
-      VertexSE2 *v1 = dynamic_cast<VertexSE2 *>(edge2->vertices()[0]);
+      PoseVertex *v1 = dynamic_cast<PoseVertex *>(edge2->vertices()[0]);
       p1.x = v1->estimate().translation().x();
       p1.y = v1->estimate().translation().y();
       p1.z = 0.0;
 
       geometry_msgs::Point p2;
-      VertexPointXY *v2 = dynamic_cast<VertexPointXY *>(edge2->vertices()[1]);
+      LandmarkVertex *v2 = dynamic_cast<LandmarkVertex *>(edge2->vertices()[1]);
       p2.x = v2->estimate().x();
       p2.y = v2->estimate().y();
       p2.z = 0.0;
