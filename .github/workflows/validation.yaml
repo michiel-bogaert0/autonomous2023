@@ -53,3 +53,17 @@ jobs:
           ./run simulation acceleration acceleration_75m
           docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=30"
           ./run stop
+  simulate-trackdrive:
+    runs-on: self-hosted
+    needs: [build]
+    steps:
+
+      - name: Run trackdrive simulation (chicane map) and supervise
+        run: | 
+          ./run stop
+          ./run set-car simulation
+          ./run set-random-roscore-port
+          ./run start-headless
+          ./run simulation trackdrive chicane
+          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=180"
+          ./run stop
