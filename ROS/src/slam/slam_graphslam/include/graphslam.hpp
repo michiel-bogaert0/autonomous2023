@@ -48,7 +48,9 @@ private:
   // GraphSLAM parameters
   double publish_rate;
   bool doSynchronous;
+  bool debug;
   int max_iterations;
+  double association_threshold;
   double max_range;
   double max_half_fov;
   Eigen::Matrix3d covariance_pose;

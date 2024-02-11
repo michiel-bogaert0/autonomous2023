@@ -70,9 +70,11 @@ void GraphSLAM::doConfigure() {
   // Initialize parameters
   this->doSynchronous = n.param<bool>("synchronous", true);
   this->publish_rate = n.param<double>("publish_rate", 3.0);
+  this->debug = n.param<bool>("debug", false);
 
   this->max_iterations = n.param<int>("max_iterations", 10);
-  // Todo: set from parameters
+  this->association_threshold = n.param<double>("association_threshold", 0.5);
+  // Todo: set from launch file
   this->max_range = 15;
   this->max_half_fov = 60 * 0.0174533;
 
@@ -229,7 +231,7 @@ void GraphSLAM::step() {
   // --------------------------------------------------------------------
   // Fetch the current pose estimate (current in: equal to the one of the
   // observations) so that we can estimate dDist and dYaw
-  double dX, dY, dYaw = 0; //, dDist;
+  double dX, dY, dYaw = 0;
 
   geometry_msgs::TransformStamped car_pose;
   try {
@@ -287,9 +289,6 @@ void GraphSLAM::step() {
   // ---------------------- Add observations to graph -------------------
   // --------------------------------------------------------------------
   for (auto observation : transformed_obs.observations) {
-    LandmarkVertex *landmark = new LandmarkVertex;
-    landmark->setId(this->vertexCounter);
-
     VectorXf obs(2);
     obs << pow(pow(observation.observation.location.x, 2) +
                    pow(observation.observation.location.y, 2),
@@ -297,15 +296,37 @@ void GraphSLAM::step() {
         atan2(observation.observation.location.y,
               observation.observation.location.x);
 
-    landmark->setEstimate(Vector2d(x + obs(0) * cos(yaw + obs(1)),
-                                   y + obs(0) * sin(yaw + obs(1))));
-    this->optimizer.addVertex(landmark);
+    Vector2d loc = Vector2d(x + obs(0) * cos(yaw + obs(1)),
+                            y + obs(0) * sin(yaw + obs(1)));
+
+    int associatedLandmarkIndex = -1;
+    for (const auto &pair : this->optimizer.vertices()) {
+      LandmarkVertex *landmarkVertex =
+          dynamic_cast<LandmarkVertex *>(pair.second);
+      if (landmarkVertex) {
+        Vector2d landmark = landmarkVertex->estimate();
+        if ((loc - landmark).norm() < this->association_threshold) {
+          // landmark already exists
+          associatedLandmarkIndex = landmarkVertex->id();
+          break;
+        }
+      }
+    }
+    if (associatedLandmarkIndex < 0) {
+      LandmarkVertex *landmark = new LandmarkVertex;
+      landmark->setId(this->vertexCounter);
+
+      landmark->setEstimate(loc);
+      this->optimizer.addVertex(landmark);
+      associatedLandmarkIndex = this->vertexCounter;
+      this->vertexCounter++;
+    }
 
     LandmarkEdge *landmarkObservation = new LandmarkEdge;
     landmarkObservation->vertices()[0] =
         this->optimizer.vertex(this->prevPoseIndex); // pose
     landmarkObservation->vertices()[1] =
-        this->optimizer.vertex(this->vertexCounter); // landmark
+        this->optimizer.vertex(associatedLandmarkIndex); // landmark
     landmarkObservation->setMeasurement(
         Vector2d(observation.observation.location.x,
                  observation.observation.location.y));
@@ -317,16 +338,14 @@ void GraphSLAM::step() {
                                    // rows and columns are used
     landmarkObservation->setInformation(covarianceMatrix.inverse());
     this->optimizer.addEdge(landmarkObservation);
-
-    this->vertexCounter++;
   }
   // --------------------------------------------------------------------
   // ------------------------ Optimization ------------------------------
   // --------------------------------------------------------------------
 
-  // optimizer.setVerbose(true); //The setVerbose(true) function call is used to
-  // set the verbosity level of the optimizer object. When verbosity is set to
-  // true, the optimizer will output more detailed information about its
+  // this->optimizer.setVerbose(true); //The setVerbose(true) function call is
+  // used to set the verbosity level of the optimizer object. When verbosity is
+  // set to true, the optimizer will output more detailed information about its
   // progress and operations. This can be useful for debugging and understanding
   // how the optimization process is proceeding.
 
@@ -337,11 +356,24 @@ void GraphSLAM::step() {
   // ------------------------ Publish -----------------------------------
   // --------------------------------------------------------------------
 
-  // this->publishOutput(transformed_obs.header.stamp);
+  this->publishOutput(transformed_obs.header.stamp);
+}
+
+void GraphSLAM::publishOutput(ros::Time lookupTime) {
+
+  if (std::chrono::duration_cast<std::chrono::duration<double>>(
+          std::chrono::steady_clock::now() - this->prev_publish_time)
+          .count() < 1.0 / this->publish_rate) {
+    return;
+  }
+
+  this->prev_publish_time = std::chrono::steady_clock::now();
+
+  // Publish odometry and landmarks
 
   ugr_msgs::ObservationWithCovarianceArrayStamped landmarks;
   landmarks.header.frame_id = this->map_frame;
-  landmarks.header.stamp = transformed_obs.header.stamp;
+  landmarks.header.stamp = lookupTime;
 
   geometry_msgs::PoseArray poses;
   poses.header.frame_id = this->map_frame;
@@ -383,86 +415,86 @@ void GraphSLAM::step() {
   this->posesPublisher.publish(poses);
 
   // Publish edges
-  visualization_msgs::Marker poseEdges;
-  poseEdges.header.frame_id = this->map_frame;
-  poseEdges.header.stamp = transformed_obs.header.stamp;
-  poseEdges.ns = "graphslam";
-  poseEdges.type = visualization_msgs::Marker::LINE_LIST;
-  poseEdges.action = visualization_msgs::Marker::ADD;
-  poseEdges.id = this->prevPoseIndex;
-  poseEdges.color.a = 1.0;
-  poseEdges.color.r = 1.0;
-  poseEdges.color.g = 0.0;
-  poseEdges.color.b = 0.0;
-  poseEdges.scale.x = 0.1;
-  poseEdges.scale.y = 0.1;
-  poseEdges.scale.z = 0.1;
+  if (this->debug) {
+    visualization_msgs::Marker poseEdges;
+    poseEdges.header.frame_id = this->map_frame;
+    poseEdges.header.stamp = lookupTime;
+    poseEdges.ns = "graphslam";
+    poseEdges.type = visualization_msgs::Marker::LINE_LIST;
+    poseEdges.action = visualization_msgs::Marker::ADD;
+    poseEdges.id = this->prevPoseIndex;
+    poseEdges.color.a = 1.0;
+    poseEdges.color.r = 1.0;
+    poseEdges.color.g = 0.0;
+    poseEdges.color.b = 0.0;
+    poseEdges.scale.x = 0.1;
+    poseEdges.scale.y = 0.1;
+    poseEdges.scale.z = 0.1;
+    poseEdges.pose.orientation.x = 0.0;
+    poseEdges.pose.orientation.y = 0.0;
+    poseEdges.pose.orientation.z = 0.0;
+    poseEdges.pose.orientation.w = 1.0;
 
-  visualization_msgs::Marker landmarkEdges;
-  landmarkEdges.header.frame_id = this->map_frame;
-  landmarkEdges.header.stamp = transformed_obs.header.stamp;
-  landmarkEdges.ns = "graphslam";
-  landmarkEdges.type = visualization_msgs::Marker::LINE_LIST;
-  landmarkEdges.action = visualization_msgs::Marker::ADD;
-  landmarkEdges.id = this->prevPoseIndex;
-  landmarkEdges.color.a = 1.0;
-  landmarkEdges.color.r = 0.0;
-  landmarkEdges.color.g = 1.0;
-  landmarkEdges.color.b = 0.0;
-  landmarkEdges.scale.x = 0.05;
-  landmarkEdges.scale.y = 0.05;
-  landmarkEdges.scale.z = 0.05;
+    visualization_msgs::Marker landmarkEdges;
+    landmarkEdges.header.frame_id = this->map_frame;
+    landmarkEdges.header.stamp = lookupTime;
+    landmarkEdges.ns = "graphslam";
+    landmarkEdges.type = visualization_msgs::Marker::LINE_LIST;
+    landmarkEdges.action = visualization_msgs::Marker::ADD;
+    landmarkEdges.id = this->prevPoseIndex;
+    landmarkEdges.color.a = 1.0;
+    landmarkEdges.color.r = 0.0;
+    landmarkEdges.color.g = 1.0;
+    landmarkEdges.color.b = 0.0;
+    landmarkEdges.scale.x = 0.05;
+    landmarkEdges.scale.y = 0.05;
+    landmarkEdges.scale.z = 0.05;
+    landmarkEdges.pose.orientation.x = 0.0;
+    landmarkEdges.pose.orientation.y = 0.0;
+    landmarkEdges.pose.orientation.z = 0.0;
+    landmarkEdges.pose.orientation.w = 1.0;
 
-  for (const auto &pair : this->optimizer.edges()) {
-    pair->vertices()[0]->id();
-    PoseEdge *edge = dynamic_cast<PoseEdge *>(pair);
-    if (edge) {
-      geometry_msgs::Point p1;
-      PoseVertex *v1 = dynamic_cast<PoseVertex *>(edge->vertices()[0]);
-      p1.x = v1->estimate().translation().x();
-      p1.y = v1->estimate().translation().y();
-      p1.z = 0.0;
+    for (const auto &pair : this->optimizer.edges()) {
+      pair->vertices()[0]->id();
+      PoseEdge *edge = dynamic_cast<PoseEdge *>(pair);
+      if (edge) {
+        geometry_msgs::Point p1;
+        PoseVertex *v1 = dynamic_cast<PoseVertex *>(edge->vertices()[0]);
+        p1.x = v1->estimate().translation().x();
+        p1.y = v1->estimate().translation().y();
+        p1.z = 0.0;
 
-      geometry_msgs::Point p2;
-      PoseVertex *v2 = dynamic_cast<PoseVertex *>(edge->vertices()[1]);
-      p2.x = v2->estimate().translation().x();
-      p2.y = v2->estimate().translation().y();
-      p2.z = 0.0;
+        geometry_msgs::Point p2;
+        PoseVertex *v2 = dynamic_cast<PoseVertex *>(edge->vertices()[1]);
+        p2.x = v2->estimate().translation().x();
+        p2.y = v2->estimate().translation().y();
+        p2.z = 0.0;
 
-      poseEdges.points.push_back(p1);
-      poseEdges.points.push_back(p2);
+        poseEdges.points.push_back(p1);
+        poseEdges.points.push_back(p2);
+      }
+      LandmarkEdge *edge2 = dynamic_cast<LandmarkEdge *>(pair);
+      if (edge2) {
+        geometry_msgs::Point p1;
+        PoseVertex *v1 = dynamic_cast<PoseVertex *>(edge2->vertices()[0]);
+        p1.x = v1->estimate().translation().x();
+        p1.y = v1->estimate().translation().y();
+        p1.z = 0.0;
+
+        geometry_msgs::Point p2;
+        LandmarkVertex *v2 =
+            dynamic_cast<LandmarkVertex *>(edge2->vertices()[1]);
+        p2.x = v2->estimate().x();
+        p2.y = v2->estimate().y();
+        p2.z = 0.0;
+
+        landmarkEdges.points.push_back(p1);
+        landmarkEdges.points.push_back(p2);
+      }
     }
-    LandmarkEdge *edge2 = dynamic_cast<LandmarkEdge *>(pair);
-    if (edge2) {
-      geometry_msgs::Point p1;
-      PoseVertex *v1 = dynamic_cast<PoseVertex *>(edge2->vertices()[0]);
-      p1.x = v1->estimate().translation().x();
-      p1.y = v1->estimate().translation().y();
-      p1.z = 0.0;
 
-      geometry_msgs::Point p2;
-      LandmarkVertex *v2 = dynamic_cast<LandmarkVertex *>(edge2->vertices()[1]);
-      p2.x = v2->estimate().x();
-      p2.y = v2->estimate().y();
-      p2.z = 0.0;
-
-      landmarkEdges.points.push_back(p1);
-      landmarkEdges.points.push_back(p2);
-    }
+    this->edgeLandmarksPublisher.publish(landmarkEdges);
+    this->edgePosesPublisher.publish(poseEdges);
   }
-
-  this->edgeLandmarksPublisher.publish(landmarkEdges);
-  this->edgePosesPublisher.publish(poseEdges);
-}
-
-void GraphSLAM::publishOutput(ros::Time lookupTime) {
-
-  if (std::chrono::duration_cast<std::chrono::duration<double>>(
-          std::chrono::steady_clock::now() - this->prev_publish_time)
-          .count() < 1.0 / this->publish_rate) {
-    return;
-  }
-
-  this->prev_publish_time = std::chrono::steady_clock::now();
 }
 } // namespace slam

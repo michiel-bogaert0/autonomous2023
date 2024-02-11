@@ -14,8 +14,10 @@
     <param name="target_rate" value="1"/> <!-- Hz -->
     <param name="publish_rate" value="3.0"/> <!-- Hz -->
     <param name="synchronous" value="false"/> 
+    <param name="debug" value="true"/> <!-- Publish edges -->
 
-    <param name="max_iterations" value="10"/> 
+    <param name="max_iterations" value="10"/>
+    <param name="association_threshold" value="0.7"/>
 
     # Input/output remapping
     <remap from="/input/observations" to="/ugr/car/observations/lidar" />
