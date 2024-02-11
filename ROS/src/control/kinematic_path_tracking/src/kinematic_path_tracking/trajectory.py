@@ -11,9 +11,14 @@ from tf2_geometry_msgs import do_transform_pose
 class Trajectory:
     """
     Helper class to calculate the cars target point based on a given path it has to follow
+
+    Args:
+        - tf_buffer {tf2_ros.Buffer}: tf2 buffer to transform the path to the current base_link_frame.
+                                      Needed because when "configuring" the trajectory is reset, but might cause isues
+                                        when the transform is not yet available (because of newly created buffer).
     """
 
-    def __init__(self):
+    def __init__(self, tf_buffer):
         self.closest_index = 0
         self.points = np.array([])
         self.target = np.array([0, 0])
@@ -22,7 +27,7 @@ class Trajectory:
         self.change_index = rospy.get_param("~change_index", True)
 
         # Transformations
-        self.tf_buffer = tf.Buffer()
+        self.tf_buffer = tf_buffer
         self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 

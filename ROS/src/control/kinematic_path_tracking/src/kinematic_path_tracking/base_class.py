@@ -15,6 +15,9 @@ class KinematicTrackingNode(ManagedNode):
     def __init__(self, name):
         super().__init__(name)
 
+        self.tf_buffer = tf.Buffer()
+        self.tf_listener = tf.TransformListener(self.tf_buffer)
+
         self.publish_rate = rospy.get_param("~publish_rate", 10)
 
         # Publishers for the controllers
@@ -44,8 +47,6 @@ class KinematicTrackingNode(ManagedNode):
         self.spin()
 
     def doConfigure(self):
-        self.tf_buffer = tf.Buffer()
-        self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
         self.wheelradius = rospy.get_param("~wheelradius", 0.1)
@@ -63,7 +64,7 @@ class KinematicTrackingNode(ManagedNode):
 
     def doActivate(self):
         # Do this here because some parameters are set in the mission yaml files
-        self.trajectory = Trajectory()
+        self.trajectory = Trajectory(self.tf_buffer)
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
