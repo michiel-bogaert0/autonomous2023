@@ -28,7 +28,7 @@
   <arg name="metadata" default=" " doc="path to write metadata file when receiving sensor data"/>
   <arg name="viz" default="false" doc="whether to run a rviz"/>
   <arg name="rviz_config" default="$(find ouster_ros)/config/viz.rviz" doc="optional rviz config file"/>
-  <arg name="tf_prefix" default="" doc="namespace for tf transforms"/>
+  <arg name="tf_prefix" default="ugr/car_base_link" doc="namespace for tf transforms"/>
 
   <group ns="$(arg ouster_ns)">
     <node pkg="nodelet" type="nodelet" name="os_nodelet_mgr"
