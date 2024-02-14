@@ -1,11 +1,12 @@
 import numpy as np
+import rospy
 from BE_dc.node import Node
 
 
 def get_color_lines(cones, header):
-    max_dist = np.power(6, 2)
-    min_dist = np.power(1, 2)
-    max_angle_change = np.pi / 2
+    max_dist = rospy.get_param("~max_distance", 36)
+    min_dist = rospy.get_param("~min_distance", 1)
+    max_angle_change = rospy.get_param("~max_angle_change", 1.8)
 
     blue_line = []
     yellow_line = []
