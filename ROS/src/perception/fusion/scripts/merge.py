@@ -51,7 +51,6 @@ class MergeNode:
             "ugr/car_base_link/cam0",
         )
         self.input_sensors = ["os_sensor", "ugr/car_base_link/cam0"]
-        self.fusion_frame_id = "late_fusion"
 
         #   Fusion parameters
         self.max_fusion_eucl_distance = float(
@@ -139,7 +138,7 @@ class MergeNode:
 
         # Publish fused observations
         results.header.stamp = results_time
-        results.header.frame_id = self.fusion_frame_id
+        results.header.frame_id = self.base_link_frame
 
         self.publish(results)
         return
@@ -158,10 +157,10 @@ class MergeNode:
 
             for sensor_msg in sensor_msgs:
                 transform: TransformStamped = self.tf_buffer.lookup_transform_full(
-                    target_frame=sensor_msg.header.frame_id,  # Transform from this frame,
-                    target_time=sensor_msg.header.stamp,  # at this time ...
-                    source_frame=self.base_link_frame,  # ... to this frame,
-                    source_time=tf_source_time,  # at this time.
+                    target_frame=self.base_link_frame,
+                    target_time=tf_source_time,
+                    source_frame=sensor_msg.header.frame_id,
+                    source_time=sensor_msg.header.stamp,
                     fixed_frame=self.world_frame,  # Frame that does not change over time, in this case the "/world" frame
                     timeout=rospy.Duration(0.1),  # Time-out
                 )
