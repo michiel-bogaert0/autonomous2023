@@ -16,8 +16,8 @@ from ugr_msgs.msg import State
 
 class MinimumCurvature(ManagedNode):
     def __init__(self):
-        rospy.init_node("Global_planning_minimum_curvature")
-        super().__init__("Global_planning_minimum_curvature")
+        rospy.init_node("minimum_curvature")
+        super().__init__("minimum_curvature")
         self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.slam_state = SLAMStatesEnum.IDLE
         rospy.Subscriber("/state", State, self.handle_state_change)
@@ -47,3 +47,9 @@ class MinimumCurvature(ManagedNode):
         self.boundaries_sub = super().AddSubscriber(
             "/input/boundaries", Boundaries, self.receive_boundaries
         )
+
+    def doActivate(self):
+        pass
+
+
+node = MinimumCurvature()
