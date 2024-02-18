@@ -16,7 +16,7 @@ from ugr_msgs.msg import (
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
 )
-from utils import car_to_real_transform, dist, get_local_poses
+from utils import car_to_real_transform, dist, get_local_poses, real_to_car_transform
 
 
 class MapWidget(QtW.QFrame):
@@ -33,7 +33,8 @@ class MapWidget(QtW.QFrame):
 
     def __init__(
         self,
-        publisher,
+        map_publisher,
+        gt_path_publisher,
         frame,
         startpos_x=0,
         startpos_y=0,
@@ -51,7 +52,9 @@ class MapWidget(QtW.QFrame):
         self.draw = Draw(self)
 
         # publisher used to publish observation messages
-        self.publisher = publisher
+        self.map_publisher = map_publisher
+        # publisher used to publish observation messages
+        self.gt_path_publisher = gt_path_publisher
         # frameID used to publish observation messages
         self.frame = frame
 
@@ -145,7 +148,12 @@ class MapWidget(QtW.QFrame):
 
             local.observations.append(local_ob)
 
-        self.publisher.publish(local)
+        self.map_publisher.publish(local)
+
+
+def publish_gt_path(self):
+    gt_path = real_to_car_transform(self.path, self.car_pos, self.car_rot)
+    self.gt_path_publisher.publish(gt_path)
 
     def receive_path(self, rel_paths: List[np.ndarray]):
         self.nr_paths = len(rel_paths)
@@ -418,6 +426,7 @@ class MapWidget(QtW.QFrame):
                 self.middel_bezier, painter, QtG.QColor(0, 0, 0, 70)
             )
             self.draw.draw_points(self.middelPoints, painter, QtG.QColor(0, 0, 0, 70))
+            self.publish_gt_path()
 
         if self.trackbounds_on:
             self.blue_bezier = make_bezier(self.blue_cones, self.is_closed)
