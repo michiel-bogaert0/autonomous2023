@@ -2,25 +2,30 @@
 import can
 import rospy
 from can_msgs.msg import Frame
-from run import CanProcessor
+from can_processor import CanProcessor
+from node_fixture.managed_node import ManagedNode
 
 
-class CanConverter:
+class CanConverter(ManagedNode):
     def __init__(self):
-        rospy.init_node("can_converter")
+        super().__init__("can_driver_converter")
+
+        self.spin()
+
+    def doConfigure(self):
         self.can_processor = CanProcessor()
 
-        self.can_pub = rospy.Publisher("ugr/can", Frame, queue_size=10)
+        self.can_pub = super.AddPublisher("ugr/can", Frame, queue_size=10)
         self.can_ids = []
         self.specific_pubs = {}
 
         # create a bus instance
         self.bus = can.interface.Bus(
-            bustype="socketcan",
-            channel=rospy.get_param("~interface", "can0"),
-            bitrate=rospy.get_param("~baudrate", 250000),
+            channel=rospy.get_param("~can_interface", "can0"),
+            bitrate=rospy.get_param("~can_baudrate", 250000),
         )
 
+    def active(self):
         try:
             self.listen_on_can()
         except rospy.ROSInterruptException:
