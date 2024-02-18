@@ -16,7 +16,7 @@ from ugr_msgs.msg import (
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
 )
-from utils import car_to_real_transform, dist, get_local_poses
+from utils import dist, get_local_poses
 
 
 class MapWidget(QtW.QFrame):
@@ -69,10 +69,13 @@ class MapWidget(QtW.QFrame):
         self.yellow_cones = yellows
         self.blue_cones = blues
         self.orange_cones = oranges
+        self.selected_yellow_cones = []
+        self.selected_blue_cones = []
 
         self.refline_on = True
-        self.trackbounds_on = False
-        self.cones_on = True
+        self.trackbounds_on = True
+        self.cones_on = False
+        self.buttons.cones_clicked()
         self.buttons.set_buttons()
 
         # currently selected element
@@ -131,23 +134,6 @@ class MapWidget(QtW.QFrame):
 
         self.publisher.publish(local)
 
-    def receive_boundaries(self, relBlue: np.ndarray, relYellow: np.ndarray):
-        self.blue_boundary = car_to_real_transform(relBlue, self.car_pos, self.car_rot)
-        self.yellow_boundary = car_to_real_transform(
-            relYellow, self.car_pos, self.car_rot
-        )
-        self.update()
-
-    def receive_centerPoints(self, centerPoints: np.ndarray):
-        self.centerPoints = car_to_real_transform(
-            centerPoints, self.car_pos, self.car_rot
-        )
-        self.update()
-
-    def receive_badPoints(self, badPoints: np.ndarray):
-        self.badPoints = car_to_real_transform(badPoints, self.car_pos, self.car_rot)
-        self.update()
-
     def get_selected_element(self, event) -> Optional[QtC.QPoint]:
         # This is the position on the screen where the user clicked
         press_location = event.pos()
@@ -179,105 +165,30 @@ class MapWidget(QtW.QFrame):
 
     # Override the mousePressEvent method to handle mouse click events
     def mousePressEvent(self, event):
+        # Get the position of the click
         selected_cone = self.get_selected_element(event)
         if selected_cone is not None:
-            # Remove a cone with SHIFT + click
-            if event.modifiers() & QtC.Qt.ShiftModifier:
-                if selected_cone in self.yellow_cones:
-                    self.yellow_cones.remove(selected_cone)
-                    if selected_cone in self.selected_yellow_cones:
-                        self.selected_yellow_cones.remove(selected_cone)
-                elif selected_cone in self.blue_cones:
-                    self.blue_cones.remove(selected_cone)
-                    if selected_cone in self.selected_blue_cones:
-                        self.selected_blue_cones.remove(selected_cone)
-                elif selected_cone in self.orange_cones:
-                    self.orange_cones.remove(selected_cone)
-                self.empty_pathplanning_input()
-                self.update()
-            elif event.modifiers() == QtC.Qt.AltModifier:
-                if selected_cone in self.yellow_cones:
-                    if selected_cone in self.selected_yellow_cones:
-                        self.selected_yellow_cones.remove(selected_cone)
-                    else:
-                        self.selected_yellow_cones.append(selected_cone)
-                elif selected_cone in self.blue_cones:
-                    if selected_cone in self.selected_blue_cones:
-                        self.selected_blue_cones.remove(selected_cone)
-                    else:
-                        self.selected_blue_cones.append(selected_cone)
-                self.empty_pathplanning_input()
-                self.update()
+            self.selection = selected_cone
+            self.selected_location = event.pos()
+            self.drag_start_pos = event.pos()
 
-            # Drag a cone or car_handle
-            else:
-                self.selection = selected_cone
-                self.selected_location = event.pos()
-                self.drag_start_pos = event.pos()
         # Drag the screen
-        elif event.modifiers() & QtC.Qt.ControlModifier or not self.place_cones:
+        else:
             self.drag_map = True
             self.drag_start_pos = event.pos()
-        elif self.place_cones:
-            # orange cones with alt key
-            if event.modifiers() == QtC.Qt.AltModifier:
-                self.orange_cones.append(self.screenToCoordinate(event.pos()))
-            # Place a yellow cone
-            elif event.button() == QtC.Qt.LeftButton and not (
-                event.modifiers() & QtC.Qt.ShiftModifier
-            ):
-                # Add a visual point to the list at the position where the user clicked
-                point = self.screenToCoordinate(event.pos())
-                self.yellow_cones.append(point)
-                self.selected_yellow_cones.append(point)
-                # Trigger a repaint of the MapWidget to update the visual points
-            # Place a blue cone
-            elif event.button() == QtC.Qt.RightButton and not (
-                event.modifiers() & QtC.Qt.ShiftModifier
-            ):
-                # Add a visual point to the list at the position where the user clicked
-                point = self.screenToCoordinate(event.pos())
-                self.blue_cones.append(point)
-                self.selected_blue_cones.append(point)
-                # Trigger a repaint of the MapWidget to update the visual points
-            self.update()
-
-    def mouseDoubleClickEvent(self, event):
-        if event.button() == QtC.Qt.LeftButton:
-            selected_cone = self.get_selected_element(event)
-            if selected_cone is not None:
-                if selected_cone in self.yellow_cones[:-1]:
-                    point = selected_cone + QtC.QPointF(0.10, 0.10)
-                    index = self.yellow_cones.index(selected_cone)
-                    self.yellow_cones.insert(index, point)
-                    self.selected_yellow_cones.append(point)
-                elif selected_cone in self.blue_cones[:-1]:
-                    point = selected_cone + QtC.QPointF(0.10, 0.10)
-                    index = self.blue_cones.index(selected_cone)
-                    self.blue_cones.insert(index, point)
-                    self.selected_blue_cones.append(point)
-                self.update()
 
     def mouseMoveEvent(self, event):
-        # Drag the selected cone or car_handle
+        # If the selection is not None, the user is dragging a point
         if self.selection is not None:
-            if self.selection == self.car_rot_handle:
-                self.car_rot = math.atan2(
-                    self.screenToCoordinate(event.pos()).y() - self.car_pos.y(),
-                    self.screenToCoordinate(event.pos()).x() - self.car_pos.x(),
-                )
-            else:
-                drag_distance = self.screenToCoordinate(
-                    event.pos()
-                ) - self.screenToCoordinate(self.drag_start_pos)
-                self.selection += (
-                    drag_distance  # QtC.QPointF(drag_distance)/(self.zoom_level)
-                )
-                self.drag_start_pos = event.pos()
+            drag_distance = self.screenToCoordinate(
+                event.pos()
+            ) - self.screenToCoordinate(self.drag_start_pos)
+            self.selection += drag_distance
+            self.drag_start_pos = event.pos()
             self.update()
 
         # If the Control key is pressed and the mouse is dragged, move the map
-        elif self.drag_map and self.drag_start_pos is not None:
+        if self.drag_map and self.drag_start_pos is not None:
             # Calculate the distance between the current position and the drag start position
             drag_distance = self.screenToCoordinate(
                 event.pos()
@@ -320,7 +231,7 @@ class MapWidget(QtW.QFrame):
         if event.modifiers() == QtC.Qt.ControlModifier and event.key() == QtC.Qt.Key_S:
             self.save_track_layout()
         else:
-            pass
+            self.update()
 
     def update_car(self):
         self.car_rot_handle: QtC.QPointF = self.car_pos + (
@@ -356,21 +267,6 @@ class MapWidget(QtW.QFrame):
 
         self.draw.draw_cones(painter)
 
-        self.draw.draw_line(
-            self.blue_boundary,
-            painter,
-            QtG.QColor(QtC.Qt.blue),
-            QtG.QColor(QtC.Qt.blue),
-        )
-        self.draw.draw_line(
-            self.yellow_boundary,
-            painter,
-            QtG.QColor(QtC.Qt.yellow),
-            QtG.QColor(QtC.Qt.yellow),
-        )
-        self.draw.draw_line(
-            self.path, painter, QtG.QColor(QtC.Qt.green), QtG.QColor(QtC.Qt.red)
-        )
         self.draw.draw_car(painter)
         self.draw.draw_scale(painter)
 

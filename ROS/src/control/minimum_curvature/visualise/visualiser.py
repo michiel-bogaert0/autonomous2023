@@ -116,7 +116,7 @@ class MainWindow(QtW.QMainWindow):
         self.setCentralWidget(self.map_widget)
         # set window size when minimalized
         self.resize(800, 600)
-        self.setWindowTitle("Track Tool")
+        self.setWindowTitle("Visualiser minimum curvature")
         # Show the main window in full screen
         self.showMaximized()
 

@@ -48,8 +48,15 @@ class Buttons:
 
     def cones_clicked(self):
         self.widget.cones_on = not self.widget.cones_on
+
+        self.widget.selected_blue_cones = []
+        self.widget.selected_yellow_cones = []
         if self.widget.cones_on:
             self.conesButton.setStyleSheet("background-color: green")
+            for cone in self.widget.blue_cones:
+                self.widget.selected_blue_cones.append(cone)
+            for cone in self.widget.yellow_cones:
+                self.widget.selected_yellow_cones.append(cone)
         else:
             self.conesButton.setStyleSheet("background-color: red")
         self.widget.update()
