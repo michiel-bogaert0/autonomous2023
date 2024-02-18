@@ -150,10 +150,9 @@ class MapWidget(QtW.QFrame):
 
         self.map_publisher.publish(local)
 
-
-def publish_gt_path(self):
-    gt_path = real_to_car_transform(self.path, self.car_pos, self.car_rot)
-    self.gt_path_publisher.publish(gt_path)
+    def publish_gt_path(self):
+        gt_path = real_to_car_transform(self.path, self.car_pos, self.car_rot)
+        self.gt_path_publisher.publish(gt_path)
 
     def receive_path(self, rel_paths: List[np.ndarray]):
         self.nr_paths = len(rel_paths)
