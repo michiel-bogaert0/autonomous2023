@@ -263,7 +263,7 @@ void GraphSLAM::step() {
   // --------------------------------------------------------------------
   // ---------------------- Add odometry to graph -----------------------
   // --------------------------------------------------------------------
-
+  // Add the odometry to the graph
   PoseVertex *newPoseVertex = new PoseVertex;
   newPoseVertex->setId(this->vertexCounter);
   newPoseVertex->setEstimate(SE2(x, y, yaw));
@@ -276,7 +276,28 @@ void GraphSLAM::step() {
         this->optimizer.vertex(this->prevPoseIndex); // from
     odometry->vertices()[1] = this->optimizer.vertex(this->vertexCounter); // to
     odometry->setMeasurement(SE2(dX, dY, dYaw));
-    odometry->setInformation(this->covariance_pose.inverse());
+    // odometry->setInformation(this->covariance_pose.inverse());
+
+    // std::ostringstream matrixStream;
+    // matrixStream << this->covariance_pose;
+    // ROS_INFO("Covariance: \n%s", matrixStream.str().c_str());
+
+    // first covariance from odometry
+    this->covariance_pose(0, 0) = 0.239653;
+    this->covariance_pose(0, 1) = 0.0510531;
+    this->covariance_pose(0, 2) = 0.00847513;
+    this->covariance_pose(0, 3) = 0.0510531;
+    this->covariance_pose(1, 0) = 0.0510531;
+    this->covariance_pose(1, 1) = 2.60422;
+    this->covariance_pose(1, 2) = 0.261481;
+    this->covariance_pose(1, 3) = 0.00847513;
+    this->covariance_pose(2, 0) = 0.00847513;
+    this->covariance_pose(2, 1) = 0.261481;
+    this->covariance_pose(2, 2) = 0.286192;
+
+    odometry->setInformation(this->covariance_pose.inverse() * 0.00001);
+
+    // odometry->setInformation(Matrix3d::Identity()*0.0000001);
 
     this->optimizer.addEdge(odometry);
   } else {
@@ -332,10 +353,24 @@ void GraphSLAM::step() {
                  observation.observation.location.y));
 
     Eigen::Matrix2d covarianceMatrix;
-    covarianceMatrix << observation.covariance[0], observation.covariance[1],
-        observation.covariance[3],
-        observation.covariance[4]; // observation gives 3x3 matrix only first 2
-                                   // rows and columns are used
+
+    // Stole from lidar pkg
+    covarianceMatrix(0, 0) = 0.2;
+    covarianceMatrix(0, 1) = 0;
+    covarianceMatrix(0, 2) = 0;
+    covarianceMatrix(0, 3) = 0.2;
+
+    // covarianceMatrix << observation.covariance[0], observation.covariance[1],
+    //     observation.covariance[3],
+    //     observation.covariance[4]; // observation gives 3x3 matrix only first
+    //     2
+    //                                // rows and columns are used
+    // landmarkObservation->setInformation(covarianceMatrix.inverse());
+
+    // std::ostringstream matrixStream;
+    // matrixStream << covarianceMatrix;
+    // ROS_INFO("Covariance: \n%s", matrixStream.str().c_str());
+
     landmarkObservation->setInformation(covarianceMatrix.inverse());
     this->optimizer.addEdge(landmarkObservation);
   }
@@ -349,8 +384,8 @@ void GraphSLAM::step() {
   // progress and operations. This can be useful for debugging and understanding
   // how the optimization process is proceeding.
 
-  // this->optimizer.initializeOptimization();
-  // this->optimizer.optimize(this->max_iterations);
+  this->optimizer.initializeOptimization();
+  this->optimizer.optimize(this->max_iterations);
 
   // --------------------------------------------------------------------
   // ------------------------ Publish -----------------------------------
@@ -421,6 +456,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     poseEdges.header.stamp = lookupTime;
     poseEdges.ns = "graphslam";
     poseEdges.type = visualization_msgs::Marker::LINE_LIST;
+    poseEdges.lifetime = ros::Duration(1);
     poseEdges.action = visualization_msgs::Marker::ADD;
     poseEdges.id = this->prevPoseIndex;
     poseEdges.color.a = 1.0;
@@ -440,6 +476,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     landmarkEdges.header.stamp = lookupTime;
     landmarkEdges.ns = "graphslam";
     landmarkEdges.type = visualization_msgs::Marker::LINE_LIST;
+    landmarkEdges.lifetime = ros::Duration(1);
     landmarkEdges.action = visualization_msgs::Marker::ADD;
     landmarkEdges.id = this->prevPoseIndex;
     landmarkEdges.color.a = 1.0;
@@ -454,10 +491,13 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     landmarkEdges.pose.orientation.z = 0.0;
     landmarkEdges.pose.orientation.w = 1.0;
 
+    bool isPoseEdge = false;
+
     for (const auto &pair : this->optimizer.edges()) {
       pair->vertices()[0]->id();
       PoseEdge *edge = dynamic_cast<PoseEdge *>(pair);
       if (edge) {
+        isPoseEdge = true;
         geometry_msgs::Point p1;
         PoseVertex *v1 = dynamic_cast<PoseVertex *>(edge->vertices()[0]);
         p1.x = v1->estimate().translation().x();
@@ -494,7 +534,9 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     }
 
     this->edgeLandmarksPublisher.publish(landmarkEdges);
-    this->edgePosesPublisher.publish(poseEdges);
+    if (isPoseEdge) {
+      this->edgePosesPublisher.publish(poseEdges);
+    }
   }
 }
 } // namespace slam

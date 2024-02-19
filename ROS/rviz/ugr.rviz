@@ -243,14 +243,14 @@ Visualization Manager:
           Axes Length: 0.30000001192092896
           Axes Radius: 0.009999999776482582
           Class: rviz/PoseArray
-          Color: 31; 255; 6
+          Color: 255; 255; 0
           Enabled: true
-          Head Length: 0.6
-          Head Radius: 0.5
+          Head Length: 0.3
+          Head Radius: 0.25
           Name: GraphSLAM poses
           Queue Size: 10
-          Shaft Length: 0.6
-          Shaft Radius: 0.1
+          Shaft Length: 0.3
+          Shaft Radius: 0.05
           Shape: Arrow (3D)
           Topic: /graphslam/debug/vertices/poses
           Unreliable: false
