@@ -479,23 +479,16 @@ class MapWidget(QtW.QFrame):
             self.blue_boundary,
             painter,
             QtG.QColor(QtC.Qt.blue),
-            QtG.QColor(QtC.Qt.blue),
         )
         self.draw.draw_line(
             self.yellow_boundary,
             painter,
             QtG.QColor(QtC.Qt.yellow),
-            QtG.QColor(QtC.Qt.yellow),
         )
         self.draw.draw_line(
             self.path, painter, QtG.QColor(QtC.Qt.green), QtG.QColor(QtC.Qt.red)
         )
-        self.draw.draw_line(
-            self.smoothed_path,
-            painter,
-            QtG.QColor(QtC.Qt.red),
-            QtG.QColor(QtC.Qt.white),
-        )
+        self.draw.draw_line(self.smoothed_path, painter, QtG.QColor(QtC.Qt.red))
         self.draw.draw_car(painter)
         self.draw.draw_scale(painter)
         self.draw.draw_pathnr(painter)
