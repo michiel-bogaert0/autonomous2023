@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-# import numpy as np
+import numpy as np
 import rospy
 import tf2_ros as tf
 
 # from geometry_msgs.msg import PoseStamped
-from nav_msgs.msg import Boundaries, Path
+from nav_msgs.msg import Path
 from node_fixture.fixture import (  # DiagnosticStatus,; NodeManagingStatesEnum,; ROSNode,; create_diagnostic_message,
     DiagnosticArray,
     SLAMStatesEnum,
 )
 from node_fixture.managed_node import ManagedNode
 from std_msgs.msg import Float64
-from ugr_msgs.msg import State
+from ugr_msgs.msg import Boundaries, ObservationWithCovarianceArrayStamped, State
+from utils import generate_center_points
 
 
 class MinimumCurvature(ManagedNode):
@@ -49,7 +50,33 @@ class MinimumCurvature(ManagedNode):
         )
 
     def doActivate(self):
-        pass
+        self.map_sub = super().AddSubscriber(
+            "/input/local_map",
+            ObservationWithCovarianceArrayStamped,
+            self.receive_new_map,
+        )
+
+    def receive_new_map(self, map):
+        cones = np.zeros((len(map.observations), 3))
+        for i, obs in enumerate(map.observations):
+            cones[i] = [
+                obs.observation.location.x,
+                obs.observation.location.y,
+                obs.observation.observation_class,
+            ]
+
+        self.compute(cones, map.header)
+
+    def compute(self, cones, header):
+        self.blue_cones = []
+        self.yellow_cones = []
+        self.center_points = []
+        for cone in cones:
+            if cone[2] == 0:
+                self.blue_cones.append(cone)
+            elif cone[2] == 1:
+                self.yellow_cones.append(cone)
+        self.center_points = generate_center_points(self.blue_cones, self.yellow_cones)
 
 
 node = MinimumCurvature()
