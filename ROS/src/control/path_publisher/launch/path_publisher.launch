@@ -1,0 +1,9 @@
+<launch>
+
+    <node pkg="path_publisher" type="path_publisher.py" name="path_publisher" output="screen" respawn="true">
+
+        <remap from="/output/path" to="/pathplanning/poses" />
+
+    </node>
+
+</launch>
