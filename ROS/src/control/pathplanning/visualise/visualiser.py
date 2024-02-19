@@ -6,6 +6,7 @@ import sys
 import numpy as np
 import rospy
 import yaml
+from nav_msgs.msg import Path
 from node_fixture.node_manager import configure_node, set_state_active
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
@@ -24,9 +25,7 @@ class Visualiser:
         )
 
         # Publisher voor gt_path
-        self.gt_path_publisher = rospy.Publisher(
-            "output/gt_path", PathArray, queue_size=10
-        )
+        self.gt_path_publisher = rospy.Publisher("output/gt_path", Path, queue_size=10)
 
         # Handler voor path_received subscription
         self.path_subscriber = rospy.Subscriber(

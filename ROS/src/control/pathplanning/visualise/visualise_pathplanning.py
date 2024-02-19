@@ -5,10 +5,13 @@ import pathlib
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+import rospy
 import yaml
 from bezier import make_bezier, make_middelline
 from buttons import Buttons
 from draw import Draw
+from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Path
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtGui as QtG
 from PyQt5 import QtWidgets as QtW
@@ -151,8 +154,27 @@ class MapWidget(QtW.QFrame):
         self.map_publisher.publish(local)
 
     def publish_gt_path(self):
+        gt_path_msg = Path()
+        gt_path_msg.header.stamp = rospy.Time.now()
+        gt_path_msg.header.frame_id = self.frame
+
         gt_path = real_to_car_transform(self.path, self.car_pos, self.car_rot)
-        self.gt_path_publisher.publish(gt_path)
+
+        for cone in gt_path:
+            pose = PoseStamped()
+            pose.pose.position.x = cone[0]
+            pose.pose.position.y = cone[1]
+            pose.pose.position.z = 0
+
+            pose.pose.orientation.x = 0
+            pose.pose.orientation.y = 0
+            pose.pose.orientation.z = 0
+            pose.pose.orientation.w = 1
+
+            pose.header = gt_path_msg.header
+            gt_path_msg.poses.append(pose)
+
+        self.gt_path_publisher.publish(gt_path_msg)
 
     def receive_path(self, rel_paths: List[np.ndarray]):
         self.nr_paths = len(rel_paths)
