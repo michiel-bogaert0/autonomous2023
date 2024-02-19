@@ -6,6 +6,7 @@ import sys
 import numpy as np
 import rospy
 import yaml
+from nav_msgs.msg import Path
 from node_fixture.node_manager import configure_node, set_state_active
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
@@ -19,9 +20,12 @@ class Visualiser:
         rospy.init_node("visualiser")
 
         # Publisher voor local_map
-        self.publisher = rospy.Publisher(
+        self.map_publisher = rospy.Publisher(
             "/output/local_map", ObservationWithCovarianceArrayStamped, queue_size=10
         )
+
+        # Publisher voor gt_path
+        self.gt_path_publisher = rospy.Publisher("output/gt_path", Path, queue_size=10)
 
         # Handler voor path_received subscription
         self.path_subscriber = rospy.Subscriber(
@@ -46,9 +50,13 @@ class Visualiser:
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
             # If a track file is specified
-            self.window = MainWindow(self.publisher, self.frame, self.track_file)
+            self.window = MainWindow(
+                self.map_publisher, self.gt_path_publisher, self.frame, self.track_file
+            )
         else:
-            self.window = MainWindow(self.publisher, self.frame)
+            self.window = MainWindow(
+                self.map_publisher, self.gt_path_publisher, self.frame
+            )
         self.window.show()
         sys.exit(app.exec_())
 
@@ -103,7 +111,7 @@ class Visualiser:
 
 
 class MainWindow(QtW.QMainWindow):
-    def __init__(self, publisher, frame, trackfile_name=None):
+    def __init__(self, map_publisher, gt_path_publisher, frame, trackfile_name=None):
         super().__init__(None)
         if trackfile_name is not None:
             layout_path = (
@@ -167,7 +175,8 @@ class MainWindow(QtW.QMainWindow):
                     )
             # Create a new instance of MapWidget
             self.map_widget = MapWidget(
-                publisher,
+                map_publisher,
+                gt_path_publisher,
                 frame,
                 startpos_x,
                 startpos_y,
@@ -180,7 +189,7 @@ class MainWindow(QtW.QMainWindow):
             )
         else:
             # Create a new instance of MapWidget
-            self.map_widget = MapWidget(publisher, frame)
+            self.map_widget = MapWidget(map_publisher, gt_path_publisher, frame)
         # Add the MapWidget to the main window
         self.setCentralWidget(self.map_widget)
         # set window size when minimalized

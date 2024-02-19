@@ -5,10 +5,13 @@ import pathlib
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+import rospy
 import yaml
 from bezier import make_bezier, make_middelline
 from buttons import Buttons
 from draw import Draw
+from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Path
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtGui as QtG
 from PyQt5 import QtWidgets as QtW
@@ -16,7 +19,7 @@ from ugr_msgs.msg import (
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
 )
-from utils import car_to_real_transform, dist, get_local_poses
+from utils import car_to_real_transform, dist, get_local_poses, real_to_car_transform
 
 
 class MapWidget(QtW.QFrame):
@@ -33,7 +36,8 @@ class MapWidget(QtW.QFrame):
 
     def __init__(
         self,
-        publisher,
+        map_publisher,
+        gt_path_publisher,
         frame,
         startpos_x=0,
         startpos_y=0,
@@ -51,7 +55,9 @@ class MapWidget(QtW.QFrame):
         self.draw = Draw(self)
 
         # publisher used to publish observation messages
-        self.publisher = publisher
+        self.map_publisher = map_publisher
+        # publisher used to publish observation messages
+        self.gt_path_publisher = gt_path_publisher
         # frameID used to publish observation messages
         self.frame = frame
 
@@ -145,7 +151,30 @@ class MapWidget(QtW.QFrame):
 
             local.observations.append(local_ob)
 
-        self.publisher.publish(local)
+        self.map_publisher.publish(local)
+
+    def publish_gt_path(self):
+        gt_path_msg = Path()
+        gt_path_msg.header.stamp = rospy.Time.now()
+        gt_path_msg.header.frame_id = self.frame
+
+        gt_path = real_to_car_transform(self.path, self.car_pos, self.car_rot)
+
+        for cone in gt_path:
+            pose = PoseStamped()
+            pose.pose.position.x = cone[0]
+            pose.pose.position.y = cone[1]
+            pose.pose.position.z = 0
+
+            pose.pose.orientation.x = 0
+            pose.pose.orientation.y = 0
+            pose.pose.orientation.z = 0
+            pose.pose.orientation.w = 1
+
+            pose.header = gt_path_msg.header
+            gt_path_msg.poses.append(pose)
+
+        self.gt_path_publisher.publish(gt_path_msg)
 
     def receive_path(self, rel_paths: List[np.ndarray]):
         self.nr_paths = len(rel_paths)
@@ -418,6 +447,7 @@ class MapWidget(QtW.QFrame):
                 self.middel_bezier, painter, QtG.QColor(0, 0, 0, 70)
             )
             self.draw.draw_points(self.middelPoints, painter, QtG.QColor(0, 0, 0, 70))
+            self.publish_gt_path()
 
         if self.trackbounds_on:
             self.blue_bezier = make_bezier(self.blue_cones, self.is_closed)
