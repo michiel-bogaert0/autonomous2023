@@ -180,7 +180,6 @@ class MapWidget(QtW.QFrame):
         self.gt_path_publisher.publish(gt_path_msg)
 
     def receive_path(self, rel_path: np.ndarray):
-        # TODO
         self.smoothed_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
         self.update()
 
