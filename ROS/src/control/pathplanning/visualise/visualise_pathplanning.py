@@ -98,6 +98,9 @@ class MapWidget(QtW.QFrame):
         self.trackbounds_on = False
         self.debug_badPoints = True
         self.debug_centerPoints = True
+        self.paths_on = True
+        self.smoothed_path_on = True
+        self.boundary_estimation_on = True
         self.buttons.set_buttons()
 
         # currently selected element
@@ -474,23 +477,27 @@ class MapWidget(QtW.QFrame):
         if self.debug_badPoints:
             self.draw.draw_points(self.badPoints, painter, QtG.QColor(255, 0, 255))
 
-        self.draw.draw_line(
-            self.blue_boundary,
-            painter,
-            QtG.QColor(QtC.Qt.blue),
-        )
-        self.draw.draw_line(
-            self.yellow_boundary,
-            painter,
-            QtG.QColor(QtC.Qt.yellow),
-        )
-        self.draw.draw_line(
-            self.path, painter, QtG.QColor(QtC.Qt.green), QtG.QColor(QtC.Qt.red)
-        )
-        self.draw.draw_line(self.smoothed_path, painter, QtG.QColor(QtC.Qt.red))
+        if self.boundary_estimation_on:
+            self.draw.draw_line(
+                self.blue_boundary,
+                painter,
+                QtG.QColor(QtC.Qt.blue),
+            )
+            self.draw.draw_line(
+                self.yellow_boundary,
+                painter,
+                QtG.QColor(QtC.Qt.yellow),
+            )
+        if self.paths_on:
+            self.draw.draw_line(
+                self.path, painter, QtG.QColor(QtC.Qt.green), QtG.QColor(QtC.Qt.red)
+            )
+        if self.smoothed_path_on:
+            self.draw.draw_line(self.smoothed_path, painter, QtG.QColor(QtC.Qt.red))
         self.draw.draw_car(painter)
         self.draw.draw_scale(painter)
-        self.draw.draw_pathnr(painter)
+        if self.paths_on:
+            self.draw.draw_pathnr(painter)
 
         painter.end()
 
