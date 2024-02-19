@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import can
+import cantools
 import rospy
 from can_msgs.msg import Frame
 from can_processor import CanProcessor
@@ -24,6 +25,8 @@ class CanConverter(ManagedNode):
             channel=rospy.get_param("~can_interface", "can0"),
             bitrate=rospy.get_param("~can_baudrate", 250000),
         )
+
+        rospy.Subscriber("ugr/send_can", Frame, self.send_on_can)
 
     def active(self):
         try:
@@ -56,6 +59,32 @@ class CanConverter(ManagedNode):
             # Check for external shutdown
             if rospy.is_shutdown():
                 return
+
+    def send_on_can(self, msg: Frame) -> None:
+        """ "Sends all messages, published on ugr/send_can, to the can bus
+        QUESTION: can I assume that the message to send is received in the right format: {'Temp': 20, 'RPM': 1000, 'Torque': 0}?
+                  or should I
+        """
+
+        self.db_adress = rospy.get_param(
+            "~db_adress", "autonomous2023/ROS/src/can/dbc/motor.dbc"
+        )
+        self.db = cantools.database.load_file(self.db_adress)
+
+        # encode the message
+        encoded_msg = self.db.encode_message(msg.id, msg.data)
+
+        # send the message
+        self.bus.send(
+            can.Message(
+                timestamp=msg.header.stamp.to_sec(),
+                is_error_frame=encoded_msg.is_error,
+                is_remote_frame=encoded_msg.is_rtr,
+                dlc=len(encoded_msg.data),
+                arbitration_id=encoded_msg.id,
+                data=list(encoded_msg.data),
+            )
+        )
 
 
 if __name__ == "__main__":
