@@ -28,8 +28,12 @@ class Visualiser:
         self.gt_path_publisher = rospy.Publisher("output/gt_path", Path, queue_size=10)
 
         # Handler voor path_received subscription
+        self.all_paths_subscriber = rospy.Subscriber(
+            "/input/debug/all_poses", PathArray, self.handle_all_paths_received
+        )
+
         self.path_subscriber = rospy.Subscriber(
-            "/input/debug/all_poses", PathArray, self.handle_path_received
+            "/input/path", Path, self.handle_path_received
         )
 
         self.boundaries_subscriber = rospy.Subscriber(
@@ -60,7 +64,18 @@ class Visualiser:
         self.window.show()
         sys.exit(app.exec_())
 
-    def handle_path_received(self, paths: PathArray):
+    def handle_path_received(self, path: Path):
+        """
+        Handles path received from pathplanning
+
+        Args:
+            path: the (smoothed) path received
+        """
+        self.window.map_widget.receive_path(
+            np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
+        )
+
+    def handle_all_paths_received(self, paths: PathArray):
         """
         Handles paths received from pathplanning
 
@@ -72,7 +87,7 @@ class Visualiser:
             all_paths.append(
                 np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
             )
-        self.window.map_widget.receive_path(all_paths)
+        self.window.map_widget.receive_all_paths(all_paths)
 
     def handle_boundaries_received(self, boundaries: Boundaries):
         relBlue = np.array(
