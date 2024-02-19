@@ -61,10 +61,7 @@ class CanConverter(ManagedNode):
                 return
 
     def send_on_can(self, msg: Frame) -> None:
-        """ "Sends all messages, published on ugr/send_can, to the can bus
-        QUESTION: can I assume that the message to send is received in the right format: {'Temp': 20, 'RPM': 1000, 'Torque': 0}?
-                  or should I
-        """
+        """ "Sends all messages, published on ugr/send_can, to the can bus"""
 
         self.db_adress = rospy.get_param(
             "~db_adress", "autonomous2023/ROS/src/can/dbc/motor.dbc"
