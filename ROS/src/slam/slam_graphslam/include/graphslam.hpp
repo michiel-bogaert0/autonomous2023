@@ -54,6 +54,7 @@ private:
   double max_range;
   double max_half_fov;
   Eigen::Matrix3d covariance_pose;
+  Eigen::Matrix2d covariance_landmark;
 
   // GraphSLAM variables
   double latestTime;

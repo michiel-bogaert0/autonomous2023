@@ -98,14 +98,30 @@ void GraphSLAM::doConfigure() {
   tf2_filter.registerCallback(
       boost::bind(&GraphSLAM::handleObservations, this, _1));
 
-  odomSubscriber =
-      n.subscribe("/input/odom", 1000, &GraphSLAM::odomCallback, this);
-
   // Initialize variables
   this->gotFirstObservations = false;
   this->prev_state = {0.0, 0.0, 0.0};
   this->vertexCounter = 0;
   this->prevPoseIndex = -1;
+
+  // first covariance from odometry
+  this->covariance_pose(0, 0) = 0.239653;
+  this->covariance_pose(0, 1) = 0.0510531;
+  this->covariance_pose(0, 2) = 0.00847513;
+  this->covariance_pose(0, 3) = 0.0510531;
+  this->covariance_pose(1, 0) = 0.0510531;
+  this->covariance_pose(1, 1) = 2.60422;
+  this->covariance_pose(1, 2) = 0.261481;
+  this->covariance_pose(1, 3) = 0.00847513;
+  this->covariance_pose(2, 0) = 0.00847513;
+  this->covariance_pose(2, 1) = 0.261481;
+  this->covariance_pose(2, 2) = 0.286192;
+
+  // Stole from lidar pkg
+  this->covariance_landmark(0, 0) = 0.2;
+  this->covariance_landmark(0, 1) = 0;
+  this->covariance_landmark(1, 0) = 0;
+  this->covariance_landmark(1, 1) = 0.2;
 
   //----------------------------------------------------------------------------
   //------------------------------ Set Optimizer -------------------------------
@@ -121,20 +137,6 @@ void GraphSLAM::doConfigure() {
 
   this->optimizer.setAlgorithm(solver);
   //-----------------------------------------------------------------------------
-}
-
-void GraphSLAM::odomCallback(const nav_msgs::OdometryConstPtr &msg) {
-  // Update pose covariance
-  // approximation
-  this->covariance_pose(0, 0) = msg->pose.covariance[0];
-  this->covariance_pose(0, 1) = msg->pose.covariance[1];
-  this->covariance_pose(0, 2) = msg->pose.covariance[5];
-  this->covariance_pose(1, 0) = msg->pose.covariance[6];
-  this->covariance_pose(1, 1) = msg->pose.covariance[7];
-  this->covariance_pose(1, 2) = msg->pose.covariance[11];
-  this->covariance_pose(2, 0) = msg->pose.covariance[30];
-  this->covariance_pose(2, 1) = msg->pose.covariance[31];
-  this->covariance_pose(2, 2) = msg->pose.covariance[35];
 }
 
 void GraphSLAM::handleObservations(
@@ -258,8 +260,15 @@ void GraphSLAM::step() {
   dY = y - this->prev_state[1];
   dYaw = yaw - this->prev_state[2];
 
+  if (dYaw > M_PI) {
+    dYaw -= 2 * M_PI;
+  } else if (dYaw < -M_PI) {
+    dYaw += 2 * M_PI;
+  }
+  SE2 prev_poseSE2(this->prev_state[0], this->prev_state[1],
+                   this->prev_state[2]);
   this->prev_state = {x, y, yaw};
-
+  SE2 poseSE2(x, y, yaw);
   // --------------------------------------------------------------------
   // ---------------------- Add odometry to graph -----------------------
   // --------------------------------------------------------------------
@@ -269,34 +278,21 @@ void GraphSLAM::step() {
   newPoseVertex->setEstimate(SE2(x, y, yaw));
   this->optimizer.addVertex(newPoseVertex);
 
+  ROS_INFO("x %f, y %f, yaw %f, dx %f, dy %f, dyaw %f", x, y, yaw, dX, dY,
+           dYaw);
+  SE2 test = prev_poseSE2.inverse() * poseSE2;
+  ROS_INFO("trans: x %f, y %f, yaw %f", test.translation().x(),
+           test.translation().y(), test.rotation().angle());
+
   // add odometry contraint
   if (this->prevPoseIndex >= 0) {
     PoseEdge *odometry = new PoseEdge;
     odometry->vertices()[0] =
         this->optimizer.vertex(this->prevPoseIndex); // from
     odometry->vertices()[1] = this->optimizer.vertex(this->vertexCounter); // to
-    odometry->setMeasurement(SE2(dX, dY, dYaw));
-
-    // std::ostringstream matrixStream;
-    // matrixStream << this->covariance_pose;
-    // ROS_INFO("Covariance: \n%s", matrixStream.str().c_str());
-
-    // first covariance from odometry
-    this->covariance_pose(0, 0) = 0.239653;
-    this->covariance_pose(0, 1) = 0.0510531;
-    this->covariance_pose(0, 2) = 0.00847513;
-    this->covariance_pose(0, 3) = 0.0510531;
-    this->covariance_pose(1, 0) = 0.0510531;
-    this->covariance_pose(1, 1) = 2.60422;
-    this->covariance_pose(1, 2) = 0.261481;
-    this->covariance_pose(1, 3) = 0.00847513;
-    this->covariance_pose(2, 0) = 0.00847513;
-    this->covariance_pose(2, 1) = 0.261481;
-    this->covariance_pose(2, 2) = 0.286192;
-
+    odometry->setMeasurement(prev_poseSE2.inverse() * poseSE2);
+    // odometry->setMeasurement(SE2(dX, dY, dYaw));
     odometry->setInformation(this->covariance_pose.inverse());
-
-    // odometry->setInformation(Matrix3d::Identity());
 
     this->optimizer.addEdge(odometry);
   } else {
@@ -350,28 +346,20 @@ void GraphSLAM::step() {
     // landmarkObservation->setMeasurement(
     //     Vector2d(observation.observation.location.x,
     //              observation.observation.location.y));
-    landmarkObservation->setMeasurement(loc - Vector2d(x, y));
-
-    Eigen::Matrix2d covarianceMatrix;
-
-    // Stole from lidar pkg
-    covarianceMatrix(0, 0) = 0.2;
-    covarianceMatrix(0, 1) = 0;
-    covarianceMatrix(1, 0) = 0;
-    covarianceMatrix(1, 1) = 0.2;
+    // landmarkObservation->setMeasurement(loc - Vector2d(x, y));
+    landmarkObservation->setMeasurement(poseSE2.inverse() * loc);
 
     // covarianceMatrix << observation.covariance[0], observation.covariance[1],
     //     observation.covariance[3],
     //     observation.covariance[4]; // observation gives 3x3 matrix only first
-    //     2
-    //                                // rows and columns are used
+    //     2 rows and columns are used
     // landmarkObservation->setInformation(covarianceMatrix.inverse());
 
     // std::ostringstream matrixStream;
     // matrixStream << covarianceMatrix;
     // ROS_INFO("Covariance: \n%s", matrixStream.str().c_str());
 
-    landmarkObservation->setInformation(covarianceMatrix.inverse());
+    landmarkObservation->setInformation(this->covariance_landmark.inverse());
     // landmarkObservation->setInformation(Matrix2d::Identity());
     this->optimizer.addEdge(landmarkObservation);
   }
@@ -425,6 +413,9 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
 
       tf2::Quaternion q;
       q.setRPY(0, 0, poseVertex->estimate().rotation().angle());
+
+      // ROS_INFO("x %f, y %f, yaw %f", pose.position.x, pose.position.y,
+      //          poseVertex->estimate().rotation().angle());
 
       pose.orientation.x = q.x();
       pose.orientation.y = q.y();
