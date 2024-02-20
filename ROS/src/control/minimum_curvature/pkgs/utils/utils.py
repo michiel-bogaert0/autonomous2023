@@ -41,8 +41,8 @@ def generate_center_points(blue_cones, yellow_cones) -> List[Tuple[float, float]
     return refPoints
 
 
-# Generate interpolated points equally spaced along the curvilinear path
-def generate_interpolated_points(points) -> List[Tuple[float, float]]:
+# Generate interpolated points along the curvilinear path
+def generate_interpolated_points(points) -> np.array[Tuple[float, float]]:
     path = np.array([[p[0], p[1]] for p in points])
 
     per = 1  # BSPline periodicity, 0 = not periodic, 1 = periodic

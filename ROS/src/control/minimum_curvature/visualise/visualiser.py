@@ -3,11 +3,10 @@ import json
 import pathlib
 import sys
 
-# import numpy as np
+import numpy as np
 import rospy
 import yaml
-
-# from node_fixture.node_manager import configure_node, set_state_active
+from node_fixture.node_manager import configure_node, set_state_active
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
@@ -25,8 +24,8 @@ class Visualiser:
 
         self.frame = rospy.get_param("~frame", "ugr/car_base_link")
         self.track_file = rospy.get_param("~layout", "")
-        # configure_node("minimum_curvature")
-        # set_state_active("minimum_curvature")
+        configure_node("minimum_curvature")
+        set_state_active("minimum_curvature")
         # Initialize and start Qt application
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
@@ -36,6 +35,18 @@ class Visualiser:
             self.window = MainWindow(self.publisher, self.frame)
         self.window.show()
         sys.exit(app.exec_())
+
+    def handle_path_received(self, received_path):
+        """
+        Handle the path received from the minimum curvature node
+
+        Args:
+            received_path (Path): The path received from the minimum curvature node
+        """
+        path = np.array(
+            [[p.pose.position.x, p.pose.position.y] for p in received_path.poses]
+        )
+        self.window.map_widget.receive_path(path)
 
 
 class MainWindow(QtW.QMainWindow):

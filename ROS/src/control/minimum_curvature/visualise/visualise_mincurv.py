@@ -16,7 +16,7 @@ from ugr_msgs.msg import (
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
 )
-from utils import dist, get_local_poses
+from utils import car_to_real_transform, dist, get_local_poses
 
 
 class MapWidget(QtW.QFrame):
@@ -52,6 +52,9 @@ class MapWidget(QtW.QFrame):
         self.publisher = publisher
         # frameID used to publish observation messages
         self.frame = frame
+
+        # intialize path
+        self.path = None
 
         # initialize boundaries
         self.blue_boundary = []
@@ -134,6 +137,10 @@ class MapWidget(QtW.QFrame):
 
         self.publisher.publish(local)
 
+    def receive_path(self, rel_path: np.ndarray):
+        self.path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
+        self.update()
+
     def get_selected_element(self, event) -> Optional[QtC.QPoint]:
         # This is the position on the screen where the user clicked
         press_location = event.pos()
@@ -206,6 +213,7 @@ class MapWidget(QtW.QFrame):
         self.drag_map = False
         self.drag_start_pos = None
         self.update_car()
+        self.empty_mincurv_input()
         self.update()
 
     # Override the wheelEvent method to handle scrolling events
@@ -225,6 +233,7 @@ class MapWidget(QtW.QFrame):
                 if self.zoom_level > self.MIN_ZOOM:
                     self.zoom_level /= self.ZOOM
                     self.offset = s + r * self.ZOOM
+            self.empty_mincurv_input()
             self.update()
 
     def keyPressEvent(self, event: QtG.QKeyEvent):
@@ -232,6 +241,9 @@ class MapWidget(QtW.QFrame):
             self.save_track_layout()
         else:
             self.update()
+
+    def empty_mincurv_input(self):
+        self.path = None
 
     def update_car(self):
         self.car_rot_handle: QtC.QPointF = self.car_pos + (
@@ -266,6 +278,10 @@ class MapWidget(QtW.QFrame):
             )
 
         self.draw.draw_cones(painter)
+
+        self.draw.draw_line(
+            self.path, painter, QtG.QColor(QtC.Qt.green), QtG.QColor(QtC.Qt.red)
+        )
 
         self.draw.draw_car(painter)
         self.draw.draw_scale(painter)

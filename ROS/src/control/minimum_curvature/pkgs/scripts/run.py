@@ -2,8 +2,8 @@
 import numpy as np
 import rospy
 import tf2_ros as tf
-
-# from geometry_msgs.msg import PoseStamped
+import trajectory_planning_helpers as tph
+from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.fixture import (  # DiagnosticStatus,; NodeManagingStatesEnum,; ROSNode,; create_diagnostic_message,
     DiagnosticArray,
@@ -12,7 +12,7 @@ from node_fixture.fixture import (  # DiagnosticStatus,; NodeManagingStatesEnum,
 from node_fixture.managed_node import ManagedNode
 from std_msgs.msg import Float64
 from ugr_msgs.msg import Boundaries, ObservationWithCovarianceArrayStamped, State
-from utils import generate_center_points
+from utils import generate_center_points, generate_interpolated_points
 
 
 class MinimumCurvature(ManagedNode):
@@ -67,7 +67,7 @@ class MinimumCurvature(ManagedNode):
 
         self.compute(cones, map.header)
 
-    def compute(self, cones, header):
+    def compute(self, cones, msg: Path):
         self.blue_cones = []
         self.yellow_cones = []
         self.center_points = []
@@ -77,6 +77,44 @@ class MinimumCurvature(ManagedNode):
             elif cone[2] == 1:
                 self.yellow_cones.append(cone)
         self.center_points = generate_center_points(self.blue_cones, self.yellow_cones)
+        self.reference_line = generate_interpolated_points(self.center_points)
+        rospy.loginfo("got here 1")
+
+        coeffs_x, coeffs_y, M, normvec_normalized = tph.calc_splines(
+            path=np.vstack((self.reference_line[:, 0:2], self.reference_line[0, 0:2]))
+        )
+
+        rospy.loginfo("got here 2")
+        rospy.loginfo(self.reference_line.shape)
+        rospy.loginfo(normvec_normalized)
+
+        rospy.loginfo("got here 3")
+
+        alpha_mincurv, curv_error_max = tph.opt_min_curv(
+            reftrack=self.reference_line,
+            normvectors=normvec_normalized,
+            A=M,
+            kappa_bound=0.2,
+            w_veh=self.car_width,
+            closed=True,
+        )
+
+        rospy.loginfo("got here 4")
+        path_result = self.reference_line[:, 0:2] + normvec_normalized * np.expand_dims(
+            alpha_mincurv, axis=1
+        )
+
+        rospy.loginfo("got here 5")
+
+        path_result_msg = msg
+        path_result_msg.poses = []
+        rospy.loginfo(path_result)
+        for point in path_result:
+            pose = PoseStamped()
+            pose.pose.position.x = point[0]
+            pose.pose.position.y = point[1]
+
+        self.path_pub.publish(msg)
 
 
 node = MinimumCurvature()
