@@ -23,6 +23,7 @@ class VelocityTarget:
         self.straight_ratio = straight_ratio
 
     def get_velocity_target(self, trajectory, slam_state, mission, actual_speed):
+        self.speed_target = rospy.get_param("/speed/target", 3.0)
         if (
             slam_state == SLAMStatesEnum.EXPLORATION
             or mission == AutonomousMission.SKIDPAD
