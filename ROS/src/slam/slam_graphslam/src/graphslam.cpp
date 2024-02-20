@@ -276,7 +276,6 @@ void GraphSLAM::step() {
         this->optimizer.vertex(this->prevPoseIndex); // from
     odometry->vertices()[1] = this->optimizer.vertex(this->vertexCounter); // to
     odometry->setMeasurement(SE2(dX, dY, dYaw));
-    // odometry->setInformation(this->covariance_pose.inverse());
 
     // std::ostringstream matrixStream;
     // matrixStream << this->covariance_pose;
@@ -295,9 +294,9 @@ void GraphSLAM::step() {
     this->covariance_pose(2, 1) = 0.261481;
     this->covariance_pose(2, 2) = 0.286192;
 
-    // odometry->setInformation(this->covariance_pose.inverse()*0.000001);
+    odometry->setInformation(this->covariance_pose.inverse());
 
-    odometry->setInformation(Matrix3d::Identity());
+    // odometry->setInformation(Matrix3d::Identity());
 
     this->optimizer.addEdge(odometry);
   } else {
@@ -358,8 +357,8 @@ void GraphSLAM::step() {
     // Stole from lidar pkg
     covarianceMatrix(0, 0) = 0.2;
     covarianceMatrix(0, 1) = 0;
-    covarianceMatrix(0, 2) = 0;
-    covarianceMatrix(0, 3) = 0.2;
+    covarianceMatrix(1, 0) = 0;
+    covarianceMatrix(1, 1) = 0.2;
 
     // covarianceMatrix << observation.covariance[0], observation.covariance[1],
     //     observation.covariance[3],
@@ -372,8 +371,8 @@ void GraphSLAM::step() {
     // matrixStream << covarianceMatrix;
     // ROS_INFO("Covariance: \n%s", matrixStream.str().c_str());
 
-    // landmarkObservation->setInformation(covarianceMatrix.inverse());
-    landmarkObservation->setInformation(Matrix2d::Identity());
+    landmarkObservation->setInformation(covarianceMatrix.inverse());
+    // landmarkObservation->setInformation(Matrix2d::Identity());
     this->optimizer.addEdge(landmarkObservation);
   }
   // --------------------------------------------------------------------
