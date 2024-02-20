@@ -3,6 +3,7 @@ import traceback
 
 import rospy
 import tf2_ros as tf
+from geometry_msgs.msg import PointStamped
 from nav_msgs.msg import Odometry, Path
 from node_fixture.fixture import DiagnosticArray, ROSNode
 from node_fixture.managed_node import ManagedNode
@@ -42,6 +43,9 @@ class KinematicTrackingNode(ManagedNode):
 
         self.odom_sub = super().AddSubscriber(
             "/input/odom", Odometry, self.get_odom_update
+        )
+        self.vis_pub = super().AddPublisher(
+            "/output/target_point", PointStamped, queue_size=10  # warning otherwise
         )
 
         self.spin()

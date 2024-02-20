@@ -15,8 +15,6 @@ class FrontWheelFeedback(KinematicTrackingNode):
 
         super().__init__("front_wheel_feedback_control")
 
-        self.start_sender()
-
     def doConfigure(self):
         super().doConfigure()
 

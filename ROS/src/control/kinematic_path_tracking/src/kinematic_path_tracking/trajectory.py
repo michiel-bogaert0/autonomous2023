@@ -20,6 +20,7 @@ class Trajectory:
 
     def __init__(self, tf_buffer):
         self.closest_index = 0
+        self.current_position_index = 0
         self.points = np.array([])
         self.target = np.array([0, 0])
 
@@ -148,12 +149,12 @@ class Trajectory:
             return 0, 0
 
         # Only calculate closest index as index of point with smallest distance to current position if working in trakdrive/autocross
-        current_position_index = (
+        self.current_position_index = (
             np.argmin(np.sum((self.path_blf - [0, 0]) ** 2, axis=1))
             if self.change_index
             else self.closest_index
         )
-        self.closest_index = current_position_index
+        self.closest_index = self.current_position_index
 
     def calculate_target_point(self, minimal_distance):
         """
@@ -171,7 +172,7 @@ class Trajectory:
         self.__preprocess_path__()
 
         if len(self.path_blf) == 0:
-            return
+            return 0, 0
 
         for _ in range(len(self.path_blf) + 1):
             target_x = self.path_blf[self.closest_index][0]
@@ -187,7 +188,7 @@ class Trajectory:
             self.closest_index = (self.closest_index + 1) % len(self.path_blf)
 
             # If no new target point, return last target point
-            if self.closest_index == self.closest_index:
+            if self.closest_index == self.current_position_index:
                 pose = PoseStamped(
                     header=Header(
                         frame_id=self.base_link_frame, stamp=self.trans.header.stamp

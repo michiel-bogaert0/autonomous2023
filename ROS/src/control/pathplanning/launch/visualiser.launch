@@ -8,6 +8,7 @@
     <param name="layout" value="$(arg layout)" />
 
     <remap from="/output/local_map" to="/ugr/car/map/fastslam/local" />
+    <remap from="/output/gt_path" to="/visualiser/debug/gt_path" />
     <remap from="/input/path" to="/pathplanning/path"/>
     <remap from="/input/boundaries" to="/boundary_estimation/boundaries"/>
     <remap from="/input/debug/all_poses" to="/pathplanning/debug/all_poses"/>
