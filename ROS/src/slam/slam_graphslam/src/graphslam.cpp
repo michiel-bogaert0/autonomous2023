@@ -295,9 +295,9 @@ void GraphSLAM::step() {
     this->covariance_pose(2, 1) = 0.261481;
     this->covariance_pose(2, 2) = 0.286192;
 
-    odometry->setInformation(this->covariance_pose.inverse() * 0.00001);
+    // odometry->setInformation(this->covariance_pose.inverse()*0.000001);
 
-    // odometry->setInformation(Matrix3d::Identity()*0.0000001);
+    odometry->setInformation(Matrix3d::Identity());
 
     this->optimizer.addEdge(odometry);
   } else {
@@ -348,9 +348,10 @@ void GraphSLAM::step() {
         this->optimizer.vertex(this->prevPoseIndex); // pose
     landmarkObservation->vertices()[1] =
         this->optimizer.vertex(associatedLandmarkIndex); // landmark
-    landmarkObservation->setMeasurement(
-        Vector2d(observation.observation.location.x,
-                 observation.observation.location.y));
+    // landmarkObservation->setMeasurement(
+    //     Vector2d(observation.observation.location.x,
+    //              observation.observation.location.y));
+    landmarkObservation->setMeasurement(loc - Vector2d(x, y));
 
     Eigen::Matrix2d covarianceMatrix;
 
@@ -371,7 +372,8 @@ void GraphSLAM::step() {
     // matrixStream << covarianceMatrix;
     // ROS_INFO("Covariance: \n%s", matrixStream.str().c_str());
 
-    landmarkObservation->setInformation(covarianceMatrix.inverse());
+    // landmarkObservation->setInformation(covarianceMatrix.inverse());
+    landmarkObservation->setInformation(Matrix2d::Identity());
     this->optimizer.addEdge(landmarkObservation);
   }
   // --------------------------------------------------------------------
