@@ -5,11 +5,13 @@ import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import PointStamped
 from nav_msgs.msg import Odometry, Path
-from node_fixture.fixture import DiagnosticArray, ROSNode
+from node_fixture.fixture import DiagnosticArray, ROSNode, StateMachineScopeEnum
 from node_fixture.managed_node import ManagedNode
 from std_msgs.msg import Float64
+from ugr_msgs.msg import State
 
 from .trajectory import Trajectory
+from .velocity_target import VelocityTarget
 
 
 class KinematicTrackingNode(ManagedNode):
@@ -48,6 +50,10 @@ class KinematicTrackingNode(ManagedNode):
             "/output/target_point", PointStamped, queue_size=10  # warning otherwise
         )
 
+        self.state_sub = super().AddSubscriber(
+            "/state/slam", State, self.handle_state_change
+        )
+
         self.spin()
 
     def doConfigure(self):
@@ -66,12 +72,38 @@ class KinematicTrackingNode(ManagedNode):
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
+        self.slam_state = None
+
+        # Variables for speed variation
+        self.speed_minimal_distance = rospy.get_param("~speed/minimal_distance", 12.0)
+        self.max_acceleration = rospy.get_param("~max_acceleration", 2)
+        self.min_speed = rospy.get_param("~speed/min", 3.0)
+        self.max_speed = rospy.get_param("~speed/max", 15.0)
+        self.pure_pursuit_state = rospy.get_param("~state", 2)
+        self.straight_ratio = rospy.get_param("~straight_ratio", 0.96)
+        self.velocitytarget = VelocityTarget(
+            self.speed_minimal_distance,
+            self.speed_target,
+            self.max_acceleration,
+            self.publish_rate,
+            self.min_speed,
+            self.max_speed,
+            self.straight_ratio,
+        )
+
     def doActivate(self):
         # Do this here because some parameters are set in the mission yaml files
         self.trajectory = Trajectory(self.tf_buffer)
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
+
+    def handle_state_change(self, state: State):
+        """
+        Handles state changes, only for SLAM state
+        """
+        if state.scope == StateMachineScopeEnum.SLAM:
+            self.slam_state = state.cur_state
 
     def getPathplanningUpdate(self, msg: Path):
         """
@@ -121,7 +153,14 @@ class KinematicTrackingNode(ManagedNode):
         try:
             # First fetch new paths, then process current path
             self.doUpdate()
+
             self.__process__()
+            mission = rospy.get_param("/mission")
+            self.velocity_cmd.data = self.velocitytarget.get_velocity_target(
+                self.trajectory, self.slam_state, mission, self.actual_speed
+            )
+            self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
+            self.velocity_pub.publish(self.velocity_cmd)
 
         except Exception as e:
             rospy.logwarn(f"{rospy.get_name()} has caught an exception: {e}")

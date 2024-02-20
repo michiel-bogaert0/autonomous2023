@@ -3,7 +3,7 @@ import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
-from node_fixture.fixture import ROSNode
+from node_fixture.fixture import AutonomousMission, ROSNode
 from std_msgs.msg import Header
 from tf2_geometry_msgs import do_transform_pose
 
@@ -156,7 +156,7 @@ class Trajectory:
         )
         self.closest_index = self.current_position_index
 
-    def calculate_target_point(self, minimal_distance):
+    def calculate_target_point(self, minimal_distance, mission):
         """
         Calculates a target point by traversing the path
         Returns the first points that matches the conditions given by minimal_distance
@@ -172,18 +172,39 @@ class Trajectory:
         self.__preprocess_path__()
 
         if len(self.path_blf) == 0:
-            return 0, 0
+            return 0, 0, 0
+
+        distance = 0.0
 
         for _ in range(len(self.path_blf) + 1):
             target_x = self.path_blf[self.closest_index][0]
             target_y = self.path_blf[self.closest_index][1]
 
-            # Current position is [0,0] in base_link_frame
-            distance = (0 - target_x) ** 2 + (0 - target_y) ** 2
+            if (
+                mission == AutonomousMission.SKIDPAD
+                or mission == AutonomousMission.ACCELERATION
+            ):
+                # For skidpad/acc, minimal distance has to be defined as direct distance to the car (0,0)
+                distance = target_x**2 + target_y**2
+            elif (
+                mission == AutonomousMission.TRACKDRIVE
+                or mission == AutonomousMission.AUTOCROSS
+            ):
+                # For trackdrive/autocross, minimal distance is defined over the path
+                target_x_pp = self.path_blf[
+                    (self.closest_index + 1) % len(self.path_blf)
+                ][0]
+                target_y_pp = self.path_blf[
+                    (self.closest_index + 1) % len(self.path_blf)
+                ][1]
+
+                distance += (target_x_pp - target_x) ** 2 + (
+                    target_y_pp - target_y
+                ) ** 2
 
             if distance > minimal_distance**2:
                 self.target = np.array([target_x, target_y])
-                return (self.target[0], self.target[1])
+                return (self.target[0], self.target[1], self.time_source)
 
             self.closest_index = (self.closest_index + 1) % len(self.path_blf)
 
@@ -201,4 +222,4 @@ class Trajectory:
                 pose_t = do_transform_pose(pose, self.trans)
 
                 self.target = np.array([pose_t.pose.position.x, pose_t.pose.position.y])
-                return (self.target[0], self.target[1])
+                return (self.target[0], self.target[1], self.time_source)

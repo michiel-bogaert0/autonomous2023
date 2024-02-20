@@ -35,10 +35,13 @@ class PurePursuit(KinematicTrackingNode):
         else:
             self.minimal_distance = self.distance_stop
 
+        mission = rospy.get_param("/mission")
         # Calculate target point
-        target_x, target_y = self.trajectory.calculate_target_point(
-            self.minimal_distance
-        )
+        (
+            target_x,
+            target_y,
+            position_target_time,
+        ) = self.trajectory.calculate_target_point(self.minimal_distance, mission)
 
         if target_x == 0 and target_y == 0:
             self.diagnostics_pub.publish(
@@ -48,9 +51,7 @@ class PurePursuit(KinematicTrackingNode):
                     message="No target point found.",
                 )
             )
-            self.velocity_cmd.data = 0.0
             self.steering_cmd.data = 0.0
-            self.velocity_pub.publish(self.velocity_cmd)
             self.steering_pub.publish(self.steering_cmd)
 
             return
@@ -71,18 +72,12 @@ class PurePursuit(KinematicTrackingNode):
             )
         )
 
-        self.speed_target = rospy.get_param("/speed/target", 3.0)
-        self.velocity_cmd.data = self.speed_target
-
         # Publish to velocity and position steering controller
         self.steering_pub.publish(self.steering_cmd)
 
-        self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
-        self.velocity_pub.publish(self.velocity_cmd)
-
         # Publish target point for visualization
         point = PointStamped()
-        point.header.stamp = self.trajectory.time_source
+        point.header.stamp = position_target_time
         point.header.frame_id = self.base_link_frame
         point.point.x = target_x
         point.point.y = target_y

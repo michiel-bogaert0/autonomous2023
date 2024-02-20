@@ -58,12 +58,9 @@ class FrontWheelFeedback(KinematicTrackingNode):
 
         # Velocity point
         self.speed_target = rospy.get_param("/speed/target", 3.0)
-        self.velocity_cmd.data = self.speed_target
-        self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
 
         # Publish to velocity and position steering controller
         self.steering_pub.publish(self.steering_cmd)
-        self.velocity_pub.publish(self.velocity_cmd)
 
 
 node = FrontWheelFeedback()
