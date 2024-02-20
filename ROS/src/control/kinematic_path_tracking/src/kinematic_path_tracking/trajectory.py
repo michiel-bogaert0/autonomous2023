@@ -185,7 +185,7 @@ class Trajectory:
                 or mission == AutonomousMission.ACCELERATION
             ):
                 # For skidpad/acc, minimal distance has to be defined as direct distance to the car (0,0)
-                distance = target_x**2 + target_y**2
+                distance = np.sqrt(target_x**2 + target_y**2)
             elif (
                 mission == AutonomousMission.TRACKDRIVE
                 or mission == AutonomousMission.AUTOCROSS
@@ -198,11 +198,11 @@ class Trajectory:
                     (self.closest_index + 1) % len(self.path_blf)
                 ][1]
 
-                distance += (target_x_pp - target_x) ** 2 + (
-                    target_y_pp - target_y
-                ) ** 2
+                distance += np.sqrt(
+                    (target_x_pp - target_x) ** 2 + (target_y_pp - target_y) ** 2
+                )
 
-            if distance > minimal_distance**2:
+            if distance > minimal_distance:
                 self.target = np.array([target_x, target_y])
                 return (self.target[0], self.target[1], self.time_source)
 

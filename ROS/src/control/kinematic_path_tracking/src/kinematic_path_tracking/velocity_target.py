@@ -49,12 +49,13 @@ class VelocityTarget:
                 0,
             )
 
+            print("Speed candidate: " + str(speed_candidate))
+
             # Update speed target, not higher than max allowed speed
             return (
                 min(speed_candidate, max_allowed_speed)
                 if ratio < self.straight_ratio
-                else self.min_speed
-                + (ratio - 0.6) / (1 - 0.6) * (self.max_speed - self.min_speed)
+                else speed_candidate
             )
 
         else:
