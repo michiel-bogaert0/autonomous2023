@@ -28,11 +28,6 @@ class MinimumCurvature(ManagedNode):
         self.path_pub = super().AddPublisher("/output/path", Path, queue_size=10)
 
     def doActivate(self):
-        # self.map_sub = super().AddSubscriber(
-        #     "/input/local_map",
-        #     ObservationWithCovarianceArrayStamped,
-        #     self.receive_new_map,
-        # )
         self.path_sub = super().AddSubscriber(
             "/input/path",
             Path,
@@ -41,7 +36,7 @@ class MinimumCurvature(ManagedNode):
 
     def receive_new_path(self, msg: Path):
         self.reference_line = np.array(
-            [[p.pose.position.x, p.pose.position.y, 1.05, 1.05] for p in msg.poses]
+            [[p.pose.position.x, p.pose.position.y, 1.15, 1.15] for p in msg.poses]
         )
         self.compute(self.reference_line, msg.header)
 
