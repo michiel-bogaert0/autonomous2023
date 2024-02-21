@@ -49,16 +49,13 @@ class MapWidget(QtW.QFrame):
         self.draw = Draw(self)
 
         # publisher used to publish observation messages
-        self.publisher = publisher
+        self.map_publisher = publisher
+
         # frameID used to publish observation messages
         self.frame = frame
 
-        # intialize path
-        self.path = None
-
-        # initialize boundaries
-        self.blue_boundary = []
-        self.yellow_boundary = []
+        # intialize smoothed path
+        self.smoothed_path = None
 
         # initialize cone lists
         if yellows is None:
@@ -135,10 +132,10 @@ class MapWidget(QtW.QFrame):
 
             local.observations.append(local_ob)
 
-        self.publisher.publish(local)
+        self.map_publisher.publish(local)
 
     def receive_path(self, rel_path: np.ndarray):
-        self.path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
+        self.smoothed_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
         self.update()
 
     def get_selected_element(self, event) -> Optional[QtC.QPoint]:
@@ -280,7 +277,10 @@ class MapWidget(QtW.QFrame):
         self.draw.draw_cones(painter)
 
         self.draw.draw_line(
-            self.path, painter, QtG.QColor(QtC.Qt.green), QtG.QColor(QtC.Qt.red)
+            self.smoothed_path,
+            painter,
+            QtG.QColor(QtC.Qt.green),
+            QtG.QColor(QtC.Qt.red),
         )
 
         self.draw.draw_car(painter)

@@ -1,53 +1,34 @@
 #!/usr/bin/env python3
+# import trajectory_planning_helpers as tph
+
 import numpy as np
 import rospy
-import tf2_ros as tf
-import trajectory_planning_helpers as tph
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
-from node_fixture.fixture import (  # DiagnosticStatus,; NodeManagingStatesEnum,; ROSNode,; create_diagnostic_message,
-    DiagnosticArray,
-    SLAMStatesEnum,
-)
 from node_fixture.managed_node import ManagedNode
-from std_msgs.msg import Float64
-from ugr_msgs.msg import Boundaries, ObservationWithCovarianceArrayStamped, State
-from utils import generate_center_points, generate_interpolated_points
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
+from utils.utils_mincurv import (
+    B_spline_smoothing,
+    calc_splines,
+    generate_center_points,
+    generate_interpolated_points,
+    opt_min_curv,
+)
 
 
 class MinimumCurvature(ManagedNode):
     def __init__(self):
-        rospy.init_node("minimum_curvature")
         super().__init__("minimum_curvature")
-        self.publish_rate = rospy.get_param("~publish_rate", 10)
-        self.slam_state = SLAMStatesEnum.IDLE
-        rospy.Subscriber("/state", State, self.handle_state_change)
-        self.start_sender()
-        rospy.spin()
+        self.spin()
 
     def doConfigure(self):
-        self.tf_buffer = tf.Buffer()
-        self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
-        self.car_width = rospy.get_param("~car_width", 1.0)
+        self.car_width = rospy.get_param("~car_width", 0.5)
 
         # Publishers for the path and velocity
 
         self.path_pub = super().AddPublisher("/output/path", Path, queue_size=10)
-        self.velocity_pub = super().AddPublisher(
-            "/output/velocity", Float64, queue_size=10
-        )
-
-        # Diagnostic publisher
-        self.diagnostic_pub = super().AddPublisher(
-            "/diagnostics", DiagnosticArray, queue_size=10
-        )
-
-        # Subscribers for the boundaries
-        self.boundaries_sub = super().AddSubscriber(
-            "/input/boundaries", Boundaries, self.receive_boundaries
-        )
 
     def doActivate(self):
         self.map_sub = super().AddSubscriber(
@@ -67,30 +48,23 @@ class MinimumCurvature(ManagedNode):
 
         self.compute(cones, map.header)
 
-    def compute(self, cones, msg: Path):
+    def compute(self, cones, header, msg=Path):
         self.blue_cones = []
         self.yellow_cones = []
         self.center_points = []
         for cone in cones:
             if cone[2] == 0:
-                self.blue_cones.append(cone)
+                self.blue_cones.append([cone[0], cone[1]])
             elif cone[2] == 1:
-                self.yellow_cones.append(cone)
+                self.yellow_cones.append([cone[0], cone[1]])
         self.center_points = generate_center_points(self.blue_cones, self.yellow_cones)
         self.reference_line = generate_interpolated_points(self.center_points)
-        rospy.loginfo("got here 1")
 
-        coeffs_x, coeffs_y, M, normvec_normalized = tph.calc_splines(
+        coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(
             path=np.vstack((self.reference_line[:, 0:2], self.reference_line[0, 0:2]))
         )
 
-        rospy.loginfo("got here 2")
-        rospy.loginfo(self.reference_line.shape)
-        rospy.loginfo(normvec_normalized)
-
-        rospy.loginfo("got here 3")
-
-        alpha_mincurv, curv_error_max = tph.opt_min_curv(
+        alpha_mincurv, curv_error_max = opt_min_curv(
             reftrack=self.reference_line,
             normvectors=normvec_normalized,
             A=M,
@@ -99,17 +73,16 @@ class MinimumCurvature(ManagedNode):
             closed=True,
         )
 
-        rospy.loginfo("got here 4")
         path_result = self.reference_line[:, 0:2] + normvec_normalized * np.expand_dims(
             alpha_mincurv, axis=1
         )
 
-        rospy.loginfo("got here 5")
+        smoothed_path = B_spline_smoothing(path_result)
+        rospy.loginfo("got here 6")
 
-        path_result_msg = msg
-        path_result_msg.poses = []
-        rospy.loginfo(path_result)
-        for point in path_result:
+        smoothed_msg = msg
+        smoothed_msg.poses = []
+        for point in smoothed_path:
             pose = PoseStamped()
             pose.pose.position.x = point[0]
             pose.pose.position.y = point[1]
@@ -117,4 +90,4 @@ class MinimumCurvature(ManagedNode):
         self.path_pub.publish(msg)
 
 
-node = MinimumCurvature()
+MinimumCurvature()

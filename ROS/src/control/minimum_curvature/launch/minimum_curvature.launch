@@ -4,7 +4,7 @@
 
         <param name="frame" value="ugr/car_base_link" />
 
-        <param name="carwidth" value="1.0" />
+        <param name="carwidth" value="0.5" />
 
         <remap from="/input/local_map" to="/ugr/car/map/fastslam/local" />
         <remap from="/output/path" to="/minimum_curvature/path" />

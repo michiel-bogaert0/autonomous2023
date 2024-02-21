@@ -6,6 +6,7 @@ import sys
 import numpy as np
 import rospy
 import yaml
+from nav_msgs.msg import Path
 from node_fixture.node_manager import configure_node, set_state_active
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
@@ -19,13 +20,15 @@ class Visualiser:
 
         # Publisher voor local_map
         self.publisher = rospy.Publisher(
-            "/output/local_map", ObservationWithCovarianceArrayStamped, queue_size=10
+            "/output/local_map", ObservationWithCovarianceArrayStamped
         )
 
         self.frame = rospy.get_param("~frame", "ugr/car_base_link")
         self.track_file = rospy.get_param("~layout", "")
+
         configure_node("minimum_curvature")
         set_state_active("minimum_curvature")
+
         # Initialize and start Qt application
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
@@ -36,17 +39,16 @@ class Visualiser:
         self.window.show()
         sys.exit(app.exec_())
 
-    def handle_path_received(self, received_path):
+    def handle_path_received(self, path: Path):
         """
-        Handle the path received from the minimum curvature node
+        Handles the path received from the minimum curvature node
 
         Args:
-            received_path (Path): The path received from the minimum curvature node
+            path (Path): The path received from the minimum curvature node
         """
-        path = np.array(
-            [[p.pose.position.x, p.pose.position.y] for p in received_path.poses]
+        self.window.map_widget.receive_path(
+            np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
         )
-        self.window.map_widget.receive_path(path)
 
 
 class MainWindow(QtW.QMainWindow):

@@ -3,7 +3,6 @@ project(minimum_curvature)
 
 
 find_package(catkin REQUIRED COMPONENTS
-    roscpp
     trajectory_msgs
     visualization_msgs
     geometry_msgs
@@ -16,10 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
     node_fixture
 )
 
-catkin_python_setup()
 catkin_package(
     CATKIN_DEPENDS
-        roscpp
         trajectory_msgs
         visualization_msgs
         geometry_msgs
@@ -31,6 +28,9 @@ catkin_package(
         tf2_geometry_msgs
         node_fixture
 )
+catkin_python_setup()
+
+link_directories(${CATKIN_DEVEL_PREFIX}/lib)
 
 include_directories(
 
