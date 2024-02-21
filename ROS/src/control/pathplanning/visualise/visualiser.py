@@ -6,7 +6,8 @@ import sys
 import numpy as np
 import rospy
 import yaml
-from node_fixture.node_management import configure_node, set_state_active
+from nav_msgs.msg import Path
+from node_fixture.node_manager import configure_node, set_state_active
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
 from ugr_msgs.msg import Boundaries, ObservationWithCovarianceArrayStamped, PathArray
@@ -19,13 +20,20 @@ class Visualiser:
         rospy.init_node("visualiser")
 
         # Publisher voor local_map
-        self.publisher = rospy.Publisher(
+        self.map_publisher = rospy.Publisher(
             "/output/local_map", ObservationWithCovarianceArrayStamped, queue_size=10
         )
 
+        # Publisher voor gt_path
+        self.gt_path_publisher = rospy.Publisher("output/gt_path", Path, queue_size=10)
+
         # Handler voor path_received subscription
+        self.all_paths_subscriber = rospy.Subscriber(
+            "/input/debug/all_poses", PathArray, self.handle_all_paths_received
+        )
+
         self.path_subscriber = rospy.Subscriber(
-            "/input/debug/all_poses", PathArray, self.handle_path_received
+            "/input/path", Path, self.handle_path_received
         )
 
         self.boundaries_subscriber = rospy.Subscriber(
@@ -46,13 +54,28 @@ class Visualiser:
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
             # If a track file is specified
-            self.window = MainWindow(self.publisher, self.frame, self.track_file)
+            self.window = MainWindow(
+                self.map_publisher, self.gt_path_publisher, self.frame, self.track_file
+            )
         else:
-            self.window = MainWindow(self.publisher, self.frame)
+            self.window = MainWindow(
+                self.map_publisher, self.gt_path_publisher, self.frame
+            )
         self.window.show()
         sys.exit(app.exec_())
 
-    def handle_path_received(self, paths: PathArray):
+    def handle_path_received(self, path: Path):
+        """
+        Handles path received from pathplanning
+
+        Args:
+            path: the (smoothed) path received
+        """
+        self.window.map_widget.receive_path(
+            np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
+        )
+
+    def handle_all_paths_received(self, paths: PathArray):
         """
         Handles paths received from pathplanning
 
@@ -64,7 +87,7 @@ class Visualiser:
             all_paths.append(
                 np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
             )
-        self.window.map_widget.receive_path(all_paths)
+        self.window.map_widget.receive_all_paths(all_paths)
 
     def handle_boundaries_received(self, boundaries: Boundaries):
         relBlue = np.array(
@@ -103,7 +126,7 @@ class Visualiser:
 
 
 class MainWindow(QtW.QMainWindow):
-    def __init__(self, publisher, frame, trackfile_name=None):
+    def __init__(self, map_publisher, gt_path_publisher, frame, trackfile_name=None):
         super().__init__(None)
         if trackfile_name is not None:
             layout_path = (
@@ -167,7 +190,8 @@ class MainWindow(QtW.QMainWindow):
                     )
             # Create a new instance of MapWidget
             self.map_widget = MapWidget(
-                publisher,
+                map_publisher,
+                gt_path_publisher,
                 frame,
                 startpos_x,
                 startpos_y,
@@ -180,7 +204,7 @@ class MainWindow(QtW.QMainWindow):
             )
         else:
             # Create a new instance of MapWidget
-            self.map_widget = MapWidget(publisher, frame)
+            self.map_widget = MapWidget(map_publisher, gt_path_publisher, frame)
         # Add the MapWidget to the main window
         self.setCentralWidget(self.map_widget)
         # set window size when minimalized

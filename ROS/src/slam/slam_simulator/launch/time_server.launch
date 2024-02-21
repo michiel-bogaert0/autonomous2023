@@ -1,0 +1,10 @@
+<launch>
+
+  <arg name="time_scaler"/>
+
+  <node pkg="slam_simulator" name="time_server" type="time_server.py" output="screen" respawn="False">
+    <param name="rate" value="200" />
+    <param name="time_scaler" value="$(arg time_scaler)" />
+  </node>
+
+</launch>

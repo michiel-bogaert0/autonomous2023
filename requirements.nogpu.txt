@@ -18,6 +18,9 @@ tqdm
 matplotlib>=3.6.2
 xmltodict
 
+# Control
+casadi
+
 # Jetson CAN
 python-can==4.0.0
 cantools==37.1.0
