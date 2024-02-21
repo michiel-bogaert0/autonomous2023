@@ -128,8 +128,8 @@ class MapWidget(QtW.QFrame):
         self.blue_bezier = []
         self.yellow_bezier = []
 
-        self.update()
         self.publish_local_map()
+        self.update()
 
     def publish_local_map(self):
         """
@@ -266,7 +266,6 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                 elif selected_cone in self.orange_cones:
                     self.orange_cones.remove(selected_cone)
-                self.empty_pathplanning_input()
                 self.update()
             elif event.modifiers() == QtC.Qt.AltModifier:
                 if selected_cone in self.yellow_cones:
@@ -279,7 +278,6 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                     else:
                         self.selected_blue_cones.append(selected_cone)
-                self.empty_pathplanning_input()
                 self.update()
 
             # Drag a cone or car_handle
@@ -313,7 +311,6 @@ class MapWidget(QtW.QFrame):
                 self.blue_cones.append(point)
                 self.selected_blue_cones.append(point)
                 # Trigger a repaint of the MapWidget to update the visual points
-            self.empty_pathplanning_input()
             self.update()
 
     def mouseDoubleClickEvent(self, event):
@@ -330,7 +327,6 @@ class MapWidget(QtW.QFrame):
                     index = self.blue_cones.index(selected_cone)
                     self.blue_cones.insert(index, point)
                     self.selected_blue_cones.append(point)
-                self.empty_pathplanning_input()
                 self.update()
 
     def mouseMoveEvent(self, event):
@@ -372,7 +368,6 @@ class MapWidget(QtW.QFrame):
         self.update_car()
 
         # the only time you're sure that you don't get a transformation fault in the path
-        self.empty_pathplanning_input()
         self.update()
 
     # Override the wheelEvent method to handle scrolling events
@@ -392,7 +387,6 @@ class MapWidget(QtW.QFrame):
                 if self.zoom_level > self.MIN_ZOOM:
                     self.zoom_level /= self.ZOOM
                     self.offset = s + r * self.ZOOM
-            self.empty_pathplanning_input()
             self.update()
 
     def keyPressEvent(self, event: QtG.QKeyEvent):
