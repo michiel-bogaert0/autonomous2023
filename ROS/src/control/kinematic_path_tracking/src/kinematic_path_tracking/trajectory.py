@@ -148,12 +148,26 @@ class Trajectory:
         if len(self.path_blf) == 0:
             return 0, 0
 
+        if self.change_index:
+            self.current_position_index = np.argmin(
+                np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
+            )
+
+        else:
+            distances = np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
+            distances = np.where(
+                abs(np.arange(len(distances)) - self.closest_index) < 20,
+                distances,
+                distances + 2000,
+            )
+            self.current_position_index = np.argmin(distances)
+
         # Only calculate closest index as index of point with smallest distance to current position if working in trakdrive/autocross
-        self.current_position_index = (
-            np.argmin(np.sum((self.path_blf - [0, 0]) ** 2, axis=1))
-            if self.change_index
-            else self.closest_index
-        )
+        # self.current_position_index = (
+        #     np.argmin(np.sum((self.path_blf - [0, 0]) ** 2, axis=1))
+        #     if self.change_index
+        #     else self.closest_index
+        # )
         self.closest_index = self.current_position_index
 
     def calculate_target_point(self, minimal_distance, mission):
@@ -180,15 +194,13 @@ class Trajectory:
             target_x = self.path_blf[self.closest_index][0]
             target_y = self.path_blf[self.closest_index][1]
 
-            if (
-                mission == AutonomousMission.SKIDPAD
-                or mission == AutonomousMission.ACCELERATION
-            ):
+            if mission == AutonomousMission.ACCELERATION:
                 # For skidpad/acc, minimal distance has to be defined as direct distance to the car (0,0)
                 distance = np.sqrt(target_x**2 + target_y**2)
             elif (
                 mission == AutonomousMission.TRACKDRIVE
                 or mission == AutonomousMission.AUTOCROSS
+                or mission == AutonomousMission.SKIDPAD
             ):
                 # For trackdrive/autocross, minimal distance is defined over the path
                 target_x_pp = self.path_blf[
