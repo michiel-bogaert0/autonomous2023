@@ -61,6 +61,8 @@ class MapWidget(QtW.QFrame):
         # frameID used to publish observation messages
         self.frame = frame
 
+        self.publish_map = True
+
         # initialize paths
         self.path = None
         self.pathnr = -1
@@ -395,6 +397,8 @@ class MapWidget(QtW.QFrame):
     def keyPressEvent(self, event: QtG.QKeyEvent):
         if event.modifiers() == QtC.Qt.ControlModifier and event.key() == QtC.Qt.Key_S:
             self.save_track_layout()
+        if event.key() == QtC.Qt.Key_Return:
+            self.publish_map = True
         else:
             # if a number is pressed
             if event.key() == QtC.Qt.Key_0:
@@ -445,7 +449,9 @@ class MapWidget(QtW.QFrame):
 
     # Override the paintEvent method to draw the visual points
     def paintEvent(self, event):
-        self.publish_local_map()
+        if self.publish_map:
+            self.publish_local_map()
+            self.publish_map = False
 
         painter = QtG.QPainter(self)
         self.draw.draw_grid(painter)
