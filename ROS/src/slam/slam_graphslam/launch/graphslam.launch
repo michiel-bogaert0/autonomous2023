@@ -21,7 +21,6 @@
 
     # Input/output remapping
     <remap from="/input/observations" to="/ugr/car/observations/lidar" />
-    <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom" />
 
     <remap from="/output/observations" to="/ugr/car/observations/slam" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/slam" />

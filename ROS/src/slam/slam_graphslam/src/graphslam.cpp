@@ -85,7 +85,7 @@ void GraphSLAM::doConfigure() {
 
   this->landmarkPublisher =
       n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>(
-          "/graphslam/debug/vertices/landmarks", 0);
+          "/output/observations", 0);
   this->posesPublisher = n.advertise<geometry_msgs::PoseArray>(
       "/graphslam/debug/vertices/poses", 0);
   this->edgePosesPublisher = n.advertise<visualization_msgs::Marker>(
@@ -231,10 +231,6 @@ void GraphSLAM::step() {
   // --------------------------------------------------------------------
   // ---------------------- Fetch odometry ------------------------------
   // --------------------------------------------------------------------
-  // Fetch the current pose estimate (current in: equal to the one of the
-  // observations) so that we can estimate dDist and dYaw
-  double dX, dY, dYaw = 0;
-
   geometry_msgs::TransformStamped car_pose;
   try {
     car_pose = this->tfBuffer.lookupTransform(
@@ -256,33 +252,19 @@ void GraphSLAM::step() {
   y = car_pose.transform.translation.y;
   tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 
-  dX = x - this->prev_state[0];
-  dY = y - this->prev_state[1];
-  dYaw = yaw - this->prev_state[2];
-
-  if (dYaw > M_PI) {
-    dYaw -= 2 * M_PI;
-  } else if (dYaw < -M_PI) {
-    dYaw += 2 * M_PI;
-  }
   SE2 prev_poseSE2(this->prev_state[0], this->prev_state[1],
                    this->prev_state[2]);
   this->prev_state = {x, y, yaw};
   SE2 poseSE2(x, y, yaw);
+  SE2 pose_trans = prev_poseSE2.inverse() * poseSE2;
   // --------------------------------------------------------------------
   // ---------------------- Add odometry to graph -----------------------
   // --------------------------------------------------------------------
   // Add the odometry to the graph
   PoseVertex *newPoseVertex = new PoseVertex;
   newPoseVertex->setId(this->vertexCounter);
-  newPoseVertex->setEstimate(SE2(x, y, yaw));
+  newPoseVertex->setEstimate(poseSE2);
   this->optimizer.addVertex(newPoseVertex);
-
-  ROS_INFO("x %f, y %f, yaw %f, dx %f, dy %f, dyaw %f", x, y, yaw, dX, dY,
-           dYaw);
-  SE2 test = prev_poseSE2.inverse() * poseSE2;
-  ROS_INFO("trans: x %f, y %f, yaw %f", test.translation().x(),
-           test.translation().y(), test.rotation().angle());
 
   // add odometry contraint
   if (this->prevPoseIndex >= 0) {
@@ -290,10 +272,8 @@ void GraphSLAM::step() {
     odometry->vertices()[0] =
         this->optimizer.vertex(this->prevPoseIndex); // from
     odometry->vertices()[1] = this->optimizer.vertex(this->vertexCounter); // to
-    odometry->setMeasurement(prev_poseSE2.inverse() * poseSE2);
-    // odometry->setMeasurement(SE2(dX, dY, dYaw));
+    odometry->setMeasurement(pose_trans);
     odometry->setInformation(this->covariance_pose.inverse());
-
     this->optimizer.addEdge(odometry);
   } else {
     // First pose
@@ -343,10 +323,6 @@ void GraphSLAM::step() {
         this->optimizer.vertex(this->prevPoseIndex); // pose
     landmarkObservation->vertices()[1] =
         this->optimizer.vertex(associatedLandmarkIndex); // landmark
-    // landmarkObservation->setMeasurement(
-    //     Vector2d(observation.observation.location.x,
-    //              observation.observation.location.y));
-    // landmarkObservation->setMeasurement(loc - Vector2d(x, y));
     landmarkObservation->setMeasurement(poseSE2.inverse() * loc);
 
     // covarianceMatrix << observation.covariance[0], observation.covariance[1],
@@ -360,7 +336,6 @@ void GraphSLAM::step() {
     // ROS_INFO("Covariance: \n%s", matrixStream.str().c_str());
 
     landmarkObservation->setInformation(this->covariance_landmark.inverse());
-    // landmarkObservation->setInformation(Matrix2d::Identity());
     this->optimizer.addEdge(landmarkObservation);
   }
   // --------------------------------------------------------------------
@@ -379,7 +354,6 @@ void GraphSLAM::step() {
   // --------------------------------------------------------------------
   // ------------------------ Publish -----------------------------------
   // --------------------------------------------------------------------
-
   this->publishOutput(transformed_obs.header.stamp);
 }
 
@@ -393,37 +367,12 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
 
   this->prev_publish_time = std::chrono::steady_clock::now();
 
-  // Publish odometry and landmarks
-
   ugr_msgs::ObservationWithCovarianceArrayStamped landmarks;
   landmarks.header.frame_id = this->map_frame;
   landmarks.header.stamp = lookupTime;
 
-  geometry_msgs::PoseArray poses;
-  poses.header.frame_id = this->map_frame;
-
   for (const auto &pair :
        this->optimizer.vertices()) { // unordered_map<int, Vertex*>
-
-    PoseVertex *poseVertex = dynamic_cast<PoseVertex *>(pair.second);
-    if (poseVertex) {
-      geometry_msgs::Pose pose;
-      pose.position.x = poseVertex->estimate().translation().x();
-      pose.position.y = poseVertex->estimate().translation().y();
-
-      tf2::Quaternion q;
-      q.setRPY(0, 0, poseVertex->estimate().rotation().angle());
-
-      // ROS_INFO("x %f, y %f, yaw %f", pose.position.x, pose.position.y,
-      //          poseVertex->estimate().rotation().angle());
-
-      pose.orientation.x = q.x();
-      pose.orientation.y = q.y();
-      pose.orientation.z = q.z();
-      pose.orientation.w = q.w();
-
-      poses.poses.push_back(pose);
-    }
 
     LandmarkVertex *landmarkVertex =
         dynamic_cast<LandmarkVertex *>(pair.second);
@@ -439,10 +388,83 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
   }
 
   this->landmarkPublisher.publish(landmarks);
-  this->posesPublisher.publish(poses);
+
+  // prevPoseIndex
+
+  PoseVertex *pose_vertex =
+      dynamic_cast<PoseVertex *>(this->optimizer.vertex(this->prevPoseIndex));
+
+  nav_msgs::Odometry odom;
+
+  odom.header.stamp = lookupTime;
+  odom.header.frame_id = this->map_frame;
+  odom.child_frame_id = this->slam_base_link_frame;
+
+  odom.pose.pose.position.x = pose_vertex->estimate().translation().x();
+  odom.pose.pose.position.y = pose_vertex->estimate().translation().y();
+
+  tf2::Quaternion quat;
+  quat.setRPY(0, 0, pose_vertex->estimate().rotation().angle());
+
+  odom.pose.pose.orientation.x = quat.getX();
+  odom.pose.pose.orientation.y = quat.getY();
+  odom.pose.pose.orientation.z = quat.getZ();
+  odom.pose.pose.orientation.w = quat.getW();
+
+  // Publish odometry
+  this->odomPublisher.publish(odom);
+
+  // TF Transformation
+  tf2::Transform transform(
+      quat, tf2::Vector3(pose_vertex->estimate().translation().x(),
+                         pose_vertex->estimate().translation().y(), 0));
+
+  geometry_msgs::TransformStamped transformMsg;
+  transformMsg.header.frame_id = this->map_frame;
+  transformMsg.header.stamp = lookupTime;
+  transformMsg.child_frame_id = this->slam_base_link_frame;
+
+  transformMsg.transform.translation.x =
+      pose_vertex->estimate().translation().x();
+  transformMsg.transform.translation.y =
+      pose_vertex->estimate().translation().y();
+
+  transformMsg.transform.rotation.x = quat.getX();
+  transformMsg.transform.rotation.y = quat.getY();
+  transformMsg.transform.rotation.z = quat.getZ();
+  transformMsg.transform.rotation.w = quat.getW();
+
+  static tf2_ros::TransformBroadcaster br;
+  br.sendTransform(transformMsg);
 
   // Publish edges
   if (this->debug) {
+    // Publish odometry poses
+    geometry_msgs::PoseArray poses;
+    poses.header.frame_id = this->map_frame;
+
+    for (const auto &pair :
+         this->optimizer.vertices()) { // unordered_map<int, Vertex*>
+
+      PoseVertex *poseVertex = dynamic_cast<PoseVertex *>(pair.second);
+      if (poseVertex) {
+        geometry_msgs::Pose pose;
+        pose.position.x = poseVertex->estimate().translation().x();
+        pose.position.y = poseVertex->estimate().translation().y();
+
+        tf2::Quaternion q;
+        q.setRPY(0, 0, poseVertex->estimate().rotation().angle());
+
+        pose.orientation.x = q.x();
+        pose.orientation.y = q.y();
+        pose.orientation.z = q.z();
+        pose.orientation.w = q.w();
+
+        poses.poses.push_back(pose);
+      }
+    }
+    this->posesPublisher.publish(poses);
+
     visualization_msgs::Marker poseEdges;
     poseEdges.header.frame_id = this->map_frame;
     poseEdges.header.stamp = lookupTime;

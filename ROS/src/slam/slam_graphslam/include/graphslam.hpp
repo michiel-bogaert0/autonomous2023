@@ -85,7 +85,6 @@ private:
   tf2_ros::MessageFilter<ugr_msgs::ObservationWithCovarianceArrayStamped>
       tf2_filter;
 
-  void odomCallback(const nav_msgs::OdometryConstPtr &);
   // Handlers
   void handleObservations(
       const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs);
