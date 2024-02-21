@@ -3,12 +3,13 @@
     <node pkg="minimum_curvature" type="run.py" name="minimum_curvature" output="screen" respawn="true">
 
         <param name="frame" value="ugr/car_base_link" />
+        <param name="rate" value="5" />
 
         <param name="carwidth" value="0.5" />
 
         <!-- <remap from="/input/local_map" to="/ugr/car/map/fastslam/local" /> -->
         <remap from="/input/path" to="/pathplanning/poses" />
-        <remap from="/output/path" to="/minimum_curvature/path" />
+        <remap from="/output/path" to="/pathplanning/path" />
         
     </node>
 

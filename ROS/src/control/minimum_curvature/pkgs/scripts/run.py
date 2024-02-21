@@ -26,21 +26,30 @@ class MinimumCurvature(ManagedNode):
 
         # Publishers for the path and velocity
         self.path_pub = super().AddPublisher("/output/path", Path, queue_size=10)
-
-    def doActivate(self):
-        self.path_sub = super().AddSubscriber(
+        self.path_sub = rospy.Subscriber(
             "/input/path",
             Path,
             self.receive_new_path,
         )
+        self.reference_line = np.array([])
+        self.header = None
+        self.calculate = False
+
+    def doActivate(self):
+        self.calculate = True
 
     def receive_new_path(self, msg: Path):
         self.reference_line = np.array(
             [[p.pose.position.x, p.pose.position.y, 1.15, 1.15] for p in msg.poses]
         )
-        self.compute(self.reference_line, msg.header)
+        self.header = msg.header
 
-    def compute(self, path, header):
+    def active(self):
+        if not self.calculate:
+            return
+        path = self.reference_line
+        header = self.header
+        print(self.reference_line)
         self.reference_line = generate_interpolated_points(path)
 
         coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(
@@ -61,15 +70,17 @@ class MinimumCurvature(ManagedNode):
         )
 
         smoothed_path = B_spline_smoothing(path_result)
-        msg = Path()
-        smoothed_msg = msg
+        smoothed_msg = Path()
         smoothed_msg.poses = []
         for point in smoothed_path:
             pose = PoseStamped()
             pose.pose.position.x = point[0]
             pose.pose.position.y = point[1]
+            pose.header = header
             smoothed_msg.poses.append(pose)
-        self.path_pub.publish(msg)
+        smoothed_msg.header = header
+        self.path_pub.publish(smoothed_msg)
+        self.calculate = False
 
 
 MinimumCurvature()
