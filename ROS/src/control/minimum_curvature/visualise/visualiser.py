@@ -30,7 +30,7 @@ class Visualiser:
         configure_node("pathplanning")
         configure_node("minimum_curvature")
         set_state_active("pathplanning")
-        set_state_active("minimum_curvature")
+        # set_state_active("minimum_curvature")
 
         # Subscriber voor minimum curvature path
         self.mincurvpath_subscriber = rospy.Subscriber(

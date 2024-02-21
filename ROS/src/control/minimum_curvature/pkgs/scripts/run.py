@@ -45,7 +45,7 @@ class MinimumCurvature(ManagedNode):
         self.header = msg.header
 
     def active(self):
-        if not self.calculate:
+        if not self.calculate or self.reference_line.size == 0:
             return
         path = self.reference_line
         header = self.header
@@ -55,6 +55,9 @@ class MinimumCurvature(ManagedNode):
         coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(
             path=np.vstack((self.reference_line[:, 0:2], self.reference_line[0, 0:2]))
         )
+
+        print(self.reference_line.size)
+        print(len(normvec_normalized))
 
         alpha_mincurv, curv_error_max = opt_min_curv(
             reftrack=self.reference_line,

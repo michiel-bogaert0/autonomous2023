@@ -9,6 +9,7 @@ import yaml
 from bezier import make_bezier, make_refline
 from buttons import Buttons
 from draw import Draw
+from node_fixture.node_manager import set_state_active, set_state_inactive
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtGui as QtG
 from PyQt5 import QtWidgets as QtW
@@ -136,6 +137,9 @@ class MapWidget(QtW.QFrame):
         if self.compute_on:
             self.map_publisher.publish(local)
             self.compute_on = False
+
+            set_state_inactive("minimum_curvature")
+            set_state_active("minimum_curvature")
 
     def receive_path(self, rel_path: np.ndarray):
         self.mincurv_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)

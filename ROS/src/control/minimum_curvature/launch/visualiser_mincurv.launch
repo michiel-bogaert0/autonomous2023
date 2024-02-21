@@ -9,7 +9,7 @@
 
     <remap from="/output/local_map" to="/ugr/car/map/fastslam/local" />
 
-    <remap from="/input/path" to="/minimum_curvature/path" />
+    <remap from="/input/path" to="/pathplanning/path" />
   
   </node>
 
