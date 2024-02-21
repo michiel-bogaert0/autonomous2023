@@ -1,57 +1,12 @@
 import math
 import time
-from typing import List, Tuple
 
 import numpy as np
 import quadprog
 from scipy.interpolate import interp1d, splev, splprep
 
 
-def generate_center_points(blue_cones, yellow_cones) -> List[Tuple[float, float]]:
-    refPoints = []
-    c = 0
-    for i, yellow_cone in enumerate(yellow_cones):
-        min_distance = math.inf
-        nearest_blue = None
-        removed = 0
-        for j, blue_cone in enumerate(blue_cones[c:]):
-            distance = math.sqrt(
-                (blue_cone[0] - yellow_cone[0]) ** 2
-                + (blue_cone[1] - yellow_cone[1]) ** 2
-            )
-            if distance < min_distance:
-                min_distance = distance
-                for index, el in enumerate(blue_cones[c + removed : c + j]):
-                    if index + removed > 0 or i == 0:
-                        mindis = math.inf
-                        closest = None
-                        for yc in yellow_cones[: i + 1]:
-                            dis = math.sqrt((el[0] - yc[0]) ** 2 + (el[1] - yc[1]) ** 2)
-                            if dis < mindis:
-                                mindis = dis
-                                closest = yc
-                        refPoints.append(
-                            [(el[0] + closest[0]) / 2, (el[1] + closest[1]) / 2]
-                        )
-                removed = j
-                nearest_blue = blue_cone
-        if nearest_blue:
-            refPoints.append(
-                [
-                    (nearest_blue[0] + yellow_cone[0]) / 2,
-                    (nearest_blue[1] + yellow_cone[1]) / 2,
-                ]
-            )
-
-        c += removed
-
-    return refPoints
-
-
-# Generate interpolated points along the curvilinear path
-def generate_interpolated_points(points):
-    path = np.array([[p[0], p[1], 1.05, 1.05] for p in points])
-
+def generate_interpolated_points(path):
     # Linear interpolation between center points to add more points for BSpline smoothing
     distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
     distance = np.insert(distance, 0, 0) / distance[-1]

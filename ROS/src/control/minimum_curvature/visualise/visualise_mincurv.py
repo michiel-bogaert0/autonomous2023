@@ -33,7 +33,7 @@ class MapWidget(QtW.QFrame):
 
     def __init__(
         self,
-        publisher,
+        map_publisher,
         frame,
         startpos_x=0,
         startpos_y=0,
@@ -49,13 +49,13 @@ class MapWidget(QtW.QFrame):
         self.draw = Draw(self)
 
         # publisher used to publish observation messages
-        self.map_publisher = publisher
+        self.map_publisher = map_publisher
 
         # frameID used to publish observation messages
         self.frame = frame
 
-        # intialize smoothed path
-        self.smoothed_path = None
+        # intialize minimum curvature path
+        self.mincurv_path = None
 
         # initialize cone lists
         if yellows is None:
@@ -75,6 +75,8 @@ class MapWidget(QtW.QFrame):
         self.refline_on = True
         self.trackbounds_on = True
         self.cones_on = False
+        self.mincurv_on = True
+        self.compute_on = True
         self.buttons.cones_clicked()
         self.buttons.set_buttons()
 
@@ -131,11 +133,14 @@ class MapWidget(QtW.QFrame):
             local_ob.observation.location.y = cone[1]
 
             local.observations.append(local_ob)
-
-        self.map_publisher.publish(local)
+        if self.compute_on:
+            self.map_publisher.publish(local)
+            self.compute_on = False
 
     def receive_path(self, rel_path: np.ndarray):
-        self.smoothed_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
+        self.mincurv_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
+        self.buttons.computeButton.setStyleSheet("background-color: gray")
+
         self.update()
 
     def get_selected_element(self, event) -> Optional[QtC.QPoint]:
@@ -255,6 +260,8 @@ class MapWidget(QtW.QFrame):
         painter = QtG.QPainter(self)
         self.draw.draw_grid(painter)
 
+        self.draw.draw_cones(painter)
+
         if self.refline_on:
             self.refPoints = make_refline(self.blue_cones, self.yellow_cones)
             self.ref_bezier = make_bezier(self.refPoints)
@@ -274,14 +281,13 @@ class MapWidget(QtW.QFrame):
                 self.yellow_bezier, painter, QtG.QColor(QtC.Qt.yellow)
             )
 
-        self.draw.draw_cones(painter)
-
-        self.draw.draw_line(
-            self.smoothed_path,
-            painter,
-            QtG.QColor(QtC.Qt.green),
-            QtG.QColor(QtC.Qt.red),
-        )
+        if self.mincurv_on:
+            self.draw.draw_line(
+                self.mincurv_path,
+                painter,
+                QtG.QColor(QtC.Qt.green),
+                QtG.QColor(QtC.Qt.red),
+            )
 
         self.draw.draw_car(painter)
         self.draw.draw_scale(painter)

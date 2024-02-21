@@ -6,11 +6,9 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 from utils.utils_mincurv import (
     B_spline_smoothing,
     calc_splines,
-    generate_center_points,
     generate_interpolated_points,
     opt_min_curv,
 )
@@ -27,38 +25,28 @@ class MinimumCurvature(ManagedNode):
         self.car_width = rospy.get_param("~car_width", 0.5)
 
         # Publishers for the path and velocity
-
         self.path_pub = super().AddPublisher("/output/path", Path, queue_size=10)
 
     def doActivate(self):
-        self.map_sub = super().AddSubscriber(
-            "/input/local_map",
-            ObservationWithCovarianceArrayStamped,
-            self.receive_new_map,
+        # self.map_sub = super().AddSubscriber(
+        #     "/input/local_map",
+        #     ObservationWithCovarianceArrayStamped,
+        #     self.receive_new_map,
+        # )
+        self.path_sub = super().AddSubscriber(
+            "/input/path",
+            Path,
+            self.receive_new_path,
         )
 
-    def receive_new_map(self, map):
-        cones = np.zeros((len(map.observations), 3))
-        for i, obs in enumerate(map.observations):
-            cones[i] = [
-                obs.observation.location.x,
-                obs.observation.location.y,
-                obs.observation.observation_class,
-            ]
+    def receive_new_path(self, msg: Path):
+        self.reference_line = np.array(
+            [[p.pose.position.x, p.pose.position.y, 1.05, 1.05] for p in msg.poses]
+        )
+        self.compute(self.reference_line, msg.header)
 
-        self.compute(cones, map.header)
-
-    def compute(self, cones, header, msg=Path):
-        self.blue_cones = []
-        self.yellow_cones = []
-        self.center_points = []
-        for cone in cones:
-            if cone[2] == 0:
-                self.blue_cones.append([cone[0], cone[1]])
-            elif cone[2] == 1:
-                self.yellow_cones.append([cone[0], cone[1]])
-        self.center_points = generate_center_points(self.blue_cones, self.yellow_cones)
-        self.reference_line = generate_interpolated_points(self.center_points)
+    def compute(self, path, header):
+        self.reference_line = generate_interpolated_points(path)
 
         coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(
             path=np.vstack((self.reference_line[:, 0:2], self.reference_line[0, 0:2]))
@@ -78,15 +66,14 @@ class MinimumCurvature(ManagedNode):
         )
 
         smoothed_path = B_spline_smoothing(path_result)
-        rospy.loginfo("got here 6")
-
+        msg = Path()
         smoothed_msg = msg
         smoothed_msg.poses = []
         for point in smoothed_path:
             pose = PoseStamped()
             pose.pose.position.x = point[0]
             pose.pose.position.y = point[1]
-
+            smoothed_msg.poses.append(pose)
         self.path_pub.publish(msg)
 
 

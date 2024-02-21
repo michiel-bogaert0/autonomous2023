@@ -19,23 +19,31 @@ class Visualiser:
         rospy.init_node("visualiser_mincurv")
 
         # Publisher voor local_map
-        self.publisher = rospy.Publisher(
-            "/output/local_map", ObservationWithCovarianceArrayStamped
+        self.map_publisher = rospy.Publisher(
+            "/output/local_map", ObservationWithCovarianceArrayStamped, queue_size=10
         )
 
         self.frame = rospy.get_param("~frame", "ugr/car_base_link")
         self.track_file = rospy.get_param("~layout", "")
+        rospy.wait_for_service("/node_managing/minimum_curvature/get", timeout=1.0)
 
+        configure_node("pathplanning")
         configure_node("minimum_curvature")
+        set_state_active("pathplanning")
         set_state_active("minimum_curvature")
+
+        # Subscriber voor minimum curvature path
+        self.mincurvpath_subscriber = rospy.Subscriber(
+            "/input/path", Path, self.handle_path_received
+        )
 
         # Initialize and start Qt application
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
             # If a track file is specified
-            self.window = MainWindow(self.publisher, self.frame, self.track_file)
+            self.window = MainWindow(self.map_publisher, self.frame, self.track_file)
         else:
-            self.window = MainWindow(self.publisher, self.frame)
+            self.window = MainWindow(self.map_publisher, self.frame)
         self.window.show()
         sys.exit(app.exec_())
 
@@ -52,7 +60,7 @@ class Visualiser:
 
 
 class MainWindow(QtW.QMainWindow):
-    def __init__(self, publisher, frame, trackfile_name=None):
+    def __init__(self, map_publisher, frame, trackfile_name=None):
         super().__init__(None)
         if trackfile_name is not None:
             layout_path = (
@@ -113,7 +121,7 @@ class MainWindow(QtW.QMainWindow):
                     )
             # Create a new instance of MapWidget
             self.map_widget = MapWidget(
-                publisher,
+                map_publisher,
                 frame,
                 startpos_x,
                 startpos_y,
@@ -124,7 +132,7 @@ class MainWindow(QtW.QMainWindow):
             )
         else:
             # Create a new instance of MapWidget
-            self.map_widget = MapWidget(publisher, frame)
+            self.map_widget = MapWidget(map_publisher, frame)
         # Add the MapWidget to the main window
         self.setCentralWidget(self.map_widget)
         # set window size when minimalized

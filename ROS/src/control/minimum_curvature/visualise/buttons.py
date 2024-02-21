@@ -24,11 +24,19 @@ class Buttons:
         self.conesButton = QtW.QPushButton("show/hide cones", self.widget)
         self.conesButton.setFixedSize(250, 30)  # Set the size of the button
         layout.addWidget(self.conesButton)
+        self.mincurvButton = QtW.QPushButton("show/hide minimum curvature", self.widget)
+        self.mincurvButton.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(self.mincurvButton)
+        self.computeButton = QtW.QPushButton("compute minimum curvature", self.widget)
+        self.computeButton.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(self.computeButton)
 
         # Connect the button's clicked signal to a slot
         self.reflineButton.clicked.connect(self.refline_clicked)
         self.trackboundsButton.clicked.connect(self.trackbounds_clicked)
         self.conesButton.clicked.connect(self.cones_clicked)
+        self.mincurvButton.clicked.connect(self.mincurv_clicked)
+        self.computeButton.clicked.connect(self.compute_clicked)
 
     def refline_clicked(self):
         self.widget.refline_on = not self.widget.refline_on
@@ -61,11 +69,23 @@ class Buttons:
             self.conesButton.setStyleSheet("background-color: red")
         self.widget.update()
 
+    def mincurv_clicked(self):
+        self.widget.mincurv_on = not self.widget.mincurv_on
+        if self.widget.mincurv_on:
+            self.mincurvButton.setStyleSheet("background-color: green")
+        else:
+            self.mincurvButton.setStyleSheet("background-color: red")
+        self.widget.update()
+
+    def compute_clicked(self):
+        self.widget.compute_on = True
+        self.computeButton.setStyleSheet("background-color: orange")
+
     def set_buttons(self):
         if self.widget.refline_on:
             self.reflineButton.setStyleSheet("background-color: green")
         else:
-            self.reflineButton.setStyleSheet("background-color: red")
+            self.reflineButton.setStyleSheet("background-color: gray")
         if self.widget.trackbounds_on:
             self.trackboundsButton.setStyleSheet("background-color: green")
         else:
@@ -74,3 +94,9 @@ class Buttons:
             self.conesButton.setStyleSheet("background-color: green")
         else:
             self.conesButton.setStyleSheet("background-color: red")
+        if self.widget.mincurv_on:
+            self.mincurvButton.setStyleSheet("background-color: green")
+        else:
+            self.mincurvButton.setStyleSheet("background-color: red")
+
+        self.computeButton.setStyleSheet("background-color: gray")
