@@ -128,6 +128,9 @@ class MapWidget(QtW.QFrame):
         self.blue_bezier = []
         self.yellow_bezier = []
 
+        self.update()
+        self.publish_local_map()
+
     def publish_local_map(self):
         """
         Publishes local map of the selected cones
@@ -395,6 +398,8 @@ class MapWidget(QtW.QFrame):
     def keyPressEvent(self, event: QtG.QKeyEvent):
         if event.modifiers() == QtC.Qt.ControlModifier and event.key() == QtC.Qt.Key_S:
             self.save_track_layout()
+        if event.key() == QtC.Qt.Key_Return:
+            self.publish_local_map()
         else:
             # if a number is pressed
             if event.key() == QtC.Qt.Key_0:
@@ -445,8 +450,6 @@ class MapWidget(QtW.QFrame):
 
     # Override the paintEvent method to draw the visual points
     def paintEvent(self, event):
-        self.publish_local_map()
-
         painter = QtG.QPainter(self)
         self.draw.draw_grid(painter)
 
