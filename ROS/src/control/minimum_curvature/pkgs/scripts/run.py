@@ -40,7 +40,7 @@ class MinimumCurvature(ManagedNode):
 
     def receive_new_path(self, msg: Path):
         self.reference_line = np.array(
-            [[p.pose.position.x, p.pose.position.y, 1.15, 1.15] for p in msg.poses]
+            [[p.pose.position.x, p.pose.position.y, 1.50, 1.50] for p in msg.poses]
         )
         self.header = msg.header
 

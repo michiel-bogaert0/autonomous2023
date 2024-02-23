@@ -12,7 +12,7 @@ def generate_interpolated_points(path):
     distance = np.insert(distance, 0, 0) / distance[-1]
 
     alpha = np.linspace(0, 1, len(path) * 3)
-    interpolator = interp1d(distance, path, kind="linear", axis=0)
+    interpolator = interp1d(distance, path, kind="quadratic", axis=0)
     path = interpolator(alpha)
 
     return path
