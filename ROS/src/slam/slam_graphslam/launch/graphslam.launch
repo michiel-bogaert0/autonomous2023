@@ -22,7 +22,8 @@
     # Input/output remapping
     <remap from="/input/observations" to="/ugr/car/observations/lidar" />
 
-    <remap from="/output/observations" to="/ugr/car/observations/slam" />
-    <remap from="/output/odom" to="/ugr/car/odometry/filtered/slam" />
+    <!-- <remap from="/output/observations" to="/ugr/car/observations/slam" /> -->
+    <remap from="/output/observations" to="/graphslam/debug/vertices/landmark" />
+    <!-- <remap from="/output/odom" to="/ugr/car/odometry/filtered/slam" /> -->
   </node>
 </launch>

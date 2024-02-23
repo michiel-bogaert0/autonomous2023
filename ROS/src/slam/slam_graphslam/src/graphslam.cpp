@@ -174,13 +174,11 @@ void GraphSLAM::step() {
   if (!this->gotFirstObservations) {
     return;
   }
-
   // --------------------------------------------------------------------
   // ------------------- Transform observations -------------------------
   // --------------------------------------------------------------------
   // Transform the observations to the base_link frame from their time to the
   // new time
-
   ugr_msgs::ObservationWithCovarianceArrayStamped transformed_obs;
   transformed_obs.header.frame_id = this->base_link_frame;
   transformed_obs.header.stamp = ros::Time::now();
@@ -201,9 +199,6 @@ void GraphSLAM::step() {
                   ros::Duration(0.05))
               .point;
     } catch (const exception &e) {
-      ROS_ERROR("Observation static transform (and perhaps time transform) "
-                "failed: %s",
-                e.what());
       this->diagPublisher->publishDiagnostic(
           node_fixture::DiagnosticStatusEnum::ERROR, "Observation transform",
           "Static transform (and perhaps time transform) failed!");
@@ -309,8 +304,11 @@ void GraphSLAM::step() {
       }
     }
     if (associatedLandmarkIndex < 0) {
+      // landmark does not exist
+      // make new landmark and add to graph
       LandmarkVertex *landmark = new LandmarkVertex;
       landmark->setId(this->vertexCounter);
+      landmark->setColor(observation.observation.observation_class);
 
       landmark->setEstimate(loc);
       this->optimizer.addVertex(landmark);
@@ -367,6 +365,10 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
 
   this->prev_publish_time = std::chrono::steady_clock::now();
 
+  // --------------------------------------------------------------------
+  // ----------------- Publish Landmarks --------------------------------
+  // --------------------------------------------------------------------
+
   ugr_msgs::ObservationWithCovarianceArrayStamped landmarks;
   landmarks.header.frame_id = this->map_frame;
   landmarks.header.stamp = lookupTime;
@@ -381,7 +383,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
       map_ob.observation.location.x = landmarkVertex->estimate().x();
       map_ob.observation.location.y = landmarkVertex->estimate().y();
       map_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-      map_ob.observation.observation_class = 3;
+      map_ob.observation.observation_class = landmarkVertex->color;
       map_ob.observation.belief = 0;
       landmarks.observations.push_back(map_ob);
     }
@@ -389,7 +391,9 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
 
   this->landmarkPublisher.publish(landmarks);
 
-  // prevPoseIndex
+  // --------------------------------------------------------------------
+  // ----------------- Publish odometry ---------------------------------
+  // --------------------------------------------------------------------
 
   PoseVertex *pose_vertex =
       dynamic_cast<PoseVertex *>(this->optimizer.vertex(this->prevPoseIndex));
@@ -411,10 +415,11 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
   odom.pose.pose.orientation.z = quat.getZ();
   odom.pose.pose.orientation.w = quat.getW();
 
-  // Publish odometry
   this->odomPublisher.publish(odom);
 
-  // TF Transformation
+  // --------------------------------------------------------------------
+  // ----------------- TF Transformation --------------------------------
+  // --------------------------------------------------------------------
   tf2::Transform transform(
       quat, tf2::Vector3(pose_vertex->estimate().translation().x(),
                          pose_vertex->estimate().translation().y(), 0));
@@ -437,7 +442,9 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
   static tf2_ros::TransformBroadcaster br;
   br.sendTransform(transformMsg);
 
-  // Publish edges
+  // --------------------------------------------------------------------
+  // --------------------- publish debug --------------------------------
+  // --------------------------------------------------------------------
   if (this->debug) {
     // Publish odometry poses
     geometry_msgs::PoseArray poses;
@@ -465,6 +472,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     }
     this->posesPublisher.publish(poses);
 
+    // Publish edges
     visualization_msgs::Marker poseEdges;
     poseEdges.header.frame_id = this->map_frame;
     poseEdges.header.stamp = lookupTime;
