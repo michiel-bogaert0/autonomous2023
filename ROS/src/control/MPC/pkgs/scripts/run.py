@@ -113,8 +113,9 @@ class MPC(ManagedNode):
         )
 
         Q = np.diag([0, 0, 0, 0, 0])
-        Qn = np.diag([1e-1, 1e-1, 0, 0, 1e-2])
-        R = np.diag([1e-4, 5e-1])
+        Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
+        R = np.diag([7e-4, 2e-2])
+        R_delta = np.diag([5e-3, 3e-2])
 
         # Weight matrices for the terminal cost
         P = np.diag([0, 0, 0, 0, 0])
@@ -125,6 +126,7 @@ class MPC(ManagedNode):
             @ Qn
             @ (self.ocp.x - self.ocp.x_control)
             + self.ocp.u.T @ R @ self.ocp.u
+            + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
         )
         self.ocp.terminal_cost = (
             (self.ocp.x - self.ocp.x_ref).T @ P @ (self.ocp.x - self.ocp.x_ref)
@@ -239,8 +241,11 @@ class MPC(ManagedNode):
                     if self.slam_state == SLAMStatesEnum.RACING:
                         # Scale steering penalty based on current speed
                         Q = np.diag([0, 0, 0, 0, 0])
-                        Qn = np.diag([5e2, 5e2, 0, 0, 1e-2])
-                        R = np.diag([1e-1, 4e4 * self.actual_speed / self.speed_target])
+                        Qn = np.diag([1e-1, 1e-1, 0, 0, 0])
+                        R = np.diag(
+                            [7e-4, 5e-1]
+                        )  # * self.actual_speed / self.speed_target])
+                        R_delta = np.diag([1e-3, 8e-1])
 
                         # Weight matrices for the terminal cost
                         P = np.diag([0, 0, 0, 0, 0])
@@ -253,6 +258,7 @@ class MPC(ManagedNode):
                             @ Qn
                             @ (self.ocp.x - self.ocp.x_control)
                             + self.ocp.u.T @ R @ self.ocp.u
+                            + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
                         )
                         self.ocp.terminal_cost = (
                             (self.ocp.x - self.ocp.x_ref).T
@@ -331,8 +337,8 @@ class MPC(ManagedNode):
                     # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
                     # rospy.loginfo(f"x closed loop: {X_closed_loop}")
                     # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
-                    # rospy.loginfo(f"u closed loop: {U_closed_loop}")
-                    # rospy.loginfo(f"actual speed: {self.actual_speed}")
+                    rospy.loginfo(f"u closed loop: {U_closed_loop}")
+                    rospy.loginfo(f"actual speed: {self.actual_speed}")
 
                     # Publish MPC prediction for visualization
                     x_pred = Path()

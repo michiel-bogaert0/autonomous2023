@@ -60,6 +60,7 @@ class Ocp:
         # symbolic params to define cost functions
         self.x = casadi.SX.sym("symbolic_x", self.nx)
         self.u = casadi.SX.sym("symbolic_u", self.nu)
+        self.u_delta = casadi.SX.sym("symbolic_u_prev", self.nu)
         self.x_ref = casadi.SX.sym("symbolic_x_ref", self.nx)
         self.x_control = casadi.SX.sym("symbolic_x_control_", self.nx)
         self.x_ref_mid = casadi.SX.sym("symbolic_x_ref_mid", self.nx)
@@ -145,9 +146,22 @@ class Ocp:
             self.cost_fun = cost_fun
             L_run = 0  # cost over the horizon
             for i in range(self.N):
-                L_run += cost_fun(
-                    self.X[:, i], self.U[:, i], self._x_ref, self._x_control[:, i]
-                )
+                if i == 0:
+                    L_run += cost_fun(
+                        self.X[:, i],
+                        self.U[:, i],
+                        self.U[:, i],
+                        self._x_ref,
+                        self._x_control[:, i],
+                    )
+                else:
+                    L_run += cost_fun(
+                        self.X[:, i],
+                        self.U[:, i],
+                        (self.U[:, i] - self.U[:, i - 1]),
+                        self._x_ref,
+                        self._x_control[:, i],
+                    )
             self.cost["run"] = L_run
 
         if terminal_cost_fun is not None:
@@ -167,7 +181,9 @@ class Ocp:
     @running_cost.setter
     def running_cost(self, symbolic_cost):
         cost_fun = casadi.Function(
-            "cost_fun", [self.x, self.u, self.x_ref, self.x_control], [symbolic_cost]
+            "cost_fun",
+            [self.x, self.u, self.u_delta, self.x_ref, self.x_control],
+            [symbolic_cost],
         )
         self.set_cost(cost_fun=cost_fun)
 
