@@ -43,6 +43,7 @@
 #include "g2o/solvers/eigen/linear_solver_eigen.h"
 
 #include "edge.hpp"
+#include "kdtree.hpp"
 #include "se2.hpp"
 #include "vertex.hpp"
 
@@ -174,6 +175,49 @@ void GraphSLAM::step() {
   if (!this->gotFirstObservations) {
     return;
   }
+
+  // --------------------------------------------------------------------
+  // ------------------------ Kdtree ------------------------------------
+  // --------------------------------------------------------------------
+  Kdtree::KdNodeVector nodes;
+  for (const auto &pair : this->optimizer.vertices()) {
+    LandmarkVertex *landmarkVertex =
+        dynamic_cast<LandmarkVertex *>(pair.second);
+    if (landmarkVertex) {
+      std::vector<double> point(2);
+      point[0] = landmarkVertex->estimate().x();
+      point[1] = landmarkVertex->estimate().y();
+      nodes.push_back(Kdtree::KdNode(point, NULL, pair.first));
+    }
+  }
+  if (nodes.size() > 2) {
+    Kdtree::KdTree tree(&nodes);
+
+    vector<int> merged_indices;
+
+    for (auto &node : nodes) {
+      if (find(merged_indices.begin(), merged_indices.end(), node.index) ==
+          merged_indices.end()) {
+        // if not already merged
+        Kdtree::KdNodeVector result;
+        tree.range_nearest_neighbors(node.point, this->association_threshold,
+                                     &result);
+        if (result.size() > 1) {
+          for (auto &neighbor : result) {
+            if (neighbor.index != node.index &&
+                find(merged_indices.begin(), merged_indices.end(),
+                     neighbor.index) == merged_indices.end()) {
+              this->optimizer.mergeVertices(
+                  this->optimizer.vertex(node.index),
+                  this->optimizer.vertex(neighbor.index), true);
+              merged_indices.push_back(neighbor.index);
+            }
+          }
+        }
+      }
+    }
+  }
+
   // --------------------------------------------------------------------
   // ------------------- Transform observations -------------------------
   // --------------------------------------------------------------------
@@ -336,6 +380,28 @@ void GraphSLAM::step() {
     landmarkObservation->setInformation(this->covariance_landmark.inverse());
     this->optimizer.addEdge(landmarkObservation);
   }
+
+  // // Associate landmarks
+  // for (const auto &pair1 : this->optimizer.vertices()) {
+  //   LandmarkVertex *landmarkVertex1 =
+  //       dynamic_cast<LandmarkVertex *>(pair1.second);
+  //   if (landmarkVertex1) {
+  //     Vector2d landmark1 = landmarkVertex1->estimate();
+  //     for (const auto &pair2 : this->optimizer.vertices()) {
+  //       LandmarkVertex *landmarkVertex2 =
+  //           dynamic_cast<LandmarkVertex *>(pair2.second);
+  //       if (landmarkVertex2) {
+  //         Vector2d landmark2 = landmarkVertex2->estimate();
+  //         if ((landmark1 - landmark2).norm() < this->association_threshold &&
+  //             landmarkVertex1->id() != landmarkVertex2->id()) {
+  //               this->optimizer.mergeVertices(landmarkVertex1,
+  //               landmarkVertex2, true);
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+
   // --------------------------------------------------------------------
   // ------------------------ Optimization ------------------------------
   // --------------------------------------------------------------------
@@ -420,27 +486,27 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
   // --------------------------------------------------------------------
   // ----------------- TF Transformation --------------------------------
   // --------------------------------------------------------------------
-  tf2::Transform transform(
-      quat, tf2::Vector3(pose_vertex->estimate().translation().x(),
-                         pose_vertex->estimate().translation().y(), 0));
+  // tf2::Transform transform(
+  //     quat, tf2::Vector3(pose_vertex->estimate().translation().x(),
+  //                        pose_vertex->estimate().translation().y(), 0));
 
-  geometry_msgs::TransformStamped transformMsg;
-  transformMsg.header.frame_id = this->map_frame;
-  transformMsg.header.stamp = lookupTime;
-  transformMsg.child_frame_id = this->slam_base_link_frame;
+  // geometry_msgs::TransformStamped transformMsg;
+  // transformMsg.header.frame_id = this->map_frame;
+  // transformMsg.header.stamp = lookupTime;
+  // transformMsg.child_frame_id = this->slam_base_link_frame;
 
-  transformMsg.transform.translation.x =
-      pose_vertex->estimate().translation().x();
-  transformMsg.transform.translation.y =
-      pose_vertex->estimate().translation().y();
+  // transformMsg.transform.translation.x =
+  //     pose_vertex->estimate().translation().x();
+  // transformMsg.transform.translation.y =
+  //     pose_vertex->estimate().translation().y();
 
-  transformMsg.transform.rotation.x = quat.getX();
-  transformMsg.transform.rotation.y = quat.getY();
-  transformMsg.transform.rotation.z = quat.getZ();
-  transformMsg.transform.rotation.w = quat.getW();
+  // transformMsg.transform.rotation.x = quat.getX();
+  // transformMsg.transform.rotation.y = quat.getY();
+  // transformMsg.transform.rotation.z = quat.getZ();
+  // transformMsg.transform.rotation.w = quat.getW();
 
-  static tf2_ros::TransformBroadcaster br;
-  br.sendTransform(transformMsg);
+  // static tf2_ros::TransformBroadcaster br;
+  // br.sendTransform(transformMsg);
 
   // --------------------------------------------------------------------
   // --------------------- publish debug --------------------------------
