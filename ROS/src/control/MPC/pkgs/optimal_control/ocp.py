@@ -45,7 +45,7 @@ class Ocp:
         self.T = T
         self.F = F
 
-        self.np = np  # Number of control points on path
+        self.np = self.N  # Number of control points on path
 
         self.opti = casadi.Opti()
 
@@ -145,10 +145,9 @@ class Ocp:
             self.cost_fun = cost_fun
             L_run = 0  # cost over the horizon
             for i in range(self.N):
-                for j in range(self.np):
-                    L_run += cost_fun(
-                        self.X[:, i], self.U[:, i], self._x_ref, self._x_control[:, j]
-                    )
+                L_run += cost_fun(
+                    self.X[:, i], self.U[:, i], self._x_ref, self._x_control[:, i]
+                )
             self.cost["run"] = L_run
 
         if terminal_cost_fun is not None:

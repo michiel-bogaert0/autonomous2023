@@ -11,6 +11,7 @@ Panels:
         - /SLAM1/TF1/Tree1
         - /SLAM1/MCL1/Shape1
         - /Control1/MPC Prediction1
+        - /Control1/Path2
       Splitter Ratio: 0.4060402810573578
     Tree Height: 760
   - Class: rviz/Selection
@@ -171,19 +172,15 @@ Visualization Manager:
           Frame Timeout: 15
           Frames:
             All Enabled: true
-            os_imu:
-              Value: true
-            os_lidar:
-              Value: true
-            os_sensor:
-              Value: true
             ugr/car_base_link:
               Value: true
             ugr/car_base_link/axis0:
               Value: true
-            ugr/car_base_link/axis1:
+            ugr/car_base_link/axis_steering:
               Value: true
             ugr/car_base_link/cam0:
+              Value: true
+            ugr/car_base_link/front_axle:
               Value: true
             ugr/car_base_link/gps0:
               Value: true
@@ -194,6 +191,12 @@ Visualization Manager:
             ugr/car_base_link/imu1:
               Value: true
             ugr/car_base_link/lidar0:
+              Value: true
+            ugr/car_base_link/os_imu:
+              Value: true
+            ugr/car_base_link/os_lidar:
+              Value: true
+            ugr/car_base_link/os_sensor:
               Value: true
             ugr/car_odom:
               Value: true
@@ -215,10 +218,11 @@ Visualization Manager:
                 ugr/car_base_link:
                   ugr/car_base_link/axis0:
                     {}
-                  ugr/car_base_link/axis1:
-                    {}
                   ugr/car_base_link/cam0:
                     {}
+                  ugr/car_base_link/front_axle:
+                    ugr/car_base_link/axis_steering:
+                      {}
                   ugr/car_base_link/gps0:
                     {}
                   ugr/car_base_link/gps1:
@@ -228,10 +232,10 @@ Visualization Manager:
                   ugr/car_base_link/imu1:
                     {}
                   ugr/car_base_link/lidar0:
-                    os_sensor:
-                      os_imu:
+                    ugr/car_base_link/os_sensor:
+                      ugr/car_base_link/os_imu:
                         {}
-                      os_lidar:
+                      ugr/car_base_link/os_lidar:
                         {}
               ugr/gt_base_link:
                 {}
@@ -592,6 +596,30 @@ Visualization Manager:
           Topic: /mpc/x_prediction
           Unreliable: false
           Value: true
+        - Alpha: 1
+          Buffer Length: 1
+          Class: rviz/Path
+          Color: 255; 0; 0
+          Enabled: true
+          Head Diameter: 0.30000001192092896
+          Head Length: 0.20000000298023224
+          Length: 0.30000001192092896
+          Line Style: Lines
+          Line Width: 0.029999999329447746
+          Name: Path
+          Offset:
+            X: 0
+            Y: 0
+            Z: 0
+          Pose Color: 255; 85; 255
+          Pose Style: None
+          Queue Size: 10
+          Radius: 0.029999999329447746
+          Shaft Diameter: 0.10000000149011612
+          Shaft Length: 0.10000000149011612
+          Topic: /mpc/ref_track
+          Unreliable: false
+          Value: true
       Enabled: true
       Name: Control
   Enabled: true
@@ -629,10 +657,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: -23.865110397338867
+      Scale: -54.29313278198242
       Target Frame: <Fixed Frame>
-      X: -6.030538558959961
-      Y: 3.3127801418304443
+      X: -0.3036387264728546
+      Y: 3.965068817138672
     Saved: ~
 Window Geometry:
   Camera:

@@ -69,6 +69,12 @@ class MPC(ManagedNode):
             queue_size=10,  # warning otherwise
         )
 
+        self.ref_track_pub = super().AddPublisher(
+            "/output/ref_track",
+            Path,
+            queue_size=10,  # warning otherwise
+        )
+
         # Diagnostics Publisher
         self.diagnostics_pub = super().AddPublisher(
             "/diagnostics", DiagnosticArray, queue_size=10
@@ -92,7 +98,7 @@ class MPC(ManagedNode):
 
         self.car = BicycleModel(dt=0.05)  # dt = publish rate?
 
-        self.N = 10
+        self.N = 40
         self.np = 2  # Number of control points to keep car close to path
         self.ocp = Ocp(
             self.car.nx,
@@ -106,9 +112,9 @@ class MPC(ManagedNode):
             silent=True,
         )
 
-        Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
-        Qn = np.diag([8e-3, 8e-3, 0, 0, 1e-2])
-        R = np.diag([1e-4, 6e-3])
+        Q = np.diag([0, 0, 0, 0, 0])
+        Qn = np.diag([1e-1, 1e-1, 0, 0, 1e-2])
+        R = np.diag([1e-4, 5e-1])
 
         # Weight matrices for the terminal cost
         P = np.diag([0, 0, 0, 0, 0])
@@ -208,6 +214,7 @@ class MPC(ManagedNode):
             if self.state == NodeManagingStatesEnum.ACTIVE:
                 try:
                     self.doUpdate()
+                    ref_track = self.trajectory.get_reference_track(self.car.dt, self.N)
 
                     speed_target = rospy.get_param("/speed/target", 3.0)
 
@@ -231,11 +238,9 @@ class MPC(ManagedNode):
 
                     if self.slam_state == SLAMStatesEnum.RACING:
                         # Scale steering penalty based on current speed
-                        Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
-                        Qn = np.diag([8e-3, 8e-3, 0, 0, 1e-2])
-                        R = np.diag(
-                            [1e-5, 3e-1 * self.actual_speed / self.speed_target]
-                        )
+                        Q = np.diag([0, 0, 0, 0, 0])
+                        Qn = np.diag([5e2, 5e2, 0, 0, 1e-2])
+                        R = np.diag([1e-1, 4e4 * self.actual_speed / self.speed_target])
 
                         # Weight matrices for the terminal cost
                         P = np.diag([0, 0, 0, 0, 0])
@@ -268,15 +273,15 @@ class MPC(ManagedNode):
                         self.minimal_distance = self.distance_stop
 
                     # Calculate target points
-                    distances = [
-                        self.minimal_distance * n
-                        for n in np.linspace(0, 1, self.np + 2)[1:]
-                    ]
-                    target_points = self.trajectory.calculate_target_points(distances)
+                    # distances = [
+                    #     self.minimal_distance * n
+                    #     for n in np.linspace(0, 1, self.np + 2)[1:]
+                    # ]
+                    # target_points = self.trajectory.calculate_target_points(distances)
 
-                    target_x, target_y = target_points[-1]
+                    # target_x, target_y = target_points[-1]
                     control_targets = []
-                    for control_target in target_points[:-1]:
+                    for control_target in ref_track:
                         control_targets.append(
                             [
                                 control_target[0],
@@ -287,27 +292,33 @@ class MPC(ManagedNode):
                             ]
                         )
 
-                    if target_x == 0 and target_y == 0:
-                        self.diagnostics_pub.publish(
-                            create_diagnostic_message(
-                                level=DiagnosticStatus.WARN,
-                                name="[CTRL MPC] Target Point Status",
-                                message="Target point not found.",
-                            )
-                        )
-                        self.velocity_cmd.data = 0.0
-                        self.steering_cmd.data = 0.0
-                        self.velocity_pub.publish(self.velocity_cmd)
-                        self.steering_pub.publish(self.steering_cmd)
-                        rate.sleep()
-                        continue
+                    # if target_x == 0 and target_y == 0:
+                    #     self.diagnostics_pub.publish(
+                    #         create_diagnostic_message(
+                    #             level=DiagnosticStatus.WARN,
+                    #             name="[CTRL MPC] Target Point Status",
+                    #             message="Target point not found.",
+                    #         )
+                    #     )
+                    #     self.velocity_cmd.data = 0.0
+                    #     self.steering_cmd.data = 0.0
+                    #     self.velocity_pub.publish(self.velocity_cmd)
+                    #     self.steering_pub.publish(self.steering_cmd)
+                    #     rate.sleep()
+                    #     continue
 
                     # rospy.loginfo(f"target_x: {target_x}, target_y: {target_y}")
                     # rospy.loginfo(f"control_targets: {control_targets}")
 
                     self.mpc.reset()
                     init_state = [0, 0, 0, 0, self.actual_speed]
-                    goal_state = [target_x, target_y, 0, 0, self.speed_target]
+                    goal_state = [
+                        ref_track[-1][0],
+                        ref_track[-1][1],
+                        0,
+                        0,
+                        self.speed_target,
+                    ]
 
                     current_state = init_state
 
@@ -342,6 +353,8 @@ class MPC(ManagedNode):
                     )  # Input is acceleration
 
                     # Use Pure Pursuit if target speed is 0
+                    target_x = ref_track[-1][0]
+                    target_y = ref_track[-1][1]
                     if self.speed_target == 0.0:
                         R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (
                             2 * (target_y - 0)
@@ -377,6 +390,18 @@ class MPC(ManagedNode):
                     point.point.x = target_x
                     point.point.y = target_y
                     self.vis_pub.publish(point)
+
+                    ref_track_msg = Path()
+                    ref_track_msg.header.stamp = self.trajectory.time_source
+                    ref_track_msg.header.frame_id = self.base_link_frame
+                    for i in range(len(control_targets)):
+                        point = PoseStamped()
+                        point.header.stamp = self.trajectory.time_source
+                        point.header.frame_id = self.base_link_frame
+                        point.pose.position.x = control_targets[i][0]
+                        point.pose.position.y = control_targets[i][1]
+                        ref_track_msg.poses.append(point)
+                    self.ref_track_pub.publish(ref_track_msg)
 
                 except Exception as e:
                     rospy.logwarn(f"MPC has caught an exception: {e}")

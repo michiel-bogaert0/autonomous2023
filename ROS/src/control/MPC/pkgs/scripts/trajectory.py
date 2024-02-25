@@ -125,3 +125,50 @@ class Trajectory:
         self.targets = targets
         self.closest_index = indexes[0]
         return self.targets
+
+    def get_reference_track(self, dt, N):
+        self.path_blf = self.transform_blf()
+        speed_target = rospy.get_param("/speed/target", 3.0)
+        d = dt * speed_target
+        distances = [(i + 1) * d for i in range(N)]  # 2 m/s^2 is max acceleration
+        current_position_index = (
+            np.argmin(np.sum((self.path_blf - [0, 0]) ** 2, axis=1))
+            if self.change_index
+            else self.closest_index
+        )
+        # current_point = self.path_blf[current_position_index]
+        # print(current_point)
+        # distance_index = 0
+        total_distance = 0
+        distances_relative = []
+        reference_path = []
+        # Start from next point
+        for i in range(
+            current_position_index + 1, len(self.path_blf) + current_position_index
+        ):
+            i = i % len(self.path_blf)
+            distances_relative.append(total_distance)
+            total_distance += np.linalg.norm(self.path_blf[i] - self.path_blf[i - 1])
+            # print(total_distance)
+            # print(f"Point {i}: {self.path_blf[i]} with distance {total_distance}")
+
+        for i in range(len(distances)):
+            # Find first value in distances_relative that is greater than distance
+            for j in range(len(distances_relative)):
+                if distances_relative[j] >= distances[i]:
+                    scaling = 1 - np.abs(
+                        (distances[i] - distances_relative[j])
+                        / (distances_relative[j] - distances_relative[j - 1])
+                    )
+                    # scaling=1
+                    path_index = (current_position_index + j) % len(self.path_blf)
+                    reference_path.append(
+                        self.path_blf[path_index - 1]
+                        + scaling
+                        * (self.path_blf[path_index] - self.path_blf[path_index - 1])
+                    )
+                    # print(f"Point {j-1} and {j} with scaling {scaling} and distance {distances[i]} and relative distance {distances_relative[j]} results in point {reference_path[-1]}")
+                    break
+        # print(reference_path)
+        return reference_path
+        # print(reference_path)
