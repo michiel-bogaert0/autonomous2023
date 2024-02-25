@@ -12,6 +12,7 @@
 #include "ros/ros.h"
 
 #include "ros/service_client.h"
+#include <slam_controller/SetMap.h>
 
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2_ros/buffer.h"
@@ -57,7 +58,7 @@ GraphSLAM::GraphSLAM(ros::NodeHandle &n)
     : ManagedNode(n, "graphslam"), n(n), tfListener(tfBuffer),
       base_link_frame(n.param<string>("base_link_frame", "ugr/car_base_link")),
       tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0) {
-  this->doConfigure(); // remove this line
+  // this->doConfigure(); // remove this line
 }
 
 void GraphSLAM::doConfigure() {
@@ -78,6 +79,15 @@ void GraphSLAM::doConfigure() {
   // Todo: set from launch file
   this->max_range = 15;
   this->max_half_fov = 60 * 0.0174533;
+
+  // Initialize map Service Client
+  string SetMap_service =
+      n.param<string>("SetMap_service", "/ugr/srv/slam_map_server/set");
+  this->setmap_srv_client =
+      n.serviceClient<slam_controller::SetMap::Request>(SetMap_service, true);
+
+  this->globalmap_namespace = n.param<string>("globalmap_namespace", "global");
+  this->localmap_namespace = n.param<string>("localmap_namespace", "local");
 
   // Initialize publishers
   this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
@@ -143,9 +153,9 @@ void GraphSLAM::doConfigure() {
 void GraphSLAM::handleObservations(
     const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs) {
   // Node lifecycle check
-  // if (!this->isActive()) {
-  //   return;
-  // }
+  if (!this->isActive()) {
+    return;
+  }
   // Time check
   if (this->latestTime - obs->header.stamp.toSec() > 5.0 &&
       this->latestTime > 0.0) {
@@ -171,8 +181,8 @@ void GraphSLAM::handleObservations(
 }
 
 void GraphSLAM::step() {
-  // if (!this->isActive() || !this->gotFirstObservations) {
-  if (!this->gotFirstObservations) {
+  if (!this->isActive() || !this->gotFirstObservations) {
+    // if (!this->gotFirstObservations) {
     return;
   }
 
@@ -228,6 +238,9 @@ void GraphSLAM::step() {
   transformed_obs.header.stamp = ros::Time::now();
 
   for (auto observation : this->observations.observations) {
+    if (observation.observation.observation_class == 2) { // verwijderen
+      continue;
+    }
     ugr_msgs::ObservationWithCovariance transformed_ob;
 
     geometry_msgs::PointStamped locStamped;
@@ -381,27 +394,6 @@ void GraphSLAM::step() {
     this->optimizer.addEdge(landmarkObservation);
   }
 
-  // // Associate landmarks
-  // for (const auto &pair1 : this->optimizer.vertices()) {
-  //   LandmarkVertex *landmarkVertex1 =
-  //       dynamic_cast<LandmarkVertex *>(pair1.second);
-  //   if (landmarkVertex1) {
-  //     Vector2d landmark1 = landmarkVertex1->estimate();
-  //     for (const auto &pair2 : this->optimizer.vertices()) {
-  //       LandmarkVertex *landmarkVertex2 =
-  //           dynamic_cast<LandmarkVertex *>(pair2.second);
-  //       if (landmarkVertex2) {
-  //         Vector2d landmark2 = landmarkVertex2->estimate();
-  //         if ((landmark1 - landmark2).norm() < this->association_threshold &&
-  //             landmarkVertex1->id() != landmarkVertex2->id()) {
-  //               this->optimizer.mergeVertices(landmarkVertex1,
-  //               landmarkVertex2, true);
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-
   // --------------------------------------------------------------------
   // ------------------------ Optimization ------------------------------
   // --------------------------------------------------------------------
@@ -432,32 +424,6 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
   this->prev_publish_time = std::chrono::steady_clock::now();
 
   // --------------------------------------------------------------------
-  // ----------------- Publish Landmarks --------------------------------
-  // --------------------------------------------------------------------
-
-  ugr_msgs::ObservationWithCovarianceArrayStamped landmarks;
-  landmarks.header.frame_id = this->map_frame;
-  landmarks.header.stamp = lookupTime;
-
-  for (const auto &pair :
-       this->optimizer.vertices()) { // unordered_map<int, Vertex*>
-
-    LandmarkVertex *landmarkVertex =
-        dynamic_cast<LandmarkVertex *>(pair.second);
-    if (landmarkVertex) {
-      ugr_msgs::ObservationWithCovariance map_ob;
-      map_ob.observation.location.x = landmarkVertex->estimate().x();
-      map_ob.observation.location.y = landmarkVertex->estimate().y();
-      map_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-      map_ob.observation.observation_class = landmarkVertex->color;
-      map_ob.observation.belief = 0;
-      landmarks.observations.push_back(map_ob);
-    }
-  }
-
-  this->landmarkPublisher.publish(landmarks);
-
-  // --------------------------------------------------------------------
   // ----------------- Publish odometry ---------------------------------
   // --------------------------------------------------------------------
 
@@ -486,32 +452,152 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
   // --------------------------------------------------------------------
   // ----------------- TF Transformation --------------------------------
   // --------------------------------------------------------------------
-  // tf2::Transform transform(
-  //     quat, tf2::Vector3(pose_vertex->estimate().translation().x(),
-  //                        pose_vertex->estimate().translation().y(), 0));
+  tf2::Transform transform(
+      quat, tf2::Vector3(pose_vertex->estimate().translation().x(),
+                         pose_vertex->estimate().translation().y(), 0));
 
-  // geometry_msgs::TransformStamped transformMsg;
-  // transformMsg.header.frame_id = this->map_frame;
-  // transformMsg.header.stamp = lookupTime;
-  // transformMsg.child_frame_id = this->slam_base_link_frame;
+  geometry_msgs::TransformStamped transformMsg;
+  transformMsg.header.frame_id = this->map_frame;
+  transformMsg.header.stamp = lookupTime;
+  transformMsg.child_frame_id = this->slam_base_link_frame;
 
-  // transformMsg.transform.translation.x =
-  //     pose_vertex->estimate().translation().x();
-  // transformMsg.transform.translation.y =
-  //     pose_vertex->estimate().translation().y();
+  transformMsg.transform.translation.x =
+      pose_vertex->estimate().translation().x();
+  transformMsg.transform.translation.y =
+      pose_vertex->estimate().translation().y();
 
-  // transformMsg.transform.rotation.x = quat.getX();
-  // transformMsg.transform.rotation.y = quat.getY();
-  // transformMsg.transform.rotation.z = quat.getZ();
-  // transformMsg.transform.rotation.w = quat.getW();
+  transformMsg.transform.rotation.x = quat.getX();
+  transformMsg.transform.rotation.y = quat.getY();
+  transformMsg.transform.rotation.z = quat.getZ();
+  transformMsg.transform.rotation.w = quat.getW();
 
-  // static tf2_ros::TransformBroadcaster br;
-  // br.sendTransform(transformMsg);
+  static tf2_ros::TransformBroadcaster br;
+  br.sendTransform(transformMsg);
+
+  // --------------------------------------------------------------------
+  // -------------- Publish Landmarks to map server ---------------------
+  // --------------------------------------------------------------------
+
+  // Create the observation_msgs things
+  ugr_msgs::ObservationWithCovarianceArrayStamped global;
+  ugr_msgs::ObservationWithCovarianceArrayStamped local;
+  global.header.frame_id = this->map_frame;
+  global.header.stamp = lookupTime;
+  local.header.frame_id = this->slam_base_link_frame;
+  local.header.stamp = lookupTime;
+
+  for (const auto &pair :
+       this->optimizer.vertices()) { // unordered_map<int, Vertex*>
+
+    LandmarkVertex *landmarkVertex =
+        dynamic_cast<LandmarkVertex *>(pair.second);
+    if (landmarkVertex) {
+
+      ugr_msgs::ObservationWithCovariance global_ob;
+      ugr_msgs::ObservationWithCovariance local_ob;
+
+      global_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+      local_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+      global_ob.observation.observation_class = landmarkVertex->color;
+      local_ob.observation.observation_class = landmarkVertex->color;
+      global_ob.observation.belief = 0;
+      local_ob.observation.belief = 0;
+
+      global_ob.observation.location.x = landmarkVertex->estimate().x();
+      global_ob.observation.location.y = landmarkVertex->estimate().y();
+
+      global.observations.push_back(global_ob);
+
+      // landmark to observation
+      VectorXf obs(2);
+      float dx = landmarkVertex->estimate().x() -
+                 pose_vertex->estimate().translation().x();
+      float dy = landmarkVertex->estimate().y() -
+                 pose_vertex->estimate().translation().y();
+
+      obs(0) = pow(pow(dx, 2) + pow(dy, 2), 0.5);
+      obs(1) = atan2(dy, dx) - pose_vertex->estimate().rotation().angle();
+
+      local_ob.observation.location.x = obs(0) * cos(obs(1));
+      local_ob.observation.location.y = obs(0) * sin(obs(1));
+      local.observations.push_back(local_ob);
+    }
+  }
+
+  if (this->setmap_srv_client.exists()) {
+    this->diagPublisher->publishDiagnostic(
+        node_fixture::DiagnosticStatusEnum::OK, "SetMap service call",
+        "exists");
+    // Initialize global request
+    slam_controller::SetMap global_srv;
+    global_srv.request.map = global;
+    global_srv.request.name = this->globalmap_namespace;
+
+    // Set global map with Service
+    if (!this->setmap_srv_client.call(global_srv)) {
+      ROS_WARN("Global map service call failed!");
+      this->diagPublisher->publishDiagnostic(
+          node_fixture::DiagnosticStatusEnum::WARN, "Global map service call",
+          "failed");
+    } else {
+      this->diagPublisher->publishDiagnostic(
+          node_fixture::DiagnosticStatusEnum::OK, "Global map service call",
+          "success");
+    }
+
+    // Initialize local request
+    slam_controller::SetMap local_srv;
+    local_srv.request.map = local;
+    local_srv.request.name = this->localmap_namespace;
+
+    // Set local map with Service
+    if (!this->setmap_srv_client.call(local_srv)) {
+      ROS_WARN("Local map service call failed!");
+      this->diagPublisher->publishDiagnostic(
+          node_fixture::DiagnosticStatusEnum::WARN, "Local map service call",
+          "failed");
+    } else {
+      this->diagPublisher->publishDiagnostic(
+          node_fixture::DiagnosticStatusEnum::OK, "Local map service call",
+          "success");
+    }
+  } else {
+    ROS_WARN("SetMap service call does not exist (yet)!");
+    this->diagPublisher->publishDiagnostic(
+        node_fixture::DiagnosticStatusEnum::WARN, "SetMap service call",
+        "Does not exist!");
+  }
 
   // --------------------------------------------------------------------
   // --------------------- publish debug --------------------------------
   // --------------------------------------------------------------------
   if (this->debug) {
+
+    // --------------------------------------------------------------------
+    // ----------------- Publish Landmarks --------------------------------
+    // --------------------------------------------------------------------
+
+    ugr_msgs::ObservationWithCovarianceArrayStamped landmarks;
+    landmarks.header.frame_id = this->map_frame;
+    landmarks.header.stamp = lookupTime;
+
+    for (const auto &pair :
+         this->optimizer.vertices()) { // unordered_map<int, Vertex*>
+
+      LandmarkVertex *landmarkVertex =
+          dynamic_cast<LandmarkVertex *>(pair.second);
+      if (landmarkVertex) {
+        ugr_msgs::ObservationWithCovariance map_ob;
+        map_ob.observation.location.x = landmarkVertex->estimate().x();
+        map_ob.observation.location.y = landmarkVertex->estimate().y();
+        map_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+        map_ob.observation.observation_class = landmarkVertex->color;
+        map_ob.observation.belief = 0;
+        landmarks.observations.push_back(map_ob);
+      }
+    }
+
+    this->landmarkPublisher.publish(landmarks);
     // Publish odometry poses
     geometry_msgs::PoseArray poses;
     poses.header.frame_id = this->map_frame;

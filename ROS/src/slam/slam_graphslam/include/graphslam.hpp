@@ -65,6 +65,11 @@ private:
   ugr_msgs::ObservationWithCovarianceArrayStamped observations;
   g2o::SparseOptimizer optimizer;
 
+  // Set Map Service Client
+  ros::ServiceClient setmap_srv_client;
+  string globalmap_namespace;
+  string localmap_namespace;
+
   // Subscribers
   ros::Subscriber odomSubscriber;
 
