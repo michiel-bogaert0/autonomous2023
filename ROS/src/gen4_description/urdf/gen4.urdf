@@ -12,26 +12,27 @@
   <link name="ugr/car_base_link/os_lidar" />
 
   <link name="ugr/car_base_link/cam0" />
-<!-- motoren zijn aan de wielen gedefinieerd -->
+
   <link name="ugr/car_base_link/axis0" />
 
   <link name="ugr/car_base_link/axis1" />
-<!-- int midden tussen de voorwielen -->
+
   <link name="ugr/car_base_link/front_axle" />
-<!-- behoud transformatie hiervan -->
+
   <link name="ugr/car_base_link/axis_steering" />
-<!-- moeten overeenkomen met de antennes op de neus -->
+
   <link name="ugr/car_base_link/gps0" />
 
   <link name="ugr/car_base_link/gps1" />
-<!-- vectornav heeft nog geen positie -->
+
   <link name"ugr/car_base_link/vectornav" />
 
 
   <!-- Joint definitions -->
 
+
   <joint name="lidar0_joint" type="fixed">
-    <origin xyz="0.36 0 0.37" rpy="0 0 0" />
+    <origin xyz="0.6765 -0.0022 0.7870" rpy="3.1415 0 0" />
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/lidar0" />
   </joint>
@@ -55,7 +56,7 @@
   </joint>
 
   <joint name="cam0_joint" type="fixed">
-    <origin xyz="0.42 0 0.74" rpy="0 0 -0.0218149" />
+    <origin xyz="0.6814 -0.0824 0.8230" rpy="0 0 3.1415" />
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/cam0" />
   </joint>
@@ -72,22 +73,22 @@
     <child link="ugr/car_base_link/imu1" />
   </joint>
 
-  <joint name="axis0" type="continuous">
-    <origin xyz="0.0 0.34 0" rpy="0 0 0" />
+  <joint name="axis0" type="continuous"> <!-- < linker motor dit? Dan hebben we een RH-assenstelsel en klopt de positieve zin met die van NX, anders alle y coord'n omkeren  -->
+    <origin xyz="0.0 0.5573 0" rpy="0 0 0" /> <!-- <inner side of the tire, outer: 0.74275 -->
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/axis0" />
 
-    <limit effort="30.0" velocity="100.0" />
+    <limit effort="30.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
   </joint>
 
-  <joint name="axis1" type="continuous">
-    <origin xyz="0.0 -0.34 0" rpy="0 0 0" />
+  <joint name="axis1" type="continuous">  
+    <origin xyz="0.0 -0.5573 0" rpy="0 0 0" />
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/axis1" />
   </joint>
 
   <joint name="front_axle" type="fixed">
-    <origin xyz="0.72 0.0 0" rpy="0 0 0" />
+    <origin xyz="1.5180 0.0 0" rpy="0 0 0" />
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/front_axle" />
   </joint>
@@ -97,19 +98,25 @@
     <parent link="ugr/car_base_link/front_axle" />
     <child link="ugr/car_base_link/axis_steering" />
 
-    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="5.0" />
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="5.0" />  <!-- < ask electrical for limitations  -->
   </joint>
 
   <joint name="gps_ublox_right_joint" type="fixed">
-    <origin xyz="0.42 -0.36 0.74" rpy="0 0 0" />
+    <origin xyz="2.5266 -0.0007 0.2714" rpy="0 -1.4101 0" />
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/gps0" />
   </joint>
 
   <joint name="gps_ublox_left_joint" type="fixed">
-    <origin xyz="0.42 0.36 0.74" rpy="0 0 0" />
+    <origin xyz="2.5266 -0.0007 0.2714" rpy="0 -1.4101 0" />
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/gps1" />
   </joint>
 
+  <joint name="vectornav_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="ugr/car_base_link" />
+    <child link="ugr/car_base_link/vectornav" />
+  </joint>
+ 
 </robot>
