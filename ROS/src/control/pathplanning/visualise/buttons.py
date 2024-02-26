@@ -90,6 +90,7 @@ class Buttons:
             self.middellineButton.setStyleSheet("background-color: green")
         else:
             self.middellineButton.setStyleSheet("background-color: red")
+        self.widget.publish_gt_path()
         self.widget.update()
 
     def trackbounds_clicked(self):
@@ -124,12 +125,14 @@ class Buttons:
         for cone in self.widget.blue_cones:
             self.widget.selected_blue_cones.append(cone)
         self.widget.empty_pathplanning_input()
+        self.widget.publish_local_map()
         self.widget.update()
 
     def deselect_all_clicked(self):
         self.widget.selected_blue_cones = []
         self.widget.selected_yellow_cones = []
         self.widget.empty_pathplanning_input()
+        self.widget.publish_local_map()
         self.widget.update()
 
     def place_cones_clicked(self):
@@ -145,6 +148,7 @@ class Buttons:
             self.enablePath.setStyleSheet("background-color: green")
         else:
             self.enablePath.setStyleSheet("background-color: red")
+        self.widget.update()
 
     def enable_smoothed_path_clicked(self):
         self.widget.smoothed_path_on = not self.widget.smoothed_path_on
@@ -152,6 +156,7 @@ class Buttons:
             self.enableSmoothedPath.setStyleSheet("background-color: green")
         else:
             self.enableSmoothedPath.setStyleSheet("background-color: red")
+        self.widget.update()
 
     def enable_boundary_estimation_clicked(self):
         self.widget.boundary_estimation_on = not self.widget.boundary_estimation_on
@@ -159,6 +164,7 @@ class Buttons:
             self.enableBoundaryEstimation.setStyleSheet("background-color: green")
         else:
             self.enableBoundaryEstimation.setStyleSheet("background-color: red")
+        self.widget.update()
 
     def set_buttons(self):
         if self.widget.is_closed:

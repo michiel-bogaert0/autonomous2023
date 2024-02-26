@@ -90,7 +90,6 @@ class MapWidget(QtW.QFrame):
         self.orange_cones = oranges
         self.selected_yellow_cones = []
         self.selected_blue_cones = []
-        self.buttons.select_all_clicked()
 
         self.is_closed = bool(closed)
         self.place_cones = bool(place_cones)
@@ -128,14 +127,19 @@ class MapWidget(QtW.QFrame):
         self.blue_bezier = []
         self.yellow_bezier = []
 
-        self.publish_local_map()
-        self.update()
+        self.buttons.select_all_clicked()
+
+        if self.middelline_on:
+            self.publish_gt_path()
 
     def publish_local_map(self):
         """
+        Erases current path
         Publishes local map of the selected cones
 
         """
+        self.empty_pathplanning_input()
+
         cones = get_local_poses(
             self.selected_blue_cones,
             self.selected_yellow_cones,
@@ -266,6 +270,7 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                 elif selected_cone in self.orange_cones:
                     self.orange_cones.remove(selected_cone)
+                self.publish_local_map()
                 self.update()
             elif event.modifiers() == QtC.Qt.AltModifier:
                 if selected_cone in self.yellow_cones:
@@ -278,6 +283,7 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                     else:
                         self.selected_blue_cones.append(selected_cone)
+                self.publish_local_map()
                 self.update()
 
             # Drag a cone or car_handle
@@ -311,6 +317,7 @@ class MapWidget(QtW.QFrame):
                 self.blue_cones.append(point)
                 self.selected_blue_cones.append(point)
                 # Trigger a repaint of the MapWidget to update the visual points
+            self.publish_local_map()
             self.update()
 
     def mouseDoubleClickEvent(self, event):
@@ -327,6 +334,7 @@ class MapWidget(QtW.QFrame):
                     index = self.blue_cones.index(selected_cone)
                     self.blue_cones.insert(index, point)
                     self.selected_blue_cones.append(point)
+                self.publish_local_map()
                 self.update()
 
     def mouseMoveEvent(self, event):
@@ -361,6 +369,10 @@ class MapWidget(QtW.QFrame):
             self.update()
 
     def mouseReleaseEvent(self, event):
+        # cones or car got changed
+        if self.selection is not None:
+            self.publish_local_map()
+
         # Reset the flag and the drag start position
         self.selection = None
         self.drag_map = False
@@ -433,6 +445,9 @@ class MapWidget(QtW.QFrame):
     def empty_pathplanning_input(self):
         self.all_paths = []
         self.path = None
+        self.smoothed_path = None
+        self.blue_boundary = []
+        self.yellow_boundary = []
         self.centerPoints = []
         self.badPoints = []
 
