@@ -62,13 +62,13 @@ class MapWidget(QtW.QFrame):
         self.frame = frame
 
         # initialize paths
-        self.path = None
+        self.path = []
         self.pathnr = -1
         self.nr_paths = 0
         self.all_paths = []
 
         # initialize smoothed path
-        self.smoothed_path = None
+        self.smoothed_path = []
 
         # initialize boundaries
         self.blue_boundary = []
@@ -129,13 +129,11 @@ class MapWidget(QtW.QFrame):
 
         self.buttons.select_all_clicked()
 
-        if self.middelline_on:
-            self.publish_gt_path()
-
     def publish_local_map(self):
         """
         Erases current path
         Publishes local map of the selected cones
+        Also publishes ground truth path if middelline is on
 
         """
         self.empty_pathplanning_input()
@@ -166,12 +164,17 @@ class MapWidget(QtW.QFrame):
 
         self.map_publisher.publish(local)
 
+        if self.middelline_on:
+            self.publish_gt_path()
+
     def publish_gt_path(self):
         gt_path_msg = Path()
         gt_path_msg.header.stamp = rospy.Time.now()
         gt_path_msg.header.frame_id = self.frame
 
-        gt_path = real_to_car_transform(self.path, self.car_pos, self.car_rot)
+        gt_path = np.empty((0, 2))
+        if len(self.path) > 0:
+            gt_path = real_to_car_transform(self.path, self.car_pos, self.car_rot)
 
         for cone in gt_path:
             pose = PoseStamped()
@@ -444,8 +447,8 @@ class MapWidget(QtW.QFrame):
 
     def empty_pathplanning_input(self):
         self.all_paths = []
-        self.path = None
-        self.smoothed_path = None
+        self.path = []
+        self.smoothed_path = []
         self.blue_boundary = []
         self.yellow_boundary = []
         self.centerPoints = []
@@ -469,7 +472,6 @@ class MapWidget(QtW.QFrame):
                 self.middel_bezier, painter, QtG.QColor(0, 0, 0, 70)
             )
             self.draw.draw_points(self.middelPoints, painter, QtG.QColor(0, 0, 0, 70))
-            self.publish_gt_path()
 
         if self.trackbounds_on:
             self.blue_bezier = make_bezier(self.blue_cones, self.is_closed)

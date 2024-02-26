@@ -90,7 +90,6 @@ class Buttons:
             self.middellineButton.setStyleSheet("background-color: green")
         else:
             self.middellineButton.setStyleSheet("background-color: red")
-        self.widget.publish_gt_path()
         self.widget.update()
 
     def trackbounds_clicked(self):
