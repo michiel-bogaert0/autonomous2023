@@ -124,14 +124,12 @@ class Buttons:
             self.widget.selected_yellow_cones.append(cone)
         for cone in self.widget.blue_cones:
             self.widget.selected_blue_cones.append(cone)
-        self.widget.empty_pathplanning_input()
         self.widget.publish_local_map()
         self.widget.update()
 
     def deselect_all_clicked(self):
         self.widget.selected_blue_cones = []
         self.widget.selected_yellow_cones = []
-        self.widget.empty_pathplanning_input()
         self.widget.publish_local_map()
         self.widget.update()
 
