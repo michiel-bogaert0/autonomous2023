@@ -126,49 +126,69 @@ class Trajectory:
         self.closest_index = indexes[0]
         return self.targets
 
-    def get_reference_track(self, dt, N):
+    def get_reference_track(self, dt, N, debug=False):
         self.path_blf = self.transform_blf()
-        speed_target = rospy.get_param("/speed/target", 3.0)
-        d = dt * speed_target
-        distances = [(i + 1) * d for i in range(N)]  # 2 m/s^2 is max acceleration
-        current_position_index = (
-            np.argmin(np.sum((self.path_blf - [0, 0]) ** 2, axis=1))
-            if self.change_index
-            else self.closest_index
-        )
-        # current_point = self.path_blf[current_position_index]
-        # print(current_point)
-        # distance_index = 0
-        total_distance = 0
-        distances_relative = []
-        reference_path = []
-        # Start from next point
-        for i in range(
-            current_position_index + 1, len(self.path_blf) + current_position_index
-        ):
-            i = i % len(self.path_blf)
-            distances_relative.append(total_distance)
-            total_distance += np.linalg.norm(self.path_blf[i] - self.path_blf[i - 1])
-            # print(total_distance)
-            # print(f"Point {i}: {self.path_blf[i]} with distance {total_distance}")
 
+        # Find target points based on required velocity and maximum acceleration
+        speed_target = rospy.get_param("/speed/target", 3.0)
+        max_acceleration = 5.0  # TODO: create param
+        d = dt * speed_target
+        distances = [(i + 1) * (d + (dt**2) * max_acceleration) for i in range(N)]
+
+        if self.change_index:
+            self.closest_index = np.argmin(
+                np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
+            )
+        else:
+            distances_temp = np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
+            # Add a large distance to all indices 20 further than self.closest_idnex
+            # To avoid mistake at skidpad overlap
+            distances_temp = np.where(
+                abs(np.arange(len(distances_temp)) - self.closest_index) < 50,
+                distances_temp,
+                distances_temp + 1000,
+            )
+            self.closest_index = np.argmin(distances_temp)
+        if debug:
+            current_point = self.path_blf[self.closest_index]
+            print(current_point)
+
+        # Now calculate for each point the distance to the car along the path
+
+        # Shift path so that closest point is at index 0
+        shifted_path = np.roll(self.path_blf, -self.closest_index, axis=0)
+        # Compute the distance between consecutive points
+        diff = np.diff(shifted_path, axis=0)
+        distances_cumsum = np.linalg.norm(diff, axis=1)
+
+        # Append 0 and calculate cummulative sum
+        distances_relative = np.append([0], np.cumsum(distances_cumsum))
+
+        # Find points at specified distances
+        reference_path = []
         for i in range(len(distances)):
             # Find first value in distances_relative that is greater than distance
             for j in range(len(distances_relative)):
-                if distances_relative[j] >= distances[i]:
+                if distances_relative[j] < distances[i]:
+                    continue
+                elif distances_relative[j] == distances[i]:
+                    # Just take point on path
+                    scaling = 1
+                elif distances_relative[j] > distances[i]:
+                    # Required distances between two points so scale between them
                     scaling = 1 - np.abs(
                         (distances[i] - distances_relative[j])
                         / (distances_relative[j] - distances_relative[j - 1])
                     )
-                    # scaling=1
-                    path_index = (current_position_index + j) % len(self.path_blf)
-                    reference_path.append(
-                        self.path_blf[path_index - 1]
-                        + scaling
-                        * (self.path_blf[path_index] - self.path_blf[path_index - 1])
+
+                reference_path.append(
+                    shifted_path[j - 1]
+                    + scaling * (shifted_path[j] - shifted_path[j - 1])
+                )
+                if debug:
+                    print(
+                        f"Point {j-1} and {j} with scaling {scaling} and distance {distances[i]} and relative distance {distances_relative[j]} results in point {reference_path[-1]}"
                     )
-                    # print(f"Point {j-1} and {j} with scaling {scaling} and distance {distances[i]} and relative distance {distances_relative[j]} results in point {reference_path[-1]}")
-                    break
-        # print(reference_path)
+                break
+
         return reference_path
-        # print(reference_path)
