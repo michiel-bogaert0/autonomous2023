@@ -98,6 +98,8 @@ class MPC(ManagedNode):
 
         self.car = BicycleModel(dt=0.05)  # dt = publish rate?
 
+        self.steering_joint_angle = 0
+
         self.N = 40
         self.np = 2  # Number of control points to keep car close to path
         self.ocp = Ocp(
@@ -113,9 +115,9 @@ class MPC(ManagedNode):
         )
 
         Q = np.diag([0, 0, 0, 0, 0])
-        Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
-        R = np.diag([7e-4, 2e-2])
-        R_delta = np.diag([5e-3, 3e-2])
+        Qn = np.diag([1e-1, 1e-1, 0, 0, 0])
+        R = np.diag([1e-4, 1e-1])
+        R_delta = np.diag([1e-3, 6e-2])
 
         # Weight matrices for the terminal cost
         P = np.diag([0, 0, 0, 0, 0])
@@ -133,7 +135,7 @@ class MPC(ManagedNode):
         )
 
         # constraints
-        max_steering_angle = 1
+        max_steering_angle = 10
         self.ocp.subject_to(
             self.ocp.bounded(
                 -self.speed_target / self.wheelradius,
@@ -241,11 +243,9 @@ class MPC(ManagedNode):
                     if self.slam_state == SLAMStatesEnum.RACING:
                         # Scale steering penalty based on current speed
                         Q = np.diag([0, 0, 0, 0, 0])
-                        Qn = np.diag([1e-1, 1e-1, 0, 0, 0])
-                        R = np.diag(
-                            [7e-4, 5e-1]
-                        )  # * self.actual_speed / self.speed_target])
-                        R_delta = np.diag([1e-3, 8e-1])
+                        Qn = np.diag([8e-2, 8e-2, 0, 0, 0])
+                        R = np.diag([1e-4, 9e-2])
+                        R_delta = np.diag([1e-3, 1e-3])
 
                         # Weight matrices for the terminal cost
                         P = np.diag([0, 0, 0, 0, 0])
@@ -317,7 +317,8 @@ class MPC(ManagedNode):
                     # rospy.loginfo(f"control_targets: {control_targets}")
 
                     self.mpc.reset()
-                    init_state = [0, 0, 0, 0, self.actual_speed]
+                    # TODO: get steering joint angle from ros control
+                    init_state = [0, 0, 0, self.steering_joint_angle, self.actual_speed]
                     goal_state = [
                         ref_track[-1][0],
                         ref_track[-1][1],
@@ -353,10 +354,16 @@ class MPC(ManagedNode):
                     self.x_vis_pub.publish(x_pred)
 
                     self.steering_cmd.data = U_closed_loop[0, 1]
+                    self.steering_joint_angle = info["X_sol"][3][1]
+                    self.steering_cmd.data = self.steering_joint_angle
+                    # self.steering_cmd.data = -1
                     self.velocity_cmd.data = (
                         self.actual_speed
                         + U_closed_loop[0, 0] * self.wheelradius * self.car.dt
                     )  # Input is acceleration
+                    # self.velocity_cmd.data = U_closed_loop[0, 0]
+                    # self.velocity_cmd.data = info["X_sol"][4][0]
+                    # self.velocity_cmd.data = 10.0
 
                     # Use Pure Pursuit if target speed is 0
                     target_x = ref_track[-1][0]
@@ -388,6 +395,9 @@ class MPC(ManagedNode):
                         self.wheelradius
                     )  # Velocity to angular velocity
                     self.velocity_pub.publish(self.velocity_cmd)
+                    print(
+                        f"velocity: {self.velocity_cmd.data}, steering: {self.steering_cmd.data}"
+                    )
 
                     # Publish target point for visualization
                     point = PointStamped()

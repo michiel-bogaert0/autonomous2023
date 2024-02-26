@@ -5,7 +5,7 @@ from environments.env_utils import Space
 
 
 class BicycleModel(Env):
-    def __init__(self, dt=0.01, R=0.1, L=1.0, Lr=0.5, mu=0.1, DC=0.025):
+    def __init__(self, dt=0.01, R=0.1, L=0.72, Lr=0.5, mu=0.1, DC=0.025):
         self.dt = dt
         self.R = R
         self.L = L
