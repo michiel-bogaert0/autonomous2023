@@ -173,8 +173,10 @@ class MapWidget(QtW.QFrame):
         gt_path_msg.header.frame_id = self.frame
 
         gt_path = np.empty((0, 2))
-        if len(self.path) > 0:
-            gt_path = real_to_car_transform(self.path, self.car_pos, self.car_rot)
+        if len(self.middelPoints) > 0:
+            gt_path = real_to_car_transform(
+                self.middelPoints, self.car_pos, self.car_rot
+            )
 
         for cone in gt_path:
             pose = PoseStamped()
