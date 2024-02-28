@@ -77,6 +77,7 @@ class MapWidget(QtW.QFrame):
         self.trackbounds_on = True
         self.cones_on = False
         self.mincurv_on = True
+        self.extra_on = True
         self.compute_on = True
         self.buttons.cones_clicked()
         self.buttons.set_buttons()
@@ -143,6 +144,12 @@ class MapWidget(QtW.QFrame):
 
     def receive_path(self, rel_path: np.ndarray):
         self.mincurv_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
+        self.buttons.computeButton.setStyleSheet("background-color: gray")
+
+        self.update()
+
+    def receive_path_extra(self, rel_path: np.ndarray):
+        self.extra_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
         self.buttons.computeButton.setStyleSheet("background-color: gray")
 
         self.update()
@@ -286,12 +293,10 @@ class MapWidget(QtW.QFrame):
             )
 
         if self.mincurv_on:
-            self.draw.draw_line(
-                self.mincurv_path,
-                painter,
-                QtG.QColor(QtC.Qt.green),
-                QtG.QColor(QtC.Qt.red),
-            )
+            self.draw.draw_line(self.mincurv_path, painter, QtG.QColor(QtC.Qt.green))
+
+        if self.extra_on:
+            self.draw.draw_line(self.extra_path, painter, QtG.QColor(QtC.Qt.red))
 
         self.draw.draw_car(painter)
         self.draw.draw_scale(painter)

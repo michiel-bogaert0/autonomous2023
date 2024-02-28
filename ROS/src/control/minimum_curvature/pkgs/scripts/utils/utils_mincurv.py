@@ -18,7 +18,7 @@ def generate_interpolated_points(path):
     return path
 
 
-def B_spline_smoothing(path):
+def B_spline_smoothing(path, s=5):
     per = 1  # BSPline periodicity, 0 = not periodic, 1 = periodic
 
     # Smooth path with BSpline interpolation
@@ -27,7 +27,7 @@ def B_spline_smoothing(path):
         [1] * len(path[0])
     )  # Weights for BSpline (Here, same weight for every point)
 
-    tck, u = splprep(path, w=w, s=5, per=per)  # Calculate BSpline
+    tck, u = splprep(path, w=w, s=s, per=per)  # Calculate BSpline
     smoothed_path = np.array(
         splev(u, tck)
     ).T  # Evaluate BSpline and transpose back to (N, 2)

@@ -27,6 +27,10 @@ class Buttons:
         self.mincurvButton = QtW.QPushButton("show/hide minimum curvature", self.widget)
         self.mincurvButton.setFixedSize(250, 30)  # Set the size of the button
         layout.addWidget(self.mincurvButton)
+        self.extraButton = QtW.QPushButton("show/hide extra", self.widget)
+        self.extraButton.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(self.extraButton)
+
         self.computeButton = QtW.QPushButton("compute minimum curvature", self.widget)
         self.computeButton.setFixedSize(250, 30)  # Set the size of the button
         layout.addWidget(self.computeButton)
@@ -36,6 +40,7 @@ class Buttons:
         self.trackboundsButton.clicked.connect(self.trackbounds_clicked)
         self.conesButton.clicked.connect(self.cones_clicked)
         self.mincurvButton.clicked.connect(self.mincurv_clicked)
+        self.extraButton.clicked.connect(self.extra_clicked)
         self.computeButton.clicked.connect(self.compute_clicked)
 
     def refline_clicked(self):
@@ -77,6 +82,14 @@ class Buttons:
             self.mincurvButton.setStyleSheet("background-color: red")
         self.widget.update()
 
+    def extra_clicked(self):
+        self.widget.extra_on = not self.widget.extra_on
+        if self.widget.extra_on:
+            self.extraButton.setStyleSheet("background-color: green")
+        else:
+            self.extraButton.setStyleSheet("background-color: red")
+        self.widget.update()
+
     def compute_clicked(self):
         self.widget.compute_on = True
         self.computeButton.setStyleSheet("background-color: orange")
@@ -98,5 +111,9 @@ class Buttons:
             self.mincurvButton.setStyleSheet("background-color: green")
         else:
             self.mincurvButton.setStyleSheet("background-color: red")
+        if self.widget.extra_on:
+            self.extraButton.setStyleSheet("background-color: green")
+        else:
+            self.extraButton.setStyleSheet("background-color: red")
 
         self.computeButton.setStyleSheet("background-color: gray")

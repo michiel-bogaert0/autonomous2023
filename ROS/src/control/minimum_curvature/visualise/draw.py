@@ -181,7 +181,7 @@ class Draw:
         points: List[QtC.QPointF],
         painter: QtG.QPainter,
         line_color: QtG.QColor,
-        point_color: QtG.QColor,
+        point_color: QtG.QColor = None,
     ):
         if points is not None and len(points) > 0:
             painter.setPen(QtG.QPen(line_color, 3.0))
@@ -195,18 +195,19 @@ class Draw:
                 end = screen_pos
                 painter.drawLine(start, end)
 
-            painter.setPen(QtG.QPen(point_color))
-            painter.setBrush(QtG.QBrush(point_color))
-            diameter = self.POINT_SIZE * self.widget.zoom_level
-            for pathPoint in points:
-                screen_pos = self.widget.coordinateToScreen(pathPoint)
-                circle_rect = QtC.QRectF(
-                    screen_pos.x() - diameter / 2,
-                    screen_pos.y() - diameter / 2,
-                    diameter,
-                    diameter,
-                )
-                painter.drawEllipse(circle_rect)
+            if point_color is not None:
+                painter.setPen(QtG.QPen(point_color))
+                painter.setBrush(QtG.QBrush(point_color))
+                diameter = self.POINT_SIZE * self.widget.zoom_level
+                for pathPoint in points:
+                    screen_pos = self.widget.coordinateToScreen(pathPoint)
+                    circle_rect = QtC.QRectF(
+                        screen_pos.x() - diameter / 2,
+                        screen_pos.y() - diameter / 2,
+                        diameter,
+                        diameter,
+                    )
+                    painter.drawEllipse(circle_rect)
 
     def draw_car(self, painter):
         painter.setPen(QtG.QPen(QtC.Qt.green))

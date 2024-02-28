@@ -37,6 +37,11 @@ class Visualiser:
             "/input/path", Path, self.handle_path_received
         )
 
+        # Subscriber for extra path
+        self.extrapath_subscriber = rospy.Subscriber(
+            "/input/path_extra", Path, self.handle_path_received_extra
+        )
+
         # Initialize and start Qt application
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
@@ -55,6 +60,17 @@ class Visualiser:
             path (Path): The path received from the minimum curvature node
         """
         self.window.map_widget.receive_path(
+            np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
+        )
+
+    def handle_path_received_extra(self, path: Path):
+        """
+        Handles the extra path received from the minimum curvature node
+
+        Args:
+            path (Path): The extra path received from the minimum curvature node
+        """
+        self.window.map_widget.receive_path_extra(
             np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
         )
 
