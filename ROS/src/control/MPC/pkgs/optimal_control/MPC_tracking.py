@@ -84,30 +84,14 @@ class MPC_tracking:
                     X0 = np.concatenate(
                         (self.X_sol[:, 1:], self.X_sol[:, [-1]]), axis=1
                     )
-                    # X0 = np.concatenate((self.X_sol[1:, :], self.X_sol[[-1], :]), axis=0)
 
             if (U0 is None) and (self.U_sol is not None):
                 if len(self.U_sol.shape) > 1:
                     U0 = np.concatenate(
                         (self.U_sol[:, 1:], self.U_sol[:, [-1]]), axis=1
                     )
-                    # U0 = np.concatenate((self.U_sol[1:, :], self.U_sol[[-1], :]), axis=0)
                 else:
                     U0 = np.append(self.U_sol[1:], self.U_sol[-1])
-
-        # if X0 is not None:
-        #     if isinstance(self.ocp, OcpWrapper):
-        #         for i, state_i in enumerate(self.ocp.states):
-        #             self.ocp.set_initial(state_i, X0[i, :])
-        #     else:
-        #         self.ocp.set_initial(self.ocp.X, X0)
-
-        # if U0 is not None:
-        #     if isinstance(self.ocp, OcpWrapper):
-        #         for i, control_i in enumerate(self.ocp.controls):
-        #             self.ocp.set_initial(control_i, U0[i, :])
-        #     else:
-        #         self.ocp.set_initial(self.ocp.U, U0)
 
         with self.timer:
             self.U_sol, self.X_sol, info = self.ocp.solve(
