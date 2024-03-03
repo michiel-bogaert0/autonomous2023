@@ -42,10 +42,6 @@ class MPC(ManagedNode):
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
         self.actual_speed = 0.0
-        self.speed_start = rospy.get_param("~speed_start", 10)
-        self.speed_stop = rospy.get_param("~speed_stop", 50)
-        self.distance_start = rospy.get_param("~distance_start", 1.2)
-        self.distance_stop = rospy.get_param("~distance_stop", 2.4)
 
         # Publishers for the controllers
         # Controllers themselves spawned in the state machines respective launch files
@@ -122,6 +118,7 @@ class MPC(ManagedNode):
             show_execution_time=False,
             silent=True,
         )
+        self.mpc = MPC_tracking(self.ocp)
 
         # Initilize previous input with zeros
         self.prev_input = [[0.0, 0.0]] * self.N
@@ -130,29 +127,11 @@ class MPC(ManagedNode):
         R = np.diag([1e-4, 1e-1])
         R_delta = np.diag([1e-3, 6e-2])
 
-        self.ocp.running_cost = (
-            (self.ocp.x - self.ocp.x_reference).T
-            @ Qn
-            @ (self.ocp.x - self.ocp.x_reference)
-            + self.ocp.u.T @ R @ self.ocp.u
-            + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
-        )
+        self.set_costs(Qn, R, R_delta)
 
         # constraints
         self.max_steering_angle = 10
-        self.ocp.subject_to(
-            self.ocp.bounded(
-                -self.speed_target / self.wheelradius,
-                self.ocp.U[0, :],
-                self.speed_target / self.wheelradius,
-            )
-        )
-        self.ocp.subject_to(
-            self.ocp.bounded(
-                -self.max_steering_angle, self.ocp.U[1, :], self.max_steering_angle
-            )
-        )
-        self.mpc = MPC_tracking(self.ocp)
+        self.set_constraints(self.speed_target, self.max_steering_angle)
 
     def doActivate(self):
         # Do this here because some parameters are set in the mission yaml files
@@ -215,6 +194,35 @@ class MPC(ManagedNode):
         """
         return (angle + max_angle) % (2 * max_angle) - max_angle
 
+    def set_constraints(self, velocity_limit, steering_limit):
+        """
+        Set constraints for the MPC
+        """
+        self.ocp.subject_to()
+        self.ocp.subject_to(
+            self.ocp.bounded(
+                -velocity_limit / self.wheelradius,
+                self.ocp.U[0, :],
+                velocity_limit / self.wheelradius,
+            )
+        )
+        self.ocp.subject_to(
+            self.ocp.bounded(-steering_limit, self.ocp.U[1, :], steering_limit)
+        )
+        self.ocp._set_continuity(1)
+
+    def set_costs(self, Qn, R, R_delta):
+        """
+        Set costs for the MPC
+        """
+        self.ocp.running_cost = (
+            (self.ocp.x - self.ocp.x_reference).T
+            @ Qn
+            @ (self.ocp.x - self.ocp.x_reference)
+            + self.ocp.u.T @ R @ self.ocp.u
+            + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
+        )
+
     def start_sender(self):
         """
         Start sending updates. If the data is too old, brake.
@@ -265,24 +273,7 @@ class MPC(ManagedNode):
                     # Need other costs for  different speeds as this changes the working environment
                     if speed_target != self.speed_target:
                         self.speed_target = speed_target
-
-                        # Reset constraints
-                        self.ocp.opti.subject_to()
-                        self.ocp.subject_to(
-                            self.ocp.bounded(
-                                -self.speed_target / self.wheelradius,
-                                self.ocp.U[0, :],
-                                self.speed_target / self.wheelradius,
-                            )
-                        )
-                        self.ocp.opti.subject_to(
-                            self.ocp.opti.bounded(
-                                -self.max_steering_angle,
-                                self.ocp.U[1, :],
-                                self.max_steering_angle,
-                            )
-                        )
-                        self.ocp._set_continuity(1)
+                        self.set_constraints(speed_target, self.max_steering_angle)
 
                     if self.slam_state == SLAMStatesEnum.RACING:
                         # Scale steering penalty based on current speed
@@ -292,13 +283,7 @@ class MPC(ManagedNode):
                             [1e-3, 1e-1 * self.actual_speed / self.speed_target]
                         )
 
-                        self.ocp.running_cost = (
-                            (self.ocp.x - self.ocp.x_reference).T
-                            @ Qn
-                            @ (self.ocp.x - self.ocp.x_reference)
-                            + self.ocp.u.T @ R @ self.ocp.u
-                            + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
-                        )
+                        self.set_costs(Qn, R, R_delta)
 
                     reference_track = []
                     for ref_point in ref_track:
@@ -314,9 +299,13 @@ class MPC(ManagedNode):
 
                     # self.mpc.reset()
                     # TODO: get steering joint angle from ros control
-                    init_state = [0, 0, 0, self.steering_joint_angle, self.actual_speed]
-
-                    current_state = init_state
+                    current_state = [
+                        0,
+                        0,
+                        0,
+                        self.steering_joint_angle,
+                        self.actual_speed,
+                    ]
 
                     # Run MPC
                     # Give reference_track as initial trajectory guess
