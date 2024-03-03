@@ -49,12 +49,14 @@ class MPC_tracking:
     def __call__(
         self,
         state,
-        ref_state,
-        control_states,
+        reference_track,
+        a,
+        b,
+        c,
+        d,
         X0=None,
         U0=None,
         warm_start=True,
-        lin_interpol=False,
         **solver_kwargs
     ):
         """Solve the optimal control problem for the given initial state and return the first action.
@@ -93,12 +95,6 @@ class MPC_tracking:
                 else:
                     U0 = np.append(self.U_sol[1:], self.U_sol[-1])
 
-        if lin_interpol:
-            assert (self.X_init_guess is None) and (
-                X0 is None
-            ), "can't supply both an initial guess and interpolate"
-            X0 = np.linspace(state, ref_state, num=self.ocp.N + 1).T
-
         # if X0 is not None:
         #     if isinstance(self.ocp, OcpWrapper):
         #         for i, state_i in enumerate(self.ocp.states):
@@ -115,7 +111,7 @@ class MPC_tracking:
 
         with self.timer:
             self.U_sol, self.X_sol, info = self.ocp.solve(
-                state, ref_state, control_states, X0=X0, U0=U0, **solver_kwargs
+                state, reference_track, a, b, c, d, X0=X0, U0=U0, **solver_kwargs
             )
 
         self.X_sol_list.append(self.X_sol)

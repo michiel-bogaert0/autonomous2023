@@ -11,7 +11,7 @@ Panels:
         - /SLAM1/TF1/Tree1
         - /SLAM1/MCL1/Shape1
         - /Control1/MPC Prediction1
-        - /Control1/Path2
+        - /Control1/right_line1
       Splitter Ratio: 0.4060402810573578
     Tree Height: 760
   - Class: rviz/Selection
@@ -606,7 +606,7 @@ Visualization Manager:
           Length: 0.30000001192092896
           Line Style: Lines
           Line Width: 0.029999999329447746
-          Name: Path
+          Name: ref_track
           Offset:
             X: 0
             Y: 0
@@ -618,6 +618,54 @@ Visualization Manager:
           Shaft Diameter: 0.10000000149011612
           Shaft Length: 0.10000000149011612
           Topic: /mpc/ref_track
+          Unreliable: false
+          Value: true
+        - Alpha: 1
+          Buffer Length: 1
+          Class: rviz/Path
+          Color: 0; 0; 255
+          Enabled: true
+          Head Diameter: 0.30000001192092896
+          Head Length: 0.20000000298023224
+          Length: 0.30000001192092896
+          Line Style: Lines
+          Line Width: 0.029999999329447746
+          Name: left_line
+          Offset:
+            X: 0
+            Y: 0
+            Z: 0
+          Pose Color: 255; 85; 255
+          Pose Style: None
+          Queue Size: 10
+          Radius: 0.029999999329447746
+          Shaft Diameter: 0.10000000149011612
+          Shaft Length: 0.10000000149011612
+          Topic: /mpc/left_line
+          Unreliable: false
+          Value: true
+        - Alpha: 1
+          Buffer Length: 1
+          Class: rviz/Path
+          Color: 255; 255; 0
+          Enabled: true
+          Head Diameter: 0.30000001192092896
+          Head Length: 0.20000000298023224
+          Length: 0.30000001192092896
+          Line Style: Lines
+          Line Width: 0.029999999329447746
+          Name: right_line
+          Offset:
+            X: 0
+            Y: 0
+            Z: 0
+          Pose Color: 255; 85; 255
+          Pose Style: None
+          Queue Size: 10
+          Radius: 0.029999999329447746
+          Shaft Diameter: 0.10000000149011612
+          Shaft Length: 0.10000000149011612
+          Topic: /mpc/right_line
           Unreliable: false
           Value: true
       Enabled: true
@@ -647,7 +695,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -4.710023880004883
+      Angle: -4.640026092529297
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -657,10 +705,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: -54.29313278198242
+      Scale: -36.23075866699219
       Target Frame: <Fixed Frame>
-      X: -0.3036387264728546
-      Y: 3.965068817138672
+      X: -10.855759620666504
+      Y: 5.07950496673584
     Saved: ~
 Window Geometry:
   Camera:

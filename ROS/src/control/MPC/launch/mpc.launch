@@ -20,5 +20,7 @@
         <remap from="/output/target_point" to="/pure_pursuit/target_point"/>
         <remap from="/output/x_prediction" to="/mpc/x_prediction"/>
         <remap from="/output/ref_track" to="/mpc/ref_track"/>
+        <remap from="output/left_line" to="/mpc/left_line"/>
+        <remap from="output/right_line" to="/mpc/right_line"/>
     </node>
 </launch>

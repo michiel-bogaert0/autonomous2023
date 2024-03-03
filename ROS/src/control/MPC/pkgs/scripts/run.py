@@ -75,6 +75,18 @@ class MPC(ManagedNode):
             queue_size=10,  # warning otherwise
         )
 
+        self.left_line_pub = super().AddPublisher(
+            "/output/left_line",
+            Path,
+            queue_size=10,  # warning otherwise
+        )
+
+        self.right_line_pub = super().AddPublisher(
+            "/output/right_line",
+            Path,
+            queue_size=10,  # warning otherwise
+        )
+
         # Diagnostics Publisher
         self.diagnostics_pub = super().AddPublisher(
             "/diagnostics", DiagnosticArray, queue_size=10
@@ -101,41 +113,33 @@ class MPC(ManagedNode):
         self.steering_joint_angle = 0
 
         self.N = 40
-        self.np = 2  # Number of control points to keep car close to path
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
-            np=self.np,
             N=self.N,
             F=self.car.F,
             T=self.car.dt * self.N,
-            terminal_constraint=False,
             show_execution_time=False,
             silent=True,
         )
 
-        Q = np.diag([0, 0, 0, 0, 0])
-        Qn = np.diag([1e-1, 1e-1, 0, 0, 0])
+        # Initilize previous input with zeros
+        self.prev_input = [[0.0, 0.0]] * self.N
+
+        Qn = np.diag([2e-1, 2e-1, 0, 0, 0])
         R = np.diag([1e-4, 1e-1])
         R_delta = np.diag([1e-3, 6e-2])
 
-        # Weight matrices for the terminal cost
-        P = np.diag([0, 0, 0, 0, 0])
-
         self.ocp.running_cost = (
-            (self.ocp.x - self.ocp.x_ref).T @ Q @ (self.ocp.x - self.ocp.x_ref)
-            + (self.ocp.x - self.ocp.x_control).T
+            (self.ocp.x - self.ocp.x_reference).T
             @ Qn
-            @ (self.ocp.x - self.ocp.x_control)
+            @ (self.ocp.x - self.ocp.x_reference)
             + self.ocp.u.T @ R @ self.ocp.u
             + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
         )
-        self.ocp.terminal_cost = (
-            (self.ocp.x - self.ocp.x_ref).T @ P @ (self.ocp.x - self.ocp.x_ref)
-        )
 
         # constraints
-        max_steering_angle = 10
+        self.max_steering_angle = 10
         self.ocp.subject_to(
             self.ocp.bounded(
                 -self.speed_target / self.wheelradius,
@@ -144,7 +148,9 @@ class MPC(ManagedNode):
             )
         )
         self.ocp.subject_to(
-            self.ocp.bounded(-max_steering_angle, self.ocp.U[1, :], max_steering_angle)
+            self.ocp.bounded(
+                -self.max_steering_angle, self.ocp.U[1, :], self.max_steering_angle
+            )
         )
         self.mpc = MPC_tracking(self.ocp)
 
@@ -220,9 +226,43 @@ class MPC(ManagedNode):
                     self.doUpdate()
                     ref_track = self.trajectory.get_reference_track(self.car.dt, self.N)
 
+                    if len(ref_track) == 0:
+                        self.diagnostics_pub.publish(
+                            create_diagnostic_message(
+                                level=DiagnosticStatus.WARN,
+                                name="[CTRL MPC] Reference Track Status",
+                                message="No reference track found.",
+                            )
+                        )
+                        self.velocity_cmd.data = 0.0
+                        self.steering_cmd.data = 0.0
+                        self.velocity_pub.publish(self.velocity_cmd)
+                        self.steering_pub.publish(self.steering_cmd)
+                        rate.sleep()
+                        continue
+
+                    # Get left and right boundary halfspaces
+                    # NOTE: works terrible without BE
+                    a, b, c, d = self.trajectory.get_tangent_line(ref_track)
+
+                    left_point = ref_track[len(ref_track) // 2]
+                    x_points_left = np.linspace(left_point[0] - 5, left_point[0] + 5)
+                    y_points_left = a * x_points_left + b
+                    self.vis_path(
+                        list(zip(x_points_left, y_points_left)), self.left_line_pub
+                    )
+
+                    right_point = ref_track[len(ref_track) // 2]
+                    x_points_right = np.linspace(right_point[0] - 5, right_point[0] + 5)
+                    y_points_right = c * x_points_right + d
+                    self.vis_path(
+                        list(zip(x_points_right, y_points_right)), self.right_line_pub
+                    )
+
                     speed_target = rospy.get_param("/speed/target", 3.0)
 
                     # Change velocity constraints when speed target changes
+                    # Need other costs for  different speeds as this changes the working environment
                     if speed_target != self.speed_target:
                         self.speed_target = speed_target
 
@@ -236,139 +276,91 @@ class MPC(ManagedNode):
                             )
                         )
                         self.ocp.opti.subject_to(
-                            self.ocp.opti.bounded(-1, self.ocp.U[1, :], 1)
+                            self.ocp.opti.bounded(
+                                -self.max_steering_angle,
+                                self.ocp.U[1, :],
+                                self.max_steering_angle,
+                            )
                         )
                         self.ocp._set_continuity(1)
 
                     if self.slam_state == SLAMStatesEnum.RACING:
                         # Scale steering penalty based on current speed
-                        Q = np.diag([0, 0, 0, 0, 0])
-                        Qn = np.diag([8e-2, 8e-2, 0, 0, 0])
-                        R = np.diag([1e-4, 9e-2])
-                        R_delta = np.diag([1e-3, 1e-3])
-
-                        # Weight matrices for the terminal cost
-                        P = np.diag([0, 0, 0, 0, 0])
+                        Qn = np.diag([40, 40, 0, 0, 0])
+                        R = np.diag([1e-4, 1])
+                        R_delta = np.diag(
+                            [1e-3, 1e-1 * self.actual_speed / self.speed_target]
+                        )
 
                         self.ocp.running_cost = (
-                            (self.ocp.x - self.ocp.x_ref).T
-                            @ Q
-                            @ (self.ocp.x - self.ocp.x_ref)
-                            + (self.ocp.x - self.ocp.x_control).T
+                            (self.ocp.x - self.ocp.x_reference).T
                             @ Qn
-                            @ (self.ocp.x - self.ocp.x_control)
+                            @ (self.ocp.x - self.ocp.x_reference)
                             + self.ocp.u.T @ R @ self.ocp.u
                             + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
                         )
-                        self.ocp.terminal_cost = (
-                            (self.ocp.x - self.ocp.x_ref).T
-                            @ P
-                            @ (self.ocp.x - self.ocp.x_ref)
-                        )
 
-                    # Change the look-ahead distance (minimal_distance) based on the current speed
-                    if self.actual_speed < self.speed_start:
-                        self.minimal_distance = self.distance_start
-                    elif self.actual_speed < self.speed_stop:
-                        self.minimal_distance = self.distance_start + (
-                            self.distance_stop - self.distance_start
-                        ) / (self.speed_stop - self.speed_start) * (
-                            self.actual_speed - self.speed_start
-                        )
-                    else:
-                        self.minimal_distance = self.distance_stop
-
-                    # Calculate target points
-                    # distances = [
-                    #     self.minimal_distance * n
-                    #     for n in np.linspace(0, 1, self.np + 2)[1:]
-                    # ]
-                    # target_points = self.trajectory.calculate_target_points(distances)
-
-                    # target_x, target_y = target_points[-1]
-                    control_targets = []
-                    for control_target in ref_track:
-                        control_targets.append(
+                    reference_track = []
+                    for ref_point in ref_track:
+                        reference_track.append(
                             [
-                                control_target[0],
-                                control_target[1],
+                                ref_point[0],
+                                ref_point[1],
                                 0,
-                                0,
+                                self.steering_joint_angle,
                                 self.speed_target,
                             ]
                         )
 
-                    # if target_x == 0 and target_y == 0:
-                    #     self.diagnostics_pub.publish(
-                    #         create_diagnostic_message(
-                    #             level=DiagnosticStatus.WARN,
-                    #             name="[CTRL MPC] Target Point Status",
-                    #             message="Target point not found.",
-                    #         )
-                    #     )
-                    #     self.velocity_cmd.data = 0.0
-                    #     self.steering_cmd.data = 0.0
-                    #     self.velocity_pub.publish(self.velocity_cmd)
-                    #     self.steering_pub.publish(self.steering_cmd)
-                    #     rate.sleep()
-                    #     continue
-
-                    # rospy.loginfo(f"target_x: {target_x}, target_y: {target_y}")
-                    # rospy.loginfo(f"control_targets: {control_targets}")
-
-                    self.mpc.reset()
+                    # self.mpc.reset()
                     # TODO: get steering joint angle from ros control
                     init_state = [0, 0, 0, self.steering_joint_angle, self.actual_speed]
-                    goal_state = [
-                        ref_track[-1][0],
-                        ref_track[-1][1],
-                        0,
-                        0,
-                        self.speed_target,
-                    ]
 
                     current_state = init_state
 
                     # Run MPC
-                    u, info = self.mpc(current_state, goal_state, control_targets)
+                    # Give reference_track as initial trajectory guess
+                    # TODO: also give orientation
+                    # Transpose because of shape needed in MPC formulation (nx, N+1)
+                    x0 = np.concatenate(
+                        (np.array([current_state]).T, np.array(reference_track).T),
+                        axis=1,
+                    )
+                    u, info = self.mpc(
+                        current_state, reference_track, a, b, c, d, X0=x0
+                    )  # , U0=self.prev_input)
 
                     # X_closed_loop = np.array(self.mpc.X_trajectory)
-                    U_closed_loop = np.array(self.mpc.U_trajectory)
+                    # U_closed_loop = np.array(self.mpc.U_trajectory)
+                    self.prev_input = info["U_sol"]
 
                     # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
                     # rospy.loginfo(f"x closed loop: {X_closed_loop}")
                     # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
-                    rospy.loginfo(f"u closed loop: {U_closed_loop}")
+                    # rospy.loginfo(f"u closed loop: {U_closed_loop}")
+                    rospy.loginfo(f"u return: {u}")
                     rospy.loginfo(f"actual speed: {self.actual_speed}")
 
                     # Publish MPC prediction for visualization
-                    x_pred = Path()
-                    x_pred.header.stamp = self.trajectory.time_source
-                    x_pred.header.frame_id = self.base_link_frame
-                    for x, y in zip(info["X_sol"][:][0], info["X_sol"][:][1]):
-                        pose = PoseStamped()
-                        pose.pose.position.x = x
-                        pose.pose.position.y = y
-                        x_pred.poses.append(pose)
+                    self.vis_path(
+                        list(zip(info["X_sol"][:][0], info["X_sol"][:][1])),
+                        self.x_vis_pub,
+                    )
 
-                    self.x_vis_pub.publish(x_pred)
-
-                    self.steering_cmd.data = U_closed_loop[0, 1]
+                    # self.steering_cmd.data = U_closed_loop[0, 1]
                     self.steering_joint_angle = info["X_sol"][3][1]
+                    # Send steering position to ros_control
                     self.steering_cmd.data = self.steering_joint_angle
                     # self.steering_cmd.data = -1
                     self.velocity_cmd.data = (
-                        self.actual_speed
-                        + U_closed_loop[0, 0] * self.wheelradius * self.car.dt
+                        self.actual_speed + u[0] * self.wheelradius * self.car.dt
                     )  # Input is acceleration
-                    # self.velocity_cmd.data = U_closed_loop[0, 0]
-                    # self.velocity_cmd.data = info["X_sol"][4][0]
-                    # self.velocity_cmd.data = 10.0
 
                     # Use Pure Pursuit if target speed is 0
-                    target_x = ref_track[-1][0]
-                    target_y = ref_track[-1][1]
+                    # TODO: avoid this + probably wrong
                     if self.speed_target == 0.0:
+                        target_x = ref_track[-1][0]
+                        target_y = ref_track[-1][1]
                         R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (
                             2 * (target_y - 0)
                         )
@@ -379,14 +371,6 @@ class MPC(ManagedNode):
 
                         self.velocity_cmd.data = 0.0
 
-                    self.diagnostics_pub.publish(
-                        create_diagnostic_message(
-                            level=DiagnosticStatus.OK,
-                            name="[CTRL MPC] Target Point Status",
-                            message="Target point found.",
-                        )
-                    )
-
                     # Publish to velocity and position steering controller
                     self.steering_cmd.data /= self.steering_transmission
                     self.steering_pub.publish(self.steering_cmd)
@@ -395,29 +379,8 @@ class MPC(ManagedNode):
                         self.wheelradius
                     )  # Velocity to angular velocity
                     self.velocity_pub.publish(self.velocity_cmd)
-                    print(
-                        f"velocity: {self.velocity_cmd.data}, steering: {self.steering_cmd.data}"
-                    )
 
-                    # Publish target point for visualization
-                    point = PointStamped()
-                    point.header.stamp = self.trajectory.time_source
-                    point.header.frame_id = self.base_link_frame
-                    point.point.x = target_x
-                    point.point.y = target_y
-                    self.vis_pub.publish(point)
-
-                    ref_track_msg = Path()
-                    ref_track_msg.header.stamp = self.trajectory.time_source
-                    ref_track_msg.header.frame_id = self.base_link_frame
-                    for i in range(len(control_targets)):
-                        point = PoseStamped()
-                        point.header.stamp = self.trajectory.time_source
-                        point.header.frame_id = self.base_link_frame
-                        point.pose.position.x = control_targets[i][0]
-                        point.pose.position.y = control_targets[i][1]
-                        ref_track_msg.poses.append(point)
-                    self.ref_track_pub.publish(ref_track_msg)
+                    self.vis_path(reference_track, self.ref_track_pub)
 
                 except Exception as e:
                     rospy.logwarn(f"MPC has caught an exception: {e}")
@@ -426,6 +389,28 @@ class MPC(ManagedNode):
                     print(traceback.format_exc())
 
             rate.sleep()
+
+    def vis_path(self, path, publisher, stamp=None, frame_id=None):
+        if publisher is None or len(path) == 0:
+            return
+
+        if stamp is None:
+            stamp = self.trajectory.time_source
+
+        if frame_id is None:
+            frame_id = self.base_link_frame
+
+        path_msg = Path()
+        path_msg.header.stamp = stamp
+        path_msg.header.frame_id = frame_id
+
+        for point in path:
+            pose = PoseStamped()
+            pose.pose.position.x = point[0]
+            pose.pose.position.y = point[1]
+            path_msg.poses.append(pose)
+
+        publisher.publish(path_msg)
 
 
 node = MPC()

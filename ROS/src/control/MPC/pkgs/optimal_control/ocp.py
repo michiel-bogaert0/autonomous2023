@@ -12,12 +12,9 @@ class Ocp:
         self,
         nx: int,
         nu: int,
-        np: int,
         N: int,
         T: float = None,
         F: Callable = None,
-        M=1,
-        terminal_constraint=False,
         silent=False,
         show_execution_time=True,
         store_intermediate=False,
@@ -28,13 +25,10 @@ class Ocp:
         Args:
             nx (int): state size
             nu (int): action size
-            np (int): number of control points on path
             N (int): number of control intervals
             T (float): time horizon, Defaults to None
             f (callable): dynamics x_dot=f(x, u) which returns the derivative of the state x_dot
             F (callable): discrete dynamics x_new=F(x,u)
-            M (int, optional): number of integration intervals per control interval. Defaults to 1.
-            terminal_constraint (bool, optional): set the goal state as a terminal constraint. Defaults to False.
             silent (bool, optional): print optimisation steps. Defaults to False.
             store_intermediate (bool, optional): store intermediate solutions of the optimisation problem. Defaults to False.
             integrator (str, optional): the integrator used in the discretization. Supports Runge-Kutta and Euler. Defaults to 'euler'.
@@ -45,33 +39,30 @@ class Ocp:
         self.T = T
         self.F = F
 
-        self.np = self.N  # Number of control points on path
-
         self.opti = casadi.Opti()
 
         self.X = self.opti.variable(self.nx, N + 1)
         self.U = self.opti.variable(self.nu, N)
         self.x0 = self.opti.parameter(self.nx)
 
-        self._x_ref = self.opti.parameter(self.nx)
-        self._x_control = self.opti.parameter(self.nx, self.np)
+        self._x_reference = self.opti.parameter(self.nx, self.N)
         self.params = []  # additional parameters
 
         # symbolic params to define cost functions
         self.x = casadi.SX.sym("symbolic_x", self.nx)
         self.u = casadi.SX.sym("symbolic_u", self.nu)
         self.u_delta = casadi.SX.sym("symbolic_u_prev", self.nu)
-        self.x_ref = casadi.SX.sym("symbolic_x_ref", self.nx)
-        self.x_control = casadi.SX.sym("symbolic_x_control_", self.nx)
-        self.x_ref_mid = casadi.SX.sym("symbolic_x_ref_mid", self.nx)
+        self.x_reference = casadi.SX.sym("symbolic_x_control_", self.nx)
+
+        self.a = self.opti.variable(1)
+        self.b = self.opti.variable(1)
+        self.c = self.opti.variable(1)
+        self.d = self.opti.variable(1)
 
         self._set_continuity(threads)
-        if terminal_constraint:
-            self.opti.subject_to(self.X[:, N] == self._x_ref)
 
         self.cost_fun = None
-        self.terminal_cost_fun = None
-        self.cost = {"run": 0, "terminal": 0, "total": 0}
+        self.cost = {"run": 0, "total": 0}
 
         self.set_solver(silent, print_time=show_execution_time)
 
@@ -125,22 +116,17 @@ class Ocp:
             X_next = self.F.map(self.N, "thread", threads)(self.X[:, :-1], self.U)
             self.opti.subject_to(self.X[:, 1:] == X_next)
 
-    def eval_cost(self, X, U, goal_state, include_terminal_cost=True):
+    def eval_cost(self, X, U, goal_state):
         assert X.shape[0] == self.nx
         N = X.shape[1] - 1
 
         cost_accum = self.cost_fun.map(N)(X[:, :-1], U, casadi.repmat(goal_state, 1, N))
-        if include_terminal_cost:
-            mayer_term = self.terminal_cost_fun(X[:, -1], goal_state)
-        else:
-            mayer_term = 0
 
-        return casadi.sum2(cost_accum) + mayer_term
+        return casadi.sum2(cost_accum)
 
     def set_cost(
         self,
         cost_fun: Callable[[List[float], List[float], List[float]], List[float]] = None,
-        terminal_cost_fun: Callable = None,
     ):
         if cost_fun is not None:
             self.cost_fun = cost_fun
@@ -151,27 +137,20 @@ class Ocp:
                         self.X[:, i],
                         self.U[:, i],
                         self.U[:, i],
-                        self._x_ref,
-                        self._x_control[:, i],
+                        self._x_reference[:, i],
                     )
                 else:
                     L_run += cost_fun(
                         self.X[:, i],
                         self.U[:, i],
                         (self.U[:, i] - self.U[:, i - 1]),
-                        self._x_ref,
-                        self._x_control[:, i],
+                        self._x_reference[:, i],
                     )
+                # self.opti.subject_to((self.a * self.X[0, i] + self.b - self.X[1, i]) * (self.c * self.X[0, i] + self.d - self.X[1, i]) < 0)
+                # self.opti.subject_to(((self.X[0, i] - self._x_reference[0, i]) ** 2 + (self.X[1, i] - self._x_reference[1, i]) ** 2) < 16)
             self.cost["run"] = L_run
 
-        if terminal_cost_fun is not None:
-            self.terminal_cost_fun = terminal_cost_fun  # debugging purposes
-            terminal_cost = terminal_cost_fun(
-                self.X[:, self.N], self._x_ref
-            )  # symbolic cost
-            self.cost["terminal"] = terminal_cost
-
-        self.cost["total"] = self.cost["run"] + self.cost["terminal"]
+        self.cost["total"] = self.cost["run"]
         self.opti.minimize(self.cost["total"])
 
     @property
@@ -182,32 +161,10 @@ class Ocp:
     def running_cost(self, symbolic_cost):
         cost_fun = casadi.Function(
             "cost_fun",
-            [self.x, self.u, self.u_delta, self.x_ref, self.x_control],
+            [self.x, self.u, self.u_delta, self.x_reference],
             [symbolic_cost],
         )
         self.set_cost(cost_fun=cost_fun)
-
-    @property
-    def difference_cost(self):
-        return self.cost["run"]
-
-    @difference_cost.setter
-    def difference_cost(self, symbolic_cost):
-        cost_fun = casadi.Function(
-            "cost_fun", [self.x, self.u, self.x_ref], [symbolic_cost]
-        )
-        self.set_cost(cost_fun=cost_fun)
-
-    @property
-    def terminal_cost(self):
-        return self.cost["terminal"]
-
-    @terminal_cost.setter
-    def terminal_cost(self, symbolic_terminal_cost):
-        terminal_cost_fun = casadi.Function(
-            "terminal_cost_fun", [self.x, self.x_ref], [symbolic_terminal_cost]
-        )
-        self.set_cost(terminal_cost_fun=terminal_cost_fun)
 
     def set_solver(self, silent, print_time=1, solver="ipopt"):
         """set the solver to be used for the trajectory optimisation
@@ -250,11 +207,13 @@ class Ocp:
     def solve(
         self,
         state,
-        goal_state,
-        control_states,
+        reference_track,
+        a,
+        b,
+        c,
+        d,
         X0=None,
         U0=None,
-        lin_interpol=False,
         show_exception=True,
     ):
         """solve the optimal control problem for the initial state and goal state
@@ -271,15 +230,13 @@ class Ocp:
             [tuple]: U_sol [nu, N], X_sol [nx, N], info
         """
         self.opti.set_value(self.x0, state)
-        self.opti.set_value(self._x_ref, goal_state)
-        for i in range(self.np):
-            self.opti.set_value(self._x_control[:, i], control_states[i])
+        for i in range(self.N):
+            self.opti.set_value(self._x_reference[:, i], reference_track[i])
 
-        if lin_interpol and (X0 is None):
-            # X0 = interpol(state, goal_state, self.N+1)
-            X0 = np.linspace(state, goal_state, num=self.N + 1).T
-        elif lin_interpol and (X0 is not None):
-            raise Exception("cannot pass initial state sequence and interpolate")
+        self.opti.set_initial(self.a, a)
+        self.opti.set_initial(self.b, b)
+        self.opti.set_initial(self.c, c)
+        self.opti.set_initial(self.d, d)
 
         if X0 is not None:
             self.opti.set_initial(self.X, X0)
