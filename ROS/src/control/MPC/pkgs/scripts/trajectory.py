@@ -129,6 +129,9 @@ class Trajectory:
     def get_reference_track(self, dt, N, debug=False):
         self.path_blf = self.transform_blf()
 
+        if len(self.path_blf) == 0:
+            return []
+
         # Find target points based on required velocity and maximum acceleration
         speed_target = rospy.get_param("/speed/target", 3.0)
         max_acceleration = 5.0  # TODO: create param
@@ -136,6 +139,7 @@ class Trajectory:
         distances = [(i + 1) * (d + (dt**2) * max_acceleration) for i in range(N)]
 
         if self.change_index:
+            # TODO: actually get closest point instead of closest index
             self.closest_index = np.argmin(
                 np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
             )
@@ -187,8 +191,33 @@ class Trajectory:
                 )
                 if debug:
                     print(
-                        f"Point {j-1} and {j} with scaling {scaling} and distance {distances[i]} and relative distance {distances_relative[j]} results in point {reference_path[-1]}"
+                        f"Point {j - 1} and {j} with scaling {scaling} and distance {distances[i]} and relative distance {distances_relative[j]} results in point {reference_path[-1]}"
                     )
                 break
 
         return reference_path
+
+    def get_tangent_line(self, reference_path):
+        point = reference_path[len(reference_path) // 2]
+        prev_point = reference_path[len(reference_path) // 2 - 1]
+        next_point = reference_path[len(reference_path) // 2 + 1]
+
+        slope = self.calculate_tangent(prev_point, next_point)
+
+        b = point[1] - slope * point[0]
+        b_left = b + 10
+        b_right = b - 10
+
+        return slope, b_left, slope, b_right
+
+    def calculate_tangent(self, point_prev, point_next):
+        # Calculate the slope using finite differences
+        dx = point_next[0] - point_prev[0]
+        dy = point_next[1] - point_prev[1]
+
+        # Avoid division by zero
+        if dx == 0:
+            return float("inf")
+
+        slope = dy / dx
+        return slope
