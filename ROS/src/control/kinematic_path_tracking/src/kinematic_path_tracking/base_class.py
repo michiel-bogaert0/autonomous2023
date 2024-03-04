@@ -10,8 +10,8 @@ from node_fixture.managed_node import ManagedNode
 from std_msgs.msg import Float64
 from ugr_msgs.msg import State
 
+from .longitudinal_control import LongitudinalControl
 from .trajectory import Trajectory
-from .velocity_target import VelocityTarget
 
 
 class KinematicTrackingNode(ManagedNode):
@@ -79,9 +79,13 @@ class KinematicTrackingNode(ManagedNode):
         self.max_acceleration = rospy.get_param("~max_acceleration", 2)
         self.min_speed = rospy.get_param("~speed/min", 3.0)
         self.max_speed = rospy.get_param("~speed/max", 15.0)
-        self.pure_pursuit_state = rospy.get_param("~state", 2)
         self.straight_ratio = rospy.get_param("~straight_ratio", 0.96)
-        self.velocitytarget = VelocityTarget(
+
+    def doActivate(self):
+        # Do this here because some parameters are set in the mission yaml files
+        self.trajectory = Trajectory(self.tf_buffer)
+
+        self.longitudinal_control = LongitudinalControl(
             self.speed_minimal_distance,
             self.speed_target,
             self.max_acceleration,
@@ -90,10 +94,6 @@ class KinematicTrackingNode(ManagedNode):
             self.max_speed,
             self.straight_ratio,
         )
-
-    def doActivate(self):
-        # Do this here because some parameters are set in the mission yaml files
-        self.trajectory = Trajectory(self.tf_buffer)
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
@@ -155,10 +155,13 @@ class KinematicTrackingNode(ManagedNode):
             self.doUpdate()
 
             self.__process__()
-            mission = rospy.get_param("/mission")
-            self.velocity_cmd.data = self.velocitytarget.get_velocity_target(
-                self.trajectory, self.slam_state, mission, self.actual_speed
+
+            self.velocity_cmd.data = (
+                self.longitudinal_control.handle_longitudinal_control(
+                    self.trajectory, self.slam_state, self.actual_speed
+                )
             )
+
             self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
             self.velocity_pub.publish(self.velocity_cmd)
 
