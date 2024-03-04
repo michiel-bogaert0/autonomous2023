@@ -123,7 +123,7 @@ class MPC(ManagedNode):
         # Initilize previous input with zeros
         self.prev_input = [[0.0, 0.0]] * self.N
 
-        Qn = np.diag([2e-1, 2e-1, 0, 0, 0])
+        Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
         R = np.diag([1e-4, 1e-1])
         R_delta = np.diag([1e-3, 6e-2])
 
@@ -277,10 +277,10 @@ class MPC(ManagedNode):
 
                     if self.slam_state == SLAMStatesEnum.RACING:
                         # Scale steering penalty based on current speed
-                        Qn = np.diag([40, 40, 0, 0, 0])
-                        R = np.diag([1e-4, 1])
+                        Qn = np.diag([5e-1, 5e-1, 0, 0, 0])
+                        R = np.diag([1e-4, 5e1])
                         R_delta = np.diag(
-                            [1e-3, 1e-1 * self.actual_speed / self.speed_target]
+                            [1e-2, 5e-1 * self.actual_speed / self.speed_target]
                         )
 
                         self.set_costs(Qn, R, R_delta)
