@@ -147,6 +147,10 @@ class KinematicTrackingNode(ManagedNode):
                 )
             )
 
+            # Brake when no path has been found!
+            if len(self.trajectory.path_blf) == 0:
+                self.velocity_cmd.data = 0
+
             self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
             self.velocity_pub.publish(self.velocity_cmd)
 

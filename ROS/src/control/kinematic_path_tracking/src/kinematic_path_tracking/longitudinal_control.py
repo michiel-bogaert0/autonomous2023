@@ -27,6 +27,9 @@ class LongitudinalControl:
             self.speed_minimal_distance
         )
 
+        if speed_target_x == 0 and speed_target_y == 0:
+            return self.speed_target
+
         # Calculate ratio
         direct_distance = np.sqrt(speed_target_x**2 + speed_target_y**2)
         ratio = direct_distance / self.speed_minimal_distance
