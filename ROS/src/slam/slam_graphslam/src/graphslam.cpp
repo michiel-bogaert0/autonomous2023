@@ -94,9 +94,9 @@ void GraphSLAM::doConfigure() {
   this->diagPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(
       new node_fixture::DiagnosticPublisher(n, "SLAM GrapSLAM"));
 
-  this->landmarkPublisher =
-      n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>(
-          "/output/observations", 0);
+  // this->landmarkPublisher =
+  //     n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>(
+  //         "/output/observations", 0);
   this->posesPublisher = n.advertise<geometry_msgs::PoseArray>(
       "/graphslam/debug/vertices/poses", 0);
   this->edgePosesPublisher = n.advertise<visualization_msgs::Marker>(
@@ -574,31 +574,8 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
   if (this->debug) {
 
     // --------------------------------------------------------------------
-    // ----------------- Publish Landmarks --------------------------------
+    // -------------------- Publish Poses ---------------------------------
     // --------------------------------------------------------------------
-
-    ugr_msgs::ObservationWithCovarianceArrayStamped landmarks;
-    landmarks.header.frame_id = this->map_frame;
-    landmarks.header.stamp = lookupTime;
-
-    for (const auto &pair :
-         this->optimizer.vertices()) { // unordered_map<int, Vertex*>
-
-      LandmarkVertex *landmarkVertex =
-          dynamic_cast<LandmarkVertex *>(pair.second);
-      if (landmarkVertex) {
-        ugr_msgs::ObservationWithCovariance map_ob;
-        map_ob.observation.location.x = landmarkVertex->estimate().x();
-        map_ob.observation.location.y = landmarkVertex->estimate().y();
-        map_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-        map_ob.observation.observation_class = landmarkVertex->color;
-        map_ob.observation.belief = 0;
-        landmarks.observations.push_back(map_ob);
-      }
-    }
-
-    this->landmarkPublisher.publish(landmarks);
-    // Publish odometry poses
     geometry_msgs::PoseArray poses;
     poses.header.frame_id = this->map_frame;
 
@@ -624,7 +601,9 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     }
     this->posesPublisher.publish(poses);
 
-    // Publish edges
+    // --------------------------------------------------------------------
+    // -------------------- Publish edges ---------------------------------
+    // --------------------------------------------------------------------
     visualization_msgs::Marker poseEdges;
     poseEdges.header.frame_id = this->map_frame;
     poseEdges.header.stamp = lookupTime;
@@ -657,9 +636,9 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     landmarkEdges.color.r = 0.0;
     landmarkEdges.color.g = 1.0;
     landmarkEdges.color.b = 0.0;
-    landmarkEdges.scale.x = 0.05;
-    landmarkEdges.scale.y = 0.05;
-    landmarkEdges.scale.z = 0.05;
+    landmarkEdges.scale.x = 0.01;
+    landmarkEdges.scale.y = 0.01;
+    landmarkEdges.scale.z = 0.01;
     landmarkEdges.pose.orientation.x = 0.0;
     landmarkEdges.pose.orientation.y = 0.0;
     landmarkEdges.pose.orientation.z = 0.0;

@@ -74,7 +74,6 @@ private:
 
   // Publishers
   ros::Publisher odomPublisher;
-  ros::Publisher landmarkPublisher;
   ros::Publisher posesPublisher;
   ros::Publisher edgePosesPublisher;
   ros::Publisher edgeLandmarksPublisher;
