@@ -4,27 +4,19 @@ from node_fixture.fixture import SLAMStatesEnum
 
 
 class LongitudinalControl:
-    def __init__(
-        self,
-        speed_minimial_distance,
-        speed_target,
-        max_acceleration,
-        publish_rate,
-        min_speed,
-        max_speed,
-        straight_ratio,
-    ):
-        self.speed_minimial_distance = speed_minimial_distance
-        self.speed_target = speed_target
-        self.max_acceleration = max_acceleration
+    def __init__(self, publish_rate):
         self.publish_rate = publish_rate
-        self.min_speed = min_speed
-        self.max_speed = max_speed
-        self.straight_ratio = straight_ratio
+        self.speed_minimal_distance = rospy.get_param("~speed/minimal_distance", 12.0)
+        self.speed_target = rospy.get_param("/speed/target", 3.0)
+        self.max_acceleration = rospy.get_param("~max_acceleration", 2)
+        self.min_speed = rospy.get_param("~speed/min", 3.0)
+        self.max_speed = rospy.get_param("~speed/max", 15.0)
+        self.straight_ratio = rospy.get_param("~straight_ratio", 0.96)
         self.adaptive_velocity = rospy.get_param("/speed/adaptive_velocity", False)
 
     def handle_longitudinal_control(self, trajectory, slam_state, actual_speed):
         self.speed_target = rospy.get_param("/speed/target", 3.0)
+
         if self.adaptive_velocity and slam_state == SLAMStatesEnum.RACING:
             return self.get_velocity_target(trajectory, actual_speed)
         else:
@@ -34,12 +26,12 @@ class LongitudinalControl:
         mission = rospy.get_param("/mission", "")
 
         speed_target_x, speed_target_y, _ = trajectory.calculate_target_point(
-            self.speed_minimial_distance, mission
+            self.speed_minimal_distance, mission
         )
 
         # Calculate ratio
         direct_distance = np.sqrt(speed_target_x**2 + speed_target_y**2)
-        ratio = direct_distance / self.speed_minimial_distance
+        ratio = direct_distance / self.speed_minimal_distance
 
         # Calculate max speed based on max acceleration
         max_allowed_speed = actual_speed + self.max_acceleration / self.publish_rate
@@ -52,8 +44,4 @@ class LongitudinalControl:
         )
 
         # Update speed target, not higher than max allowed speed
-        return (
-            min(speed_candidate, max_allowed_speed)
-            if ratio < self.straight_ratio
-            else speed_candidate
-        )
+        return min(speed_candidate, max_allowed_speed)

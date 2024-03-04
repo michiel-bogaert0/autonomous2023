@@ -74,26 +74,11 @@ class KinematicTrackingNode(ManagedNode):
 
         self.slam_state = None
 
-        # Variables for speed variation
-        self.speed_minimal_distance = rospy.get_param("~speed/minimal_distance", 12.0)
-        self.max_acceleration = rospy.get_param("~max_acceleration", 2)
-        self.min_speed = rospy.get_param("~speed/min", 3.0)
-        self.max_speed = rospy.get_param("~speed/max", 15.0)
-        self.straight_ratio = rospy.get_param("~straight_ratio", 0.96)
-
     def doActivate(self):
         # Do this here because some parameters are set in the mission yaml files
         self.trajectory = Trajectory(self.tf_buffer)
 
-        self.longitudinal_control = LongitudinalControl(
-            self.speed_minimal_distance,
-            self.speed_target,
-            self.max_acceleration,
-            self.publish_rate,
-            self.min_speed,
-            self.max_speed,
-            self.straight_ratio,
-        )
+        self.longitudinal_control = LongitudinalControl(self.publish_rate)
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
