@@ -121,13 +121,13 @@ class MinimumCurvature(ManagedNode):
             psi=psi_reftrack,
             kappa=kappa_reftrack,
             dkappa=dkappa_reftrack,
-            kappa_bound=0.2,
+            kappa_bound=0.3,
             w_veh=self.car_width,
             print_debug=False,
             plot_debug=False,
-            stepsize_interp=0.3,
-            iters_min=3,
-            curv_error_allowed=0.01,
+            stepsize_interp=0.2,
+            iters_min=5,
+            curv_error_allowed=0.03,
         )
         end = perf_counter()
         rospy.logerr(f"Total time elapsed: {end - start}")
@@ -136,7 +136,7 @@ class MinimumCurvature(ManagedNode):
             reftrack=self.reference_line,
             normvectors=normvec_normalized,
             A=M,
-            kappa_bound=0.2,
+            kappa_bound=0.3,
             w_veh=self.car_width,
             print_debug=False,
             plot_debug=False,

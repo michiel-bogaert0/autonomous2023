@@ -1,10 +1,12 @@
 import math
+import sys
 import time
 from typing import Union
 
 import numpy as np
 import quadprog
 import rospy
+from scipy import optimize, spatial
 from scipy.interpolate import interp1d, splev, splprep
 
 
@@ -783,7 +785,7 @@ def iqp_handler(
         # check termination criterions: minimum number of iterations and curvature error
         if (
             iter_cur >= iters_min and curv_error_max_tmp <= curv_error_allowed
-        ) or iter_cur == 3:
+        ) or iter_cur == 5:
             end = time.perf_counter()
             rospy.logerr("Iteration %d finished in %f", iter_cur, end - start)
             if print_debug:
@@ -1478,3 +1480,515 @@ def normalize_psi(psi: Union[np.ndarray, float]) -> np.ndarray:
             psi_out += 2 * math.pi
 
     return psi_out
+
+
+def prep_track(
+    reftrack_imp: np.ndarray,
+    reg_smooth_opts: dict,
+    stepsize_opts: dict,
+    debug: bool = True,
+    min_width: float = None,
+) -> tuple:
+    """
+    Created by:
+    Alexander Heilmeier
+
+    Documentation:
+    This function prepares the inserted reference track for optimization.
+
+    Inputs:
+    reftrack_imp:               imported track [x_m, y_m, w_tr_right_m, w_tr_left_m]
+    reg_smooth_opts:            parameters for the spline approximation
+    stepsize_opts:              dict containing the stepsizes before spline approximation and after spline interpolation
+    debug:                      boolean showing if debug messages should be printed
+    min_width:                  [m] minimum enforced track width (None to deactivate)
+
+    Outputs:
+    reftrack_interp:            track after smoothing and interpolation [x_m, y_m, w_tr_right_m, w_tr_left_m]
+    normvec_normalized_interp:  normalized normal vectors on the reference line [x_m, y_m]
+    a_interp:                   LES coefficients when calculating the splines
+    coeffs_x_interp:            spline coefficients of the x-component
+    coeffs_y_interp:            spline coefficients of the y-component
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # INTERPOLATE REFTRACK AND CALCULATE INITIAL SPLINES ---------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # smoothing and interpolating reference track
+    reftrack_interp = spline_approximation(
+        track=reftrack_imp,
+        k_reg=reg_smooth_opts["k_reg"],
+        s_reg=reg_smooth_opts["s_reg"],
+        stepsize_prep=stepsize_opts["stepsize_prep"],
+        stepsize_reg=stepsize_opts["stepsize_reg"],
+        debug=debug,
+    )
+
+    # calculate splines
+    refpath_interp_cl = np.vstack((reftrack_interp[:, :2], reftrack_interp[0, :2]))
+
+    (
+        coeffs_x_interp,
+        coeffs_y_interp,
+        a_interp,
+        normvec_normalized_interp,
+    ) = calc_splines(path=refpath_interp_cl)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CHECK SPLINE NORMALS FOR CROSSING POINTS -------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    normals_crossing = check_normals_crossing(
+        track=reftrack_interp, normvec_normalized=normvec_normalized_interp, horizon=10
+    )
+
+    if normals_crossing:
+        raise IOError(
+            "At least two spline normals are crossed, check input or increase smoothing factor!"
+        )
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # ENFORCE MINIMUM TRACK WIDTH (INFLATE TIGHTER SECTIONS UNTIL REACHED) ---------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    manipulated_track_width = False
+
+    if min_width is not None:
+        for i in range(reftrack_interp.shape[0]):
+            cur_width = reftrack_interp[i, 2] + reftrack_interp[i, 3]
+
+            if cur_width < min_width:
+                manipulated_track_width = True
+
+                # inflate to both sides equally
+                reftrack_interp[i, 2] += (min_width - cur_width) / 2
+                reftrack_interp[i, 3] += (min_width - cur_width) / 2
+
+    if manipulated_track_width:
+        print(
+            "WARNING: Track region was smaller than requested minimum track width -> Applied artificial inflation in"
+            " order to match the requirements!",
+            file=sys.stderr,
+        )
+
+    return (
+        reftrack_interp,
+        normvec_normalized_interp,
+        a_interp,
+        coeffs_x_interp,
+        coeffs_y_interp,
+    )
+
+
+def spline_approximation(
+    track: np.ndarray,
+    k_reg: int = 3,
+    s_reg: int = 10,
+    stepsize_prep: float = 1.0,
+    stepsize_reg: float = 3.0,
+    debug: bool = False,
+) -> np.ndarray:
+    """
+    author:
+    Fabian Christ
+
+    modified by:
+    Alexander Heilmeier
+
+    .. description::
+    Smooth spline approximation for a track (e.g. centerline, reference line).
+
+    .. inputs::
+    :param track:           [x, y, w_tr_right, w_tr_left, (banking)] (always unclosed).
+    :type track:            np.ndarray
+    :param k_reg:           order of B splines.
+    :type k_reg:            int
+    :param s_reg:           smoothing factor (usually between 5 and 100).
+    :type s_reg:            int
+    :param stepsize_prep:   stepsize used for linear track interpolation before spline approximation.
+    :type stepsize_prep:    float
+    :param stepsize_reg:    stepsize after smoothing.
+    :type stepsize_reg:     float
+    :param debug:           flag for printing debug messages
+    :type debug:            bool
+
+    .. outputs::
+    :return track_reg:      [x, y, w_tr_right, w_tr_left, (banking)] (always unclosed).
+    :rtype track_reg:       np.ndarray
+
+    .. notes::
+    The function can only be used for closable tracks, i.e. track is closed at the beginning!
+    The banking angle is optional and must not be provided!
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # LINEAR INTERPOLATION BEFORE SMOOTHING ----------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    track_interp = interp_track(track=track, stepsize=stepsize_prep)
+    track_interp_cl = np.vstack((track_interp, track_interp[0]))
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # SPLINE APPROXIMATION / PATH SMOOTHING ----------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # create closed track (original track)
+    track_cl = np.vstack((track, track[0]))
+    no_points_track_cl = track_cl.shape[0]
+    el_lengths_cl = np.sqrt(
+        np.sum(np.power(np.diff(track_cl[:, :2], axis=0), 2), axis=1)
+    )
+    dists_cum_cl = np.cumsum(el_lengths_cl)
+    dists_cum_cl = np.insert(dists_cum_cl, 0, 0.0)
+
+    # find B spline representation of the inserted path and smooth it in this process
+    # (tck_cl: tuple (vector of knots, the B-spline coefficients, and the degree of the spline))
+    tck_cl, t_glob_cl = splprep(
+        [track_interp_cl[:, 0], track_interp_cl[:, 1]], k=k_reg, s=s_reg, per=1
+    )[:2]
+
+    # calculate total length of smooth approximating spline based on euclidian distance with points at every 0.25m
+    no_points_lencalc_cl = math.ceil(dists_cum_cl[-1]) * 4
+    path_smoothed_tmp = np.array(
+        splev(np.linspace(0.0, 1.0, no_points_lencalc_cl), tck_cl)
+    ).T
+    len_path_smoothed_tmp = np.sum(
+        np.sqrt(np.sum(np.power(np.diff(path_smoothed_tmp, axis=0), 2), axis=1))
+    )
+
+    # get smoothed path
+    no_points_reg_cl = math.ceil(len_path_smoothed_tmp / stepsize_reg) + 1
+    path_smoothed = np.array(splev(np.linspace(0.0, 1.0, no_points_reg_cl), tck_cl)).T[
+        :-1
+    ]
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # PROCESS TRACK WIDTHS (AND BANKING ANGLE IF GIVEN) ----------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # find the closest points on the B spline to input points
+    dists_cl = np.zeros(
+        no_points_track_cl
+    )  # contains (min) distances between input points and spline
+    closest_point_cl = np.zeros(
+        (no_points_track_cl, 2)
+    )  # contains the closest points on the spline
+    closest_t_glob_cl = np.zeros(
+        no_points_track_cl
+    )  # containts the t_glob values for closest points
+    t_glob_guess_cl = (
+        dists_cum_cl / dists_cum_cl[-1]
+    )  # start guess for the minimization
+
+    for i in range(no_points_track_cl):
+        # get t_glob value for the point on the B spline with a minimum distance to the input points
+        closest_t_glob_cl[i] = optimize.fmin(
+            dist_to_p, x0=t_glob_guess_cl[i], args=(tck_cl, track_cl[i, :2]), disp=False
+        )
+
+        # evaluate B spline on the basis of t_glob to obtain the closest point
+        closest_point_cl[i] = splev(closest_t_glob_cl[i], tck_cl)
+
+        # save distance from closest point to input point
+        dists_cl[i] = math.sqrt(
+            math.pow(closest_point_cl[i, 0] - track_cl[i, 0], 2)
+            + math.pow(closest_point_cl[i, 1] - track_cl[i, 1], 2)
+        )
+
+    if debug:
+        print(
+            "Spline approximation: mean deviation %.2fm, maximum deviation %.2fm"
+            % (float(np.mean(dists_cl)), float(np.amax(np.abs(dists_cl))))
+        )
+
+    # get side of smoothed track compared to the inserted track
+    sides = np.zeros(no_points_track_cl - 1)
+
+    for i in range(no_points_track_cl - 1):
+        sides[i] = side_of_line(
+            a=track_cl[i, :2], b=track_cl[i + 1, :2], z=closest_point_cl[i]
+        )
+
+    sides_cl = np.hstack((sides, sides[0]))
+
+    # calculate new track widths on the basis of the new reference line, but not interpolated to new stepsize yet
+    w_tr_right_new_cl = track_cl[:, 2] + sides_cl * dists_cl
+    w_tr_left_new_cl = track_cl[:, 3] - sides_cl * dists_cl
+
+    # interpolate track widths after smoothing (linear)
+    w_tr_right_smoothed_cl = np.interp(
+        np.linspace(0.0, 1.0, no_points_reg_cl), closest_t_glob_cl, w_tr_right_new_cl
+    )
+    w_tr_left_smoothed_cl = np.interp(
+        np.linspace(0.0, 1.0, no_points_reg_cl), closest_t_glob_cl, w_tr_left_new_cl
+    )
+
+    track_reg = np.column_stack(
+        (path_smoothed, w_tr_right_smoothed_cl[:-1], w_tr_left_smoothed_cl[:-1])
+    )
+
+    # interpolate banking if given (linear)
+    if track_cl.shape[1] == 5:
+        banking_smoothed_cl = np.interp(
+            np.linspace(0.0, 1.0, no_points_reg_cl), closest_t_glob_cl, track_cl[:, 4]
+        )
+        track_reg = np.column_stack((track_reg, banking_smoothed_cl[:-1]))
+
+    return track_reg
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# DISTANCE CALCULATION FOR OPTIMIZATION --------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# return distance from point p to a point on the spline at spline parameter t_glob
+def dist_to_p(t_glob: np.ndarray, path: list, p: np.ndarray):
+    s = splev(t_glob, path)
+    return spatial.distance.euclidean(p, s)
+
+
+def interp_track(track: np.ndarray, stepsize: float) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    Interpolate track points linearly to a new stepsize.
+
+    .. inputs::
+    :param track:           track in the format [x, y, w_tr_right, w_tr_left, (banking)].
+    :type track:            np.ndarray
+    :param stepsize:        desired stepsize after interpolation in m.
+    :type stepsize:         float
+
+    .. outputs::
+    :return track_interp:   interpolated track [x, y, w_tr_right, w_tr_left, (banking)].
+    :rtype track_interp:    np.ndarray
+
+    .. notes::
+    Track input and output are unclosed! track input must however be closable in the current form!
+    The banking angle is optional and must not be provided!
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # LINEAR INTERPOLATION OF TRACK ------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # create closed track
+    track_cl = np.vstack((track, track[0]))
+
+    # calculate element lengths (euclidian distance)
+    el_lengths_cl = np.sqrt(
+        np.sum(np.power(np.diff(track_cl[:, :2], axis=0), 2), axis=1)
+    )
+
+    # sum up total distance (from start) to every element
+    dists_cum_cl = np.cumsum(el_lengths_cl)
+    dists_cum_cl = np.insert(dists_cum_cl, 0, 0.0)
+
+    # calculate desired lenghts depending on specified stepsize (+1 because last element is included)
+    no_points_interp_cl = math.ceil(dists_cum_cl[-1] / stepsize) + 1
+    dists_interp_cl = np.linspace(0.0, dists_cum_cl[-1], no_points_interp_cl)
+
+    # interpolate closed track points
+    track_interp_cl = np.zeros((no_points_interp_cl, track_cl.shape[1]))
+
+    track_interp_cl[:, 0] = np.interp(dists_interp_cl, dists_cum_cl, track_cl[:, 0])
+    track_interp_cl[:, 1] = np.interp(dists_interp_cl, dists_cum_cl, track_cl[:, 1])
+    track_interp_cl[:, 2] = np.interp(dists_interp_cl, dists_cum_cl, track_cl[:, 2])
+    track_interp_cl[:, 3] = np.interp(dists_interp_cl, dists_cum_cl, track_cl[:, 3])
+
+    if track_cl.shape[1] == 5:
+        track_interp_cl[:, 4] = np.interp(dists_interp_cl, dists_cum_cl, track_cl[:, 4])
+
+    return track_interp_cl[:-1]
+
+
+def check_normals_crossing(
+    track: np.ndarray, normvec_normalized: np.ndarray, horizon: int = 10
+) -> bool:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    This function checks spline normals for crossings. Returns True if a crossing was found, otherwise False.
+
+    .. inputs::
+    :param track:               array containing the track [x, y, w_tr_right, w_tr_left] to check
+    :type track:                np.ndarray
+    :param normvec_normalized:  array containing normalized normal vectors for every track point
+                                [x_component, y_component]
+    :type normvec_normalized:   np.ndarray
+    :param horizon:             determines the number of normals in forward and backward direction that are checked
+                                against each normal on the line
+    :type horizon:              int
+
+    .. outputs::
+    :return found_crossing:     bool value indicating if a crossing was found or not
+    :rtype found_crossing:      bool
+
+    .. notes::
+    The checks can take a while if full check is performed. Inputs are unclosed.
+    """
+
+    # check input
+    no_points = track.shape[0]
+
+    if horizon >= no_points:
+        raise RuntimeError(
+            "Horizon of %i points is too large for a track with %i points, reduce horizon!"
+            % (horizon, no_points)
+        )
+
+    elif horizon >= no_points / 2:
+        print(
+            "WARNING: Horizon of %i points makes no sense for a track with %i points, reduce horizon!"
+            % (horizon, no_points)
+        )
+
+    # initialization
+    les_mat = np.zeros((2, 2))
+    idx_list = list(range(0, no_points))
+    idx_list = idx_list[-horizon:] + idx_list + idx_list[:horizon]
+
+    # loop through all points of the track to check for crossings in their neighbourhoods
+    for idx in range(no_points):
+        # determine indices of points in the neighbourhood of the current index
+        idx_neighbours = idx_list[idx : idx + 2 * horizon + 1]
+        del idx_neighbours[horizon]
+        idx_neighbours = np.array(idx_neighbours)
+
+        # remove indices of normal vectors that are collinear to the current index
+        is_collinear_b = np.isclose(
+            np.cross(normvec_normalized[idx], normvec_normalized[idx_neighbours]), 0.0
+        )
+        idx_neighbours_rel = idx_neighbours[np.nonzero(np.invert(is_collinear_b))[0]]
+
+        # check crossings solving an LES
+        for idx_comp in list(idx_neighbours_rel):
+            # LES: x_1 + lambda_1 * nx_1 = x_2 + lambda_2 * nx_2; y_1 + lambda_1 * ny_1 = y_2 + lambda_2 * ny_2;
+            const = track[idx_comp, :2] - track[idx, :2]
+            les_mat[:, 0] = normvec_normalized[idx]
+            les_mat[:, 1] = -normvec_normalized[idx_comp]
+
+            # solve LES
+            lambdas = np.linalg.solve(les_mat, const)
+
+            # we have a crossing within the relevant part if both lambdas lie between -w_tr_left and w_tr_right
+            if (
+                -track[idx, 3] <= lambdas[0] <= track[idx, 2]
+                and -track[idx_comp, 3] <= lambdas[1] <= track[idx_comp, 2]
+            ):
+                return True  # found crossing
+
+    return False
+
+
+def side_of_line(
+    a: Union[tuple, np.ndarray],
+    b: Union[tuple, np.ndarray],
+    z: Union[tuple, np.ndarray],
+) -> float:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    Function determines if a point z is on the left or right side of a line from a to b. It is based on the z component
+    orientation of the cross product, see question on
+    https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
+
+    .. inputs::
+    :param a:       point coordinates [x, y]
+    :type a:        Union[tuple, np.ndarray]
+    :param b:       point coordinates [x, y]
+    :type b:        Union[tuple, np.ndarray]
+    :param z:       point coordinates [x, y]
+    :type z:        Union[tuple, np.ndarray]
+
+    .. outputs::
+    :return side:   0.0 = on line, 1.0 = left side, -1.0 = right side.
+    :rtype side:    float
+    """
+
+    # calculate side
+    side = np.sign((b[0] - a[0]) * (z[1] - a[1]) - (b[1] - a[1]) * (z[0] - a[0]))
+
+    return side
+
+
+def calc_min_bound_dists(
+    trajectory: np.ndarray,
+    bound1: np.ndarray,
+    bound2: np.ndarray,
+    length_veh: float,
+    width_veh: float,
+) -> np.ndarray:
+    """
+    Created by:
+    Alexander Heilmeier
+
+    Documentation:
+    Calculate minimum distance between vehicle and track boundaries for every trajectory point. Vehicle dimensions are
+    taken into account for this calculation. Vehicle orientation is assumed to be the same as the heading of the
+    trajectory.
+
+    Inputs:
+    trajectory:     array containing the trajectory information. Required are x, y, psi for every point
+    bound1/2:       arrays containing the track boundaries [x, y]
+    length_veh:     real vehicle length in m
+    width_veh:      real vehicle width in m
+
+    Outputs:
+    min_dists:      minimum distance to boundaries for every trajectory point
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE MINIMUM DISTANCES --------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    bounds = np.vstack((bound1, bound2))
+
+    # calculate static vehicle edge positions [x, y] for psi = 0
+    fl = np.array([-width_veh / 2, length_veh / 2])
+    fr = np.array([width_veh / 2, length_veh / 2])
+    rl = np.array([-width_veh / 2, -length_veh / 2])
+    rr = np.array([width_veh / 2, -length_veh / 2])
+
+    # loop through all the raceline points
+    min_dists = np.zeros(trajectory.shape[0])
+    mat_rot = np.zeros((2, 2))
+
+    for i in range(trajectory.shape[0]):
+        mat_rot[0, 0] = math.cos(trajectory[i, 3])
+        mat_rot[0, 1] = -math.sin(trajectory[i, 3])
+        mat_rot[1, 0] = math.sin(trajectory[i, 3])
+        mat_rot[1, 1] = math.cos(trajectory[i, 3])
+
+        # calculate positions of vehicle edges
+        fl_ = trajectory[i, 1:3] + np.matmul(mat_rot, fl)
+        fr_ = trajectory[i, 1:3] + np.matmul(mat_rot, fr)
+        rl_ = trajectory[i, 1:3] + np.matmul(mat_rot, rl)
+        rr_ = trajectory[i, 1:3] + np.matmul(mat_rot, rr)
+
+        # get minimum distances of vehicle edges to any boundary point
+        fl__mindist = np.sqrt(
+            np.power(bounds[:, 0] - fl_[0], 2) + np.power(bounds[:, 1] - fl_[1], 2)
+        )
+        fr__mindist = np.sqrt(
+            np.power(bounds[:, 0] - fr_[0], 2) + np.power(bounds[:, 1] - fr_[1], 2)
+        )
+        rl__mindist = np.sqrt(
+            np.power(bounds[:, 0] - rl_[0], 2) + np.power(bounds[:, 1] - rl_[1], 2)
+        )
+        rr__mindist = np.sqrt(
+            np.power(bounds[:, 0] - rr_[0], 2) + np.power(bounds[:, 1] - rr_[1], 2)
+        )
+
+        # save overall minimum distance of current vehicle position
+        min_dists[i] = np.amin((fl__mindist, fr__mindist, rl__mindist, rr__mindist))
+
+    return min_dists
