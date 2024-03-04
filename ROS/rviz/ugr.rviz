@@ -275,25 +275,11 @@ Visualization Manager:
           Class 3 color: 255; 69; 0
           Class 4 color: 0; 0; 0
           Enabled: true
-          Name: Map
+          Name: Map SLAM
           Queue Size: 10
           Realistic: true
-          Topic: /ugr/car/map/fastslam/global
+          Topic: /ugr/car/map/slam/global
           Unreliable: false
-          Value: true
-        - Alpha: 1
-          Class: rviz_observations_visualization/ObservationWithCovarianceStamped
-          Class 0 color: 0; 255; 0
-          Class 1 color: 237; 51; 59
-          Class 2 color: 255; 140; 0
-          Class 3 color: 255; 69; 0
-          Class 4 color: 0; 0; 0
-          Enabled: true
-          Name: GraphSLAM landmarks
-          Queue Size: 10
-          Realistic: true
-          Topic: /graphslam/debug/vertices/landmarks
-          Unreliable: true
           Value: true
         - Alpha: 1
           Arrow Length: 0.30000001192092896
@@ -311,7 +297,7 @@ Visualization Manager:
           Shape: Arrow (3D)
           Topic: /graphslam/debug/vertices/poses
           Unreliable: false
-          Value: true
+          Value: false
         - Class: rviz/Marker
           Enabled: true
           Marker Topic: /graphslam/debug/edges/poses
@@ -319,7 +305,7 @@ Visualization Manager:
           Namespaces:
             {}
           Queue Size: 10
-          Value: true
+          Value: false
         - Class: rviz/Marker
           Enabled: true
           Marker Topic: /graphslam/debug/edges/landmarks
@@ -327,7 +313,7 @@ Visualization Manager:
           Namespaces:
             {}
           Queue Size: 10
-          Value: true
+          Value: false
         - Alpha: 1
           Arrow Length: 0.30000001192092896
           Axes Length: 0.30000001192092896
@@ -377,7 +363,7 @@ Visualization Manager:
             Shaft Length: 0.5
             Shaft Radius: 0.05000000074505806
             Value: Arrow
-          Topic: /ugr/car/odometry/filtered/fastslam
+          Topic: /ugr/car/odometry/filtered/slam
           Unreliable: false
           Value: false
         - Angle Tolerance: 0.10000000149011612

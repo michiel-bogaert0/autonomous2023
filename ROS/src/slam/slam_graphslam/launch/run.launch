@@ -1,7 +1,5 @@
 <launch>
     <include file="$(find slam_graphslam)/launch/keyboard.launch" pass_all_args="true" />
-
-    <!-- <include file="$(find slam_fastslam)/launch/fastslam1.launch" pass_all_args="true" /> -->
   
     <include file="$(find slam_graphslam)/launch/graphslam.launch" pass_all_args="true" />
 

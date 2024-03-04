@@ -1,6 +1,6 @@
 <launch>
     <node pkg="boundary_estimation" type="boundary_estimation.py" name="boundary_estimation" respawn="true" output="screen">
-        <remap from="/input/local_map" to="/ugr/car/map/fastslam/local"/>
+        <remap from="/input/local_map" to="/ugr/car/map/slam/local"/>
         
         <remap from="/output/debug/left_boundary" to="/boundary_estimation/debug/left_boundary"/>
         <remap from="/output/debug/right_boundary" to="/boundary_estimation/debug/right_boundary"/>

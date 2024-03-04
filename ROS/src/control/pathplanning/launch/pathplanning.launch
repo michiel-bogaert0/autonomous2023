@@ -13,7 +13,7 @@
         <param name="range_sides" value="100" />
         <param name="range_behind" value="100" />
         
-        <remap from="/input/local_map" to="/ugr/car/map/fastslam/local"/>
+        <remap from="/input/local_map" to="/ugr/car/map/slam/local"/>
         <remap from="/output/path" to="/pathplanning/poses"/>
 
         <param name="debug_visualisation" value="true" />
