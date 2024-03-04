@@ -133,16 +133,17 @@ class EarlyFusion:
         if pointcloud is None:
             return
         projections, pointcloud = self.project_pc(pointcloud)
-        observations = []
+        cones = []  # list of tuples (centroid, cone_type, close_points_count)
         for box in bboxes:
             inside_pts = self.filter_points_inside_bbox(pointcloud, projections, box)
             if len(inside_pts) == 0:
                 continue
-            centroid = self.calculate_centroid(inside_pts)
+            centroid, close_points_count = self.calculate_centroid(inside_pts)
             if centroid is None:
                 continue
-            observations.append(self.create_observation(centroid, box.cone_type))
-        results = self.create_results(observations, bbox_header.stamp)
+            cones.append((centroid, box.cone_type, close_points_count))
+        cones = self.remove_duplicate_cones(cones)
+        results = self.create_results(cones, bbox_header.stamp)
         self.publish(results)
 
     def fov_filter(self, pc):
@@ -151,10 +152,14 @@ class EarlyFusion:
         """
         return pc[np.abs(pc[:, 1] / pc[:, 0]) < self.max_ratio]
 
-    def create_results(self, observations, stamp):
+    def create_results(self, cones, stamp):
         """
         Creates an ObservationWithCovarianceArrayStamped message from a list of observations
         """
+        observations = []
+        for cone in cones:
+            centroid, cone_type = cone[0], cone[1]
+            observations.append(self.create_observation(centroid, cone_type))
         results = ObservationWithCovarianceArrayStamped()
         results.observations = observations
         results.header.stamp = (
@@ -165,7 +170,7 @@ class EarlyFusion:
 
     def calculate_centroid(self, points):
         """
-        Calculates the centroid of a set of points
+        Calculates the centroid of a set of points and also returns the number of points close to the centroid
         """
         mean_point = np.median(
             points, axis=0
@@ -178,13 +183,14 @@ class EarlyFusion:
             ]
         )  # filter out points that are too far from the mean
         if len(filtered_pts) == 0:
-            return None
+            return None, None
         centroid = np.mean(filtered_pts, axis=0)
         direction_vector = centroid / np.linalg.norm(centroid)
         centroid += direction_vector * (
             1 / 6 * self.cone_width
         )  # compensation for only seeing the front of the cone
-        return centroid
+        close_points_count = len(filtered_pts)  # count of points close to the centroid
+        return centroid, close_points_count
 
     def filter_points_inside_bbox(self, pc, projections, bbox):
         """
@@ -203,6 +209,22 @@ class EarlyFusion:
         inside_pts = pc[mask]
 
         return inside_pts
+
+    def remove_duplicate_cones(self, cones):
+        """
+        Removes duplicate cones caused by overlapping bboxes by checking if the distance between two cones is less than the cone width
+        """
+        for i in range(len(cones)):
+            for j in range(i + 1, len(cones)):
+                if np.linalg.norm(cones[i][0] - cones[j][0]) < self.cone_width:
+                    if (
+                        cones[i][2] > cones[j][2]
+                    ):  # keep the cone with the most close points (which will be the closest cone)
+                        del cones[j]
+                    else:
+                        del cones[i]
+                    return self.remove_duplicate_cones(cones)
+        return cones
 
     def create_observation(self, centroid, cone_type):
         """
