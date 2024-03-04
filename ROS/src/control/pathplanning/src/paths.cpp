@@ -33,7 +33,10 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
 
     queue.erase(queue.begin());
 
-    bool first_pose_found = false;
+    bool first_pose_found = true;
+    if (path.size() <= 1) {
+      first_pose_found = false;
+    }
 
     // First stage is adding as much continuous nodes as possible to reduce
     // search space by alot
