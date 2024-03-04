@@ -33,6 +33,8 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
 
     queue.erase(queue.begin());
 
+    bool first_pose_found = false;
+
     // First stage is adding as much continuous nodes as possible to reduce
     // search space by alot
     bool child_found = true;
@@ -58,6 +60,13 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
           double angle_node =
               atan2(next_pos[1] - parent->y, next_pos[0] - parent->x);
           double angle_change = angle_node - parent->angle;
+
+          // The first pose of the path is an exeption and its angle should be
+          // oriented in the same direction as the car
+          if (!first_pose_found) {
+            angle_node = 0;
+            first_pose_found = true;
+          }
 
           Node *node =
               new Node(next_pos[0], next_pos[1], distance_node, parent,
@@ -101,6 +110,12 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
             atan2(next_pos[1] - parent->y, next_pos[0] - parent->x);
         double angle_change = angle_node - parent->angle;
 
+        // The first pose of the path is an exeption and its angle should be
+        // oriented in the same direction as the car
+        if (!first_pose_found) {
+          angle_node = 0;
+        }
+
         Node *node = new Node(next_pos[0], next_pos[1], distance_node, parent,
                               std::vector<Node *>(), angle_node, angle_change);
 
@@ -111,6 +126,8 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
         queue.push_back(std::make_tuple(node, new_path, depth + 1));
       }
     }
+
+    first_pose_found = true;
 
     if (!child_found) {
       leaves.push_back(parent);
