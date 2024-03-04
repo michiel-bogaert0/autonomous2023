@@ -130,8 +130,6 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
       }
     }
 
-    first_pose_found = true;
-
     if (!child_found) {
       leaves.push_back(parent);
     }
