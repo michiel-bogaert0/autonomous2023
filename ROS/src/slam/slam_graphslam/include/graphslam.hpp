@@ -48,12 +48,13 @@ private:
   double publish_rate;
   bool doSynchronous;
   bool debug;
+
   int max_iterations;
   double association_threshold;
   double max_range;
-  double max_half_fov;
-  Eigen::Matrix3d covariance_pose;
-  Eigen::Matrix2d covariance_landmark;
+  double max_half_angle;
+  Eigen::Matrix3d information_pose;
+  Eigen::Matrix2d information_landmark;
 
   // GraphSLAM variables
   double latestTime;

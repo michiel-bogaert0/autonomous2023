@@ -57,9 +57,7 @@ namespace slam {
 GraphSLAM::GraphSLAM(ros::NodeHandle &n)
     : ManagedNode(n, "graphslam"), n(n), tfListener(tfBuffer),
       base_link_frame(n.param<string>("base_link_frame", "ugr/car_base_link")),
-      tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0) {
-  // this->doConfigure(); // remove this line
-}
+      tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0) {}
 
 void GraphSLAM::doConfigure() {
   // Initialize frames
@@ -76,16 +74,64 @@ void GraphSLAM::doConfigure() {
 
   this->max_iterations = n.param<int>("max_iterations", 10);
   this->association_threshold = n.param<double>("association_threshold", 0.5);
-  // Todo: set from launch file
-  this->max_range = 15;
-  this->max_half_fov = 60 * 0.0174533;
+  this->max_range = n.param<double>("max_range", 15);
+  this->max_half_angle = n.param<double>("max_half_angle", 60 * 0.0174533);
+
+  // Initialize covariance matrices
+  vector<double> cov_pose_vector;
+  vector<double> cov_landmark_vector;
+
+  n.param<vector<double>>("covariance_pose", cov_pose_vector,
+                          {1, 0, 0, 0, 1, 0, 0, 0, 1});
+  n.param<vector<double>>("covariance_landmark", cov_landmark_vector,
+                          {0.2, 0, 0, 0.2});
+
+  if (cov_pose_vector.size() != 9)
+    throw invalid_argument("The covariance pose must be a vector of size 9");
+
+  if (cov_landmark_vector.size() != 4)
+    throw invalid_argument(
+        "The covariance landmark must be a vector of size 4");
+
+  Eigen::Matrix3d covariance_pose;
+  Eigen::Matrix2d covariance_landmark;
+
+  // first covariance from odometry
+  // this->covariance_pose(0, 0) = 0.239653;
+  // this->covariance_pose(0, 1) = 0.0510531;
+  // this->covariance_pose(0, 2) = 0.00847513;
+  // this->covariance_pose(0, 3) = 0.0510531;
+  // this->covariance_pose(1, 0) = 0.0510531;
+  // this->covariance_pose(1, 1) = 2.60422;
+  // this->covariance_pose(1, 2) = 0.261481;
+  // this->covariance_pose(1, 3) = 0.00847513;
+  // this->covariance_pose(2, 0) = 0.00847513;
+  // this->covariance_pose(2, 1) = 0.261481;
+  // this->covariance_pose(2, 2) = 0.286192;
+
+  covariance_pose(0, 0) = cov_pose_vector[0];
+  covariance_pose(0, 1) = cov_pose_vector[1];
+  covariance_pose(0, 2) = cov_pose_vector[2];
+  covariance_pose(1, 0) = cov_pose_vector[3];
+  covariance_pose(1, 1) = cov_pose_vector[4];
+  covariance_pose(1, 2) = cov_pose_vector[5];
+  covariance_pose(2, 0) = cov_pose_vector[6];
+  covariance_pose(2, 1) = cov_pose_vector[7];
+  covariance_pose(2, 2) = cov_pose_vector[8];
+
+  covariance_landmark(0, 0) = cov_landmark_vector[0];
+  covariance_landmark(0, 1) = cov_landmark_vector[1];
+  covariance_landmark(1, 0) = cov_landmark_vector[2];
+  covariance_landmark(1, 1) = cov_landmark_vector[3];
+
+  this->information_pose = covariance_pose.inverse();
+  this->information_landmark = covariance_landmark.inverse();
 
   // Initialize map Service Client
   string SetMap_service =
       n.param<string>("SetMap_service", "/ugr/srv/slam_map_server/set");
   this->setmap_srv_client =
       n.serviceClient<slam_controller::SetMap::Request>(SetMap_service, true);
-
   this->globalmap_namespace = n.param<string>("globalmap_namespace", "global");
   this->localmap_namespace = n.param<string>("localmap_namespace", "local");
 
@@ -94,15 +140,14 @@ void GraphSLAM::doConfigure() {
   this->diagPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(
       new node_fixture::DiagnosticPublisher(n, "SLAM GrapSLAM"));
 
-  // this->landmarkPublisher =
-  //     n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>(
-  //         "/output/observations", 0);
-  this->posesPublisher = n.advertise<geometry_msgs::PoseArray>(
-      "/graphslam/debug/vertices/poses", 0);
-  this->edgePosesPublisher = n.advertise<visualization_msgs::Marker>(
-      "/graphslam/debug/edges/poses", 0);
-  this->edgeLandmarksPublisher = n.advertise<visualization_msgs::Marker>(
-      "/graphslam/debug/edges/landmarks", 0);
+  if (this->debug) {
+    this->posesPublisher =
+        n.advertise<geometry_msgs::PoseArray>("/output/pose/vertices", 0);
+    this->edgePosesPublisher =
+        n.advertise<visualization_msgs::Marker>("/output/pose/edges", 0);
+    this->edgeLandmarksPublisher =
+        n.advertise<visualization_msgs::Marker>("/output/landmark/edges", 0);
+  }
 
   // Initialize subscribers
   obs_sub.subscribe(n, "/input/observations", 1);
@@ -110,29 +155,11 @@ void GraphSLAM::doConfigure() {
       boost::bind(&GraphSLAM::handleObservations, this, _1));
 
   // Initialize variables
+  this->latestTime = 0.0;
   this->gotFirstObservations = false;
   this->prev_state = {0.0, 0.0, 0.0};
   this->vertexCounter = 0;
   this->prevPoseIndex = -1;
-
-  // first covariance from odometry
-  this->covariance_pose(0, 0) = 0.239653;
-  this->covariance_pose(0, 1) = 0.0510531;
-  this->covariance_pose(0, 2) = 0.00847513;
-  this->covariance_pose(0, 3) = 0.0510531;
-  this->covariance_pose(1, 0) = 0.0510531;
-  this->covariance_pose(1, 1) = 2.60422;
-  this->covariance_pose(1, 2) = 0.261481;
-  this->covariance_pose(1, 3) = 0.00847513;
-  this->covariance_pose(2, 0) = 0.00847513;
-  this->covariance_pose(2, 1) = 0.261481;
-  this->covariance_pose(2, 2) = 0.286192;
-
-  // Stole from lidar pkg
-  this->covariance_landmark(0, 0) = 0.2;
-  this->covariance_landmark(0, 1) = 0;
-  this->covariance_landmark(1, 0) = 0;
-  this->covariance_landmark(1, 1) = 0.2;
 
   //----------------------------------------------------------------------------
   //------------------------------ Set Optimizer -------------------------------
@@ -148,7 +175,7 @@ void GraphSLAM::doConfigure() {
 
   this->optimizer.setAlgorithm(solver);
   //-----------------------------------------------------------------------------
-}
+} // doConfigure method
 
 void GraphSLAM::handleObservations(
     const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs) {
@@ -178,7 +205,7 @@ void GraphSLAM::handleObservations(
   if (this->doSynchronous) {
     this->step();
   }
-}
+} // handleObservations method
 
 void GraphSLAM::step() {
   if (!this->isActive() || !this->gotFirstObservations) {
@@ -269,7 +296,7 @@ void GraphSLAM::step() {
     z(1) = atan2(transformed_ob.observation.location.y,
                  transformed_ob.observation.location.x);
 
-    if (z(0) > pow(this->max_range, 2) || abs(z(1)) > this->max_half_fov) {
+    if (z(0) > pow(this->max_range, 2) || abs(z(1)) > this->max_half_angle) {
       continue;
     }
 
@@ -325,7 +352,7 @@ void GraphSLAM::step() {
         this->optimizer.vertex(this->prevPoseIndex); // from
     odometry->vertices()[1] = this->optimizer.vertex(this->vertexCounter); // to
     odometry->setMeasurement(pose_trans);
-    odometry->setInformation(this->covariance_pose.inverse());
+    odometry->setInformation(this->information_pose);
     this->optimizer.addEdge(odometry);
   } else {
     // First pose
@@ -386,11 +413,7 @@ void GraphSLAM::step() {
     //     2 rows and columns are used
     // landmarkObservation->setInformation(covarianceMatrix.inverse());
 
-    // std::ostringstream matrixStream;
-    // matrixStream << covarianceMatrix;
-    // ROS_INFO("Covariance: \n%s", matrixStream.str().c_str());
-
-    landmarkObservation->setInformation(this->covariance_landmark.inverse());
+    landmarkObservation->setInformation(this->information_landmark);
     this->optimizer.addEdge(landmarkObservation);
   }
 
@@ -411,7 +434,7 @@ void GraphSLAM::step() {
   // ------------------------ Publish -----------------------------------
   // --------------------------------------------------------------------
   this->publishOutput(transformed_obs.header.stamp);
-}
+} // step method
 
 void GraphSLAM::publishOutput(ros::Time lookupTime) {
 
@@ -691,5 +714,5 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
       this->edgePosesPublisher.publish(poseEdges);
     }
   }
-}
+} // publishOutput method
 } // namespace slam

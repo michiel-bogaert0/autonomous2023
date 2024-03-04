@@ -5,12 +5,13 @@
   <arg name="lidar_frame" default="os_sensor"/>
 
   <node pkg="slam_graphslam" output="screen" type="graphslam" name="graphslam" respawn="False">
-    # Parameters
+    # Frames
     <param name="world_frame" value="$(arg world_frame)" />
     <param name="base_link_frame" value="$(arg base_link_frame)" />
     <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
     <param name="lidar_frame" value="$(arg lidar_frame)" />
 
+    # Parameters
     <param name="target_rate" value="50"/> <!-- Hz -->
     <param name="publish_rate" value="10"/> <!-- Hz -->
     <param name="synchronous" value="false"/> 
@@ -18,6 +19,11 @@
 
     <param name="max_iterations" value="10"/>
     <param name="association_threshold" value="1"/>
+    <param name="max_range" value="15"/>
+    <param name="max_half_angle" value="1.57"/> <!-- ingesteld voor lidar -->
+
+    <rosparam param="covariance_pose">[1, 0, 0, 0, 1, 0, 0, 0, 1]</rosparam>
+    <rosparam param="covariance_landmark"> [0.2, 0, 0, 0.2]</rosparam>
 
      # Map service Parameters
     <param name="SetMap_service" value="/ugr/srv/slam_map_server/set" />
@@ -26,8 +32,11 @@
 
     # Input/output remapping
     <remap from="/input/observations" to="/ugr/car/observations/lidar" />
-
-    <!-- <remap from="/output/observations" to="/graphslam/debug/vertices/landmarks" /> -->
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/slam" />
+
+    # Input/output remapping debug
+    <remap from="/output/pose/vertices" to="/graphslam/debug/vertices/poses" />
+    <remap from="/output/pose/edges" to="/graphslam/debug/edges/poses" />
+    <remap from="/output/landmark/edges" to="/graphslam/debug/edges/landmarks" />
   </node>
 </launch>
