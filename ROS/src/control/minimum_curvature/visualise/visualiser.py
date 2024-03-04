@@ -42,6 +42,16 @@ class Visualiser:
             "/input/path_extra", Path, self.handle_path_received_extra
         )
 
+        # Subscriber for iqp path
+        self.iqppath_subscriber = rospy.Subscriber(
+            "/input/path_iqp", Path, self.handle_path_received_iqp
+        )
+
+        # Subscriber for reference path
+        self.refpath_subscriber = rospy.Subscriber(
+            "/input/path_ref", Path, self.handle_path_received_ref
+        )
+
         # Initialize and start Qt application
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
@@ -71,6 +81,28 @@ class Visualiser:
             path (Path): The extra path received from the minimum curvature node
         """
         self.window.map_widget.receive_path_extra(
+            np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
+        )
+
+    def handle_path_received_iqp(self, path: Path):
+        """
+        Handles the iqp path received from the minimum curvature node
+
+        Args:
+            path (Path): The iqp path received from the minimum curvature node
+        """
+        self.window.map_widget.receive_path_iqp(
+            np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
+        )
+
+    def handle_path_received_ref(self, path: Path):
+        """
+        Handles the reference path received from the minimum curvature node
+
+        Args:
+            path (Path): The reference path received from the minimum curvature node
+        """
+        self.window.map_widget.receive_path_ref(
             np.array([[p.pose.position.x, p.pose.position.y] for p in path.poses])
         )
 

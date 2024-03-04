@@ -11,6 +11,8 @@
         <remap from="/input/path" to="/pathplanning/poses" />
         <remap from="/output/path" to="/pathplanning/path" />
         <remap from="/output/path_extra" to="/minimum_curvature/path_extra" />
+        <remap from="/output/path_iqp" to="/minimum_curvature/path_iqp" />
+        <remap from="/output/path_ref" to="/minimum_curvature/path_ref" />
         
     </node>
 

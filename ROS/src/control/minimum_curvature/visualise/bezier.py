@@ -61,10 +61,10 @@ def make_bezier(points: List[QtC.QPointF]) -> List[BezierPoint]:
     return bezier
 
 
-def make_refline(
+def make_centerline(
     blue_cones: List[QtC.QPointF], yellow_cones: List[QtC.QPointF]
 ) -> List[QtC.QPointF]:
-    refPoints = []
+    centerPoints = []
     c = 0
     for i, yellow_cone in enumerate(yellow_cones):
         min_distance = math.inf
@@ -88,11 +88,11 @@ def make_refline(
                             if dis < mindis:
                                 mindis = dis
                                 closest = yc
-                        refPoints.append((el + closest) / 2)
+                        centerPoints.append((el + closest) / 2)
                 removed = j
                 nearest_blue = blue_cone
         if nearest_blue:
-            refPoints.append((yellow_cone + nearest_blue) / 2)
+            centerPoints.append((yellow_cone + nearest_blue) / 2)
 
         c += removed
 
@@ -106,8 +106,8 @@ def make_refline(
                     mindis = dis
                     closest = yc
             if closest is not None:
-                refPoints.append((el + closest) / 2)
-    return refPoints
+                centerPoints.append((el + closest) / 2)
+    return centerPoints
 
 
 def get_bezier_curve_iterator(

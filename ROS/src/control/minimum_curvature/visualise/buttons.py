@@ -15,9 +15,9 @@ class Buttons:
         layout.setSpacing(10)
 
         # Create a QPushButton and add it to the layout
-        self.reflineButton = QtW.QPushButton("show/hide reference line", self.widget)
-        self.reflineButton.setFixedSize(250, 30)  # Set the size of the button
-        layout.addWidget(self.reflineButton)
+        self.centerlineButton = QtW.QPushButton("show/hide center line", self.widget)
+        self.centerlineButton.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(self.centerlineButton)
         self.trackboundsButton = QtW.QPushButton("show/hide trackbounds", self.widget)
         self.trackboundsButton.setFixedSize(250, 30)  # Set the size of the button
         layout.addWidget(self.trackboundsButton)
@@ -30,25 +30,33 @@ class Buttons:
         self.extraButton = QtW.QPushButton("show/hide extra", self.widget)
         self.extraButton.setFixedSize(250, 30)  # Set the size of the button
         layout.addWidget(self.extraButton)
+        self.iqpButton = QtW.QPushButton("show/hide iqp", self.widget)
+        self.iqpButton.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(self.iqpButton)
+        self.reflineButton = QtW.QPushButton("show/hide reference", self.widget)
+        self.reflineButton.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(self.reflineButton)
 
         self.computeButton = QtW.QPushButton("compute minimum curvature", self.widget)
         self.computeButton.setFixedSize(250, 30)  # Set the size of the button
         layout.addWidget(self.computeButton)
 
         # Connect the button's clicked signal to a slot
-        self.reflineButton.clicked.connect(self.refline_clicked)
+        self.centerlineButton.clicked.connect(self.centerline_clicked)
         self.trackboundsButton.clicked.connect(self.trackbounds_clicked)
         self.conesButton.clicked.connect(self.cones_clicked)
         self.mincurvButton.clicked.connect(self.mincurv_clicked)
         self.extraButton.clicked.connect(self.extra_clicked)
+        self.iqpButton.clicked.connect(self.iqp_clicked)
+        self.reflineButton.clicked.connect(self.refline_clicked)
         self.computeButton.clicked.connect(self.compute_clicked)
 
-    def refline_clicked(self):
-        self.widget.refline_on = not self.widget.refline_on
-        if self.widget.refline_on:
-            self.reflineButton.setStyleSheet("background-color: green")
+    def centerline_clicked(self):
+        self.widget.centerline_on = not self.widget.centerline_on
+        if self.widget.centerline_on:
+            self.centerlineButton.setStyleSheet("background-color: green")
         else:
-            self.reflineButton.setStyleSheet("background-color: red")
+            self.centerlineButton.setStyleSheet("background-color: red")
         self.widget.update()
 
     def trackbounds_clicked(self):
@@ -90,30 +98,60 @@ class Buttons:
             self.extraButton.setStyleSheet("background-color: red")
         self.widget.update()
 
+    def iqp_clicked(self):
+        self.widget.iqp_on = not self.widget.iqp_on
+        if self.widget.iqp_on:
+            self.iqpButton.setStyleSheet("background-color: green")
+        else:
+            self.iqpButton.setStyleSheet("background-color: red")
+        self.widget.update()
+
+    def refline_clicked(self):
+        self.widget.refline_on = not self.widget.refline_on
+        if self.widget.refline_on:
+            self.reflineButton.setStyleSheet("background-color: green")
+        else:
+            self.reflineButton.setStyleSheet("background-color: gray")
+        self.widget.update()
+
     def compute_clicked(self):
         self.widget.compute_on = True
         self.computeButton.setStyleSheet("background-color: orange")
 
     def set_buttons(self):
-        if self.widget.refline_on:
-            self.reflineButton.setStyleSheet("background-color: green")
+        if self.widget.centerline_on:
+            self.centerlineButton.setStyleSheet("background-color: green")
         else:
-            self.reflineButton.setStyleSheet("background-color: gray")
+            self.centerlineButton.setStyleSheet("background-color: gray")
+
         if self.widget.trackbounds_on:
             self.trackboundsButton.setStyleSheet("background-color: green")
         else:
             self.trackboundsButton.setStyleSheet("background-color: red")
+
         if self.widget.cones_on:
             self.conesButton.setStyleSheet("background-color: green")
         else:
             self.conesButton.setStyleSheet("background-color: red")
+
         if self.widget.mincurv_on:
             self.mincurvButton.setStyleSheet("background-color: green")
         else:
             self.mincurvButton.setStyleSheet("background-color: red")
+
         if self.widget.extra_on:
             self.extraButton.setStyleSheet("background-color: green")
         else:
             self.extraButton.setStyleSheet("background-color: red")
+
+        if self.widget.iqp_on:
+            self.iqpButton.setStyleSheet("background-color: green")
+        else:
+            self.iqpButton.setStyleSheet("background-color: red")
+
+        if self.widget.refline_on:
+            self.reflineButton.setStyleSheet("background-color: green")
+        else:
+            self.reflineButton.setStyleSheet("background-color: gray")
 
         self.computeButton.setStyleSheet("background-color: gray")

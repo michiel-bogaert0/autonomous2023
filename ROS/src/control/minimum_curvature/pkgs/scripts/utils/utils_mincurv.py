@@ -1,8 +1,10 @@
 import math
 import time
+from typing import Union
 
 import numpy as np
 import quadprog
+import rospy
 from scipy.interpolate import interp1d, splev, splprep
 
 
@@ -626,3 +628,853 @@ def opt_min_curv(
     curv_error_max = np.amax(np.abs(curv_sol_lin - curv_orig_lin))
 
     return alpha_mincurv, curv_error_max
+
+
+def iqp_handler(
+    reftrack: np.ndarray,
+    normvectors: np.ndarray,
+    A: np.ndarray,
+    spline_len: np.ndarray,
+    psi: np.ndarray,
+    kappa: np.ndarray,
+    dkappa: np.ndarray,
+    kappa_bound: float,
+    w_veh: float,
+    stepsize_interp: float,
+    iters_min: int = 3,
+    curv_error_allowed: float = 0.01,
+    print_debug: bool = False,
+    plot_debug: bool = False,
+) -> tuple:
+    """
+    author:
+    Alexander Heilmeier
+    Marvin Ochsenius
+
+    .. description::
+    This function handles the iterative call of the quadratic optimization problem (minimum curvature) during
+    trajectory optimization. The interface to this function was kept as similar as possible to the interface of
+    opt_min_curv.py.
+
+    The basic idea is to repeatedly call the minimum curvature optimization while we limit restrict the solution space
+    for an improved validity (the linearization for the optimization problems is the problem here). After every step
+    we update the reference track on the basis of the solution for the next iteration to increase the validity of the
+    linearization. Since the optimization problem is based on the assumption of equal stepsizes we have to interpolate
+    the track in every iteration.
+
+    Please refer to our paper for further information:
+    Heilmeier, Wischnewski, Hermansdorfer, Betz, Lienkamp, Lohmann
+    Minimum Curvature Trajectory Planning and Control for an Autonomous Racecar
+    DOI: 10.1080/00423114.2019.1631455
+
+    .. inputs::
+    :param reftrack:            array containing the reference track, i.e. a reference line and the according track
+                                widths to the right and to the left [x, y, w_tr_right, w_tr_left] (unit is meter, must
+                                be unclosed!)
+    :type reftrack:             np.ndarray
+    :param normvectors:         normalized normal vectors for every point of the reference track [x, y]
+                                (unit is meter, must be unclosed!)
+    :type normvectors:          np.ndarray
+    :param A:                   linear equation system matrix for splines (applicable for both, x and y direction)
+                                -> System matrices have the form a_i, b_i * t, c_i * t^2, d_i * t^3
+                                -> see calc_splines.py for further information or to obtain this matrix
+    :type A:                    np.ndarray
+    :param spline_len:          spline lengths for every point of the reference track [x, y]
+                                (unit is meter, must be unclosed!)
+    :type spline_len:           np.ndarray
+    :param psi:                 heading for every point of the reference track [x, y]
+                                (unit is rad, must be unclosed!)
+    :type psi:                  np.ndarray
+    :param kappa:               curvature for every point of the reference track [x, y]
+                                (unit is 1/m, must be unclosed!)
+    :type kappa:                np.ndarray
+    :param dkappa:              derivative of curvature for every point of the reference track [x, y]
+                                (unit is 1/m^2, must be unclosed!)
+    :type dkappa:               np.ndarray
+    :param kappa_bound:         curvature boundary to consider during optimization.
+    :type kappa_bound:          float
+    :param w_veh:               vehicle width in m. It is considered during the calculation of the allowed deviations
+                                from the reference line.
+    :type w_veh:                float
+    :param print_debug:         bool flag to print debug messages.
+    :type print_debug:          bool
+    :param plot_debug:          bool flag to plot the curvatures that are calculated based on the original linearization
+                                and on a linearization around the solution.
+    :type plot_debug:           bool
+    :param stepsize_interp:     stepsize in meters which is used for an interpolation after the spline approximation.
+                                This stepsize determines the steps within the optimization problem.
+    :type stepsize_interp:      float
+    :param iters_min:           number if minimum iterations of the IQP (termination criterion).
+    :type iters_min:            int
+    :param curv_error_allowed:  allowed curvature error in rad/m between the original linearization and the
+                                linearization around the solution (termination criterion).
+    :type curv_error_allowed:   float
+
+    .. outputs::
+    :return alpha_mincurv_tmp:  solution vector of the optimization problem containing the lateral shift in m for every
+                                point.
+    :rtype alpha_mincurv_tmp:   np.ndarray
+    :return reftrack_tmp:       reference track data [x, y, w_tr_right, w_tr_left] as it was used in the final iteration
+                                of the IQP.
+    :rtype reftrack_tmp:        np.ndarray
+    :return normvectors_tmp:    normalized normal vectors as they were used in the final iteration of the IQP [x, y].
+    :rtype normvectors_tmp:     np.ndarray
+    :return spline_len_tmp:     spline lengths of reference track data [x, y, w_tr_right, w_tr_left] as it was used in
+                                the final iteration of the IQP.
+    :rtype spline_len_tmp:      np.ndarray
+    :return psi_reftrack_tmp:   heading of reference track data [x, y, w_tr_right, w_tr_left] as it was used in the
+                                final iteration of the IQP.
+    :rtype psi_reftrack_tmp:    np.ndarray
+    :return kappa_reftrack_tmp: curvtaure of reference track data [x, y, w_tr_right, w_tr_left] as it was used in the
+                                final iteration of the IQP.
+    :rtype psi_reftrack_tmp:    np.ndarray
+    :return dkappa_reftrack_tmp:derivative of curvature of reference track data [x, y, w_tr_right, w_tr_left] as it was
+                                used in the final iteration of the IQP.
+    :rtype psi_reftrack_tmp:    np.ndarray
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # IQP (ITERATIVE QUADRATIC PROGRAMMING) ----------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # set initial data
+    reftrack_tmp = reftrack
+    normvectors_tmp = normvectors
+    A_tmp = A
+    spline_len_tmp = spline_len
+    psi_reftrack_tmp = psi
+    kappa_reftrack_tmp = kappa
+    dkappa_reftrack_tmp = dkappa
+
+    rospy.logerr("Starting IQP")
+
+    # loop
+    iter_cur = 0
+
+    while True:
+        iter_cur += 1
+
+        rospy.logerr("Iteration %d started", iter_cur)
+        start = time.perf_counter()
+
+        # calculate intermediate solution and catch sum of squared curvature errors
+        alpha_mincurv_tmp, curv_error_max_tmp = opt_min_curv(
+            reftrack=reftrack_tmp,
+            normvectors=normvectors_tmp,
+            A=A_tmp,
+            kappa_bound=kappa_bound,
+            w_veh=w_veh,
+            print_debug=print_debug,
+            plot_debug=plot_debug,
+            closed=True,
+        )
+
+        # print some progress information
+        if print_debug:
+            print(
+                "Minimum curvature IQP: iteration %i, curv_error_max: %.4frad/m"
+                % (iter_cur, curv_error_max_tmp)
+            )
+
+        # restrict solution space to improve validity of the linearization during the first steps
+        if iter_cur < iters_min:
+            alpha_mincurv_tmp *= iter_cur * 1.0 / iters_min
+
+        # check termination criterions: minimum number of iterations and curvature error
+        if (
+            iter_cur >= iters_min and curv_error_max_tmp <= curv_error_allowed
+        ) or iter_cur == 3:
+            end = time.perf_counter()
+            rospy.logerr("Iteration %d finished in %f", iter_cur, end - start)
+            if print_debug:
+                print("Finished IQP!")
+            break
+
+        # --------------------------------------------------------------------------------------------------------------
+        # INTERPOLATION FOR EQUAL STEPSIZES ----------------------------------------------------------------------------
+        # --------------------------------------------------------------------------------------------------------------
+
+        (
+            refline_tmp,
+            _,
+            _,
+            _,
+            spline_inds_tmp,
+            t_values_tmp,
+        ) = create_raceline(
+            refline=reftrack_tmp[:, :2],
+            normvectors=normvectors_tmp,
+            alpha=alpha_mincurv_tmp,
+            stepsize_interp=stepsize_interp,
+        )[:6]
+
+        # calculate new track boundaries on the basis of the intermediate alpha values and interpolate them accordingly
+        reftrack_tmp[:, 2] -= alpha_mincurv_tmp
+        reftrack_tmp[:, 3] += alpha_mincurv_tmp
+
+        ws_track_tmp = interp_track_widths(
+            w_track=reftrack_tmp[:, 2:],
+            spline_inds=spline_inds_tmp,
+            t_values=t_values_tmp,
+            incl_last_point=False,
+        )
+
+        # create new reftrack
+        reftrack_tmp = np.column_stack((refline_tmp, ws_track_tmp))
+
+        # --------------------------------------------------------------------------------------------------------------
+        # CALCULATE NEW SPLINES ON THE BASIS OF THE INTERPOLATED REFERENCE TRACK ---------------------------------------
+        # --------------------------------------------------------------------------------------------------------------
+
+        # calculate new splines
+        refline_tmp_cl = np.vstack((reftrack_tmp[:, :2], reftrack_tmp[0, :2]))
+
+        (
+            coeffs_x_tmp,
+            coeffs_y_tmp,
+            A_tmp,
+            normvectors_tmp,
+        ) = calc_splines(path=refline_tmp_cl, use_dist_scaling=False)
+
+        # calculate spline lengths
+        spline_len_tmp = calc_spline_lengths(
+            coeffs_x=coeffs_x_tmp, coeffs_y=coeffs_y_tmp
+        )
+
+        # calculate heading, curvature, and first derivative of curvature (analytically)
+        (
+            psi_reftrack_tmp,
+            kappa_reftrack_tmp,
+            dkappa_reftrack_tmp,
+        ) = calc_head_curv_an(
+            coeffs_x=coeffs_x_tmp,
+            coeffs_y=coeffs_y_tmp,
+            ind_spls=np.arange(reftrack_tmp.shape[0]),
+            t_spls=np.zeros(reftrack_tmp.shape[0]),
+            calc_dcurv=True,
+        )
+
+        end = time.perf_counter()
+        rospy.logerr("Iteration %d finished in %f", iter_cur, end - start)
+
+    return (
+        alpha_mincurv_tmp,
+        reftrack_tmp,
+        normvectors_tmp,
+        spline_len_tmp,
+        psi_reftrack_tmp,
+        kappa_reftrack_tmp,
+        dkappa_reftrack_tmp,
+    )
+
+
+def interp_track_widths(
+    w_track: np.ndarray,
+    spline_inds: np.ndarray,
+    t_values: np.ndarray,
+    incl_last_point: bool = False,
+) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    The function (linearly) interpolates the track widths in the same steps as the splines were interpolated before.
+
+    Keep attention that the (multiple) interpolation of track widths can lead to unwanted effects, e.g. that peaks
+    in the track widths can disappear if the stepsize is too large (kind of an aliasing effect).
+
+    .. inputs::
+    :param w_track:         array containing the track widths in meters [w_track_right, w_track_left] to interpolate,
+                            optionally with banking angle in rad: [w_track_right, w_track_left, banking]
+    :type w_track:          np.ndarray
+    :param spline_inds:     indices that show which spline (and here w_track element) shall be interpolated.
+    :type spline_inds:      np.ndarray
+    :param t_values:        relative spline coordinate values (t) of every point on the splines specified by spline_inds
+    :type t_values:         np.ndarray
+    :param incl_last_point: bool flag to show if last point should be included or not.
+    :type incl_last_point:  bool
+
+    .. outputs::
+    :return w_track_interp: array with interpolated track widths (and optionally banking angle).
+    :rtype w_track_interp:  np.ndarray
+
+    .. notes::
+    All inputs are unclosed.
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE INTERMEDIATE STEPS -------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    w_track_cl = np.vstack((w_track, w_track[0]))
+    no_interp_points = t_values.size  # unclosed
+
+    if incl_last_point:
+        w_track_interp = np.zeros((no_interp_points + 1, w_track.shape[1]))
+        w_track_interp[-1] = w_track_cl[-1]
+    else:
+        w_track_interp = np.zeros((no_interp_points, w_track.shape[1]))
+
+    # loop through every interpolation point
+    for i in range(no_interp_points):
+        # find the spline that hosts the current interpolation point
+        ind_spl = spline_inds[i]
+
+        # calculate track widths (linear approximation assumed along one spline)
+        w_track_interp[i, 0] = np.interp(
+            t_values[i], (0.0, 1.0), w_track_cl[ind_spl : ind_spl + 2, 0]
+        )
+        w_track_interp[i, 1] = np.interp(
+            t_values[i], (0.0, 1.0), w_track_cl[ind_spl : ind_spl + 2, 1]
+        )
+
+        if w_track.shape[1] == 3:
+            w_track_interp[i, 2] = np.interp(
+                t_values[i], (0.0, 1.0), w_track_cl[ind_spl : ind_spl + 2, 2]
+            )
+
+    return w_track_interp
+
+
+def create_raceline(
+    refline: np.ndarray,
+    normvectors: np.ndarray,
+    alpha: np.ndarray,
+    stepsize_interp: float,
+) -> tuple:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    This function includes the algorithm part connected to the interpolation of the raceline after the optimization.
+
+    .. inputs::
+    :param refline:         array containing the track reference line [x, y] (unit is meter, must be unclosed!)
+    :type refline:          np.ndarray
+    :param normvectors:     normalized normal vectors for every point of the reference line [x_component, y_component]
+                            (unit is meter, must be unclosed!)
+    :type normvectors:      np.ndarray
+    :param alpha:           solution vector of the optimization problem containing the lateral shift in m for every point.
+    :type alpha:            np.ndarray
+    :param stepsize_interp: stepsize in meters which is used for the interpolation after the raceline creation.
+    :type stepsize_interp:  float
+
+    .. outputs::
+    :return raceline_interp:                interpolated raceline [x, y] in m.
+    :rtype raceline_interp:                 np.ndarray
+    :return A_raceline:                     linear equation system matrix of the splines on the raceline.
+    :rtype A_raceline:                      np.ndarray
+    :return coeffs_x_raceline:              spline coefficients of the x-component.
+    :rtype coeffs_x_raceline:               np.ndarray
+    :return coeffs_y_raceline:              spline coefficients of the y-component.
+    :rtype coeffs_y_raceline:               np.ndarray
+    :return spline_inds_raceline_interp:    contains the indices of the splines that hold the interpolated points.
+    :rtype spline_inds_raceline_interp:     np.ndarray
+    :return t_values_raceline_interp:       containts the relative spline coordinate values (t) of every point on the
+                                            splines.
+    :rtype t_values_raceline_interp:        np.ndarray
+    :return s_raceline_interp:              total distance in m (i.e. s coordinate) up to every interpolation point.
+    :rtype s_raceline_interp:               np.ndarray
+    :return spline_lengths_raceline:        lengths of the splines on the raceline in m.
+    :rtype spline_lengths_raceline:         np.ndarray
+    :return el_lengths_raceline_interp_cl:  distance between every two points on interpolated raceline in m (closed!).
+    :rtype el_lengths_raceline_interp_cl:   np.ndarray
+    """
+
+    # calculate raceline on the basis of the optimized alpha values
+    raceline = refline + np.expand_dims(alpha, 1) * normvectors
+
+    # calculate new splines on the basis of the raceline
+    raceline_cl = np.vstack((raceline, raceline[0]))
+
+    (
+        coeffs_x_raceline,
+        coeffs_y_raceline,
+        A_raceline,
+        normvectors_raceline,
+    ) = calc_splines(path=raceline_cl, use_dist_scaling=False)
+
+    # calculate new spline lengths
+    spline_lengths_raceline = calc_spline_lengths(
+        coeffs_x=coeffs_x_raceline, coeffs_y=coeffs_y_raceline
+    )
+
+    # interpolate splines for evenly spaced raceline points
+    (
+        raceline_interp,
+        spline_inds_raceline_interp,
+        t_values_raceline_interp,
+        s_raceline_interp,
+    ) = interp_splines(
+        spline_lengths=spline_lengths_raceline,
+        coeffs_x=coeffs_x_raceline,
+        coeffs_y=coeffs_y_raceline,
+        incl_last_point=False,
+        stepsize_approx=stepsize_interp,
+    )
+
+    # calculate element lengths
+    s_tot_raceline = float(np.sum(spline_lengths_raceline))
+    el_lengths_raceline_interp = np.diff(s_raceline_interp)
+    el_lengths_raceline_interp_cl = np.append(
+        el_lengths_raceline_interp, s_tot_raceline - s_raceline_interp[-1]
+    )
+
+    return (
+        raceline_interp,
+        A_raceline,
+        coeffs_x_raceline,
+        coeffs_y_raceline,
+        spline_inds_raceline_interp,
+        t_values_raceline_interp,
+        s_raceline_interp,
+        spline_lengths_raceline,
+        el_lengths_raceline_interp_cl,
+    )
+
+
+def calc_spline_lengths(
+    coeffs_x: np.ndarray,
+    coeffs_y: np.ndarray,
+    quickndirty: bool = False,
+    no_interp_points: int = 15,
+) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    Calculate spline lengths for third order splines defining x- and y-coordinates by usage of intermediate steps.
+
+    .. inputs::
+    :param coeffs_x:            coefficient matrix of the x splines with size (no_splines x 4).
+    :type coeffs_x:             np.ndarray
+    :param coeffs_y:            coefficient matrix of the y splines with size (no_splines x 4).
+    :type coeffs_y:             np.ndarray
+    :param quickndirty:         True returns lengths based on distance between first and last spline point instead of
+                                using interpolation.
+    :type quickndirty:          bool
+    :param no_interp_points:    length calculation is carried out with the given number of interpolation steps.
+    :type no_interp_points:     int
+
+    .. outputs::
+    :return spline_lengths:     length of every spline segment.
+    :rtype spline_lengths:      np.ndarray
+
+    .. notes::
+    len(coeffs_x) = len(coeffs_y) = len(spline_lengths)
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # PREPARATIONS -----------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # check inputs
+    if coeffs_x.shape[0] != coeffs_y.shape[0]:
+        raise RuntimeError("Coefficient matrices must have the same length!")
+
+    # catch case with only one spline
+    if coeffs_x.size == 4 and coeffs_x.shape[0] == 4:
+        coeffs_x = np.expand_dims(coeffs_x, 0)
+        coeffs_y = np.expand_dims(coeffs_y, 0)
+
+    # get number of splines and create output array
+    no_splines = coeffs_x.shape[0]
+    spline_lengths = np.zeros(no_splines)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE LENGHTS ------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    if quickndirty:
+        for i in range(no_splines):
+            spline_lengths[i] = math.sqrt(
+                math.pow(np.sum(coeffs_x[i]) - coeffs_x[i, 0], 2)
+                + math.pow(np.sum(coeffs_y[i]) - coeffs_y[i, 0], 2)
+            )
+
+    else:
+        # loop through all the splines and calculate intermediate coordinates
+        t_steps = np.linspace(0.0, 1.0, no_interp_points)
+        spl_coords = np.zeros((no_interp_points, 2))
+
+        for i in range(no_splines):
+            spl_coords[:, 0] = (
+                coeffs_x[i, 0]
+                + coeffs_x[i, 1] * t_steps
+                + coeffs_x[i, 2] * np.power(t_steps, 2)
+                + coeffs_x[i, 3] * np.power(t_steps, 3)
+            )
+            spl_coords[:, 1] = (
+                coeffs_y[i, 0]
+                + coeffs_y[i, 1] * t_steps
+                + coeffs_y[i, 2] * np.power(t_steps, 2)
+                + coeffs_y[i, 3] * np.power(t_steps, 3)
+            )
+
+            spline_lengths[i] = np.sum(
+                np.sqrt(np.sum(np.power(np.diff(spl_coords, axis=0), 2), axis=1))
+            )
+
+    return spline_lengths
+
+
+def interp_splines(
+    coeffs_x: np.ndarray,
+    coeffs_y: np.ndarray,
+    spline_lengths: np.ndarray = None,
+    incl_last_point: bool = False,
+    stepsize_approx: float = None,
+    stepnum_fixed: list = None,
+) -> tuple:
+    """
+    author:
+    Alexander Heilmeier & Tim Stahl
+
+    .. description::
+    Interpolate points on one or more splines with third order. The last point (i.e. t = 1.0)
+    can be included if option is set accordingly (should be prevented for a closed raceline in most cases). The
+    algorithm keeps stepsize_approx as good as possible.
+
+    .. inputs::
+    :param coeffs_x:        coefficient matrix of the x splines with size (no_splines x 4).
+    :type coeffs_x:         np.ndarray
+    :param coeffs_y:        coefficient matrix of the y splines with size (no_splines x 4).
+    :type coeffs_y:         np.ndarray
+    :param spline_lengths:  array containing the lengths of the inserted splines with size (no_splines x 1).
+    :type spline_lengths:   np.ndarray
+    :param incl_last_point: flag to set if last point should be kept or removed before return.
+    :type incl_last_point:  bool
+    :param stepsize_approx: desired stepsize of the points after interpolation.                      \\ Provide only one
+    :type stepsize_approx:  float
+    :param stepnum_fixed:   return a fixed number of coordinates per spline, list of length no_splines. \\ of these two!
+    :type stepnum_fixed:    list
+
+    .. outputs::
+    :return path_interp:    interpolated path points.
+    :rtype path_interp:     np.ndarray
+    :return spline_inds:    contains the indices of the splines that hold the interpolated points.
+    :rtype spline_inds:     np.ndarray
+    :return t_values:       containts the relative spline coordinate values (t) of every point on the splines.
+    :rtype t_values:        np.ndarray
+    :return dists_interp:   total distance up to every interpolation point.
+    :rtype dists_interp:    np.ndarray
+
+    .. notes::
+    len(coeffs_x) = len(coeffs_y) = len(spline_lengths)
+
+    len(path_interp = len(spline_inds) = len(t_values) = len(dists_interp)
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # INPUT CHECKS -----------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # check sizes
+    if coeffs_x.shape[0] != coeffs_y.shape[0]:
+        raise RuntimeError("Coefficient matrices must have the same length!")
+
+    if spline_lengths is not None and coeffs_x.shape[0] != spline_lengths.size:
+        raise RuntimeError("coeffs_x/y and spline_lengths must have the same length!")
+
+    # check if coeffs_x and coeffs_y have exactly two dimensions and raise error otherwise
+    if not (coeffs_x.ndim == 2 and coeffs_y.ndim == 2):
+        raise RuntimeError("Coefficient matrices do not have two dimensions!")
+
+    # check if step size specification is valid
+    if (stepsize_approx is None and stepnum_fixed is None) or (
+        stepsize_approx is not None and stepnum_fixed is not None
+    ):
+        raise RuntimeError(
+            "Provide one of 'stepsize_approx' and 'stepnum_fixed' and set the other to 'None'!"
+        )
+
+    if stepnum_fixed is not None and len(stepnum_fixed) != coeffs_x.shape[0]:
+        raise RuntimeError(
+            "The provided list 'stepnum_fixed' must hold an entry for every spline!"
+        )
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE NUMBER OF INTERPOLATION POINTS AND ACCORDING DISTANCES -------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    if stepsize_approx is not None:
+        # get the total distance up to the end of every spline (i.e. cumulated distances)
+        if spline_lengths is None:
+            spline_lengths = calc_spline_lengths(
+                coeffs_x=coeffs_x, coeffs_y=coeffs_y, quickndirty=False
+            )
+
+        dists_cum = np.cumsum(spline_lengths)
+
+        # calculate number of interpolation points and distances (+1 because last point is included at first)
+        no_interp_points = math.ceil(dists_cum[-1] / stepsize_approx) + 1
+        dists_interp = np.linspace(0.0, dists_cum[-1], no_interp_points)
+
+    else:
+        # get total number of points to be sampled (subtract overlapping points)
+        no_interp_points = sum(stepnum_fixed) - (len(stepnum_fixed) - 1)
+        dists_interp = None
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE INTERMEDIATE STEPS -------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # create arrays to save the values
+    path_interp = np.zeros((no_interp_points, 2))  # raceline coords (x, y) array
+    spline_inds = np.zeros(
+        no_interp_points, dtype=int
+    )  # save the spline index to which a point belongs
+    t_values = np.zeros(no_interp_points)  # save t values
+
+    if stepsize_approx is not None:
+        # --------------------------------------------------------------------------------------------------------------
+        # APPROX. EQUAL STEP SIZE ALONG PATH OF ADJACENT SPLINES -------------------------------------------------------
+        # --------------------------------------------------------------------------------------------------------------
+
+        # loop through all the elements and create steps with stepsize_approx
+        for i in range(no_interp_points - 1):
+            # find the spline that hosts the current interpolation point
+            j = np.argmax(dists_interp[i] < dists_cum)
+            spline_inds[i] = j
+
+            # get spline t value depending on the progress within the current element
+            if j > 0:
+                t_values[i] = (dists_interp[i] - dists_cum[j - 1]) / spline_lengths[j]
+            else:
+                if spline_lengths.ndim == 0:
+                    t_values[i] = dists_interp[i] / spline_lengths
+                else:
+                    t_values[i] = dists_interp[i] / spline_lengths[0]
+
+            # calculate coords
+            path_interp[i, 0] = (
+                coeffs_x[j, 0]
+                + coeffs_x[j, 1] * t_values[i]
+                + coeffs_x[j, 2] * math.pow(t_values[i], 2)
+                + coeffs_x[j, 3] * math.pow(t_values[i], 3)
+            )
+
+            path_interp[i, 1] = (
+                coeffs_y[j, 0]
+                + coeffs_y[j, 1] * t_values[i]
+                + coeffs_y[j, 2] * math.pow(t_values[i], 2)
+                + coeffs_y[j, 3] * math.pow(t_values[i], 3)
+            )
+
+    else:
+        # --------------------------------------------------------------------------------------------------------------
+        # FIXED STEP SIZE FOR EVERY SPLINE SEGMENT ---------------------------------------------------------------------
+        # --------------------------------------------------------------------------------------------------------------
+
+        j = 0
+
+        for i in range(len(stepnum_fixed)):
+            # skip last point except for last segment
+            if i < len(stepnum_fixed) - 1:
+                t_values[j : (j + stepnum_fixed[i] - 1)] = np.linspace(
+                    0, 1, stepnum_fixed[i]
+                )[:-1]
+                spline_inds[j : (j + stepnum_fixed[i] - 1)] = i
+                j += stepnum_fixed[i] - 1
+
+            else:
+                t_values[j : (j + stepnum_fixed[i])] = np.linspace(
+                    0, 1, stepnum_fixed[i]
+                )
+                spline_inds[j : (j + stepnum_fixed[i])] = i
+                j += stepnum_fixed[i]
+
+        t_set = np.column_stack(
+            (
+                np.ones(no_interp_points),
+                t_values,
+                np.power(t_values, 2),
+                np.power(t_values, 3),
+            )
+        )
+
+        # remove overlapping samples
+        n_samples = np.array(stepnum_fixed)
+        n_samples[:-1] -= 1
+
+        path_interp[:, 0] = np.sum(
+            np.multiply(np.repeat(coeffs_x, n_samples, axis=0), t_set), axis=1
+        )
+        path_interp[:, 1] = np.sum(
+            np.multiply(np.repeat(coeffs_y, n_samples, axis=0), t_set), axis=1
+        )
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE LAST POINT IF REQUIRED (t = 1.0) -----------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    if incl_last_point:
+        path_interp[-1, 0] = np.sum(coeffs_x[-1])
+        path_interp[-1, 1] = np.sum(coeffs_y[-1])
+        spline_inds[-1] = coeffs_x.shape[0] - 1
+        t_values[-1] = 1.0
+
+    else:
+        path_interp = path_interp[:-1]
+        spline_inds = spline_inds[:-1]
+        t_values = t_values[:-1]
+
+        if dists_interp is not None:
+            dists_interp = dists_interp[:-1]
+
+    # NOTE: dists_interp is None, when using a fixed step size
+    return path_interp, spline_inds, t_values, dists_interp
+
+
+def calc_head_curv_an(
+    coeffs_x: np.ndarray,
+    coeffs_y: np.ndarray,
+    ind_spls: np.ndarray,
+    t_spls: np.ndarray,
+    calc_curv: bool = True,
+    calc_dcurv: bool = False,
+) -> tuple:
+    """
+    author:
+    Alexander Heilmeier
+    Marvin Ochsenius (dcurv extension)
+
+    .. description::
+    Analytical calculation of heading psi, curvature kappa, and first derivative of the curvature dkappa
+    on the basis of third order splines for x- and y-coordinate.
+
+    .. inputs::
+    :param coeffs_x:    coefficient matrix of the x splines with size (no_splines x 4).
+    :type coeffs_x:     np.ndarray
+    :param coeffs_y:    coefficient matrix of the y splines with size (no_splines x 4).
+    :type coeffs_y:     np.ndarray
+    :param ind_spls:    contains the indices of the splines that hold the points for which we want to calculate heading/curv.
+    :type ind_spls:     np.ndarray
+    :param t_spls:      containts the relative spline coordinate values (t) of every point on the splines.
+    :type t_spls:       np.ndarray
+    :param calc_curv:   bool flag to show if curvature should be calculated as well (kappa is set 0.0 otherwise).
+    :type calc_curv:    bool
+    :param calc_dcurv:  bool flag to show if first derivative of curvature should be calculated as well.
+    :type calc_dcurv:   bool
+
+    .. outputs::
+    :return psi:        heading at every point.
+    :rtype psi:         float
+    :return kappa:      curvature at every point.
+    :rtype kappa:       float
+    :return dkappa:     first derivative of curvature at every point (if calc_dcurv bool flag is True).
+    :rtype dkappa:      float
+
+    .. notes::
+    len(ind_spls) = len(t_spls) = len(psi) = len(kappa) = len(dkappa)
+    """
+
+    # check inputs
+    if coeffs_x.shape[0] != coeffs_y.shape[0]:
+        raise ValueError("Coefficient matrices must have the same length!")
+
+    if ind_spls.size != t_spls.size:
+        raise ValueError("ind_spls and t_spls must have the same length!")
+
+    if not calc_curv and calc_dcurv:
+        raise ValueError("dkappa cannot be calculated without kappa!")
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE HEADING ------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # calculate required derivatives
+    x_d = (
+        coeffs_x[ind_spls, 1]
+        + 2 * coeffs_x[ind_spls, 2] * t_spls
+        + 3 * coeffs_x[ind_spls, 3] * np.power(t_spls, 2)
+    )
+
+    y_d = (
+        coeffs_y[ind_spls, 1]
+        + 2 * coeffs_y[ind_spls, 2] * t_spls
+        + 3 * coeffs_y[ind_spls, 3] * np.power(t_spls, 2)
+    )
+
+    # calculate heading psi (pi/2 must be substracted due to our convention that psi = 0 is north)
+    psi = np.arctan2(y_d, x_d) - math.pi / 2
+    psi = normalize_psi(psi)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE CURVATURE ----------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    if calc_curv:
+        # calculate required derivatives
+        x_dd = 2 * coeffs_x[ind_spls, 2] + 6 * coeffs_x[ind_spls, 3] * t_spls
+
+        y_dd = 2 * coeffs_y[ind_spls, 2] + 6 * coeffs_y[ind_spls, 3] * t_spls
+
+        # calculate curvature kappa
+        kappa = (x_d * y_dd - y_d * x_dd) / np.power(
+            np.power(x_d, 2) + np.power(y_d, 2), 1.5
+        )
+
+    else:
+        kappa = 0.0
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE FIRST DERIVATIVE OF CURVATURE --------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    if calc_dcurv:
+        # calculate required derivatives
+        x_ddd = 6 * coeffs_x[ind_spls, 3]
+
+        y_ddd = 6 * coeffs_y[ind_spls, 3]
+
+        # calculate first derivative of curvature dkappa
+        dkappa = (
+            (np.power(x_d, 2) + np.power(y_d, 2)) * (x_d * y_ddd - y_d * x_ddd)
+            - 3 * (x_d * y_dd - y_d * x_dd) * (x_d * x_dd + y_d * y_dd)
+        ) / np.power(np.power(x_d, 2) + np.power(y_d, 2), 3)
+
+        return psi, kappa, dkappa
+
+    else:
+        return psi, kappa
+
+
+def normalize_psi(psi: Union[np.ndarray, float]) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    Normalize heading psi such that [-pi,pi[ holds as interval boundaries.
+
+    .. inputs::
+    :param psi:         array containing headings psi to be normalized.
+    :type psi:          Union[np.ndarray, float]
+
+    .. outputs::
+    :return psi_out:    array with normalized headings psi.
+    :rtype psi_out:     np.ndarray
+
+    .. notes::
+    len(psi) = len(psi_out)
+    """
+
+    # use modulo operator to remove multiples of 2*pi
+    psi_out = np.sign(psi) * np.mod(np.abs(psi), 2 * math.pi)
+
+    # restrict psi to [-pi,pi[
+    if type(psi_out) is np.ndarray:
+        psi_out[psi_out >= math.pi] -= 2 * math.pi
+        psi_out[psi_out < -math.pi] += 2 * math.pi
+
+    else:
+        if psi_out >= math.pi:
+            psi_out -= 2 * math.pi
+        elif psi_out < -math.pi:
+            psi_out += 2 * math.pi
+
+    return psi_out

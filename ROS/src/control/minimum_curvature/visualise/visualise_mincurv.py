@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import yaml
-from bezier import make_bezier, make_refline
+from bezier import make_bezier, make_centerline
 from buttons import Buttons
 from draw import Draw
 from node_fixture.node_manager import set_state_active, set_state_inactive
@@ -57,6 +57,9 @@ class MapWidget(QtW.QFrame):
 
         # intialize minimum curvature path
         self.mincurv_path = None
+        self.extra_path = None
+        self.iqp_path = None
+        self.ref_path = None
 
         # initialize cone lists
         if yellows is None:
@@ -73,11 +76,13 @@ class MapWidget(QtW.QFrame):
         self.selected_yellow_cones = []
         self.selected_blue_cones = []
 
-        self.refline_on = True
+        self.centerline_on = True
         self.trackbounds_on = True
         self.cones_on = False
         self.mincurv_on = True
         self.extra_on = True
+        self.iqp_on = True
+        self.refline_on = True
         self.compute_on = True
         self.buttons.cones_clicked()
         self.buttons.set_buttons()
@@ -102,8 +107,8 @@ class MapWidget(QtW.QFrame):
         ) * QtC.QPointF(math.cos(self.car_rot), math.sin(self.car_rot))
 
         # initialize list of bezier points wich represent the middle of the track
-        self.refPoints = []
-        self.ref_bezier = []
+        self.centerPoints = []
+        self.center_bezier = []
         self.blue_bezier = []
         self.yellow_bezier = []
 
@@ -150,6 +155,18 @@ class MapWidget(QtW.QFrame):
 
     def receive_path_extra(self, rel_path: np.ndarray):
         self.extra_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
+        self.buttons.computeButton.setStyleSheet("background-color: gray")
+
+        self.update()
+
+    def receive_path_iqp(self, rel_path: np.ndarray):
+        self.iqp_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
+        self.buttons.computeButton.setStyleSheet("background-color: gray")
+
+        self.update()
+
+    def receive_path_ref(self, rel_path: np.ndarray):
+        self.ref_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
         self.buttons.computeButton.setStyleSheet("background-color: gray")
 
         self.update()
@@ -273,13 +290,13 @@ class MapWidget(QtW.QFrame):
 
         self.draw.draw_cones(painter)
 
-        if self.refline_on:
-            self.refPoints = make_refline(self.blue_cones, self.yellow_cones)
-            self.ref_bezier = make_bezier(self.refPoints)
+        if self.centerline_on:
+            self.centerPoints = make_centerline(self.blue_cones, self.yellow_cones)
+            self.center_bezier = make_bezier(self.centerPoints)
             self.draw.draw_bezier_line(
-                self.ref_bezier, painter, QtG.QColor(0, 0, 0, 70)
+                self.center_bezier, painter, QtG.QColor(0, 0, 0, 70)
             )
-            self.draw.draw_points(self.refPoints, painter, QtG.QColor(0, 0, 0, 70))
+            self.draw.draw_points(self.centerPoints, painter, QtG.QColor(0, 0, 0, 70))
 
         if self.trackbounds_on:
             self.blue_bezier = make_bezier(self.blue_cones)
@@ -289,7 +306,7 @@ class MapWidget(QtW.QFrame):
 
             self.yellow_bezier = make_bezier(self.yellow_cones)
             self.draw.draw_bezier_line(
-                self.yellow_bezier, painter, QtG.QColor(QtC.Qt.yellow)
+                self.yellow_bezier, painter, QtG.QColor(230, 245, 0)
             )
 
         if self.mincurv_on:
@@ -297,6 +314,12 @@ class MapWidget(QtW.QFrame):
 
         if self.extra_on:
             self.draw.draw_line(self.extra_path, painter, QtG.QColor(QtC.Qt.red))
+
+        if self.iqp_on:
+            self.draw.draw_line(self.iqp_path, painter, QtG.QColor(QtC.Qt.cyan))
+
+        if self.refline_on:
+            self.draw.draw_line(self.ref_path, painter, QtG.QColor(255, 165, 0))
 
         self.draw.draw_car(painter)
         self.draw.draw_scale(painter)
