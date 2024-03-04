@@ -164,7 +164,7 @@ class Trajectory:
 
         self.closest_index = self.current_position_index
 
-    def calculate_target_point(self, minimal_distance, mission):
+    def calculate_target_point(self, minimal_distance):
         """
         Calculates a target point by traversing the path
         Returns the first points that matches the conditions given by minimal_distance

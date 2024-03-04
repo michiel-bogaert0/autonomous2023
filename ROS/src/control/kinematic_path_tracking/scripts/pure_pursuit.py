@@ -35,13 +35,12 @@ class PurePursuit(KinematicTrackingNode):
         else:
             self.minimal_distance = self.distance_stop
 
-        mission = rospy.get_param("/mission")
         # Calculate target point
         (
             target_x,
             target_y,
             position_target_time,
-        ) = self.trajectory.calculate_target_point(self.minimal_distance, mission)
+        ) = self.trajectory.calculate_target_point(self.minimal_distance)
 
         if target_x == 0 and target_y == 0:
             self.diagnostics_pub.publish(

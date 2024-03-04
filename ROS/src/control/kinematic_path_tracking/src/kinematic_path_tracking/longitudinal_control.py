@@ -23,10 +23,8 @@ class LongitudinalControl:
             return self.speed_target
 
     def get_velocity_target(self, trajectory, actual_speed):
-        mission = rospy.get_param("/mission", "")
-
         speed_target_x, speed_target_y, _ = trajectory.calculate_target_point(
-            self.speed_minimal_distance, mission
+            self.speed_minimal_distance
         )
 
         # Calculate ratio
