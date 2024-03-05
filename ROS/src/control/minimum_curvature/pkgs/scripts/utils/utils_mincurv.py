@@ -1922,73 +1922,114 @@ def side_of_line(
 
 def calc_min_bound_dists(
     trajectory: np.ndarray,
-    bound1: np.ndarray,
-    bound2: np.ndarray,
-    length_veh: float,
-    width_veh: float,
+    bound_left: np.ndarray,
+    bound_right: np.ndarray,
 ) -> np.ndarray:
     """
     Created by:
-    Alexander Heilmeier
+    Kwinten Mortier
 
     Documentation:
-    Calculate minimum distance between vehicle and track boundaries for every trajectory point. Vehicle dimensions are
-    taken into account for this calculation. Vehicle orientation is assumed to be the same as the heading of the
-    trajectory.
+    Calculate minimum distance between vehicle and track boundaries for every trajectory point.
 
     Inputs:
     trajectory:     array containing the trajectory information. Required are x, y, psi for every point
-    bound1/2:       arrays containing the track boundaries [x, y]
-    length_veh:     real vehicle length in m
-    width_veh:      real vehicle width in m
+    bound_left:     array containing the left track boundary [x, y]
+    bound_right:    array containing the right track boundary [x, y]
 
     Outputs:
-    min_dists:      minimum distance to boundaries for every trajectory point
+    min_dists:      minimum distance to boundaries along normal for every trajectory point
     """
 
-    # ------------------------------------------------------------------------------------------------------------------
-    # CALCULATE MINIMUM DISTANCES --------------------------------------------------------------------------------------
-    # ------------------------------------------------------------------------------------------------------------------
-
-    bounds = np.vstack((bound1, bound2))
-
-    # calculate static vehicle edge positions [x, y] for psi = 0
-    fl = np.array([-width_veh / 2, length_veh / 2])
-    fr = np.array([width_veh / 2, length_veh / 2])
-    rl = np.array([-width_veh / 2, -length_veh / 2])
-    rr = np.array([width_veh / 2, -length_veh / 2])
-
-    # loop through all the raceline points
-    min_dists = np.zeros(trajectory.shape[0])
-    mat_rot = np.zeros((2, 2))
+    boundaries_dist = np.zeros((trajectory.shape[0], 2))
 
     for i in range(trajectory.shape[0]):
-        mat_rot[0, 0] = math.cos(trajectory[i, 3])
-        mat_rot[0, 1] = -math.sin(trajectory[i, 3])
-        mat_rot[1, 0] = math.sin(trajectory[i, 3])
-        mat_rot[1, 1] = math.cos(trajectory[i, 3])
-
-        # calculate positions of vehicle edges
-        fl_ = trajectory[i, 1:3] + np.matmul(mat_rot, fl)
-        fr_ = trajectory[i, 1:3] + np.matmul(mat_rot, fr)
-        rl_ = trajectory[i, 1:3] + np.matmul(mat_rot, rl)
-        rr_ = trajectory[i, 1:3] + np.matmul(mat_rot, rr)
-
-        # get minimum distances of vehicle edges to any boundary point
-        fl__mindist = np.sqrt(
-            np.power(bounds[:, 0] - fl_[0], 2) + np.power(bounds[:, 1] - fl_[1], 2)
+        # get minimum distances of the left and right boundary
+        mindist_left = np.min(
+            np.sqrt(
+                np.power(bound_left[:, 0] - trajectory[i, 0], 2)
+                + np.power(bound_left[:, 1] - trajectory[i, 1], 2)
+            )
         )
-        fr__mindist = np.sqrt(
-            np.power(bounds[:, 0] - fr_[0], 2) + np.power(bounds[:, 1] - fr_[1], 2)
+        mindist_right = np.min(
+            np.sqrt(
+                np.power(bound_right[:, 0] - trajectory[i, 0], 2)
+                + np.power(bound_right[:, 1] - trajectory[i, 1], 2)
+            )
         )
-        rl__mindist = np.sqrt(
-            np.power(bounds[:, 0] - rl_[0], 2) + np.power(bounds[:, 1] - rl_[1], 2)
-        )
-        rr__mindist = np.sqrt(
-            np.power(bounds[:, 0] - rr_[0], 2) + np.power(bounds[:, 1] - rr_[1], 2)
-        )
+        boundaries_dist[i, 0] = mindist_left
+        boundaries_dist[i, 1] = mindist_right
 
-        # save overall minimum distance of current vehicle position
-        min_dists[i] = np.amin((fl__mindist, fr__mindist, rl__mindist, rr__mindist))
+    return boundaries_dist
 
-    return min_dists
+
+def calc_head_curv_an2(
+    coeffs_x: np.ndarray,
+    coeffs_y: np.ndarray,
+    ind_spls: np.ndarray,
+    t_spls: np.ndarray,
+    calc_curv: bool = True,
+    calc_dcurv: bool = False,
+) -> tuple:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    Analytical calculation of heading psi, curvature kappa, and first derivative of the curvature dkappa
+    on the basis of third order splines for x- and y-coordinate.
+
+    .. inputs::
+    :param coeffs_x:    coefficient matrix of the x splines with size (no_splines x 4).
+    :type coeffs_x:     np.ndarray
+    :param coeffs_y:    coefficient matrix of the y splines with size (no_splines x 4).
+    :type coeffs_y:     np.ndarray
+    :param ind_spls:    contains the indices of the splines that hold the points for which we want to calculate heading/curv.
+    :type ind_spls:     np.ndarray
+    :param t_spls:      containts the relative spline coordinate values (t) of every point on the splines.
+    :type t_spls:       np.ndarray
+    :param calc_curv:   bool flag to show if curvature should be calculated as well (kappa is set 0.0 otherwise).
+    :type calc_curv:    bool
+    :param calc_dcurv:  bool flag to show if first derivative of curvature should be calculated as well.
+    :type calc_dcurv:   bool
+
+    .. outputs::
+    :return psi:        heading at every point.
+    :rtype psi:         float
+
+    .. notes::
+    len(ind_spls) = len(t_spls) = len(psi) = len(kappa) = len(dkappa)
+    """
+
+    # check inputs
+    if coeffs_x.shape[0] != coeffs_y.shape[0]:
+        raise ValueError("Coefficient matrices must have the same length!")
+
+    if ind_spls.size != t_spls.size:
+        raise ValueError("ind_spls and t_spls must have the same length!")
+
+    if not calc_curv and calc_dcurv:
+        raise ValueError("dkappa cannot be calculated without kappa!")
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE HEADING ------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # calculate required derivatives
+    x_d = (
+        coeffs_x[ind_spls, 1]
+        + 2 * coeffs_x[ind_spls, 2] * t_spls
+        + 3 * coeffs_x[ind_spls, 3] * np.power(t_spls, 2)
+    )
+
+    y_d = (
+        coeffs_y[ind_spls, 1]
+        + 2 * coeffs_y[ind_spls, 2] * t_spls
+        + 3 * coeffs_y[ind_spls, 3] * np.power(t_spls, 2)
+    )
+
+    # calculate heading psi (pi/2 must be substracted due to our convention that psi = 0 is north)
+    psi = np.arctan2(y_d, x_d) - math.pi / 2
+    psi = normalize_psi(psi)
+
+    return psi

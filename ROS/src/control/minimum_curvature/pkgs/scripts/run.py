@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# import trajectory_planning_helpers as tph
 
 from time import perf_counter
 
@@ -8,7 +7,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
-from utils.utils_mincurv import (
+from utils.utils_mincurv import (  # calc_head_curv_an2,; calc_min_bound_dists,
     B_spline_smoothing,
     calc_head_curv_an,
     calc_spline_lengths,
@@ -41,13 +40,22 @@ class MinimumCurvature(ManagedNode):
             "/output/path_ref", Path, queue_size=10
         )
 
-        # Subscribers for the path
+        # Subscribers for the path and boundaries
         self.path_sub = rospy.Subscriber(
             "/input/path",
             Path,
             self.receive_new_path,
         )
+
+        # self.boundaries_sub = rospy.Subscriber(
+        #     "/input/boundaries",
+        #     Boundaries,
+        #     self.receive_new_boundaries,
+        # )
+
         self.reference_line = np.array([])
+        # self.bound_left = np.array([])
+        # self.bound_right = np.array([])
         self.extra_smoothed = np.array([])
         self.header = None
         self.calculate = False
@@ -60,6 +68,11 @@ class MinimumCurvature(ManagedNode):
             [[p.pose.position.x, p.pose.position.y, 1.60, 1.60] for p in msg.poses]
         )
         self.header = msg.header
+
+    # TODO: Implement with boundary estimation when available (perfomant enough)
+    # def receive_new_boundaries(self, msg: Boundaries):
+    #     # Todo
+    #     return
 
     def active(self):
         if not self.calculate or self.reference_line.size == 0:
@@ -77,6 +90,20 @@ class MinimumCurvature(ManagedNode):
             path=np.vstack((self.reference_line[:, 0:2], self.reference_line[0, 0:2]))
         )
 
+        # TODO: For every point in the reference line, calculate the perpendicular distance to the left and right boundaries
+        # psi_reftrack = calc_head_curv_an2(
+        #     coeffs_x=coeffs_x,
+        #     coeffs_y=coeffs_y,
+        #     ind_spls=np.arange(self.reference_line.shape[0]),
+        #     t_spls=np.zeros(self.reference_line.shape[0]),
+        # )
+
+        # bound_dist_left, bound_dist_right = calc_min_bound_dists(
+        #     trajectory=self.reference_line[:, 0:2],
+        #     bound_left=# Todo,
+        #     bound_right=# Todo,
+        # )
+
         (
             coeffs_x_extra,
             coeffs_y_extra,
@@ -85,15 +112,6 @@ class MinimumCurvature(ManagedNode):
         ) = calc_splines(
             path=np.vstack((self.extra_smoothed[:, 0:2], self.extra_smoothed[0, 0:2]))
         )
-
-        # print(self.reference_line)
-        # print(type(self.reference_line))
-        # print("\n")
-        # print(self.extra_smoothed)
-        # print(type(self.extra_smoothed))
-
-        # print(self.extra_smoothed.size)
-        # print(len(normvec_normalized_extra))
 
         psi_reftrack, kappa_reftrack, dkappa_reftrack = calc_head_curv_an(
             coeffs_x=coeffs_x,

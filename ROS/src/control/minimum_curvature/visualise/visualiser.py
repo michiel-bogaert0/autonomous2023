@@ -23,6 +23,12 @@ class Visualiser:
             "/output/local_map", ObservationWithCovarianceArrayStamped, queue_size=10
         )
 
+        # # Publisher voor gt_path
+        # self.gt_path_publisher = rospy.Publisher("output/gt_path", Path, queue_size=10)
+
+        # # Publisher voor gt_boundaries
+        # self.gt_boundaries_publisher = rospy.Publisher("output/gt_boundaries", Boundaries, queue_size=10)
+
         self.frame = rospy.get_param("~frame", "ugr/car_base_link")
         self.track_file = rospy.get_param("~layout", "")
         rospy.wait_for_service("/node_managing/minimum_curvature/get", timeout=1.0)

@@ -8,6 +8,8 @@
     <param name="layout" value="$(arg layout)" />
 
     <remap from="/output/local_map" to="/ugr/car/map/fastslam/local" />
+    <!-- <remap from="/output/gt_path" to="/minimum_curvature/gt_path" />
+    <remap from="/output/gt_boundaries" to="/minimum_curvature/gt_boundaries" /> -->
 
     <remap from="/input/path" to="/pathplanning/path" />
     <remap from="/input/path_extra" to="/minimum_curvature/path_extra" />

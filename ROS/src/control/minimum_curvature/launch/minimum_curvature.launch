@@ -8,6 +8,8 @@
         <param name="carwidth" value="0.5" />
 
         <!-- <remap from="/input/local_map" to="/ugr/car/map/fastslam/local" /> -->
+        <!-- <remap from="/input/boundaries" to="/boundary_estimation/boundaries" /> -->
+
         <remap from="/input/path" to="/pathplanning/poses" />
         <remap from="/output/path" to="/pathplanning/path" />
         <remap from="/output/path_extra" to="/minimum_curvature/path_extra" />
