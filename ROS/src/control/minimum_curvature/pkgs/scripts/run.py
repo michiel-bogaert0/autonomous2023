@@ -78,8 +78,8 @@ class MinimumCurvature(ManagedNode):
         self.bound_right = np.array(
             [[p.pose.position.x, p.pose.position.y] for p in msg.right_boundary.poses]
         )
-        # rospy.logerr(f"Left_boundary: {self.bound_left}")
-        # rospy.logerr(f"Right_boundary: {self.bound_right}")
+        rospy.logerr(f"Left_boundary: {self.bound_left}")
+        rospy.logerr(f"Right_boundary: {self.bound_right}")
 
     def active(self):
         if not self.calculate or self.reference_line.size == 0:
