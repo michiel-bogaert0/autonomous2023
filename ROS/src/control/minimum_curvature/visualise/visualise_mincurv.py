@@ -9,15 +9,18 @@ import yaml
 from bezier import make_bezier, make_centerline
 from buttons import Buttons
 from draw import Draw
+from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Path
 from node_fixture.node_manager import set_state_active, set_state_inactive
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtGui as QtG
 from PyQt5 import QtWidgets as QtW
 from ugr_msgs.msg import (
+    Boundaries,
     ObservationWithCovariance,
     ObservationWithCovarianceArrayStamped,
 )
-from utils import car_to_real_transform, dist, get_local_poses
+from utils import car_to_real_transform, dist, get_local_poses, real_to_car_transform
 
 
 class MapWidget(QtW.QFrame):
@@ -35,6 +38,8 @@ class MapWidget(QtW.QFrame):
     def __init__(
         self,
         map_publisher,
+        gt_path_publisher,
+        gt_boundaries_publisher,
         frame,
         startpos_x=0,
         startpos_y=0,
@@ -52,10 +57,16 @@ class MapWidget(QtW.QFrame):
         # publisher used to publish observation messages
         self.map_publisher = map_publisher
 
+        # publisher for ground truth path
+        self.gt_path_publisher = gt_path_publisher
+
+        # publisher for ground truth boundaries
+        self.gt_boundaries_publisher = gt_boundaries_publisher
+
         # frameID used to publish observation messages
         self.frame = frame
 
-        # intialize minimum curvature path
+        # intialize minimum curvature paths
         self.mincurv_path = None
         self.extra_path = None
         self.iqp_path = None
@@ -109,14 +120,19 @@ class MapWidget(QtW.QFrame):
         # initialize list of bezier points wich represent the middle of the track
         self.centerPoints = []
         self.center_bezier = []
+
+        # initialize list of bezier points wich represent the boundaries of the track
         self.blue_bezier = []
         self.yellow_bezier = []
 
     def publish_local_map(self):
         """
         Publishes local map of the selected cones
+        Publishes centerline of the map -> ground thruth path
+        Publishes boundaries of the map -> ground thruth boundaries
 
         """
+        # get the local poses of the cones
         cones = get_local_poses(
             self.blue_cones,
             self.yellow_cones,
@@ -124,9 +140,32 @@ class MapWidget(QtW.QFrame):
             self.car_rot,
         )
 
+        # get the centerline of the track
+        self.centerPoints = make_centerline(self.blue_cones, self.yellow_cones)
+        self.center_bezier = make_bezier(self.centerPoints)
+
+        # get the boundaries of the track
+        self.blue_bezier = make_bezier(self.blue_cones)
+        self.yellow_bezier = make_bezier(self.yellow_cones)
+
+        gt_path = real_to_car_transform(self.centerPoints, self.car_pos, self.car_rot)
+        gt_left_boundary = real_to_car_transform(
+            self.blue_cones, self.car_pos, self.car_rot
+        )
+        gt_right_boundary = real_to_car_transform(
+            self.yellow_cones, self.car_pos, self.car_rot
+        )
+
         local = ObservationWithCovarianceArrayStamped()
+        gt_path_msg = Path()
+        gt_left_boundary_msg = Path()
+        gt_right_boundary_msg = Path()
+        gt_boundaries_msg = Boundaries()
 
         local.header.frame_id = self.frame
+        gt_path_msg.header.frame_id = self.frame
+        gt_left_boundary_msg.header.frame_id = self.frame
+        gt_right_boundary_msg.header.frame_id = self.frame
 
         for cone in cones:
             local_ob = ObservationWithCovariance()
@@ -140,8 +179,38 @@ class MapWidget(QtW.QFrame):
             local_ob.observation.location.y = cone[1]
 
             local.observations.append(local_ob)
+
+        gt_path_msg.poses = []
+        for point in gt_path:
+            pose = PoseStamped()
+            pose.pose.position.x = point[0]
+            pose.pose.position.y = point[1]
+            pose.header = gt_path_msg.header
+            gt_path_msg.poses.append(pose)
+
+        gt_left_boundary_msg.poses = []
+        for point in gt_left_boundary:
+            pose = PoseStamped()
+            pose.pose.position.x = point[0]
+            pose.pose.position.y = point[1]
+            pose.header = gt_left_boundary_msg.header
+            gt_left_boundary_msg.poses.append(pose)
+
+        gt_right_boundary_msg.poses = []
+        for point in gt_right_boundary:
+            pose = PoseStamped()
+            pose.pose.position.x = point[0]
+            pose.pose.position.y = point[1]
+            pose.header = gt_right_boundary_msg.header
+            gt_right_boundary_msg.poses.append(pose)
+
+        gt_boundaries_msg.left_boundary = gt_left_boundary_msg
+        gt_boundaries_msg.right_boundary = gt_right_boundary_msg
+
         if self.compute_on:
             self.map_publisher.publish(local)
+            self.gt_path_publisher.publish(gt_path_msg)
+            self.gt_boundaries_publisher.publish(gt_boundaries_msg)
             self.compute_on = False
 
             set_state_inactive("minimum_curvature")
@@ -291,20 +360,15 @@ class MapWidget(QtW.QFrame):
         self.draw.draw_cones(painter)
 
         if self.centerline_on:
-            self.centerPoints = make_centerline(self.blue_cones, self.yellow_cones)
-            self.center_bezier = make_bezier(self.centerPoints)
             self.draw.draw_bezier_line(
                 self.center_bezier, painter, QtG.QColor(0, 0, 0, 70)
             )
             self.draw.draw_points(self.centerPoints, painter, QtG.QColor(0, 0, 0, 70))
 
         if self.trackbounds_on:
-            self.blue_bezier = make_bezier(self.blue_cones)
             self.draw.draw_bezier_line(
                 self.blue_bezier, painter, QtG.QColor(QtC.Qt.blue)
             )
-
-            self.yellow_bezier = make_bezier(self.yellow_cones)
             self.draw.draw_bezier_line(
                 self.yellow_bezier, painter, QtG.QColor(230, 245, 0)
             )

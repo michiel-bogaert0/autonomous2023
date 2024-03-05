@@ -10,7 +10,7 @@ from nav_msgs.msg import Path
 from node_fixture.node_manager import configure_node, set_state_active
 from PyQt5 import QtCore as QtC
 from PyQt5 import QtWidgets as QtW
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
+from ugr_msgs.msg import Boundaries, ObservationWithCovarianceArrayStamped
 from visualise_mincurv import MapWidget
 
 
@@ -23,11 +23,13 @@ class Visualiser:
             "/output/local_map", ObservationWithCovarianceArrayStamped, queue_size=10
         )
 
-        # # Publisher voor gt_path
-        # self.gt_path_publisher = rospy.Publisher("output/gt_path", Path, queue_size=10)
+        # Publisher voor gt_path
+        self.gt_path_publisher = rospy.Publisher("output/gt_path", Path, queue_size=10)
 
-        # # Publisher voor gt_boundaries
-        # self.gt_boundaries_publisher = rospy.Publisher("output/gt_boundaries", Boundaries, queue_size=10)
+        # Publisher voor gt_boundaries
+        self.gt_boundaries_publisher = rospy.Publisher(
+            "output/gt_boundaries", Boundaries, queue_size=10
+        )
 
         self.frame = rospy.get_param("~frame", "ugr/car_base_link")
         self.track_file = rospy.get_param("~layout", "")
@@ -62,9 +64,20 @@ class Visualiser:
         app = QtW.QApplication(sys.argv)
         if len(self.track_file) > 0:
             # If a track file is specified
-            self.window = MainWindow(self.map_publisher, self.frame, self.track_file)
+            self.window = MainWindow(
+                self.map_publisher,
+                self.gt_path_publisher,
+                self.gt_boundaries_publisher,
+                self.frame,
+                self.track_file,
+            )
         else:
-            self.window = MainWindow(self.map_publisher, self.frame)
+            self.window = MainWindow(
+                self.map_publisher,
+                self.gt_path_publisher,
+                self.gt_boundaries_publisher,
+                self.frame,
+            )
         self.window.show()
         sys.exit(app.exec_())
 
@@ -114,7 +127,14 @@ class Visualiser:
 
 
 class MainWindow(QtW.QMainWindow):
-    def __init__(self, map_publisher, frame, trackfile_name=None):
+    def __init__(
+        self,
+        map_publisher,
+        gt_path_publisher,
+        gt_boundaries_publisher,
+        frame,
+        trackfile_name=None,
+    ):
         super().__init__(None)
         if trackfile_name is not None:
             layout_path = (
@@ -176,6 +196,8 @@ class MainWindow(QtW.QMainWindow):
             # Create a new instance of MapWidget
             self.map_widget = MapWidget(
                 map_publisher,
+                gt_path_publisher,
+                gt_boundaries_publisher,
                 frame,
                 startpos_x,
                 startpos_y,
@@ -186,7 +208,9 @@ class MainWindow(QtW.QMainWindow):
             )
         else:
             # Create a new instance of MapWidget
-            self.map_widget = MapWidget(map_publisher, frame)
+            self.map_widget = MapWidget(
+                map_publisher, gt_path_publisher, gt_boundaries_publisher, frame
+            )
         # Add the MapWidget to the main window
         self.setCentralWidget(self.map_widget)
         # set window size when minimalized

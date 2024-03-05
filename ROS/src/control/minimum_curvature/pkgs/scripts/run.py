@@ -7,6 +7,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
+from ugr_msgs.msg import Boundaries
 from utils.utils_mincurv import (  # calc_head_curv_an2,; calc_min_bound_dists,
     B_spline_smoothing,
     calc_head_curv_an,
@@ -47,15 +48,15 @@ class MinimumCurvature(ManagedNode):
             self.receive_new_path,
         )
 
-        # self.boundaries_sub = rospy.Subscriber(
-        #     "/input/boundaries",
-        #     Boundaries,
-        #     self.receive_new_boundaries,
-        # )
+        self.boundaries_sub = rospy.Subscriber(
+            "/input/boundaries",
+            Boundaries,
+            self.receive_new_boundaries,
+        )
 
         self.reference_line = np.array([])
-        # self.bound_left = np.array([])
-        # self.bound_right = np.array([])
+        self.bound_left = np.array([])
+        self.bound_right = np.array([])
         self.extra_smoothed = np.array([])
         self.header = None
         self.calculate = False
@@ -69,10 +70,16 @@ class MinimumCurvature(ManagedNode):
         )
         self.header = msg.header
 
-    # TODO: Implement with boundary estimation when available (perfomant enough)
-    # def receive_new_boundaries(self, msg: Boundaries):
-    #     # Todo
-    #     return
+    def receive_new_boundaries(self, msg: Boundaries):
+        self.bound_left = np.array(
+            [[p.pose.position.x, p.pose.position.y] for p in msg.left_boundary.poses]
+        )
+
+        self.bound_right = np.array(
+            [[p.pose.position.x, p.pose.position.y] for p in msg.right_boundary.poses]
+        )
+        # rospy.logerr(f"Left_boundary: {self.bound_left}")
+        # rospy.logerr(f"Right_boundary: {self.bound_right}")
 
     def active(self):
         if not self.calculate or self.reference_line.size == 0:
