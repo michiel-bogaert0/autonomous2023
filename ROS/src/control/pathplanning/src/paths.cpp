@@ -38,9 +38,66 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
       first_pose_found = false;
     }
 
-    // First stage is adding as much continuous nodes as possible to reduce
-    // search space by alot
-    bool child_found = true;
+    bool child_found = false;
+
+    // Handle first pose
+    if (!first_pose_found) {
+      // Search all nodes in continuous distance and add node with smallest
+      // angle_change from car orientation
+      double min_angle_change = 1000;
+      Node *node = nullptr;
+
+      // Get the closest center points to this element that are within close
+      // distance
+      std::vector<std::vector<double>> next_nodes;
+      next_nodes = sort_closest_to(center_points, {parent->x, parent->y},
+                                   this->continuous_dist_);
+
+      for (auto next_pos : next_nodes) {
+        if (pathplanning::check_if_feasible_child(
+                *parent, path, next_pos, bad_points, center_points, cones,
+                this->max_angle_change, this->safety_dist_squared,
+                this->stage1_rect_width_, this->stage1_threshold_bad_points_,
+                this->stage1_threshold_center_points_)) {
+
+          double distance_node =
+              pow(parent->x - next_pos[0], 2) + pow(parent->y - next_pos[1], 2);
+          double angle_node =
+              atan2(next_pos[1] - parent->y, next_pos[0] - parent->x);
+          double angle_change = angle_node - parent->angle;
+
+          // The first pose of the path is an exeption and its angle should be
+          // oriented in the same direction as the car
+          angle_node = 0;
+
+          if (abs(angle_change) < min_angle_change) {
+            if (!child_found) {
+              node = new Node(next_pos[0], next_pos[1], distance_node, parent,
+                              std::vector<Node *>(), angle_node, angle_change);
+            } else {
+              node->x = next_pos[0];
+              node->y = next_pos[1];
+              node->distance = distance_node;
+              node->parent = parent;
+              node->angle = angle_node;
+              node->angle_change = angle_change;
+            }
+            min_angle_change = abs(angle_change);
+            first_pose_found = true;
+            child_found = true;
+          }
+        }
+      }
+      if (child_found) {
+        path.push_back({node->x, node->y});
+        parent->children.push_back(node);
+        parent = node;
+      }
+    }
+
+    // // First stage is adding as much continuous nodes as possible to reduce
+    // // search space by alot
+    // bool child_found = true;
 
     while (child_found) {
       // Get the closest center points to this element that are within close
@@ -64,12 +121,13 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
               atan2(next_pos[1] - parent->y, next_pos[0] - parent->x);
           double angle_change = angle_node - parent->angle;
 
-          // The first pose of the path is an exeption and its angle should be
-          // oriented in the same direction as the car
-          if (!first_pose_found) {
-            angle_node = 0;
-            first_pose_found = true;
-          }
+          // // The first pose of the path is an exeption and its angle should
+          // be
+          // // oriented in the same direction as the car
+          // if (!first_pose_found) {
+          //   angle_node = 0;
+          //   first_pose_found = true;
+          // }
 
           Node *node =
               new Node(next_pos[0], next_pos[1], distance_node, parent,
