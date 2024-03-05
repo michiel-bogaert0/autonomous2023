@@ -8,9 +8,10 @@ from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
 from ugr_msgs.msg import Boundaries
-from utils.utils_mincurv import (  # calc_head_curv_an2,; calc_min_bound_dists,
+from utils.utils_mincurv import (  # calc_bound_dists,
     B_spline_smoothing,
     calc_head_curv_an,
+    calc_head_curv_an2,
     calc_spline_lengths,
     calc_splines,
     generate_interpolated_points,
@@ -74,12 +75,9 @@ class MinimumCurvature(ManagedNode):
         self.bound_left = np.array(
             [[p.pose.position.x, p.pose.position.y] for p in msg.left_boundary.poses]
         )
-
         self.bound_right = np.array(
             [[p.pose.position.x, p.pose.position.y] for p in msg.right_boundary.poses]
         )
-        rospy.logerr(f"Left_boundary: {self.bound_left}")
-        rospy.logerr(f"Right_boundary: {self.bound_right}")
 
     def active(self):
         if not self.calculate or self.reference_line.size == 0:
@@ -97,18 +95,19 @@ class MinimumCurvature(ManagedNode):
             path=np.vstack((self.reference_line[:, 0:2], self.reference_line[0, 0:2]))
         )
 
-        # TODO: For every point in the reference line, calculate the perpendicular distance to the left and right boundaries
-        # psi_reftrack = calc_head_curv_an2(
-        #     coeffs_x=coeffs_x,
-        #     coeffs_y=coeffs_y,
-        #     ind_spls=np.arange(self.reference_line.shape[0]),
-        #     t_spls=np.zeros(self.reference_line.shape[0]),
-        # )
+        psi_reftrack = calc_head_curv_an2(
+            coeffs_x=coeffs_x,
+            coeffs_y=coeffs_y,
+            ind_spls=np.arange(self.reference_line.shape[0]),
+            t_spls=np.zeros(self.reference_line.shape[0]),
+        )
 
-        # bound_dist_left, bound_dist_right = calc_min_bound_dists(
+        # # TODO: For every point in the reference line, calculate the perpendicular distance to the left and right boundaries
+        # # If function works fine, then use the boundary distances instead of fixed distances
+        # boundaries_dists = calc_bound_dists(
         #     trajectory=self.reference_line[:, 0:2],
-        #     bound_left=# Todo,
-        #     bound_right=# Todo,
+        #     bound_left=self.bound_left,
+        #     bound_right=self.bound_right,
         # )
 
         (

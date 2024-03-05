@@ -91,7 +91,7 @@ class MapWidget(QtW.QFrame):
         self.trackbounds_on = True
         self.cones_on = False
         self.mincurv_on = True
-        self.extra_on = True
+        self.extra_on = False
         self.iqp_on = True
         self.refline_on = True
         self.compute_on = True

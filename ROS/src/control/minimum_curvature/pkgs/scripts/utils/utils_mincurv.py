@@ -1920,7 +1920,8 @@ def side_of_line(
     return side
 
 
-def calc_min_bound_dists(
+# TODO: For every point in the reference line, calculate the perpendicular distance to the left and right boundaries
+def calc_bound_dists(
     trajectory: np.ndarray,
     bound_left: np.ndarray,
     bound_right: np.ndarray,
@@ -1930,7 +1931,7 @@ def calc_min_bound_dists(
     Kwinten Mortier
 
     Documentation:
-    Calculate minimum distance between vehicle and track boundaries for every trajectory point.
+    For every point on the trajectory, calculate the perpendicular distance to the left and right boundaries
 
     Inputs:
     trajectory:     array containing the trajectory information. Required are x, y, psi for every point
@@ -1938,29 +1939,29 @@ def calc_min_bound_dists(
     bound_right:    array containing the right track boundary [x, y]
 
     Outputs:
-    min_dists:      minimum distance to boundaries along normal for every trajectory point
+    bound_dists:    perpendicular distance to boundaries along normal for every trajectory point
     """
+    # Initialize an empty array to store the minimum distances
+    min_dists = np.zeros(trajectory.shape[0])
 
-    boundaries_dist = np.zeros((trajectory.shape[0], 2))
-
+    # Loop through each point on the trajectory
     for i in range(trajectory.shape[0]):
-        # get minimum distances of the left and right boundary
-        mindist_left = np.min(
-            np.sqrt(
-                np.power(bound_left[:, 0] - trajectory[i, 0], 2)
-                + np.power(bound_left[:, 1] - trajectory[i, 1], 2)
-            )
-        )
-        mindist_right = np.min(
-            np.sqrt(
-                np.power(bound_right[:, 0] - trajectory[i, 0], 2)
-                + np.power(bound_right[:, 1] - trajectory[i, 1], 2)
-            )
-        )
-        boundaries_dist[i, 0] = mindist_left
-        boundaries_dist[i, 1] = mindist_right
+        # Get the x, y, and psi values for the current point
+        x = trajectory[i, 0]
+        y = trajectory[i, 1]
+        psi = trajectory[i, 2]
 
-    return boundaries_dist
+        # Calculate the normal vector at the current point
+        norm_vector = np.array([-np.sin(psi), np.cos(psi)])
+
+        # Calculate the distances from the current point to the left and right boundaries
+        dist_left = np.dot(norm_vector, bound_left[i] - np.array([x, y]))
+        dist_right = np.dot(norm_vector, bound_right[i] - np.array([x, y]))
+
+        # Store the minimum distance
+        min_dists[i] = min(dist_left, dist_right)
+
+    return min_dists
 
 
 def calc_head_curv_an2(
@@ -1988,10 +1989,6 @@ def calc_head_curv_an2(
     :type ind_spls:     np.ndarray
     :param t_spls:      containts the relative spline coordinate values (t) of every point on the splines.
     :type t_spls:       np.ndarray
-    :param calc_curv:   bool flag to show if curvature should be calculated as well (kappa is set 0.0 otherwise).
-    :type calc_curv:    bool
-    :param calc_dcurv:  bool flag to show if first derivative of curvature should be calculated as well.
-    :type calc_dcurv:   bool
 
     .. outputs::
     :return psi:        heading at every point.
