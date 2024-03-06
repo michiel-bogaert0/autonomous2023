@@ -24,11 +24,11 @@ class LongitudinalControl:
         self.publish_rate = publish_rate
         self.speed_minimal_distance = rospy.get_param("~speed/minimal_distance", 12.0)
         self.speed_target = rospy.get_param("/speed/target", 3.0)
-        self.max_acceleration = rospy.get_param("/speed/max_acceleration", 2)
-        self.min_speed = rospy.get_param("/speed/min", 3.0)
-        self.max_speed = rospy.get_param("/speed/max", 15.0)
+        self.max_acceleration = rospy.get_param("/speed/LC_max_acceleration", 2)
+        self.min_speed = rospy.get_param("/speed/LC_min", 3.0)
+        self.max_speed = rospy.get_param("/speed/LC_max", 15.0)
         self.straight_ratio = rospy.get_param("~straight_ratio", 0.97)
-        self.adaptive_velocity = rospy.get_param("/speed/adaptive_velocity", False)
+        self.adaptive_velocity = rospy.get_param("/speed/LC_adaptive_velocity", False)
 
     def handle_longitudinal_control(self, trajectory, slam_state, actual_speed):
         """
