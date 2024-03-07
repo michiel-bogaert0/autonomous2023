@@ -1361,8 +1361,8 @@ observations:
   observation:
     belief: 1
     location:
-      x: -0.5400000214576721
-      y: -2.6519999504089355
+      x: -0.2941151775262468
+      y: -2.5836986048724286
       z: 0
     observation_class: 1
 - covariance:
