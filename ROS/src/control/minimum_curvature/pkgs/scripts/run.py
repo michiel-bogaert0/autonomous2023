@@ -17,6 +17,7 @@ from utils.utils_mincurv import (  # calc_bound_dists,
     generate_interpolated_points,
     iqp_handler,
     opt_min_curv,
+    prep_track,
 )
 
 
@@ -91,6 +92,20 @@ class MinimumCurvature(ManagedNode):
             (B_spline_smoothing(reference[:, 0:2], 2), reference[:, 2:4])
         )
 
+        (
+            reftrack_interp,
+            normvec_normalized_interp,
+            a_interp,
+            coeffs_x_interp,
+            coeffs_y_interp,
+        ) = prep_track(
+            reftrack_imp=self.reference_line,
+            k_reg=3,
+            s_reg=10,
+            stepsize_prep=0.2,
+            stepsize_reg=0.2,
+        )
+
         coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(
             path=np.vstack((self.reference_line[:, 0:2], self.reference_line[0, 0:2]))
         )
@@ -120,10 +135,10 @@ class MinimumCurvature(ManagedNode):
         )
 
         psi_reftrack, kappa_reftrack, dkappa_reftrack = calc_head_curv_an(
-            coeffs_x=coeffs_x,
-            coeffs_y=coeffs_y,
-            ind_spls=np.arange(self.reference_line.shape[0]),
-            t_spls=np.zeros(self.reference_line.shape[0]),
+            coeffs_x=coeffs_x_interp,
+            coeffs_y=coeffs_y_interp,
+            ind_spls=np.arange(reftrack_interp.shape[0]),
+            t_spls=np.zeros(reftrack_interp.shape[0]),
             calc_curv=True,
             calc_dcurv=True,
         )
@@ -138,20 +153,20 @@ class MinimumCurvature(ManagedNode):
             kappa_reftrack_iqp,
             dkappa_reftrack_iqp,
         ) = iqp_handler(
-            reftrack=self.reference_line,
-            normvectors=normvec_normalized,
-            A=M,
-            spline_len=calc_spline_lengths(coeffs_x, coeffs_y),
+            reftrack=reftrack_interp,
+            normvectors=normvec_normalized_interp,
+            A=a_interp,
+            spline_len=calc_spline_lengths(coeffs_x_interp, coeffs_y_interp),
             psi=psi_reftrack,
             kappa=kappa_reftrack,
             dkappa=dkappa_reftrack,
-            kappa_bound=0.3,
+            kappa_bound=0.5,
             w_veh=self.car_width,
             print_debug=False,
             plot_debug=False,
             stepsize_interp=0.2,
-            iters_min=5,
-            curv_error_allowed=0.03,
+            iters_min=3,
+            curv_error_allowed=0.01,
         )
         end = perf_counter()
         rospy.logerr(f"Total time elapsed: {end - start}")
@@ -200,7 +215,7 @@ class MinimumCurvature(ManagedNode):
 
         smoothed_path = B_spline_smoothing(path_result, 2)
         path_extra = B_spline_smoothing(path_result_extra, 2)
-        path_iqp = B_spline_smoothing(path_result_iqp, 2)
+        # path_iqp = B_spline_smoothing(path_result_iqp, 2)
         path_ref = B_spline_smoothing(self.path_ref, 2)
 
         smoothed_msg = Path()
@@ -227,7 +242,7 @@ class MinimumCurvature(ManagedNode):
 
         iqp_msg = Path()
         iqp_msg.poses = []
-        for point in path_iqp:
+        for point in path_result_iqp:
             pose = PoseStamped()
             pose.pose.position.x = point[0]
             pose.pose.position.y = point[1]

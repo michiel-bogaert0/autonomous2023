@@ -637,9 +637,9 @@ def iqp_handler(
     normvectors: np.ndarray,
     A: np.ndarray,
     spline_len: np.ndarray,
-    psi: np.ndarray,
-    kappa: np.ndarray,
-    dkappa: np.ndarray,
+    psi: np.ndarray,  # Not necessary, useful for data
+    kappa: np.ndarray,  # Not necessary, useful for data
+    dkappa: np.ndarray,  # Not necessary, useful for data
     kappa_bound: float,
     w_veh: float,
     stepsize_interp: float,
@@ -1484,8 +1484,11 @@ def normalize_psi(psi: Union[np.ndarray, float]) -> np.ndarray:
 
 def prep_track(
     reftrack_imp: np.ndarray,
-    reg_smooth_opts: dict,
-    stepsize_opts: dict,
+    k_reg: int = 3,
+    s_reg: int = 10,
+    stepsize_prep: float = 1.0,
+    stepsize_reg: float = 3.0,
+    stepsize_interp_after_opt: float = 2.0,
     debug: bool = True,
     min_width: float = None,
 ) -> tuple:
@@ -1498,8 +1501,11 @@ def prep_track(
 
     Inputs:
     reftrack_imp:               imported track [x_m, y_m, w_tr_right_m, w_tr_left_m]
-    reg_smooth_opts:            parameters for the spline approximation
-    stepsize_opts:              dict containing the stepsizes before spline approximation and after spline interpolation
+    k_reg:                      order of B-Splines
+    s_reg:                      smoothing factor
+    stepsize_prep:              stepsize used for linear track interpolation before spline approximation
+    stepsize_reg:               stepsize after smoothing
+    stepsize_interp_after_opt:  stepsize used for the interpolation after the raceline creation
     debug:                      boolean showing if debug messages should be printed
     min_width:                  [m] minimum enforced track width (None to deactivate)
 
@@ -1518,10 +1524,10 @@ def prep_track(
     # smoothing and interpolating reference track
     reftrack_interp = spline_approximation(
         track=reftrack_imp,
-        k_reg=reg_smooth_opts["k_reg"],
-        s_reg=reg_smooth_opts["s_reg"],
-        stepsize_prep=stepsize_opts["stepsize_prep"],
-        stepsize_reg=stepsize_opts["stepsize_reg"],
+        k_reg=k_reg,
+        s_reg=s_reg,
+        stepsize_prep=stepsize_prep,
+        stepsize_reg=stepsize_reg,
         debug=debug,
     )
 
@@ -1745,7 +1751,7 @@ def spline_approximation(
 
 # return distance from point p to a point on the spline at spline parameter t_glob
 def dist_to_p(t_glob: np.ndarray, path: list, p: np.ndarray):
-    s = splev(t_glob, path)
+    s = np.array(splev(t_glob, path)).ravel()
     return spatial.distance.euclidean(p, s)
 
 
