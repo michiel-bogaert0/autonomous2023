@@ -22,7 +22,7 @@
     <param name="max_range" value="15"/>
     <param name="max_half_angle" value="1.57"/> <!-- ingesteld voor lidar -->
 
-    <rosparam param="covariance_pose">[1, 0, 0, 0, 1, 0, 0, 0, 1]</rosparam>
+    <rosparam param="covariance_pose">[0.2, 0, 0, 0, 1, 0, 0, 0, 0.2]</rosparam>
     <rosparam param="covariance_landmark"> [0.2, 0, 0, 0.2]</rosparam>
 
      # Map service Parameters

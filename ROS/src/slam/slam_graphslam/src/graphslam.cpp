@@ -96,19 +96,6 @@ void GraphSLAM::doConfigure() {
   Eigen::Matrix3d covariance_pose;
   Eigen::Matrix2d covariance_landmark;
 
-  // first covariance from odometry
-  // this->covariance_pose(0, 0) = 0.239653;
-  // this->covariance_pose(0, 1) = 0.0510531;
-  // this->covariance_pose(0, 2) = 0.00847513;
-  // this->covariance_pose(0, 3) = 0.0510531;
-  // this->covariance_pose(1, 0) = 0.0510531;
-  // this->covariance_pose(1, 1) = 2.60422;
-  // this->covariance_pose(1, 2) = 0.261481;
-  // this->covariance_pose(1, 3) = 0.00847513;
-  // this->covariance_pose(2, 0) = 0.00847513;
-  // this->covariance_pose(2, 1) = 0.261481;
-  // this->covariance_pose(2, 2) = 0.286192;
-
   covariance_pose(0, 0) = cov_pose_vector[0];
   covariance_pose(0, 1) = cov_pose_vector[1];
   covariance_pose(0, 2) = cov_pose_vector[2];
@@ -179,8 +166,7 @@ void GraphSLAM::doConfigure() {
 
 void GraphSLAM::handleObservations(
     const ugr_msgs::ObservationWithCovarianceArrayStampedConstPtr &obs) {
-  // Node lifecycle check
-  if (!this->isActive()) {
+  if (!this->isActive()) { // Node lifecycle check
     return;
   }
   // Time check
@@ -209,7 +195,6 @@ void GraphSLAM::handleObservations(
 
 void GraphSLAM::step() {
   if (!this->isActive() || !this->gotFirstObservations) {
-    // if (!this->gotFirstObservations) {
     return;
   }
 
@@ -421,14 +406,60 @@ void GraphSLAM::step() {
   // ------------------------ Optimization ------------------------------
   // --------------------------------------------------------------------
 
+  // if (this->debug) {
   // this->optimizer.setVerbose(true); //The setVerbose(true) function call is
-  // used to set the verbosity level of the optimizer object. When verbosity is
-  // set to true, the optimizer will output more detailed information about its
-  // progress and operations. This can be useful for debugging and understanding
-  // how the optimization process is proceeding.
+  //  used to set the verbosity level of the optimizer object. When verbosity is
+  //  set to true, the optimizer will output more detailed information about its
+  //  progress and operations. This can be useful for debugging and
+  //  understanding how the optimization process is proceeding.
+  //}
 
   this->optimizer.initializeOptimization();
   this->optimizer.optimize(this->max_iterations);
+
+  // --------------------------------------------------------------------
+  // ------------------------ Kdtree ------------------------------------
+  // --------------------------------------------------------------------
+  // Kdtree::KdNodeVector nodes;
+  // for (const auto &pair : this->optimizer.vertices()) {
+  //   LandmarkVertex *landmarkVertex =
+  //       dynamic_cast<LandmarkVertex *>(pair.second);
+  //   if (landmarkVertex) {
+  //     std::vector<double> point(2);
+  //     point[0] = landmarkVertex->estimate().x();
+  //     point[1] = landmarkVertex->estimate().y();
+  //     nodes.push_back(Kdtree::KdNode(point, NULL, pair.first));
+  //   }
+  // }
+  // if (nodes.size() > 2) {
+  //   Kdtree::KdTree tree(&nodes);
+
+  //   vector<int> merged_indices;
+
+  //   for (auto &node : nodes) {
+  //     if (find(merged_indices.begin(), merged_indices.end(), node.index) ==
+  //         merged_indices.end()) {
+  //       // if not already merged
+  //       Kdtree::KdNodeVector result;
+  //       tree.range_nearest_neighbors(node.point, this->association_threshold,
+  //                                    &result);
+  //       if (result.size() > 1) {
+  //         for (auto &neighbor : result) {
+  //           if (neighbor.index != node.index &&
+  //               find(merged_indices.begin(), merged_indices.end(),
+  //                    neighbor.index) == merged_indices.end()) {
+  //             // ROS_INFO("Merging %d and %d", node.index, neighbor.index);
+  //             this->optimizer.mergeVertices(
+  //                 this->optimizer.vertex(min(node.index, neighbor.index)),
+  //                 this->optimizer.vertex(max(node.index, neighbor.index)),
+  //                 true);
+  //             merged_indices.push_back(max(node.index, neighbor.index));
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   // --------------------------------------------------------------------
   // ------------------------ Publish -----------------------------------
@@ -659,9 +690,9 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     landmarkEdges.color.r = 0.0;
     landmarkEdges.color.g = 1.0;
     landmarkEdges.color.b = 0.0;
-    landmarkEdges.scale.x = 0.01;
-    landmarkEdges.scale.y = 0.01;
-    landmarkEdges.scale.z = 0.01;
+    landmarkEdges.scale.x = 0.005;
+    landmarkEdges.scale.y = 0.005;
+    landmarkEdges.scale.z = 0.005;
     landmarkEdges.pose.orientation.x = 0.0;
     landmarkEdges.pose.orientation.y = 0.0;
     landmarkEdges.pose.orientation.z = 0.0;
