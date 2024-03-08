@@ -199,48 +199,6 @@ void GraphSLAM::step() {
   }
 
   // --------------------------------------------------------------------
-  // ------------------------ Kdtree ------------------------------------
-  // --------------------------------------------------------------------
-  Kdtree::KdNodeVector nodes;
-  for (const auto &pair : this->optimizer.vertices()) {
-    LandmarkVertex *landmarkVertex =
-        dynamic_cast<LandmarkVertex *>(pair.second);
-    if (landmarkVertex) {
-      std::vector<double> point(2);
-      point[0] = landmarkVertex->estimate().x();
-      point[1] = landmarkVertex->estimate().y();
-      nodes.push_back(Kdtree::KdNode(point, NULL, pair.first));
-    }
-  }
-  if (nodes.size() > 2) {
-    Kdtree::KdTree tree(&nodes);
-
-    vector<int> merged_indices;
-
-    for (auto &node : nodes) {
-      if (find(merged_indices.begin(), merged_indices.end(), node.index) ==
-          merged_indices.end()) {
-        // if not already merged
-        Kdtree::KdNodeVector result;
-        tree.range_nearest_neighbors(node.point, this->association_threshold,
-                                     &result);
-        if (result.size() > 1) {
-          for (auto &neighbor : result) {
-            if (neighbor.index != node.index &&
-                find(merged_indices.begin(), merged_indices.end(),
-                     neighbor.index) == merged_indices.end()) {
-              this->optimizer.mergeVertices(
-                  this->optimizer.vertex(node.index),
-                  this->optimizer.vertex(neighbor.index), true);
-              merged_indices.push_back(neighbor.index);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // --------------------------------------------------------------------
   // ------------------- Transform observations -------------------------
   // --------------------------------------------------------------------
   // Transform the observations to the base_link frame from their time to the
@@ -377,7 +335,9 @@ void GraphSLAM::step() {
       // make new landmark and add to graph
       LandmarkVertex *landmark = new LandmarkVertex;
       landmark->setId(this->vertexCounter);
-      landmark->setColor(observation.observation.observation_class);
+
+      landmark->setColor(observation.observation.observation_class,
+                         observation.observation.belief);
 
       landmark->setEstimate(loc);
       this->optimizer.addVertex(landmark);
@@ -420,46 +380,44 @@ void GraphSLAM::step() {
   // --------------------------------------------------------------------
   // ------------------------ Kdtree ------------------------------------
   // --------------------------------------------------------------------
-  // Kdtree::KdNodeVector nodes;
-  // for (const auto &pair : this->optimizer.vertices()) {
-  //   LandmarkVertex *landmarkVertex =
-  //       dynamic_cast<LandmarkVertex *>(pair.second);
-  //   if (landmarkVertex) {
-  //     std::vector<double> point(2);
-  //     point[0] = landmarkVertex->estimate().x();
-  //     point[1] = landmarkVertex->estimate().y();
-  //     nodes.push_back(Kdtree::KdNode(point, NULL, pair.first));
-  //   }
-  // }
-  // if (nodes.size() > 2) {
-  //   Kdtree::KdTree tree(&nodes);
+  Kdtree::KdNodeVector nodes;
+  for (const auto &pair : this->optimizer.vertices()) {
+    LandmarkVertex *landmarkVertex =
+        dynamic_cast<LandmarkVertex *>(pair.second);
+    if (landmarkVertex) {
+      std::vector<double> point(2);
+      point[0] = landmarkVertex->estimate().x();
+      point[1] = landmarkVertex->estimate().y();
+      nodes.push_back(Kdtree::KdNode(point, NULL, pair.first));
+    }
+  }
+  if (nodes.size() > 2) {
+    Kdtree::KdTree tree(&nodes);
 
-  //   vector<int> merged_indices;
+    vector<int> merged_indices;
 
-  //   for (auto &node : nodes) {
-  //     if (find(merged_indices.begin(), merged_indices.end(), node.index) ==
-  //         merged_indices.end()) {
-  //       // if not already merged
-  //       Kdtree::KdNodeVector result;
-  //       tree.range_nearest_neighbors(node.point, this->association_threshold,
-  //                                    &result);
-  //       if (result.size() > 1) {
-  //         for (auto &neighbor : result) {
-  //           if (neighbor.index != node.index &&
-  //               find(merged_indices.begin(), merged_indices.end(),
-  //                    neighbor.index) == merged_indices.end()) {
-  //             // ROS_INFO("Merging %d and %d", node.index, neighbor.index);
-  //             this->optimizer.mergeVertices(
-  //                 this->optimizer.vertex(min(node.index, neighbor.index)),
-  //                 this->optimizer.vertex(max(node.index, neighbor.index)),
-  //                 true);
-  //             merged_indices.push_back(max(node.index, neighbor.index));
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
+    for (auto &node : nodes) {
+      if (find(merged_indices.begin(), merged_indices.end(), node.index) ==
+          merged_indices.end()) {
+        // if not already merged
+        Kdtree::KdNodeVector result;
+        tree.range_nearest_neighbors(node.point, this->association_threshold,
+                                     &result);
+        if (result.size() > 1) {
+          for (auto &neighbor : result) {
+            if (neighbor.index > node.index &&
+                find(merged_indices.begin(), merged_indices.end(),
+                     neighbor.index) == merged_indices.end()) {
+              this->optimizer.mergeVertices(
+                  this->optimizer.vertex(node.index),
+                  this->optimizer.vertex(neighbor.index), true);
+              merged_indices.push_back(neighbor.index);
+            }
+          }
+        }
+      }
+    }
+  }
 
   // --------------------------------------------------------------------
   // ------------------------ Publish -----------------------------------
@@ -552,8 +510,8 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
 
       global_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
       local_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-      global_ob.observation.observation_class = landmarkVertex->color;
-      local_ob.observation.observation_class = landmarkVertex->color;
+      global_ob.observation.observation_class = landmarkVertex->getColor();
+      local_ob.observation.observation_class = landmarkVertex->getColor();
       global_ob.observation.belief = 0;
       local_ob.observation.belief = 0;
 

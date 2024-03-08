@@ -22,8 +22,8 @@
     <param name="max_range" value="15"/>
     <param name="max_half_angle" value="1.57"/> <!-- ingesteld voor lidar -->
 
-    <rosparam param="covariance_pose">[0.2, 0, 0, 0, 1, 0, 0, 0, 0.2]</rosparam>
-    <rosparam param="covariance_landmark"> [0.2, 0, 0, 0.2]</rosparam>
+    <rosparam param="covariance_pose">[0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2]</rosparam>
+    <rosparam param="covariance_landmark"> [0.4, 0, 0, 0.4]</rosparam>
 
      # Map service Parameters
     <param name="SetMap_service" value="/ugr/srv/slam_map_server/set" />

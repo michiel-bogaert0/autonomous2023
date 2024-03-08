@@ -35,8 +35,10 @@ public:
 class LandmarkVertex : public BaseVertex<2, Eigen::Vector2d> {
 public:
   LandmarkVertex();
-  int color;
-  void setColor(int c) { color = c; }
+  float beliefs[3];
+
+  void setColor(int c, float b);
+  int getColor();
 
   virtual void setToOriginImpl() { _estimate.setZero(); }
 
