@@ -126,7 +126,7 @@ class Trajectory:
         self.closest_index = indexes[0]
         return self.targets
 
-    def get_reference_track(self, dt, N, debug=False):
+    def get_reference_track(self, dt, N, actual_speed, debug=False):
         self.path_blf = self.transform_blf()
 
         if len(self.path_blf) == 0:
@@ -134,9 +134,12 @@ class Trajectory:
 
         # Find target points based on required velocity and maximum acceleration
         speed_target = rospy.get_param("/speed/target", 3.0)
-        max_acceleration = 5.0  # TODO: create param
-        d = dt * speed_target
-        distances = [(i + 1) * (d + (dt**2) * max_acceleration) for i in range(N)]
+        max_acceleration = 1.0  # TODO: create param
+        # calculate distances based on maximum acceleration and current speed
+        distances = [
+            (min(speed_target, actual_speed + dt * max_acceleration * i)) * i * dt
+            for i in range(N)
+        ]
 
         if self.change_index:
             # TODO: actually get closest point instead of closest index
