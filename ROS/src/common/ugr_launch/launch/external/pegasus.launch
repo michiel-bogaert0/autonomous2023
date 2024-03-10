@@ -1,0 +1,85 @@
+<launch>
+
+  <!-- 
+    Launch file for external nodes Pegasus. 
+    The arguments decide which parts of Pegasus you want to enable.
+
+    Note that enable_sensors should only launch the drivers, not the computational nodes!
+
+    Args:
+      enable_sensors: enable sensor drivers
+      enable_can: enable the CAN bus (required for some sensor drivers)
+      enable_drive: enables the hardware interface for Pegasus
+      frames: what static frames to use
+   -->
+
+  <arg name="enable_sensors" default="true" />
+  <arg name="enable_can" default="true" />
+  <arg name="enable_drive" default="true" />
+
+  <arg name="frames" default="pegasus_v2"/>
+
+  <include file="$(find ugr_launch)/launch/frames/$(arg frames).launch" pass_all_args="true"/>
+
+  <group if="$(arg enable_can)">
+    <node pkg="can_node" type="can_driver.py" name="can_driver" output="screen">
+
+      <param name="can_interface" value="/dev/ttyACM0" />
+
+      <remap from="/input/can" to="/ugr/car/can/tx" />
+      <remap from="/output/can" to="/ugr/car/can/rx" />
+    </node>
+  </group>
+
+  <group if="$(arg enable_sensors)">
+
+    <!-- Vectornav -->
+    <include file="$(find vectornav)/launch/vectornav.launch"/>
+
+    <!-- Lidar -->
+    <include file="$(find ouster_ros)/launch/sensor.launch">
+      <arg name="timestamp_mode" default="TIME_FROM_PTP_1588" />
+    </include>
+
+    <!-- Camera -->
+    <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">
+      <arg name="type" default="camera" />
+    </include>
+
+    <!-- GPS -->
+    <include file="$(find ublox_gps)/launch/gps.launch" pass_all_args="true" />
+
+    <!-- CAN-enabled sensors -->
+
+    <node pkg="can_node" type="can_converter.py" name="can_converter" output="screen">
+      <param name="res_send_interval" value="0.1" />
+
+      <param name="odrive_dbc" value="$(find can_node)/odrive.dbc" />
+
+      <param name="imu0/frame" value="ugr/car_base_link/imu0" />
+      <param name="imu1/frame" value="ugr/car_base_link/imu1" />
+
+      <remap from="/input/can" to="/ugr/car/can/rx" />
+      <remap from="/output/can" to="/ugr/car/can/tx" />
+
+      <!-- Encoder 0: right -->
+      <!-- Encoder 1: left -->
+      <remap from="/output/vel0" to="/ugr/car/sensors/encoder0" />
+      <remap from="/output/vel1" to="/ugr/car/sensors/encoder1" />
+
+      <!-- IMU0 : front -->
+      <!-- IMU1 : back -->
+      <remap from="/output/imu0/pitch_roll" to="/ugr/car/sensors/imu0/pitch_roll" />
+      <remap from="/output/imu1/pitch_roll" to="/ugr/car/sensors/imu1/pitch_roll" />
+      <remap from="/output/imu0/angular_rate" to="/ugr/car/sensors/imu0/angular_rate" />
+      <remap from="/output/imu1/angular_rate" to="/ugr/car/sensors/imu1/angular_rate" />
+      <remap from="/output/imu0/acc" to="/ugr/car/sensors/imu0/acc" />
+      <remap from="/output/imu1/acc" to="/ugr/car/sensors/imu1/acc" />
+    </node>
+  </group>
+
+  <group if="$(arg enable_drive)">
+    <include file="$(find ugr_ros_control)/pegasus_control/launch/pegasus_hardware.launch" />
+  </group>
+
+</launch>

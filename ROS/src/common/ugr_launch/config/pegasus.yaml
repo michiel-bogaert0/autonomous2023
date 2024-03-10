@@ -1,0 +1,10 @@
+# Use this file to override paramters for Pegasus
+ugr:
+  car:
+    steering:
+      transmission: 0.2
+
+autonomous_state:
+  node_management:
+    always:
+      - slam_controller

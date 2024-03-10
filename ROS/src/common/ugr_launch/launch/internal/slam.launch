@@ -1,0 +1,37 @@
+<launch>
+
+  <!-- Only put nodes here that are related to processing inside SLAM -->
+  <!-- There should be NO hardware dependencies! -->
+
+  <!-- ? Map Publisher -->
+  <node name="map_publisher" pkg="slam_controller" output="screen" type="map_publisher.py">
+    <remap from="/output/map" to="/ugr/car/map/global" />
+  </node>
+
+  <!-- ? FastSLAM -->
+  <include file="$(find slam_fastslam)/launch/fastslam1.launch" pass_all_args="true" />
+
+  <!-- ? SLAM MCL -->
+  <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
+    <arg name="path_to_map" value="/ugr/car/map/global"/>
+  </include>
+
+  <!-- ? ISE -->
+  <include file="$(find slam_controller)/launch/ISE.launch" pass_all_args="true"/>
+
+  <!-- SLAM loopclosure -->
+  <arg name="world_frame" default="ugr/map" />
+  <arg name="base_link_frame" default="ugr/car_base_link" />
+  <node pkg="slam_loopclosure" output="screen" respawn="true" type="loopclosure" name="loopclosure">
+      <param name="world_frame" value="$(arg world_frame)" />
+      <param name="base_link_frame" value="$(arg base_link_frame)" />
+      <rosparam param="finishpoint">[0,0,0]</rosparam>
+      
+      <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
+      <remap from="/reset_closure" to="/ugr/srv/reset_loopclosure"/>
+      <remap from="/adjust_finish" to="/ugr/srv/adjust_finish"/>
+  </node>
+
+  <!-- SLAM controller -->
+  <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true" />
+</launch>

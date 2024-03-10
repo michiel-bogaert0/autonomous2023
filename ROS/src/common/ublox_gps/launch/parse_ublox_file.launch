@@ -1,0 +1,28 @@
+<launch>
+
+    <!-- GPS1: base (left) -->
+    <node pkg="ublox_gps" type="parse_ublox.py" name="parse_ublox_gps1" output="screen">
+        <param name="source" value="/home/lowiek/Documents/base.ubx" />
+        <param name="is_serial" value="false"/>
+        <param name="gps_frame_id" value="ugr/car_base_link/gps1"/>
+
+        <remap from="/output/pvt" to="/ugr/car/sensors/gps1/pvt"/>
+        <remap from="/output/utm" to="/ugr/car/sensors/gps1/utm"/>
+        <remap from="/output/relposned" to="/ugr/car/sensors/gps1/relposned"/>
+        <remap from="/output/pose" to="/ugr/car/sensors/gps1/pose"/>
+        <remap from="/output/time" to="/ugr/car/sensors/gps1/time"/>
+    </node>
+
+    <!-- GPS0: rover (right) -->
+    <node pkg="ublox_gps" type="parse_ublox.py" name="parse_ublox_gps0" output="screen">
+        <param name="source" value="/home/lowiek/Documents/rover.ubx" />
+        <param name="is_serial" value="false"/>
+        <param name="gps_frame_id" value="ugr/car_base_link/gps0"/>
+
+        <remap from="/output/pvt" to="/ugr/car/sensors/gps0/pvt"/>
+        <remap from="/output/utm" to="/ugr/car/sensors/gps0/utm"/>
+        <remap from="/output/relposned" to="/ugr/car/sensors/gps0/relposned"/>
+        <remap from="/output/pose" to="/ugr/car/sensors/gps0/pose"/>
+        <remap from="/output/time" to="/ugr/car/sensors/gps0/time"/>
+    </node>
+</launch>
