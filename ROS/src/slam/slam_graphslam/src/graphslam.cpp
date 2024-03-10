@@ -128,6 +128,7 @@ void GraphSLAM::doConfigure() {
       new node_fixture::DiagnosticPublisher(n, "SLAM GrapSLAM"));
 
   if (this->debug) {
+    // Initialize debug publishers
     this->posesPublisher =
         n.advertise<geometry_msgs::PoseArray>("/output/pose/vertices", 0);
     this->edgePosesPublisher =
@@ -144,8 +145,12 @@ void GraphSLAM::doConfigure() {
   // Initialize variables
   this->latestTime = 0.0;
   this->gotFirstObservations = false;
+  // to keep track of the previous odometry state for calculating the
+  // transformation
   this->prev_state = {0.0, 0.0, 0.0};
+  // to now wich index the new vertex gets
   this->vertexCounter = 0;
+  // to keep track of the previous pose
   this->prevPoseIndex = -1;
 
   //----------------------------------------------------------------------------
@@ -208,9 +213,6 @@ void GraphSLAM::step() {
   transformed_obs.header.stamp = ros::Time::now();
 
   for (auto observation : this->observations.observations) {
-    // if (observation.observation.observation_class == 2) { // verwijderen
-    //   continue;
-    // }
     ugr_msgs::ObservationWithCovariance transformed_ob;
 
     geometry_msgs::PointStamped locStamped;
@@ -265,19 +267,23 @@ void GraphSLAM::step() {
         "failed");
     return;
   }
-  const tf2::Quaternion quat(
-      car_pose.transform.rotation.x, car_pose.transform.rotation.y,
-      car_pose.transform.rotation.z, car_pose.transform.rotation.w);
 
   double roll, pitch, yaw, x, y;
   x = car_pose.transform.translation.x;
   y = car_pose.transform.translation.y;
+
+  // calculate yaw from quaternion
+  const tf2::Quaternion quat(
+      car_pose.transform.rotation.x, car_pose.transform.rotation.y,
+      car_pose.transform.rotation.z, car_pose.transform.rotation.w);
   tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 
   SE2 prev_poseSE2(this->prev_state[0], this->prev_state[1],
                    this->prev_state[2]);
+  // set the previous odometry state to the current odometry state
   this->prev_state = {x, y, yaw};
   SE2 poseSE2(x, y, yaw);
+  // calculate the transformation from the previous pose to the new pose
   SE2 pose_trans = prev_poseSE2.inverse() * poseSE2;
   // --------------------------------------------------------------------
   // ---------------------- Add odometry to graph -----------------------
@@ -285,28 +291,37 @@ void GraphSLAM::step() {
   // Add the odometry to the graph
   PoseVertex *newPoseVertex = new PoseVertex;
   newPoseVertex->setId(this->vertexCounter);
+  // set the new pose to the current odometry estimate
   newPoseVertex->setEstimate(poseSE2);
   this->optimizer.addVertex(newPoseVertex);
 
   // add odometry contraint
   if (this->prevPoseIndex >= 0) {
     PoseEdge *odometry = new PoseEdge;
+    // the odometry edge is between the previous pose and the new pose
     odometry->vertices()[0] =
         this->optimizer.vertex(this->prevPoseIndex); // from
     odometry->vertices()[1] = this->optimizer.vertex(this->vertexCounter); // to
+    // set the odometry measurement to the transformation from the previous pose
+    // to the new pose
     odometry->setMeasurement(pose_trans);
+    // set the information matrix to the inverse of the covariance matrix
     odometry->setInformation(this->information_pose);
     this->optimizer.addEdge(odometry);
   } else {
-    // First pose
+    // if this is the first pose, set the pose to fixed
     newPoseVertex->setFixed(true);
   }
+  // set the previous pose index to the new pose index
+  // this is used to add the odometry edge between the previous pose and the new
+  // pose and to add the landmark edges between the new pose and the landmarks
   this->prevPoseIndex = this->vertexCounter;
   this->vertexCounter++;
   // --------------------------------------------------------------------
   // ---------------------- Add observations to graph -------------------
   // --------------------------------------------------------------------
   for (auto observation : transformed_obs.observations) {
+    // calculate the location of the landmark in the world frame
     VectorXf obs(2);
     obs << pow(pow(observation.observation.location.x, 2) +
                    pow(observation.observation.location.y, 2),
@@ -317,39 +332,47 @@ void GraphSLAM::step() {
     Vector2d loc = Vector2d(x + obs(0) * cos(yaw + obs(1)),
                             y + obs(0) * sin(yaw + obs(1)));
 
+    // check if the landmark already exists
     int associatedLandmarkIndex = -1;
     for (const auto &pair : this->optimizer.vertices()) {
       LandmarkVertex *landmarkVertex =
           dynamic_cast<LandmarkVertex *>(pair.second);
       if (landmarkVertex) {
         Vector2d landmark = landmarkVertex->estimate();
+        // if the distance between the landmark and the observation is smaller
+        // than the association threshold than the landmark already exists
         if ((loc - landmark).norm() < this->association_threshold) {
-          // landmark already exists
           associatedLandmarkIndex = landmarkVertex->id();
           break;
         }
       }
     }
+    // if the landmark does not exist, make a new landmark and add it to the
+    // graph
     if (associatedLandmarkIndex < 0) {
-      // landmark does not exist
-      // make new landmark and add to graph
       LandmarkVertex *landmark = new LandmarkVertex;
       landmark->setId(this->vertexCounter);
 
+      // set the color and belief of the landmark to the observation class
       landmark->setColor(observation.observation.observation_class,
                          observation.observation.belief);
 
+      // set the estimate of the landmark to the location of the landmark in the
+      // world frame
       landmark->setEstimate(loc);
       this->optimizer.addVertex(landmark);
+      // set the associated landmark index to the new landmark index
       associatedLandmarkIndex = this->vertexCounter;
       this->vertexCounter++;
     }
-
+    // add a constraint between the new pose and the landmark
     LandmarkEdge *landmarkObservation = new LandmarkEdge;
     landmarkObservation->vertices()[0] =
         this->optimizer.vertex(this->prevPoseIndex); // pose
     landmarkObservation->vertices()[1] =
         this->optimizer.vertex(associatedLandmarkIndex); // landmark
+    // set the measurement to the transformation from the new pose to the
+    // landmark
     landmarkObservation->setMeasurement(poseSE2.inverse() * loc);
 
     // covarianceMatrix << observation.covariance[0], observation.covariance[1],
@@ -358,6 +381,7 @@ void GraphSLAM::step() {
     //     2 rows and columns are used
     // landmarkObservation->setInformation(covarianceMatrix.inverse());
 
+    // set the information matrix to the inverse of the covariance matrix
     landmarkObservation->setInformation(this->information_landmark);
     this->optimizer.addEdge(landmarkObservation);
   }
@@ -365,6 +389,7 @@ void GraphSLAM::step() {
   // --------------------------------------------------------------------
   // ------------------------ Optimization ------------------------------
   // --------------------------------------------------------------------
+  // optimize the graph
 
   // if (this->debug) {
   // this->optimizer.setVerbose(true); //The setVerbose(true) function call is
@@ -380,6 +405,10 @@ void GraphSLAM::step() {
   // --------------------------------------------------------------------
   // ------------------------ Kdtree ------------------------------------
   // --------------------------------------------------------------------
+  // merge landmarks that are close to each other
+  // create a kdtree with the landmarks
+
+  // create a vector of nodes with the landmarks
   Kdtree::KdNodeVector nodes;
   for (const auto &pair : this->optimizer.vertices()) {
     LandmarkVertex *landmarkVertex =
@@ -391,15 +420,23 @@ void GraphSLAM::step() {
       nodes.push_back(Kdtree::KdNode(point, NULL, pair.first));
     }
   }
+
+  // if there are more than 2 landmarks, merge the landmarks that are close to
+  // each other
   if (nodes.size() > 2) {
+    // create a kdtree with the KdNodes
     Kdtree::KdTree tree(&nodes);
 
+    // create a vector of indices of the merged landmarks
+    // this is used to keep track of the landmarks that are already merged
+    // if a landmark is already merged, it should not be merged again
     vector<int> merged_indices;
 
     for (auto &node : nodes) {
+      // if the node is not already merged
       if (find(merged_indices.begin(), merged_indices.end(), node.index) ==
           merged_indices.end()) {
-        // if not already merged
+        // find the nearest neighbors of the node
         Kdtree::KdNodeVector result;
         tree.range_nearest_neighbors(node.point, this->association_threshold,
                                      &result);
@@ -422,26 +459,27 @@ void GraphSLAM::step() {
   // --------------------------------------------------------------------
   // ------------------------ Publish -----------------------------------
   // --------------------------------------------------------------------
+  // publish the odometry and the landmarks
   this->publishOutput(transformed_obs.header.stamp);
 } // step method
 
 void GraphSLAM::publishOutput(ros::Time lookupTime) {
-
+  // check that we do not publish faster than the publish rate
   if (std::chrono::duration_cast<std::chrono::duration<double>>(
           std::chrono::steady_clock::now() - this->prev_publish_time)
           .count() < 1.0 / this->publish_rate) {
     return;
   }
-
   this->prev_publish_time = std::chrono::steady_clock::now();
 
   // --------------------------------------------------------------------
   // ----------------- Publish odometry ---------------------------------
   // --------------------------------------------------------------------
-
+  // get the pose vertex of the current pose
   PoseVertex *pose_vertex =
       dynamic_cast<PoseVertex *>(this->optimizer.vertex(this->prevPoseIndex));
 
+  // create the odometry message
   nav_msgs::Odometry odom;
 
   odom.header.stamp = lookupTime;
@@ -464,6 +502,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
   // --------------------------------------------------------------------
   // ----------------- TF Transformation --------------------------------
   // --------------------------------------------------------------------
+  // create the transform message
   tf2::Transform transform(
       quat, tf2::Vector3(pose_vertex->estimate().translation().x(),
                          pose_vertex->estimate().translation().y(), 0));
@@ -489,8 +528,10 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
   // --------------------------------------------------------------------
   // -------------- Publish Landmarks to map server ---------------------
   // --------------------------------------------------------------------
+  // create the observation messages and publish them to the map server
+  // global is the landmarks in the world frame
+  // local is the landmarks in the base_link frame
 
-  // Create the observation_msgs things
   ugr_msgs::ObservationWithCovarianceArrayStamped global;
   ugr_msgs::ObservationWithCovarianceArrayStamped local;
   global.header.frame_id = this->map_frame;
@@ -524,6 +565,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
       global.observations.push_back(global_ob);
 
       // landmark to observation
+      // calculate the location of the landmark in the base_link frame
       VectorXf obs(2);
       float dx = landmarkVertex->estimate().x() -
                  pose_vertex->estimate().translation().x();
@@ -539,6 +581,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     }
   }
 
+  // publish the observations to the map server
   if (this->setmap_srv_client.exists()) {
     this->diagPublisher->publishDiagnostic(
         node_fixture::DiagnosticStatusEnum::OK, "SetMap service call",
@@ -587,6 +630,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
   // --------------------- publish debug --------------------------------
   // --------------------------------------------------------------------
   if (this->debug) {
+    // if debug is true, publish the poses and edges
 
     // --------------------------------------------------------------------
     // -------------------- Publish Poses ---------------------------------
