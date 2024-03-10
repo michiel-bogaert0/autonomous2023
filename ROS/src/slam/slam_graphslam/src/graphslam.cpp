@@ -208,9 +208,9 @@ void GraphSLAM::step() {
   transformed_obs.header.stamp = ros::Time::now();
 
   for (auto observation : this->observations.observations) {
-    if (observation.observation.observation_class == 2) { // verwijderen
-      continue;
-    }
+    // if (observation.observation.observation_class == 2) { // verwijderen
+    //   continue;
+    // }
     ugr_msgs::ObservationWithCovariance transformed_ob;
 
     geometry_msgs::PointStamped locStamped;
@@ -512,8 +512,11 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
       local_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
       global_ob.observation.observation_class = landmarkVertex->getColor();
       local_ob.observation.observation_class = landmarkVertex->getColor();
-      global_ob.observation.belief = 0;
+      global_ob.observation.belief = 0; // mss aantal edges
       local_ob.observation.belief = 0;
+
+      global_ob.observation.index = pair.first;
+      local_ob.observation.index = pair.first;
 
       global_ob.observation.location.x = landmarkVertex->estimate().x();
       global_ob.observation.location.y = landmarkVertex->estimate().y();
