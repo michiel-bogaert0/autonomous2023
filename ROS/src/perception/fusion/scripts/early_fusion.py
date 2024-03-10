@@ -44,7 +44,7 @@ class EarlyFusion:
         self.belief = rospy.get_param("~belief", 0.8)
         self.cone_width = rospy.get_param("~cone_width", 0.232)
         self.fusion_ready = False
-        self.orig_rotation_matrix = np.array(
+        self.rotation_matrix = np.array(
             [
                 [0.9998479, 0.026, -0.2],
                 [-0.026, 0.9998479, -0.045],
