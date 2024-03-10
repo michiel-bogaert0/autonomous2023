@@ -134,20 +134,20 @@ class Ocp:
             for i in range(self.N):
                 if i == 0:
                     L_run += cost_fun(
-                        self.X[:, i],
+                        self.X[:, i + 1],
                         self.U[:, i],
                         self.U[:, i],
                         self._x_reference[:, i],
                     )
                 else:
                     L_run += cost_fun(
-                        self.X[:, i],
+                        self.X[:, i + 1],
                         self.U[:, i],
                         (self.U[:, i] - self.U[:, i - 1]),
                         self._x_reference[:, i],
                     )
                 # self.opti.subject_to((self.a * self.X[0, i] + self.b - self.X[1, i]) * (self.c * self.X[0, i] + self.d - self.X[1, i]) < 0)
-                # self.opti.subject_to(((self.X[0, i] - self._x_reference[0, i]) ** 2 + (self.X[1, i] - self._x_reference[1, i]) ** 2) < 16)
+                # self.opti.subject_to(((self.X[0, i+1] - self._x_reference[0, i]) ** 2 + (self.X[1, i+1] - self._x_reference[1, i]) ** 2) < 4)
             self.cost["run"] = L_run
 
         self.cost["total"] = self.cost["run"]

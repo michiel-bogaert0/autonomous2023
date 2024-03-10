@@ -99,6 +99,10 @@ class MPC(ManagedNode):
             "/input/odom", Odometry, self.get_odom_update
         )
 
+        self.steering_sub = super().AddSubscriber(
+            "/ugr/steering_position/value", Float64, self.get_steering_update
+        )
+
         self.speed_target = rospy.get_param("/speed/target", 3.0)
         self.steering_transmission = rospy.get_param(
             "ugr/car/steering/transmission", 0.25
@@ -123,15 +127,16 @@ class MPC(ManagedNode):
         # Initilize previous input with zeros
         self.prev_input = [[0.0, 0.0]] * self.N
 
-        Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
-        R = np.diag([1e-4, 1e-1])
-        R_delta = np.diag([1e-3, 6e-2])
+        Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
+        R = np.diag([1e-4, 2e-2])
+        R_delta = np.diag([1e-4, 2e-2])
 
         self.set_costs(Qn, R, R_delta)
 
         # constraints
-        self.max_steering_angle = 10
-        self.set_constraints(self.speed_target, self.max_steering_angle)
+        # TODO: get these from urdf model
+        self.max_steering_angle = 5  # same as pegasus.urdf
+        self.set_constraints(self.speed_target * 10, self.max_steering_angle)
 
     def doActivate(self):
         # Do this here because some parameters are set in the mission yaml files
@@ -139,6 +144,9 @@ class MPC(ManagedNode):
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
+
+    def get_steering_update(self, msg: Float64):
+        self.steering_joint_angle = msg.data
 
     def handle_state_change(self, msg: State):
         if msg.scope == StateMachineScopeEnum.SLAM:
@@ -198,6 +206,8 @@ class MPC(ManagedNode):
         """
         Set constraints for the MPC
         """
+        velocity_limit = 5
+        steering_limit = 5
         self.ocp.subject_to()
         self.ocp.subject_to(
             self.ocp.bounded(
@@ -232,7 +242,9 @@ class MPC(ManagedNode):
             if self.state == NodeManagingStatesEnum.ACTIVE:
                 try:
                     self.doUpdate()
-                    ref_track = self.trajectory.get_reference_track(self.car.dt, self.N)
+                    ref_track = self.trajectory.get_reference_track(
+                        self.car.dt, self.N, self.actual_speed
+                    )
 
                     if len(ref_track) == 0:
                         self.diagnostics_pub.publish(
@@ -273,14 +285,14 @@ class MPC(ManagedNode):
                     # Need other costs for  different speeds as this changes the working environment
                     if speed_target != self.speed_target:
                         self.speed_target = speed_target
-                        self.set_constraints(speed_target, self.max_steering_angle)
+                        self.set_constraints(speed_target / 2, self.max_steering_angle)
 
                     if self.slam_state == SLAMStatesEnum.RACING:
                         # Scale steering penalty based on current speed
-                        Qn = np.diag([5e-1, 5e-1, 0, 0, 0])
-                        R = np.diag([1e-4, 5e1])
+                        Qn = np.diag([8e-1, 8e-1, 0, 0, 0])
+                        R = np.diag([1e-2, 100])
                         R_delta = np.diag(
-                            [1e-2, 5e-1 * self.actual_speed / self.speed_target]
+                            [1e-2, 0]  # * self.actual_speed / self.speed_target]
                         )
 
                         self.set_costs(Qn, R, R_delta)
@@ -311,12 +323,12 @@ class MPC(ManagedNode):
                     # Give reference_track as initial trajectory guess
                     # TODO: also give orientation
                     # Transpose because of shape needed in MPC formulation (nx, N+1)
-                    x0 = np.concatenate(
-                        (np.array([current_state]).T, np.array(reference_track).T),
-                        axis=1,
-                    )
+                    # x0 = np.concatenate(
+                    #     (np.array([current_state]).T, np.array(reference_track).T),
+                    #     axis=1,
+                    # )
                     u, info = self.mpc(
-                        current_state, reference_track, a, b, c, d, X0=x0
+                        current_state, reference_track, a, b, c, d  # , X0=x0
                     )  # , U0=self.prev_input)
 
                     # X_closed_loop = np.array(self.mpc.X_trajectory)
@@ -337,13 +349,17 @@ class MPC(ManagedNode):
                     )
 
                     # self.steering_cmd.data = U_closed_loop[0, 1]
-                    self.steering_joint_angle = info["X_sol"][3][1]
-                    # Send steering position to ros_control
-                    self.steering_cmd.data = self.steering_joint_angle
-                    # self.steering_cmd.data = -1
-                    self.velocity_cmd.data = (
-                        self.actual_speed + u[0] * self.wheelradius * self.car.dt
-                    )  # Input is acceleration
+                    # self.steering_joint_angle = info["X_sol"][3][1]
+                    # # Send steering position to ros_control
+                    # self.steering_cmd.data = self.steering_joint_angle
+                    # self.steering_joint_angle += u[1] * self.car.dt
+                    # self.steering_cmd.data = self.steering_joint_angle + u[1] * self.car.dt
+                    # # self.steering_cmd.data = -1
+                    # self.velocity_cmd.data = (
+                    #     self.actual_speed + u[0] * self.wheelradius * self.car.dt
+                    # )  # Input is acceleration
+                    self.velocity_cmd.data = u[0]
+                    self.steering_cmd.data = u[1]
 
                     # Use Pure Pursuit if target speed is 0
                     # TODO: avoid this + probably wrong
@@ -361,12 +377,13 @@ class MPC(ManagedNode):
                         self.velocity_cmd.data = 0.0
 
                     # Publish to velocity and position steering controller
-                    self.steering_cmd.data /= self.steering_transmission
+                    # self.steering_cmd.data /= self.steering_transmission
                     self.steering_pub.publish(self.steering_cmd)
 
-                    self.velocity_cmd.data /= (
-                        self.wheelradius
-                    )  # Velocity to angular velocity
+                    # self.velocity_cmd.data /= (
+                    #     self.wheelradius
+                    # )  # Velocity to angular velocity
+                    # print(f"velocity: {self.velocity_cmd.data}")
                     self.velocity_pub.publish(self.velocity_cmd)
 
                     self.vis_path(reference_track, self.ref_track_pub)
