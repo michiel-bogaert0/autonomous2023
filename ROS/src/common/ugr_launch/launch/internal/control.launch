@@ -21,9 +21,6 @@
   <!-- Pathplanning -->
   <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true" />
 
-  <!-- Min curv -->
-  <include file="$(find minimum_curvature)/launch/minimum_curvature.launch" pass_all_args="true" />
-
   <!-- Boundary Estimation -->
   <include file="$(find boundary_estimation)/launch/boundary_estimation.launch" pass_all_args="true" />
 </launch>
