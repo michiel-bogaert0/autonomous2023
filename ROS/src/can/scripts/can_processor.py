@@ -14,9 +14,6 @@ class CanProcessor:
             "~db_adress", "autonomous2023/ROS/src/can/dbc/motor.dbc"
         )
         self.db = cantools.database.load_file(self.db_adress)
-        self.can_sub = rospy.Subscriber("/ugr/can", Frame, self.receive_can_frame)
-
-        rospy.spin()
 
     def receive_can_frame(self, msg: Frame) -> None:
         """Receives CAN frames, converts them to readable format and publishes them to a topic"""

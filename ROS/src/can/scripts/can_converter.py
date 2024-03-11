@@ -56,6 +56,8 @@ class CanConverter(ManagedNode):
             pub = self.specific_pubs[str(can_msg.id)]
             pub.publish(can_msg)
 
+            self.can_processor.receive_can_frame(can_msg)
+
             # Check for external shutdown
             if rospy.is_shutdown():
                 return
