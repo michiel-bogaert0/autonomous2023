@@ -62,13 +62,13 @@ class MapWidget(QtW.QFrame):
         self.frame = frame
 
         # initialize paths
-        self.path = None
+        self.path = []
         self.pathnr = -1
         self.nr_paths = 0
         self.all_paths = []
 
         # initialize smoothed path
-        self.smoothed_path = None
+        self.smoothed_path = []
 
         # initialize boundaries
         self.blue_boundary = []
@@ -90,7 +90,6 @@ class MapWidget(QtW.QFrame):
         self.orange_cones = oranges
         self.selected_yellow_cones = []
         self.selected_blue_cones = []
-        self.buttons.select_all_clicked()
 
         self.is_closed = bool(closed)
         self.place_cones = bool(place_cones)
@@ -128,14 +127,17 @@ class MapWidget(QtW.QFrame):
         self.blue_bezier = []
         self.yellow_bezier = []
 
-        self.publish_local_map()
-        self.update()
+        self.buttons.select_all_clicked()
 
     def publish_local_map(self):
         """
+        Erases current path
         Publishes local map of the selected cones
+        Also publishes ground truth path if middelline is on
 
         """
+        self.empty_pathplanning_input()
+
         cones = get_local_poses(
             self.selected_blue_cones,
             self.selected_yellow_cones,
@@ -162,12 +164,19 @@ class MapWidget(QtW.QFrame):
 
         self.map_publisher.publish(local)
 
+        if self.middelline_on:
+            self.publish_gt_path()
+
     def publish_gt_path(self):
         gt_path_msg = Path()
         gt_path_msg.header.stamp = rospy.Time.now()
         gt_path_msg.header.frame_id = self.frame
 
-        gt_path = real_to_car_transform(self.path, self.car_pos, self.car_rot)
+        gt_path = np.empty((0, 2))
+        if len(self.middelPoints) > 0:
+            gt_path = real_to_car_transform(
+                self.middelPoints, self.car_pos, self.car_rot
+            )
 
         for cone in gt_path:
             pose = PoseStamped()
@@ -266,6 +275,7 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                 elif selected_cone in self.orange_cones:
                     self.orange_cones.remove(selected_cone)
+                self.publish_local_map()
                 self.update()
             elif event.modifiers() == QtC.Qt.AltModifier:
                 if selected_cone in self.yellow_cones:
@@ -278,6 +288,7 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                     else:
                         self.selected_blue_cones.append(selected_cone)
+                self.publish_local_map()
                 self.update()
 
             # Drag a cone or car_handle
@@ -311,6 +322,7 @@ class MapWidget(QtW.QFrame):
                 self.blue_cones.append(point)
                 self.selected_blue_cones.append(point)
                 # Trigger a repaint of the MapWidget to update the visual points
+            self.publish_local_map()
             self.update()
 
     def mouseDoubleClickEvent(self, event):
@@ -327,6 +339,7 @@ class MapWidget(QtW.QFrame):
                     index = self.blue_cones.index(selected_cone)
                     self.blue_cones.insert(index, point)
                     self.selected_blue_cones.append(point)
+                self.publish_local_map()
                 self.update()
 
     def mouseMoveEvent(self, event):
@@ -361,6 +374,10 @@ class MapWidget(QtW.QFrame):
             self.update()
 
     def mouseReleaseEvent(self, event):
+        # cones or car got changed
+        if self.selection is not None:
+            self.publish_local_map()
+
         # Reset the flag and the drag start position
         self.selection = None
         self.drag_map = False
@@ -432,7 +449,10 @@ class MapWidget(QtW.QFrame):
 
     def empty_pathplanning_input(self):
         self.all_paths = []
-        self.path = None
+        self.path = []
+        self.smoothed_path = []
+        self.blue_boundary = []
+        self.yellow_boundary = []
         self.centerPoints = []
         self.badPoints = []
 
@@ -454,7 +474,6 @@ class MapWidget(QtW.QFrame):
                 self.middel_bezier, painter, QtG.QColor(0, 0, 0, 70)
             )
             self.draw.draw_points(self.middelPoints, painter, QtG.QColor(0, 0, 0, 70))
-            self.publish_gt_path()
 
         if self.trackbounds_on:
             self.blue_bezier = make_bezier(self.blue_cones, self.is_closed)
