@@ -249,7 +249,7 @@ Visualization Manager:
           Enabled: true
           Name: GT
           Queue Size: 10
-          Realistic: true
+          Realistic: false
           Topic: /ugr/car/map/gt
           Unreliable: false
           Value: true
@@ -298,6 +298,7 @@ Visualization Manager:
           Topic: /graphslam/debug/vertices/poses
           Unreliable: false
           Value: false
+          Enabled: false
         - Class: rviz/Marker
           Enabled: true
           Marker Topic: /graphslam/debug/edges/poses
@@ -306,6 +307,7 @@ Visualization Manager:
             {}
           Queue Size: 10
           Value: false
+          Enabled: false
         - Class: rviz/Marker
           Enabled: true
           Marker Topic: /graphslam/debug/edges/landmarks
@@ -314,6 +316,7 @@ Visualization Manager:
             {}
           Queue Size: 10
           Value: false
+          Enabled: false
         - Alpha: 1
           Arrow Length: 0.30000001192092896
           Axes Length: 0.30000001192092896
