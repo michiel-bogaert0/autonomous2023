@@ -440,8 +440,14 @@ void GraphSLAM::step() {
         Kdtree::KdNodeVector result;
         tree.range_nearest_neighbors(node.point, this->association_threshold,
                                      &result);
+        // if there are more than 1 nearest neighbors, merge the landmarks
         if (result.size() > 1) {
           for (auto &neighbor : result) {
+            // if the neighbor is not already merged and the index of the
+            // neighbor is larger than the index of the node then merge the
+            // landmarks the index has to be larger so that the landmarks are
+            // always merged in to the smallest index this means less jumping of
+            // cones and easier for control progessive pathplaning
             if (neighbor.index > node.index &&
                 find(merged_indices.begin(), merged_indices.end(),
                      neighbor.index) == merged_indices.end()) {
@@ -663,15 +669,19 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     // --------------------------------------------------------------------
     // -------------------- Publish edges ---------------------------------
     // --------------------------------------------------------------------
+    // create the edge messages and publish them
+
+    // create pose edges message
     visualization_msgs::Marker poseEdges;
     poseEdges.header.frame_id = this->map_frame;
     poseEdges.header.stamp = lookupTime;
     poseEdges.ns = "graphslam";
     poseEdges.type = visualization_msgs::Marker::LINE_LIST;
+    // how long the marker will be displayed
     poseEdges.lifetime = ros::Duration(1);
     poseEdges.action = visualization_msgs::Marker::ADD;
     poseEdges.id = this->prevPoseIndex;
-    poseEdges.color.a = 1.0;
+    poseEdges.color.a = 1.0; // transparantie
     poseEdges.color.r = 1.0;
     poseEdges.color.g = 0.0;
     poseEdges.color.b = 0.0;
@@ -683,6 +693,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     poseEdges.pose.orientation.z = 0.0;
     poseEdges.pose.orientation.w = 1.0;
 
+    // create landmark edges message
     visualization_msgs::Marker landmarkEdges;
     landmarkEdges.header.frame_id = this->map_frame;
     landmarkEdges.header.stamp = lookupTime;
@@ -691,7 +702,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     landmarkEdges.lifetime = ros::Duration(1);
     landmarkEdges.action = visualization_msgs::Marker::ADD;
     landmarkEdges.id = this->prevPoseIndex;
-    landmarkEdges.color.a = 1.0;
+    landmarkEdges.color.a = 1.0; // transparantie
     landmarkEdges.color.r = 0.0;
     landmarkEdges.color.g = 1.0;
     landmarkEdges.color.b = 0.0;
