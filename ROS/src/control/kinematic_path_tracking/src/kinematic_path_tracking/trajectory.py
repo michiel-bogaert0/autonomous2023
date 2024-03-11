@@ -148,12 +148,20 @@ class Trajectory:
         if len(self.path_blf) == 0:
             return 0, 0
 
-        # Only calculate closest index as index of point with smallest distance to current position if working in trakdrive/autocross
-        self.current_position_index = (
-            np.argmin(np.sum((self.path_blf - [0, 0]) ** 2, axis=1))
-            if self.change_index
-            else self.closest_index
-        )
+        if self.change_index:
+            self.current_position_index = np.argmin(
+                np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
+            )
+
+        else:
+            distances = np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
+            distances = np.where(
+                abs(np.arange(len(distances)) - self.closest_index) < 20,
+                distances,
+                distances + 2000,
+            )  # Add large weight to distances outside of the 20 closest points
+            self.current_position_index = np.argmin(distances)
+
         self.closest_index = self.current_position_index
 
     def calculate_target_point(self, minimal_distance):
@@ -172,18 +180,28 @@ class Trajectory:
         self.__preprocess_path__()
 
         if len(self.path_blf) == 0:
-            return 0, 0
+            return 0, 0, 0
+
+        distance = 0.0
 
         for _ in range(len(self.path_blf) + 1):
             target_x = self.path_blf[self.closest_index][0]
             target_y = self.path_blf[self.closest_index][1]
 
-            # Current position is [0,0] in base_link_frame
-            distance = (0 - target_x) ** 2 + (0 - target_y) ** 2
+            target_x_pp = self.path_blf[(self.closest_index + 1) % len(self.path_blf)][
+                0
+            ]
+            target_y_pp = self.path_blf[(self.closest_index + 1) % len(self.path_blf)][
+                1
+            ]
 
-            if distance > minimal_distance**2:
+            distance += np.sqrt(
+                (target_x_pp - target_x) ** 2 + (target_y_pp - target_y) ** 2
+            )
+
+            if distance > minimal_distance:
                 self.target = np.array([target_x, target_y])
-                return (self.target[0], self.target[1])
+                return (self.target[0], self.target[1], self.time_source)
 
             self.closest_index = (self.closest_index + 1) % len(self.path_blf)
 
@@ -201,4 +219,4 @@ class Trajectory:
                 pose_t = do_transform_pose(pose, self.trans)
 
                 self.target = np.array([pose_t.pose.position.x, pose_t.pose.position.y])
-                return (self.target[0], self.target[1])
+                return (self.target[0], self.target[1], self.time_source)
