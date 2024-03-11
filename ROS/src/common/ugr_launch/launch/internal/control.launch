@@ -1,0 +1,28 @@
+<launch>
+
+  <!-- Only put nodes here that are related to processing inside control -->
+  <!-- There should be NO hardware dependencies! -->
+
+  <!-- Pure Pursuit -->
+  <include file="$(find kinematic_path_tracking)/launch/pure_pursuit.launch" pass_all_args="true">
+  </include>
+
+  <!-- Front wheel feedback -->
+  <include file="$(find kinematic_path_tracking)/launch/front_wheel_feedback.launch" pass_all_args="true">
+  </include>
+  
+  <!-- MPC -->
+  <include file="$(find mpc)/launch/mpc.launch" pass_all_args="true">
+  </include>
+
+  <!-- Path_publisher -->
+  <node name="path_publisher" pkg="slam_controller" output="screen" type="path_publisher.py">
+    <remap from="/output/path" to="/pathplanning/poses" />
+  </node>
+
+  <!-- Pathplanning -->
+  <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true" />
+
+  <!-- Boundary Estimation -->
+  <include file="$(find boundary_estimation)/launch/boundary_estimation.launch" pass_all_args="true" />
+</launch>

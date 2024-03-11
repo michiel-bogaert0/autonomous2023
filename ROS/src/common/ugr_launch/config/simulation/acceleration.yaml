@@ -1,0 +1,33 @@
+slam_controller:
+  node_management:
+    always:
+
+      # SLAM
+      - slam_mcl
+      - loopclosure
+      - map_publisher
+
+      # Control
+      - MPC_tracking_control
+      - path_publisher
+      
+slam_mcl:
+  path_to_map: "/ugr/car/map/global"
+loopclosure:
+  finishpoint: [100, 0, 0]
+map_publisher:
+  map_pkg: "slam_simulator"
+  map: "/maps/chicane_sim.yaml"
+speed:
+  target: 10.0
+pure_pursuit:
+  change_index: False
+  minimal_distance: 3
+  world_frame: "ugr/map"
+mpc:
+  change_index: True
+  minimal_distance: 3
+  world_frame: "ugr/map"
+path_publisher:
+  package_path: "slam_controller"
+  path: "/paths/chicane_sim.yaml"
