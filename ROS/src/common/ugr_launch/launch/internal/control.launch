@@ -16,9 +16,7 @@
   </include>
 
   <!-- Path_publisher -->
-  <node name="path_publisher" pkg="slam_controller" output="screen" type="path_publisher.py">
-    <remap from="/output/path" to="/pathplanning/poses" />
-  </node>
+  <include file="$(find path_publisher)/launch/path_publisher.launch" pass_all_args="true" />
 
   <!-- Pathplanning -->
   <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true" />

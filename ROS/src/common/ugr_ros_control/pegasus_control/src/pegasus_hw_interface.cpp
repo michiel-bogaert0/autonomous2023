@@ -120,9 +120,8 @@ void PegasusHWInterface::write(ros::Duration& elapsed_time)
   {
     publish_steering_msg(joint_position_command_[steering_joint_id]);
 
-    // here torque control can be added by giving different commands to the left and right wheels
     publish_vel_msg(joint_velocity_command_[drive_joint_id], 1);
-    publish_vel_msg(joint_velocity_command_[drive_joint_id], 2);
+    publish_vel_msg(-joint_velocity_command_[drive_joint_id], 2);
   }
   else
   {
@@ -223,7 +222,7 @@ void PegasusHWInterface::handle_vel_msg(const can_msgs::Frame::ConstPtr& msg, ui
   twist_msg.header.stamp = ros::Time::now();
   twist_msg.twist = geometry_msgs::TwistWithCovariance();
 
-  // TODO use actual covariance measurements (first we need data to estimate these)
+  // TODO Use actual covariance measurements (first we need data to estimate these)
   twist_msg.twist.covariance = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
