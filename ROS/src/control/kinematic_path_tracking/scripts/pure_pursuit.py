@@ -10,14 +10,6 @@ class PurePursuit(KinematicTrackingNode):
     def __init__(self):
         super().__init__("pure_pursuit_control")
 
-        # For visualization
-        self.vis_pub = super().AddPublisher(
-            "/output/target_point", PointStamped, queue_size=10  # warning otherwise
-        )
-
-        # Start!
-        self.start_sender()
-
     def doConfigure(self):
         super().doConfigure()
 

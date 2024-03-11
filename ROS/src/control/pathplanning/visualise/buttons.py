@@ -45,6 +45,21 @@ class Buttons:
         )
         self.placeConesButton.setFixedSize(250, 30)  # Set the size of the button
         layout.addWidget(self.placeConesButton)
+        self.enablePath = QtW.QPushButton("enable/disable paths", self.widget)
+        self.enablePath.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(self.enablePath)
+        self.enableSmoothedPath = QtW.QPushButton(
+            "enable/disable smoothed path", self.widget
+        )
+        self.enableSmoothedPath.setFixedSize(250, 30)  # Set the size of the button
+        layout.addWidget(self.enableSmoothedPath)
+        self.enableBoundaryEstimation = QtW.QPushButton(
+            "enable/disable boundary_estimation", self.widget
+        )
+        self.enableBoundaryEstimation.setFixedSize(
+            250, 30
+        )  # Set the size of the button
+        layout.addWidget(self.enableBoundaryEstimation)
 
         # Connect the button's clicked signal to a slot
         self.loopButton.clicked.connect(self.close_loop_clicked)
@@ -55,6 +70,11 @@ class Buttons:
         self.placeConesButton.clicked.connect(self.place_cones_clicked)
         self.debugCenterPointsButton.clicked.connect(self.debug_center_points_clicked)
         self.debugBadPointsButton.clicked.connect(self.debug_bad_points_clicked)
+        self.enablePath.clicked.connect(self.enable_path_clicked)
+        self.enableSmoothedPath.clicked.connect(self.enable_smoothed_path_clicked)
+        self.enableBoundaryEstimation.clicked.connect(
+            self.enable_boundary_estimation_clicked
+        )
 
     def close_loop_clicked(self):
         self.widget.is_closed = not self.widget.is_closed
@@ -103,13 +123,13 @@ class Buttons:
             self.widget.selected_yellow_cones.append(cone)
         for cone in self.widget.blue_cones:
             self.widget.selected_blue_cones.append(cone)
-        self.widget.empty_pathplanning_input()
+        self.widget.publish_local_map()
         self.widget.update()
 
     def deselect_all_clicked(self):
         self.widget.selected_blue_cones = []
         self.widget.selected_yellow_cones = []
-        self.widget.empty_pathplanning_input()
+        self.widget.publish_local_map()
         self.widget.update()
 
     def place_cones_clicked(self):
@@ -118,6 +138,30 @@ class Buttons:
             self.placeConesButton.setStyleSheet("background-color: green")
         else:
             self.placeConesButton.setStyleSheet("background-color: red")
+
+    def enable_path_clicked(self):
+        self.widget.paths_on = not self.widget.paths_on
+        if self.widget.paths_on:
+            self.enablePath.setStyleSheet("background-color: green")
+        else:
+            self.enablePath.setStyleSheet("background-color: red")
+        self.widget.update()
+
+    def enable_smoothed_path_clicked(self):
+        self.widget.smoothed_path_on = not self.widget.smoothed_path_on
+        if self.widget.smoothed_path_on:
+            self.enableSmoothedPath.setStyleSheet("background-color: green")
+        else:
+            self.enableSmoothedPath.setStyleSheet("background-color: red")
+        self.widget.update()
+
+    def enable_boundary_estimation_clicked(self):
+        self.widget.boundary_estimation_on = not self.widget.boundary_estimation_on
+        if self.widget.boundary_estimation_on:
+            self.enableBoundaryEstimation.setStyleSheet("background-color: green")
+        else:
+            self.enableBoundaryEstimation.setStyleSheet("background-color: red")
+        self.widget.update()
 
     def set_buttons(self):
         if self.widget.is_closed:
@@ -144,3 +188,15 @@ class Buttons:
             self.placeConesButton.setStyleSheet("background-color: green")
         else:
             self.placeConesButton.setStyleSheet("background-color: red")
+        if self.widget.paths_on:
+            self.enablePath.setStyleSheet("background-color: green")
+        else:
+            self.enablePath.setStyleSheet("background-color: red")
+        if self.widget.smoothed_path_on:
+            self.enableSmoothedPath.setStyleSheet("background-color: green")
+        else:
+            self.enableSmoothedPath.setStyleSheet("background-color: red")
+        if self.widget.boundary_estimation_on:
+            self.enableBoundaryEstimation.setStyleSheet("background-color: green")
+        else:
+            self.enableBoundaryEstimation.setStyleSheet("background-color: red")
