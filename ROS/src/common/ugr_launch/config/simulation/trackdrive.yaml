@@ -1,0 +1,34 @@
+slam_controller:
+  node_management:
+    exploration:
+      # SLAM
+      - fastslam
+
+    racing:
+
+      # SLAM
+      - slam_mcl
+
+    always:
+      # SLAM
+      - loopclosure
+
+      # Control
+      - front_wheel_feedback_control
+      - pathplanning
+
+slam_mcl:
+  path_to_map: "/ugr/car/map/fastslam/global"
+loopclosure:
+  finishpoint: [0, 0, 0]
+speed:
+  target: 2.0
+  target_racing: 10.0
+pure_pursuit:
+  change_index: True
+  minimal_distance: 1.2
+  world_frame: "ugr/map"
+mpc:
+  change_index: True
+  minimal_distance: 1.2
+  world_frame: "ugr/map"

@@ -1,0 +1,57 @@
+# ugr_ros_control Settings -----------------------
+# Settings for ros_control control loop
+generic_hw_control_loop:
+  loop_hz: 300
+  cycle_time_error_threshold: 0.01
+
+# Settings for ros_control hardware interface
+hardware_interface:
+   drive_joint: axis0
+   drive_joint: axis1
+   steering_joint: axis_steering
+   joints:
+      - axis0
+      - axis1
+      - axis_steering
+   joints_config:
+      axis0:
+         interfaces:
+            - velocity
+            - effort
+      axis1:
+         interfaces:
+            - velocity
+            - effort
+      axis_steering:
+         interfaces:
+            - position
+
+# Publish all joint states ----------------------------------
+# Creates the /joint_states topic necessary in ROS
+joint_state_controller:
+   type:         joint_state_controller/JointStateController
+   publish_rate: 50
+
+# Joint position controller for steering
+steering_position_controller:
+   type: position_controllers/JointPositionController
+   joint: axis_steering
+
+# Velocity controller for drive
+drive_velocity_controller:
+   type: velocity_controllers/JointVelocityController
+   joint: axis0
+
+drive_effort_controller:
+   type: effort_controllers/JointEffortController
+   joint: axis0
+   pid: {p: 10.0, i: 0.01, d: 0.0}
+
+drive_velocity_controller:
+   type: velocity_controllers/JointVelocityController
+   joint: axis1
+
+drive_effort_controller:
+   type: effort_controllers/JointEffor ctController
+   joint: axis1
+   pid: {p: 10.0, i: 0.01, d: 0.0}
