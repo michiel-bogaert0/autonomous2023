@@ -5,10 +5,12 @@ import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import PointStamped
 from nav_msgs.msg import Odometry, Path
-from node_fixture.fixture import DiagnosticArray, ROSNode
+from node_fixture.fixture import DiagnosticArray, ROSNode, StateMachineScopeEnum
 from node_fixture.managed_node import ManagedNode
 from std_msgs.msg import Float64
+from ugr_msgs.msg import State
 
+from .longitudinal_control import LongitudinalControl
 from .trajectory import Trajectory
 
 
@@ -48,6 +50,10 @@ class KinematicTrackingNode(ManagedNode):
             "/output/target_point", PointStamped, queue_size=10  # warning otherwise
         )
 
+        self.state_sub = super().AddSubscriber(
+            "/state/slam", State, self.handle_state_change
+        )
+
         self.spin()
 
     def doConfigure(self):
@@ -66,12 +72,23 @@ class KinematicTrackingNode(ManagedNode):
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
+        self.slam_state = None
+
     def doActivate(self):
         # Do this here because some parameters are set in the mission yaml files
         self.trajectory = Trajectory(self.tf_buffer)
 
+        self.longitudinal_control = LongitudinalControl(self.publish_rate)
+
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
+
+    def handle_state_change(self, state: State):
+        """
+        Handles state changes, only for SLAM state
+        """
+        if state.scope == StateMachineScopeEnum.SLAM:
+            self.slam_state = state.cur_state
 
     def getPathplanningUpdate(self, msg: Path):
         """
@@ -121,7 +138,21 @@ class KinematicTrackingNode(ManagedNode):
         try:
             # First fetch new paths, then process current path
             self.doUpdate()
+
             self.__process__()
+
+            self.velocity_cmd.data = (
+                self.longitudinal_control.handle_longitudinal_control(
+                    self.trajectory, self.slam_state, self.actual_speed
+                )
+            )
+
+            # Brake when no path has been found!
+            if len(self.trajectory.path_blf) == 0:
+                self.velocity_cmd.data = 0
+
+            self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
+            self.velocity_pub.publish(self.velocity_cmd)
 
         except Exception as e:
             rospy.logwarn(f"{rospy.get_name()} has caught an exception: {e}")

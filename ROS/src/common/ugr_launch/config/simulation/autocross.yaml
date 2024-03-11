@@ -18,7 +18,11 @@ loopclosure:
   finishpoint: [0, 0, 0]
 speed:
   target: 2.0
+  LC_adaptive_velocity: False
 pure_pursuit:
+  change_index: True
+  world_frame: "ugr/map"
+front_wheel_feedback:
   change_index: True
   world_frame: "ugr/map"
 mpc:

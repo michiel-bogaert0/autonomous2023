@@ -20,6 +20,7 @@ map_publisher:
   map: "/maps/skidpad.yaml"
 speed:
   target: 10.0
+  LC_adaptive_velocity: False
 front_wheel_feedback:
   change_index: False
   world_frame: "ugr/map"
@@ -30,5 +31,5 @@ mpc:
   change_index: False
   world_frame: "ugr/map"
 path_publisher:
-  package_path: "slam_controller"
+  package_path: "path_publisher"
   path: "/paths/skidpad.yaml"
