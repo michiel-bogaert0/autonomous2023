@@ -14,8 +14,9 @@
 
 #pragma once
 
-#include "pybind11/pybind11.h"
 #include "ros/ros.h"
+
+#include "pybind11/pybind11.h"
 
 namespace pybind11 {
 namespace detail {

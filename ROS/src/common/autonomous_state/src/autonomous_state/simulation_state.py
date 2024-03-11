@@ -28,12 +28,13 @@ class SimulationState(CarState):
         self.ebs_state = CarStateEnum.ON
 
     def update(self, state: AutonomousStatesEnum):
+        
         if (
             state == AutonomousStatesEnum.ASREADY
             and self.as_state != AutonomousStatesEnum.ASREADY
         ):
             self.start_t = rospy.Time.now().to_sec()
-
+            
         self.as_state = state
 
     def activate_EBS(self):

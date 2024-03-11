@@ -7,96 +7,98 @@
 #define _MEMORYPORT_H_
 
 #if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable : 4996)
+	#pragma warning(push)
+	#pragma warning(disable:4996)
 #endif
 
 #include <string>
 
 #if defined(_MSC_VER)
-#pragma warning(pop)
+	#pragma warning(pop)
 #endif
 
 #include "int.h"
-#include "nocopy.h"
 #include "port.h"
+#include "nocopy.h"
 
-namespace vn
-{
-namespace util
-{
+namespace vn {
+namespace util {
 
 /// \brief Useful test class for taking place where \ref vn::common::ISimplePort may be
 ///     used.
 class MemoryPort : public xplat::IPort, private NoCopy
 {
-  typedef void (*DataWrittenHandler)(void * userData, const char * rawData, size_t length);
+	typedef void(*DataWrittenHandler)(void* userData, const char* rawData, size_t length);
 
-  // Constructors ///////////////////////////////////////////////////////////
-
-public:
-  /// \brief Creates a new \ref MemoryPort.
-  MemoryPort();
-
-  ~MemoryPort();
-
-  // Public Methods /////////////////////////////////////////////////////////
+	// Constructors ///////////////////////////////////////////////////////////
 
 public:
-  virtual void open();
 
-  virtual void close();
+	/// \brief Creates a new \ref MemoryPort.
+	MemoryPort();
 
-  virtual bool isOpen();
+	~MemoryPort();
 
-  virtual void write(const char data[], size_t length);
+	// Public Methods /////////////////////////////////////////////////////////
 
-  virtual void read(char dataBuffer[], size_t numOfBytesToRead, size_t & numOfBytesActuallyRead);
+public:
 
-  virtual void registerDataReceivedHandler(void * userData, DataReceivedHandler handler);
+	virtual void open();
 
-  virtual void unregisterDataReceivedHandler();
+	virtual void close();
 
-  /// \brief Registers a callback method for notification when new data is
-  /// written.
-  ///
-  /// \param[in] userData Pointer to user data, which will be provided to the
-  ///     callback method.
-  /// \param[in] handler The callback method.
-  void registerDataWrittenHandler(void * userData, DataWrittenHandler handler);
+	virtual bool isOpen();
 
-  /// \brief Unregisters the registered callback method.
-  void unregisterDataWrittenHandler();
+	virtual void write(const char data[], size_t length);
 
-  /// \brief Sends data to the \ref MemoryPort which can then be read by
-  ///     \ref read.
-  ///
-  /// \param[in] data Data buffer containing the data.
-  /// \param[in] length The number of data bytes.
-  void SendDataBackDoor(const uint8_t data[], size_t length);
+	virtual void read(char dataBuffer[], size_t numOfBytesToRead, size_t &numOfBytesActuallyRead);
 
-  /// \brief Sends data to the \ref MemoryPort which can then be read by
-  ///     \ref read.
-  ///
-  /// \param[in] data Data buffer containing the data.
-  /// \param[in] length The number of data bytes.
-  void SendDataBackDoor(const char data[], size_t length);
+	virtual void registerDataReceivedHandler(void* userData, DataReceivedHandler handler);
 
-  /// \brief Sends data to the \ref MemoryPort which can then be read by
-  ///     \ref read.
-  ///
-  /// \param[in] data The data to send.
-  void SendDataBackDoor(const std::string data);
+	virtual void unregisterDataReceivedHandler();
 
-  // Private Members ////////////////////////////////////////////////////////
+	/// \brief Registers a callback method for notification when new data is
+	/// written.
+	///
+	/// \param[in] userData Pointer to user data, which will be provided to the
+	///     callback method.
+	/// \param[in] handler The callback method.
+	void registerDataWrittenHandler(void* userData, DataWrittenHandler handler);
+
+	/// \brief Unregisters the registered callback method.
+	void unregisterDataWrittenHandler();
+
+	/// \brief Sends data to the \ref MemoryPort which can then be read by
+	///     \ref read.
+	///
+	/// \param[in] data Data buffer containing the data.
+	/// \param[in] length The number of data bytes.
+	void SendDataBackDoor(const uint8_t data[], size_t length);
+
+	/// \brief Sends data to the \ref MemoryPort which can then be read by
+	///     \ref read.
+	///
+	/// \param[in] data Data buffer containing the data.
+	/// \param[in] length The number of data bytes.
+	void SendDataBackDoor(const char data[], size_t length);
+
+	/// \brief Sends data to the \ref MemoryPort which can then be read by
+	///     \ref read.
+	///
+	/// \param[in] data The data to send.
+	void SendDataBackDoor(const std::string data);
+
+	// Private Members ////////////////////////////////////////////////////////
 
 private:
-  // Contains internal data, mainly stuff that is required for support.
-  struct Impl;
-  Impl * _pi;
+
+	// Contains internal data, mainly stuff that is required for support.
+	struct Impl;
+	Impl *_pi;
+
 };
 
-}  // namespace util
-}  // namespace vn
+}
+}
 
 #endif

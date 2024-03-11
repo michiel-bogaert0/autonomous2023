@@ -693,3 +693,4 @@ TF2SIMD_FORCE_INLINE	void	Matrix3x3::deSerializeDouble(const struct	Matrix3x3Dou
 
 }
 #endif //TF2_MATRIX3x3_H
+

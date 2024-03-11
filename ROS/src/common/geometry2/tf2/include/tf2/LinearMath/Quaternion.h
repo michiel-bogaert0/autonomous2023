@@ -474,3 +474,4 @@ shortestArcQuatNormalize2(Vector3& v0,Vector3& v1)
 
 
 
+
