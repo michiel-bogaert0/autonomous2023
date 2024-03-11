@@ -12,8 +12,8 @@ from node_fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from node_fixture.fixture import NodeManagingStatesEnum
 from node_fixture.node_manager import NodeManager
+from node_fixture.fixture import NodeManagingStatesEnum
 from pegasus_state import PegasusState
 from simulation_state import SimulationState
 from std_msgs.msg import Header
@@ -29,10 +29,10 @@ class AutonomousController(NodeManager):
         such as "simulation" or "pegasus". These models are the ones responsible for
         providing the data required to set the autonomous state.
         """
-
+        
         super().__init__("autonomous_state", NodeManagingStatesEnum.ACTIVE)
 
-        self.as_state = ""
+        self.as_state= ""
 
         rospy.Subscriber("/state", State, self.handle_external_state_change)
         rospy.Subscriber("/input/odom", Odometry, self.handle_odom)
@@ -64,14 +64,14 @@ class AutonomousController(NodeManager):
         # Setup
         while not self.configure_nodes():
             sleep(0.1)
-
+            
             if rospy.is_shutdown():
                 return
-
+            
         self.change_state(AutonomousStatesEnum.ASOFF)
         self.car.update(self.as_state)
 
-        self.spin()
+        self.spin()        
 
     def active(self):
         """
@@ -89,7 +89,7 @@ class AutonomousController(NodeManager):
         self.diagnostics_publisher.publish(
             create_diagnostic_message(
                 DiagnosticStatus.ERROR
-                if self.as_state == AutonomousStatesEnum.ASEMERGENCY
+                if self.as_state== AutonomousStatesEnum.ASEMERGENCY
                 else DiagnosticStatus.OK,
                 "[GNRL] STATE: AS state",
                 str(self.state),
@@ -100,15 +100,12 @@ class AutonomousController(NodeManager):
                 DiagnosticStatus.OK, "[GNRL] STATE: Car state", str(ccs)
             )
         )
-
+        
         # Monitor the nodes and enable EBS if required
-        # ?? Not sure if the second part (after the 'and') is required, but it's there in the original code
-        # ?? Basically disables the monitoring causing an emergency when the car is in ASOFF, so no where near ready to actually drive
-        # ?? Must check when integrating on real car.
-        if self.get_health_level() == DiagnosticStatus.ERROR and not (
-            self.as_state == AutonomousStatesEnum.ASOFF
-            or self.as_state == AutonomousStatesEnum.ASFINISHED
-        ):
+        #?? Not sure if the second part (after the 'and') is required, but it's there in the original code
+        #?? Basically disables the monitoring causing an emergency when the car is in ASOFF, so no where near ready to actually drive
+        #?? Must check when integrating on real car.
+        if self.get_health_level() == DiagnosticStatus.ERROR and not (self.as_state == AutonomousStatesEnum.ASOFF or self.as_state == AutonomousStatesEnum.ASFINISHED):
             self.car.activate_EBS()
 
         if ccs["EBS"] == CarStateEnum.ACTIVATED:
@@ -118,7 +115,7 @@ class AutonomousController(NodeManager):
             # ! This line is here to prevent rapid toggles between ASFINISHED and ASEMERGENCY as a result of self.vehicle_stopped rapidly switching
             # ! In a normal FS car this isn't a problem because you have to apply both EBS and the brakes in order to get the vehicle to a "standstill" state
             # ! But for pegasus (and currently simulation also) we can't really "apply the brakes"
-            elif self.as_state != AutonomousStatesEnum.ASFINISHED:
+            elif self.as_state!= AutonomousStatesEnum.ASFINISHED:
                 self.change_state(AutonomousStatesEnum.ASEMERGENCY)
 
         elif ccs["EBS"] == CarStateEnum.ON:
@@ -139,16 +136,13 @@ class AutonomousController(NodeManager):
                     self.change_state(AutonomousStatesEnum.ASDRIVE)
 
                 else:
-                    if (
-                        ccs["ASB"] == CarStateEnum.ACTIVATED
-                        and self.get_health_level() == DiagnosticStatus.OK
-                    ):
+                    if ccs["ASB"] == CarStateEnum.ACTIVATED and self.get_health_level() == DiagnosticStatus.OK:
                         self.change_state(AutonomousStatesEnum.ASREADY)
                     else:
                         self.change_state(AutonomousStatesEnum.ASOFF)
             else:
                 self.change_state(AutonomousStatesEnum.ASOFF)
-
+                
         self.car.update(self.as_state)
 
     def handle_odom(self, odom: Odometry):
@@ -199,7 +193,7 @@ class AutonomousController(NodeManager):
                 cur_state=new_state,
             )
         )
-        self.as_state = new_state
+        self.as_state= new_state
 
     def handle_external_state_change(self, state: State):
         """

@@ -32,31 +32,37 @@
 #ifndef TF2_TRANSFORM_STORAGE_H
 #define TF2_TRANSFORM_STORAGE_H
 
-#include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Vector3.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 #include <ros/message_forward.h>
 #include <ros/time.h>
 #include <ros/types.h>
 
-namespace geometry_msgs {
+namespace geometry_msgs
+{
 ROS_DECLARE_MESSAGE(TransformStamped)
 }
 
-namespace tf2 {
+namespace tf2
+{
 
 typedef uint32_t CompactFrameID;
 
 /** \brief Storage for transforms and their parent */
-class TransformStorage {
+class TransformStorage
+{
 public:
   TransformStorage();
-  TransformStorage(const geometry_msgs::TransformStamped &data,
-                   CompactFrameID frame_id, CompactFrameID child_frame_id);
+  TransformStorage(const geometry_msgs::TransformStamped& data, CompactFrameID frame_id, CompactFrameID child_frame_id);
 
-  TransformStorage(const TransformStorage &rhs) { *this = rhs; }
+  TransformStorage(const TransformStorage& rhs)
+  {
+    *this = rhs;
+  }
 
-  TransformStorage &operator=(const TransformStorage &rhs) {
+  TransformStorage& operator=(const TransformStorage& rhs)
+  {
 #if 01
     rotation_ = rhs.rotation_;
     translation_ = rhs.translation_;
@@ -74,6 +80,7 @@ public:
   CompactFrameID child_frame_id_;
 };
 
-} // namespace tf2
+}
 
 #endif // TF2_TRANSFORM_STORAGE_H
+

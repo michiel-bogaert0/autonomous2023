@@ -1,105 +1,68 @@
-clear clc format long g clf
+clear
+clc
+format long g
+clf
 
-    while 1 sampled_data = csvread('~/ros/current/ws_acme/src/iiwa_trajectory_data/recorded_trajectory_2.csv', 1, 0);
-% assign columns into seperate variable names - this is made quickly using the % header names and find -
-    replace command i = 1;
-timestamp = sampled_data( :, i);
-i = i + 1;
-t_delta = diff(timestamp);
-
-j1_pos_desired = sampled_data( :, i);
-i = i + 1;
-j1_vel_desired = sampled_data( :, i);
-i = i + 1;
-j1_pos = sampled_data( :, i);
-i = i + 1;
-j1_vel = sampled_data( :, i);
-i = i + 1;
-j1_vel_delta = diff(j1_vel);
-j1_accel = [0; j1_vel_delta./ t_delta];
-% add a zero in front to make same size as other data structures
-
-        j2_pos_desired = sampled_data(
-    :, i);
-i = i + 1;
-j2_vel_desired = sampled_data( :, i);
-i = i + 1;
-j2_pos = sampled_data( :, i);
-i = i + 1;
-j2_vel = sampled_data( :, i);
-i = i + 1;
-j2_vel_delta = diff(j2_vel);
-j2_accel = [0; j2_vel_delta./ t_delta];
-% add a zero in front to make same size as other data structures
-
-        j3_pos_desired = sampled_data(
-    :, i);
-i = i + 1;
-j3_vel_desired = sampled_data( :, i);
-i = i + 1;
-j3_pos = sampled_data( :, i);
-i = i + 1;
-j3_vel = sampled_data( :, i);
-i = i + 1;
-j3_vel_delta = diff(j3_vel);
-j3_accel = [0; j3_vel_delta./ t_delta];
-% add a zero in front to make same size as other data structures
-
-        j4_pos_desired = sampled_data(
-    :, i);
-i = i + 1;
-j4_vel_desired = sampled_data( :, i);
-i = i + 1;
-j4_pos = sampled_data( :, i);
-i = i + 1;
-j4_vel = sampled_data( :, i);
-i = i + 1;
-j4_vel_delta = diff(j4_vel);
-j4_accel = [0; j4_vel_delta./ t_delta];
-% add a zero in front to make same size as other data structures
-
-        j5_pos_desired = sampled_data(
-    :, i);
-i = i + 1;
-j5_vel_desired = sampled_data( :, i);
-i = i + 1;
-j5_pos = sampled_data( :, i);
-i = i + 1;
-j5_vel = sampled_data( :, i);
-i = i + 1;
-j5_vel_delta = diff(j5_vel);
-j5_accel = [0; j5_vel_delta./ t_delta];
-% add a zero in front to make same size as other data structures
-
-        j6_pos_desired = sampled_data(
-    :, i);
-i = i + 1;
-j6_vel_desired = sampled_data( :, i);
-i = i + 1;
-j6_pos = sampled_data( :, i);
-i = i + 1;
-j6_vel = sampled_data( :, i);
-i = i + 1;
-j6_vel_delta = diff(j6_vel);
-j6_accel = [0; j6_vel_delta./ t_delta];
-% add a zero in front to make same size as other data structures
-
-        j7_pos_desired = sampled_data(
-    :, i);
-i = i + 1;
-j7_vel_desired = sampled_data( :, i);
-i = i + 1;
-j7_pos = sampled_data( :, i);
-i = i + 1;
-j7_vel = sampled_data( :, i);
-i = i + 1;
-j7_vel_delta = diff(j7_vel);
-j7_accel = [0; j7_vel_delta./ t_delta];
-% add a zero in front to make same size as other data structures
-
-        time_start_end = [timestamp(1, 1) timestamp(end, 1)];
-
-if (0)  %plot position actual
+while 1
+    sampled_data = csvread('~/ros/current/ws_acme/src/iiwa_trajectory_data/recorded_trajectory_2.csv',1,0);
+    %assign columns into seperate variable names - this is made quickly using the
+    %header names and find-replace command
+    i=1;
+    timestamp=sampled_data(:,i);i=i+1;
+    t_delta=diff(timestamp);
+    
+    j1_pos_desired=sampled_data(:,i);i=i+1;
+    j1_vel_desired=sampled_data(:,i);i=i+1;
+    j1_pos=sampled_data(:,i);i=i+1;
+    j1_vel=sampled_data(:,i);i=i+1;
+    j1_vel_delta=diff(j1_vel);
+    j1_accel=[0; j1_vel_delta ./ t_delta]; % add a zero in front to make same size as other data structures
+    
+    j2_pos_desired=sampled_data(:,i);i=i+1;
+    j2_vel_desired=sampled_data(:,i);i=i+1;
+    j2_pos=sampled_data(:,i);i=i+1;
+    j2_vel=sampled_data(:,i);i=i+1;
+    j2_vel_delta=diff(j2_vel);
+    j2_accel=[0; j2_vel_delta ./ t_delta]; % add a zero in front to make same size as other data structures
+    
+    j3_pos_desired=sampled_data(:,i);i=i+1;
+    j3_vel_desired=sampled_data(:,i);i=i+1;
+    j3_pos=sampled_data(:,i);i=i+1;
+    j3_vel=sampled_data(:,i);i=i+1;
+    j3_vel_delta=diff(j3_vel);
+    j3_accel=[0; j3_vel_delta ./ t_delta]; % add a zero in front to make same size as other data structures
+    
+    j4_pos_desired=sampled_data(:,i);i=i+1;
+    j4_vel_desired=sampled_data(:,i);i=i+1;
+    j4_pos=sampled_data(:,i);i=i+1;
+    j4_vel=sampled_data(:,i);i=i+1;
+    j4_vel_delta=diff(j4_vel);
+    j4_accel=[0; j4_vel_delta ./ t_delta]; % add a zero in front to make same size as other data structures
+    
+    j5_pos_desired=sampled_data(:,i);i=i+1;
+    j5_vel_desired=sampled_data(:,i);i=i+1;
+    j5_pos=sampled_data(:,i);i=i+1;
+    j5_vel=sampled_data(:,i);i=i+1;
+    j5_vel_delta=diff(j5_vel);
+    j5_accel=[0; j5_vel_delta ./ t_delta]; % add a zero in front to make same size as other data structures
+    
+    j6_pos_desired=sampled_data(:,i);i=i+1;
+    j6_vel_desired=sampled_data(:,i);i=i+1;
+    j6_pos=sampled_data(:,i);i=i+1;
+    j6_vel=sampled_data(:,i);i=i+1;
+    j6_vel_delta=diff(j6_vel);
+    j6_accel=[0; j6_vel_delta ./ t_delta]; % add a zero in front to make same size as other data structures
+    
+    j7_pos_desired=sampled_data(:,i);i=i+1;
+    j7_vel_desired=sampled_data(:,i);i=i+1;
+    j7_pos=sampled_data(:,i);i=i+1;
+    j7_vel=sampled_data(:,i);i=i+1;
+    j7_vel_delta=diff(j7_vel);
+    j7_accel=[0; j7_vel_delta ./ t_delta]; % add a zero in front to make same size as other data structures
+    
+    time_start_end = [timestamp(1,1) timestamp(end,1)];
+    
+    if (0)  %plot position actual
         plot(...
              timestamp, j1_pos,'r', ...
              timestamp, j2_pos,'y', ...

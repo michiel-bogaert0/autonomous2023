@@ -2,19 +2,16 @@
 #define _VNPROTOCOL_UART_PACKETFINDER_H_
 
 #include "nocopy.h"
-#include "packet.h"
 #include "vntime.h"
+#include "packet.h"
 
 #if PYTHON
-#include "vn/util/boostpython.h"
+	#include "vn/util/boostpython.h"
 #endif
 
-namespace vn
-{
-namespace protocol
-{
-namespace uart
-{
+namespace vn {
+namespace protocol {
+namespace uart {
 
 /// \brief Helps with management of communication with a sensor using the UART
 /// protocol.
@@ -27,81 +24,80 @@ namespace uart
 /// incremented for each byte received.
 class vn_proglib_DLLEXPORT PacketFinder : private util::NoCopy
 {
+
 public:
-  /// \brief Defines the signature for a method that can receive
-  /// notifications of new valid packets found.
-  ///
-  /// \param[in] userData Pointer to user data that was initially supplied
-  ///     when the callback was registered via registerPossiblePacketFoundHandler.
-  /// \param[in] possiblePacket The possible packet that was found.
-  /// \param[in] packetStartRunningIndex The running index of the start of
-  ///     the packet.
-  /// \param[in] timestamp The timestamp the packet was found.
-  typedef void (*ValidPacketFoundHandler)(
-    void * userData, Packet & packet, size_t runningIndexOfPacketStart, xplat::TimeStamp timestamp);
 
-  /// \brief Creates a new /ref PacketFinder with internal buffers to store
-  /// incoming bytes and alert when valid packets are received.
-  PacketFinder();
+	/// \brief Defines the signature for a method that can receive
+	/// notifications of new valid packets found.
+	///
+	/// \param[in] userData Pointer to user data that was initially supplied
+	///     when the callback was registered via registerPossiblePacketFoundHandler.
+	/// \param[in] possiblePacket The possible packet that was found.
+	/// \param[in] packetStartRunningIndex The running index of the start of
+	///     the packet.
+	/// \param[in] timestamp The timestamp the packet was found.
+	typedef void (*ValidPacketFoundHandler)(void* userData, Packet& packet, size_t runningIndexOfPacketStart, xplat::TimeStamp timestamp);
 
-  /// \brief Creates a new /ref PacketFinder with an internal buffer the size
-  /// specified.
-  ///
-  /// \param[in] internalReceiveBufferSize The number of bytes to make the
-  ///     internal buffer.
-  explicit PacketFinder(size_t internalReceiveBufferSize);
+	/// \brief Creates a new /ref PacketFinder with internal buffers to store
+	/// incoming bytes and alert when valid packets are received.
+	PacketFinder();
 
-  ~PacketFinder();
+	/// \brief Creates a new /ref PacketFinder with an internal buffer the size
+	/// specified.
+	///
+	/// \param[in] internalReceiveBufferSize The number of bytes to make the
+	///     internal buffer.
+	explicit PacketFinder(size_t internalReceiveBufferSize);
 
-  /// \brief Adds new data to the internal buffers and processes the received
-  /// data to determine if any new received packets are available.
-  ///
-  /// \param[in] data The data buffer containing the received data.
-  /// \param[in] length The number of bytes of data in the buffer.
-  void processReceivedData(char data[], size_t length);
-  void processReceivedData(char data[], size_t length, bool bootloaderFilter);
+	~PacketFinder();
 
-  /// \brief Adds new data to the internal buffers and processes the received
-  /// data to determine if any new received packets are available.
-  ///
-  /// \param[in] data The data buffer containing the received data.
-  /// \param[in] length The number of bytes of data in the buffer.
-  /// \param[in] timestamp The time when the data was received.
-  void processReceivedData(
-    char data[], size_t length, bool bootloaderFilter, xplat::TimeStamp timestamp);
+	/// \brief Adds new data to the internal buffers and processes the received
+	/// data to determine if any new received packets are available.
+	///
+	/// \param[in] data The data buffer containing the received data.
+	/// \param[in] length The number of bytes of data in the buffer.
+	void processReceivedData(char data[], size_t length);
+	void processReceivedData(char data[], size_t length, bool bootloaderFilter);
 
-#if PYTHON
+	/// \brief Adds new data to the internal buffers and processes the received
+	/// data to determine if any new received packets are available.
+	///
+	/// \param[in] data The data buffer containing the received data.
+	/// \param[in] length The number of bytes of data in the buffer.
+	/// \param[in] timestamp The time when the data was received.
+	void processReceivedData(char data[], size_t length, bool bootloaderFilter, xplat::TimeStamp timestamp);
 
-  void processReceivedData(boost::python::list data);
+	#if PYTHON
 
-#endif
+	void processReceivedData(boost::python::list data);
 
-  /// \brief Registers a callback method for notification when a new possible
-  /// packet is found.
-  ///
-  /// \param[in] userData Pointer to user data, which will be provided to the
-  ///     callback method.
-  /// \param[in] handler The callback method.
-  void registerPossiblePacketFoundHandler(void * userData, ValidPacketFoundHandler handler);
+	#endif
 
-  /// \brief Unregisters the registered callback method.
-  void unregisterPossiblePacketFoundHandler();
+	/// \brief Registers a callback method for notification when a new possible
+	/// packet is found.
+	///
+	/// \param[in] userData Pointer to user data, which will be provided to the
+	///     callback method.
+	/// \param[in] handler The callback method.
+	void registerPossiblePacketFoundHandler(void* userData, ValidPacketFoundHandler handler);
 
-#if PYTHON
+	/// \brief Unregisters the registered callback method.
+	void unregisterPossiblePacketFoundHandler();
 
-  boost::python::object * register_packet_found_handler(
-    /*boost::python::object* callable*/ PyObject * callable);
-  //void register_packet_found_handler(boost::python::object* callable);
+	#if PYTHON
 
-#endif
+	boost::python::object* register_packet_found_handler(/*boost::python::object* callable*/ PyObject* callable);
+	//void register_packet_found_handler(boost::python::object* callable);
+
+	#endif
 
 private:
-  struct Impl;
-  Impl * _pi;
+	struct Impl;
+	Impl *_pi;
 };
 
-}  // namespace uart
-}  // namespace protocol
-}  // namespace vn
+}
+}
+}
 
 #endif

@@ -1,11 +1,9 @@
 #include "vn/port.h"
 
-namespace vn
-{
-namespace xplat
-{
+namespace vn {
+namespace xplat {
 
-IPort::~IPort() {}
+IPort::~IPort() { }
 
-}  // namespace xplat
-}  // namespace vn
+}
+}

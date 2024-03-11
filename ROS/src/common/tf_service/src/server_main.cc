@@ -16,9 +16,10 @@
 #include <memory>
 #include <thread>
 
-#include "boost/program_options.hpp"
 #include "ros/ros.h"
 #include "tf_service/buffer_server.h"
+
+#include "boost/program_options.hpp"
 
 namespace po = boost::program_options;
 

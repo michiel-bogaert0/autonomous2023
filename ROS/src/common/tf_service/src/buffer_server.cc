@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "tf_service/buffer_server.h"
-
 #include <functional>
+
+#include "tf_service/buffer_server.h"
 
 #include "geometry_msgs/TransformStamped.h"
 #include "tf2_msgs/TF2Error.h"
+
 #include "tf_service/constants.h"
 
 namespace tf_service {

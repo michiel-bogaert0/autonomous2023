@@ -32,7 +32,9 @@
 
 #include <string>
 
-TEST(Stamped, assignment) {
+
+TEST(Stamped, assignment)
+{
   tf2::Stamped<std::string> first("foobar", ros::Time(0), "my_frame_id");
   tf2::Stamped<std::string> second("baz", ros::Time(0), "my_frame_id");
 
@@ -41,7 +43,8 @@ TEST(Stamped, assignment) {
   EXPECT_EQ(second, first);
 }
 
-TEST(Stamped, setData) {
+TEST(Stamped, setData)
+{
   tf2::Stamped<std::string> first("foobar", ros::Time(0), "my_frame_id");
   tf2::Stamped<std::string> second("baz", ros::Time(0), "my_frame_id");
 
@@ -50,21 +53,24 @@ TEST(Stamped, setData) {
   EXPECT_EQ(second, first);
 }
 
-TEST(Stamped, copy_constructor) {
+TEST(Stamped, copy_constructor)
+{
   tf2::Stamped<std::string> first("foobar", ros::Time(0), "my_frame_id");
   tf2::Stamped<std::string> second(first);
 
   EXPECT_EQ(second, first);
 }
 
-TEST(Stamped, default_constructor) {
+TEST(Stamped, default_constructor)
+{
   tf2::Stamped<std::string> first("foobar", ros::Time(0), "my_frame_id");
   tf2::Stamped<std::string> second;
 
   EXPECT_NE(second, first);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   testing::InitGoogleTest(&argc, argv);
   ros::Time::init();
   return RUN_ALL_TESTS();
