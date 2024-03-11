@@ -14,7 +14,7 @@ slam_controller:
       - loopclosure
 
       # Control
-      - front_wheel_feedback_control
+      - pure_pursuit_control
       - pathplanning
 
 slam_mcl:
@@ -24,9 +24,16 @@ loopclosure:
 speed:
   target: 2.0
   target_racing: 10.0
+  LC_adaptive_velocity: True
+  LC_max_acceleration: 2.0
+  LC_min: 3.0
+  LC_max: 15.0
 pure_pursuit:
   change_index: True
   minimal_distance: 1.2
+  world_frame: "ugr/map"
+front_wheel_feedback:
+  change_index: True
   world_frame: "ugr/map"
 mpc:
   change_index: True

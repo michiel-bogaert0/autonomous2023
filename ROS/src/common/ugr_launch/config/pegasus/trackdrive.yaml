@@ -24,9 +24,16 @@ loopclosure:
 speed:
   target: 1.0
   target_racing: 5.0
+  LC_adaptive_velocity: True
+  LC_max_acceleration: 0.5 # TO BE VERIFIED
+  LC_min: 1.0
+  LC_max: 4.0
 pure_pursuit:
   change_index: True
   minimal_distance: 1.2
+  world_frame: "ugr/map"
+front_wheel_feedback:
+  change_index: True
   world_frame: "ugr/map"
 mpc:
   change_index: True
