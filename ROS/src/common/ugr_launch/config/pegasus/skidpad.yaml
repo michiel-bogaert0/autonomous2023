@@ -1,7 +1,6 @@
 slam_controller:
   node_management:
     always:
-
       # SLAM
       - slam_mcl
       - loopclosure
@@ -10,7 +9,7 @@ slam_controller:
       # Control
       - front_wheel_feedback_control
       - path_publisher
-      
+
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
 loopclosure:
@@ -20,7 +19,11 @@ map_publisher:
   map: "/maps/skidpad.yaml"
 speed:
   target: 2.0
+  LC_adaptive_velocity: False
 pure_pursuit:
+  change_index: False
+  world_frame: "ugr/map"
+front_wheel_feedback:
   change_index: False
   world_frame: "ugr/map"
 mpc:
