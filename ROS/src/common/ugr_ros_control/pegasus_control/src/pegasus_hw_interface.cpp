@@ -235,7 +235,7 @@ void PegasusHWInterface::handle_vel_msg(const can_msgs::Frame::ConstPtr& msg, ui
 
   if (axis_id == 1)
   {
-    this->cur_velocity = vel_msg.vel_estimate * 2 * M_PI;  // rad/s
+    this->cur_velocity = vel_msg.vel_estimate * 2 * M_PI;
     vel_right_pub.publish(twist_msg);
   }
   else if (axis_id == 2)
