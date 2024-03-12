@@ -52,6 +52,6 @@ drive_velocity_controller:
    joint: axis1
 
 drive_effort_controller:
-   type: effort_controllers/JointEffor ctController
+   type: effort_controllers/JointEffortController
    joint: axis1
    pid: {p: 10.0, i: 0.01, d: 0.0}
