@@ -289,7 +289,7 @@ void PegasusHWInterface::publish_vel_msg(float vel, int axis)
 
   uint32_t can_id = axis << 5 | 0x00D;
 
-  boost::array<unsigned char, 8> converted_data;  // Different type needed for can msg
+  boost::array<unsigned char, 8> converted_data;  // Different type needed for can msg.
   for (size_t i = 0; i < converted_data.size(); i++)
   {
     converted_data[i] = encoded_data[i];

@@ -207,7 +207,7 @@ void Gen4HWInterface::publish_vel_msg(float axis0, float axis1)
   axis0 = axis0 / (2 * M_PI) * 60;
   axis1 = axis1 / (2 * M_PI) * 60;
 
-  // can_id for axis0 and axis1: look at .dbc to cmd_target_speed or cmd_target_position (or cmd_target_current)
+  // can_id for axis0 and axis1: look at .dbc to cmd_target_speed or cmd_target_position (or cmd_target_current).
   // todo add the id's and send motor commands, both commands in one or seperate?
 
   // make ros can frame and send on can
