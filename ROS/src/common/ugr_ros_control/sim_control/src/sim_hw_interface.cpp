@@ -85,7 +85,6 @@ void SimHWInterface::init()
   this->gt_timer = nh.createTimer(ros::Duration(1 / gt_publish_rate), &SimHWInterface::publish_gt, this);
   this->encoder_timer = nh.createTimer(ros::Duration(1 / encoder_publish_rate), &SimHWInterface::publish_encoder, this);
   this->imu_timer = nh.createTimer(ros::Duration(1 / imu_publish_rate), &SimHWInterface::publish_imu, this);
-  this->steer_pub = nh.advertise<std_msgs::Float64>("/ugr/steering_position/value", 1);
 
   // Now check if configured joints are actually there. Also remembe joint id
   std::string drive_joint_name = nh_.param<std::string>("hardware_interface/drive_joint", "axis0");
@@ -120,8 +119,8 @@ void SimHWInterface::read(ros::Duration& elapsed_time)
   // Effort gets applied immediately (assumption)
   joint_effort_[drive_joint_id] = joint_effort_command_[drive_joint_id];
   joint_velocity_[steering_joint_id] = joint_velocity_command_[steering_joint_id];
-  // joint_velocity_[drive_joint_id] = this->model->get_wheel_angular_velocity();
-  // joint_position_[steering_joint_id] = this->model->get_steering_angle();
+  joint_velocity_[drive_joint_id] = this->model->get_wheel_angular_velocity();
+  joint_position_[steering_joint_id] = this->model->get_steering_angle();
 }
 
 void SimHWInterface::write(ros::Duration& elapsed_time)
@@ -134,9 +133,6 @@ void SimHWInterface::write(ros::Duration& elapsed_time)
   // Feed to bicycle model
   this->model->update(elapsed_time.toSec(), joint_effort_command_[drive_joint_id],
                       joint_velocity_command_[steering_joint_id]);
-  std_msgs::Float64 steer_msg;
-  steer_msg.data = this->model->get_steering_angle();
-  this->steer_pub.publish(steer_msg);
 }
 
 void SimHWInterface::enforceLimits(ros::Duration& period)

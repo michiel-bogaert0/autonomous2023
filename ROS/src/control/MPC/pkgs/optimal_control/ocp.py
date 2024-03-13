@@ -44,6 +44,7 @@ class Ocp:
         self.X = self.opti.variable(self.nx, N + 1)
         self.U = self.opti.variable(self.nu, N)
         self.x0 = self.opti.parameter(self.nx)
+        self.u_prev = self.opti.parameter(self.nu)
 
         self._x_reference = self.opti.parameter(self.nx, self.N)
         self.params = []  # additional parameters
@@ -136,7 +137,7 @@ class Ocp:
                     L_run += cost_fun(
                         self.X[:, i + 1],
                         self.U[:, i],
-                        self.U[:, i],
+                        (self.U[:, i] - self.u_prev),
                         self._x_reference[:, i],
                     )
                 else:
@@ -212,6 +213,7 @@ class Ocp:
         b,
         c,
         d,
+        u_prev,
         X0=None,
         U0=None,
         show_exception=True,
@@ -237,6 +239,7 @@ class Ocp:
         self.opti.set_initial(self.b, b)
         self.opti.set_initial(self.c, c)
         self.opti.set_initial(self.d, d)
+        self.opti.set_value(self.u_prev, u_prev)
 
         if X0 is not None:
             self.opti.set_initial(self.X, X0)

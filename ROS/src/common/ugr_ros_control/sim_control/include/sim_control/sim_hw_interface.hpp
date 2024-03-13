@@ -84,7 +84,7 @@ private:
   int drive_joint_id;
   int steering_joint_id;
 
-  ros::Publisher gt_pub, encoder_pub, imu_pub, steer_pub;
+  ros::Publisher gt_pub, encoder_pub, imu_pub;
   tf2_ros::TransformBroadcaster br;
   std::string world_frame, gt_base_link_frame, base_link_frame;
   std::vector<double> encoder_noise, imu_angular_velocity_noise, imu_acceleration_noise;

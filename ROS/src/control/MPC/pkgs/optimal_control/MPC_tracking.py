@@ -54,6 +54,7 @@ class MPC_tracking:
         b,
         c,
         d,
+        u_prev,
         X0=None,
         U0=None,
         warm_start=True,
@@ -95,7 +96,16 @@ class MPC_tracking:
 
         with self.timer:
             self.U_sol, self.X_sol, info = self.ocp.solve(
-                state, reference_track, a, b, c, d, X0=X0, U0=U0, **solver_kwargs
+                state,
+                reference_track,
+                a,
+                b,
+                c,
+                d,
+                u_prev,
+                X0=X0,
+                U0=U0,
+                **solver_kwargs
             )
 
         self.X_sol_list.append(self.X_sol)

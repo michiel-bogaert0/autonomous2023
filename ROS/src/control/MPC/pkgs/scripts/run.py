@@ -17,6 +17,7 @@ from node_fixture.fixture import (
 from node_fixture.managed_node import ManagedNode
 from optimal_control.MPC_tracking import MPC_tracking
 from optimal_control.ocp import Ocp
+from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 from trajectory import Trajectory
 from ugr_msgs.msg import State
@@ -99,11 +100,12 @@ class MPC(ManagedNode):
             "/input/odom", Odometry, self.get_odom_update
         )
 
-        self.steering_sub = super().AddSubscriber(
-            "/ugr/steering_position/value", Float64, self.get_steering_update
+        self.joint_state_sub = super().AddSubscriber(
+            "/ugr/car/joint_states", JointState, self.get_joint_states
         )
 
         self.speed_target = rospy.get_param("/speed/target", 3.0)
+
         self.steering_transmission = rospy.get_param(
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
@@ -111,6 +113,7 @@ class MPC(ManagedNode):
         self.car = BicycleModel(dt=0.05)  # dt = publish rate?
 
         self.steering_joint_angle = 0
+        self.u = [0, 0]
 
         self.N = 40
         self.ocp = Ocp(
@@ -121,6 +124,7 @@ class MPC(ManagedNode):
             T=self.car.dt * self.N,
             show_execution_time=False,
             silent=True,
+            store_intermediate=False,
         )
         self.mpc = MPC_tracking(self.ocp)
 
@@ -128,8 +132,8 @@ class MPC(ManagedNode):
         self.prev_input = [[0.0, 0.0]] * self.N
 
         Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
-        R = np.diag([1e-4, 2e-2])
-        R_delta = np.diag([1e-4, 2e-2])
+        R = np.diag([1e-5, 5e-2])
+        R_delta = np.diag([1e-1, 5e-3])
 
         self.set_costs(Qn, R, R_delta)
 
@@ -145,8 +149,8 @@ class MPC(ManagedNode):
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
 
-    def get_steering_update(self, msg: Float64):
-        self.steering_joint_angle = msg.data
+    def get_joint_states(self, msg: JointState):
+        self.steering_joint_angle = msg.position[msg.name.index("axis_steering")]
 
     def handle_state_change(self, msg: State):
         if msg.scope == StateMachineScopeEnum.SLAM:
@@ -290,9 +294,9 @@ class MPC(ManagedNode):
                     if self.slam_state == SLAMStatesEnum.RACING:
                         # Scale steering penalty based on current speed
                         Qn = np.diag([8, 8, 0, 0, 0])
-                        R = np.diag([5e-3, 100])
+                        R = np.diag([5e-2, 100])
                         R_delta = np.diag(
-                            [1, 0]  # * self.actual_speed / self.speed_target]
+                            [10, 0]  # * self.actual_speed / self.speed_target]
                         )
 
                         self.set_costs(Qn, R, R_delta)
@@ -328,8 +332,9 @@ class MPC(ManagedNode):
                     #     axis=1,
                     # )
                     u, info = self.mpc(
-                        current_state, reference_track, a, b, c, d  # , X0=x0
+                        current_state, reference_track, a, b, c, d, self.u  # , X0=x0
                     )  # , U0=self.prev_input)
+                    self.u = u
 
                     # X_closed_loop = np.array(self.mpc.X_trajectory)
                     # U_closed_loop = np.array(self.mpc.U_trajectory)

@@ -134,7 +134,7 @@ class Trajectory:
 
         # Find target points based on required velocity and maximum acceleration
         speed_target = rospy.get_param("/speed/target", 3.0)
-        max_acceleration = 1.0  # TODO: create param
+        max_acceleration = 5.0  # TODO: create param
         # calculate distances based on maximum acceleration and current speed
         distances = [
             (min(speed_target, actual_speed + dt * max_acceleration * i)) * i * dt
