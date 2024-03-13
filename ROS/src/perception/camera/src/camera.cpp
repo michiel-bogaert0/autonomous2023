@@ -92,14 +92,15 @@ void CameraNode::setup_camera() {
   /* Calibration parameters */
 
   *camera_matrix_ =
-      (cv::Mat_<double>(3, 3) << 1.72892240e+03, 0, 9.79269439e+02, 0,
-       1.72242861e+03, 5.90557895e+02, 0, 0, 1);
+      (cv::Mat_<double>(3, 3) << 1.66170824e+03, 0, 9.59900862e+02, 0,
+       1.65718865e+03, 5.98103114e+02, 0, 0, 1);
   *distortion_matrix_ =
-      (cv::Mat_<double>(1, 5) << -1.80133997e-01, 8.75756190e-01,
-       -2.18768565e-03, 2.58119628e-04, -2.20635722);
-  *optimal_camera_matrix_ =
-      cv::getOptimalNewCameraMatrix(*camera_matrix_, *distortion_matrix_,
-                                    cv::Size(camera_width_, camera_height_), 1);
+      (cv::Mat_<double>(1, 5) << -1.08573207e-01, 1.74070981e-01,
+       -6.25355801e-05, 1.55457374e-03, -1.01938235e-01);
+  *optimal_camera_matrix_ = cv::getOptimalNewCameraMatrix(
+      *camera_matrix_, cv::Mat::zeros(1, 4, CV_64FC1),
+      cv::Size(camera_width_, camera_height_), 1);
+  std::cout << "opt = " << *optimal_camera_matrix_ << std::endl;
   cv::initUndistortRectifyMap(
       *camera_matrix_, *distortion_matrix_, cv::Mat(), *optimal_camera_matrix_,
       cv::Size(camera_width_, camera_height_), CV_32FC1, *map1_, *map2_);
@@ -142,19 +143,19 @@ sensor_msgs::CameraInfo CameraNode::get_camera_info() {
                              flat_dist.data + flat_dist.total());
     msg.D = dist;
     msg.K = mat_to_boost<9>(*camera_matrix_);
-    cv::Mat eye_mat = cv::Mat::eye(3, 3, CV_32FC1);
+    cv::Mat eye_mat = cv::Mat::eye(3, 3, CV_64FC1);
     msg.R = mat_to_boost<9>(eye_mat);
     cv::Mat stacked_camera_matrix_;
     cv::hconcat(*optimal_camera_matrix_, cv::Mat::zeros(3, 1, CV_64F),
                 stacked_camera_matrix_);
     msg.P = mat_to_boost<12>(stacked_camera_matrix_);
   } else {
-    cv::Mat flat_zeros = cv::Mat::zeros(1, 5, CV_32FC1);
+    cv::Mat flat_zeros = cv::Mat::zeros(1, 5, CV_64FC1);
     std::vector<double> vec_zeros(flat_zeros.data,
                                   flat_zeros.data + flat_zeros.total());
     msg.D = vec_zeros;
     msg.K = mat_to_boost<9>(*optimal_camera_matrix_);
-    cv::Mat eye_mat = cv::Mat::eye(3, 3, CV_32FC1);
+    cv::Mat eye_mat = cv::Mat::eye(3, 3, CV_64FC1);
     msg.R = mat_to_boost<9>(eye_mat);
     cv::Mat stacked_camera_matrix_;
     cv::hconcat(*optimal_camera_matrix_, cv::Mat::zeros(3, 1, CV_64F),
@@ -179,11 +180,14 @@ void CameraNode::publish_image_data() {
    */
   while (ros::ok()) {
     sensor_msgs::Image data = process_data();
+    data.header = create_header();
     image_pub_.publish(data);
-    rate_.sleep();
+
     sensor_msgs::CameraInfo info = get_camera_info();
-    std_msgs::Header header = create_header();
+    info.header = data.header;
     info_pub_.publish(info);
+
+    rate_.sleep();
   }
 };
 
@@ -193,8 +197,8 @@ boost::array<double, Size> CameraNode::mat_to_boost(cv::Mat &mat) {
    * @brief Reinterprets cv::Mat object into a boost array of a certain size.
    * Needed for the get_camera_info method.
    */
-  cv::Mat flat = mat.reshape(1);
-  std::vector<double> vec(flat.data, flat.data + flat.total());
+  cv::Mat flat = mat.reshape(1, mat.total() * mat.channels());
+  std::vector<double> vec = mat.isContinuous() ? flat : flat.clone();
   boost::array<double, Size> arr;
   boost::range::copy(vec, arr.begin());
   return arr;
