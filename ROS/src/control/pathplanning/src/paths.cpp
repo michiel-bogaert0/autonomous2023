@@ -91,6 +91,8 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
       }
     }
 
+    child_found = true;
+
     while (child_found) {
       // Get the closest center points to this element that are within close
       // distance
