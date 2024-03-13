@@ -100,7 +100,6 @@ void CameraNode::setup_camera() {
   *optimal_camera_matrix_ = cv::getOptimalNewCameraMatrix(
       *camera_matrix_, cv::Mat::zeros(1, 4, CV_64FC1),
       cv::Size(camera_width_, camera_height_), 1);
-  std::cout << "opt = " << *optimal_camera_matrix_ << std::endl;
   cv::initUndistortRectifyMap(
       *camera_matrix_, *distortion_matrix_, cv::Mat(), *optimal_camera_matrix_,
       cv::Size(camera_width_, camera_height_), CV_32FC1, *map1_, *map2_);
