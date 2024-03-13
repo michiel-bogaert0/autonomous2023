@@ -325,6 +325,7 @@ def roscan_to_serialcan(data: Frame) -> can.Message:
         dlc=len(data.data),
         arbitration_id=data.id,
         data=list(data.data),
+        is_extended_id=False,
     )
     return can_message
 
