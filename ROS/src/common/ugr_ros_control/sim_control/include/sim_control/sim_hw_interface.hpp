@@ -49,7 +49,6 @@
 #include <sensor_msgs/Imu.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
-#include <std_msgs/Float64.h>
 
 namespace sim_control
 {
