@@ -13,7 +13,7 @@ from scipy.interpolate import interp1d, splev, splprep
 
 
 def generate_interpolated_points(path):
-    # Linear interpolation between center points to add more points for BSpline smoothing
+    # Quadratic interpolation between center points to add more points for BSpline smoothing
     distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
     distance = np.insert(distance, 0, 0) / distance[-1]
 
@@ -24,7 +24,7 @@ def generate_interpolated_points(path):
     return path
 
 
-def B_spline_smoothing(path, s=5):
+def B_spline_smoothing(path, s=3):
     per = 1  # BSPline periodicity, 0 = not periodic, 1 = periodic
 
     # Smooth path with BSpline interpolation
@@ -2979,8 +2979,6 @@ def result_plots(
             trajectory[:, 1:3] - normvec_normalized_opt * width_veh_real / 2
         )
 
-        print(refline)
-
         point1_arrow = refline[0]
         point2_arrow = refline[4]
         vec_arrow = point2_arrow - point1_arrow
@@ -3052,7 +3050,7 @@ def result_plots(
         ax.plot(trajectory[:, 1], trajectory[:, 2], "r-", linewidth=0.7)
 
         ax.grid()
-        ax.set_aspect("auto")
+        ax.set_aspect("equalxy")
         ax.set_xlabel("east in m")
         ax.set_ylabel("north in m")
 
@@ -3172,8 +3170,8 @@ def check_traj(
     bound_r_tmp = np.column_stack((bound_r, np.zeros((bound_r.shape[0], 2))))
     bound_l_tmp = np.column_stack((bound_l, np.zeros((bound_l.shape[0], 2))))
 
-    bound_r_interp = interp_track(track=bound_r_tmp, stepsize=1.0)[0]
-    bound_l_interp = interp_track(track=bound_l_tmp, stepsize=1.0)[0]
+    bound_r_interp = interp_track_2(reftrack=bound_r_tmp, stepsize_approx=1.0)[0]
+    bound_l_interp = interp_track_2(reftrack=bound_l_tmp, stepsize_approx=1.0)[0]
 
     # calculate minimum distances of every trajectory point to the boundaries
     min_dists = calc_min_bound_dists(
@@ -3451,3 +3449,51 @@ def calc_tangent_vectors(psi: np.ndarray) -> np.ndarray:
     tangvec_normalized[:, 1] = np.sin(psi_)
 
     return tangvec_normalized
+
+
+def interp_track_2(reftrack: np.ndarray, stepsize_approx: float = 1.0) -> np.ndarray:
+    """
+    Created by:
+    Alexander Heilmeier
+
+    Documentation:
+    Use linear interpolation between track points to create new points with equal distances.
+
+    Inputs:
+    reftrack:           array containing the track information that shell be interpolated [x, y, w_tr_right, w_tr_left].
+    stepsize_approx:    desired stepsize for the interpolation
+
+    Outputs:
+    reftrack_interp:    interpolated reference track (unclosed)
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # FUNCTION BODY ----------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    reftrack_cl = np.vstack((reftrack, reftrack[0]))
+
+    # calculate element lengths (euclidian distance)
+    el_lenghts = np.sqrt(
+        np.sum(np.power(np.diff(reftrack_cl[:, :2], axis=0), 2), axis=1)
+    )
+
+    # sum up total distance (from start) to every element
+    dists_cum = np.cumsum(el_lenghts)
+    dists_cum = np.insert(dists_cum, 0, 0.0)
+
+    # calculate desired lenghts depending on specified stepsize (+1 because last element is included)
+    no_points_interp = math.ceil(dists_cum[-1] / stepsize_approx) + 1
+    dists_interp = np.linspace(0.0, dists_cum[-1], no_points_interp)
+
+    # interpolate closed track points
+    reftrack_interp_cl = np.zeros((no_points_interp, 4))
+    reftrack_interp_cl[:, 0] = np.interp(dists_interp, dists_cum, reftrack_cl[:, 0])
+    reftrack_interp_cl[:, 1] = np.interp(dists_interp, dists_cum, reftrack_cl[:, 1])
+    reftrack_interp_cl[:, 2] = np.interp(dists_interp, dists_cum, reftrack_cl[:, 2])
+    reftrack_interp_cl[:, 3] = np.interp(dists_interp, dists_cum, reftrack_cl[:, 3])
+
+    # remove closed points
+    reftrack_interp = reftrack_interp_cl[:-1]
+
+    return reftrack_interp

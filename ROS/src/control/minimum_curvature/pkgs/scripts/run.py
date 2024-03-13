@@ -9,11 +9,10 @@ from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
 from ugr_msgs.msg import Boundaries
-from utils.utils_mincurv import (  # calc_bound_dists,
+from utils.utils_mincurv import (  # calc_bound_dists,; calc_head_curv_an2,; opt_min_curv,
     B_spline_smoothing,
     calc_ax_profile,
     calc_head_curv_an,
-    calc_head_curv_an2,
     calc_spline_lengths,
     calc_splines,
     calc_t_profile,
@@ -22,7 +21,6 @@ from utils.utils_mincurv import (  # calc_bound_dists,
     create_raceline,
     generate_interpolated_points,
     iqp_handler,
-    opt_min_curv,
     prep_track,
     result_plots,
 )
@@ -160,14 +158,23 @@ class MinimumCurvature(ManagedNode):
     def active(self):
         if not self.calculate or self.reference_line.size == 0:
             return
+
+        rospy.logerr("Calculating minimum curvature path")
+
         path = self.reference_line
         header = self.header
         self.reference_line = generate_interpolated_points(path)
-        self.path_ref = generate_interpolated_points(path)
-        reference = np.copy(self.reference_line)
-        self.extra_smoothed = np.hstack(
-            (B_spline_smoothing(reference[:, 0:2], 2), reference[:, 2:4])
-        )
+        self.reference_line = np.hstack(
+            (
+                B_spline_smoothing(self.reference_line[:, 0:2], 2),
+                self.reference_line[:, 2:4],
+            )
+        )[:-1]
+        # self.path_ref = generate_interpolated_points(path)
+        # reference = np.copy(self.reference_line)
+        # self.extra_smoothed = np.hstack(
+        #     (B_spline_smoothing(reference[:, 0:2], 2), reference[:, 2:4])
+        # )
 
         (
             reftrack_interp,
@@ -183,16 +190,16 @@ class MinimumCurvature(ManagedNode):
             stepsize_reg=0.3,
         )
 
-        coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(
-            path=np.vstack((self.reference_line[:, 0:2], self.reference_line[0, 0:2]))
-        )
+        # coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(
+        #     path=np.vstack((self.reference_line[:, 0:2], self.reference_line[0, 0:2]))
+        # )
 
-        psi_reftrack = calc_head_curv_an2(
-            coeffs_x=coeffs_x,
-            coeffs_y=coeffs_y,
-            ind_spls=np.arange(self.reference_line.shape[0]),
-            t_spls=np.zeros(self.reference_line.shape[0]),
-        )
+        # psi_reftrack = calc_head_curv_an2(
+        #     coeffs_x=coeffs_x,
+        #     coeffs_y=coeffs_y,
+        #     ind_spls=np.arange(self.reference_line.shape[0]),
+        #     t_spls=np.zeros(self.reference_line.shape[0]),
+        # )
 
         # # TODO: For every point in the reference line, calculate the perpendicular distance to the left and right boundaries
         # # If function works fine, then use the boundary distances instead of fixed distances
@@ -202,14 +209,14 @@ class MinimumCurvature(ManagedNode):
         #     bound_right=self.bound_right,
         # )
 
-        (
-            coeffs_x_extra,
-            coeffs_y_extra,
-            M_extra,
-            normvec_normalized_extra,
-        ) = calc_splines(
-            path=np.vstack((self.extra_smoothed[:, 0:2], self.extra_smoothed[0, 0:2]))
-        )
+        # (
+        #     coeffs_x_extra,
+        #     coeffs_y_extra,
+        #     M_extra,
+        #     normvec_normalized_extra,
+        # ) = calc_splines(
+        #     path=np.vstack((self.extra_smoothed[:, 0:2], self.extra_smoothed[0, 0:2]))
+        # )
 
         psi_reftrack, kappa_reftrack, dkappa_reftrack = calc_head_curv_an(
             coeffs_x=coeffs_x_interp,
@@ -313,11 +320,10 @@ class MinimumCurvature(ManagedNode):
 
             plt.plot(s_points, vx_profile_opt)
             plt.plot(s_points, ax_profile_opt)
-            plt.plot(s_points, t_profile_cl[:-1])
 
             plt.grid()
             plt.xlabel("distance in m")
-            plt.legend(["vx in m/s", "ax in m/s2", "t in s"])
+            plt.legend(["vx in m/s", "ax in m/s2"])
 
         # Data postprocessing
         trajectory_opt = np.column_stack(
@@ -338,8 +344,8 @@ class MinimumCurvature(ManagedNode):
         traj_race_cl[-1, 0] = np.sum(spline_data_opt[:, 0])  # set correct length
 
         bound1, bound2 = check_traj(
-            reftrack=reftrack_interp,
-            reftrack_normvec_normalized=normvec_normalized_interp,
+            reftrack=reftrack_interp_iqp,
+            reftrack_normvec_normalized=normvec_normalized_iqp,
             length_veh=self.car_length,
             width_veh=self.car_width,
             debug=True,
@@ -390,7 +396,7 @@ class MinimumCurvature(ManagedNode):
             plot_opts=self.plot_opts,
             width_veh_opt=self.car_width,
             width_veh_real=self.car_width,
-            refline=reftrack_interp[:, :2],
+            refline=self.reference_line[:, :2],
             bound1_imp=self.bound1_imp,
             bound2_imp=self.bound2_imp,
             bound1_interp=bound1,
@@ -398,78 +404,78 @@ class MinimumCurvature(ManagedNode):
             trajectory=trajectory_opt,
         )
 
-        alpha_mincurv, curv_error_max = opt_min_curv(
-            reftrack=self.reference_line,
-            normvectors=normvec_normalized,
-            A=M,
-            kappa_bound=0.3,
-            w_veh=self.car_width,
-            print_debug=False,
-            plot_debug=False,
-            closed=True,
-            psi_s=False,
-            psi_e=False,
-            fix_s=False,
-            fix_e=False,
-        )
+        # alpha_mincurv, curv_error_max = opt_min_curv(
+        #     reftrack=self.reference_line,
+        #     normvectors=normvec_normalized,
+        #     A=M,
+        #     kappa_bound=0.3,
+        #     w_veh=self.car_width,
+        #     print_debug=False,
+        #     plot_debug=False,
+        #     closed=True,
+        #     psi_s=False,
+        #     psi_e=False,
+        #     fix_s=False,
+        #     fix_e=False,
+        # )
 
-        alpha_mincurv_extra, curv_error_max_extra = opt_min_curv(
-            reftrack=self.extra_smoothed,
-            normvectors=normvec_normalized_extra,
-            A=M_extra,
-            kappa_bound=0.2,
-            w_veh=self.car_width,
-            print_debug=False,
-            plot_debug=False,
-            closed=True,
-            psi_s=False,
-            psi_e=False,
-            fix_s=False,
-            fix_e=False,
-        )
+        # alpha_mincurv_extra, curv_error_max_extra = opt_min_curv(
+        #     reftrack=self.extra_smoothed,
+        #     normvectors=normvec_normalized_extra,
+        #     A=M_extra,
+        #     kappa_bound=0.2,
+        #     w_veh=self.car_width,
+        #     print_debug=False,
+        #     plot_debug=False,
+        #     closed=True,
+        #     psi_s=False,
+        #     psi_e=False,
+        #     fix_s=False,
+        #     fix_e=False,
+        # )
 
-        path_result = self.reference_line[:, 0:2] + normvec_normalized * np.expand_dims(
-            alpha_mincurv, axis=1
-        )
+        # path_result = self.reference_line[:, 0:2] + normvec_normalized * np.expand_dims(
+        #     alpha_mincurv, axis=1
+        # )
 
-        path_result_extra = self.extra_smoothed[
-            :, 0:2
-        ] + normvec_normalized_extra * np.expand_dims(alpha_mincurv_extra, axis=1)
+        # path_result_extra = self.extra_smoothed[
+        #     :, 0:2
+        # ] + normvec_normalized_extra * np.expand_dims(alpha_mincurv_extra, axis=1)
 
         path_result_iqp = reftrack_interp_iqp[
             :, 0:2
         ] + normvec_normalized_iqp * np.expand_dims(alpha_mincurv_iqp, axis=1)
 
-        smoothed_path = B_spline_smoothing(path_result, 2)
-        path_extra = B_spline_smoothing(path_result_extra, 2)
-        # path_iqp = B_spline_smoothing(path_result_iqp, 2)
-        path_ref = B_spline_smoothing(self.path_ref, 2)
+        # smoothed_path = B_spline_smoothing(path_result, 2)
+        # path_extra = B_spline_smoothing(path_result_extra, 2)
+        path_iqp = B_spline_smoothing(path_result_iqp, 2)
+        # path_ref = B_spline_smoothing(self.path_ref, 2)
 
-        smoothed_msg = Path()
-        smoothed_msg.poses = []
-        for point in smoothed_path:
-            pose = PoseStamped()
-            pose.pose.position.x = point[0]
-            pose.pose.position.y = point[1]
-            pose.header = header
-            smoothed_msg.poses.append(pose)
-        smoothed_msg.header = header
-        self.path_pub.publish(smoothed_msg)
+        # smoothed_msg = Path()
+        # smoothed_msg.poses = []
+        # for point in smoothed_path:
+        #     pose = PoseStamped()
+        #     pose.pose.position.x = point[0]
+        #     pose.pose.position.y = point[1]
+        #     pose.header = header
+        #     smoothed_msg.poses.append(pose)
+        # smoothed_msg.header = header
+        # self.path_pub.publish(smoothed_msg)
 
-        extra_msg = Path()
-        extra_msg.poses = []
-        for point in path_extra:
-            pose = PoseStamped()
-            pose.pose.position.x = point[0]
-            pose.pose.position.y = point[1]
-            pose.header = header
-            extra_msg.poses.append(pose)
-        extra_msg.header = header
-        self.path_extra_pub.publish(extra_msg)
+        # extra_msg = Path()
+        # extra_msg.poses = []
+        # for point in path_extra:
+        #     pose = PoseStamped()
+        #     pose.pose.position.x = point[0]
+        #     pose.pose.position.y = point[1]
+        #     pose.header = header
+        #     extra_msg.poses.append(pose)
+        # extra_msg.header = header
+        # self.path_extra_pub.publish(extra_msg)
 
         iqp_msg = Path()
         iqp_msg.poses = []
-        for point in path_result_iqp:
+        for point in path_iqp:
             pose = PoseStamped()
             pose.pose.position.x = point[0]
             pose.pose.position.y = point[1]
@@ -478,19 +484,24 @@ class MinimumCurvature(ManagedNode):
         iqp_msg.header = header
         self.path_iqp_pub.publish(iqp_msg)
 
-        ref_msg = Path()
-        ref_msg.poses = []
-        for point in path_ref:
-            pose = PoseStamped()
-            pose.pose.position.x = point[0]
-            pose.pose.position.y = point[1]
-            pose.header = header
-            ref_msg.poses.append(pose)
-        ref_msg.header = header
-        self.path_ref_pub.publish(ref_msg)
+        # ref_msg = Path()
+        # ref_msg.poses = []
+        # for point in path_ref:
+        #     pose = PoseStamped()
+        #     pose.pose.position.x = point[0]
+        #     pose.pose.position.y = point[1]
+        #     pose.header = header
+        #     ref_msg.poses.append(pose)
+        # ref_msg.header = header
+        # self.path_ref_pub.publish(ref_msg)
         if self.plot:
             plt.show()
         self.calculate = False
+
+        # TODO: Fix ggv acceleration limits
+        # TODO: Fix better values for drag, weight, etc...
+        # TODO: Fix loop_closure in plots
+        # TODO: FIX BOUNDARIES!!!
 
 
 MinimumCurvature()
