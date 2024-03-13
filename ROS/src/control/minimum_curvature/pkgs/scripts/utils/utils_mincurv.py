@@ -3,9 +3,11 @@ import sys
 import time
 from typing import Union
 
+import matplotlib.pyplot as plt
 import numpy as np
 import quadprog
 import rospy
+from mpl_toolkits.mplot3d import Axes3D
 from scipy import optimize, spatial
 from scipy.interpolate import interp1d, splev, splprep
 
@@ -2036,3 +2038,1416 @@ def calc_head_curv_an2(
     psi = normalize_psi(psi)
 
     return psi
+
+
+def conv_filt(signal: np.ndarray, filt_window: int, closed: bool) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    modified by:
+    Tim Stahl
+
+    .. description::
+    Filter a given temporal signal using a convolution (moving average) filter.
+
+    .. inputs::
+    :param signal:          temporal signal that should be filtered (always unclosed).
+    :type signal:           np.ndarray
+    :param filt_window:     filter window size for moving average filter (must be odd).
+    :type filt_window:      int
+    :param closed:          flag showing if the signal can be considered as closable, e.g. for velocity profiles.
+    :type closed:           bool
+
+    .. outputs::
+    :return signal_filt:    filtered input signal (always unclosed).
+    :rtype signal_filt:     np.ndarray
+
+    .. notes::
+    signal input is always unclosed!
+
+    len(signal) = len(signal_filt)
+    """
+
+    # check if window width is odd
+    if not filt_window % 2 == 1:
+        raise RuntimeError("Window width of moving average filter must be odd!")
+
+    # calculate half window width - 1
+    w_window_half = int((filt_window - 1) / 2)
+
+    # apply filter
+    if closed:
+        # temporarily add points in front of and behind signal
+        signal_tmp = np.concatenate(
+            (signal[-w_window_half:], signal, signal[:w_window_half]), axis=0
+        )
+
+        # apply convolution filter used as a moving average filter and remove temporary points
+        signal_filt = np.convolve(
+            signal_tmp, np.ones(filt_window) / float(filt_window), mode="same"
+        )[w_window_half:-w_window_half]
+
+    else:
+        # implementation 1: include boundaries during filtering
+        # no_points = signal.size
+        # signal_filt = np.zeros(no_points)
+        #
+        # for i in range(no_points):
+        #     if i < w_window_half:
+        #         signal_filt[i] = np.average(signal[:i + w_window_half + 1])
+        #
+        #     elif i < no_points - w_window_half:
+        #         signal_filt[i] = np.average(signal[i - w_window_half:i + w_window_half + 1])
+        #
+        #     else:
+        #         signal_filt[i] = np.average(signal[i - w_window_half:])
+
+        # implementation 2: start filtering at w_window_half and stop at -w_window_half
+        signal_filt = np.copy(signal)
+        signal_filt[w_window_half:-w_window_half] = np.convolve(
+            signal, np.ones(filt_window) / float(filt_window), mode="same"
+        )[w_window_half:-w_window_half]
+
+    return signal_filt
+
+
+def calc_vel_profile(
+    ax_max_machines: np.ndarray,
+    kappa: np.ndarray,
+    el_lengths: np.ndarray,
+    closed: bool,
+    drag_coeff: float,
+    m_veh: float,
+    ggv: np.ndarray = None,
+    loc_gg: np.ndarray = None,
+    v_max: float = None,
+    dyn_model_exp: float = 1.0,
+    mu: np.ndarray = None,
+    v_start: float = None,
+    v_end: float = None,
+    filt_window: int = None,
+) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    modified by:
+    Tim Stahl
+
+    .. description::
+    Calculates a velocity profile using the tire and motor limits as good as possible.
+
+    .. inputs::
+    :param ax_max_machines: longitudinal acceleration limits by the electrical motors: [vx, ax_max_machines]. Velocity
+                            in m/s, accelerations in m/s2. They should be handed in without considering drag resistance,
+                            i.e. simply by calculating F_x_drivetrain / m_veh
+    :type ax_max_machines:  np.ndarray
+    :param kappa:           curvature profile of given trajectory in rad/m (always unclosed).
+    :type kappa:            np.ndarray
+    :param el_lengths:      element lengths (distances between coordinates) of given trajectory.
+    :type el_lengths:       np.ndarray
+    :param closed:          flag to set if the velocity profile must be calculated for a closed or unclosed trajectory.
+    :type closed:           bool
+    :param drag_coeff:      drag coefficient including all constants: drag_coeff = 0.5 * c_w * A_front * rho_air
+    :type drag_coeff:       float
+    :param m_veh:           vehicle mass in kg.
+    :type m_veh:            float
+    :param ggv:             ggv-diagram to be applied: [vx, ax_max, ay_max]. Velocity in m/s, accelerations in m/s2.
+                            ATTENTION: Insert either ggv + mu (optional) or loc_gg!
+    :type ggv:              np.ndarray
+    :param loc_gg:          local gg diagrams along the path points: [[ax_max_0, ay_max_0], [ax_max_1, ay_max_1], ...],
+                            accelerations in m/s2. ATTENTION: Insert either ggv + mu (optional) or loc_gg!
+    :type loc_gg:           np.ndarray
+    :param v_max:           Maximum longitudinal speed in m/s (optional if ggv is supplied, taking the minimum of the
+                            fastest velocities covered by the ggv and ax_max_machines arrays then).
+    :type v_max:            float
+    :param dyn_model_exp:   exponent used in the vehicle dynamics model (usual range [1.0,2.0]).
+    :type dyn_model_exp:    float
+    :param mu:              friction coefficients (always unclosed).
+    :type mu:               np.ndarray
+    :param v_start:         start velocity in m/s (used in unclosed case only).
+    :type v_start:          float
+    :param v_end:           end velocity in m/s (used in unclosed case only).
+    :type v_end:            float
+    :param filt_window:     filter window size for moving average filter (must be odd).
+    :type filt_window:      int
+
+    .. outputs::
+    :return vx_profile:     calculated velocity profile (always unclosed).
+    :rtype vx_profile:      np.ndarray
+
+    .. notes::
+    All inputs must be inserted unclosed, i.e. kappa[-1] != kappa[0], even if closed is set True! (el_lengths is kind of
+    closed if closed is True of course!)
+
+    case closed is True:
+    len(kappa) = len(el_lengths) = len(mu) = len(vx_profile)
+
+    case closed is False:
+    len(kappa) = len(el_lengths) + 1 = len(mu) = len(vx_profile)
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # INPUT CHECKS -----------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # check if either ggv (and optionally mu) or loc_gg are handed in
+    if (ggv is not None or mu is not None) and loc_gg is not None:
+        raise RuntimeError(
+            "Either ggv and optionally mu OR loc_gg must be supplied, not both (or all) of them!"
+        )
+
+    if ggv is None and loc_gg is None:
+        raise RuntimeError("Either ggv or loc_gg must be supplied!")
+
+    # check shape of loc_gg
+    if loc_gg is not None:
+        if loc_gg.ndim != 2:
+            raise RuntimeError("loc_gg must have two dimensions!")
+
+        if loc_gg.shape[0] != kappa.size:
+            raise RuntimeError("Length of loc_gg and kappa must be equal!")
+
+        if loc_gg.shape[1] != 2:
+            raise RuntimeError("loc_gg must consist of two columns: [ax_max, ay_max]!")
+
+    # check shape of ggv
+    if ggv is not None and ggv.shape[1] != 3:
+        raise RuntimeError(
+            "ggv diagram must consist of the three columns [vx, ax_max, ay_max]!"
+        )
+
+    # check size of mu
+    if mu is not None and kappa.size != mu.size:
+        raise RuntimeError("kappa and mu must have the same length!")
+
+    # check size of kappa and element lengths
+    if closed and kappa.size != el_lengths.size:
+        raise RuntimeError("kappa and el_lengths must have the same length if closed!")
+
+    elif not closed and kappa.size != el_lengths.size + 1:
+        raise RuntimeError("kappa must have the length of el_lengths + 1 if unclosed!")
+
+    # check start and end velocities
+    if not closed and v_start is None:
+        raise RuntimeError("v_start must be provided for the unclosed case!")
+
+    if v_start is not None and v_start < 0.0:
+        v_start = 0.0
+        print("WARNING: Input v_start was < 0.0. Using v_start = 0.0 instead!")
+
+    if v_end is not None and v_end < 0.0:
+        v_end = 0.0
+        print("WARNING: Input v_end was < 0.0. Using v_end = 0.0 instead!")
+
+    # check dyn_model_exp
+    if not 1.0 <= dyn_model_exp <= 2.0:
+        print(
+            "WARNING: Exponent for the vehicle dynamics model should be in the range [1.0, 2.0]!"
+        )
+
+    # check shape of ax_max_machines
+    if ax_max_machines.shape[1] != 2:
+        raise RuntimeError(
+            "ax_max_machines must consist of the two columns [vx, ax_max_machines]!"
+        )
+
+    # check v_max
+    if v_max is None:
+        if ggv is None:
+            raise RuntimeError("v_max must be supplied if ggv is None!")
+        else:
+            v_max = min(ggv[-1, 0], ax_max_machines[-1, 0])
+
+    else:
+        # check if ggv covers velocity until v_max
+        if ggv is not None and ggv[-1, 0] < v_max:
+            raise RuntimeError(
+                "ggv has to cover the entire velocity range of the car (i.e. >= v_max)!"
+            )
+
+        # check if ax_max_machines covers velocity until v_max
+        if ax_max_machines[-1, 0] < v_max:
+            raise RuntimeError(
+                "ax_max_machines has to cover the entire velocity range of the car (i.e. >= v_max)!"
+            )
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # BRINGING GGV OR LOC_GG INTO SHAPE FOR EQUAL HANDLING AFTERWARDS --------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    """For an equal/easier handling of every case afterwards we bring all cases into a form where the local ggv is made
+    available for every waypoint, i.e. [ggv_0, ggv_1, ggv_2, ...] -> we have a three dimensional array p_ggv (path_ggv)
+    where the first dimension is the waypoint, the second is the velocity and the third is the two acceleration columns
+    -> DIM = NO_WAYPOINTS_CLOSED x NO_VELOCITY ENTRIES x 3"""
+
+    # CASE 1: ggv supplied -> copy it for every waypoint
+    if ggv is not None:
+        p_ggv = np.repeat(np.expand_dims(ggv, axis=0), kappa.size, axis=0)
+        op_mode = "ggv"
+
+    # CASE 2: local gg diagram supplied -> add velocity dimension (artificial velocity of 10.0 m/s)
+    else:
+        p_ggv = np.expand_dims(
+            np.column_stack((np.ones(loc_gg.shape[0]) * 10.0, loc_gg)), axis=1
+        )
+        op_mode = "loc_gg"
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # SPEED PROFILE CALCULATION (FB) -----------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # transform curvature kappa into corresponding radii (abs because curvature has a sign in our convention)
+    radii = np.abs(
+        np.divide(1.0, kappa, out=np.full(kappa.size, np.inf), where=kappa != 0.0)
+    )
+
+    # call solver
+    if not closed:
+        vx_profile = __solver_fb_unclosed(
+            p_ggv=p_ggv,
+            ax_max_machines=ax_max_machines,
+            v_max=v_max,
+            radii=radii,
+            el_lengths=el_lengths,
+            mu=mu,
+            v_start=v_start,
+            v_end=v_end,
+            dyn_model_exp=dyn_model_exp,
+            drag_coeff=drag_coeff,
+            m_veh=m_veh,
+            op_mode=op_mode,
+        )
+
+    else:
+        vx_profile = __solver_fb_closed(
+            p_ggv=p_ggv,
+            ax_max_machines=ax_max_machines,
+            v_max=v_max,
+            radii=radii,
+            el_lengths=el_lengths,
+            mu=mu,
+            dyn_model_exp=dyn_model_exp,
+            drag_coeff=drag_coeff,
+            m_veh=m_veh,
+            op_mode=op_mode,
+        )
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # POSTPROCESSING ---------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    if filt_window is not None:
+        vx_profile = conv_filt(
+            signal=vx_profile, filt_window=filt_window, closed=closed
+        )
+
+    return vx_profile
+
+
+def __solver_fb_unclosed(
+    p_ggv: np.ndarray,
+    ax_max_machines: np.ndarray,
+    v_max: float,
+    radii: np.ndarray,
+    el_lengths: np.ndarray,
+    v_start: float,
+    drag_coeff: float,
+    m_veh: float,
+    op_mode: str,
+    mu: np.ndarray = None,
+    v_end: float = None,
+    dyn_model_exp: float = 1.0,
+) -> np.ndarray:
+    # ------------------------------------------------------------------------------------------------------------------
+    # FORWARD BACKWARD SOLVER ------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # handle mu
+    if mu is None:
+        mu = np.ones(radii.size)
+        mu_mean = 1.0
+    else:
+        mu_mean = np.mean(mu)
+
+    # run through all the points and check for possible lateral acceleration
+    if op_mode == "ggv":
+        # in ggv mode all ggvs are equal -> we can use the first one
+        ay_max_global = mu_mean * np.amin(
+            p_ggv[0, :, 2]
+        )  # get first lateral acceleration estimate
+        vx_profile = np.sqrt(
+            ay_max_global * radii
+        )  # get first velocity profile estimate
+
+        ay_max_curr = mu * np.interp(vx_profile, p_ggv[0, :, 0], p_ggv[0, :, 2])
+        vx_profile = np.sqrt(np.multiply(ay_max_curr, radii))
+
+    else:
+        # in loc_gg mode all ggvs consist of a single line due to the missing velocity dependency, mu is None in this
+        # case
+        vx_profile = np.sqrt(
+            p_ggv[:, 0, 2] * radii
+        )  # get first velocity profile estimate
+
+    # cut vx_profile to car's top speed
+    vx_profile[vx_profile > v_max] = v_max
+
+    # consider v_start
+    if vx_profile[0] > v_start:
+        vx_profile[0] = v_start
+
+    # calculate acceleration profile
+    vx_profile = __solver_fb_acc_profile(
+        p_ggv=p_ggv,
+        ax_max_machines=ax_max_machines,
+        v_max=v_max,
+        radii=radii,
+        el_lengths=el_lengths,
+        mu=mu,
+        vx_profile=vx_profile,
+        backwards=False,
+        dyn_model_exp=dyn_model_exp,
+        drag_coeff=drag_coeff,
+        m_veh=m_veh,
+    )
+
+    # consider v_end
+    if v_end is not None and vx_profile[-1] > v_end:
+        vx_profile[-1] = v_end
+
+    # calculate deceleration profile
+    vx_profile = __solver_fb_acc_profile(
+        p_ggv=p_ggv,
+        ax_max_machines=ax_max_machines,
+        v_max=v_max,
+        radii=radii,
+        el_lengths=el_lengths,
+        mu=mu,
+        vx_profile=vx_profile,
+        backwards=True,
+        dyn_model_exp=dyn_model_exp,
+        drag_coeff=drag_coeff,
+        m_veh=m_veh,
+    )
+
+    return vx_profile
+
+
+def __solver_fb_closed(
+    p_ggv: np.ndarray,
+    ax_max_machines: np.ndarray,
+    v_max: float,
+    radii: np.ndarray,
+    el_lengths: np.ndarray,
+    drag_coeff: float,
+    m_veh: float,
+    op_mode: str,
+    mu: np.ndarray = None,
+    dyn_model_exp: float = 1.0,
+) -> np.ndarray:
+    # ------------------------------------------------------------------------------------------------------------------
+    # FORWARD BACKWARD SOLVER ------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    no_points = radii.size
+
+    # handle mu
+    if mu is None:
+        mu = np.ones(no_points)
+        mu_mean = 1.0
+    else:
+        mu_mean = np.mean(mu)
+
+    # run through all the points and check for possible lateral acceleration
+    if op_mode == "ggv":
+        # in ggv mode all ggvs are equal -> we can use the first one
+        ay_max_global = mu_mean * np.amin(
+            p_ggv[0, :, 2]
+        )  # get first lateral acceleration estimate
+        vx_profile = np.sqrt(
+            ay_max_global * radii
+        )  # get first velocity estimate (radii must be positive!)
+
+        # iterate until the initial velocity profile converges (break after max. 100 iterations)
+        converged = False
+
+        for _i in range(100):
+            vx_profile_prev_iteration = vx_profile
+
+            ay_max_curr = mu * np.interp(vx_profile, p_ggv[0, :, 0], p_ggv[0, :, 2])
+            vx_profile = np.sqrt(np.multiply(ay_max_curr, radii))
+
+            # break the loop if the maximum change of the velocity profile was below 0.5%
+            if np.max(np.abs(vx_profile / vx_profile_prev_iteration - 1.0)) < 0.005:
+                converged = True
+                break
+
+        if not converged:
+            print(
+                "The initial vx profile did not converge after 100 iterations, please check radii and ggv!"
+            )
+
+    else:
+        # in loc_gg mode all ggvs consist of a single line due to the missing velocity dependency, mu is None in this
+        # case
+        vx_profile = np.sqrt(
+            p_ggv[:, 0, 2] * radii
+        )  # get first velocity estimate (radii must be positive!)
+
+    # cut vx_profile to car's top speed
+    vx_profile[vx_profile > v_max] = v_max
+
+    """We need to calculate the speed profile for two laps to get the correct starting and ending velocity."""
+
+    # double arrays
+    vx_profile_double = np.concatenate((vx_profile, vx_profile), axis=0)
+    radii_double = np.concatenate((radii, radii), axis=0)
+    el_lengths_double = np.concatenate((el_lengths, el_lengths), axis=0)
+    mu_double = np.concatenate((mu, mu), axis=0)
+    p_ggv_double = np.concatenate((p_ggv, p_ggv), axis=0)
+
+    # calculate acceleration profile
+    vx_profile_double = __solver_fb_acc_profile(
+        p_ggv=p_ggv_double,
+        ax_max_machines=ax_max_machines,
+        v_max=v_max,
+        radii=radii_double,
+        el_lengths=el_lengths_double,
+        mu=mu_double,
+        vx_profile=vx_profile_double,
+        backwards=False,
+        dyn_model_exp=dyn_model_exp,
+        drag_coeff=drag_coeff,
+        m_veh=m_veh,
+    )
+
+    # use second lap of acceleration profile
+    vx_profile_double = np.concatenate(
+        (vx_profile_double[no_points:], vx_profile_double[no_points:]), axis=0
+    )
+
+    # calculate deceleration profile
+    vx_profile_double = __solver_fb_acc_profile(
+        p_ggv=p_ggv_double,
+        ax_max_machines=ax_max_machines,
+        v_max=v_max,
+        radii=radii_double,
+        el_lengths=el_lengths_double,
+        mu=mu_double,
+        vx_profile=vx_profile_double,
+        backwards=True,
+        dyn_model_exp=dyn_model_exp,
+        drag_coeff=drag_coeff,
+        m_veh=m_veh,
+    )
+
+    # use second lap of deceleration profile
+    vx_profile = vx_profile_double[no_points:]
+
+    return vx_profile
+
+
+def __solver_fb_acc_profile(
+    p_ggv: np.ndarray,
+    ax_max_machines: np.ndarray,
+    v_max: float,
+    radii: np.ndarray,
+    el_lengths: np.ndarray,
+    mu: np.ndarray,
+    vx_profile: np.ndarray,
+    drag_coeff: float,
+    m_veh: float,
+    dyn_model_exp: float = 1.0,
+    backwards: bool = False,
+) -> np.ndarray:
+    # ------------------------------------------------------------------------------------------------------------------
+    # PREPARATIONS -----------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    no_points = vx_profile.size
+
+    # check for reversed direction
+    if backwards:
+        radii_mod = np.flipud(radii)
+        el_lengths_mod = np.flipud(el_lengths)
+        mu_mod = np.flipud(mu)
+        vx_profile = np.flipud(vx_profile)
+        mode = "decel_backw"
+    else:
+        radii_mod = radii
+        el_lengths_mod = el_lengths
+        mu_mod = mu
+        mode = "accel_forw"
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # SEARCH START POINTS FOR ACCELERATION PHASES ----------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    vx_diffs = np.diff(vx_profile)
+    acc_inds = np.where(vx_diffs > 0.0)[
+        0
+    ]  # indices of points with positive acceleration
+    if acc_inds.size != 0:
+        # check index diffs -> we only need the first point of every acceleration phase
+        acc_inds_diffs = np.diff(acc_inds)
+        acc_inds_diffs = np.insert(
+            acc_inds_diffs, 0, 2
+        )  # first point is always a starting point
+        acc_inds_rel = acc_inds[
+            acc_inds_diffs > 1
+        ]  # starting point indices for acceleration phases
+    else:
+        acc_inds_rel = []  # if vmax is low and can be driven all the time
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE VELOCITY PROFILE ---------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # cast np.array as a list
+    acc_inds_rel = list(acc_inds_rel)
+
+    # while we have indices remaining in the list
+    while acc_inds_rel:
+        # set index to first list element
+        i = acc_inds_rel.pop(0)
+
+        # start from current index and run until either the end of the lap or a termination criterion are reached
+        while i < no_points - 1:
+            ax_possible_cur = calc_ax_poss(
+                vx_start=vx_profile[i],
+                radius=radii_mod[i],
+                ggv=p_ggv[i],
+                ax_max_machines=ax_max_machines,
+                mu=mu_mod[i],
+                mode=mode,
+                dyn_model_exp=dyn_model_exp,
+                drag_coeff=drag_coeff,
+                m_veh=m_veh,
+            )
+
+            vx_possible_next = math.sqrt(
+                math.pow(vx_profile[i], 2) + 2 * ax_possible_cur * el_lengths_mod[i]
+            )
+
+            if backwards:
+                """
+                We have to loop the calculation if we are in the backwards iteration (currently just once). This is
+                because we calculate the possible ax at a point i which does not necessarily fit for point i + 1
+                (which is i - 1 in the real direction). At point i + 1 (or i - 1 in real direction) we have a different
+                start velocity (vx_possible_next), radius and mu value while the absolute value of ax remains the same
+                in both directions.
+                """
+
+                # looping just once at the moment
+                for _j in range(1):
+                    ax_possible_next = calc_ax_poss(
+                        vx_start=vx_possible_next,
+                        radius=radii_mod[i + 1],
+                        ggv=p_ggv[i + 1],
+                        ax_max_machines=ax_max_machines,
+                        mu=mu_mod[i + 1],
+                        mode=mode,
+                        dyn_model_exp=dyn_model_exp,
+                        drag_coeff=drag_coeff,
+                        m_veh=m_veh,
+                    )
+
+                    vx_tmp = math.sqrt(
+                        math.pow(vx_profile[i], 2)
+                        + 2 * ax_possible_next * el_lengths_mod[i]
+                    )
+
+                    if vx_tmp < vx_possible_next:
+                        vx_possible_next = vx_tmp
+                    else:
+                        break
+
+            # save possible next velocity if it is smaller than the current value
+            if vx_possible_next < vx_profile[i + 1]:
+                vx_profile[i + 1] = vx_possible_next
+
+            i += 1
+
+            # break current acceleration phase if next speed would be higher than the maximum vehicle velocity or if we
+            # are at the next acceleration phase start index
+            if vx_possible_next > v_max or (acc_inds_rel and i >= acc_inds_rel[0]):
+                break
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # POSTPROCESSING ---------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # flip output vel_profile if necessary
+    if backwards:
+        vx_profile = np.flipud(vx_profile)
+
+    return vx_profile
+
+
+def calc_ax_poss(
+    vx_start: float,
+    radius: float,
+    ggv: np.ndarray,
+    mu: float,
+    dyn_model_exp: float,
+    drag_coeff: float,
+    m_veh: float,
+    ax_max_machines: np.ndarray = None,
+    mode: str = "accel_forw",
+) -> float:
+    """
+    This function returns the possible longitudinal acceleration in the current step/point.
+
+    .. inputs::
+    :param vx_start:        [m/s] velocity at current point
+    :type vx_start:         float
+    :param radius:          [m] radius on which the car is currently driving
+    :type radius:           float
+    :param ggv:             ggv-diagram to be applied: [vx, ax_max, ay_max]. Velocity in m/s, accelerations in m/s2.
+    :type ggv:              np.ndarray
+    :param mu:              [-] current friction value
+    :type mu:               float
+    :param dyn_model_exp:   [-] exponent used in the vehicle dynamics model (usual range [1.0,2.0]).
+    :type dyn_model_exp:    float
+    :param drag_coeff:      [m2*kg/m3] drag coefficient incl. all constants: drag_coeff = 0.5 * c_w * A_front * rho_air
+    :type drag_coeff:       float
+    :param m_veh:           [kg] vehicle mass
+    :type m_veh:            float
+    :param ax_max_machines: longitudinal acceleration limits by the electrical motors: [vx, ax_max_machines]. Velocity
+                            in m/s, accelerations in m/s2. They should be handed in without considering drag resistance.
+                            Can be set None if using one of the decel modes.
+    :type ax_max_machines:  np.ndarray
+    :param mode:            [-] operation mode, can be 'accel_forw', 'decel_forw', 'decel_backw'
+                            -> determines if machine limitations are considered and if ax should be considered negative
+                            or positive during deceleration (for possible backwards iteration)
+    :type mode:             str
+
+    .. outputs::
+    :return ax_final:       [m/s2] final acceleration from current point to next one
+    :rtype ax_final:        float
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # PREPARATIONS -----------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # check inputs
+    if mode not in ["accel_forw", "decel_forw", "decel_backw"]:
+        raise RuntimeError("Unknown operation mode for calc_ax_poss!")
+
+    if mode == "accel_forw" and ax_max_machines is None:
+        raise RuntimeError(
+            "ax_max_machines is required if operation mode is accel_forw!"
+        )
+
+    if ggv.ndim != 2 or ggv.shape[1] != 3:
+        raise RuntimeError(
+            "ggv must have two dimensions and three columns [vx, ax_max, ay_max]!"
+        )
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CONSIDER TIRE POTENTIAL ------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # calculate possible and used accelerations (considering tires)
+    ax_max_tires = mu * np.interp(vx_start, ggv[:, 0], ggv[:, 1])
+    ay_max_tires = mu * np.interp(vx_start, ggv[:, 0], ggv[:, 2])
+    ay_used = math.pow(vx_start, 2) / radius
+
+    # during forward acceleration and backward deceleration ax_max_tires must be considered positive, during forward
+    # deceleration it must be considered negative
+    if mode in ["accel_forw", "decel_backw"] and ax_max_tires < 0.0:
+        print(
+            "WARNING: Inverting sign of ax_max_tires because it should be positive but was negative!"
+        )
+        ax_max_tires *= -1.0
+    elif mode == "decel_forw" and ax_max_tires > 0.0:
+        print(
+            "WARNING: Inverting sign of ax_max_tires because it should be negative but was positve!"
+        )
+        ax_max_tires *= -1.0
+
+    radicand = 1.0 - math.pow(ay_used / ay_max_tires, dyn_model_exp)
+
+    if radicand > 0.0:
+        ax_avail_tires = ax_max_tires * math.pow(radicand, 1.0 / dyn_model_exp)
+    else:
+        ax_avail_tires = 0.0
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CONSIDER MACHINE LIMITATIONS -------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # consider limitations imposed by electrical machines during forward acceleration
+    if mode == "accel_forw":
+        # interpolate machine acceleration to be able to consider varying gear ratios, efficiencies etc.
+        ax_max_machines_tmp = np.interp(
+            vx_start, ax_max_machines[:, 0], ax_max_machines[:, 1]
+        )
+        ax_avail_vehicle = min(ax_avail_tires, ax_max_machines_tmp)
+    else:
+        ax_avail_vehicle = ax_avail_tires
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CONSIDER DRAG ----------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # calculate equivalent longitudinal acceleration of drag force at the current speed
+    ax_drag = -math.pow(vx_start, 2) * drag_coeff / m_veh
+
+    # drag reduces the possible acceleration in the forward case and increases it in the backward case
+    if mode in ["accel_forw", "decel_forw"]:
+        ax_final = ax_avail_vehicle + ax_drag
+        # attention: this value will now be negative in forward direction if tire is entirely used for cornering
+    else:
+        ax_final = ax_avail_vehicle - ax_drag
+
+    return ax_final
+
+
+def calc_ax_profile(
+    vx_profile: np.ndarray, el_lengths: np.ndarray, eq_length_output: bool = False
+) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    The function calculates the acceleration profile for a given velocity profile.
+
+    .. inputs::
+    :param vx_profile:          array containing the velocity profile used as a basis for the acceleration calculations.
+    :type vx_profile:           np.ndarray
+    :param el_lengths:          array containing the element lengths between every point of the velocity profile.
+    :type el_lengths:           np.ndarray
+    :param eq_length_output:    assumes zero acceleration for the last point of the acceleration profile and therefore
+                                returns ax_profile with equal length to vx_profile.
+    :type eq_length_output:     bool
+
+    .. outputs::
+    :return ax_profile:         acceleration profile calculated for the inserted vx_profile.
+    :rtype ax_profile:          np.ndarray
+
+    .. notes::
+    case eq_length_output is True:
+    len(vx_profile) = len(el_lengths) + 1 = len(ax_profile)
+
+    case eq_length_output is False:
+    len(vx_profile) = len(el_lengths) + 1 = len(ax_profile) + 1
+    """
+
+    # check inputs
+    if vx_profile.size != el_lengths.size + 1:
+        raise RuntimeError(
+            "Array size of vx_profile should be 1 element bigger than el_lengths!"
+        )
+
+    # calculate longitudinal acceleration profile array numerically: (v_end^2 - v_beg^2) / 2*s
+    if eq_length_output:
+        ax_profile = np.zeros(vx_profile.size)
+        ax_profile[:-1] = (
+            np.power(vx_profile[1:], 2) - np.power(vx_profile[:-1], 2)
+        ) / (2 * el_lengths)
+    else:
+        ax_profile = (np.power(vx_profile[1:], 2) - np.power(vx_profile[:-1], 2)) / (
+            2 * el_lengths
+        )
+
+    return ax_profile
+
+
+def calc_t_profile(
+    vx_profile: np.ndarray,
+    el_lengths: np.ndarray,
+    t_start: float = 0.0,
+    ax_profile: np.ndarray = None,
+) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    Calculate a temporal duration profile for a given trajectory.
+
+    .. inputs::
+    :param vx_profile:  array containing the velocity profile.
+    :type vx_profile:   np.ndarray
+    :param el_lengths:  array containing the element lengths between every point of the velocity profile.
+    :type el_lengths:   np.ndarray
+    :param t_start:     start time in seconds added to first array element.
+    :type t_start:      float
+    :param ax_profile:  acceleration profile fitting to the velocity profile.
+    :type ax_profile:   np.ndarray
+
+    .. outputs::
+    :return t_profile:  time profile for the given velocity profile.
+    :rtype t_profile:   np.ndarray
+
+    .. notes::
+    len(el_lengths) + 1 = len(t_profile)
+
+    len(vx_profile) and len(ax_profile) must be >= len(el_lengths) as the temporal duration from one point to the next
+    is only calculated based on the previous point.
+    """
+
+    # check inputs
+    if vx_profile.size < el_lengths.size:
+        raise RuntimeError(
+            "vx_profile and el_lenghts must have at least the same length!"
+        )
+
+    if ax_profile is not None and ax_profile.size < el_lengths.size:
+        raise RuntimeError(
+            "ax_profile and el_lenghts must have at least the same length!"
+        )
+
+    # calculate acceleration profile if required
+    if ax_profile is None:
+        ax_profile = calc_ax_profile(
+            vx_profile=vx_profile, el_lengths=el_lengths, eq_length_output=False
+        )
+
+    # calculate temporal duration of every step between two points
+    no_points = el_lengths.size
+    t_steps = np.zeros(no_points)
+
+    for i in range(no_points):
+        if not math.isclose(ax_profile[i], 0.0):
+            t_steps[i] = (
+                -vx_profile[i]
+                + math.sqrt(
+                    (math.pow(vx_profile[i], 2) + 2 * ax_profile[i] * el_lengths[i])
+                )
+            ) / ax_profile[i]
+
+        else:  # ax == 0.0
+            t_steps[i] = el_lengths[i] / vx_profile[i]
+
+    # calculate temporal duration profile out of steps
+    t_profile = np.insert(np.cumsum(t_steps), 0, 0.0) + t_start
+
+    return t_profile
+
+
+def result_plots(
+    plot_opts: dict,
+    width_veh_opt: float,
+    width_veh_real: float,
+    refline: np.ndarray,
+    bound1_imp: np.ndarray,
+    bound2_imp: np.ndarray,
+    bound1_interp: np.ndarray,
+    bound2_interp: np.ndarray,
+    trajectory: np.ndarray,
+) -> None:
+    """
+    Created by:
+    Alexander Heilmeier
+
+    Documentation:
+    This function plots several figures containing relevant trajectory information after trajectory optimization.
+
+    Inputs:
+    plot_opts:      dict containing the information which figures to plot
+    width_veh_opt:  vehicle width used during optimization in m
+    width_veh_real: real vehicle width in m
+    refline:        contains the reference line coordinates [x_m, y_m]
+    bound1_imp:     first track boundary (as imported) (mostly right) [x_m, y_m]
+    bound2_imp:     second track boundary (as imported) (mostly left) [x_m, y_m]
+    bound1_interp:  first track boundary (interpolated) (mostly right) [x_m, y_m]
+    bound2_interp:  second track boundary (interpolated) (mostly left) [x_m, y_m]
+    trajectory:     trajectory data [s_m, x_m, y_m, psi_rad, kappa_radpm, vx_mps, ax_mps2]
+    """
+
+    if plot_opts["raceline"]:
+        # calculate vehicle boundary points (including safety margin in vehicle width)
+        normvec_normalized_opt = calc_normal_vectors(trajectory[:, 3])
+
+        veh_bound1_virt = (
+            trajectory[:, 1:3] + normvec_normalized_opt * width_veh_opt / 2
+        )
+        veh_bound2_virt = (
+            trajectory[:, 1:3] - normvec_normalized_opt * width_veh_opt / 2
+        )
+
+        veh_bound1_real = (
+            trajectory[:, 1:3] + normvec_normalized_opt * width_veh_real / 2
+        )
+        veh_bound2_real = (
+            trajectory[:, 1:3] - normvec_normalized_opt * width_veh_real / 2
+        )
+
+        print(refline)
+
+        point1_arrow = refline[0]
+        point2_arrow = refline[4]
+        vec_arrow = point2_arrow - point1_arrow
+
+        # plot track including optimized path
+        plt.figure()
+        plt.plot(refline[:, 0], refline[:, 1], "k--", linewidth=0.7)
+        plt.plot(veh_bound1_virt[:, 0], veh_bound1_virt[:, 1], "b", linewidth=0.5)
+        plt.plot(veh_bound2_virt[:, 0], veh_bound2_virt[:, 1], "b", linewidth=0.5)
+        plt.plot(veh_bound1_real[:, 0], veh_bound1_real[:, 1], "c", linewidth=0.5)
+        plt.plot(veh_bound2_real[:, 0], veh_bound2_real[:, 1], "c", linewidth=0.5)
+        plt.plot(bound1_interp[:, 0], bound1_interp[:, 1], "k-", linewidth=0.7)
+        plt.plot(bound2_interp[:, 0], bound2_interp[:, 1], "k-", linewidth=0.7)
+        plt.plot(trajectory[:, 1], trajectory[:, 2], "r-", linewidth=0.7)
+
+        if (
+            plot_opts["imported_bounds"]
+            and bound1_imp is not None
+            and bound2_imp is not None
+        ):
+            plt.plot(bound1_imp[:, 0], bound1_imp[:, 1], "y-", linewidth=0.7)
+            plt.plot(bound2_imp[:, 0], bound2_imp[:, 1], "y-", linewidth=0.7)
+
+        plt.grid()
+        ax = plt.gca()
+        ax.arrow(
+            point1_arrow[0],
+            point1_arrow[1],
+            vec_arrow[0],
+            vec_arrow[1],
+            width=0.5,
+            head_width=1.0,
+            head_length=1.0,
+            fc="g",
+            ec="g",
+        )
+        ax.set_aspect("equal", "datalim")
+        plt.xlabel("east in m")
+        plt.ylabel("north in m")
+        plt.show()
+
+    if plot_opts["raceline_curv"]:
+        # plot curvature profile
+        plt.figure()
+        plt.plot(trajectory[:, 0], trajectory[:, 4])
+        plt.grid()
+        plt.xlabel("distance in m")
+        plt.ylabel("curvature in rad/m")
+        plt.show()
+
+    if plot_opts["racetraj_vel_3d"]:
+        scale_x = 1.0
+        scale_y = 1.0
+        scale_z = 0.3  # scale z axis such that it does not appear stretched
+
+        # create 3d plot
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+
+        # recast get_proj function to use scaling factors for the axes
+        ax.get_proj = lambda: np.dot(
+            Axes3D.get_proj(ax), np.diag([scale_x, scale_y, scale_z, 1.0])
+        )
+
+        # plot raceline and boundaries
+        ax.plot(refline[:, 0], refline[:, 1], "k--", linewidth=0.7)
+        ax.plot(bound1_interp[:, 0], bound1_interp[:, 1], 0.0, "k-", linewidth=0.7)
+        ax.plot(bound2_interp[:, 0], bound2_interp[:, 1], 0.0, "k-", linewidth=0.7)
+        ax.plot(trajectory[:, 1], trajectory[:, 2], "r-", linewidth=0.7)
+
+        ax.grid()
+        ax.set_aspect("auto")
+        ax.set_xlabel("east in m")
+        ax.set_ylabel("north in m")
+
+        # plot velocity profile in 3D
+        ax.plot(trajectory[:, 1], trajectory[:, 2], trajectory[:, 5], color="k")
+        ax.set_zlabel("velocity in m/s")
+
+        # plot vertical lines visualizing acceleration and deceleration zones
+        ind_stepsize = int(
+            np.round(
+                plot_opts["racetraj_vel_3d_stepsize"] / trajectory[1, 0]
+                - trajectory[0, 0]
+            )
+        )
+        if ind_stepsize < 1:
+            ind_stepsize = 1
+
+        cur_ind = 0
+        no_points_traj_vdc = np.shape(trajectory)[0]
+
+        while cur_ind < no_points_traj_vdc - 1:
+            x_tmp = [trajectory[cur_ind, 1], trajectory[cur_ind, 1]]
+            y_tmp = [trajectory[cur_ind, 2], trajectory[cur_ind, 2]]
+            z_tmp = [
+                0.0,
+                trajectory[cur_ind, 5],
+            ]  # plot line with height depending on velocity
+
+            # get proper color for line depending on acceleration
+            if trajectory[cur_ind, 6] > 0.0:
+                col = "g"
+            elif trajectory[cur_ind, 6] < 0.0:
+                col = "r"
+            else:
+                col = "gray"
+
+            # plot line
+            ax.plot(x_tmp, y_tmp, z_tmp, color=col)
+
+            # increment index
+            cur_ind += ind_stepsize
+
+        plt.show()
+
+    if plot_opts["spline_normals"]:
+        plt.figure()
+
+        plt.plot(refline[:, 0], refline[:, 1], "k-")
+        for i in range(bound1_interp.shape[0]):
+            temp = np.vstack((bound1_interp[i], bound2_interp[i]))
+            plt.plot(temp[:, 0], temp[:, 1], "r-", linewidth=0.7)
+
+        plt.grid()
+        ax = plt.gca()
+        ax.set_aspect("equal", "datalim")
+        plt.xlabel("east in m")
+        plt.ylabel("north in m")
+
+        plt.show()
+
+
+def check_traj(
+    reftrack: np.ndarray,
+    reftrack_normvec_normalized: np.ndarray,
+    trajectory: np.ndarray,
+    ggv: np.ndarray,
+    ax_max_machines: np.ndarray,
+    v_max: float,
+    length_veh: float,
+    width_veh: float,
+    debug: bool,
+    dragcoeff: float,
+    mass_veh: float,
+    curvlim: float,
+) -> tuple:
+    """
+    Created by:
+    Alexander Heilmeier
+
+    Documentation:
+    This function checks the generated trajectory in regards of minimum distance to the boundaries and maximum
+    curvature and accelerations.
+
+    Inputs:
+    reftrack:           track [x_m, y_m, w_tr_right_m, w_tr_left_m]
+    reftrack_normvec_normalized: normalized normal vectors on the reference line [x_m, y_m]
+    trajectory:         trajectory to be checked [s_m, x_m, y_m, psi_rad, kappa_radpm, vx_mps, ax_mps2]
+    ggv:                ggv-diagram to be applied: [vx, ax_max, ay_max]. Velocity in m/s, accelerations in m/s2.
+    ax_max_machines:    longitudinal acceleration limits by the electrical motors: [vx, ax_max_machines]. Velocity
+                        in m/s, accelerations in m/s2. They should be handed in without considering drag resistance.
+    v_max:              Maximum longitudinal speed in m/s.
+    length_veh:         vehicle length in m
+    width_veh:          vehicle width in m
+    debug:              boolean showing if debug messages should be printed
+    dragcoeff:          [m2*kg/m3] drag coefficient containing c_w_A * rho_air * 0.5
+    mass_veh:           [kg] mass
+    curvlim:            [rad/m] maximum drivable curvature
+
+    Outputs:
+    bound_r:            right track boundary [x_m, y_m]
+    bound_l:            left track boundary [x_m, y_m]
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CHECK VEHICLE EDGES FOR MINIMUM DISTANCE TO TRACK BOUNDARIES -----------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # calculate boundaries and interpolate them to small stepsizes (currently linear interpolation)
+    bound_r = reftrack[:, :2] + reftrack_normvec_normalized * np.expand_dims(
+        reftrack[:, 2], 1
+    )
+    bound_l = reftrack[:, :2] - reftrack_normvec_normalized * np.expand_dims(
+        reftrack[:, 3], 1
+    )
+
+    # check boundaries for vehicle edges
+    bound_r_tmp = np.column_stack((bound_r, np.zeros((bound_r.shape[0], 2))))
+    bound_l_tmp = np.column_stack((bound_l, np.zeros((bound_l.shape[0], 2))))
+
+    bound_r_interp = interp_track(track=bound_r_tmp, stepsize=1.0)[0]
+    bound_l_interp = interp_track(track=bound_l_tmp, stepsize=1.0)[0]
+
+    # calculate minimum distances of every trajectory point to the boundaries
+    min_dists = calc_min_bound_dists(
+        trajectory=trajectory,
+        bound1=bound_r_interp,
+        bound2=bound_l_interp,
+        length_veh=length_veh,
+        width_veh=width_veh,
+    )
+
+    # calculate overall minimum distance
+    min_dist = np.amin(min_dists)
+
+    # warn if distance falls below a safety margin of 1.0 m
+    if min_dist < 1.0:
+        print(
+            "WARNING: Minimum distance to boundaries is estimated to %.2fm. Keep in mind that the distance can also"
+            " lie on the outside of the track!" % min_dist
+        )
+    elif debug:
+        print(
+            "INFO: Minimum distance to boundaries is estimated to %.2fm. Keep in mind that the distance can also lie"
+            " on the outside of the track!" % min_dist
+        )
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CHECK FINAL TRAJECTORY FOR MAXIMUM CURVATURE ---------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # check maximum (absolute) curvature
+    if np.amax(np.abs(trajectory[:, 4])) > curvlim:
+        print(
+            "WARNING: Curvature limit is exceeded: %.3frad/m"
+            % np.amax(np.abs(trajectory[:, 4]))
+        )
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CHECK FINAL TRAJECTORY FOR MAXIMUM ACCELERATIONS -----------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    if ggv is not None:
+        # transform curvature kappa into corresponding radii (abs because curvature has a sign in our convention)
+        radii = np.abs(
+            np.divide(
+                1.0,
+                trajectory[:, 4],
+                out=np.full(trajectory.shape[0], np.inf),
+                where=trajectory[:, 4] != 0,
+            )
+        )
+
+        # check max. lateral accelerations
+        ay_profile = np.divide(np.power(trajectory[:, 5], 2), radii)
+
+        if np.any(ay_profile > np.amax(ggv[:, 2]) + 0.1):
+            print(
+                "WARNING: Lateral ggv acceleration limit is exceeded: %.2fm/s2"
+                % np.amax(ay_profile)
+            )
+
+        # check max. longitudinal accelerations (consider that drag is included in the velocity profile!)
+        ax_drag = -np.power(trajectory[:, 5], 2) * dragcoeff / mass_veh
+        ax_wo_drag = trajectory[:, 6] - ax_drag
+
+        if np.any(ax_wo_drag > np.amax(ggv[:, 1]) + 0.1):
+            print(
+                "WARNING: Longitudinal ggv acceleration limit (positive) is exceeded: %.2fm/s2"
+                % np.amax(ax_wo_drag)
+            )
+
+        if np.any(ax_wo_drag < np.amin(-ggv[:, 1]) - 0.1):
+            print(
+                "WARNING: Longitudinal ggv acceleration limit (negative) is exceeded: %.2fm/s2"
+                % np.amin(ax_wo_drag)
+            )
+
+        # check total acceleration
+        a_tot = np.sqrt(np.power(ax_wo_drag, 2) + np.power(ay_profile, 2))
+
+        if np.any(a_tot > np.amax(ggv[:, 1:]) + 0.1):
+            print(
+                "WARNING: Total ggv acceleration limit is exceeded: %.2fm/s2"
+                % np.amax(a_tot)
+            )
+
+    else:
+        print(
+            "WARNING: Since ggv-diagram was not given the according checks cannot be performed!"
+        )
+
+    if ax_max_machines is not None:
+        # check max. longitudinal accelerations (consider that drag is included in the velocity profile!)
+        ax_drag = -np.power(trajectory[:, 5], 2) * dragcoeff / mass_veh
+        ax_wo_drag = trajectory[:, 6] - ax_drag
+
+        if np.any(ax_wo_drag > np.amax(ax_max_machines[:, 1]) + 0.1):
+            print(
+                "WARNING: Longitudinal acceleration machine limits are exceeded: %.2fm/s2"
+                % np.amax(ax_wo_drag)
+            )
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CHECK FINAL TRAJECTORY FOR MAXIMUM VELOCITY ----------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    if np.any(trajectory[:, 5] > v_max + 0.1):
+        print(
+            "WARNING: Maximum velocity of final trajectory exceeds the maximal velocity of the vehicle: %.2fm/s!"
+            % np.amax(trajectory[:, 5])
+        )
+
+    return bound_r, bound_l
+
+
+def calc_min_bound_dists(
+    trajectory: np.ndarray,
+    bound1: np.ndarray,
+    bound2: np.ndarray,
+    length_veh: float,
+    width_veh: float,
+) -> np.ndarray:
+    """
+    Created by:
+    Alexander Heilmeier
+
+    Documentation:
+    Calculate minimum distance between vehicle and track boundaries for every trajectory point. Vehicle dimensions are
+    taken into account for this calculation. Vehicle orientation is assumed to be the same as the heading of the
+    trajectory.
+
+    Inputs:
+    trajectory:     array containing the trajectory information. Required are x, y, psi for every point
+    bound1/2:       arrays containing the track boundaries [x, y]
+    length_veh:     real vehicle length in m
+    width_veh:      real vehicle width in m
+
+    Outputs:
+    min_dists:      minimum distance to boundaries for every trajectory point
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALCULATE MINIMUM DISTANCES --------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    bounds = np.vstack((bound1, bound2))
+
+    # calculate static vehicle edge positions [x, y] for psi = 0
+    fl = np.array([-width_veh / 2, length_veh / 2])
+    fr = np.array([width_veh / 2, length_veh / 2])
+    rl = np.array([-width_veh / 2, -length_veh / 2])
+    rr = np.array([width_veh / 2, -length_veh / 2])
+
+    # loop through all the raceline points
+    min_dists = np.zeros(trajectory.shape[0])
+    mat_rot = np.zeros((2, 2))
+
+    for i in range(trajectory.shape[0]):
+        mat_rot[0, 0] = math.cos(trajectory[i, 3])
+        mat_rot[0, 1] = -math.sin(trajectory[i, 3])
+        mat_rot[1, 0] = math.sin(trajectory[i, 3])
+        mat_rot[1, 1] = math.cos(trajectory[i, 3])
+
+        # calculate positions of vehicle edges
+        fl_ = trajectory[i, 1:3] + np.matmul(mat_rot, fl)
+        fr_ = trajectory[i, 1:3] + np.matmul(mat_rot, fr)
+        rl_ = trajectory[i, 1:3] + np.matmul(mat_rot, rl)
+        rr_ = trajectory[i, 1:3] + np.matmul(mat_rot, rr)
+
+        # get minimum distances of vehicle edges to any boundary point
+        fl__mindist = np.sqrt(
+            np.power(bounds[:, 0] - fl_[0], 2) + np.power(bounds[:, 1] - fl_[1], 2)
+        )
+        fr__mindist = np.sqrt(
+            np.power(bounds[:, 0] - fr_[0], 2) + np.power(bounds[:, 1] - fr_[1], 2)
+        )
+        rl__mindist = np.sqrt(
+            np.power(bounds[:, 0] - rl_[0], 2) + np.power(bounds[:, 1] - rl_[1], 2)
+        )
+        rr__mindist = np.sqrt(
+            np.power(bounds[:, 0] - rr_[0], 2) + np.power(bounds[:, 1] - rr_[1], 2)
+        )
+
+        # save overall minimum distance of current vehicle position
+        min_dists[i] = np.amin((fl__mindist, fr__mindist, rl__mindist, rr__mindist))
+
+    return min_dists
+
+
+def calc_normal_vectors(psi: np.ndarray) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    Use heading to calculate normalized (i.e. unit length) normal vectors. Normal vectors point in direction psi - pi/2.
+
+    .. inputs::
+    :param psi:                     array containing the heading of every point (north up, range [-pi,pi[).
+    :type psi:                      np.ndarray
+
+    .. outputs::
+    :return normvec_normalized:     unit length normal vectors for every point [x, y].
+    :rtype normvec_normalized:      np.ndarray
+
+    .. notes::
+    len(psi) = len(normvec_normalized)
+    """
+
+    # calculate normal vectors
+    normvec_normalized = -calc_normal_vectors_ahead(psi=psi)
+
+    return normvec_normalized
+
+
+def calc_normal_vectors_ahead(psi: np.ndarray) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    Use heading to calculate normalized (i.e. unit length) normal vectors. Normal vectors point in direction psi + pi/2.
+
+    .. inputs::
+    :param psi:                     array containing the heading of every point (north up, range [-pi,pi[).
+    :type psi:                      np.ndarray
+
+    .. outputs::
+    :return normvec_normalized:     unit length normal vectors for every point [x, y].
+    :rtype normvec_normalized:      np.ndarray
+
+    .. notes::
+    len(psi) = len(normvec_normalized)
+    """
+
+    # calculate tangent vectors
+    tangvec_normalized = calc_tangent_vectors(psi=psi)
+
+    # find normal vectors
+    normvec_normalized = np.stack(
+        (-tangvec_normalized[:, 1], tangvec_normalized[:, 0]), axis=1
+    )
+
+    return normvec_normalized
+
+
+def calc_tangent_vectors(psi: np.ndarray) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    Use heading to calculate normalized (i.e. unit length) tangent vectors.
+
+    .. inputs::
+    :param psi:                     array containing the heading of every point (north up, range [-pi,pi[).
+    :type psi:                      np.ndarray
+
+    .. outputs::
+    :return tangvec_normalized:     unit length tangent vectors for every point [x, y].
+    :rtype tangvec_normalized:      np.ndarray
+
+    .. notes::
+    len(psi) = len(tangvec_normalized)
+    """
+
+    psi_ = np.copy(psi)
+
+    # remap psi_vel to x-axis
+    psi_ += math.pi / 2
+    psi_ = normalize_psi(psi_)
+
+    # get normalized tangent vectors
+    tangvec_normalized = np.zeros((psi_.size, 2))
+    tangvec_normalized[:, 0] = np.cos(psi_)
+    tangvec_normalized[:, 1] = np.sin(psi_)
+
+    return tangvec_normalized
