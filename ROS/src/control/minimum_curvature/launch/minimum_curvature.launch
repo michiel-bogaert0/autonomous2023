@@ -12,14 +12,14 @@
         <param name="v_max" value="10.0" />
         <param name="drag_coeff" value="1.00" />
         <param name="car_mass" value="50.00" />
-        <param name="plot" value="True" />
+        <param name="plot" value="False" />
         <param name="imported_bounds" value="True" />
         <param name="curvlim" value="0.5" />
-        <param name="stepsize_prep" value="0.5" />
-        <param name="stepsize_opt" value="0.5" />
-        <param name="stepsize_post" value="0.5" />
+        <param name="stepsize_prep" value="1.00" />
+        <param name="stepsize_opt" value="1.00" />
+        <param name="stepsize_post" value="1.00" />
+        <param name="vel" value="False" />
 
-        <!-- <remap from="/input/local_map" to="/ugr/car/map/fastslam/local" /> -->
         <remap from="/input/boundaries" to="/boundary_estimation/boundaries" />
 
         <remap from="/input/path" to="/pathplanning/poses" />

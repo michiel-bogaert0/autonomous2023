@@ -787,7 +787,7 @@ def iqp_handler(
         # check termination criterions: minimum number of iterations and curvature error
         if (
             iter_cur >= iters_min and curv_error_max_tmp <= curv_error_allowed
-        ) or iter_cur == 5:
+        ) or iter_cur == 4:
             end = time.perf_counter()
             rospy.logerr("Iteration %d finished in %f", iter_cur, end - start)
             if print_debug:

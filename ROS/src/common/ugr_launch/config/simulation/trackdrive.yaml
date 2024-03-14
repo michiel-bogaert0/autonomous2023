@@ -9,12 +9,15 @@ slam_controller:
       # SLAM
       - slam_mcl
 
+      # Control
+      - minimum_curvature
+
     always:
       # SLAM
       - loopclosure
 
       # Control
-      - pure_pursuit_control
+      - front_wheel_feedback_control
       - pathplanning
 
 slam_mcl:

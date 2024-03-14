@@ -9,6 +9,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
+from node_fixture.node_manager import set_state_inactive
 from ugr_msgs.msg import Boundaries
 from utils.utils_mincurv import (  # calc_bound_dists,; calc_head_curv_an2,; opt_min_curv,
     B_spline_smoothing,
@@ -42,7 +43,6 @@ class MinimumCurvature(ManagedNode):
         self.v_max = rospy.get_param("~v_max", 10.0)
         self.drag_coeff = rospy.get_param("~drag_coeff", 1.00)
         self.car_mass = rospy.get_param("~car_mass", 50.00)
-        self.plot = rospy.get_param("~plot", True)
         self.imported_bounds = rospy.get_param("~imported_bounds", True)
         self.curvlim = rospy.get_param("~curvlim", 0.5)
 
@@ -50,18 +50,19 @@ class MinimumCurvature(ManagedNode):
         self.stepsize_opt = rospy.get_param("~stepsize_opt", 0.25)
         self.stepsize_post = rospy.get_param("~stepsize_interp", 0.25)
 
+        self.plot = rospy.get_param("~plot", True)
+        self.vel = rospy.get_param("~vel", True)
+
         self.car_width_with_margins = (
             self.car_width + self.width_margin_left + self.width_margin_right
         )
 
         # Publishers for the path, path_extra, path_iqp and reference
-        self.path_pub = super().AddPublisher("/output/path", Path, queue_size=10)
+        self.path_pub = super().AddPublisher("/output/path_iqp", Path, queue_size=10)
         self.path_extra_pub = super().AddPublisher(
             "/output/path_extra", Path, queue_size=10
         )
-        self.path_iqp_pub = super().AddPublisher(
-            "/output/path_iqp", Path, queue_size=10
-        )
+        self.path_iqp_pub = super().AddPublisher("/output/path", Path, queue_size=10)
         self.path_ref_pub = super().AddPublisher(
             "/output/path_ref", Path, queue_size=10
         )
@@ -265,75 +266,113 @@ class MinimumCurvature(ManagedNode):
             print_debug=False,
             plot_debug=False,
             stepsize_interp=self.stepsize_opt,
-            iters_min=3,
-            curv_error_allowed=0.01,
+            iters_min=2,
+            curv_error_allowed=0.05,
         )
         rospy.logerr(
             f"Total time elapsed during iqp optimisation: {time.perf_counter() - iqp_start}"
         )
 
-        vel_start = time.perf_counter()
-        # Interpolate splines to small distances between raceline points
-        (
-            raceline_interp,
-            a_opt,
-            coeffs_x_opt,
-            coeffs_y_opt,
-            spline_inds_opt_interp,
-            t_vals_opt_interp,
-            s_points_opt_interp,
-            spline_lengths_opt,
-            el_lengths_opt_interp,
-        ) = create_raceline(
-            refline=reftrack_interp_iqp[:, :2],
-            normvectors=normvec_normalized_iqp,
-            alpha=alpha_mincurv_iqp,
-            stepsize_interp=self.stepsize_opt,
-        )
-        # rospy.logerr(f"Raceline interpolated: {raceline_interp}")
+        if self.vel:
+            vel_start = time.perf_counter()
+            # Interpolate splines to small distances between raceline points
+            (
+                raceline_interp,
+                a_opt,
+                coeffs_x_opt,
+                coeffs_y_opt,
+                spline_inds_opt_interp,
+                t_vals_opt_interp,
+                s_points_opt_interp,
+                spline_lengths_opt,
+                el_lengths_opt_interp,
+            ) = create_raceline(
+                refline=reftrack_interp_iqp[:, :2],
+                normvectors=normvec_normalized_iqp,
+                alpha=alpha_mincurv_iqp,
+                stepsize_interp=self.stepsize_opt,
+            )
+            # rospy.logerr(f"Raceline interpolated: {raceline_interp}")
 
-        # Calculate heading and curvature
-        psi_vel_opt, kappa_opt = calc_head_curv_an(
-            coeffs_x=coeffs_x_opt,
-            coeffs_y=coeffs_y_opt,
-            ind_spls=spline_inds_opt_interp,
-            t_spls=t_vals_opt_interp,
-        )
+            # Calculate heading and curvature
+            psi_vel_opt, kappa_opt = calc_head_curv_an(
+                coeffs_x=coeffs_x_opt,
+                coeffs_y=coeffs_y_opt,
+                ind_spls=spline_inds_opt_interp,
+                t_spls=t_vals_opt_interp,
+            )
 
-        # rospy.logerr(f"Heading: {psi_vel_opt}")
-        # rospy.logerr(f"Curvature: {kappa_opt}")
+            # rospy.logerr(f"Heading: {psi_vel_opt}")
+            # rospy.logerr(f"Curvature: {kappa_opt}")
 
-        # Calculate velocity and acceleration profile
-        vx_profile_opt = calc_vel_profile(
-            ggv=self.ggv,
-            ax_max_machines=self.ax_max_machines,
-            drag_coeff=self.drag_coeff,
-            m_veh=self.car_mass,
-            kappa=kappa_opt,
-            el_lengths=el_lengths_opt_interp,
-            closed=True,
-        )
-        # rospy.logerr(f"vx_profile: {vx_profile_opt}")
+            # Calculate velocity and acceleration profile
+            vx_profile_opt = calc_vel_profile(
+                ggv=self.ggv,
+                ax_max_machines=self.ax_max_machines,
+                drag_coeff=self.drag_coeff,
+                m_veh=self.car_mass,
+                kappa=kappa_opt,
+                el_lengths=el_lengths_opt_interp,
+                closed=True,
+            )
+            # rospy.logerr(f"vx_profile: {vx_profile_opt}")
 
-        # Calculate longitudinal acceleration profile
-        vx_profile_opt_cl = np.append(vx_profile_opt, vx_profile_opt[0])
-        ax_profile_opt = calc_ax_profile(
-            vx_profile=vx_profile_opt_cl,
-            el_lengths=el_lengths_opt_interp,
-            eq_length_output=False,
-        )
-        # rospy.logerr(f"ax_profile: {ax_profile_opt}")
+            # Calculate longitudinal acceleration profile
+            vx_profile_opt_cl = np.append(vx_profile_opt, vx_profile_opt[0])
+            ax_profile_opt = calc_ax_profile(
+                vx_profile=vx_profile_opt_cl,
+                el_lengths=el_lengths_opt_interp,
+                eq_length_output=False,
+            )
+            # rospy.logerr(f"ax_profile: {ax_profile_opt}")
 
-        # Calculate laptime
-        t_profile_cl = calc_t_profile(
-            vx_profile=vx_profile_opt,
-            ax_profile=ax_profile_opt,
-            el_lengths=el_lengths_opt_interp,
-        )
-        rospy.logerr(f"Estimated laptime: {t_profile_cl[-1]}")
-        rospy.logerr(
-            f"Total time elapsed during velocity and acceleration profile calculation: {time.perf_counter() - vel_start}"
-        )
+            # Calculate laptime
+            t_profile_cl = calc_t_profile(
+                vx_profile=vx_profile_opt,
+                ax_profile=ax_profile_opt,
+                el_lengths=el_lengths_opt_interp,
+            )
+            rospy.logerr(f"Estimated laptime: {t_profile_cl[-1]}")
+            rospy.logerr(
+                f"Total time elapsed during velocity and acceleration profile calculation: {time.perf_counter() - vel_start}"
+            )
+
+            # Data postprocessing
+            trajectory_opt = np.column_stack(
+                (
+                    s_points_opt_interp,
+                    raceline_interp,
+                    psi_vel_opt,
+                    kappa_opt,
+                    vx_profile_opt,
+                    ax_profile_opt,
+                )
+            )
+            spline_data_opt = np.column_stack(
+                (spline_lengths_opt, coeffs_x_opt, coeffs_y_opt)
+            )
+
+            traj_race_cl = np.vstack((trajectory_opt, trajectory_opt[0, :]))
+            traj_race_cl[-1, 0] = np.sum(spline_data_opt[:, 0])  # set correct length
+
+            rospy.logerr(
+                f"Runtime from start to final trajectory was {time.perf_counter() - t_start}"
+            )
+
+            bound1, bound2 = check_traj(
+                reftrack=reftrack_interp_iqp,
+                reftrack_normvec_normalized=normvec_normalized_iqp,
+                length_veh=self.car_length,
+                width_veh=self.car_width,
+                debug=True,
+                trajectory=trajectory_opt,
+                ggv=self.ggv,
+                ax_max_machines=self.ax_max_machines,
+                v_max=self.v_max,
+                curvlim=self.curvlim,
+                mass_veh=self.car_mass,
+                dragcoeff=self.drag_coeff,
+            )
 
         if self.plot:
             s_points = np.cumsum(el_lengths_opt_interp[:-1])
@@ -346,44 +385,6 @@ class MinimumCurvature(ManagedNode):
             plt.xlabel("distance in m")
             plt.legend(["vx in m/s", "ax in m/s2"])
 
-        # Data postprocessing
-        trajectory_opt = np.column_stack(
-            (
-                s_points_opt_interp,
-                raceline_interp,
-                psi_vel_opt,
-                kappa_opt,
-                vx_profile_opt,
-                ax_profile_opt,
-            )
-        )
-        spline_data_opt = np.column_stack(
-            (spline_lengths_opt, coeffs_x_opt, coeffs_y_opt)
-        )
-
-        traj_race_cl = np.vstack((trajectory_opt, trajectory_opt[0, :]))
-        traj_race_cl[-1, 0] = np.sum(spline_data_opt[:, 0])  # set correct length
-
-        rospy.logerr(
-            f"Runtime from start to final trajectory was {time.perf_counter() - t_start}"
-        )
-
-        bound1, bound2 = check_traj(
-            reftrack=reftrack_interp_iqp,
-            reftrack_normvec_normalized=normvec_normalized_iqp,
-            length_veh=self.car_length,
-            width_veh=self.car_width,
-            debug=True,
-            trajectory=trajectory_opt,
-            ggv=self.ggv,
-            ax_max_machines=self.ax_max_machines,
-            v_max=self.v_max,
-            curvlim=self.curvlim,
-            mass_veh=self.car_mass,
-            dragcoeff=self.drag_coeff,
-        )
-
-        if self.plot:
             self.bound1_imp = None
             self.bound2_imp = None
 
@@ -514,6 +515,8 @@ class MinimumCurvature(ManagedNode):
             iqp_msg.poses.append(pose)
         iqp_msg.header = header
         self.path_iqp_pub.publish(iqp_msg)
+        rospy.logerr("Minimum Curvature path was published!")
+        set_state_inactive("pathplanning")
 
         # ref_msg = Path()
         # ref_msg.poses = []
