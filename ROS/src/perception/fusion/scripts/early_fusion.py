@@ -46,13 +46,13 @@ class EarlyFusion:
         self.fusion_ready = False
         self.rotation_matrix = np.array(
             [
-                [0.9998479, 0.038, 0.0000000],
-                [-0.038, 0.9998479, 0.03],
-                [0.0000000, -0.03, 1.0000000],
+                [0.9998479, 0.026, -0.2],
+                [-0.026, 0.9998479, -0.045],
+                [0.2, 0.045, 1.0000000],
             ]
         )
         self.translation_vector = np.array(
-            rospy.get_param("~translation_vector", [-0.09, 0, -0.40])
+            rospy.get_param("~translation_vector", [-0.09, 0, -0.42])
         )
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.sensor_frame = rospy.get_param("~sensor_frame", "os_sensor")

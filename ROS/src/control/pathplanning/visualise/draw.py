@@ -191,9 +191,8 @@ class Draw:
             for index, pathPoint in enumerate(points):
                 screen_pos = self.widget.coordinateToScreen(pathPoint)
                 if index == 0:
-                    start = self.widget.coordinateToScreen(self.widget.car_pos)
-                else:
-                    start = self.widget.coordinateToScreen(points[index - 1])
+                    continue
+                start = self.widget.coordinateToScreen(points[index - 1])
                 end = screen_pos
                 painter.drawLine(start, end)
 

@@ -58,22 +58,6 @@ void Pathplanning::compute(const std::vector<std::vector<double>> &cones,
 
   std::vector<geometry_msgs::PoseStamped> poses;
 
-  // Manually add zero_pose
-  geometry_msgs::PoseStamped zero_pose;
-  zero_pose.pose.position.x = 0;
-  zero_pose.pose.position.y = 0;
-  zero_pose.pose.position.z = 0.0;
-
-  zero_pose.pose.orientation.x = 0.0;
-  zero_pose.pose.orientation.y = 0.0;
-  zero_pose.pose.orientation.z = 0.0;
-  zero_pose.pose.orientation.w = 1.0;
-
-  zero_pose.header.frame_id = header.frame_id;
-  zero_pose.header.stamp = header.stamp;
-
-  poses.push_back(zero_pose);
-
   for (const auto &node : path) {
     geometry_msgs::PoseStamped pose;
 
@@ -106,22 +90,6 @@ void Pathplanning::compute(const std::vector<std::vector<double>> &cones,
     std::vector<nav_msgs::Path> allPaths;
     for (const auto &debugPath : debugPaths) {
       std::vector<geometry_msgs::PoseStamped> debugPoses;
-
-      // Manually add zero_pose
-      geometry_msgs::PoseStamped debug_zero_pose;
-      debug_zero_pose.pose.position.x = 0;
-      debug_zero_pose.pose.position.y = 0;
-      debug_zero_pose.pose.position.z = 0.0;
-
-      debug_zero_pose.pose.orientation.x = 0.0;
-      debug_zero_pose.pose.orientation.y = 0.0;
-      debug_zero_pose.pose.orientation.z = 0.0;
-      debug_zero_pose.pose.orientation.w = 1.0;
-
-      debug_zero_pose.header.frame_id = header.frame_id;
-      debug_zero_pose.header.stamp = header.stamp;
-
-      debugPoses.push_back(debug_zero_pose);
 
       for (const auto &debug_node : debugPath) {
         geometry_msgs::PoseStamped pose;

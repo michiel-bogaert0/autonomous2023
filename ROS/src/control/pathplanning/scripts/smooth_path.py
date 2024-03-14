@@ -44,6 +44,9 @@ class PoseArraySmootherNode:
                 ):
                     away_from_start = True
 
+            # Add zero pose to path if no closure of path
+            if not per:
+                path = np.vstack(([0, 0], path))
             # Linear interpolation between center points to add more points for BSpline smoothing
             distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
             distance = np.insert(distance, 0, 0) / distance[-1]
