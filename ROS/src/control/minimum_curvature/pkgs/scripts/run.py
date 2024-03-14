@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import time
 from time import perf_counter
 
 import matplotlib.pyplot as plt
@@ -34,7 +35,9 @@ class MinimumCurvature(ManagedNode):
     def doConfigure(self):
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
-        self.car_width = rospy.get_param("~car_width", 0.5)
+        self.car_width = rospy.get_param("~car_width", 0.50)
+        self.width_margin_left = rospy.get_param("~width_margin_left", 0.10)
+        self.width_margin_right = rospy.get_param("~width_margin_right", 0.10)
         self.car_length = rospy.get_param("~car_length", 0.72)
         self.v_max = rospy.get_param("~v_max", 10.0)
         self.drag_coeff = rospy.get_param("~drag_coeff", 1.00)
@@ -42,6 +45,14 @@ class MinimumCurvature(ManagedNode):
         self.plot = rospy.get_param("~plot", True)
         self.imported_bounds = rospy.get_param("~imported_bounds", True)
         self.curvlim = rospy.get_param("~curvlim", 0.5)
+
+        self.stepsize_prep = rospy.get_param("~stepsize_prep", 0.25)
+        self.stepsize_opt = rospy.get_param("~stepsize_opt", 0.25)
+        self.stepsize_post = rospy.get_param("~stepsize_interp", 0.25)
+
+        self.car_width_with_margins = (
+            self.car_width + self.width_margin_left + self.width_margin_right
+        )
 
         # Publishers for the path, path_extra, path_iqp and reference
         self.path_pub = super().AddPublisher("/output/path", Path, queue_size=10)
@@ -160,6 +171,7 @@ class MinimumCurvature(ManagedNode):
             return
 
         rospy.logerr("Calculating minimum curvature path")
+        t_start = time.perf_counter()
 
         path = self.reference_line
         header = self.header
@@ -186,8 +198,8 @@ class MinimumCurvature(ManagedNode):
             reftrack_imp=self.reference_line,
             k_reg=3,
             s_reg=10,
-            stepsize_prep=0.3,
-            stepsize_reg=0.3,
+            stepsize_prep=self.stepsize_prep,
+            stepsize_reg=self.stepsize_opt,
         )
 
         # coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(
@@ -227,7 +239,11 @@ class MinimumCurvature(ManagedNode):
             calc_dcurv=True,
         )
 
-        start = perf_counter()
+        rospy.logerr(
+            f"Total time elapsed during preprocessing: {time.perf_counter() - t_start}"
+        )
+
+        iqp_start = perf_counter()
         (
             alpha_mincurv_iqp,
             reftrack_interp_iqp,
@@ -245,16 +261,18 @@ class MinimumCurvature(ManagedNode):
             kappa=kappa_reftrack,
             dkappa=dkappa_reftrack,
             kappa_bound=0.5,
-            w_veh=self.car_width,
+            w_veh=self.car_width_with_margins,
             print_debug=False,
             plot_debug=False,
-            stepsize_interp=0.25,
+            stepsize_interp=self.stepsize_opt,
             iters_min=3,
             curv_error_allowed=0.01,
         )
-        end = perf_counter()
-        rospy.logerr(f"Total time elapsed: {end - start}")
+        rospy.logerr(
+            f"Total time elapsed during iqp optimisation: {time.perf_counter() - iqp_start}"
+        )
 
+        vel_start = time.perf_counter()
         # Interpolate splines to small distances between raceline points
         (
             raceline_interp,
@@ -270,7 +288,7 @@ class MinimumCurvature(ManagedNode):
             refline=reftrack_interp_iqp[:, :2],
             normvectors=normvec_normalized_iqp,
             alpha=alpha_mincurv_iqp,
-            stepsize_interp=0.2,
+            stepsize_interp=self.stepsize_opt,
         )
         # rospy.logerr(f"Raceline interpolated: {raceline_interp}")
 
@@ -313,6 +331,9 @@ class MinimumCurvature(ManagedNode):
             el_lengths=el_lengths_opt_interp,
         )
         rospy.logerr(f"Estimated laptime: {t_profile_cl[-1]}")
+        rospy.logerr(
+            f"Total time elapsed during velocity and acceleration profile calculation: {time.perf_counter() - vel_start}"
+        )
 
         if self.plot:
             s_points = np.cumsum(el_lengths_opt_interp[:-1])
@@ -343,6 +364,10 @@ class MinimumCurvature(ManagedNode):
         traj_race_cl = np.vstack((trajectory_opt, trajectory_opt[0, :]))
         traj_race_cl[-1, 0] = np.sum(spline_data_opt[:, 0])  # set correct length
 
+        rospy.logerr(
+            f"Runtime from start to final trajectory was {time.perf_counter() - t_start}"
+        )
+
         bound1, bound2 = check_traj(
             reftrack=reftrack_interp_iqp,
             reftrack_normvec_normalized=normvec_normalized_iqp,
@@ -358,51 +383,57 @@ class MinimumCurvature(ManagedNode):
             dragcoeff=self.drag_coeff,
         )
 
-        self.bound1_imp = None
-        self.bound2_imp = None
+        if self.plot:
+            self.bound1_imp = None
+            self.bound2_imp = None
 
-        if self.imported_bounds:
-            # try to extract four times as many points as in the interpolated version (in order to hold more details)
-            n_skip = max(int(self.reference_line.shape[0] / (bound1.shape[0] * 4)), 1)
-
-            _, _, _, normvec_imp = calc_splines(
-                path=np.vstack(
-                    (self.reference_line[::n_skip, 0:2], self.reference_line[0, 0:2])
+            if self.imported_bounds:
+                # try to extract four times as many points as in the interpolated version (in order to hold more details)
+                n_skip = max(
+                    int(self.reference_line.shape[0] / (bound1.shape[0] * 4)), 1
                 )
+
+                _, _, _, normvec_imp = calc_splines(
+                    path=np.vstack(
+                        (
+                            self.reference_line[::n_skip, 0:2],
+                            self.reference_line[0, 0:2],
+                        )
+                    )
+                )
+
+                self.bound1_imp = self.reference_line[
+                    ::n_skip, :2
+                ] + normvec_imp * np.expand_dims(self.reference_line[::n_skip, 2], 1)
+                self.bound2_imp = self.reference_line[
+                    ::n_skip, :2
+                ] - normvec_imp * np.expand_dims(self.reference_line[::n_skip, 3], 1)
+
+            # Plot results
+
+            self.plot_opts = {
+                "mincurv_curv_lin": True,  # plot curv. linearization (original and solution based) (mincurv only)
+                "raceline": True,  # plot optimized path
+                "imported_bounds": True,  # plot imported bounds (analyze difference to interpolated bounds)
+                "raceline_curv": True,  # plot curvature profile of optimized path
+                "racetraj_vel": True,  # plot velocity profile
+                "racetraj_vel_3d": True,  # plot 3D velocity profile above raceline
+                "racetraj_vel_3d_stepsize": 1.0,  # [m] vertical lines stepsize in 3D velocity profile plot
+                "spline_normals": True,  # plot spline normals to check for crossings
+                "mintime_plots": False,
+            }  # plot states, controls, friction coeffs etc. (mintime only)
+
+            result_plots(
+                plot_opts=self.plot_opts,
+                width_veh_opt=self.car_width_with_margins,
+                width_veh_real=self.car_width,
+                refline=self.reference_line[:, :2],
+                bound1_imp=self.bound1_imp,
+                bound2_imp=self.bound2_imp,
+                bound1_interp=bound1,
+                bound2_interp=bound2,
+                trajectory=trajectory_opt,
             )
-
-            self.bound1_imp = self.reference_line[
-                ::n_skip, :2
-            ] + normvec_imp * np.expand_dims(self.reference_line[::n_skip, 2], 1)
-            self.bound2_imp = self.reference_line[
-                ::n_skip, :2
-            ] - normvec_imp * np.expand_dims(self.reference_line[::n_skip, 3], 1)
-
-        # Plot results
-
-        self.plot_opts = {
-            "mincurv_curv_lin": True,  # plot curv. linearization (original and solution based) (mincurv only)
-            "raceline": True,  # plot optimized path
-            "imported_bounds": True,  # plot imported bounds (analyze difference to interpolated bounds)
-            "raceline_curv": True,  # plot curvature profile of optimized path
-            "racetraj_vel": True,  # plot velocity profile
-            "racetraj_vel_3d": True,  # plot 3D velocity profile above raceline
-            "racetraj_vel_3d_stepsize": 1.0,  # [m] vertical lines stepsize in 3D velocity profile plot
-            "spline_normals": True,  # plot spline normals to check for crossings
-            "mintime_plots": False,
-        }  # plot states, controls, friction coeffs etc. (mintime only)
-
-        result_plots(
-            plot_opts=self.plot_opts,
-            width_veh_opt=self.car_width,
-            width_veh_real=self.car_width,
-            refline=self.reference_line[:, :2],
-            bound1_imp=self.bound1_imp,
-            bound2_imp=self.bound2_imp,
-            bound1_interp=bound1,
-            bound2_interp=bound2,
-            trajectory=trajectory_opt,
-        )
 
         # alpha_mincurv, curv_error_max = opt_min_curv(
         #     reftrack=self.reference_line,

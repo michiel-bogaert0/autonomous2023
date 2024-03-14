@@ -33,7 +33,7 @@ class Visualiser:
 
         self.frame = rospy.get_param("~frame", "ugr/car_base_link")
         self.track_file = rospy.get_param("~layout", "")
-        rospy.wait_for_service("/node_managing/minimum_curvature/get", timeout=2.0)
+        rospy.wait_for_service("/node_managing/minimum_curvature/get", timeout=3.0)
 
         configure_node("pathplanning")
         configure_node("minimum_curvature")

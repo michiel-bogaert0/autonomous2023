@@ -5,7 +5,9 @@
         <param name="frame" value="ugr/car_base_link" />
         <param name="rate" value="5" />
 
-        <param name="carwidth" value="0.5" />
+        <param name="carwidth" value="0.50" />
+        <param name="width_margin_left" value="0.10" />
+        <param name="width_margin_right" value="0.10" />
         <param name="carlength" value="0.72" />
         <param name="v_max" value="10.0" />
         <param name="drag_coeff" value="1.00" />
@@ -13,6 +15,9 @@
         <param name="plot" value="True" />
         <param name="imported_bounds" value="True" />
         <param name="curvlim" value="0.5" />
+        <param name="stepsize_prep" value="0.5" />
+        <param name="stepsize_opt" value="0.5" />
+        <param name="stepsize_post" value="0.5" />
 
         <!-- <remap from="/input/local_map" to="/ugr/car/map/fastslam/local" /> -->
         <remap from="/input/boundaries" to="/boundary_estimation/boundaries" />
