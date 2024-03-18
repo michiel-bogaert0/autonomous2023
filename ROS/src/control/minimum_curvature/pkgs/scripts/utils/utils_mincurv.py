@@ -24,7 +24,7 @@ def generate_interpolated_points(path):
     return path
 
 
-def B_spline_smoothing(path, s=3):
+def B_spline_smoothing(path, s=3, extra_points=False):
     per = 1  # BSPline periodicity, 0 = not periodic, 1 = periodic
 
     # Smooth path with BSpline interpolation
@@ -34,10 +34,13 @@ def B_spline_smoothing(path, s=3):
     )  # Weights for BSpline (Here, same weight for every point)
 
     tck, u = splprep(path, w=w, s=s, per=per)  # Calculate BSpline
+
+    if extra_points:
+        u = np.linspace(0, 1, path.shape[1] * 4)
+
     smoothed_path = np.array(
         splev(u, tck)
     ).T  # Evaluate BSpline and transpose back to (N, 2)
-
     return smoothed_path
 
 
@@ -1933,41 +1936,138 @@ def calc_bound_dists(
     trajectory: np.ndarray,
     bound_left: np.ndarray,
     bound_right: np.ndarray,
+    min_distance: float = 1.5,
 ) -> np.ndarray:
     """
     Created by:
     Kwinten Mortier
 
     Documentation:
-    For every point on the trajectory, calculate the perpendicular distance to the left and right boundaries
+    For every point on the trajectory, calculate the estimated perpendicular distance to the left and right boundaries
 
     Inputs:
-    trajectory:     array containing the trajectory information. Required are x, y, psi for every point
+    trajectory:     array containing the reference trajectory [x, y]
     bound_left:     array containing the left track boundary [x, y]
     bound_right:    array containing the right track boundary [x, y]
 
     Outputs:
-    bound_dists:    perpendicular distance to boundaries along normal for every trajectory point
+    bound_dists:    estimated perpendicular distance to boundaries along normal for every trajectory point
     """
     # Initialize an empty array to store the minimum distances
-    min_dists = np.zeros(trajectory.shape[0])
+    min_dists = np.zeros(trajectory.shape)
+    trajectory_closed = np.vstack((trajectory, trajectory[0]))
 
-    # Loop through each point on the trajectory
+    # Calculate the spline coefficients for the x and y coordinates of the closed trajectory
+    coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(trajectory_closed)
+
+    left_extended = trajectory - normvec_normalized * min_distance
+    right_extended = trajectory + normvec_normalized * min_distance
+
+    tree_left = spatial.cKDTree(bound_left)
+    tree_right = spatial.cKDTree(bound_right)
+
     for i in range(trajectory.shape[0]):
-        # Get the x, y, and psi values for the current point
-        x = trajectory[i, 0]
-        y = trajectory[i, 1]
-        psi = trajectory[i, 2]
+        dist_left_extended, ind_left = tree_left.query(left_extended[i], k=1)
+        dist_right_extended, ind_right = tree_right.query(right_extended[i], k=1)
 
-        # Calculate the normal vector at the current point
-        norm_vector = np.array([-np.sin(psi), np.cos(psi)])
+        dist_left = math.sqrt(
+            (trajectory[i][0] - bound_left[ind_left][0]) ** 2
+            + (trajectory[i][1] - bound_left[ind_left][1]) ** 2
+        )
+        dist_right = math.sqrt(
+            (trajectory[i][0] - bound_right[ind_right][0]) ** 2
+            + (trajectory[i][1] - bound_right[ind_right][1]) ** 2
+        )
 
-        # Calculate the distances from the current point to the left and right boundaries
-        dist_left = np.dot(norm_vector, bound_left[i] - np.array([x, y]))
-        dist_right = np.dot(norm_vector, bound_right[i] - np.array([x, y]))
+        min_dists[i] = np.array([dist_left, dist_right])
 
-        # Store the minimum distance
-        min_dists[i] = min(dist_left, dist_right)
+    # Loopclosure for plots
+    left_extended = np.vstack((left_extended, left_extended[0]))
+    right_extended = np.vstack((right_extended, right_extended[0]))
+
+    # New boundaries
+    new_left = trajectory - normvec_normalized * min_dists[:, 0].reshape(-1, 1)
+    new_right = trajectory + normvec_normalized * min_dists[:, 1].reshape(-1, 1)
+
+    plot = False
+
+    if plot:
+        # plot track including optimized path
+        plt.figure()
+        plt.plot(
+            left_extended[:, 0],
+            left_extended[:, 1],
+            color=normalize_color((0, 0, 255)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        plt.plot(
+            right_extended[:, 0],
+            right_extended[:, 1],
+            color=normalize_color((230, 245, 0)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        plt.plot(
+            trajectory_closed[:, 0],
+            trajectory_closed[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        plt.plot(
+            bound_left[:, 0],
+            bound_left[:, 1],
+            color=normalize_color((0, 0, 255)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        plt.plot(
+            bound_right[:, 0],
+            bound_right[:, 1],
+            color=normalize_color((230, 245, 0)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        plt.plot(
+            new_left[:, 0],
+            new_left[:, 1],
+            color=normalize_color((0, 255, 0)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        plt.plot(
+            new_right[:, 0],
+            new_right[:, 1],
+            color=normalize_color((0, 255, 0)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+
+        for i in range(new_left.shape[0]):
+            temp = np.vstack((new_left[i], new_right[i]))
+            plt.plot(temp[:, 0], temp[:, 1], "r-", linewidth=0.7)
+
+        plt.grid()
+        ax = plt.gca()
+        ax.set_aspect("equal", "datalim")
+        plt.xlabel("east in m")
+        plt.ylabel("north in m")
+        plt.show()
 
     return min_dists
 
@@ -1977,8 +2077,6 @@ def calc_head_curv_an2(
     coeffs_y: np.ndarray,
     ind_spls: np.ndarray,
     t_spls: np.ndarray,
-    calc_curv: bool = True,
-    calc_dcurv: bool = False,
 ) -> tuple:
     """
     author:
@@ -2003,7 +2101,7 @@ def calc_head_curv_an2(
     :rtype psi:         float
 
     .. notes::
-    len(ind_spls) = len(t_spls) = len(psi) = len(kappa) = len(dkappa)
+    len(ind_spls) = len(t_spls) = len(psi)
     """
 
     # check inputs
@@ -2012,9 +2110,6 @@ def calc_head_curv_an2(
 
     if ind_spls.size != t_spls.size:
         raise ValueError("ind_spls and t_spls must have the same length!")
-
-    if not calc_curv and calc_dcurv:
-        raise ValueError("dkappa cannot be calculated without kappa!")
 
     # ------------------------------------------------------------------------------------------------------------------
     # CALCULATE HEADING ------------------------------------------------------------------------------------------------
@@ -2941,6 +3036,10 @@ def result_plots(
     bound1_interp: np.ndarray,
     bound2_interp: np.ndarray,
     trajectory: np.ndarray,
+    cones_left: np.ndarray,
+    cones_right: np.ndarray,
+    bound_left: np.ndarray,
+    bound_right: np.ndarray,
 ) -> None:
     """
     Created by:
@@ -2959,6 +3058,8 @@ def result_plots(
     bound1_interp:  first track boundary (interpolated) (mostly right) [x_m, y_m]
     bound2_interp:  second track boundary (interpolated) (mostly left) [x_m, y_m]
     trajectory:     trajectory data [s_m, x_m, y_m, psi_rad, kappa_radpm, vx_mps, ax_mps2]
+    cones_left:     left cone coordinates [x_m, y_m]
+    cones_right:    right cone coordinates [x_m, y_m]
     """
 
     if plot_opts["raceline"]:
@@ -2985,14 +3086,60 @@ def result_plots(
 
         # plot track including optimized path
         plt.figure()
-        plt.plot(refline[:, 0], refline[:, 1], "k--", linewidth=0.7)
+        plt.plot(
+            refline[:, 0],
+            refline[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linestyle="dashed",
+            linewidth=0.7,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
         plt.plot(veh_bound1_virt[:, 0], veh_bound1_virt[:, 1], "b", linewidth=0.5)
         plt.plot(veh_bound2_virt[:, 0], veh_bound2_virt[:, 1], "b", linewidth=0.5)
         plt.plot(veh_bound1_real[:, 0], veh_bound1_real[:, 1], "c", linewidth=0.5)
         plt.plot(veh_bound2_real[:, 0], veh_bound2_real[:, 1], "c", linewidth=0.5)
         plt.plot(bound1_interp[:, 0], bound1_interp[:, 1], "k-", linewidth=0.7)
         plt.plot(bound2_interp[:, 0], bound2_interp[:, 1], "k-", linewidth=0.7)
-        plt.plot(trajectory[:, 1], trajectory[:, 2], "r-", linewidth=0.7)
+        plt.plot(
+            trajectory[:, 1],
+            trajectory[:, 2],
+            color=normalize_color((0, 255, 0)),
+            linewidth=0.7,
+        )
+        plt.scatter(
+            cones_left[:, 0],
+            cones_left[:, 1],
+            color=normalize_color((0, 0, 0)),
+            marker="X",
+            s=5,
+        )
+        plt.scatter(
+            cones_right[:, 0],
+            cones_right[:, 1],
+            color=normalize_color((0, 0, 0)),
+            marker="X",
+            s=5,
+        )
+        plt.plot(
+            bound_left[:, 0],
+            bound_left[:, 1],
+            color=normalize_color((0, 0, 255)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        plt.plot(
+            bound_right[:, 0],
+            bound_right[:, 1],
+            color=normalize_color((230, 245, 0)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
 
         if (
             plot_opts["imported_bounds"]
@@ -3497,3 +3644,26 @@ def interp_track_2(reftrack: np.ndarray, stepsize_approx: float = 1.0) -> np.nda
     reftrack_interp = reftrack_interp_cl[:-1]
 
     return reftrack_interp
+
+
+def normalize_color(color: tuple) -> tuple:
+    """
+    Created by:
+    Kwinten Mortier
+
+    .. description::
+    Normalize a tuple representing a RGB color to be used in matplotlib.
+
+    .. inputs::
+    :param color:                   tuple containing the RGB values of a color
+    :type color:                    tuple
+
+    .. outputs::
+    :return color_normalized:       tuple containing the normalized RGB values of a color
+    :rtype color_normalized:        tuple
+    """
+
+    # normalize the color
+    color_normalized = (color[0] / 255, color[1] / 255, color[2] / 255)
+
+    return color_normalized

@@ -9,11 +9,13 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
-from node_fixture.node_manager import set_state_inactive
+
+# from node_fixture.node_manager import set_state_inactive
 from ugr_msgs.msg import Boundaries
-from utils.utils_mincurv import (  # calc_bound_dists,; calc_head_curv_an2,; opt_min_curv,
+from utils.utils_mincurv import (  # opt_min_curv,
     B_spline_smoothing,
     calc_ax_profile,
+    calc_bound_dists,
     calc_head_curv_an,
     calc_spline_lengths,
     calc_splines,
@@ -52,6 +54,8 @@ class MinimumCurvature(ManagedNode):
 
         self.plot = rospy.get_param("~plot", True)
         self.vel = rospy.get_param("~vel", True)
+
+        self.min_distance = rospy.get_param("~min_distance", 1.5)
 
         self.car_width_with_margins = (
             self.car_width + self.width_margin_left + self.width_margin_right
@@ -155,17 +159,27 @@ class MinimumCurvature(ManagedNode):
 
     def receive_new_path(self, msg: Path):
         self.reference_line = np.array(
-            [[p.pose.position.x, p.pose.position.y, 1.50, 1.50] for p in msg.poses]
+            # [[p.pose.position.x, p.pose.position.y, 1.50, 1.50] for p in msg.poses]
+            [[p.pose.position.x, p.pose.position.y] for p in msg.poses]
         )
+        self.reference_line = np.vstack((self.reference_line, self.reference_line[0]))
         self.header = msg.header
 
     def receive_new_boundaries(self, msg: Boundaries):
-        self.bound_left = np.array(
+        self.cones_left = np.array(
             [[p.pose.position.x, p.pose.position.y] for p in msg.left_boundary.poses]
         )
-        self.bound_right = np.array(
+
+        self.bound_left = np.vstack((self.cones_left, self.cones_left[0]))
+        self.bound_left = generate_interpolated_points(self.bound_left)
+        self.bound_left = B_spline_smoothing(self.bound_left, s=0, extra_points=True)
+
+        self.cones_right = np.array(
             [[p.pose.position.x, p.pose.position.y] for p in msg.right_boundary.poses]
         )
+        self.bound_right = np.vstack((self.cones_right, self.cones_right[0]))
+        self.bound_right = generate_interpolated_points(self.bound_right)
+        self.bound_right = B_spline_smoothing(self.bound_right, s=0, extra_points=True)
 
     def active(self):
         if not self.calculate or self.reference_line.size == 0:
@@ -177,17 +191,23 @@ class MinimumCurvature(ManagedNode):
         path = self.reference_line
         header = self.header
         self.reference_line = generate_interpolated_points(path)
-        self.reference_line = np.hstack(
-            (
-                B_spline_smoothing(self.reference_line[:, 0:2], 2),
-                self.reference_line[:, 2:4],
-            )
+        self.reference_line = B_spline_smoothing(
+            self.reference_line, s=2, extra_points=False
         )[:-1]
-        # self.path_ref = generate_interpolated_points(path)
-        # reference = np.copy(self.reference_line)
-        # self.extra_smoothed = np.hstack(
-        #     (B_spline_smoothing(reference[:, 0:2], 2), reference[:, 2:4])
-        # )
+
+        t_start_boundary = time.perf_counter()
+        # Estimates the perpendicalur boundary distances for every point on the reference line
+        boundaries_dists = calc_bound_dists(
+            trajectory=self.reference_line,
+            bound_left=self.bound_left,
+            bound_right=self.bound_right,
+            min_distance=self.min_distance,
+        )
+        rospy.logerr(
+            f"Total time elapsed during boundary calculation: {time.perf_counter() - t_start_boundary}"
+        )
+
+        self.reference_line = np.hstack((self.reference_line, boundaries_dists))
 
         (
             reftrack_interp,
@@ -198,28 +218,16 @@ class MinimumCurvature(ManagedNode):
         ) = prep_track(
             reftrack_imp=self.reference_line,
             k_reg=3,
-            s_reg=10,
+            s_reg=10.0,
             stepsize_prep=self.stepsize_prep,
             stepsize_reg=self.stepsize_opt,
         )
-
-        # coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(
-        #     path=np.vstack((self.reference_line[:, 0:2], self.reference_line[0, 0:2]))
-        # )
 
         # psi_reftrack = calc_head_curv_an2(
         #     coeffs_x=coeffs_x,
         #     coeffs_y=coeffs_y,
         #     ind_spls=np.arange(self.reference_line.shape[0]),
         #     t_spls=np.zeros(self.reference_line.shape[0]),
-        # )
-
-        # # TODO: For every point in the reference line, calculate the perpendicular distance to the left and right boundaries
-        # # If function works fine, then use the boundary distances instead of fixed distances
-        # boundaries_dists = calc_bound_dists(
-        #     trajectory=self.reference_line[:, 0:2],
-        #     bound_left=self.bound_left,
-        #     bound_right=self.bound_right,
         # )
 
         # (
@@ -410,8 +418,19 @@ class MinimumCurvature(ManagedNode):
                     ::n_skip, :2
                 ] - normvec_imp * np.expand_dims(self.reference_line[::n_skip, 3], 1)
 
-            # Plot results
+            # Loopclosure for plots
+            trajectory_opt = np.vstack((trajectory_opt, trajectory_opt[0]))
+            self.bound_left = np.vstack((self.bound_left, self.bound_left[0]))
+            self.bound_right = np.vstack((self.bound_right, self.bound_right[0]))
+            self.bound1_imp = np.vstack((self.bound1_imp, self.bound1_imp[0]))
+            self.bound2_imp = np.vstack((self.bound2_imp, self.bound2_imp[0]))
+            bound1 = np.vstack((bound1, bound1[0]))
+            bound2 = np.vstack((bound2, bound2[0]))
+            self.reference_line = np.vstack(
+                (self.reference_line, self.reference_line[0])
+            )
 
+            # Plot results
             self.plot_opts = {
                 "mincurv_curv_lin": True,  # plot curv. linearization (original and solution based) (mincurv only)
                 "raceline": True,  # plot optimized path
@@ -434,6 +453,10 @@ class MinimumCurvature(ManagedNode):
                 bound1_interp=bound1,
                 bound2_interp=bound2,
                 trajectory=trajectory_opt,
+                cones_left=self.cones_left,
+                cones_right=self.cones_right,
+                bound_left=self.bound_left,
+                bound_right=self.bound_right,
             )
 
         # alpha_mincurv, curv_error_max = opt_min_curv(
@@ -480,8 +503,10 @@ class MinimumCurvature(ManagedNode):
 
         # smoothed_path = B_spline_smoothing(path_result, 2)
         # path_extra = B_spline_smoothing(path_result_extra, 2)
-        path_iqp = B_spline_smoothing(path_result_iqp, 2)
+        path_iqp = B_spline_smoothing(path_result_iqp, s=2)
         # path_ref = B_spline_smoothing(self.path_ref, 2)
+
+        path_iqp = np.vstack((path_iqp, path_iqp[0]))
 
         # smoothed_msg = Path()
         # smoothed_msg.poses = []
@@ -516,7 +541,7 @@ class MinimumCurvature(ManagedNode):
         iqp_msg.header = header
         self.path_iqp_pub.publish(iqp_msg)
         rospy.logerr("Minimum Curvature path was published!")
-        set_state_inactive("pathplanning")
+        # set_state_inactive("pathplanning")
 
         # ref_msg = Path()
         # ref_msg.poses = []
