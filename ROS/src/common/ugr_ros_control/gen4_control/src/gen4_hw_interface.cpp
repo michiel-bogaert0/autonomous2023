@@ -63,11 +63,13 @@ void Gen4HWInterface::init()
 
   this->can_pub = nh.advertise<can_msgs::Frame>("ugr/send_can", 10);
   this->can_axis0_sub =
-      nh.subscribe<can_msgs::Frame>("/processed/Actual_ERPM", 1, &Gen4HWInterface::can_callback_axis0, this);
-  this->can_aixs1_sub =
-      nh.subscribe<can_msgs::Frame>("/processed/Actual_ERPM", 1, &Gen4HWInterface::can_callback_axis1, this);
+      nh.subscribe<std_msgs::Float32>("/processed/Actual_ERPM", 1, &Gen4HWInterface::can_callback_axis0, this);
+  this->can_axis1_sub =
+      nh.subscribe<std_msgs::Float32>("/processed/Actual_ERPM", 1, &Gen4HWInterface::can_callback_axis1, this);
   this->can_steering_sub =
-      nh.subscribe<can_msgs::Frame>("/processed/steering", 1, &Gen4HWInterface::can_callback, this);
+      nh.subscribe<std_msgs::Float32>("/processed/steering", 1, &Gen4HWInterface::can_callback_steering, this);
+
+  this->jaw_rate_sub = nh.subscribe<sensor_msgs::Imu>("/imu", 1, &Gen4HWInterface::yaw_rate_callback, this);
 
   this->state_sub = nh.subscribe<ugr_msgs::State>("/state", 1, &Gen4HWInterface::state_change, this);
 
@@ -107,6 +109,25 @@ void Gen4HWInterface::init()
   }
 
   ROS_INFO_NAMED("gen4_hw_interface", "Gen4HWInterface init'd.");
+
+  // PID for Torque vectoring
+  this->Kp = nh.param("Kp", 1);
+  this->Ki = nh.param("Ki", 0.0);
+  this->Kd = nh.param("Kd", 0.0);
+  this->integral = 0.0;
+  this->prev_error = 0.0;
+  this->prev_time = ros::Time::now().toSec();
+  this->yaw_rate = 0.0;
+
+  // parametes for torque vectoring
+  this->use_torque_vectoring = nh.param("use_torque_vectoring", false);
+  this->l_wheelbase = nh.param("l_wheelbase", 2);
+  this->COG = nh.param("COG", 0.5);
+  this->Cyf = nh.param("Cyf", 444);
+  this->Cyr = nh.param("Cyr", 444);
+  this->m = nh.param("m", 320);
+  this->lr = this->COG * this->l_wheelbase;
+  this->lf = (1 - this->COG) * this->l_wheelbase;
 }
 
 // The READ function
@@ -126,12 +147,12 @@ void Gen4HWInterface::write(ros::Duration& elapsed_time)
   if (this->is_running == true)
   {
     publish_steering_msg(joint_position_command_[steering_joint_id]);
-    publish_vel_msg(joint_velocity_command_[drive_joint0_id], joint_velocity_command_[drive_joint1_id]);
+    publish_torque_msg(joint_effort_command_[drive_joint0_id]);
   }
   else
   {
-    publish_vel_msg(0);
-    publish_vel_msg(0);
+    publish_torque_msg(0.0);
+    publish_torque_msg(0.0);
   }
 }
 
@@ -156,41 +177,41 @@ void Gen4HWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
 }
 
 // Callback for the CAN messages: axis0, axis1 and steering
-void Gen4HWInterface::can_callback_axis0(const std_msgs::Float32& msg)
+void Gen4HWInterface::can_callback_axis0(const std_msgs::Float32::ConstPtr& msg)
 {
   handle_vel_msg(msg, 1);
 }
 
-void Gen4HWInterface::can_callback_axis1(const std_msgs::Float32& msg)
+void Gen4HWInterface::can_callback_axis1(const std_msgs::Float32::ConstPtr& msg)
 {
   handle_vel_msg(msg, 2);
 }
 
-void Gen4HWInterface::can_callback_steering(const std_msgs::Float32& msg)
+void Gen4HWInterface::can_callback_steering(const std_msgs::Float32::ConstPtr& msg)
 {
   handle_steering_msg(msg);
 }
 
-void Gen4HWInterface::handle_vel_msg(const std_msgs::Float32::ConstPtr& msg, uint32_ttwist_msgmsg axis_id)
+void Gen4HWInterface::handle_vel_msg(const std_msgs::Float32::ConstPtr& msg, uint32_t axis_id)
 {
-  double motor_speed = msg;  // in rpm received from motor -> /60 to get rps -> * (pi*diameter) to get m/s
+  double motor_speed = msg->data;  // in rpm received from motor -> /60 to get rps -> * (pi*diameter) to get m/s
   // double wheel_speed = speed / this->gear_ratio;  // in rpm
   // double car_speed = wheel_speed * M_PI * this->wheel_diameter / 60;
 
-  // Set cur_velocity_axis. and publish the twist message
+  // Set cur_velocity_axis
   if (axis_id == 1)
   {
     this->cur_velocity_axis0 = 2 * M_PI * motor_speed / 60;  // rad/s
   }
   else if (axis_id == 2)
   {
-    this->cur_velocity_axis1 = 2 * M_PI * motor_speed / 60;  // rad / s
+    this->cur_velocity_axis1 = 2 * M_PI * motor_speed / 60;  // rad/s
   }
 }
 
 void Gen4HWInterface::handle_steering_msg(const std_msgs::Float32::ConstPtr& msg)
 {
-  this->cur_steering = msg;
+  this->cur_steering = msg->data;
 }
 
 void Gen4HWInterface::publish_steering_msg(float steering)
@@ -201,22 +222,67 @@ void Gen4HWInterface::publish_steering_msg(float steering)
   // TODO place steering commmand on ros topic
 }
 
-void Gen4HWInterface::publish_vel_msg(float axis0, float axis1)
+void Gen4HWInterface::publish_torque_msg(float axis)
 {
-  // convert rad/s to rpm
-  axis0 = axis0 / (2 * M_PI) * 60;
-  axis1 = axis1 / (2 * M_PI) * 60;
+  float mean_axis_speed = (this->cur_velocity_axis0 + this->cur_velocity_axis1) / 2;
+  float car_speed = mean_axis_speed / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s
+  // for speed lower than 5 m/s no torque vectoring is used
+  if (car_speed > 5 && this->use_torque_vectoring == true)
+  {
+    // float dT = this->torque_vectoring();
+    // float axis0 = axis - dT / 2;
+    // float axis1 = axis + dT / 2;
+  }
 
-  // can_id for axis0 and axis1: look at .dbc to cmd_target_speed or cmd_target_position (or cmd_target_current).
-  // todo add the id's and send motor commands, both commands in one or seperate?
+  // TODO : look for the can id's in dbc file (id's for cmd_target_speed or cmd_target_position or (cmd_target_current))
+  // TODO : send the motor commands in can_msgs::Frame format on the can bus
 
   // make ros can frame and send on can
-  can_msgs::Frame can_msg;
-  can_msg.id = can_id;
-  can_msg.data = axis0;
-  can_msg.dlc = 8;
+  // can_msgs::Frame can_msg;
+  // can_msg.id = can_id;
+  // can_msg.data = axis0;
+  // can_msg.dlc = 8;
 
-  can_pub.publish(can_msg);
+  // can_pub.publish(can_msg);
+}
+
+void Gen4HWInterface::yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg)
+{
+  this->yaw_rate = msg->angular_velocity.z;
+}
+
+float Gen4HWInterface::torque_vectoring()
+{
+  // returns the torque distribution for the left and right wheel
+  float mean_axis_speed = (this->cur_velocity_axis0 + this->cur_velocity_axis1) / 2;
+  float car_speed = mean_axis_speed / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s
+  float yaw_rate_desired = 0.0;
+
+  // calculate the understeer gradient
+  float Ku = this->lr * this->m / (this->Cyf * (this->lf + this->lr)) -
+             this->lf * this->m / (this->Cyr * (this->lf + this->lr));
+
+  // calculate the desired yaw rate, add safety for division by zero
+  if (abs(this->lr + this->lf + Ku * pow(car_speed, 2)) > 0.0001)
+    ;
+  {
+    yaw_rate_desired = car_speed / (this->lr + this->lf + Ku * pow(car_speed, 2)) * this->cur_steering;
+  }
+
+  float yaw_rate_error = yaw_rate_desired - this->yaw_rate;
+
+  // PID controller calculates the difference in torque dT, based on the yaw rate error
+  // Recommended to use D = 0
+  float now_time = ros::Time::now().toSec();
+  this->integral += yaw_rate_error * (now_time - this->prev_time);
+  float difference = (yaw_rate_error - this->prev_error) / (now_time - this->prev_time);
+
+  float dT = this->Kp * yaw_rate_error + this->Ki * this->integral + this->Kd * difference;
+
+  this->prev_error = yaw_rate_error;
+  this->prev_time = now_time;
+
+  return dT;
 }
 
 }  // namespace gen4_control

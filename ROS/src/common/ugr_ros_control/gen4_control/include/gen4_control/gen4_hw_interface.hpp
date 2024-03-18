@@ -79,14 +79,23 @@ public:
 
   void state_change(const ugr_msgs::State::ConstPtr& msg);
 
-  void handle_vel_msg(const can_msgs::Frame::ConstPtr& msg, uint32_t axis_id);
+  void handle_vel_msg(const std_msgs::Float32::ConstPtr& msg, uint32_t axis_id);
+  void handle_steering_msg(const std_msgs::Float32::ConstPtr& msg);
 
   void publish_steering_msg(float steering);
   void publish_vel_msg(float vel, int axis);
-  void can_callback(const can_msgs::Frame::ConstPtr& msg);
+  void publish_torque_msg(float axis);
+  void can_callback_axis0(const std_msgs::Float32::ConstPtr& msg);
+  void can_callback_axis1(const std_msgs::Float32::ConstPtr& msg);
+  void can_callback_steering(const std_msgs::Float32::ConstPtr& msg);
+
+  void yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg);
+
+  float torque_vectoring();
 
 private:
-  int drive_joint_id;
+  int drive_joint0_id;
+  int drive_joint1_id;
   int steering_joint_id;
 
   std::string axis0_frame;
@@ -102,6 +111,10 @@ private:
   ros::Publisher can_pub;
   ros::Subscriber can_sub;
   ros::Subscriber state_sub;
+  ros::Subscriber can_axis0_sub;
+  ros::Subscriber can_axis1_sub;
+  ros::Subscriber can_steering_sub;
+  ros::Subscriber jaw_rate_sub;
   ros::Publisher vel_left_pub;
   ros::Publisher vel_right_pub;
   float steer_max_step;
@@ -109,6 +122,26 @@ private:
   float cur_velocity_axis0;
   float cur_velocity_axis1;
   float cur_steering;
+
+  // PID for torque vectoring
+  float Kp;
+  float Ki;
+  float Kd;
+  float integral;
+  float prev_error;
+  float prev_time;
+  float this_time;
+  float yaw_rate;
+
+  // parameters for torque vectoring
+  bool use_torque_vectoring;
+  float l_wheelbase;
+  float COG;
+  float Cyf;
+  float Cyr;
+  float m;
+  float lr;
+  float lf;
 
 };  // class
 

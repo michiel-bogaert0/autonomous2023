@@ -21,7 +21,23 @@
       <remap from="/output/vel0" to="/ugr/car/sensors/hwinterface/encoder0" />
       <remap from="/output/vel1" to="/ugr/car/sensors/hwinterface/encoder1" />
 
+      <param name="wheel_diameter" value="0.4064" />
+      <param name="gear_ratio" value="3.405" />
+
+      <!-- Torque vectoring -->
+      <param name="use_torque_vectoring" value="false" />
+      <param name="l_wheelbase" value="2" />
+      <param name=="COG" value="0.5" />
+      <param name="Cyf" value="444" />
+      <param name="Cyr" value="444" />
+      <param name="m" value="320" />
       
+      <!-- PID Torque vectoring -->
+      <param name="Kp" value="1.0" />
+      <param name="Ki" value="0.0" />
+      <param name="Kd" value="0.0" />
+
+
     </node>
 
     <!-- Load controller settings -->
