@@ -12,6 +12,61 @@ from scipy import optimize, spatial
 from scipy.interpolate import interp1d, splev, splprep
 
 
+########################################################################################################################
+# FINISHED FUNCTIONS:
+# - interp_track
+########################################################################################################################
+def interp_track(
+    track: np.ndarray, stepsize: float, interpolation_method: str = "quadratic"
+) -> np.ndarray:
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    Interpolate track points to a new stepsize.
+
+    .. inputs::
+    :param track:                   track in the format [x, y, w_tr_right, w_tr_left] or [x, y].
+    :type track:                    np.ndarray
+    :param stepsize:                desired stepsize after interpolation in m.
+    :type stepsize:                 float
+    :param interpolation_method:    method used for interpolation (e.g. 'linear', 'quadratic', 'cubic').
+    :type interpolation_method:     str
+
+    .. outputs::
+    :return track_interp:   interpolated track [x, y, w_tr_right, w_tr_left] or [x, y].
+    :rtype track_interp:    np.ndarray
+
+    .. notes::
+    Track input and output are unclosed! track input must however be closable in the current form!
+    """
+
+    # create closed track
+    track_cl = np.vstack((track, track[0]))
+
+    # calculate element lengths (euclidian distance)
+    el_lengths_cl = np.sqrt(
+        np.sum(np.power(np.diff(track_cl[:, :2], axis=0), 2), axis=1)
+    )
+
+    # sum up total distance (from start) to every element
+    dists_cum_cl = np.cumsum(el_lengths_cl)
+    dists_cum_cl = np.insert(dists_cum_cl, 0, 0.0)
+
+    # calculate desired lenghts depending on specified stepsize (+1 because last element is included)
+    no_points_interp_cl = math.ceil(dists_cum_cl[-1] / stepsize) + 1
+    dists_interp_cl = np.linspace(0.0, dists_cum_cl[-1], no_points_interp_cl)
+
+    # interpolate closed track points
+    track_interp_cl = np.zeros((no_points_interp_cl, track_cl.shape[1]))
+
+    interpolator = interp1d(dists_cum_cl, track_cl, kind=interpolation_method, axis=0)
+    track_interp_cl = interpolator(dists_interp_cl)
+
+    return track_interp_cl
+
+
 def generate_interpolated_points(path):
     # Quadratic interpolation between center points to add more points for BSpline smoothing
     distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
@@ -1495,7 +1550,7 @@ def prep_track(
     stepsize_reg: float = 3.0,
     stepsize_interp_after_opt: float = 2.0,
     debug: bool = True,
-    min_width: float = None,
+    min_width: float = 3.0,
 ) -> tuple:
     """
     Created by:
@@ -1760,63 +1815,6 @@ def dist_to_p(t_glob: np.ndarray, path: list, p: np.ndarray):
     return spatial.distance.euclidean(p, s)
 
 
-def interp_track(track: np.ndarray, stepsize: float) -> np.ndarray:
-    """
-    author:
-    Alexander Heilmeier
-
-    .. description::
-    Interpolate track points linearly to a new stepsize.
-
-    .. inputs::
-    :param track:           track in the format [x, y, w_tr_right, w_tr_left, (banking)].
-    :type track:            np.ndarray
-    :param stepsize:        desired stepsize after interpolation in m.
-    :type stepsize:         float
-
-    .. outputs::
-    :return track_interp:   interpolated track [x, y, w_tr_right, w_tr_left, (banking)].
-    :rtype track_interp:    np.ndarray
-
-    .. notes::
-    Track input and output are unclosed! track input must however be closable in the current form!
-    The banking angle is optional and must not be provided!
-    """
-
-    # ------------------------------------------------------------------------------------------------------------------
-    # LINEAR INTERPOLATION OF TRACK ------------------------------------------------------------------------------------
-    # ------------------------------------------------------------------------------------------------------------------
-
-    # create closed track
-    track_cl = np.vstack((track, track[0]))
-
-    # calculate element lengths (euclidian distance)
-    el_lengths_cl = np.sqrt(
-        np.sum(np.power(np.diff(track_cl[:, :2], axis=0), 2), axis=1)
-    )
-
-    # sum up total distance (from start) to every element
-    dists_cum_cl = np.cumsum(el_lengths_cl)
-    dists_cum_cl = np.insert(dists_cum_cl, 0, 0.0)
-
-    # calculate desired lenghts depending on specified stepsize (+1 because last element is included)
-    no_points_interp_cl = math.ceil(dists_cum_cl[-1] / stepsize) + 1
-    dists_interp_cl = np.linspace(0.0, dists_cum_cl[-1], no_points_interp_cl)
-
-    # interpolate closed track points
-    track_interp_cl = np.zeros((no_points_interp_cl, track_cl.shape[1]))
-
-    track_interp_cl[:, 0] = np.interp(dists_interp_cl, dists_cum_cl, track_cl[:, 0])
-    track_interp_cl[:, 1] = np.interp(dists_interp_cl, dists_cum_cl, track_cl[:, 1])
-    track_interp_cl[:, 2] = np.interp(dists_interp_cl, dists_cum_cl, track_cl[:, 2])
-    track_interp_cl[:, 3] = np.interp(dists_interp_cl, dists_cum_cl, track_cl[:, 3])
-
-    if track_cl.shape[1] == 5:
-        track_interp_cl[:, 4] = np.interp(dists_interp_cl, dists_cum_cl, track_cl[:, 4])
-
-    return track_interp_cl[:-1]
-
-
 def check_normals_crossing(
     track: np.ndarray, normvec_normalized: np.ndarray, horizon: int = 10
 ) -> bool:
@@ -1931,28 +1929,62 @@ def side_of_line(
     return side
 
 
-# TODO: For every point in the reference line, calculate the perpendicular distance to the left and right boundaries
+# TODO: Better algorithm?
+# TODO: Fix plots, mainly colors and markers
+# TODO: Add calculation for error between old and new boundaries. Maybe average distance or something similar? Purely for validation purposes.
 def calc_bound_dists(
     trajectory: np.ndarray,
     bound_left: np.ndarray,
     bound_right: np.ndarray,
     min_distance: float = 1.5,
+    plot_bound_dists: bool = False,
 ) -> np.ndarray:
     """
-    Created by:
+    author:
     Kwinten Mortier
 
-    Documentation:
-    For every point on the trajectory, calculate the estimated perpendicular distance to the left and right boundaries
+    .. description::
+    For every point on the reference trajectory, calculates the estimated perpendicular distance to the left and right boundaries. Determines which point on the boundary is closest to
+    a point at a minimum distance to the trajectory and calculates the distance from the trajectory to that point. The distance is then stored in an array.
 
-    Inputs:
-    trajectory:     array containing the reference trajectory [x, y]
-    bound_left:     array containing the left track boundary [x, y]
-    bound_right:    array containing the right track boundary [x, y]
+    .. inputs::
+    :trajectory:                array containing the reference trajectory [x, y] (Unclosed track!)
+    :type trajectory:           np.ndarray
+    :bound_left:                array containing the left track boundary [x, y] (Unclosed boundary!)
+    :type bound_left:           np.ndarray
+    :bound_right:               array containing the right track boundary [x, y] (Unclosed boundary!)
+    :type bound_right:          np.ndarray
+    :min_distance:              minimum distance from reference to the boundaries in m
+    :type min_distance:         float
+    :plot_bound_dists:          flag to show the boundaries and the calculated distances on the map
+    :type plot_bound_dists:     bool
 
-    Outputs:
-    bound_dists:    estimated perpendicular distance to boundaries along normal for every trajectory point
+    .. outputs::
+    :bound_dists:                estimated perpendicular distance to boundaries along normal for every trajectory point (Unclosed)
+    :rtype bound_dists:         np.ndarray
+    :new_left:                  new left boundary after distance calculation (Unclosed)
+    :rtype new_left:            np.ndarray
+    :new_right:                 new right boundary after distance calculation (Unclosed)
+    :rtype new_right:           np.ndarray
+
+    .. notes::
+    Make sure the boundaries contain sufficient amount of points to accurately estimate the distance
+    Trajectory and boundaries must be unclosed!
     """
+    # Check inputs
+    if (trajectory[0] == trajectory[-1]).all():
+        raise RuntimeError("Trajectory must be unclosed!")
+    if (bound_left[0] == bound_left[-1]).all():
+        raise RuntimeError("Left boundary must be unclosed!")
+    if (bound_right[0] == bound_right[-1]).all():
+        raise RuntimeError("Right boundary must be unclosed!")
+    if (
+        trajectory.shape[1] != 2
+        or bound_left.shape[1] != 2
+        or bound_right.shape[1] != 2
+    ):
+        raise RuntimeError("Trajectory and boundaries must be 2D arrays!")
+
     # Initialize an empty array to store the minimum distances
     min_dists = np.zeros(trajectory.shape)
     trajectory_closed = np.vstack((trajectory, trajectory[0]))
@@ -1963,12 +1995,12 @@ def calc_bound_dists(
     left_extended = trajectory - normvec_normalized * min_distance
     right_extended = trajectory + normvec_normalized * min_distance
 
-    tree_left = spatial.cKDTree(bound_left)
-    tree_right = spatial.cKDTree(bound_right)
+    tree_left = spatial.KDTree(bound_left)
+    tree_right = spatial.KDTree(bound_right)
 
     for i in range(trajectory.shape[0]):
-        dist_left_extended, ind_left = tree_left.query(left_extended[i], k=1)
-        dist_right_extended, ind_right = tree_right.query(right_extended[i], k=1)
+        _, ind_left = tree_left.query(left_extended[i], k=1)
+        _, ind_right = tree_right.query(right_extended[i], k=1)
 
         dist_left = math.sqrt(
             (trajectory[i][0] - bound_left[ind_left][0]) ** 2
@@ -1981,22 +2013,25 @@ def calc_bound_dists(
 
         min_dists[i] = np.array([dist_left, dist_right])
 
-    # Loopclosure for plots
-    left_extended = np.vstack((left_extended, left_extended[0]))
-    right_extended = np.vstack((right_extended, right_extended[0]))
-
     # New boundaries
     new_left = trajectory - normvec_normalized * min_dists[:, 0].reshape(-1, 1)
     new_right = trajectory + normvec_normalized * min_dists[:, 1].reshape(-1, 1)
 
-    plot = False
+    # Inputs for plots
+    trajectory_plot = trajectory_closed
+    left_extended_plot = np.vstack((left_extended, left_extended[0]))
+    right_extended_plot = np.vstack((right_extended, right_extended[0]))
+    new_left_plot = np.vstack((new_left, new_left[0]))
+    new_right_plot = np.vstack((new_right, new_right[0]))
+    bound_left_plot = np.vstack((bound_left, bound_left[0]))
+    bound_right_plot = np.vstack((bound_right, bound_right[0]))
 
-    if plot:
+    if plot_bound_dists:
         # plot track including optimized path
         plt.figure()
         plt.plot(
-            left_extended[:, 0],
-            left_extended[:, 1],
+            left_extended_plot[:, 0],
+            left_extended_plot[:, 1],
             color=normalize_color((0, 0, 255)),
             linewidth=1.0,
             marker="o",
@@ -2004,8 +2039,8 @@ def calc_bound_dists(
             markerfacecolor=normalize_color((0, 0, 0)),
         )
         plt.plot(
-            right_extended[:, 0],
-            right_extended[:, 1],
+            right_extended_plot[:, 0],
+            right_extended_plot[:, 1],
             color=normalize_color((230, 245, 0)),
             linewidth=1.0,
             marker="o",
@@ -2013,8 +2048,8 @@ def calc_bound_dists(
             markerfacecolor=normalize_color((0, 0, 0)),
         )
         plt.plot(
-            trajectory_closed[:, 0],
-            trajectory_closed[:, 1],
+            trajectory_plot[:, 0],
+            trajectory_plot[:, 1],
             color=normalize_color((0, 0, 0)),
             linewidth=1.0,
             marker="o",
@@ -2022,8 +2057,8 @@ def calc_bound_dists(
             markerfacecolor=normalize_color((0, 0, 0)),
         )
         plt.plot(
-            bound_left[:, 0],
-            bound_left[:, 1],
+            bound_left_plot[:, 0],
+            bound_left_plot[:, 1],
             color=normalize_color((0, 0, 255)),
             linewidth=1.0,
             marker="o",
@@ -2031,8 +2066,8 @@ def calc_bound_dists(
             markerfacecolor=normalize_color((0, 0, 0)),
         )
         plt.plot(
-            bound_right[:, 0],
-            bound_right[:, 1],
+            bound_right_plot[:, 0],
+            bound_right_plot[:, 1],
             color=normalize_color((230, 245, 0)),
             linewidth=1.0,
             marker="o",
@@ -2040,8 +2075,8 @@ def calc_bound_dists(
             markerfacecolor=normalize_color((0, 0, 0)),
         )
         plt.plot(
-            new_left[:, 0],
-            new_left[:, 1],
+            new_left_plot[:, 0],
+            new_left_plot[:, 1],
             color=normalize_color((0, 255, 0)),
             linewidth=1.0,
             marker="o",
@@ -2049,8 +2084,8 @@ def calc_bound_dists(
             markerfacecolor=normalize_color((0, 0, 0)),
         )
         plt.plot(
-            new_right[:, 0],
-            new_right[:, 1],
+            new_right_plot[:, 0],
+            new_right_plot[:, 1],
             color=normalize_color((0, 255, 0)),
             linewidth=1.0,
             marker="o",
@@ -2058,8 +2093,8 @@ def calc_bound_dists(
             markerfacecolor=normalize_color((0, 0, 0)),
         )
 
-        for i in range(new_left.shape[0]):
-            temp = np.vstack((new_left[i], new_right[i]))
+        for i in range(new_left_plot.shape[0]):
+            temp = np.vstack((new_left_plot[i], new_right_plot[i]))
             plt.plot(temp[:, 0], temp[:, 1], "r-", linewidth=0.7)
 
         plt.grid()
@@ -2069,7 +2104,7 @@ def calc_bound_dists(
         plt.ylabel("north in m")
         plt.show()
 
-    return min_dists
+    return min_dists, new_left, new_right
 
 
 def calc_head_curv_an2(

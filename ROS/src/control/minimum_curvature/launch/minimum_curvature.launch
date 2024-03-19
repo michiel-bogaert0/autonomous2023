@@ -15,7 +15,8 @@
         <param name="plot" value="True" />
         <param name="imported_bounds" value="True" />
         <param name="curvlim" value="0.5" />
-        <param name="stepsize_prep" value="0.50" />
+        <param name="stepsize_prep_track" value="0.50" />
+        <param name="stepsize_prep_bounds" value="0.25" />
         <param name="stepsize_opt" value="0.50" />
         <param name="stepsize_post" value="0.50" />
         <param name="vel" value="True" />
