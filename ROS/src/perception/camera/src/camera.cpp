@@ -54,7 +54,7 @@ sensor_msgs::Image CameraNode::cv_to_ros_image(cv::Mat &mat) {
    */
   cv_bridge::CvImage msg;
   msg.header = create_header();
-  msg.encoding = sensor_msgs::image_encodings::BGR8;
+  msg.encoding = sensor_msgs::image_encodings::RGB8;
   msg.image = mat;
 
   return *msg.toImageMsg();
@@ -117,6 +117,7 @@ sensor_msgs::Image CameraNode::process_data() {
     buf = image.GetImageData();
     cv::Mat img(cv::Size(camera_width_, camera_height_), CV_8UC3, buf,
                 cv::Mat::AUTO_STEP);
+    cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
     if (!use_raw_)
       cv::remap(img, img, *map1_, *map2_, cv::INTER_LINEAR);
     sensor_msgs::Image msg = cv_to_ros_image(img);
