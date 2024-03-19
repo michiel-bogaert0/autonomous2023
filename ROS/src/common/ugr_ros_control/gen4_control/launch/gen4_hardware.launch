@@ -26,7 +26,7 @@
 
       <!-- Torque vectoring -->
       <param name="use_torque_vectoring" value="false" />
-      <param name="l_wheelbase" value="2" />
+      <param name="l_wheelbase" value="1.528" />
       <param name=="COG" value="0.5" />
       <param name="Cyf" value="444" />
       <param name="Cyr" value="444" />
