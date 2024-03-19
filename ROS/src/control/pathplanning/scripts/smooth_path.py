@@ -4,6 +4,7 @@ import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
+from node_fixture import AutonomousMission
 from scipy.interpolate import interp1d, splev, splprep
 
 
@@ -26,6 +27,7 @@ class PoseArraySmootherNode:
 
     def pose_array_callback(self, msg: Path):
         try:
+            mission = rospy.get_param("/mission", "")
             path = np.array([[p.pose.position.x, p.pose.position.y] for p in msg.poses])
             away_from_start = False
 
@@ -45,7 +47,7 @@ class PoseArraySmootherNode:
                     away_from_start = True
 
             # Add zero pose to path if no closure of path
-            if not per:
+            if not per and mission == AutonomousMission.TRACKDRIVE:
                 path = np.vstack(([0, 0], path))
             # Linear interpolation between center points to add more points for BSpline smoothing
             distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
