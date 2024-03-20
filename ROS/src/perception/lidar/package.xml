@@ -15,6 +15,9 @@
   <depend>pcl_msgs</depend>
   <depend>ugr_msgs</depend>
   <depend>pcl_ros</depend>
+  <build_depend>ouster_ros</build_depend>
+  <build_export_depend>ouster_ros</build_export_depend>
+  <exec_depend>ouster_ros</exec_depend>
 
   <export>
   </export>
