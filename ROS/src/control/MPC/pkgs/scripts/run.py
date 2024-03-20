@@ -29,6 +29,7 @@ class MPC(ManagedNode):
         super().__init__("MPC_tracking_control")
         self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.slam_state = SLAMStatesEnum.IDLE
+        self.save_solution = False
         rospy.Subscriber("/state", State, self.handle_state_change)
         self.start_sender()
         rospy.spin()
@@ -110,12 +111,12 @@ class MPC(ManagedNode):
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
-        self.car = BicycleModel(dt=0.05)  # dt = publish rate?
+        self.car = BicycleModel(dt=0.1)  # dt = publish rate?
 
         self.steering_joint_angle = 0
         self.u = [0, 0]
 
-        self.N = 40
+        self.N = 20
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
@@ -124,7 +125,7 @@ class MPC(ManagedNode):
             T=self.car.dt * self.N,
             show_execution_time=False,
             silent=True,
-            store_intermediate=False,
+            store_intermediate=True,
         )
         self.mpc = MPC_tracking(self.ocp)
 
@@ -293,10 +294,15 @@ class MPC(ManagedNode):
 
                     if self.slam_state == SLAMStatesEnum.RACING:
                         # Scale steering penalty based on current speed
-                        Qn = np.diag([8, 8, 0, 0, 0])
-                        R = np.diag([5e-2, 100])
+                        # Qn = np.diag([8, 8, 0, 0, 0])
+                        # R = np.diag([5e-2, 100])
+                        # R_delta = np.diag(
+                        #     [10, 0]  # * self.actual_speed / self.speed_target]
+                        # )
+                        Qn = np.diag([1e-2, 1e-2, 0, 0, 0])
+                        R = np.diag([1e-4, 1e-4])
                         R_delta = np.diag(
-                            [10, 0]  # * self.actual_speed / self.speed_target]
+                            [1e-2, 1e-1]  # * self.actual_speed / self.speed_target]
                         )
 
                         self.set_costs(Qn, R, R_delta)
@@ -400,6 +406,19 @@ class MPC(ManagedNode):
                     print(traceback.format_exc())
 
             rate.sleep()
+
+        inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
+        inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
+
+        if self.save_solution:
+            # Store solution in npz file for later analysis
+            np.savez(
+                "/home/ugr/autonomous2023/ROS/src/control/MPC/data/solution.npz",
+                U_sol_intermediate=self.mpc.U_sol_intermediate,
+                X_sol_intermediate=self.mpc.X_sol_intermediate,
+                info_pr=inf_pr,
+                info_du=inf_du,
+            )
 
     def vis_path(self, path, publisher, stamp=None, frame_id=None):
         if publisher is None or len(path) == 0:

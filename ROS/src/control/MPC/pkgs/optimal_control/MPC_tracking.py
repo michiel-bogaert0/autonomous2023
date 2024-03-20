@@ -153,24 +153,24 @@ class MPC_tracking:
         # print(self.opti.g.shape)
         # print(self.opti.g[0])
 
-        x = cd.vertcat(cd.vec(self.X), self.U.T)
+        x = cd.vertcat(cd.vec(self.X_sol), self.U_sol.T)
 
         if L is None:
-            L = self.opti.f
+            L = self.ocp.f
         H, J = cd.hessian(L, x)
 
         plt.spy(H.sparsity())
         plt.show()
 
-        Jg = cd.jacobian(self.opti.g, x)
+        Jg = cd.jacobian(self.ocp.g, x)
         plt.spy(Jg.sparsity())
         plt.show()
 
     def showConvergence(self):
         import matplotlib.pyplot as plt
 
-        inf_pr = self.opti.debug.stats()["iterations"]["inf_pr"]
-        inf_du = self.opti.debug.stats()["iterations"]["inf_du"]
+        inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
+        inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
 
         fig, ax = plt.subplots()
 
