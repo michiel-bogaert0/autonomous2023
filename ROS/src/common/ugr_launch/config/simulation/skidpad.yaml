@@ -8,7 +8,7 @@ slam_controller:
       - map_publisher
 
       # Control
-      - MPC_tracking_control
+      - front_wheel_feedback_control
       - path_publisher
 
 slam_mcl:

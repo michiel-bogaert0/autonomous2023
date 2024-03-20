@@ -8,7 +8,7 @@ slam_controller:
       - map_publisher
 
       # Control
-      - MPC_tracking_control
+      - front_wheel_feedback_control
       - path_publisher
       
 slam_mcl:
@@ -17,7 +17,7 @@ loopclosure:
   finishpoint: [75, 0, 0]
 map_publisher:
   map_pkg: "slam_simulator"
-  map: "/maps/chicane_sim.yaml"
+  map: "/maps/acceleration_75m.yaml"
 speed:
   target: 10.0
   LC_adaptive_velocity: False
@@ -34,4 +34,4 @@ mpc:
   world_frame: "ugr/map"
 path_publisher:
   package_path: "path_publisher"
-  path: "/paths/chicane_sim.yaml"
+  path: "/paths/straight_L75.yaml"

@@ -31,10 +31,8 @@ class BicycleModel(Env):
         v = s[4]
         phi = u[1]
         alpha = u[0]
-        # drag_acc = casadi.if_else(v > 0.1, self.DC * casadi.power(v, 2), 0.0)
-        # friction_acc = casadi.if_else(v > 0.1, self.mu, 0.0)
 
-        a = alpha * self.R  # - drag_acc - friction_acc
+        a = alpha * self.R
 
         # Outputs
         omega = v * np.tan(zeta) / self.L
