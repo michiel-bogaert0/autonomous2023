@@ -13,41 +13,53 @@ from scipy.interpolate import interp1d, splev, splprep
 
 
 ########################################################################################################################
-# FINISHED FUNCTIONS:
+# ALMOST FINISHED FUNCTIONS:
 # - interp_track
+# - B_spline_smoothing
+# - calc_bound_dists
 ########################################################################################################################
-def interp_track(
-    track: np.ndarray, stepsize: float, interpolation_method: str = "quadratic"
+def interp_trajectory(
+    trajectory: np.ndarray,
+    stepsize: float,
+    interpolation_method: str = "quadratic",
 ) -> np.ndarray:
     """
     author:
     Kwinten Mortier
 
     .. description::
-    Interpolate track points to a new stepsize.
+    Interpolate trajectory points to a new stepsize. Also works for boundaries.
 
     .. inputs::
-    :param track:                   track in the format [x, y, w_tr_right, w_tr_left] or [x, y].
-    :type track:                    np.ndarray
+    :param trajectory:              trajectory in the format [x, y, w_tr_right, w_tr_left] or [x, y].
+    :type trajectory:               np.ndarray
     :param stepsize:                desired stepsize after interpolation in m.
     :type stepsize:                 float
     :param interpolation_method:    method used for interpolation (e.g. 'linear', 'quadratic', 'cubic').
     :type interpolation_method:     str
 
     .. outputs::
-    :return track_interp:   interpolated track [x, y, w_tr_right, w_tr_left] or [x, y].
-    :rtype track_interp:    np.ndarray
+    :return trajectory_interp_cl:   interpolated trajectory [x, y, w_tr_right, w_tr_left] or [x, y].
+    :rtype trajectory_interp_cl:    np.ndarray
 
     .. notes::
-    Track input and output are unclosed! track input must however be closable in the current form!
+    Trajectory input is unclosed! Trajectory input must however be closable in the current form!
     """
 
-    # create closed track
-    track_cl = np.vstack((track, track[0]))
+    # Check inputs
+    if trajectory.shape[1] != 2 and trajectory.shape[1] != 4:
+        raise RuntimeError(
+            "Trajectory input must be in the format [x, y] or [x, y, w_tr_right, w_tr_left]!"
+        )
+    if (trajectory[0] == trajectory[-1]).all():
+        raise RuntimeError("Trajectory input must be unclosed!")
+
+    # create closed trajectory
+    trajectory_cl = np.vstack((trajectory, trajectory[0]))
 
     # calculate element lengths (euclidian distance)
     el_lengths_cl = np.sqrt(
-        np.sum(np.power(np.diff(track_cl[:, :2], axis=0), 2), axis=1)
+        np.sum(np.power(np.diff(trajectory_cl[:, :2], axis=0), 2), axis=1)
     )
 
     # sum up total distance (from start) to every element
@@ -59,44 +71,238 @@ def interp_track(
     dists_interp_cl = np.linspace(0.0, dists_cum_cl[-1], no_points_interp_cl)
 
     # interpolate closed track points
-    track_interp_cl = np.zeros((no_points_interp_cl, track_cl.shape[1]))
+    trajectory_interp_cl = np.zeros((no_points_interp_cl, trajectory_cl.shape[1]))
 
-    interpolator = interp1d(dists_cum_cl, track_cl, kind=interpolation_method, axis=0)
-    track_interp_cl = interpolator(dists_interp_cl)
+    interpolator = interp1d(
+        dists_cum_cl, trajectory_cl, kind=interpolation_method, axis=0
+    )
+    trajectory_interp_cl = interpolator(dists_interp_cl)
 
-    return track_interp_cl
-
-
-def generate_interpolated_points(path):
-    # Quadratic interpolation between center points to add more points for BSpline smoothing
-    distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
-    distance = np.insert(distance, 0, 0) / distance[-1]
-
-    alpha = np.linspace(0, 1, len(path) * 3)
-    interpolator = interp1d(distance, path, kind="quadratic", axis=0)
-    path = interpolator(alpha)
-
-    return path
+    return trajectory_interp_cl
 
 
-def B_spline_smoothing(path, s=3, extra_points=False):
-    per = 1  # BSPline periodicity, 0 = not periodic, 1 = periodic
+def B_spline_smoothing(
+    trajectory_cl: np.ndarray,
+    smoothing_factor: float = 2.0,
+) -> np.ndarray:
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    Find a B-spline representation of the trajectory and smooth it in this process.
+
+    .. inputs::
+    :param trajectory_cl:               trajectory in the format [x, y, w_tr_right, w_tr_left] or [x, y].
+    :type trajectory_cl:                np.ndarray
+    :param smoothing_factor:            factor for smoothing the trajectory.
+    :type smoothing_factor:             float
+
+    .. outputs::
+    :return trajectory_smoothed_cl:     smoothed trajectory [x, y].
+    :rtype trajectory_smoothed_cl:      np.ndarray
+
+    .. notes::
+    Trajectory input and output are closed!
+    """
+
+    # Check inputs
+    if trajectory_cl.shape[1] != 2:
+        raise RuntimeError("Trajectory input must be in the format [x, y]!")
+    if not (trajectory_cl[0] == trajectory_cl[-1]).all():
+        raise RuntimeError("Trajectory input must be closed!")
+    if smoothing_factor < 0.0:
+        raise RuntimeError("Smoothing factor must be 0 or positive!")
 
     # Smooth path with BSpline interpolation
-    path = path.T  # Transpose to get correct shape for BSpline, splprep expects (2, N)
-    w = np.array(
-        [1] * len(path[0])
-    )  # Weights for BSpline (Here, same weight for every point)
+    trajectory_cl = (
+        trajectory_cl.T
+    )  # Transpose to get correct shape, splprep expects (2, N)
 
-    tck, u = splprep(path, w=w, s=s, per=per)  # Calculate BSpline
+    tck, u = splprep(trajectory_cl, s=smoothing_factor, per=1)
 
-    if extra_points:
-        u = np.linspace(0, 1, path.shape[1] * 4)
-
-    smoothed_path = np.array(
+    trajectory_smoothed_cl = np.array(
         splev(u, tck)
     ).T  # Evaluate BSpline and transpose back to (N, 2)
-    return smoothed_path
+
+    return trajectory_smoothed_cl
+
+
+# TODO: Fix plots, mainly colors and markers
+# TODO: Add calculation for error between old and new boundaries. Maybe average distance or something similar? Purely for validation purposes.
+def calc_bound_dists(
+    trajectory: np.ndarray,
+    bound_left: np.ndarray,
+    bound_right: np.ndarray,
+    min_left_distance: float = 1.5,
+    min_right_distance: float = 1.5,
+    plot_bound_dists: bool = False,
+) -> np.ndarray:
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    For every point on the reference trajectory, calculates the estimated perpendicular distance to the left and right boundaries. Determines which point on the boundary is closest to
+    a point at a minimum distance to the trajectory and calculates the distance from the trajectory to that point. The distance is then stored in an array.
+
+    .. inputs::
+    :param trajectory:              array containing the reference trajectory [x, y] (Unclosed track!)
+    :type trajectory:               np.ndarray
+    :param bound_left:              array containing the left track boundary [x, y] (Unclosed boundary!)
+    :type bound_left:               np.ndarray
+    :param bound_right:             array containing the right track boundary [x, y] (Unclosed boundary!)
+    :type bound_right:              np.ndarray
+    :param min_left_distance:       minimum distance from reference to the left boundary in m
+    :type min_left_distance:        float
+    :param min_right_distance:      minimum distance from reference to the right boundary in m
+    :type min_right_distance:       float
+    :param plot_bound_dists:        flag to show the boundaries and the calculated distances on the map
+    :type plot_bound_dists:         bool
+
+    .. outputs::
+    :return bound_dists:            estimated perpendicular distance to boundaries along normal for every trajectory point (unclosed).
+    :rtype bound_dists:             np.ndarray
+    :return new_left:               new left boundary after distance calculation (unclosed).
+    :rtype new_left:                np.ndarray
+    :return new_right:              new right boundary after distance calculation (unclosed).
+    :rtype new_right:               np.ndarray
+
+    .. notes::
+    Make sure the boundaries contain sufficient amount of points to accurately estimate the distance
+    Trajectory and boundaries must be unclosed!
+    """
+
+    # Check inputs
+    if (trajectory[0] == trajectory[-1]).all():
+        raise RuntimeError("Trajectory must be unclosed!")
+    if (bound_left[0] == bound_left[-1]).all():
+        raise RuntimeError("Left boundary must be unclosed!")
+    if (bound_right[0] == bound_right[-1]).all():
+        raise RuntimeError("Right boundary must be unclosed!")
+    if (
+        trajectory.shape[1] != 2
+        or bound_left.shape[1] != 2
+        or bound_right.shape[1] != 2
+    ):
+        raise RuntimeError("Trajectory and boundaries must be 2D arrays!")
+
+    # Initialize an empty array to store the minimum distances
+    min_dists = np.zeros(trajectory.shape)
+
+    # Calculate the spline coefficients for the x and y coordinates of the closed trajectory
+    trajectory_cl = np.vstack((trajectory, trajectory[0]))
+    _, _, M, normvec_normalized = calc_splines(trajectory_cl)
+
+    # Calculate the estimated perpendicular distance to the boundaries
+    left_distance = min_left_distance
+    right_distance = min_right_distance
+
+    tree_left = spatial.KDTree(bound_left)
+    tree_right = spatial.KDTree(bound_right)
+
+    for i in range(trajectory.shape[0]):
+        left_point = trajectory[i] - normvec_normalized[i] * left_distance
+        right_point = trajectory[i] + normvec_normalized[i] * right_distance
+
+        _, ind_left = tree_left.query(left_point, k=1)
+        _, ind_right = tree_right.query(right_point, k=1)
+
+        dist_left = math.sqrt(
+            (trajectory[i][0] - bound_left[ind_left][0]) ** 2
+            + (trajectory[i][1] - bound_left[ind_left][1]) ** 2
+        )
+
+        dist_right = math.sqrt(
+            (trajectory[i][0] - bound_right[ind_right][0]) ** 2
+            + (trajectory[i][1] - bound_right[ind_right][1]) ** 2
+        )
+        if i == 0:
+            left_distance = dist_left
+            right_distance = dist_right
+        else:
+            if dist_left <= left_distance:
+                left_distance = dist_left - abs(dist_left - left_distance) / 2
+            else:
+                left_distance = dist_left + abs(dist_left - left_distance) / 2
+            if dist_right <= right_distance:
+                right_distance = dist_right - abs(dist_right - right_distance) / 2
+            else:
+                right_distance = dist_right + abs(dist_right - right_distance) / 2
+
+        min_dists[i] = np.array([dist_left, dist_right])
+
+    # New boundaries
+    new_left = trajectory - normvec_normalized * min_dists[:, 0].reshape(-1, 1)
+    new_right = trajectory + normvec_normalized * min_dists[:, 1].reshape(-1, 1)
+
+    # Inputs for plots
+    trajectory_plot = trajectory_cl
+    new_left_plot = np.vstack((new_left, new_left[0]))
+    new_right_plot = np.vstack((new_right, new_right[0]))
+    bound_left_plot = np.vstack((bound_left, bound_left[0]))
+    bound_right_plot = np.vstack((bound_right, bound_right[0]))
+
+    if plot_bound_dists:
+        plt.figure()
+        plt.plot(
+            trajectory_plot[:, 0],
+            trajectory_plot[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        plt.plot(
+            bound_left_plot[:, 0],
+            bound_left_plot[:, 1],
+            color=normalize_color((0, 0, 255)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        plt.plot(
+            bound_right_plot[:, 0],
+            bound_right_plot[:, 1],
+            color=normalize_color((230, 245, 0)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        plt.plot(
+            new_left_plot[:, 0],
+            new_left_plot[:, 1],
+            color=normalize_color((0, 255, 0)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        plt.plot(
+            new_right_plot[:, 0],
+            new_right_plot[:, 1],
+            color=normalize_color((0, 255, 0)),
+            linewidth=1.0,
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+
+        for i in range(new_left_plot.shape[0]):
+            temp = np.vstack((new_left_plot[i], new_right_plot[i]))
+            plt.plot(temp[:, 0], temp[:, 1], "r-", linewidth=0.7)
+
+        plt.grid()
+        ax = plt.gca()
+        ax.set_aspect("equal", "datalim")
+        plt.xlabel("east in m")
+        plt.ylabel("north in m")
+        plt.show()
+
+    return min_dists, new_left, new_right
 
 
 def calc_splines(
@@ -1692,7 +1898,7 @@ def spline_approximation(
     # LINEAR INTERPOLATION BEFORE SMOOTHING ----------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------------------------------------
 
-    track_interp = interp_track(track=track, stepsize=stepsize_prep)
+    track_interp = interp_trajectory(trajectory=track, stepsize=stepsize_prep)
     track_interp_cl = np.vstack((track_interp, track_interp[0]))
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1927,184 +2133,6 @@ def side_of_line(
     side = np.sign((b[0] - a[0]) * (z[1] - a[1]) - (b[1] - a[1]) * (z[0] - a[0]))
 
     return side
-
-
-# TODO: Better algorithm?
-# TODO: Fix plots, mainly colors and markers
-# TODO: Add calculation for error between old and new boundaries. Maybe average distance or something similar? Purely for validation purposes.
-def calc_bound_dists(
-    trajectory: np.ndarray,
-    bound_left: np.ndarray,
-    bound_right: np.ndarray,
-    min_distance: float = 1.5,
-    plot_bound_dists: bool = False,
-) -> np.ndarray:
-    """
-    author:
-    Kwinten Mortier
-
-    .. description::
-    For every point on the reference trajectory, calculates the estimated perpendicular distance to the left and right boundaries. Determines which point on the boundary is closest to
-    a point at a minimum distance to the trajectory and calculates the distance from the trajectory to that point. The distance is then stored in an array.
-
-    .. inputs::
-    :trajectory:                array containing the reference trajectory [x, y] (Unclosed track!)
-    :type trajectory:           np.ndarray
-    :bound_left:                array containing the left track boundary [x, y] (Unclosed boundary!)
-    :type bound_left:           np.ndarray
-    :bound_right:               array containing the right track boundary [x, y] (Unclosed boundary!)
-    :type bound_right:          np.ndarray
-    :min_distance:              minimum distance from reference to the boundaries in m
-    :type min_distance:         float
-    :plot_bound_dists:          flag to show the boundaries and the calculated distances on the map
-    :type plot_bound_dists:     bool
-
-    .. outputs::
-    :bound_dists:                estimated perpendicular distance to boundaries along normal for every trajectory point (Unclosed)
-    :rtype bound_dists:         np.ndarray
-    :new_left:                  new left boundary after distance calculation (Unclosed)
-    :rtype new_left:            np.ndarray
-    :new_right:                 new right boundary after distance calculation (Unclosed)
-    :rtype new_right:           np.ndarray
-
-    .. notes::
-    Make sure the boundaries contain sufficient amount of points to accurately estimate the distance
-    Trajectory and boundaries must be unclosed!
-    """
-    # Check inputs
-    if (trajectory[0] == trajectory[-1]).all():
-        raise RuntimeError("Trajectory must be unclosed!")
-    if (bound_left[0] == bound_left[-1]).all():
-        raise RuntimeError("Left boundary must be unclosed!")
-    if (bound_right[0] == bound_right[-1]).all():
-        raise RuntimeError("Right boundary must be unclosed!")
-    if (
-        trajectory.shape[1] != 2
-        or bound_left.shape[1] != 2
-        or bound_right.shape[1] != 2
-    ):
-        raise RuntimeError("Trajectory and boundaries must be 2D arrays!")
-
-    # Initialize an empty array to store the minimum distances
-    min_dists = np.zeros(trajectory.shape)
-    trajectory_closed = np.vstack((trajectory, trajectory[0]))
-
-    # Calculate the spline coefficients for the x and y coordinates of the closed trajectory
-    coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(trajectory_closed)
-
-    left_extended = trajectory - normvec_normalized * min_distance
-    right_extended = trajectory + normvec_normalized * min_distance
-
-    tree_left = spatial.KDTree(bound_left)
-    tree_right = spatial.KDTree(bound_right)
-
-    for i in range(trajectory.shape[0]):
-        _, ind_left = tree_left.query(left_extended[i], k=1)
-        _, ind_right = tree_right.query(right_extended[i], k=1)
-
-        dist_left = math.sqrt(
-            (trajectory[i][0] - bound_left[ind_left][0]) ** 2
-            + (trajectory[i][1] - bound_left[ind_left][1]) ** 2
-        )
-        dist_right = math.sqrt(
-            (trajectory[i][0] - bound_right[ind_right][0]) ** 2
-            + (trajectory[i][1] - bound_right[ind_right][1]) ** 2
-        )
-
-        min_dists[i] = np.array([dist_left, dist_right])
-
-    # New boundaries
-    new_left = trajectory - normvec_normalized * min_dists[:, 0].reshape(-1, 1)
-    new_right = trajectory + normvec_normalized * min_dists[:, 1].reshape(-1, 1)
-
-    # Inputs for plots
-    trajectory_plot = trajectory_closed
-    left_extended_plot = np.vstack((left_extended, left_extended[0]))
-    right_extended_plot = np.vstack((right_extended, right_extended[0]))
-    new_left_plot = np.vstack((new_left, new_left[0]))
-    new_right_plot = np.vstack((new_right, new_right[0]))
-    bound_left_plot = np.vstack((bound_left, bound_left[0]))
-    bound_right_plot = np.vstack((bound_right, bound_right[0]))
-
-    if plot_bound_dists:
-        # plot track including optimized path
-        plt.figure()
-        plt.plot(
-            left_extended_plot[:, 0],
-            left_extended_plot[:, 1],
-            color=normalize_color((0, 0, 255)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            right_extended_plot[:, 0],
-            right_extended_plot[:, 1],
-            color=normalize_color((230, 245, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            trajectory_plot[:, 0],
-            trajectory_plot[:, 1],
-            color=normalize_color((0, 0, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            bound_left_plot[:, 0],
-            bound_left_plot[:, 1],
-            color=normalize_color((0, 0, 255)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            bound_right_plot[:, 0],
-            bound_right_plot[:, 1],
-            color=normalize_color((230, 245, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            new_left_plot[:, 0],
-            new_left_plot[:, 1],
-            color=normalize_color((0, 255, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            new_right_plot[:, 0],
-            new_right_plot[:, 1],
-            color=normalize_color((0, 255, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-
-        for i in range(new_left_plot.shape[0]):
-            temp = np.vstack((new_left_plot[i], new_right_plot[i]))
-            plt.plot(temp[:, 0], temp[:, 1], "r-", linewidth=0.7)
-
-        plt.grid()
-        ax = plt.gca()
-        ax.set_aspect("equal", "datalim")
-        plt.xlabel("east in m")
-        plt.ylabel("north in m")
-        plt.show()
-
-    return min_dists, new_left, new_right
 
 
 def calc_head_curv_an2(

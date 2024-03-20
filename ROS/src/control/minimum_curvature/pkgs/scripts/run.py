@@ -12,21 +12,21 @@ from node_fixture.managed_node import ManagedNode
 
 # from node_fixture.node_manager import set_state_inactive
 from ugr_msgs.msg import Boundaries
-from utils.utils_mincurv import (  # opt_min_curv,
+from utils.utils_mincurv import (  # opt_min_curv,; prep_track,
     B_spline_smoothing,
     calc_ax_profile,
     calc_bound_dists,
     calc_head_curv_an,
+    calc_head_curv_an2,
     calc_spline_lengths,
     calc_splines,
     calc_t_profile,
     calc_vel_profile,
     check_traj,
     create_raceline,
-    interp_track,
+    interp_trajectory,
     iqp_handler,
     normalize_color,
-    prep_track,
     result_plots,
 )
 
@@ -161,7 +161,6 @@ class MinimumCurvature(ManagedNode):
 
     def receive_new_path(self, msg: Path):
         self.reference_line = np.array(
-            # [[p.pose.position.x, p.pose.position.y, 1.50, 1.50] for p in msg.poses]
             [[p.pose.position.x, p.pose.position.y] for p in msg.poses]
         )
         self.header = msg.header
@@ -182,29 +181,39 @@ class MinimumCurvature(ManagedNode):
         t_start = time.perf_counter()
         header = self.header
 
-        self.reference_line = interp_track(
-            self.reference_line,
+        self.reference_line_cl = interp_trajectory(
+            trajectory=self.reference_line,
             stepsize=self.stepsize_prep_track,
             interpolation_method="quadratic",
         )
-        self.reference_line = B_spline_smoothing(
-            self.reference_line,
-            s=2,
+        self.reference_line_cl = B_spline_smoothing(
+            trajectory_cl=self.reference_line_cl,
+            smoothing_factor=2.0,
         )
 
-        self.bound_left = interp_track(
-            self.cones_left,
+        self.bound_left_cl = interp_trajectory(
+            trajectory=self.cones_left,
             stepsize=self.stepsize_prep_bounds,
             interpolation_method="quadratic",
         )
-        self.bound_left = B_spline_smoothing(self.bound_left, s=0.1)
+        self.bound_left_cl = B_spline_smoothing(
+            trajectory_cl=self.bound_left_cl,
+            smoothing_factor=0.1,
+        )
 
-        self.bound_right = interp_track(
-            self.cones_right,
+        self.bound_right_cl = interp_trajectory(
+            trajectory=self.cones_right,
             stepsize=self.stepsize_prep_bounds,
             interpolation_method="quadratic",
         )
-        self.bound_right = B_spline_smoothing(self.bound_right, s=0.1)
+        self.bound_right_cl = B_spline_smoothing(
+            trajectory_cl=self.bound_right_cl,
+            smoothing_factor=0.1,
+        )
+
+        self.reference_line = self.reference_line_cl[:-1, :]
+        self.bound_left = self.bound_left_cl[:-1, :]
+        self.bound_right = self.bound_right_cl[:-1, :]
 
         plot_preprocessed_track = False
         if plot_preprocessed_track:
@@ -224,8 +233,8 @@ class MinimumCurvature(ManagedNode):
                 s=10,
             )
             plt.plot(
-                self.bound_left[:, 0],
-                self.bound_left[:, 1],
+                self.bound_left_cl[:, 0],
+                self.bound_left_cl[:, 1],
                 color=normalize_color((255, 192, 203)),
                 linestyle="dashed",
                 linewidth=0.7,
@@ -234,8 +243,8 @@ class MinimumCurvature(ManagedNode):
                 markerfacecolor=((0, 0, 0)),
             )
             plt.plot(
-                self.bound_right[:, 0],
-                self.bound_right[:, 1],
+                self.bound_right_cl[:, 0],
+                self.bound_right_cl[:, 1],
                 color=normalize_color((255, 192, 203)),
                 linestyle="dashed",
                 linewidth=0.7,
@@ -244,8 +253,8 @@ class MinimumCurvature(ManagedNode):
                 markerfacecolor=((0, 0, 0)),
             )
             plt.plot(
-                self.reference_line[:, 0],
-                self.reference_line[:, 1],
+                self.reference_line_cl[:, 0],
+                self.reference_line_cl[:, 1],
                 color=normalize_color((255, 192, 203)),
                 linestyle="dashed",
                 linewidth=0.7,
@@ -260,17 +269,15 @@ class MinimumCurvature(ManagedNode):
             plt.ylabel("north in m")
             plt.show()
 
-        rospy.logwarn(f"Reference line shape: {self.reference_line.shape}")
-        rospy.logwarn(f"Bound left shape: {self.bound_left.shape}")
-        rospy.logwarn(f"Bound right shape: {self.bound_right.shape}")
-
         t_start_boundary = time.perf_counter()
+
         # Estimates the perpendicalur boundary distances for every point on the reference line
         boundaries_dists, new_left, new_right = calc_bound_dists(
-            trajectory=self.reference_line[:-1, :],
-            bound_left=self.bound_left[:-1, :],
-            bound_right=self.bound_right[:-1, :],
-            min_distance=self.min_distance,
+            trajectory=self.reference_line,
+            bound_left=self.bound_left,
+            bound_right=self.bound_right,
+            min_left_distance=self.min_distance,
+            min_right_distance=self.min_distance,
             plot_bound_dists=False,
         )
 
@@ -279,152 +286,151 @@ class MinimumCurvature(ManagedNode):
         )
 
         # Add the boundary distances to the reference line (result is unclosed track)
-        self.reference_line = np.hstack((self.reference_line[:-1, :], boundaries_dists))
+        self.reference_line = np.hstack((self.reference_line, boundaries_dists))
+        self.reference_line_cl = np.vstack(
+            (self.reference_line, self.reference_line[0])
+        )
+
+        # Calculate the spline coefficients for the reference line
+        coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(
+            path=self.reference_line_cl[:, 0:2]
+        )
 
         ########################################################################
         # HIER ZIT JE TE WERKEN
         #######################################################################
 
-        (
-            reftrack_interp,
-            normvec_normalized_interp,
-            a_interp,
-            coeffs_x_interp,
-            coeffs_y_interp,
-        ) = prep_track(
-            reftrack_imp=self.reference_line,
-            k_reg=3,
-            s_reg=1.0,
-            stepsize_prep=self.stepsize_prep_track,
-            stepsize_reg=self.stepsize_opt,
-            min_width=self.min_distance * 2,
-        )
-        preprocessed_left = (
-            reftrack_interp[:, :2] - normvec_normalized_interp * reftrack_interp[:, 2:3]
-        )
-        preprocessed_right = (
-            reftrack_interp[:, :2] + normvec_normalized_interp * reftrack_interp[:, 3:4]
-        )
-        print(f"Preprocessed left.shape: {preprocessed_left.shape}")
-
-        # plot track including optimized path
-        plt.figure()
-        plt.plot(
-            reftrack_interp[:, 0],
-            reftrack_interp[:, 1],
-            color=normalize_color((0, 255, 0)),
-            linewidth=0.7,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((255, 0, 0)),
-        )
-        plt.plot(
-            self.reference_line[:, 0],
-            self.reference_line[:, 1],
-            color=normalize_color((0, 0, 0)),
-            linestyle="dashed",
-            linewidth=0.7,
-            marker="o",
-            markersize=2,
-            markerfacecolor=((0, 0, 0)),
-        )
-        plt.plot(
-            self.bound_left[:, 0],
-            self.bound_left[:, 1],
-            color=normalize_color((0, 0, 255)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            self.bound_right[:, 0],
-            self.bound_right[:, 1],
-            color=normalize_color((230, 245, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            new_left[:, 0],
-            new_left[:, 1],
-            color=normalize_color((0, 0, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            new_right[:, 0],
-            new_right[:, 1],
-            color=normalize_color((0, 0, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            preprocessed_left[:, 0],
-            preprocessed_left[:, 1],
-            color=normalize_color((255, 192, 203)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            preprocessed_right[:, 0],
-            preprocessed_right[:, 1],
-            color=normalize_color((255, 192, 203)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        # plt.scatter(
-        #     self.cones_left[:, 0],
-        #     self.cones_left[:, 1],
-        #     color=normalize_color((255, 0, 0)),
-        #     marker="X",
-        #     s=10,
-        # )
-        # plt.scatter(
-        #     self.cones_right[:, 0],
-        #     self.cones_right[:, 1],
-        #     color=normalize_color((255, 0, 0)),
-        #     marker="X",
-        #     s=10,
-        # )
-
-        plt.grid()
-        ax = plt.gca()
-        ax.set_aspect("equal", "datalim")
-        plt.xlabel("east in m")
-        plt.ylabel("north in m")
-        plt.show()
-
-        # psi_reftrack = calc_head_curv_an2(
-        #     coeffs_x=coeffs_x,
-        #     coeffs_y=coeffs_y,
-        #     ind_spls=np.arange(self.reference_line.shape[0]),
-        #     t_spls=np.zeros(self.reference_line.shape[0]),
-        # )
-
         # (
-        #     coeffs_x_extra,
-        #     coeffs_y_extra,
-        #     M_extra,
-        #     normvec_normalized_extra,
-        # ) = calc_splines(
-        #     path=np.vstack((self.extra_smoothed[:, 0:2], self.extra_smoothed[0, 0:2]))
+        #     reftrack_interp,
+        #     normvec_normalized_interp,
+        #     a_interp,
+        #     coeffs_x_interp,
+        #     coeffs_y_interp,
+        # ) = prep_track(
+        #     reftrack_imp=self.reference_line,
+        #     k_reg=3,
+        #     s_reg=1.0,
+        #     stepsize_prep=self.stepsize_prep_track,
+        #     stepsize_reg=self.stepsize_opt,
+        #     min_width=self.min_distance * 2,
         # )
+        # preprocessed_left = (
+        #     reftrack_interp[:, :2] - normvec_normalized_interp * reftrack_interp[:, 2:3]
+        # )
+        # preprocessed_right = (
+        #     reftrack_interp[:, :2] + normvec_normalized_interp * reftrack_interp[:, 3:4]
+        # )
+        # print(f"Preprocessed left.shape: {preprocessed_left.shape}")
+
+        # # plot track including optimized path
+        # plt.figure()
+        # plt.plot(
+        #     reftrack_interp[:, 0],
+        #     reftrack_interp[:, 1],
+        #     color=normalize_color((0, 255, 0)),
+        #     linewidth=0.7,
+        #     marker="o",
+        #     markersize=2,
+        #     markerfacecolor=normalize_color((255, 0, 0)),
+        # )
+        # plt.plot(
+        #     self.reference_line[:, 0],
+        #     self.reference_line[:, 1],
+        #     color=normalize_color((0, 0, 0)),
+        #     linestyle="dashed",
+        #     linewidth=0.7,
+        #     marker="o",
+        #     markersize=2,
+        #     markerfacecolor=((0, 0, 0)),
+        # )
+        # plt.plot(
+        #     self.bound_left[:, 0],
+        #     self.bound_left[:, 1],
+        #     color=normalize_color((0, 0, 255)),
+        #     linewidth=1.0,
+        #     marker="o",
+        #     markersize=2,
+        #     markerfacecolor=normalize_color((0, 0, 0)),
+        # )
+        # plt.plot(
+        #     self.bound_right[:, 0],
+        #     self.bound_right[:, 1],
+        #     color=normalize_color((230, 245, 0)),
+        #     linewidth=1.0,
+        #     marker="o",
+        #     markersize=2,
+        #     markerfacecolor=normalize_color((0, 0, 0)),
+        # )
+        # plt.plot(
+        #     new_left[:, 0],
+        #     new_left[:, 1],
+        #     color=normalize_color((0, 0, 0)),
+        #     linewidth=1.0,
+        #     marker="o",
+        #     markersize=2,
+        #     markerfacecolor=normalize_color((0, 0, 0)),
+        # )
+        # plt.plot(
+        #     new_right[:, 0],
+        #     new_right[:, 1],
+        #     color=normalize_color((0, 0, 0)),
+        #     linewidth=1.0,
+        #     marker="o",
+        #     markersize=2,
+        #     markerfacecolor=normalize_color((0, 0, 0)),
+        # )
+        # plt.plot(
+        #     preprocessed_left[:, 0],
+        #     preprocessed_left[:, 1],
+        #     color=normalize_color((255, 192, 203)),
+        #     linewidth=1.0,
+        #     marker="o",
+        #     markersize=2,
+        #     markerfacecolor=normalize_color((0, 0, 0)),
+        # )
+        # plt.plot(
+        #     preprocessed_right[:, 0],
+        #     preprocessed_right[:, 1],
+        #     color=normalize_color((255, 192, 203)),
+        #     linewidth=1.0,
+        #     marker="o",
+        #     markersize=2,
+        #     markerfacecolor=normalize_color((0, 0, 0)),
+        # )
+        # # plt.scatter(
+        # #     self.cones_left[:, 0],
+        # #     self.cones_left[:, 1],
+        # #     color=normalize_color((255, 0, 0)),
+        # #     marker="X",
+        # #     s=10,
+        # # )
+        # # plt.scatter(
+        # #     self.cones_right[:, 0],
+        # #     self.cones_right[:, 1],
+        # #     color=normalize_color((255, 0, 0)),
+        # #     marker="X",
+        # #     s=10,
+        # # )
+
+        # plt.grid()
+        # ax = plt.gca()
+        # ax.set_aspect("equal", "datalim")
+        # plt.xlabel("east in m")
+        # plt.ylabel("north in m")
+        # plt.show()
+
+        psi_reftrack = calc_head_curv_an2(
+            coeffs_x=coeffs_x,
+            coeffs_y=coeffs_y,
+            ind_spls=np.arange(self.reference_line.shape[0]),
+            t_spls=np.zeros(self.reference_line.shape[0]),
+        )
 
         psi_reftrack, kappa_reftrack, dkappa_reftrack = calc_head_curv_an(
-            coeffs_x=coeffs_x_interp,
-            coeffs_y=coeffs_y_interp,
-            ind_spls=np.arange(reftrack_interp.shape[0]),
-            t_spls=np.zeros(reftrack_interp.shape[0]),
+            coeffs_x=coeffs_x,
+            coeffs_y=coeffs_y,
+            ind_spls=np.arange(self.reference_line.shape[0]),
+            t_spls=np.zeros(self.reference_line.shape[0]),
             calc_curv=True,
             calc_dcurv=True,
         )
@@ -443,10 +449,10 @@ class MinimumCurvature(ManagedNode):
             kappa_reftrack_iqp,
             dkappa_reftrack_iqp,
         ) = iqp_handler(
-            reftrack=reftrack_interp,
-            normvectors=normvec_normalized_interp,
-            A=a_interp,
-            spline_len=calc_spline_lengths(coeffs_x_interp, coeffs_y_interp),
+            reftrack=self.reference_line,
+            normvectors=normvec_normalized,
+            A=M,
+            spline_len=calc_spline_lengths(coeffs_x, coeffs_y),
             psi=psi_reftrack,
             kappa=kappa_reftrack,
             dkappa=dkappa_reftrack,
@@ -554,7 +560,7 @@ class MinimumCurvature(ManagedNode):
                 length_veh=self.car_length,
                 width_veh=self.car_width,
                 debug=True,
-                trajectory=trajectory_opt,
+                trajectory=traj_race_cl,
                 ggv=self.ggv,
                 ax_max_machines=self.ax_max_machines,
                 v_max=self.v_max,
@@ -607,9 +613,6 @@ class MinimumCurvature(ManagedNode):
             self.bound2_imp = np.vstack((self.bound2_imp, self.bound2_imp[0]))
             bound1 = np.vstack((bound1, bound1[0]))
             bound2 = np.vstack((bound2, bound2[0]))
-            self.reference_line = np.vstack(
-                (self.reference_line, self.reference_line[0])
-            )
 
             # Plot results
             self.plot_opts = {
@@ -628,7 +631,7 @@ class MinimumCurvature(ManagedNode):
                 plot_opts=self.plot_opts,
                 width_veh_opt=self.car_width_with_margins,
                 width_veh_real=self.car_width,
-                refline=self.reference_line[:, :2],
+                refline=self.reference_line_cl[:, :2],
                 bound1_imp=self.bound1_imp,
                 bound2_imp=self.bound2_imp,
                 bound1_interp=bound1,
@@ -684,7 +687,7 @@ class MinimumCurvature(ManagedNode):
 
         # smoothed_path = B_spline_smoothing(path_result, 2)
         # path_extra = B_spline_smoothing(path_result_extra, 2)
-        path_iqp = B_spline_smoothing(path_result_iqp, s=2)
+        path_iqp = B_spline_smoothing(path_result_iqp, smoothing_factor=2)
         # path_ref = B_spline_smoothing(self.path_ref, 2)
 
         path_iqp = np.vstack((path_iqp, path_iqp[0]))
@@ -741,7 +744,6 @@ class MinimumCurvature(ManagedNode):
         # TODO: Fix ggv acceleration limits
         # TODO: Fix better values for drag, weight, etc...
         # TODO: Fix loop_closure in plots
-        # TODO: FIX BOUNDARIES!!!
 
 
 MinimumCurvature()
