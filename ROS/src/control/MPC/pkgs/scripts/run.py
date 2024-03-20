@@ -220,6 +220,10 @@ class MPC(ManagedNode):
         self.ocp.subject_to(
             self.ocp.bounded(-steering_limit, self.ocp.U[1, :], steering_limit)
         )
+        # Limit angle of steering joint
+        self.ocp.subject_to(self.ocp.bounded(-np.pi / 4, self.ocp.X[3, :], np.pi / 4))
+        # Limit velocity
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 20))
         self.ocp._set_continuity(1)
 
     def set_costs(self, Qn, R, R_delta):

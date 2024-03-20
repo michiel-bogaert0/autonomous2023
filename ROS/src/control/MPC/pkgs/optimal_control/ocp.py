@@ -147,7 +147,10 @@ class Ocp:
                         (self.U[:, i] - self.U[:, i - 1]),
                         self._x_reference[:, i],
                     )
+                # This constraint works with halspaces (not implemented properly yet)
                 # self.opti.subject_to((self.a * self.X[0, i] + self.b - self.X[1, i]) * (self.c * self.X[0, i] + self.d - self.X[1, i]) < 0)
+
+                # This one works with circles, but causes convergence issues
                 # self.opti.subject_to(((self.X[0, i+1] - self._x_reference[0, i]) ** 2 + (self.X[1, i+1] - self._x_reference[1, i]) ** 2) < (2 ** 2))
             self.cost["run"] = L_run
 
