@@ -129,9 +129,6 @@ class MPC(ManagedNode):
         )
         self.mpc = MPC_tracking(self.ocp)
 
-        # Initilize previous input with zeros
-        self.prev_input = [[0.0, 0.0]] * self.N
-
         Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
         R = np.diag([1e-5, 5e-2])
         R_delta = np.diag([1e-1, 5e-3])
@@ -141,7 +138,7 @@ class MPC(ManagedNode):
         # constraints
         # TODO: get these from urdf model
         self.max_steering_angle = 5  # same as pegasus.urdf
-        self.set_constraints(self.speed_target * 10, self.max_steering_angle)
+        self.set_constraints(5, self.max_steering_angle)
 
     def doActivate(self):
         # Do this here because some parameters are set in the mission yaml files
@@ -211,7 +208,6 @@ class MPC(ManagedNode):
         """
         Set constraints for the MPC
         """
-        velocity_limit = 5
         steering_limit = 5
         self.ocp.subject_to()
         self.ocp.subject_to(
@@ -247,10 +243,29 @@ class MPC(ManagedNode):
             if self.state == NodeManagingStatesEnum.ACTIVE:
                 try:
                     self.doUpdate()
+
+                    self.speed_target = rospy.get_param("/speed/target", 3.0)
+
+                    # Stop the car
+                    if self.speed_target == 0.0:
+                        # Keep current steering angle
+                        self.steering_cmd.data = 0.0
+
+                        # Brake fully
+                        # TODO: this causes the car to accelerate backwards
+                        self.velocity_cmd.data = -50.0
+
+                        # Publish to velocity and position steering controller
+                        self.steering_pub.publish(self.steering_cmd)
+                        self.velocity_pub.publish(self.velocity_cmd)
+                        rate.sleep()
+                        continue
+
                     ref_track = self.trajectory.get_reference_track(
                         self.car.dt, self.N, self.actual_speed
                     )
 
+                    # Stop the car if no path
                     if len(ref_track) == 0:
                         self.diagnostics_pub.publish(
                             create_diagnostic_message(
@@ -259,12 +274,32 @@ class MPC(ManagedNode):
                                 message="No reference track found.",
                             )
                         )
+
+                        # TODO: this should probably cause the car to brake
+                        # But doing this causes startup issues when no path is available yet
                         self.velocity_cmd.data = 0.0
                         self.steering_cmd.data = 0.0
                         self.velocity_pub.publish(self.velocity_cmd)
                         self.steering_pub.publish(self.steering_cmd)
                         rate.sleep()
                         continue
+
+                    reference_track = []
+                    for ref_point in ref_track:
+                        reference_track.append(
+                            [
+                                ref_point[0],
+                                ref_point[1],
+                                0,
+                                self.steering_joint_angle,
+                                self.speed_target,
+                            ]
+                        )
+                    self.vis_path(reference_track, self.ref_track_pub)
+
+                    ############################################################################
+                    #     The next part is uncorrect but kept here for future reference        #
+                    ############################################################################
 
                     # Get left and right boundary halfspaces
                     # NOTE: works terrible without BE
@@ -284,13 +319,7 @@ class MPC(ManagedNode):
                         list(zip(x_points_right, y_points_right)), self.right_line_pub
                     )
 
-                    speed_target = rospy.get_param("/speed/target", 3.0)
-
-                    # Change velocity constraints when speed target changes
-                    # Need other costs for  different speeds as this changes the working environment
-                    if speed_target != self.speed_target:
-                        self.speed_target = speed_target
-                        self.set_constraints(speed_target / 2, self.max_steering_angle)
+                    ############################################################################
 
                     if self.slam_state == SLAMStatesEnum.RACING:
                         # Scale steering penalty based on current speed
@@ -299,28 +328,16 @@ class MPC(ManagedNode):
                         # R_delta = np.diag(
                         #     [10, 0]  # * self.actual_speed / self.speed_target]
                         # )
-                        Qn = np.diag([1e-2, 1e-2, 0, 0, 0])
-                        R = np.diag([1e-4, 1e-4])
+
+                        # Costs below are quite stable for skidpad and trackdrive
+                        Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
+                        R = np.diag([1e-5, 5e-4])
                         R_delta = np.diag(
-                            [1e-2, 1e-1]  # * self.actual_speed / self.speed_target]
+                            [1e-2, 6e-1]  # * self.actual_speed / self.speed_target]
                         )
 
                         self.set_costs(Qn, R, R_delta)
 
-                    reference_track = []
-                    for ref_point in ref_track:
-                        reference_track.append(
-                            [
-                                ref_point[0],
-                                ref_point[1],
-                                0,
-                                self.steering_joint_angle,
-                                self.speed_target,
-                            ]
-                        )
-
-                    # self.mpc.reset()
-                    # TODO: get steering joint angle from ros control
                     current_state = [
                         0,
                         0,
@@ -330,21 +347,10 @@ class MPC(ManagedNode):
                     ]
 
                     # Run MPC
-                    # Give reference_track as initial trajectory guess
-                    # TODO: also give orientation
-                    # Transpose because of shape needed in MPC formulation (nx, N+1)
-                    # x0 = np.concatenate(
-                    #     (np.array([current_state]).T, np.array(reference_track).T),
-                    #     axis=1,
-                    # )
                     u, info = self.mpc(
-                        current_state, reference_track, a, b, c, d, self.u  # , X0=x0
-                    )  # , U0=self.prev_input)
+                        current_state, reference_track, a, b, c, d, self.u
+                    )
                     self.u = u
-
-                    # X_closed_loop = np.array(self.mpc.X_trajectory)
-                    # U_closed_loop = np.array(self.mpc.U_trajectory)
-                    self.prev_input = info["U_sol"]
 
                     # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
                     # rospy.loginfo(f"x closed loop: {X_closed_loop}")
@@ -353,51 +359,18 @@ class MPC(ManagedNode):
                     rospy.loginfo(f"u return: {u}")
                     rospy.loginfo(f"actual speed: {self.actual_speed}")
 
-                    # Publish MPC prediction for visualization
+                    # Visualise MPC prediction
                     self.vis_path(
                         list(zip(info["X_sol"][:][0], info["X_sol"][:][1])),
                         self.x_vis_pub,
                     )
 
-                    # self.steering_cmd.data = U_closed_loop[0, 1]
-                    # self.steering_joint_angle = info["X_sol"][3][1]
-                    # # Send steering position to ros_control
-                    # self.steering_cmd.data = self.steering_joint_angle
-                    # self.steering_joint_angle += u[1] * self.car.dt
-                    # self.steering_cmd.data = self.steering_joint_angle + u[1] * self.car.dt
-                    # # self.steering_cmd.data = -1
-                    # self.velocity_cmd.data = (
-                    #     self.actual_speed + u[0] * self.wheelradius * self.car.dt
-                    # )  # Input is acceleration
                     self.velocity_cmd.data = u[0]
                     self.steering_cmd.data = u[1]
 
-                    # Use Pure Pursuit if target speed is 0
-                    # TODO: avoid this + probably wrong
-                    if self.speed_target == 0.0:
-                        target_x = ref_track[-1][0]
-                        target_y = ref_track[-1][1]
-                        R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (
-                            2 * (target_y - 0)
-                        )
-
-                        self.steering_cmd.data = self.symmetrically_bound_angle(
-                            np.arctan2(1.0, R), np.pi / 2
-                        )
-
-                        self.velocity_cmd.data = 0.0
-
                     # Publish to velocity and position steering controller
-                    # self.steering_cmd.data /= self.steering_transmission
                     self.steering_pub.publish(self.steering_cmd)
-
-                    # self.velocity_cmd.data /= (
-                    #     self.wheelradius
-                    # )  # Velocity to angular velocity
-                    # print(f"velocity: {self.velocity_cmd.data}")
                     self.velocity_pub.publish(self.velocity_cmd)
-
-                    self.vis_path(reference_track, self.ref_track_pub)
 
                 except Exception as e:
                     rospy.logwarn(f"MPC has caught an exception: {e}")
@@ -407,11 +380,12 @@ class MPC(ManagedNode):
 
             rate.sleep()
 
-        inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
-        inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
-
+        # Store solution in npz file for later analysis
         if self.save_solution:
-            # Store solution in npz file for later analysis
+            # Get convergence information
+            inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
+            inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
+
             np.savez(
                 "/home/ugr/autonomous2023/ROS/src/control/MPC/data/solution.npz",
                 U_sol_intermediate=self.mpc.U_sol_intermediate,
@@ -421,6 +395,9 @@ class MPC(ManagedNode):
             )
 
     def vis_path(self, path, publisher, stamp=None, frame_id=None):
+        """
+        Publishes a path to the specified topic
+        """
         if publisher is None or len(path) == 0:
             return
 
