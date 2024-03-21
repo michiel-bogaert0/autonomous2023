@@ -332,48 +332,29 @@ void GraphSLAM::step() {
     Vector2d loc = Vector2d(x + obs(0) * cos(yaw + obs(1)),
                             y + obs(0) * sin(yaw + obs(1)));
 
-    // check if the landmark already exists
-    int associatedLandmarkIndex = -1;
-    for (const auto &pair : this->optimizer.vertices()) {
-      LandmarkVertex *landmarkVertex =
-          dynamic_cast<LandmarkVertex *>(pair.second);
-      if (landmarkVertex) {
-        Vector2d landmark = landmarkVertex->estimate();
-        // if the distance between the landmark and the observation is smaller
-        // than the association threshold than the landmark already exists
-        if ((loc - landmark).norm() < this->association_threshold) {
-          associatedLandmarkIndex = landmarkVertex->id();
-          break;
-        }
-      }
-    }
-    // if the landmark does not exist, make a new landmark and add it to the
-    // graph
-    if (associatedLandmarkIndex < 0) {
-      LandmarkVertex *landmark = new LandmarkVertex;
-      landmark->setId(this->vertexCounter);
+    LandmarkVertex *landmark = new LandmarkVertex;
+    landmark->setId(this->vertexCounter);
 
-      // set the color and belief of the landmark to the observation class
-      landmark->setColor(observation.observation.observation_class,
-                         observation.observation.belief);
+    // set the color and belief of the landmark to the observation class
+    landmark->setColor(observation.observation.observation_class,
+                       observation.observation.belief);
 
-      // set the estimate of the landmark to the location of the landmark in the
-      // world frame
-      landmark->setEstimate(loc);
-      this->optimizer.addVertex(landmark);
-      // set the associated landmark index to the new landmark index
-      associatedLandmarkIndex = this->vertexCounter;
-      this->vertexCounter++;
-    }
+    // set the estimate of the landmark to the location of the landmark in the
+    // world frame
+    landmark->setEstimate(loc);
+    this->optimizer.addVertex(landmark);
+
     // add a constraint between the new pose and the landmark
     LandmarkEdge *landmarkObservation = new LandmarkEdge;
     landmarkObservation->vertices()[0] =
         this->optimizer.vertex(this->prevPoseIndex); // pose
     landmarkObservation->vertices()[1] =
-        this->optimizer.vertex(associatedLandmarkIndex); // landmark
+        this->optimizer.vertex(this->vertexCounter); // landmark
     // set the measurement to the transformation from the new pose to the
     // landmark
     landmarkObservation->setMeasurement(poseSE2.inverse() * loc);
+
+    this->vertexCounter++;
 
     // covarianceMatrix << observation.covariance[0], observation.covariance[1],
     //     observation.covariance[3],

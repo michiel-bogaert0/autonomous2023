@@ -12,18 +12,18 @@
     <param name="lidar_frame" value="$(arg lidar_frame)" />
 
     # Parameters
-    <param name="target_rate" value="50"/> <!-- Hz -->
+    <param name="target_rate" value="45"/> <!-- Hz -->
     <param name="publish_rate" value="10"/> <!-- Hz -->
     <param name="synchronous" value="false"/> 
     <param name="debug" value="true"/> <!-- Publish edges -->
 
-    <param name="max_iterations" value="10"/>
+    <param name="max_iterations" value="5"/>
     <param name="association_threshold" value="1"/>
     <param name="max_range" value="15"/>
     <param name="max_half_angle" value="1.57"/> <!-- ingesteld voor lidar -->
 
     <rosparam param="covariance_pose">[0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2]</rosparam>
-    <rosparam param="covariance_landmark"> [0.4, 0, 0, 0.4]</rosparam>
+    <rosparam param="covariance_landmark"> [0.3, 0, 0, 0.3]</rosparam>
 
      # Map service Parameters
     <param name="SetMap_service" value="/ugr/srv/slam_map_server/set" />
