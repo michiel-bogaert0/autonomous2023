@@ -12,10 +12,9 @@ from node_fixture.managed_node import ManagedNode
 
 # from node_fixture.node_manager import set_state_inactive
 from ugr_msgs.msg import Boundaries
-from utils.utils_mincurv import (  # opt_min_curv,; prep_track,
+from utils.utils_mincurv import (  # opt_min_curv,; prep_track,; normalize_color,; prep_track,
     B_spline_smoothing,
     calc_ax_profile,
-    calc_bound_dists,
     calc_head_curv_an,
     calc_head_curv_an2,
     calc_spline_lengths,
@@ -24,9 +23,8 @@ from utils.utils_mincurv import (  # opt_min_curv,; prep_track,
     calc_vel_profile,
     check_traj,
     create_raceline,
-    interp_trajectory,
     iqp_handler,
-    normalize_color,
+    prep_track2,
     result_plots,
 )
 
@@ -49,8 +47,18 @@ class MinimumCurvature(ManagedNode):
         self.imported_bounds = rospy.get_param("~imported_bounds", True)
         self.curvlim = rospy.get_param("~curvlim", 0.5)
 
-        self.stepsize_prep_track = rospy.get_param("~stepsize_prep_track", 0.25)
-        self.stepsize_prep_bounds = rospy.get_param("~stepsize_prep_bounds", 0.50)
+        self.stepsize_prep_trajectory = rospy.get_param(
+            "~stepsize_prep_trajectory", 0.50
+        )
+        self.stepsize_prep_boundaries = rospy.get_param(
+            "~stepsize_prep_boundaries", 0.10
+        )
+        self.smoothing_factor_prep_trajectory = rospy.get_param(
+            "~smoothing_factor_prep_trajectory", 2.0
+        )
+        self.smoothing_factor_prep_boundaries = rospy.get_param(
+            "~smoothing_factor_prep_boundaries", 0.1
+        )
         self.stepsize_opt = rospy.get_param("~stepsize_opt", 0.25)
         self.stepsize_post = rospy.get_param("~stepsize_interp", 0.25)
 
@@ -181,114 +189,25 @@ class MinimumCurvature(ManagedNode):
         t_start = time.perf_counter()
         header = self.header
 
-        self.reference_line_cl = interp_trajectory(
+        # Preprocess the track
+        t_start_prep = time.perf_counter()
+
+        prepped_track, bound_left, bound_right = prep_track2(
             trajectory=self.reference_line,
-            stepsize=self.stepsize_prep_track,
-            interpolation_method="quadratic",
-        )
-        self.reference_line_cl = B_spline_smoothing(
-            trajectory_cl=self.reference_line_cl,
-            smoothing_factor=2.0,
-        )
-
-        self.bound_left_cl = interp_trajectory(
-            trajectory=self.cones_left,
-            stepsize=self.stepsize_prep_bounds,
-            interpolation_method="quadratic",
-        )
-        self.bound_left_cl = B_spline_smoothing(
-            trajectory_cl=self.bound_left_cl,
-            smoothing_factor=0.1,
-        )
-
-        self.bound_right_cl = interp_trajectory(
-            trajectory=self.cones_right,
-            stepsize=self.stepsize_prep_bounds,
-            interpolation_method="quadratic",
-        )
-        self.bound_right_cl = B_spline_smoothing(
-            trajectory_cl=self.bound_right_cl,
-            smoothing_factor=0.1,
-        )
-
-        self.reference_line = self.reference_line_cl[:-1, :]
-        self.bound_left = self.bound_left_cl[:-1, :]
-        self.bound_right = self.bound_right_cl[:-1, :]
-
-        plot_preprocessed_track = False
-        if plot_preprocessed_track:
-            plt.figure(num="Preprocessed track")
-            plt.scatter(
-                self.cones_left[:, 0],
-                self.cones_left[:, 1],
-                color=normalize_color((255, 0, 0)),
-                marker="X",
-                s=10,
-            )
-            plt.scatter(
-                self.cones_right[:, 0],
-                self.cones_right[:, 1],
-                color=normalize_color((255, 0, 0)),
-                marker="X",
-                s=10,
-            )
-            plt.plot(
-                self.bound_left_cl[:, 0],
-                self.bound_left_cl[:, 1],
-                color=normalize_color((255, 192, 203)),
-                linestyle="dashed",
-                linewidth=0.7,
-                marker="o",
-                markersize=2,
-                markerfacecolor=((0, 0, 0)),
-            )
-            plt.plot(
-                self.bound_right_cl[:, 0],
-                self.bound_right_cl[:, 1],
-                color=normalize_color((255, 192, 203)),
-                linestyle="dashed",
-                linewidth=0.7,
-                marker="o",
-                markersize=2,
-                markerfacecolor=((0, 0, 0)),
-            )
-            plt.plot(
-                self.reference_line_cl[:, 0],
-                self.reference_line_cl[:, 1],
-                color=normalize_color((255, 192, 203)),
-                linestyle="dashed",
-                linewidth=0.7,
-                marker="o",
-                markersize=2,
-                markerfacecolor=((0, 0, 0)),
-            )
-            plt.grid()
-            ax = plt.gca()
-            ax.set_aspect("equal", "datalim")
-            plt.xlabel("east in m")
-            plt.ylabel("north in m")
-            plt.show()
-
-        t_start_boundary = time.perf_counter()
-
-        # Estimates the perpendicalur boundary distances for every point on the reference line
-        boundaries_dists, new_left, new_right = calc_bound_dists(
-            trajectory=self.reference_line,
-            bound_left=self.bound_left,
-            bound_right=self.bound_right,
+            cones_left=self.cones_left,
+            cones_right=self.cones_right,
             min_left_distance=self.min_distance,
             min_right_distance=self.min_distance,
-            plot_bound_dists=False,
+            stepsize_trajectory=self.stepsize_prep_trajectory,
+            stepsize_boundaries=self.stepsize_prep_boundaries,
+            sf_trajectory=self.smoothing_factor_prep_trajectory,
+            sf_boundaries=self.smoothing_factor_prep_boundaries,
+            debug_info=True,
+            plot_prep=True,
         )
 
-        rospy.logerr(
-            f"Total time elapsed during boundary calculation: {time.perf_counter() - t_start_boundary}"
-        )
-
-        # Add the boundary distances to the reference line (result is unclosed track)
-        self.reference_line = np.hstack((self.reference_line, boundaries_dists))
-        self.reference_line_cl = np.vstack(
-            (self.reference_line, self.reference_line[0])
+        rospy.logwarn(
+            f"Time for preprocessing track: {time.perf_counter() - t_start_prep}"
         )
 
         # Calculate the spline coefficients for the reference line
@@ -397,27 +316,27 @@ class MinimumCurvature(ManagedNode):
         #     markersize=2,
         #     markerfacecolor=normalize_color((0, 0, 0)),
         # )
-        # # plt.scatter(
-        # #     self.cones_left[:, 0],
-        # #     self.cones_left[:, 1],
-        # #     color=normalize_color((255, 0, 0)),
-        # #     marker="X",
-        # #     s=10,
-        # # )
-        # # plt.scatter(
-        # #     self.cones_right[:, 0],
-        # #     self.cones_right[:, 1],
-        # #     color=normalize_color((255, 0, 0)),
-        # #     marker="X",
-        # #     s=10,
-        # # )
+        # plt.scatter(
+        #     self.cones_left[:, 0],
+        #     self.cones_left[:, 1],
+        #     color=normalize_color((255, 0, 0)),
+        #     marker="X",
+        #     s=10,
+        # )
+        # plt.scatter(
+        #     self.cones_right[:, 0],
+        #     self.cones_right[:, 1],
+        #     color=normalize_color((255, 0, 0)),
+        #     marker="X",
+        #     s=10,
+        # )
 
-        # plt.grid()
-        # ax = plt.gca()
-        # ax.set_aspect("equal", "datalim")
-        # plt.xlabel("east in m")
-        # plt.ylabel("north in m")
-        # plt.show()
+        plt.grid()
+        ax = plt.gca()
+        ax.set_aspect("equal", "datalim")
+        plt.xlabel("east in m")
+        plt.ylabel("north in m")
+        plt.show()
 
         psi_reftrack = calc_head_curv_an2(
             coeffs_x=coeffs_x,

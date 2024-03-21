@@ -15,12 +15,14 @@
         <param name="plot" value="True" />
         <param name="imported_bounds" value="True" />
         <param name="curvlim" value="0.5" />
-        <param name="stepsize_prep_track" value="0.50" />
-        <param name="stepsize_prep_bounds" value="0.10" />
-        <param name="stepsize_opt" value="0.50" />
-        <param name="stepsize_post" value="0.50" />
+        <param name="stepsize_prep_trajectory" value="0.50" />
+        <param name="stepsize_prep_boundaries" value="0.10" />
+        <param name="stepsize_opt" value="0.25" />
+        <param name="stepsize_post" value="0.25" />
         <param name="vel" value="True" />
         <param name="min_distance" value="1.5" />
+        <param name="smoothing_factor_prep_trajectory" value="2.0" />
+        <param name="smoothing_factor_prep_boundaries" value="0.1" />
 
         <remap from="/input/boundaries" to="/boundary_estimation/boundaries" />
 

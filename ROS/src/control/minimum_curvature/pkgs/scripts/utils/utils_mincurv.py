@@ -1,4 +1,6 @@
+import datetime
 import math
+import os
 import sys
 import time
 from typing import Union
@@ -163,10 +165,10 @@ def calc_bound_dists(
     .. outputs::
     :return bound_dists:            estimated perpendicular distance to boundaries along normal for every trajectory point (unclosed).
     :rtype bound_dists:             np.ndarray
-    :return new_left:               new left boundary after distance calculation (unclosed).
-    :rtype new_left:                np.ndarray
-    :return new_right:              new right boundary after distance calculation (unclosed).
-    :rtype new_right:               np.ndarray
+    :return new_bound_left:         new left boundary after distance calculation (unclosed).
+    :rtype new_bound_left:          np.ndarray
+    :return new_bound_right:        new right boundary after distance calculation (unclosed).
+    :rtype new_bound_right:         np.ndarray
 
     .. notes::
     Make sure the boundaries contain sufficient amount of points to accurately estimate the distance
@@ -233,13 +235,13 @@ def calc_bound_dists(
         min_dists[i] = np.array([dist_left, dist_right])
 
     # New boundaries
-    new_left = trajectory - normvec_normalized * min_dists[:, 0].reshape(-1, 1)
-    new_right = trajectory + normvec_normalized * min_dists[:, 1].reshape(-1, 1)
+    new_bound_left = trajectory - normvec_normalized * min_dists[:, 0].reshape(-1, 1)
+    new_bound_right = trajectory + normvec_normalized * min_dists[:, 1].reshape(-1, 1)
 
     # Inputs for plots
     trajectory_plot = trajectory_cl
-    new_left_plot = np.vstack((new_left, new_left[0]))
-    new_right_plot = np.vstack((new_right, new_right[0]))
+    new_left_plot = np.vstack((new_bound_left, new_bound_left[0]))
+    new_right_plot = np.vstack((new_bound_right, new_bound_right[0]))
     bound_left_plot = np.vstack((bound_left, bound_left[0]))
     bound_right_plot = np.vstack((bound_right, bound_right[0]))
 
@@ -302,7 +304,217 @@ def calc_bound_dists(
         plt.ylabel("north in m")
         plt.show()
 
-    return min_dists, new_left, new_right
+    return min_dists, new_bound_left, new_bound_right
+
+
+def prep_track2(
+    trajectory: np.ndarray,
+    cones_left: np.ndarray,
+    cones_right: np.ndarray,
+    min_left_distance: float = 1.5,
+    min_right_distance: float = 1.5,
+    stepsize_trajectory: float = 0.5,
+    stepsize_boundaries: float = 0.1,
+    sf_trajectory: float = 2.0,
+    sf_boundaries: float = 0.1,
+    debug_info: bool = False,
+    plot_prep: bool = False,
+) -> tuple:
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    This function prepares the track for the IQP minimum curvature optimization.
+    It interpolates the trajectory to a fixed stepsize and smooths the trajectory using a B-spline.
+    It creates boundaries from cones by interpolating to a fixed stepsize and smoothing the boundaries using a B-spline.
+    It calculates the perpendicular distance between the trajectory and the boundaries.
+    Finally, it returns the prepared track in the format [x, y, w_tr_right, w_tr_left].
+
+    .. inputs::
+    :param trajectory:              array containing the reference trajectory [x, y] (Unclosed track!)
+    :type trajectory:               np.ndarray
+    :param cones_left:              array containing the left track cones [x, y] (Unclosed!)
+    :type cones_left:               np.ndarray
+    :param cones_right:             array containing the right track cones [x, y] (Unclosed!)
+    :type cones_right:              np.ndarray
+    :param min_left_distance:       minimum distance from reference to the left boundary in m
+    :type min_left_distance:        float
+    :param min_right_distance:      minimum distance from reference to the right boundary in m
+    :type min_right_distance:       float
+    :param stepsize_trajectory:     desired stepsize after interpolation in m for the trajectory
+    :type stepsize_trajectory:      float
+    :param stepsize_boundaries:     desired stepsize after interpolation in m for the boundaries
+    :type stepsize_boundaries:      float
+    :param sf_trajectory:           factor for smoothing the trajectory and boundaries.
+    :type sf_trajectory:            float
+    :param sf_boundaries:           factor for smoothing the trajectory and boundaries.
+    :type sf_boundaries:            float
+    :param debug_info:              flag to show debugging information
+    :type debug_info:               bool
+    :param plot_prep:               flag to show the preprocessing steps on the map
+    :type plot_prep:                bool
+
+    .. outputs::
+    :return prepped_track:          prepared track for the IQP optimization [x, y, w_tr_right, w_tr_left] (unclosed).
+    :rtype prepped_track:           np.ndarray
+    :return bound_left:             left boundary (unclosed).
+    :rtype bound_left:              np.ndarray
+    :return bound_right:            right boundary (unclosed).
+    :rtype bound_right:             np.ndarray
+
+    .. notes::
+    Make sure the boundaries contain sufficient amount of points to accurately estimate the distance
+    Trajectory and boundaries must be unclosed!
+    """
+
+    # Check inputs
+    if (
+        (trajectory[0] == trajectory[-1]).all()
+        or (cones_left[0] == cones_left[-1]).all()
+        or (cones_right[0] == cones_right[-1]).all()
+    ):
+        raise RuntimeError("Trajectory and boundaries must be unclosed!")
+    if (
+        trajectory.shape[1] != 2
+        or cones_left.shape[1] != 2
+        or cones_right.shape[1] != 2
+    ):
+        raise RuntimeError("Trajectory and boundaries must be 2D arrays!")
+
+    # Interpolate trajectory
+    trajectory_interp_cl = interp_trajectory(
+        trajectory=trajectory,
+        stepsize=stepsize_trajectory,
+        interpolation_method="quadratic",
+    )
+    # trajecory_interp = trajectory_interp_cl[:-1]
+
+    # Smooth trajectory
+    trajectory_smoothed_cl = B_spline_smoothing(
+        trajectory_cl=trajectory_interp_cl, smoothing_factor=sf_trajectory
+    )
+    trajectory_smoothed = trajectory_smoothed_cl[:-1]
+
+    # Interpolate boundaries
+    bound_left_interp_cl = interp_trajectory(
+        trajectory=cones_left,
+        stepsize=stepsize_boundaries,
+        interpolation_method="quadratic",
+    )
+    bound_right_interp_cl = interp_trajectory(
+        trajectory=cones_right,
+        stepsize=stepsize_boundaries,
+        interpolation_method="quadratic",
+    )
+    # bound_left_interp = bound_left_interp_cl[:-1]
+    # bound_left_interp = bound_left_interp_cl[:-1]
+
+    # Smooth boundaries
+    bound_left_smoothed_cl = B_spline_smoothing(
+        trajectory_cl=bound_left_interp_cl, smoothing_factor=sf_boundaries
+    )
+    bound_right_smoothed_cl = B_spline_smoothing(
+        trajectory_cl=bound_right_interp_cl, smoothing_factor=sf_boundaries
+    )
+    bound_left_smoothed = bound_left_smoothed_cl[:-1]
+    bound_right_smoothed = bound_right_smoothed_cl[:-1]
+
+    # Calculate distances to boundaries
+    t_start_boundary_calc = time.perf_counter()
+
+    bound_dists, new_bound_left, new_bound_right = calc_bound_dists(
+        trajectory=trajectory_smoothed,
+        bound_left=bound_left_smoothed,
+        bound_right=bound_right_smoothed,
+        min_left_distance=min_left_distance,
+        min_right_distance=min_right_distance,
+    )
+
+    track = np.hstack((trajectory_smoothed, bound_dists))
+    # track_cl = np.vstack((track, track[0]))
+
+    # new_bound_left_cl = np.vstack((new_bound_left, new_bound_left[0]))
+    # new_bound_right_cl = np.vstack((new_bound_right, new_bound_right[0]))
+
+    rospy.logwarn(
+        f"Time for boundary calculation: {time.perf_counter() - t_start_boundary_calc}"
+    )
+
+    prepped_track = track
+    # prepped_track_cl = track_cl
+    bound_left = new_bound_left
+    bound_right = new_bound_right
+    # bound_left_cl = new_bound_left_cl
+    # bound_right_cl = new_bound_right_cl
+
+    return prepped_track, bound_left, bound_right
+
+
+def get_plot_name(
+    plot_name: str,
+) -> str:
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    Creates a plot name with a timestamp. The timestamp layout is 'YYYYMMDD_HHMMSS'.
+
+    .. inputs::
+    :param plot_name:               name of the plot.
+    :type plot_name:                str
+
+    .. outputs::
+    :return plot_name_t_stamp:       name of the plot with a timestamp.
+    :rtype plot_name_t_stamp:        str
+    """
+
+    # Get current date and time
+    t_stamp = datetime.datetime.now().strftime("%d%b_%H%M").lower()
+
+    # Create plot name with timestamp
+    plot_name_t_stamp = f"{plot_name}_{t_stamp}.png"
+
+    return plot_name_t_stamp
+
+
+def save_plot_to_folder(
+    plot: plt.figure,
+    folder_path: str,
+    plot_filename: str = "plot",
+):
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    Save a plot to a specified folder.
+
+    .. inputs::
+    :param plot:                plot to save.
+    :type plot:                 plt.figure.Figure
+    :param folder_path:         factor for smoothing the trajectory.
+    :type folder_path:          float
+    :param plot_filename:       factor for smoothing the trajectory.
+    :type plot_filename:        float
+
+    .. outputs::
+    None
+
+    .. notes::
+    This function saves the plot, no outputs!
+    """
+
+    # Create folder if it does not exist
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    # Create plot name with timestamp
+    plot_filename_t_stamp = get_plot_name(plot_filename)
+
+    # Save plot to folder
+    plot.savefig(os.path.join(folder_path, plot_filename_t_stamp))
 
 
 def calc_splines(
@@ -1898,8 +2110,7 @@ def spline_approximation(
     # LINEAR INTERPOLATION BEFORE SMOOTHING ----------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------------------------------------
 
-    track_interp = interp_trajectory(trajectory=track, stepsize=stepsize_prep)
-    track_interp_cl = np.vstack((track_interp, track_interp[0]))
+    track_interp_cl = interp_trajectory(trajectory=track, stepsize=stepsize_prep)
 
     # ------------------------------------------------------------------------------------------------------------------
     # SPLINE APPROXIMATION / PATH SMOOTHING ----------------------------------------------------------------------------
