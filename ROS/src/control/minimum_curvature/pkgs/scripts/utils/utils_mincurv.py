@@ -1,16 +1,19 @@
 import datetime
 import math
 import os
-import sys
+
+# import pathlib
 import time
 from typing import Union
 
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import quadprog
 import rospy
+from matplotlib.legend_handler import HandlerPatch
 from mpl_toolkits.mplot3d import Axes3D
-from scipy import optimize, spatial
+from scipy import spatial
 from scipy.interpolate import interp1d, splev, splprep
 
 
@@ -117,11 +120,9 @@ def B_spline_smoothing(
         raise RuntimeError("Smoothing factor must be 0 or positive!")
 
     # Smooth path with BSpline interpolation
-    trajectory_cl = (
-        trajectory_cl.T
+    tck, u = splprep(
+        trajectory_cl.T, s=smoothing_factor, per=1
     )  # Transpose to get correct shape, splprep expects (2, N)
-
-    tck, u = splprep(trajectory_cl, s=smoothing_factor, per=1)
 
     trajectory_smoothed_cl = np.array(
         splev(u, tck)
@@ -130,7 +131,6 @@ def B_spline_smoothing(
     return trajectory_smoothed_cl
 
 
-# TODO: Fix plots, mainly colors and markers
 # TODO: Add calculation for error between old and new boundaries. Maybe average distance or something similar? Purely for validation purposes.
 def calc_bound_dists(
     trajectory: np.ndarray,
@@ -138,7 +138,6 @@ def calc_bound_dists(
     bound_right: np.ndarray,
     min_left_distance: float = 1.5,
     min_right_distance: float = 1.5,
-    plot_bound_dists: bool = False,
 ) -> np.ndarray:
     """
     author:
@@ -159,8 +158,6 @@ def calc_bound_dists(
     :type min_left_distance:        float
     :param min_right_distance:      minimum distance from reference to the right boundary in m
     :type min_right_distance:       float
-    :param plot_bound_dists:        flag to show the boundaries and the calculated distances on the map
-    :type plot_bound_dists:         bool
 
     .. outputs::
     :return bound_dists:            estimated perpendicular distance to boundaries along normal for every trajectory point (unclosed).
@@ -169,6 +166,14 @@ def calc_bound_dists(
     :rtype new_bound_left:          np.ndarray
     :return new_bound_right:        new right boundary after distance calculation (unclosed).
     :rtype new_bound_right:         np.ndarray
+    :return coeffs_x:               spline coefficients for the x coordinates of the closed trajectory.
+    :rtype coeffs_x:                np.ndarray
+    :return coeffs_y:               spline coefficients for the y coordinates of the closed trajectory.
+    :rtype coeffs_y:                np.ndarray
+    :return M:                      spline coefficients for the x and y coordinates of the closed trajectory.
+    :rtype M:                       np.ndarray
+    :return normvec_normalized:     normalized normal vectors to the trajectory.
+    :rtype normvec_normalized:      np.ndarray
 
     .. notes::
     Make sure the boundaries contain sufficient amount of points to accurately estimate the distance
@@ -194,7 +199,7 @@ def calc_bound_dists(
 
     # Calculate the spline coefficients for the x and y coordinates of the closed trajectory
     trajectory_cl = np.vstack((trajectory, trajectory[0]))
-    _, _, M, normvec_normalized = calc_splines(trajectory_cl)
+    coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(trajectory_cl)
 
     # Calculate the estimated perpendicular distance to the boundaries
     left_distance = min_left_distance
@@ -238,76 +243,81 @@ def calc_bound_dists(
     new_bound_left = trajectory - normvec_normalized * min_dists[:, 0].reshape(-1, 1)
     new_bound_right = trajectory + normvec_normalized * min_dists[:, 1].reshape(-1, 1)
 
-    # Inputs for plots
-    trajectory_plot = trajectory_cl
-    new_left_plot = np.vstack((new_bound_left, new_bound_left[0]))
-    new_right_plot = np.vstack((new_bound_right, new_bound_right[0]))
-    bound_left_plot = np.vstack((bound_left, bound_left[0]))
-    bound_right_plot = np.vstack((bound_right, bound_right[0]))
-
-    if plot_bound_dists:
-        plt.figure()
-        plt.plot(
-            trajectory_plot[:, 0],
-            trajectory_plot[:, 1],
-            color=normalize_color((0, 0, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            bound_left_plot[:, 0],
-            bound_left_plot[:, 1],
-            color=normalize_color((0, 0, 255)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            bound_right_plot[:, 0],
-            bound_right_plot[:, 1],
-            color=normalize_color((230, 245, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            new_left_plot[:, 0],
-            new_left_plot[:, 1],
-            color=normalize_color((0, 255, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
-        )
-        plt.plot(
-            new_right_plot[:, 0],
-            new_right_plot[:, 1],
-            color=normalize_color((0, 255, 0)),
-            linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
+    # Check spline normals for crossing points
+    normals_crossing = check_normals_crossing(
+        track=np.hstack((trajectory, min_dists)),
+        normvec_normalized=normvec_normalized,
+        horizon=10,
+    )
+    if normals_crossing:
+        rospy.logerr(
+            "At least two spline normalse are crossed! Check input or increase trajectory smoothing factor!"
         )
 
-        for i in range(new_left_plot.shape[0]):
-            temp = np.vstack((new_left_plot[i], new_right_plot[i]))
-            plt.plot(temp[:, 0], temp[:, 1], "r-", linewidth=0.7)
+    # Enforce minimum track width
+    manipulated_track_width = False
+    min_track_width = min_left_distance + min_right_distance
 
-        plt.grid()
-        ax = plt.gca()
-        ax.set_aspect("equal", "datalim")
-        plt.xlabel("east in m")
-        plt.ylabel("north in m")
-        plt.show()
+    for i in range(trajectory.shape[0]):
+        track_width = min_dists[i, 0] + min_dists[i, 1]
 
-    return min_dists, new_bound_left, new_bound_right
+        if track_width < min_track_width:
+            manipulated_track_width = True
+
+            # Inflate to both sides equally
+            min_dists[i, 0] += (min_track_width - track_width) / 2
+            min_dists[i, 1] += (min_track_width - track_width) / 2
+
+            new_bound_left[i] = trajectory[i] - normvec_normalized[i] * min_dists[i, 0]
+            new_bound_right[i] = trajectory[i] + normvec_normalized[i] * min_dists[i, 1]
+
+    if manipulated_track_width:
+        rospy.logerr("Track width was manipulated to enforce minimum track width!")
+
+    return (
+        min_dists,
+        new_bound_left,
+        new_bound_right,
+        coeffs_x,
+        coeffs_y,
+        M,
+        normvec_normalized,
+    )
 
 
-def prep_track2(
+def calc_distances_along_closed_trajectory(
+    trajectory: np.ndarray,
+) -> np.ndarray:
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    Calculates the distances along a trajectory for every point.
+
+    .. inputs::
+    :param trajectory:           trajectory in the format [x, y] (unclosed).
+    :type trajectory:            np.ndarray
+
+    .. outputs::
+    :return distances_along_traj:   distances along the trajectory for every point.
+    :rtype distances_along_traj:    np.ndarray
+    """
+    # Check inputs
+    if (trajectory[0] == trajectory[-1]).all():
+        raise RuntimeError("Trajectory must be unclosed!")
+
+    # Calculate distances along the closed trajectory
+    distances_along_traj = np.zeros(trajectory.shape[0])
+    for i in range(1, trajectory.shape[0]):
+        distances_along_traj[i] = distances_along_traj[i - 1] + np.linalg.norm(
+            trajectory[i] - trajectory[i - 1]
+        )
+
+    return distances_along_traj
+
+
+def prep_track(
     trajectory: np.ndarray,
     cones_left: np.ndarray,
     cones_right: np.ndarray,
@@ -332,40 +342,54 @@ def prep_track2(
     Finally, it returns the prepared track in the format [x, y, w_tr_right, w_tr_left].
 
     .. inputs::
-    :param trajectory:              array containing the reference trajectory [x, y] (Unclosed track!)
-    :type trajectory:               np.ndarray
-    :param cones_left:              array containing the left track cones [x, y] (Unclosed!)
-    :type cones_left:               np.ndarray
-    :param cones_right:             array containing the right track cones [x, y] (Unclosed!)
-    :type cones_right:              np.ndarray
-    :param min_left_distance:       minimum distance from reference to the left boundary in m
-    :type min_left_distance:        float
-    :param min_right_distance:      minimum distance from reference to the right boundary in m
-    :type min_right_distance:       float
-    :param stepsize_trajectory:     desired stepsize after interpolation in m for the trajectory
-    :type stepsize_trajectory:      float
-    :param stepsize_boundaries:     desired stepsize after interpolation in m for the boundaries
-    :type stepsize_boundaries:      float
-    :param sf_trajectory:           factor for smoothing the trajectory and boundaries.
-    :type sf_trajectory:            float
-    :param sf_boundaries:           factor for smoothing the trajectory and boundaries.
-    :type sf_boundaries:            float
-    :param debug_info:              flag to show debugging information
-    :type debug_info:               bool
-    :param plot_prep:               flag to show the preprocessing steps on the map
-    :type plot_prep:                bool
+    :param trajectory:                  array containing the reference trajectory [x, y] (Unclosed track!)
+    :type trajectory:                   np.ndarray
+    :param cones_left:                  array containing the left track cones [x, y] (Unclosed!)
+    :type cones_left:                   np.ndarray
+    :param cones_right:                 array containing the right track cones [x, y] (Unclosed!)
+    :type cones_right:                  np.ndarray
+    :param min_left_distance:           minimum distance from reference to the left boundary in m
+    :type min_left_distance:            float
+    :param min_right_distance:          minimum distance from reference to the right boundary in m
+    :type min_right_distance:           float
+    :param stepsize_trajectory:         desired stepsize after interpolation in m for the trajectory
+    :type stepsize_trajectory:          float
+    :param stepsize_boundaries:         desired stepsize after interpolation in m for the boundaries
+    :type stepsize_boundaries:          float
+    :param sf_trajectory:               factor for smoothing the trajectory and boundaries.
+    :type sf_trajectory:                float
+    :param sf_boundaries:               factor for smoothing the trajectory and boundaries.
+    :type sf_boundaries:                float
+    :param debug_info:                  flag to show debugging information
+    :type debug_info:                   bool
+    :param plot_prep:                   flag to show the preprocessing steps on the map
+    :type plot_prep:                    bool
 
     .. outputs::
-    :return prepped_track:          prepared track for the IQP optimization [x, y, w_tr_right, w_tr_left] (unclosed).
-    :rtype prepped_track:           np.ndarray
-    :return bound_left:             left boundary (unclosed).
-    :rtype bound_left:              np.ndarray
-    :return bound_right:            right boundary (unclosed).
-    :rtype bound_right:             np.ndarray
+    :return prepped_track:              preprocessed track for the IQP optimization [x, y, w_tr_right, w_tr_left] (unclosed).
+    :rtype prepped_track:               np.ndarray
+    :return bound_left:                 left boundary (unclosed).
+    :rtype bound_left:                  np.ndarray
+    :return bound_right:                right boundary (unclosed).
+    :rtype bound_right:                 np.ndarray
+    :return coeffs_x:                   spline coefficients for the x coordinates of the closed trajectory.
+    :rtype coeffs_x:                    np.ndarray
+    :return coeffs_y:                   spline coefficients for the y coordinates of the closed trajectory.
+    :rtype coeffs_y:                    np.ndarray
+    :return M:                          spline coefficients for the x and y coordinates of the closed trajectory.
+    :rtype M:                           np.ndarray
+    :return normvec_normalized:         normalized normal vectors to the preprocessed trajectory.
+    :rtype normvec_normalized:          np.ndarray
+    :return psi_prepped_track:          heading of the preprocessed trajectory.
+    :rtype psi_prepped_track:           np.ndarray
+    :return kappa_prepped_track:        curvature of the preprocessed trajectory.
+    :rtype kappa_prepped_track:         np.ndarray
+    :return dkappa_prepped_track:       curvature derivative of the preprocessed trajectory.
+    :rtype dkappa_prepped_track:        np.ndarray
 
     .. notes::
     Make sure the boundaries contain sufficient amount of points to accurately estimate the distance
-    Trajectory and boundaries must be unclosed!
+    Input trajectory and cones must be unclosed!
     """
 
     # Check inputs
@@ -374,13 +398,13 @@ def prep_track2(
         or (cones_left[0] == cones_left[-1]).all()
         or (cones_right[0] == cones_right[-1]).all()
     ):
-        raise RuntimeError("Trajectory and boundaries must be unclosed!")
+        raise RuntimeError("Trajectory and cones must be unclosed!")
     if (
         trajectory.shape[1] != 2
         or cones_left.shape[1] != 2
         or cones_right.shape[1] != 2
     ):
-        raise RuntimeError("Trajectory and boundaries must be 2D arrays!")
+        raise RuntimeError("Trajectory and cones must be 2D arrays!")
 
     # Interpolate trajectory
     trajectory_interp_cl = interp_trajectory(
@@ -388,7 +412,6 @@ def prep_track2(
         stepsize=stepsize_trajectory,
         interpolation_method="quadratic",
     )
-    # trajecory_interp = trajectory_interp_cl[:-1]
 
     # Smooth trajectory
     trajectory_smoothed_cl = B_spline_smoothing(
@@ -407,8 +430,6 @@ def prep_track2(
         stepsize=stepsize_boundaries,
         interpolation_method="quadratic",
     )
-    # bound_left_interp = bound_left_interp_cl[:-1]
-    # bound_left_interp = bound_left_interp_cl[:-1]
 
     # Smooth boundaries
     bound_left_smoothed_cl = B_spline_smoothing(
@@ -423,7 +444,15 @@ def prep_track2(
     # Calculate distances to boundaries
     t_start_boundary_calc = time.perf_counter()
 
-    bound_dists, new_bound_left, new_bound_right = calc_bound_dists(
+    (
+        bound_dists,
+        new_bound_left,
+        new_bound_right,
+        coeffs_x,
+        coeffs_y,
+        M,
+        normvec_normalized,
+    ) = calc_bound_dists(
         trajectory=trajectory_smoothed,
         bound_left=bound_left_smoothed,
         bound_right=bound_right_smoothed,
@@ -432,23 +461,828 @@ def prep_track2(
     )
 
     track = np.hstack((trajectory_smoothed, bound_dists))
-    # track_cl = np.vstack((track, track[0]))
 
-    # new_bound_left_cl = np.vstack((new_bound_left, new_bound_left[0]))
-    # new_bound_right_cl = np.vstack((new_bound_right, new_bound_right[0]))
+    new_bound_left_cl = np.vstack((new_bound_left, new_bound_left[0]))
+    new_bound_right_cl = np.vstack((new_bound_right, new_bound_right[0]))
 
     rospy.logwarn(
         f"Time for boundary calculation: {time.perf_counter() - t_start_boundary_calc}"
     )
 
     prepped_track = track
-    # prepped_track_cl = track_cl
     bound_left = new_bound_left
     bound_right = new_bound_right
-    # bound_left_cl = new_bound_left_cl
-    # bound_right_cl = new_bound_right_cl
 
-    return prepped_track, bound_left, bound_right
+    # Calculate the heading psi, the curvature kappa and the curvature derivative d_kappa of the preprocessed track
+    psi_prepped_track, kappa_prepped_track, dkappa_prepped_track = calc_head_curv_an(
+        coeffs_x=coeffs_x,
+        coeffs_y=coeffs_y,
+        ind_spls=np.arange(prepped_track.shape[0]),
+        t_spls=np.zeros(prepped_track.shape[0]),
+        calc_curv=True,
+        calc_dcurv=True,
+    )
+
+    # Calculate the distances along the closed trajectory
+    distances_along_traj = calc_distances_along_closed_trajectory(
+        trajectory=prepped_track[:, :2],
+    )
+
+    ########################################################################################################################
+    # Preprocessing plots:
+    # - Initial data
+    # - Quadratic interpolation
+    # - BSpline smoothing
+    # - Boundary distance estimation
+    # - Preprocessed track
+    # - Curvature preprocessed track 2D
+    # - Curvature preprocessed track 3D
+    # - Curvature derivative preprocessed track
+
+    ########################################################################################################################
+    if plot_prep:
+        # Plotting variables
+        trajectory_plot = np.vstack((trajectory, trajectory[0]))
+        cones_left_plot = cones_left
+        cones_right_plot = cones_right
+
+        trajectory_interp_plot = trajectory_interp_cl
+        bound_left_interp_plot = bound_left_interp_cl
+        bound_right_interp_plot = bound_right_interp_cl
+
+        trajectory_smoothed_plot = trajectory_smoothed_cl
+        bound_left_smoothed_plot = bound_left_smoothed_cl
+        bound_right_smoothed_plot = bound_right_smoothed_cl
+
+        new_bound_left_plot = new_bound_left_cl
+        new_bound_right_plot = new_bound_right_cl
+
+        kappa_prepped_track_plot = kappa_prepped_track
+        distances_along_traj_plot = distances_along_traj
+        kappa_prepped_track_plot3D = np.hstack(
+            (kappa_prepped_track, kappa_prepped_track[0])
+        )
+        dkappa_prepped_track_plot = dkappa_prepped_track
+        dkappa_prepped_track_plot3D = np.hstack(
+            (dkappa_prepped_track, dkappa_prepped_track[0])
+        )
+
+        # Arrow variables
+        point1_arrow = trajectory[0]
+        point2_arrow = trajectory[1]
+        vec_arrow = point2_arrow - point1_arrow
+
+        # Folder path for preprocessing plots
+        # folder_path = (
+        #     pathlib.Path.home()
+        #     / "autonomous2023/ROS/src/control/minimum_curvature/data/preprocessing"
+        # )
+
+        # ------------------------------------------------------------------------------------------------------------------
+        # Initial data -----------------------------------------------------------------------------------------------------
+        # - Plotting the reference trajectory (initial_data_1)
+        # - Plotting the left cones (initial_data_2)
+        # - Plotting the right cones (initial_data_3)
+        # - Plotting the driving direction (initial_data_4)
+        # ------------------------------------------------------------------------------------------------------------------
+        plt.figure("Initial data")
+        plt.title("Initial data")
+        plt.grid()
+        initial_data_1 = plt.plot(
+            trajectory_plot[:, 0],
+            trajectory_plot[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linewidth=0.5,
+            linestyle="dashed",
+            marker="o",
+            markersize=5,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        initial_data_2 = plt.scatter(
+            cones_left_plot[:, 0],
+            cones_left_plot[:, 1],
+            color=normalize_color((0, 0, 255)),
+            marker="o",
+            s=25,
+        )
+        initial_data_3 = plt.scatter(
+            cones_right_plot[:, 0],
+            cones_right_plot[:, 1],
+            color=normalize_color((230, 240, 0)),
+            marker="o",
+            s=25,
+        )
+        initial_data_4 = plt.arrow(
+            point1_arrow[0],
+            point1_arrow[1],
+            vec_arrow[0],
+            vec_arrow[1],
+            width=0.3,
+            head_width=1.0,
+            head_length=1.0,
+            fc="g",
+            ec="g",
+        )
+        plt.legend(
+            [initial_data_1[0], initial_data_2, initial_data_3, initial_data_4],
+            ["Reference trajectory", "Left cones", "Right cones", "Driving direction"],
+            handler_map={
+                mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
+            },
+        )
+        ax = plt.gca()
+        ax.set_aspect("equal", "datalim")
+        plt.xlabel("east in m")
+        plt.ylabel("north in m")
+
+        plt.show()
+
+        # save_plot_to_folder(plt, folder_path, "Initial Data")
+        # plt.close()
+
+        # ------------------------------------------------------------------------------------------------------------------
+        # Quadratic interpolation ------------------------------------------------------------------------------------------
+        # - Plotting the reference trajectory (quad_interp_1)
+        # - Plotting the left cones (quad_interp_2)
+        # - Plotting the right cones (quad_interp_3)
+        # - Plotting the interpolated trajectory (quad_interp_4)
+        # - Plotting the interpolated left boundary (quad_interp_5)
+        # - Plotting the interpolated right boundary (quad_interp_6)
+        # - Plotting the driving direction (quad_interp_7)
+        # ------------------------------------------------------------------------------------------------------------------
+        plt.figure("Quadratic interpolation")
+        plt.title("Quadratic interpolation")
+        plt.grid()
+        quad_interp_1 = plt.scatter(
+            trajectory_plot[:, 0],
+            trajectory_plot[:, 1],
+            color=normalize_color((255, 0, 0)),
+            marker="o",
+            s=25,
+        )
+        # quad_interp_2
+        plt.scatter(
+            cones_left_plot[:, 0],
+            cones_left_plot[:, 1],
+            color=normalize_color((255, 0, 0)),
+            marker="o",
+            s=25,
+        )
+        # quad_interp_3
+        plt.scatter(
+            cones_right_plot[:, 0],
+            cones_right_plot[:, 1],
+            color=normalize_color((255, 0, 0)),
+            marker="o",
+            s=25,
+        )
+        quad_interp_4 = plt.plot(
+            trajectory_interp_plot[:, 0],
+            trajectory_interp_plot[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linewidth=0.5,
+            linestyle="dashed",
+            marker="o",
+            markersize=3,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        quad_interp_5 = plt.plot(
+            bound_left_interp_plot[:, 0],
+            bound_left_interp_plot[:, 1],
+            color=normalize_color((0, 0, 255)),
+            linewidth=0.5,
+            linestyle="dashed",
+            marker="o",
+            markersize=3,
+            markerfacecolor=normalize_color((0, 0, 255)),
+        )
+        quad_interp_6 = plt.plot(
+            bound_right_interp_plot[:, 0],
+            bound_right_interp_plot[:, 1],
+            color=normalize_color((230, 240, 0)),
+            linewidth=0.5,
+            linestyle="dashed",
+            marker="o",
+            markersize=3,
+            markerfacecolor=normalize_color((230, 240, 0)),
+        )
+        quad_interp_7 = plt.arrow(
+            point1_arrow[0],
+            point1_arrow[1],
+            vec_arrow[0],
+            vec_arrow[1],
+            width=0.3,
+            head_width=1.0,
+            head_length=1.0,
+            fc="g",
+            ec="g",
+        )
+        plt.legend(
+            [
+                quad_interp_1,
+                quad_interp_4[0],
+                quad_interp_5[0],
+                quad_interp_6[0],
+                quad_interp_7,
+            ],
+            [
+                "Initial data",
+                "Interpolated trajectory",
+                "Interpolated left boundary",
+                "Interpolated right boundary",
+                "Driving direction",
+            ],
+            handler_map={
+                mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
+            },
+        )
+        ax = plt.gca()
+        ax.set_aspect("equal", "datalim")
+        plt.xlabel("east in m")
+        plt.ylabel("north in m")
+
+        plt.show()
+
+        # save_plot_to_folder(plt, folder_path, "Quadratic Interpolation")
+        # plt.close()
+
+        # ------------------------------------------------------------------------------------------------------------------
+        # BSpline smoothing ------------------------------------------------------------------------------------------------
+        # - Plotting the reference trajectory (smoothing_1)
+        # - Plotting the left cones (smoothing_2)
+        # - Plotting the right cones (smoothing_3)
+        # - Plotting the interpolated trajectory (smoothing_4)
+        # - Plotting the interpolated left boundary (smoothing_5)
+        # - Plotting the interpolated right boundary (smoothing_6)
+        # - Plotting the smoothed trajectory (smoothing_7)
+        # - Plotting the smoothed left boundary (smoothing_8)
+        # - Plotting the smoothed right boundary (smoothing_9)
+        # - Plotting the driving direction (smoothing_10)
+        # ------------------------------------------------------------------------------------------------------------------
+        plt.figure("BSpline smoothing")
+        plt.title("BSpline smoothing")
+        plt.grid()
+        smoothing_1 = plt.scatter(
+            trajectory_plot[:, 0],
+            trajectory_plot[:, 1],
+            color=normalize_color((255, 0, 0)),
+            marker="o",
+            s=25,
+        )
+        # smoothing_2
+        plt.scatter(
+            cones_left_plot[:, 0],
+            cones_left_plot[:, 1],
+            color=normalize_color((255, 0, 0)),
+            marker="o",
+            s=25,
+        )
+        # smoothing_3
+        plt.scatter(
+            cones_right_plot[:, 0],
+            cones_right_plot[:, 1],
+            color=normalize_color((255, 0, 0)),
+            marker="o",
+            s=25,
+        )
+        smoothing_4 = plt.plot(
+            trajectory_interp_plot[:, 0],
+            trajectory_interp_plot[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linewidth=0.3,
+            linestyle="dashed",
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        # smoothing_5
+        plt.plot(
+            bound_left_interp_plot[:, 0],
+            bound_left_interp_plot[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linewidth=0.3,
+            linestyle="dashed",
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        # smoothing_6
+        plt.plot(
+            bound_right_interp_plot[:, 0],
+            bound_right_interp_plot[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linewidth=0.3,
+            linestyle="dashed",
+            marker="o",
+            markersize=2,
+            markerfacecolor=normalize_color((0, 0, 0)),
+        )
+        smoothing_7 = plt.plot(
+            trajectory_smoothed_plot[:, 0],
+            trajectory_smoothed_plot[:, 1],
+            color=normalize_color((0, 255, 0)),
+            linewidth=1.5,
+            linestyle="solid",
+        )
+        smoothing_8 = plt.plot(
+            bound_left_smoothed_plot[:, 0],
+            bound_left_smoothed_plot[:, 1],
+            color=normalize_color((0, 0, 255)),
+            linewidth=1.5,
+            linestyle="solid",
+        )
+        smoothing_9 = plt.plot(
+            bound_right_smoothed_plot[:, 0],
+            bound_right_smoothed_plot[:, 1],
+            color=normalize_color((230, 240, 0)),
+            linewidth=1.5,
+            linestyle="solid",
+        )
+        smoothing_10 = plt.arrow(
+            point1_arrow[0],
+            point1_arrow[1],
+            vec_arrow[0],
+            vec_arrow[1],
+            width=0.3,
+            head_width=1.0,
+            head_length=1.0,
+            fc="g",
+            ec="g",
+        )
+        plt.legend(
+            [
+                smoothing_1,
+                smoothing_4[0],
+                smoothing_7[0],
+                smoothing_8[0],
+                smoothing_9[0],
+                smoothing_10,
+            ],
+            [
+                "Initial data",
+                "Interpolated data",
+                "Smoothed trajectory",
+                "Smoothed left boundary",
+                "Smoothed right boundary",
+                "Driving direction",
+            ],
+            handler_map={
+                mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
+            },
+        )
+        ax = plt.gca()
+        ax.set_aspect("equal", "datalim")
+        plt.xlabel("east in m")
+        plt.ylabel("north in m")
+
+        plt.show()
+
+        # save_plot_to_folder(plt, folder_path, "BSpline Smoothing")
+        # plt.close()
+
+        # ------------------------------------------------------------------------------------------------------------------
+        # Boundary distance estimation -------------------------------------------------------------------------------------
+        # - Plotting the reference trajectory (bound_dists_1)
+        # - Plotting the left cones (bound_dists_2)
+        # - Plotting the right cones (bound_dists_3)
+        # - Plotting the smoothed trajectory (bound_dists_4)
+        # - Plotting the smoothed left boundary (bound_dists_5)
+        # - Plotting the smoothed right boundary (bound_dists_6)
+        # - Plotting the new left boundary (bound_dists_7)
+        # - Plotting the new right boundary (bound_dists_8)
+        # - Plotting the normals to the smoothed trajectory (bound_dists_9)
+        # - Plotting the driving direction (bound_dists_10)
+        # ------------------------------------------------------------------------------------------------------------------
+        plt.figure("Boundary distance estimation")
+        plt.title("Boundary distance estimation")
+        plt.grid()
+        bound_dists_1 = plt.scatter(
+            trajectory_plot[:, 0],
+            trajectory_plot[:, 1],
+            color=normalize_color((255, 0, 0)),
+            marker="o",
+            s=25,
+        )
+        # bound_dists_2
+        plt.scatter(
+            cones_left_plot[:, 0],
+            cones_left_plot[:, 1],
+            color=normalize_color((255, 0, 0)),
+            marker="o",
+            s=25,
+        )
+        # bound_dists_3
+        plt.scatter(
+            cones_right_plot[:, 0],
+            cones_right_plot[:, 1],
+            color=normalize_color((255, 0, 0)),
+            marker="o",
+            s=25,
+        )
+        bound_dists_4 = plt.plot(
+            trajectory_smoothed_plot[:, 0],
+            trajectory_smoothed_plot[:, 1],
+            color=normalize_color((0, 255, 0)),
+            linewidth=1.0,
+            linestyle="dashed",
+            marker="o",
+            markersize=3,
+            markerfacecolor=normalize_color((0, 255, 0)),
+        )
+        bound_dists_5 = plt.plot(
+            bound_left_smoothed_plot[:, 0],
+            bound_left_smoothed_plot[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linewidth=0.5,
+            linestyle="dashed",
+        )
+        # bound_dists_6
+        plt.plot(
+            bound_right_smoothed_plot[:, 0],
+            bound_right_smoothed_plot[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linewidth=0.5,
+            linestyle="dashed",
+        )
+        bound_dists_7 = plt.plot(
+            new_bound_left_plot[:, 0],
+            new_bound_left_plot[:, 1],
+            color=normalize_color((0, 0, 255)),
+            linewidth=1.0,
+            linestyle="solid",
+            marker="o",
+            markersize=3,
+            markerfacecolor=normalize_color((0, 0, 255)),
+        )
+        bound_dists_8 = plt.plot(
+            new_bound_right_plot[:, 0],
+            new_bound_right_plot[:, 1],
+            color=normalize_color((230, 240, 0)),
+            linewidth=1.0,
+            linestyle="solid",
+            marker="o",
+            markersize=3,
+            markerfacecolor=normalize_color((230, 240, 0)),
+        )
+
+        for i in range(new_bound_left_plot.shape[0]):
+            temp = np.vstack((new_bound_left_plot[i], new_bound_right_plot[i]))
+            bound_dists_9 = plt.plot(
+                temp[:, 0],
+                temp[:, 1],
+                color=normalize_color((255, 0, 0)),
+                linewidth=0.7,
+                linestyle="solid",
+            )
+
+        bound_dists_10 = plt.arrow(
+            point1_arrow[0],
+            point1_arrow[1],
+            vec_arrow[0],
+            vec_arrow[1],
+            width=0.3,
+            head_width=1.0,
+            head_length=1.0,
+            fc="g",
+            ec="g",
+        )
+        plt.legend(
+            [
+                bound_dists_1,
+                bound_dists_4[0],
+                bound_dists_5[0],
+                bound_dists_7[0],
+                bound_dists_8[0],
+                bound_dists_9[0],
+                bound_dists_10,
+            ],
+            [
+                "Initial data",
+                "Smoothed trajectory",
+                "Smoothed boundaries",
+                "New left boundary",
+                "New right boundary",
+                "Trajectory normals",
+                "Driving direction",
+            ],
+            handler_map={
+                mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
+            },
+        )
+        ax = plt.gca()
+        ax.set_aspect("equal", "datalim")
+        plt.xlabel("east in m")
+        plt.ylabel("north in m")
+
+        plt.show()
+
+        # save_plot_to_folder(plt, folder_path, "Boundary Distance Estimation")
+        # plt.close()
+
+        # ------------------------------------------------------------------------------------------------------------------
+        # Preprocessed track -----------------------------------------------------------------------------------------------
+        # - Plotting the preprocessed trajectory (prepped_track_1)
+        # - Plotting the left preprocessed boundary (prepped_track_2)
+        # - Plotting the right preprocessed boundary (prepped_track_3)
+        # - Plotting the driving direction (prepped_track_4)
+        # ------------------------------------------------------------------------------------------------------------------
+        plt.figure("Preprocessed track")
+        plt.title("Preprocessed track")
+        plt.grid()
+        prepped_track_1 = plt.plot(
+            trajectory_smoothed_plot[:, 0],
+            trajectory_smoothed_plot[:, 1],
+            color=normalize_color((0, 255, 0)),
+            linewidth=2.0,
+            linestyle="dashed",
+        )
+        prepped_track_2 = plt.plot(
+            new_bound_left_plot[:, 0],
+            new_bound_left_plot[:, 1],
+            color=normalize_color((0, 0, 255)),
+            linewidth=2.0,
+            linestyle="solid",
+        )
+        prepped_track_3 = plt.plot(
+            new_bound_right_plot[:, 0],
+            new_bound_right_plot[:, 1],
+            color=normalize_color((230, 240, 0)),
+            linewidth=2.0,
+            linestyle="solid",
+        )
+        prepped_track_4 = plt.arrow(
+            point1_arrow[0],
+            point1_arrow[1],
+            vec_arrow[0],
+            vec_arrow[1],
+            width=0.3,
+            head_width=1.0,
+            head_length=1.0,
+            fc="g",
+            ec="g",
+        )
+        plt.legend(
+            [
+                prepped_track_1[0],
+                prepped_track_2[0],
+                prepped_track_3[0],
+                prepped_track_4,
+            ],
+            [
+                "Preprocessed trajectory",
+                "Preprocessed left boundary",
+                "Preprocessed right boundary",
+                "Driving direction",
+            ],
+            handler_map={
+                mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
+            },
+        )
+        ax = plt.gca()
+        ax.set_aspect("equal", "datalim")
+        plt.xlabel("east in m")
+        plt.ylabel("north in m")
+
+        plt.show()
+
+        # save_plot_to_folder(plt, folder_path, "Preprocessed Track")
+        # plt.close()
+
+        # ------------------------------------------------------------------------------------------------------------------
+        # Curvature preprocessed track 2D ----------------------------------------------------------------------------------
+        # - Plotting the curvature of the preprocessed trajectory (curvature2D_1)
+        # ------------------------------------------------------------------------------------------------------------------
+        plt.figure("Curvature preprocessed track 2D")
+        plt.title("Curvature preprocessed track 2D")
+        plt.grid()
+        # curvature2D_1
+        plt.plot(
+            distances_along_traj_plot,
+            kappa_prepped_track_plot,
+            color=normalize_color((255, 0, 0)),
+            linewidth=1.0,
+            linestyle="solid",
+            label="Curvature preprocessed trajectory",
+        )
+        plt.legend()
+        plt.xlabel("distance from start in m")
+        plt.ylabel("curvature in rad/m")
+
+        plt.show()
+
+        # save_plot_to_folder(plt, folder_path, "Curvature Preprocessed Track 2D")
+        # plt.close()
+
+        # ------------------------------------------------------------------------------------------------------------------
+        # Curvature preprocessed track 3D ----------------------------------------------------------------------------------
+        # - Plotting the preprocessed trajectory (curvature3D_1)
+        # - Plotting the left preprocessed boundary (curvature3D_2)
+        # - Plotting the right preprocessed boundary (curvature3D_3)
+        # - Plotting the curvature of the preprocessed trajectory (curvature3D_4)
+        # ------------------------------------------------------------------------------------------------------------------
+        plt.figure("Curvature preprocessed track 3D")
+        plt.grid()
+        ax_curvature3D = plt.subplot(projection="3d")
+        ax_curvature3D.set_title("Curvature preprocessed track 3D")
+
+        # Scale the z-axis such that it does not appear stretched
+        curvature3D_scale_x = 1.0
+        curvature3D_scale_y = 1.0
+        curvature3D_scale_z = 0.3
+
+        # recast get_proj function to use scaling factors for the axes
+        ax_curvature3D.get_proj = lambda: np.dot(
+            Axes3D.get_proj(ax_curvature3D),
+            np.diag(
+                [curvature3D_scale_x, curvature3D_scale_y, curvature3D_scale_z, 1.0]
+            ),
+        )
+
+        curvature3D_1 = ax_curvature3D.plot(
+            trajectory_smoothed_plot[:, 0],
+            trajectory_smoothed_plot[:, 1],
+            color=normalize_color((0, 255, 0)),
+            linewidth=1.0,
+            linestyle="dashed",
+        )
+        curvature3D_2 = ax_curvature3D.plot(
+            new_bound_left_plot[:, 0],
+            new_bound_left_plot[:, 1],
+            color=normalize_color((0, 0, 255)),
+            linewidth=1.0,
+            linestyle="solid",
+        )
+        curvature3D_3 = ax_curvature3D.plot(
+            new_bound_right_plot[:, 0],
+            new_bound_right_plot[:, 1],
+            color=normalize_color((230, 240, 0)),
+            linewidth=1.0,
+            linestyle="solid",
+        )
+        curvature3D_4 = ax_curvature3D.plot(
+            trajectory_smoothed_plot[:, 0],
+            trajectory_smoothed_plot[:, 1],
+            kappa_prepped_track_plot3D,
+            color=normalize_color((255, 0, 0)),
+            linewidth=1.0,
+            linestyle="solid",
+        )
+        ax_curvature3D.legend(
+            [
+                curvature3D_1[0],
+                curvature3D_2[0],
+                curvature3D_3[0],
+                curvature3D_4[0],
+            ],
+            [
+                "Preprocessed trajectory",
+                "Preprocessed left boundary",
+                "Preprocessed right boundary",
+                "Curvature preprocessed trajectory",
+            ],
+        )
+        ax_curvature3D.set_xlabel("east in m")
+        ax_curvature3D.set_ylabel("north in m")
+        ax_curvature3D.set_zlabel("curvature in rad/m")
+        ax_curvature3D.set_aspect("equalxy")
+
+        plt.show()
+
+        # save_plot_to_folder(plt, folder_path, "Curvature Preprocessed Track 3D")
+        # plt.close()
+
+        # ------------------------------------------------------------------------------------------------------------------
+        # Curvature derivative preprocessed track 2D ----------------------------------------------------------------------------------
+        # - Plotting the curvature of the preprocessed trajectory (Dcurvature2D_1)
+        # ------------------------------------------------------------------------------------------------------------------
+        plt.figure("Curvature derivative preprocessed track 2D")
+        plt.title("Curvature derivative preprocessed track 2D")
+        plt.grid()
+        # Dcurvature2D_1
+        plt.plot(
+            distances_along_traj_plot,
+            dkappa_prepped_track_plot,
+            color=normalize_color((255, 0, 0)),
+            linewidth=1.0,
+            linestyle="solid",
+            label="Curvature derivative preprocessed trajectory",
+        )
+        plt.legend()
+        plt.xlabel("distance from start in m")
+        plt.ylabel("curvature derivative in rad/m²")
+
+        plt.show()
+
+        # save_plot_to_folder(plt, folder_path, "Curvature Derivative Preprocessed Track 2D")
+        # plt.close()
+
+        # ------------------------------------------------------------------------------------------------------------------
+        # Curvature derivative preprocessed track 3D ----------------------------------------------------------------------------------
+        # - Plotting the preprocessed trajectory (Dcurvature3D_1)
+        # - Plotting the left preprocessed boundary (Dcurvature3D_2)
+        # - Plotting the right preprocessed boundary (Dcurvature3D_3)
+        # - Plotting the curvature derivative of the preprocessed trajectory (Dcurvature3D_4)
+        # ------------------------------------------------------------------------------------------------------------------
+        plt.figure("Curvature preprocessed track 3D")
+        plt.grid()
+        ax_Dcurvature3D = plt.subplot(projection="3d")
+        ax_Dcurvature3D.set_title("Curvature derivative preprocessed track 3D")
+
+        # Scale the z-axis such that it does not appear stretched
+        Dcurvature3D_scale_x = 1.0
+        Dcurvature3D_scale_y = 1.0
+        Dcurvature3D_scale_z = 0.3
+
+        # recast get_proj function to use scaling factors for the axes
+        ax_Dcurvature3D.get_proj = lambda: np.dot(
+            Axes3D.get_proj(ax_Dcurvature3D),
+            np.diag(
+                [Dcurvature3D_scale_x, Dcurvature3D_scale_y, Dcurvature3D_scale_z, 1.0]
+            ),
+        )
+
+        Dcurvature3D_1 = ax_Dcurvature3D.plot(
+            trajectory_smoothed_plot[:, 0],
+            trajectory_smoothed_plot[:, 1],
+            color=normalize_color((0, 255, 0)),
+            linewidth=1.0,
+            linestyle="dashed",
+        )
+        Dcurvature3D_2 = ax_Dcurvature3D.plot(
+            new_bound_left_plot[:, 0],
+            new_bound_left_plot[:, 1],
+            color=normalize_color((0, 0, 255)),
+            linewidth=1.0,
+            linestyle="solid",
+        )
+        Dcurvature3D_3 = ax_Dcurvature3D.plot(
+            new_bound_right_plot[:, 0],
+            new_bound_right_plot[:, 1],
+            color=normalize_color((230, 240, 0)),
+            linewidth=1.0,
+            linestyle="solid",
+        )
+        Dcurvature3D_4 = ax_Dcurvature3D.plot(
+            trajectory_smoothed_plot[:, 0],
+            trajectory_smoothed_plot[:, 1],
+            dkappa_prepped_track_plot3D,
+            color=normalize_color((255, 0, 0)),
+            linewidth=1.0,
+            linestyle="solid",
+        )
+        ax_Dcurvature3D.legend(
+            [
+                Dcurvature3D_1[0],
+                Dcurvature3D_2[0],
+                Dcurvature3D_3[0],
+                Dcurvature3D_4[0],
+            ],
+            [
+                "Preprocessed trajectory",
+                "Preprocessed left boundary",
+                "Preprocessed right boundary",
+                "Curvature derivative preprocessed trajectory",
+            ],
+        )
+        ax_Dcurvature3D.set_xlabel("east in m")
+        ax_Dcurvature3D.set_ylabel("north in m")
+        ax_Dcurvature3D.set_zlabel("curvature derivative in rad/m²")
+        ax_Dcurvature3D.set_aspect("equalxy")
+
+        plt.show()
+
+        # save_plot_to_folder(plt, folder_path, "Curvature Derivativ Preprocessed Track 3D")
+        # plt.close()
+
+    # Return preprocesing results
+    return (
+        prepped_track,
+        bound_left,
+        bound_right,
+        coeffs_x,
+        coeffs_y,
+        M,
+        normvec_normalized,
+        psi_prepped_track,
+        kappa_prepped_track,
+        dkappa_prepped_track,
+    )
+
+
+########################################################################################################################
+# PLOTTING FUNCTIONS:
+# - make_legend_arrow
+# - get_plot_name
+# - save_plot_to_folder
+# - clear_folder
+
+
+########################################################################################################################
+def make_legend_arrow(legend, orig_handle, xdescent, ydescent, width, height, fontsize):
+    p = mpatches.FancyArrow(
+        0, 0.5 * height, width, 0, length_includes_head=True, head_width=0.75 * height
+    )
+    return p
 
 
 def get_plot_name(
@@ -471,7 +1305,7 @@ def get_plot_name(
     """
 
     # Get current date and time
-    t_stamp = datetime.datetime.now().strftime("%d%b_%H%M").lower()
+    t_stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S").lower()
 
     # Create plot name with timestamp
     plot_name_t_stamp = f"{plot_name}_{t_stamp}.png"
@@ -514,7 +1348,38 @@ def save_plot_to_folder(
     plot_filename_t_stamp = get_plot_name(plot_filename)
 
     # Save plot to folder
-    plot.savefig(os.path.join(folder_path, plot_filename_t_stamp))
+    plot.savefig(os.path.join(folder_path, plot_filename_t_stamp), dpi=1200)
+
+
+def clear_folder(folder_path: str):
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    Clear the contents of a folder.
+
+    .. inputs::
+    :param folder_path:         path to the folder to clear.
+    :type folder_path:          str
+
+    .. outputs::
+    None
+
+    .. notes::
+    This function clears the contents of the folder, no outputs!
+    """
+    # Check if folder exists
+    if os.path.exists(folder_path):
+        # Iterate over the files in the folder
+        for filename in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, filename)
+            # Check if the path is a file
+            if os.path.isfile(file_path):
+                # Remove the file
+                os.remove(file_path)
+    else:
+        rospy.loginfo(f"Folder '{folder_path}' does not exist.")
 
 
 def calc_splines(
@@ -1958,278 +2823,6 @@ def normalize_psi(psi: Union[np.ndarray, float]) -> np.ndarray:
             psi_out += 2 * math.pi
 
     return psi_out
-
-
-def prep_track(
-    reftrack_imp: np.ndarray,
-    k_reg: int = 3,
-    s_reg: int = 10,
-    stepsize_prep: float = 1.0,
-    stepsize_reg: float = 3.0,
-    stepsize_interp_after_opt: float = 2.0,
-    debug: bool = True,
-    min_width: float = 3.0,
-) -> tuple:
-    """
-    Created by:
-    Alexander Heilmeier
-
-    Documentation:
-    This function prepares the inserted reference track for optimization.
-
-    Inputs:
-    reftrack_imp:               imported track [x_m, y_m, w_tr_right_m, w_tr_left_m]
-    k_reg:                      order of B-Splines
-    s_reg:                      smoothing factor
-    stepsize_prep:              stepsize used for linear track interpolation before spline approximation
-    stepsize_reg:               stepsize after smoothing
-    stepsize_interp_after_opt:  stepsize used for the interpolation after the raceline creation
-    debug:                      boolean showing if debug messages should be printed
-    min_width:                  [m] minimum enforced track width (None to deactivate)
-
-    Outputs:
-    reftrack_interp:            track after smoothing and interpolation [x_m, y_m, w_tr_right_m, w_tr_left_m]
-    normvec_normalized_interp:  normalized normal vectors on the reference line [x_m, y_m]
-    a_interp:                   LES coefficients when calculating the splines
-    coeffs_x_interp:            spline coefficients of the x-component
-    coeffs_y_interp:            spline coefficients of the y-component
-    """
-
-    # ------------------------------------------------------------------------------------------------------------------
-    # INTERPOLATE REFTRACK AND CALCULATE INITIAL SPLINES ---------------------------------------------------------------
-    # ------------------------------------------------------------------------------------------------------------------
-
-    # smoothing and interpolating reference track
-    reftrack_interp = spline_approximation(
-        track=reftrack_imp,
-        k_reg=k_reg,
-        s_reg=s_reg,
-        stepsize_prep=stepsize_prep,
-        stepsize_reg=stepsize_reg,
-        debug=debug,
-    )
-
-    # calculate splines
-    refpath_interp_cl = np.vstack((reftrack_interp[:, :2], reftrack_interp[0, :2]))
-
-    (
-        coeffs_x_interp,
-        coeffs_y_interp,
-        a_interp,
-        normvec_normalized_interp,
-    ) = calc_splines(path=refpath_interp_cl)
-
-    # ------------------------------------------------------------------------------------------------------------------
-    # CHECK SPLINE NORMALS FOR CROSSING POINTS -------------------------------------------------------------------------
-    # ------------------------------------------------------------------------------------------------------------------
-
-    normals_crossing = check_normals_crossing(
-        track=reftrack_interp, normvec_normalized=normvec_normalized_interp, horizon=10
-    )
-
-    if normals_crossing:
-        raise IOError(
-            "At least two spline normals are crossed, check input or increase smoothing factor!"
-        )
-
-    # ------------------------------------------------------------------------------------------------------------------
-    # ENFORCE MINIMUM TRACK WIDTH (INFLATE TIGHTER SECTIONS UNTIL REACHED) ---------------------------------------------
-    # ------------------------------------------------------------------------------------------------------------------
-
-    manipulated_track_width = False
-
-    if min_width is not None:
-        for i in range(reftrack_interp.shape[0]):
-            cur_width = reftrack_interp[i, 2] + reftrack_interp[i, 3]
-
-            if cur_width < min_width:
-                manipulated_track_width = True
-
-                # inflate to both sides equally
-                reftrack_interp[i, 2] += (min_width - cur_width) / 2
-                reftrack_interp[i, 3] += (min_width - cur_width) / 2
-
-    if manipulated_track_width:
-        print(
-            "WARNING: Track region was smaller than requested minimum track width -> Applied artificial inflation in"
-            " order to match the requirements!",
-            file=sys.stderr,
-        )
-
-    return (
-        reftrack_interp,
-        normvec_normalized_interp,
-        a_interp,
-        coeffs_x_interp,
-        coeffs_y_interp,
-    )
-
-
-def spline_approximation(
-    track: np.ndarray,
-    k_reg: int = 3,
-    s_reg: int = 10,
-    stepsize_prep: float = 1.0,
-    stepsize_reg: float = 3.0,
-    debug: bool = False,
-) -> np.ndarray:
-    """
-    author:
-    Fabian Christ
-
-    modified by:
-    Alexander Heilmeier
-
-    .. description::
-    Smooth spline approximation for a track (e.g. centerline, reference line).
-
-    .. inputs::
-    :param track:           [x, y, w_tr_right, w_tr_left, (banking)] (always unclosed).
-    :type track:            np.ndarray
-    :param k_reg:           order of B splines.
-    :type k_reg:            int
-    :param s_reg:           smoothing factor (usually between 5 and 100).
-    :type s_reg:            int
-    :param stepsize_prep:   stepsize used for linear track interpolation before spline approximation.
-    :type stepsize_prep:    float
-    :param stepsize_reg:    stepsize after smoothing.
-    :type stepsize_reg:     float
-    :param debug:           flag for printing debug messages
-    :type debug:            bool
-
-    .. outputs::
-    :return track_reg:      [x, y, w_tr_right, w_tr_left, (banking)] (always unclosed).
-    :rtype track_reg:       np.ndarray
-
-    .. notes::
-    The function can only be used for closable tracks, i.e. track is closed at the beginning!
-    The banking angle is optional and must not be provided!
-    """
-
-    # ------------------------------------------------------------------------------------------------------------------
-    # LINEAR INTERPOLATION BEFORE SMOOTHING ----------------------------------------------------------------------------
-    # ------------------------------------------------------------------------------------------------------------------
-
-    track_interp_cl = interp_trajectory(trajectory=track, stepsize=stepsize_prep)
-
-    # ------------------------------------------------------------------------------------------------------------------
-    # SPLINE APPROXIMATION / PATH SMOOTHING ----------------------------------------------------------------------------
-    # ------------------------------------------------------------------------------------------------------------------
-
-    # create closed track (original track)
-    track_cl = np.vstack((track, track[0]))
-    no_points_track_cl = track_cl.shape[0]
-    el_lengths_cl = np.sqrt(
-        np.sum(np.power(np.diff(track_cl[:, :2], axis=0), 2), axis=1)
-    )
-    dists_cum_cl = np.cumsum(el_lengths_cl)
-    dists_cum_cl = np.insert(dists_cum_cl, 0, 0.0)
-
-    # find B spline representation of the inserted path and smooth it in this process
-    # (tck_cl: tuple (vector of knots, the B-spline coefficients, and the degree of the spline))
-    tck_cl, t_glob_cl = splprep(
-        [track_interp_cl[:, 0], track_interp_cl[:, 1]], k=k_reg, s=s_reg, per=1
-    )[:2]
-
-    # calculate total length of smooth approximating spline based on euclidian distance with points at every 0.25m
-    no_points_lencalc_cl = math.ceil(dists_cum_cl[-1]) * 4
-    path_smoothed_tmp = np.array(
-        splev(np.linspace(0.0, 1.0, no_points_lencalc_cl), tck_cl)
-    ).T
-    len_path_smoothed_tmp = np.sum(
-        np.sqrt(np.sum(np.power(np.diff(path_smoothed_tmp, axis=0), 2), axis=1))
-    )
-
-    # get smoothed path
-    no_points_reg_cl = math.ceil(len_path_smoothed_tmp / stepsize_reg) + 1
-    path_smoothed = np.array(splev(np.linspace(0.0, 1.0, no_points_reg_cl), tck_cl)).T[
-        :-1
-    ]
-
-    # ------------------------------------------------------------------------------------------------------------------
-    # PROCESS TRACK WIDTHS (AND BANKING ANGLE IF GIVEN) ----------------------------------------------------------------
-    # ------------------------------------------------------------------------------------------------------------------
-
-    # find the closest points on the B spline to input points
-    dists_cl = np.zeros(
-        no_points_track_cl
-    )  # contains (min) distances between input points and spline
-    closest_point_cl = np.zeros(
-        (no_points_track_cl, 2)
-    )  # contains the closest points on the spline
-    closest_t_glob_cl = np.zeros(
-        no_points_track_cl
-    )  # containts the t_glob values for closest points
-    t_glob_guess_cl = (
-        dists_cum_cl / dists_cum_cl[-1]
-    )  # start guess for the minimization
-
-    for i in range(no_points_track_cl):
-        # get t_glob value for the point on the B spline with a minimum distance to the input points
-        closest_t_glob_cl[i] = optimize.fmin(
-            dist_to_p, x0=t_glob_guess_cl[i], args=(tck_cl, track_cl[i, :2]), disp=False
-        )
-
-        # evaluate B spline on the basis of t_glob to obtain the closest point
-        closest_point_cl[i] = splev(closest_t_glob_cl[i], tck_cl)
-
-        # save distance from closest point to input point
-        dists_cl[i] = math.sqrt(
-            math.pow(closest_point_cl[i, 0] - track_cl[i, 0], 2)
-            + math.pow(closest_point_cl[i, 1] - track_cl[i, 1], 2)
-        )
-
-    if debug:
-        print(
-            "Spline approximation: mean deviation %.2fm, maximum deviation %.2fm"
-            % (float(np.mean(dists_cl)), float(np.amax(np.abs(dists_cl))))
-        )
-
-    # get side of smoothed track compared to the inserted track
-    sides = np.zeros(no_points_track_cl - 1)
-
-    for i in range(no_points_track_cl - 1):
-        sides[i] = side_of_line(
-            a=track_cl[i, :2], b=track_cl[i + 1, :2], z=closest_point_cl[i]
-        )
-
-    sides_cl = np.hstack((sides, sides[0]))
-
-    # calculate new track widths on the basis of the new reference line, but not interpolated to new stepsize yet
-    w_tr_right_new_cl = track_cl[:, 2] + sides_cl * dists_cl
-    w_tr_left_new_cl = track_cl[:, 3] - sides_cl * dists_cl
-
-    # interpolate track widths after smoothing (linear)
-    w_tr_right_smoothed_cl = np.interp(
-        np.linspace(0.0, 1.0, no_points_reg_cl), closest_t_glob_cl, w_tr_right_new_cl
-    )
-    w_tr_left_smoothed_cl = np.interp(
-        np.linspace(0.0, 1.0, no_points_reg_cl), closest_t_glob_cl, w_tr_left_new_cl
-    )
-
-    track_reg = np.column_stack(
-        (path_smoothed, w_tr_right_smoothed_cl[:-1], w_tr_left_smoothed_cl[:-1])
-    )
-
-    # interpolate banking if given (linear)
-    if track_cl.shape[1] == 5:
-        banking_smoothed_cl = np.interp(
-            np.linspace(0.0, 1.0, no_points_reg_cl), closest_t_glob_cl, track_cl[:, 4]
-        )
-        track_reg = np.column_stack((track_reg, banking_smoothed_cl[:-1]))
-
-    return track_reg
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# DISTANCE CALCULATION FOR OPTIMIZATION --------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-# return distance from point p to a point on the spline at spline parameter t_glob
-def dist_to_p(t_glob: np.ndarray, path: list, p: np.ndarray):
-    s = np.array(splev(t_glob, path)).ravel()
-    return spatial.distance.euclidean(p, s)
 
 
 def check_normals_crossing(

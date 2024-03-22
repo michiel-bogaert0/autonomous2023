@@ -16,7 +16,7 @@
         <param name="imported_bounds" value="True" />
         <param name="curvlim" value="0.5" />
         <param name="stepsize_prep_trajectory" value="0.50" />
-        <param name="stepsize_prep_boundaries" value="0.10" />
+        <param name="stepsize_prep_boundaries" value="0.25" />
         <param name="stepsize_opt" value="0.25" />
         <param name="stepsize_post" value="0.25" />
         <param name="vel" value="True" />
