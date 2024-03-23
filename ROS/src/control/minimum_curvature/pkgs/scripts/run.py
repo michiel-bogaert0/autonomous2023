@@ -12,7 +12,7 @@ from node_fixture.managed_node import ManagedNode
 
 # from node_fixture.node_manager import set_state_inactive
 from ugr_msgs.msg import Boundaries
-from utils.utils_mincurv import (  # opt_min_curv,;
+from utils.utils_mincurv import (
     B_spline_smoothing,
     calc_ax_profile,
     calc_head_curv_an,
@@ -58,7 +58,7 @@ class MinimumCurvature(ManagedNode):
         self.smoothing_factor_prep_boundaries = rospy.get_param(
             "~smoothing_factor_prep_boundaries", 0.1
         )
-        self.stepsize_opt = rospy.get_param("~stepsize_opt", 0.25)
+        self.stepsize_opt = rospy.get_param("~stepsize_opt", 0.05)
         self.stepsize_post = rospy.get_param("~stepsize_interp", 0.25)
 
         self.plot = rospy.get_param("~plot", True)
@@ -188,13 +188,15 @@ class MinimumCurvature(ManagedNode):
         t_start = time.perf_counter()
         header = self.header
 
-        # Preprocess the track
-        t_start_prep = time.perf_counter()
+        # ----------------------------------------------------------------------------------------------------------------------
+        # PREPROCESSING TRACK --------------------------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------------------------------------------
 
+        t_start_prep = time.perf_counter()
         (
             prepped_track,
-            bound_left,
-            bound_right,
+            self.bound_left,
+            self.bound_right,
             coeffs_x,
             coeffs_y,
             M,
@@ -213,22 +215,24 @@ class MinimumCurvature(ManagedNode):
             sf_trajectory=self.smoothing_factor_prep_trajectory,
             sf_boundaries=self.smoothing_factor_prep_boundaries,
             debug_info=False,
-            plot_prep=True,
+            plot_prep=False,
         )
 
         rospy.logwarn(
             f"Total time elapsed during preprocessing: {time.perf_counter() - t_start_prep}"
         )
 
-        # IQP minimum curvature optimization
+        # ----------------------------------------------------------------------------------------------------------------------
+        # IQP MINIMUM CURVATURE OPTIMISATION -----------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------------------------------------------
 
         t_start_iqp_optimization = perf_counter()
         (
             alpha_mincurv_iqp,
-            reftrack_interp_iqp,
+            track_iqp,
             normvec_normalized_iqp,
             spline_len_iqp,
-            psi_reftrack_iqp,
+            psi_track_iqp,
             kappa_reftrack_iqp,
             dkappa_reftrack_iqp,
         ) = iqp_handler(
@@ -239,13 +243,13 @@ class MinimumCurvature(ManagedNode):
             psi=psi_prepped_track,
             kappa=kappa_prepped_track,
             dkappa=dkappa_prepped_track,
-            kappa_bound=0.5,
+            kappa_bound=1.0,
             w_veh=self.car_width_with_margins,
-            print_debug=False,
+            print_debug=True,
             plot_debug=False,
             stepsize_interp=self.stepsize_opt,
-            iters_min=2,
-            curv_error_allowed=0.05,
+            iters_min=3,
+            curv_error_allowed=0.1,
         )
         rospy.logerr(
             f"Total time elapsed during iqp optimisation: {time.perf_counter() - t_start_iqp_optimization}"
@@ -265,7 +269,7 @@ class MinimumCurvature(ManagedNode):
                 spline_lengths_opt,
                 el_lengths_opt_interp,
             ) = create_raceline(
-                refline=reftrack_interp_iqp[:, :2],
+                refline=track_iqp[:, :2],
                 normvectors=normvec_normalized_iqp,
                 alpha=alpha_mincurv_iqp,
                 stepsize_interp=self.stepsize_opt,
@@ -338,7 +342,7 @@ class MinimumCurvature(ManagedNode):
             )
 
             bound1, bound2 = check_traj(
-                reftrack=reftrack_interp_iqp,
+                reftrack=track_iqp,
                 reftrack_normvec_normalized=normvec_normalized_iqp,
                 length_veh=self.car_length,
                 width_veh=self.car_width,
@@ -392,8 +396,8 @@ class MinimumCurvature(ManagedNode):
             trajectory_opt = np.vstack((trajectory_opt, trajectory_opt[0]))
             self.bound_left = np.vstack((self.bound_left, self.bound_left[0]))
             self.bound_right = np.vstack((self.bound_right, self.bound_right[0]))
-            self.bound1_imp = np.vstack((self.bound1_imp, self.bound1_imp[0]))
-            self.bound2_imp = np.vstack((self.bound2_imp, self.bound2_imp[0]))
+            # self.bound1_imp = np.vstack((self.bound1_imp, self.bound1_imp[0]))
+            # self.bound2_imp = np.vstack((self.bound2_imp, self.bound2_imp[0]))
             bound1 = np.vstack((bound1, bound1[0]))
             bound2 = np.vstack((bound2, bound2[0]))
 
@@ -401,7 +405,7 @@ class MinimumCurvature(ManagedNode):
             self.plot_opts = {
                 "mincurv_curv_lin": True,  # plot curv. linearization (original and solution based) (mincurv only)
                 "raceline": True,  # plot optimized path
-                "imported_bounds": True,  # plot imported bounds (analyze difference to interpolated bounds)
+                "imported_bounds": False,  # plot imported bounds (analyze difference to interpolated bounds)
                 "raceline_curv": True,  # plot curvature profile of optimized path
                 "racetraj_vel": True,  # plot velocity profile
                 "racetraj_vel_3d": True,  # plot 3D velocity profile above raceline
@@ -414,11 +418,11 @@ class MinimumCurvature(ManagedNode):
                 plot_opts=self.plot_opts,
                 width_veh_opt=self.car_width_with_margins,
                 width_veh_real=self.car_width,
-                refline=prepped_track[:, :2],
+                refline=self.reference_line[:, :2],
                 bound1_imp=self.bound1_imp,
                 bound2_imp=self.bound2_imp,
-                bound1_interp=bound1,
-                bound2_interp=bound2,
+                bound1_interp=self.bound_left,
+                bound2_interp=self.bound_right,
                 trajectory=trajectory_opt,
                 cones_left=self.cones_left,
                 cones_right=self.cones_right,
@@ -426,76 +430,13 @@ class MinimumCurvature(ManagedNode):
                 bound_right=self.bound_right,
             )
 
-        # alpha_mincurv, curv_error_max = opt_min_curv(
-        #     reftrack=self.reference_line,
-        #     normvectors=normvec_normalized,
-        #     A=M,
-        #     kappa_bound=0.3,
-        #     w_veh=self.car_width,
-        #     print_debug=False,
-        #     plot_debug=False,
-        #     closed=True,
-        #     psi_s=False,
-        #     psi_e=False,
-        #     fix_s=False,
-        #     fix_e=False,
-        # )
+        path_result_iqp = track_iqp[:, 0:2] + normvec_normalized_iqp * np.expand_dims(
+            alpha_mincurv_iqp, axis=1
+        )
 
-        # alpha_mincurv_extra, curv_error_max_extra = opt_min_curv(
-        #     reftrack=self.extra_smoothed,
-        #     normvectors=normvec_normalized_extra,
-        #     A=M_extra,
-        #     kappa_bound=0.2,
-        #     w_veh=self.car_width,
-        #     print_debug=False,
-        #     plot_debug=False,
-        #     closed=True,
-        #     psi_s=False,
-        #     psi_e=False,
-        #     fix_s=False,
-        #     fix_e=False,
-        # )
-
-        # path_result = self.reference_line[:, 0:2] + normvec_normalized * np.expand_dims(
-        #     alpha_mincurv, axis=1
-        # )
-
-        # path_result_extra = self.extra_smoothed[
-        #     :, 0:2
-        # ] + normvec_normalized_extra * np.expand_dims(alpha_mincurv_extra, axis=1)
-
-        path_result_iqp = reftrack_interp_iqp[
-            :, 0:2
-        ] + normvec_normalized_iqp * np.expand_dims(alpha_mincurv_iqp, axis=1)
-
-        # smoothed_path = B_spline_smoothing(path_result, 2)
-        # path_extra = B_spline_smoothing(path_result_extra, 2)
         path_iqp = B_spline_smoothing(path_result_iqp, smoothing_factor=2)
-        # path_ref = B_spline_smoothing(self.path_ref, 2)
 
         path_iqp = np.vstack((path_iqp, path_iqp[0]))
-
-        # smoothed_msg = Path()
-        # smoothed_msg.poses = []
-        # for point in smoothed_path:
-        #     pose = PoseStamped()
-        #     pose.pose.position.x = point[0]
-        #     pose.pose.position.y = point[1]
-        #     pose.header = header
-        #     smoothed_msg.poses.append(pose)
-        # smoothed_msg.header = header
-        # self.path_pub.publish(smoothed_msg)
-
-        # extra_msg = Path()
-        # extra_msg.poses = []
-        # for point in path_extra:
-        #     pose = PoseStamped()
-        #     pose.pose.position.x = point[0]
-        #     pose.pose.position.y = point[1]
-        #     pose.header = header
-        #     extra_msg.poses.append(pose)
-        # extra_msg.header = header
-        # self.path_extra_pub.publish(extra_msg)
 
         iqp_msg = Path()
         iqp_msg.poses = []
@@ -508,18 +449,7 @@ class MinimumCurvature(ManagedNode):
         iqp_msg.header = header
         self.path_iqp_pub.publish(iqp_msg)
         rospy.logerr("Minimum Curvature path was published!")
-        # set_state_inactive("pathplanning")
 
-        # ref_msg = Path()
-        # ref_msg.poses = []
-        # for point in path_ref:
-        #     pose = PoseStamped()
-        #     pose.pose.position.x = point[0]
-        #     pose.pose.position.y = point[1]
-        #     pose.header = header
-        #     ref_msg.poses.append(pose)
-        # ref_msg.header = header
-        # self.path_ref_pub.publish(ref_msg)
         if self.plot:
             plt.show()
         self.calculate = False

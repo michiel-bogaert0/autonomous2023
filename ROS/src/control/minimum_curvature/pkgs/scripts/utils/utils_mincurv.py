@@ -22,6 +22,8 @@ from scipy.interpolate import interp1d, splev, splprep
 # - interp_track
 # - B_spline_smoothing
 # - calc_bound_dists
+# - calc_distances_along_trajectory
+# - prep_track
 ########################################################################################################################
 def interp_trajectory(
     trajectory: np.ndarray,
@@ -36,7 +38,7 @@ def interp_trajectory(
     Interpolate trajectory points to a new stepsize. Also works for boundaries.
 
     .. inputs::
-    :param trajectory:              trajectory in the format [x, y, w_tr_right, w_tr_left] or [x, y].
+    :param trajectory:              trajectory in the format [x, y, w_tr_left, w_tr_right] or [x, y].
     :type trajectory:               np.ndarray
     :param stepsize:                desired stepsize after interpolation in m.
     :type stepsize:                 float
@@ -44,7 +46,7 @@ def interp_trajectory(
     :type interpolation_method:     str
 
     .. outputs::
-    :return trajectory_interp_cl:   interpolated trajectory [x, y, w_tr_right, w_tr_left] or [x, y].
+    :return trajectory_interp_cl:   interpolated trajectory [x, y, w_tr_left, w_tr_right] or [x, y].
     :rtype trajectory_interp_cl:    np.ndarray
 
     .. notes::
@@ -54,7 +56,7 @@ def interp_trajectory(
     # Check inputs
     if trajectory.shape[1] != 2 and trajectory.shape[1] != 4:
         raise RuntimeError(
-            "Trajectory input must be in the format [x, y] or [x, y, w_tr_right, w_tr_left]!"
+            "Trajectory input must be in the format [x, y] or [x, y, w_tr_left, w_tr_right]!"
         )
     if (trajectory[0] == trajectory[-1]).all():
         raise RuntimeError("Trajectory input must be unclosed!")
@@ -98,7 +100,7 @@ def B_spline_smoothing(
     Find a B-spline representation of the trajectory and smooth it in this process.
 
     .. inputs::
-    :param trajectory_cl:               trajectory in the format [x, y, w_tr_right, w_tr_left] or [x, y].
+    :param trajectory_cl:               trajectory in the format [x, y, w_tr_left, w_tr_right] or [x, y].
     :type trajectory_cl:                np.ndarray
     :param smoothing_factor:            factor for smoothing the trajectory.
     :type smoothing_factor:             float
@@ -285,7 +287,7 @@ def calc_bound_dists(
     )
 
 
-def calc_distances_along_closed_trajectory(
+def calc_distances_along_trajectory(
     trajectory: np.ndarray,
 ) -> np.ndarray:
     """
@@ -366,7 +368,7 @@ def prep_track(
     :type plot_prep:                    bool
 
     .. outputs::
-    :return prepped_track:              preprocessed track for the IQP optimization [x, y, w_tr_right, w_tr_left] (unclosed).
+    :return prepped_track:              preprocessed track for the IQP optimization [x, y, w_tr_left, w_tr_right] (unclosed).
     :rtype prepped_track:               np.ndarray
     :return bound_left:                 left boundary (unclosed).
     :rtype bound_left:                  np.ndarray
@@ -484,7 +486,7 @@ def prep_track(
     )
 
     # Calculate the distances along the closed trajectory
-    distances_along_traj = calc_distances_along_closed_trajectory(
+    distances_along_traj = calc_distances_along_trajectory(
         trajectory=prepped_track[:, :2],
     )
 
@@ -1382,6 +1384,7 @@ def clear_folder(folder_path: str):
         rospy.loginfo(f"Folder '{folder_path}' does not exist.")
 
 
+# Needs to be optimised but keep the original code for now (functionality needs to be kept, maybe only closed loop?)
 def calc_splines(
     path: np.ndarray,
     el_lengths: np.ndarray = None,
@@ -1490,43 +1493,22 @@ def calc_splines(
     # row 3: heading at end of current spline should be equal to heading at beginning of next spline (t = 1 and t = 0)
     # row 4: curvature at end of current spline should be equal to curvature at beginning of next spline (t = 1 and
     #        t = 0)
-    template_M = (
-        np.array(  # current point               | next point              | bounds
-            [
-                [
-                    1,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                ],  # a_0i                                                  = {x,y}_i
-                [
-                    1,
-                    1,
-                    1,
-                    1,
-                    0,
-                    0,
-                    0,
-                    0,
-                ],  # a_0i + a_1i +  a_2i +  a_3i                           = {x,y}_i+1
-                [
-                    0,
-                    1,
-                    2,
-                    3,
-                    0,
-                    -1,
-                    0,
-                    0,
-                ],  # _      a_1i + 2a_2i + 3a_3i      - a_1i+1             = 0
-                [0, 0, 2, 6, 0, 0, -2, 0],
-            ]
-        )
-    )  # _             2a_2i + 6a_3i               - 2a_2i+1   = 0
+
+    # template_M
+    # current point               | next point              | bounds
+    # a_0i                                                  = {x,y}_i
+    # a_0i + a_1i +  a_2i +  a_3i                           = {x,y}_i+1
+    # _      a_1i + 2a_2i + 3a_3i      - a_1i+1             = 0
+    # _             2a_2i + 6a_3i               - 2a_2i+1   = 0
+
+    template_M = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0, 0],
+            [0, 1, 2, 3, 0, -1, 0, 0],
+            [0, 0, 2, 6, 0, 0, -2, 0],
+        ]
+    )
 
     for i in range(no_splines):
         j = i * 4
@@ -1647,7 +1629,7 @@ def opt_min_curv(
 
     .. inputs::
     :param reftrack:    array containing the reference track, i.e. a reference line and the according track widths to
-                        the right and to the left [x, y, w_tr_right, w_tr_left] (unit is meter, must be unclosed!)
+                        the right and to the left [x, y, w_tr_left, w_tr_right] (unit is meter, must be unclosed!)
     :type reftrack:     np.ndarray
     :param normvectors: normalized normal vectors for every point of the reference track [x_component, y_component]
                         (unit is meter, must be unclosed!)
@@ -1888,8 +1870,8 @@ def opt_min_curv(
     """
 
     # calculate allowed deviation from refline
-    dev_max_right = reftrack[:, 2] - w_veh / 2
-    dev_max_left = reftrack[:, 3] - w_veh / 2
+    dev_max_left = reftrack[:, 2] - w_veh / 2
+    dev_max_right = reftrack[:, 3] - w_veh / 2
 
     # constrain resulting path to reference line at start- and end-point for open tracks
     if not closed and fix_s:
@@ -1969,6 +1951,12 @@ def opt_min_curv(
             math.pow(x_prime_tmp[i, i], 2) + math.pow(y_prime_tmp[i, i], 2), 1.5
         )
 
+    if plot_debug:
+        plt.plot(curv_orig_lin)
+        plt.plot(curv_sol_lin)
+        plt.legend(("original linearization", "solution based linearization"))
+        plt.show()
+
     # calculate maximum curvature error
     curv_error_max = np.amax(np.abs(curv_sol_lin - curv_orig_lin))
 
@@ -2014,7 +2002,7 @@ def iqp_handler(
 
     .. inputs::
     :param reftrack:            array containing the reference track, i.e. a reference line and the according track
-                                widths to the right and to the left [x, y, w_tr_right, w_tr_left] (unit is meter, must
+                                widths to the right and to the left [x, y, w_tr_left, w_tr_right] (unit is meter, must
                                 be unclosed!)
     :type reftrack:             np.ndarray
     :param normvectors:         normalized normal vectors for every point of the reference track [x, y]
@@ -2059,21 +2047,21 @@ def iqp_handler(
     :return alpha_mincurv_tmp:  solution vector of the optimization problem containing the lateral shift in m for every
                                 point.
     :rtype alpha_mincurv_tmp:   np.ndarray
-    :return reftrack_tmp:       reference track data [x, y, w_tr_right, w_tr_left] as it was used in the final iteration
+    :return reftrack_tmp:       reference track data [x, y, w_tr_left, w_tr_right] as it was used in the final iteration
                                 of the IQP.
     :rtype reftrack_tmp:        np.ndarray
     :return normvectors_tmp:    normalized normal vectors as they were used in the final iteration of the IQP [x, y].
     :rtype normvectors_tmp:     np.ndarray
-    :return spline_len_tmp:     spline lengths of reference track data [x, y, w_tr_right, w_tr_left] as it was used in
+    :return spline_len_tmp:     spline lengths of reference track data [x, y, w_tr_left, w_tr_right] as it was used in
                                 the final iteration of the IQP.
     :rtype spline_len_tmp:      np.ndarray
-    :return psi_reftrack_tmp:   heading of reference track data [x, y, w_tr_right, w_tr_left] as it was used in the
+    :return psi_reftrack_tmp:   heading of reference track data [x, y, w_tr_left, w_tr_right] as it was used in the
                                 final iteration of the IQP.
     :rtype psi_reftrack_tmp:    np.ndarray
-    :return kappa_reftrack_tmp: curvtaure of reference track data [x, y, w_tr_right, w_tr_left] as it was used in the
+    :return kappa_reftrack_tmp: curvtaure of reference track data [x, y, w_tr_left, w_tr_right] as it was used in the
                                 final iteration of the IQP.
     :rtype psi_reftrack_tmp:    np.ndarray
-    :return dkappa_reftrack_tmp:derivative of curvature of reference track data [x, y, w_tr_right, w_tr_left] as it was
+    :return dkappa_reftrack_tmp:derivative of curvature of reference track data [x, y, w_tr_left, w_tr_right] as it was
                                 used in the final iteration of the IQP.
     :rtype psi_reftrack_tmp:    np.ndarray
     """
@@ -2111,7 +2099,6 @@ def iqp_handler(
             w_veh=w_veh,
             print_debug=print_debug,
             plot_debug=plot_debug,
-            closed=True,
         )
 
         # print some progress information
@@ -2154,8 +2141,8 @@ def iqp_handler(
         )[:6]
 
         # calculate new track boundaries on the basis of the intermediate alpha values and interpolate them accordingly
-        reftrack_tmp[:, 2] -= alpha_mincurv_tmp
-        reftrack_tmp[:, 3] += alpha_mincurv_tmp
+        reftrack_tmp[:, 2] += alpha_mincurv_tmp
+        reftrack_tmp[:, 3] -= alpha_mincurv_tmp
 
         ws_track_tmp = interp_track_widths(
             w_track=reftrack_tmp[:, 2:],
@@ -2230,8 +2217,8 @@ def interp_track_widths(
     in the track widths can disappear if the stepsize is too large (kind of an aliasing effect).
 
     .. inputs::
-    :param w_track:         array containing the track widths in meters [w_track_right, w_track_left] to interpolate,
-                            optionally with banking angle in rad: [w_track_right, w_track_left, banking]
+    :param w_track:         array containing the track widths in meters [w_track_left, w_track_right] to interpolate,
+                            optionally with banking angle in rad: [w_track_left, w_track_right, banking]
     :type w_track:          np.ndarray
     :param spline_inds:     indices that show which spline (and here w_track element) shall be interpolated.
     :type spline_inds:      np.ndarray
@@ -3948,7 +3935,7 @@ def result_plots(
         )
 
         point1_arrow = refline[0]
-        point2_arrow = refline[4]
+        point2_arrow = refline[2]
         vec_arrow = point2_arrow - point1_arrow
 
         # plot track including optimized path
@@ -3963,29 +3950,47 @@ def result_plots(
             markersize=2,
             markerfacecolor=normalize_color((0, 0, 0)),
         )
-        plt.plot(veh_bound1_virt[:, 0], veh_bound1_virt[:, 1], "b", linewidth=0.5)
-        plt.plot(veh_bound2_virt[:, 0], veh_bound2_virt[:, 1], "b", linewidth=0.5)
-        plt.plot(veh_bound1_real[:, 0], veh_bound1_real[:, 1], "c", linewidth=0.5)
-        plt.plot(veh_bound2_real[:, 0], veh_bound2_real[:, 1], "c", linewidth=0.5)
-        plt.plot(bound1_interp[:, 0], bound1_interp[:, 1], "k-", linewidth=0.7)
-        plt.plot(bound2_interp[:, 0], bound2_interp[:, 1], "k-", linewidth=0.7)
+        plt.plot(
+            veh_bound1_virt[:, 0],
+            veh_bound1_virt[:, 1],
+            color=normalize_color((255, 0, 255)),
+            linewidth=0.5,
+        )
+        plt.plot(
+            veh_bound2_virt[:, 0],
+            veh_bound2_virt[:, 1],
+            color=normalize_color((255, 0, 255)),
+            linewidth=0.5,
+        )
+        plt.plot(
+            veh_bound1_real[:, 0],
+            veh_bound1_real[:, 1],
+            color=normalize_color((0, 255, 0)),
+            linewidth=0.5,
+        )
+        plt.plot(
+            veh_bound2_real[:, 0],
+            veh_bound2_real[:, 1],
+            color=normalize_color((0, 255, 0)),
+            linewidth=0.5,
+        )
         plt.plot(
             trajectory[:, 1],
             trajectory[:, 2],
-            color=normalize_color((0, 255, 0)),
+            color=normalize_color((255, 0, 0)),
             linewidth=0.7,
         )
         plt.scatter(
             cones_left[:, 0],
             cones_left[:, 1],
-            color=normalize_color((0, 0, 0)),
+            color=normalize_color((255, 0, 0)),
             marker="X",
             s=5,
         )
         plt.scatter(
             cones_right[:, 0],
             cones_right[:, 1],
-            color=normalize_color((0, 0, 0)),
+            color=normalize_color((255, 0, 0)),
             marker="X",
             s=5,
         )
@@ -3994,27 +3999,13 @@ def result_plots(
             bound_left[:, 1],
             color=normalize_color((0, 0, 255)),
             linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
         )
         plt.plot(
             bound_right[:, 0],
             bound_right[:, 1],
             color=normalize_color((230, 245, 0)),
             linewidth=1.0,
-            marker="o",
-            markersize=2,
-            markerfacecolor=normalize_color((0, 0, 0)),
         )
-
-        if (
-            plot_opts["imported_bounds"]
-            and bound1_imp is not None
-            and bound2_imp is not None
-        ):
-            plt.plot(bound1_imp[:, 0], bound1_imp[:, 1], "y-", linewidth=0.7)
-            plt.plot(bound2_imp[:, 0], bound2_imp[:, 1], "y-", linewidth=0.7)
 
         plt.grid()
         ax = plt.gca()
