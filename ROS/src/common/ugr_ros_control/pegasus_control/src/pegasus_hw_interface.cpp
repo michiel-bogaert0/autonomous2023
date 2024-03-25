@@ -160,12 +160,12 @@ void PegasusHWInterface::doSwitch(const std::list<hardware_interface::Controller
   can_msg.data = converted_data;
   can_msg.dlc = 8;
 
-  uint32_t can_id = 1 << 5 | 0x00D;  // Right
+  uint32_t can_id = 1 << 5 | 0x00B;  // Right
   can_msg.id = can_id;
 
   can_pub.publish(can_msg);
 
-  can_id = 2 << 5 | 0x00D;  // Left
+  can_id = 2 << 5 | 0x00B;  // Left
   can_msg.id = can_id;
 
   can_pub.publish(can_msg);
