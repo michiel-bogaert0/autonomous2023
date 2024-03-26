@@ -14,9 +14,6 @@
     <remap from="/output/gt_boundaries" to="/boundary_estimation/boundaries" />
 
     <remap from="/input/path" to="/pathplanning/path" />
-    <remap from="/input/path_extra" to="/minimum_curvature/path_extra" />
-    <remap from="/input/path_iqp" to="/minimum_curvature/path_iqp" />
-    <remap from="/input/path_ref" to="/minimum_curvature/path_ref" />
   
   </node>
 

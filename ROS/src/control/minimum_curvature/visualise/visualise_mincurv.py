@@ -222,24 +222,6 @@ class MapWidget(QtW.QFrame):
 
         self.update()
 
-    def receive_path_extra(self, rel_path: np.ndarray):
-        self.extra_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
-        self.buttons.computeButton.setStyleSheet("background-color: gray")
-
-        self.update()
-
-    def receive_path_iqp(self, rel_path: np.ndarray):
-        self.iqp_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
-        self.buttons.computeButton.setStyleSheet("background-color: gray")
-
-        self.update()
-
-    def receive_path_ref(self, rel_path: np.ndarray):
-        self.ref_path = car_to_real_transform(rel_path, self.car_pos, self.car_rot)
-        self.buttons.computeButton.setStyleSheet("background-color: gray")
-
-        self.update()
-
     def get_selected_element(self, event) -> Optional[QtC.QPoint]:
         # This is the position on the screen where the user clicked
         press_location = event.pos()
@@ -375,15 +357,6 @@ class MapWidget(QtW.QFrame):
 
         if self.mincurv_on:
             self.draw.draw_line(self.mincurv_path, painter, QtG.QColor(QtC.Qt.green))
-
-        if self.extra_on:
-            self.draw.draw_line(self.extra_path, painter, QtG.QColor(QtC.Qt.red))
-
-        if self.iqp_on:
-            self.draw.draw_line(self.iqp_path, painter, QtG.QColor(QtC.Qt.cyan))
-
-        if self.refline_on:
-            self.draw.draw_line(self.ref_path, painter, QtG.QColor(255, 165, 0))
 
         self.draw.draw_car(painter)
         self.draw.draw_scale(painter)

@@ -5,32 +5,56 @@
         <param name="frame" value="ugr/car_base_link" />
         <param name="rate" value="5" />
 
-        <param name="carwidth" value="0.50" />
-        <param name="width_margin_left" value="0.20" />
-        <param name="width_margin_right" value="0.20" />
-        <param name="carlength" value="0.72" />
-        <param name="v_max" value="10.0" />
-        <param name="drag_coeff" value="1.00" />
-        <param name="car_mass" value="50.00" />
-        <param name="plot" value="True" />
-        <param name="imported_bounds" value="False" />
-        <param name="curvlim" value="0.5" />
+        <param name="car_width" value="1.49" />
+        <param name="carlength" value="3.21" />
+        <param name="car_mass" value="270.00" />
+
+        <param name="width_margin_left" value="0.15" />
+        <param name="width_margin_right" value="0.15" />
+        <param name="cone_width" value="0.24" />
+        <param name="min_track_width" value="3.00" />
+        
+        <param name="kappa_max" value="0.50" />
+        <param name="curv_error_allowed" value="0.10" />
+
         <param name="stepsize_prep_trajectory" value="0.50" />
         <param name="stepsize_prep_boundaries" value="0.25" />
-        <param name="stepsize_opt" value="0.25" />
-        <param name="stepsize_post" value="0.25" />
-        <param name="vel" value="True" />
-        <param name="min_distance" value="1.5" />
         <param name="smoothing_factor_prep_trajectory" value="2.0" />
         <param name="smoothing_factor_prep_boundaries" value="0.1" />
+        
+        <param name="stepsize_opt" value="0.50" />
+        <param name="stepsize_post" value="0.25" />
+
+        <param name="min_iterations_iqp" value="3" />
+        <param name="max_iterations_iqp" value="5" />
+
+        <param name="vel_calc" value="True" />
+        <param name="v_max" value="36.00" />
+        <param name="T_motor_max" value="140" />
+        <param name="P_max" value="80000" />
+        <param name="num_motors" value="2" />
+        <param name="gear_ratio" value="3.405" />
+        <param name="wheel_radius" value="0.206" />
+        <param name="drag_coeff" value="1.00" />
+        <param name="acc_limit_long" value="15.69" />
+        <param name="acc_limit_lat" value="15.69" />
+
+        <param name="plot" value="False" />
+        <param name="plot_prep" value="False" />
+        <param name="plot_opt" value="True" />
+        <param name="plot_post" value="False" />
+        <param name="plot_final" value="True" />
+
+        <param name="print_debug" value="False" />
+        <param name="print_debug_prep" value="False" />
+        <param name="print_debug_opt" value="False" />
+        <param name="print_debug_post" value="False" />
+        <param name="print_debug_final" value="False" />
 
         <remap from="/input/boundaries" to="/boundary_estimation/boundaries" />
-
         <remap from="/input/path" to="/pathplanning/poses" />
-        <remap from="/output/path" to="/pathplanning/path" />
-        <remap from="/output/path_extra" to="/minimum_curvature/path_extra" />
-        <remap from="/output/path_iqp" to="/minimum_curvature/path_iqp" />
-        <remap from="/output/path_ref" to="/minimum_curvature/path_ref" />
+
+        <remap from="/output/path_mincurv" to="/pathplanning/path" />
         
     </node>
 

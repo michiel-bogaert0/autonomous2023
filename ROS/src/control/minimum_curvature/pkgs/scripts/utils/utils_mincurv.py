@@ -16,14 +16,19 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy import spatial
 from scipy.interpolate import interp1d, splev, splprep
 
-
 ########################################################################################################################
 # ALMOST FINISHED FUNCTIONS:
-# - interp_track
+# - interp_trajectory
 # - B_spline_smoothing
 # - calc_bound_dists
 # - calc_distances_along_trajectory
 # - prep_track
+# - calc_ax_max_motors
+# - calc_ggv
+# - calc_splines
+# - opt_min_curv
+
+
 ########################################################################################################################
 def interp_trajectory(
     trajectory: np.ndarray,
@@ -138,8 +143,7 @@ def calc_bound_dists(
     trajectory: np.ndarray,
     bound_left: np.ndarray,
     bound_right: np.ndarray,
-    min_left_distance: float = 1.5,
-    min_right_distance: float = 1.5,
+    min_track_width: float = 3.0,
 ) -> np.ndarray:
     """
     author:
@@ -156,10 +160,8 @@ def calc_bound_dists(
     :type bound_left:               np.ndarray
     :param bound_right:             array containing the right track boundary [x, y] (Unclosed boundary!)
     :type bound_right:              np.ndarray
-    :param min_left_distance:       minimum distance from reference to the left boundary in m
-    :type min_left_distance:        float
-    :param min_right_distance:      minimum distance from reference to the right boundary in m
-    :type min_right_distance:       float
+    :param min_track_width:         minimum track width in m
+    :type min_track_width:          float
 
     .. outputs::
     :return bound_dists:            estimated perpendicular distance to boundaries along normal for every trajectory point (unclosed).
@@ -204,8 +206,8 @@ def calc_bound_dists(
     coeffs_x, coeffs_y, M, normvec_normalized = calc_splines(trajectory_cl)
 
     # Calculate the estimated perpendicular distance to the boundaries
-    left_distance = min_left_distance
-    right_distance = min_right_distance
+    left_distance = min_track_width / 2
+    right_distance = min_track_width / 2
 
     tree_left = spatial.KDTree(bound_left)
     tree_right = spatial.KDTree(bound_right)
@@ -258,13 +260,15 @@ def calc_bound_dists(
 
     # Enforce minimum track width
     manipulated_track_width = False
-    min_track_width = min_left_distance + min_right_distance
 
     for i in range(trajectory.shape[0]):
         track_width = min_dists[i, 0] + min_dists[i, 1]
 
         if track_width < min_track_width:
             manipulated_track_width = True
+            rospy.loginfo(
+                f"Track width too small at point {trajectory[i]}, track width was {track_width} m!"
+            )
 
             # Inflate to both sides equally
             min_dists[i, 0] += (min_track_width - track_width) / 2
@@ -323,8 +327,7 @@ def prep_track(
     trajectory: np.ndarray,
     cones_left: np.ndarray,
     cones_right: np.ndarray,
-    min_left_distance: float = 1.5,
-    min_right_distance: float = 1.5,
+    min_track_width: float = 3.0,
     stepsize_trajectory: float = 0.5,
     stepsize_boundaries: float = 0.1,
     sf_trajectory: float = 2.0,
@@ -350,10 +353,8 @@ def prep_track(
     :type cones_left:                   np.ndarray
     :param cones_right:                 array containing the right track cones [x, y] (Unclosed!)
     :type cones_right:                  np.ndarray
-    :param min_left_distance:           minimum distance from reference to the left boundary in m
-    :type min_left_distance:            float
-    :param min_right_distance:          minimum distance from reference to the right boundary in m
-    :type min_right_distance:           float
+    :param min_track_width:             minimum track width in m
+    :type min_track_width:              float
     :param stepsize_trajectory:         desired stepsize after interpolation in m for the trajectory
     :type stepsize_trajectory:          float
     :param stepsize_boundaries:         desired stepsize after interpolation in m for the boundaries
@@ -444,8 +445,6 @@ def prep_track(
     bound_right_smoothed = bound_right_smoothed_cl[:-1]
 
     # Calculate distances to boundaries
-    t_start_boundary_calc = time.perf_counter()
-
     (
         bound_dists,
         new_bound_left,
@@ -458,18 +457,13 @@ def prep_track(
         trajectory=trajectory_smoothed,
         bound_left=bound_left_smoothed,
         bound_right=bound_right_smoothed,
-        min_left_distance=min_left_distance,
-        min_right_distance=min_right_distance,
+        min_track_width=min_track_width,
     )
 
     track = np.hstack((trajectory_smoothed, bound_dists))
 
     new_bound_left_cl = np.vstack((new_bound_left, new_bound_left[0]))
     new_bound_right_cl = np.vstack((new_bound_right, new_bound_right[0]))
-
-    rospy.logwarn(
-        f"Time for boundary calculation: {time.perf_counter() - t_start_boundary_calc}"
-    )
 
     prepped_track = track
     bound_left = new_bound_left
@@ -1271,117 +1265,118 @@ def prep_track(
     )
 
 
-########################################################################################################################
-# PLOTTING FUNCTIONS:
-# - make_legend_arrow
-# - get_plot_name
-# - save_plot_to_folder
-# - clear_folder
-
-
-########################################################################################################################
-def make_legend_arrow(legend, orig_handle, xdescent, ydescent, width, height, fontsize):
-    p = mpatches.FancyArrow(
-        0, 0.5 * height, width, 0, length_includes_head=True, head_width=0.75 * height
-    )
-    return p
-
-
-def get_plot_name(
-    plot_name: str,
-) -> str:
+def calc_ax_max_motors(
+    v_max: float,
+    T_motor_max: float,
+    P_max: float,
+    num_motors: int,
+    gear_ratio: float,
+    wheel_radius: float,
+    car_mass: float,
+) -> np.ndarray:
     """
     author:
     Kwinten Mortier
 
     .. description::
-    Creates a plot name with a timestamp. The timestamp layout is 'YYYYMMDD_HHMMSS'.
+    Calculates the forward acceleration capabilities of the motors based on the torque limitations of the motor and the
+    power limitations set by Formula Student rules.
 
     .. inputs::
-    :param plot_name:               name of the plot.
-    :type plot_name:                str
+    :param v_max:               maximum velocity of the vehicle in m/s.
+    :type v_max:                float
+    :param T_motor_max:         maximum torque of the motor in Nm.
+    :type T_motor_max:          float
+    :param P_max:               maximum combined power in W (set by Formula Student rules).
+    :type P_max:                float
+    :param num_motors:          number of motors.
+    :type num_motors:           int
+    :param gear_ratio:          gear ratio of the motor.
+    :type gear_ratio:           float
+    :param wheel_radius:        outer radius of the wheel in m.
+    :type wheel_radius:         float
+    :param car_mass:            mass of the vehicle in kg.
+    :type car_mass:             float
 
     .. outputs::
-    :return plot_name_t_stamp:       name of the plot with a timestamp.
-    :rtype plot_name_t_stamp:        str
-    """
-
-    # Get current date and time
-    t_stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S").lower()
-
-    # Create plot name with timestamp
-    plot_name_t_stamp = f"{plot_name}_{t_stamp}.png"
-
-    return plot_name_t_stamp
-
-
-def save_plot_to_folder(
-    plot: plt.figure,
-    folder_path: str,
-    plot_filename: str = "plot",
-):
-    """
-    author:
-    Kwinten Mortier
-
-    .. description::
-    Save a plot to a specified folder.
-
-    .. inputs::
-    :param plot:                plot to save.
-    :type plot:                 plt.figure.Figure
-    :param folder_path:         factor for smoothing the trajectory.
-    :type folder_path:          float
-    :param plot_filename:       factor for smoothing the trajectory.
-    :type plot_filename:        float
-
-    .. outputs::
-    None
+    :return ax_max_motors:      maximum forward acceleration capabilities of the motors at speeds from 0 to v_max.
+    :rtype ax_max_motors:       np.ndarray
 
     .. notes::
-    This function saves the plot, no outputs!
+    Torque will be maximal until a certain speed is reached, after which the power will be maximal.
+    Make sure the correct units are used!
+
+    Result is a 2D array with the first column being the speed in m/s and the second column being the maximum acceleration in m/s².
     """
 
-    # Create folder if it does not exist
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
+    # Calculate the maximum acceleration of the motors
+    ax_max_motors = np.zeros((int(v_max) + 1, 2))
 
-    # Create plot name with timestamp
-    plot_filename_t_stamp = get_plot_name(plot_filename)
+    for i in range(int(v_max) + 1):
+        v = i
+        omega = v / wheel_radius
+        omega_motor = omega * gear_ratio
+        P_motor = num_motors * T_motor_max * omega_motor
+        if P_motor <= P_max:
+            T_motor = T_motor_max
+        else:
+            T_motor = P_max / (num_motors * omega_motor)
 
-    # Save plot to folder
-    plot.savefig(os.path.join(folder_path, plot_filename_t_stamp), dpi=1200)
+        T = T_motor * gear_ratio
+        F = num_motors * T / wheel_radius
+        ax_max = F / car_mass
+        ax_max_motors[i] = [v, ax_max]
+
+    return ax_max_motors
 
 
-def clear_folder(folder_path: str):
+def calc_ggv(
+    v_max: float,
+    acc_limit_long: float,
+    acc_limit_lat: float,
+) -> np.ndarray:
     """
     author:
     Kwinten Mortier
 
     .. description::
-    Clear the contents of a folder.
+    Estimates the ggv diagram of the vehicle based on the longitudinal and lateral acceleration limits.
 
     .. inputs::
-    :param folder_path:         path to the folder to clear.
-    :type folder_path:          str
+    :param v_max:               maximum velocity of the vehicle in m/s.
+    :type v_max:                float
+    :param acc_limit_long:      longitudinal acceleration limit of the vehicle in m/s².
+    :type acc_limit_long:       float
+    :param acc_limit_lat:       lateral acceleration limit of the vehicle in m/s².
+    :type acc_limit_lat:        float
 
     .. outputs::
-    None
+    :return ggv:                ggv diagram of the vehicle.
+    :rtype ggv:                 np.ndarray
 
     .. notes::
-    This function clears the contents of the folder, no outputs!
+    Make sure the correct units are used!
+
+    The estimation is based on the grip circle model. The grip circle model assumes that the maximum longitudinal and lateral
+    acceleration limits are independent of each other. The grip circle model is an approximation and the actual ggv diagram
+    might differ from the one calculated here. The acceleration limits are assumed to be constant over the entire speed range and are
+    extracted from tire data.
+
+    For example: The tire data suggests that the tire can handle up to 1.6 G of lateral and longitudinal acceleration. This means that
+    the maximum lateral and longitudinal acceleration limits are 1.6 * 9.80 m/s² = 15.69 m/s².
+
+    Result is a 2D array. The first column is the speed in m/s, the second column is the maximum longitudinal acceleration in m/s²,
+    the third column is the maximum lateral acceleration in m/s².
     """
-    # Check if folder exists
-    if os.path.exists(folder_path):
-        # Iterate over the files in the folder
-        for filename in os.listdir(folder_path):
-            file_path = os.path.join(folder_path, filename)
-            # Check if the path is a file
-            if os.path.isfile(file_path):
-                # Remove the file
-                os.remove(file_path)
-    else:
-        rospy.loginfo(f"Folder '{folder_path}' does not exist.")
+
+    # Calculate the ggv diagram
+    ggv = np.zeros((int(v_max) + 1, 3))
+
+    for i in range(int(v_max) + 1):
+        v = i
+        ggv[i] = [v, acc_limit_long, acc_limit_lat]
+
+    return ggv
 
 
 # Needs to be optimised but keep the original code for now (functionality needs to be kept, maybe only closed loop?)
@@ -1961,6 +1956,119 @@ def opt_min_curv(
     curv_error_max = np.amax(np.abs(curv_sol_lin - curv_orig_lin))
 
     return alpha_mincurv, curv_error_max
+
+
+########################################################################################################################
+# PLOTTING FUNCTIONS:
+# - make_legend_arrow
+# - get_plot_name
+# - save_plot_to_folder
+# - clear_folder
+
+
+########################################################################################################################
+def make_legend_arrow(legend, orig_handle, xdescent, ydescent, width, height, fontsize):
+    p = mpatches.FancyArrow(
+        0, 0.5 * height, width, 0, length_includes_head=True, head_width=0.75 * height
+    )
+    return p
+
+
+def get_plot_name(
+    plot_name: str,
+) -> str:
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    Creates a plot name with a timestamp. The timestamp layout is 'YYYYMMDD_HHMMSS'.
+
+    .. inputs::
+    :param plot_name:               name of the plot.
+    :type plot_name:                str
+
+    .. outputs::
+    :return plot_name_t_stamp:       name of the plot with a timestamp.
+    :rtype plot_name_t_stamp:        str
+    """
+
+    # Get current date and time
+    t_stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S").lower()
+
+    # Create plot name with timestamp
+    plot_name_t_stamp = f"{plot_name}_{t_stamp}.png"
+
+    return plot_name_t_stamp
+
+
+def save_plot_to_folder(
+    plot: plt.figure,
+    folder_path: str,
+    plot_filename: str = "plot",
+):
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    Save a plot to a specified folder.
+
+    .. inputs::
+    :param plot:                plot to save.
+    :type plot:                 plt.figure.Figure
+    :param folder_path:         factor for smoothing the trajectory.
+    :type folder_path:          float
+    :param plot_filename:       factor for smoothing the trajectory.
+    :type plot_filename:        float
+
+    .. outputs::
+    None
+
+    .. notes::
+    This function saves the plot, no outputs!
+    """
+
+    # Create folder if it does not exist
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    # Create plot name with timestamp
+    plot_filename_t_stamp = get_plot_name(plot_filename)
+
+    # Save plot to folder
+    plot.savefig(os.path.join(folder_path, plot_filename_t_stamp), dpi=1200)
+
+
+def clear_folder(folder_path: str):
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    Clear the contents of a folder.
+
+    .. inputs::
+    :param folder_path:         path to the folder to clear.
+    :type folder_path:          str
+
+    .. outputs::
+    None
+
+    .. notes::
+    This function clears the contents of the folder, no outputs!
+    """
+    # Check if folder exists
+    if os.path.exists(folder_path):
+        # Iterate over the files in the folder
+        for filename in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, filename)
+            # Check if the path is a file
+            if os.path.isfile(file_path):
+                # Remove the file
+                os.remove(file_path)
+    else:
+        rospy.loginfo(f"Folder '{folder_path}' does not exist.")
 
 
 def iqp_handler(
@@ -2924,69 +3032,6 @@ def side_of_line(
     side = np.sign((b[0] - a[0]) * (z[1] - a[1]) - (b[1] - a[1]) * (z[0] - a[0]))
 
     return side
-
-
-def calc_head_curv_an2(
-    coeffs_x: np.ndarray,
-    coeffs_y: np.ndarray,
-    ind_spls: np.ndarray,
-    t_spls: np.ndarray,
-) -> tuple:
-    """
-    author:
-    Alexander Heilmeier
-
-    .. description::
-    Analytical calculation of heading psi, curvature kappa, and first derivative of the curvature dkappa
-    on the basis of third order splines for x- and y-coordinate.
-
-    .. inputs::
-    :param coeffs_x:    coefficient matrix of the x splines with size (no_splines x 4).
-    :type coeffs_x:     np.ndarray
-    :param coeffs_y:    coefficient matrix of the y splines with size (no_splines x 4).
-    :type coeffs_y:     np.ndarray
-    :param ind_spls:    contains the indices of the splines that hold the points for which we want to calculate heading/curv.
-    :type ind_spls:     np.ndarray
-    :param t_spls:      containts the relative spline coordinate values (t) of every point on the splines.
-    :type t_spls:       np.ndarray
-
-    .. outputs::
-    :return psi:        heading at every point.
-    :rtype psi:         float
-
-    .. notes::
-    len(ind_spls) = len(t_spls) = len(psi)
-    """
-
-    # check inputs
-    if coeffs_x.shape[0] != coeffs_y.shape[0]:
-        raise ValueError("Coefficient matrices must have the same length!")
-
-    if ind_spls.size != t_spls.size:
-        raise ValueError("ind_spls and t_spls must have the same length!")
-
-    # ------------------------------------------------------------------------------------------------------------------
-    # CALCULATE HEADING ------------------------------------------------------------------------------------------------
-    # ------------------------------------------------------------------------------------------------------------------
-
-    # calculate required derivatives
-    x_d = (
-        coeffs_x[ind_spls, 1]
-        + 2 * coeffs_x[ind_spls, 2] * t_spls
-        + 3 * coeffs_x[ind_spls, 3] * np.power(t_spls, 2)
-    )
-
-    y_d = (
-        coeffs_y[ind_spls, 1]
-        + 2 * coeffs_y[ind_spls, 2] * t_spls
-        + 3 * coeffs_y[ind_spls, 3] * np.power(t_spls, 2)
-    )
-
-    # calculate heading psi (pi/2 must be substracted due to our convention that psi = 0 is north)
-    psi = np.arctan2(y_d, x_d) - math.pi / 2
-    psi = normalize_psi(psi)
-
-    return psi
 
 
 def conv_filt(signal: np.ndarray, filt_window: int, closed: bool) -> np.ndarray:

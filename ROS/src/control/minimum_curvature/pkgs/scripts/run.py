@@ -9,15 +9,13 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
-
-# from node_fixture.node_manager import set_state_inactive
 from ugr_msgs.msg import Boundaries
 from utils.utils_mincurv import (
-    B_spline_smoothing,
+    calc_ax_max_motors,
     calc_ax_profile,
+    calc_ggv,
     calc_head_curv_an,
     calc_spline_lengths,
-    calc_splines,
     calc_t_profile,
     calc_vel_profile,
     check_traj,
@@ -37,20 +35,29 @@ class MinimumCurvature(ManagedNode):
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
         self.car_width = rospy.get_param("~car_width", 0.50)
-        self.width_margin_left = rospy.get_param("~width_margin_left", 0.10)
-        self.width_margin_right = rospy.get_param("~width_margin_right", 0.10)
         self.car_length = rospy.get_param("~car_length", 0.72)
-        self.v_max = rospy.get_param("~v_max", 10.0)
-        self.drag_coeff = rospy.get_param("~drag_coeff", 1.00)
-        self.car_mass = rospy.get_param("~car_mass", 50.00)
-        self.imported_bounds = rospy.get_param("~imported_bounds", True)
-        self.curvlim = rospy.get_param("~curvlim", 0.5)
+        self.car_mass = rospy.get_param("~car_mass", 270.00)
+
+        self.width_margin_left = rospy.get_param("~width_margin_left", 0.15)
+        self.width_margin_right = rospy.get_param("~width_margin_right", 0.15)
+        self.cone_width = rospy.get_param("~cone_width", 0.24)
+        self.min_track_width = rospy.get_param("~min_track_width", 3.00)
+
+        self.car_width_with_margins = (
+            self.car_width
+            + self.width_margin_left
+            + self.width_margin_right
+            + 2 * self.cone_width / 2
+        )
+
+        self.kappa_max = rospy.get_param("~kappa_max", 0.50)
+        self.curv_error_allowed = rospy.get_param("~curv_error_allowed", 0.10)
 
         self.stepsize_prep_trajectory = rospy.get_param(
             "~stepsize_prep_trajectory", 0.50
         )
         self.stepsize_prep_boundaries = rospy.get_param(
-            "~stepsize_prep_boundaries", 0.10
+            "~stepsize_prep_boundaries", 0.25
         )
         self.smoothing_factor_prep_trajectory = rospy.get_param(
             "~smoothing_factor_prep_trajectory", 2.0
@@ -58,27 +65,49 @@ class MinimumCurvature(ManagedNode):
         self.smoothing_factor_prep_boundaries = rospy.get_param(
             "~smoothing_factor_prep_boundaries", 0.1
         )
-        self.stepsize_opt = rospy.get_param("~stepsize_opt", 0.05)
+
+        self.stepsize_opt = rospy.get_param("~stepsize_opt", 0.50)
         self.stepsize_post = rospy.get_param("~stepsize_interp", 0.25)
 
-        self.plot = rospy.get_param("~plot", True)
-        self.vel = rospy.get_param("~vel", True)
+        self.min_iterations_iqp = rospy.get_param("~min_iterations_iqp", 3)
+        self.max_iterations_iqp = rospy.get_param("~max_iterations_iqp", 5)
 
-        self.min_distance = rospy.get_param("~min_distance", 1.5)
+        self.vel_calc = rospy.get_param("~vel_calc", False)
+        self.v_max = rospy.get_param("~v_max", 36.00)
+        self.T_motor_max = rospy.get_param("~T_motor_max", 140.00)
+        self.P_max = rospy.get_param("~P_max", 80000.00)
+        self.num_motors = rospy.get_param("~num_motors", 2)
+        self.gear_ratio = rospy.get_param("~gear_ratio", 3.405)
+        self.wheel_radius = rospy.get_param("~wheel_radius", 0.206)
+        self.drag_coeff = rospy.get_param("~drag_coeff", 1.00)
+        self.acc_limit_long = rospy.get_param("~acc_limit_long", 15.69)
+        self.acc_limit_lat = rospy.get_param("~acc_limit_lat", 15.69)
 
-        self.car_width_with_margins = (
-            self.car_width + self.width_margin_left + self.width_margin_right
-        )
+        # Plotting and debugging
+        self.plot = rospy.get_param("~plot", False)
+        self.print_debug = rospy.get_param("~print_debug", False)
 
-        # Publishers for the path, path_extra, path_iqp and reference
-        self.path_pub = super().AddPublisher("/output/path_iqp", Path, queue_size=10)
-        self.path_extra_pub = super().AddPublisher(
-            "/output/path_extra", Path, queue_size=10
-        )
-        self.path_iqp_pub = super().AddPublisher("/output/path", Path, queue_size=10)
-        self.path_ref_pub = super().AddPublisher(
-            "/output/path_ref", Path, queue_size=10
-        )
+        if self.plot:
+            self.plot_prep = rospy.get_param("~plot_prep", False)
+            self.plot_opt = rospy.get_param("~plot_opt", False)
+            self.plot_post = rospy.get_param("~plot_post", False)
+            self.plot_final = rospy.get_param("~plot_final", False)
+        else:
+            self.plot_prep = False
+            self.plot_opt = False
+            self.plot_post = False
+            self.plot_final = False
+
+        if self.print_debug:
+            self.print_debug_prep = rospy.get_param("~print_debug_prep", False)
+            self.print_debug_opt = rospy.get_param("~print_debug_opt", False)
+            self.print_debug_post = rospy.get_param("~print_debug_post", False)
+            self.print_debug_final = rospy.get_param("~print_debug_final", False)
+        else:
+            self.print_debug_prep = False
+            self.print_debug_opt = False
+            self.print_debug_post = False
+            self.print_debug_final = False
 
         # Subscribers for the path and boundaries
         self.path_sub = rospy.Subscriber(
@@ -93,75 +122,19 @@ class MinimumCurvature(ManagedNode):
             self.receive_new_boundaries,
         )
 
+        # Publishers for the minimum curvature path
+        self.path_mincurv_pub = super().AddPublisher(
+            "/output/path_mincurv", Path, queue_size=10
+        )
+
+        # Declare variables
         self.reference_line = np.array([])
-        self.bound_left = np.array([])
-        self.bound_right = np.array([])
-        self.extra_smoothed = np.array([])
+        self.cones_left = np.array([])
+        self.cones_right = np.array([])
         self.header = None
+
+        # Variable to control single calculation
         self.calculate = False
-
-        # ggv and ax_max_machines are hardcoded for now
-        """
-        ggv describes the maximum accelerations of the vehicle on the axis of the velocity, from 0 to max speed, for positive acceleration (ax)
-        and lateral direction (ay)
-
-        """
-        self.ggv = np.array(
-            [
-                [0.0, 3.0, 3.0],  # [v [m/s], ax [m/s^2], ay [m/s^2]]
-                [0.5, 3.0, 3.0],
-                [1.0, 3.0, 3.0],
-                [1.5, 3.0, 3.0],
-                [2.0, 3.0, 3.0],
-                [2.5, 3.0, 3.0],
-                [3.0, 3.0, 3.0],
-                [3.5, 3.0, 3.0],
-                [4.0, 3.0, 3.0],
-                [4.5, 3.0, 3.0],
-                [5.0, 3.0, 3.0],
-                [5.5, 3.0, 3.0],
-                [6.0, 3.0, 3.0],
-                [6.5, 3.0, 3.0],
-                [7.0, 3.0, 3.0],
-                [7.5, 3.0, 3.0],
-                [8.0, 3.0, 3.0],
-                [8.5, 3.0, 3.0],
-                [9.0, 3.0, 3.0],
-                [9.5, 3.0, 3.0],
-                [10.0, 3.0, 3.0],
-            ]
-        )
-
-        """
-        ax_max_machines describes the acceleration resources of the motor at certain velocity thresholds
-        (values inbetween are interpolated linearly)
-
-        """
-        self.ax_max_machines = np.array(
-            [
-                [0.0, 3.0],  # [v [m/s], ax [m/s^2]]
-                [0.5, 3.0],
-                [1.0, 3.0],
-                [1.5, 3.0],
-                [2.0, 3.0],
-                [2.5, 3.0],
-                [3.0, 3.0],
-                [3.5, 3.0],
-                [4.0, 3.0],
-                [4.5, 3.0],
-                [5.0, 3.0],
-                [5.5, 3.0],
-                [6.0, 3.0],
-                [6.5, 3.0],
-                [7.0, 3.0],
-                [7.5, 3.0],
-                [8.0, 3.0],
-                [8.5, 3.0],
-                [9.0, 3.0],
-                [9.5, 3.0],
-                [10.0, 3.0],
-            ]
-        )
 
     def doActivate(self):
         self.calculate = True
@@ -181,18 +154,24 @@ class MinimumCurvature(ManagedNode):
         )
 
     def active(self):
-        if not self.calculate or self.reference_line.size == 0:
+        if (
+            not self.calculate
+            or self.reference_line.size == 0
+            or self.cones_left.size == 0
+            or self.cones_right.size == 0
+        ):
             return
 
-        rospy.logerr("Calculating minimum curvature path")
+        rospy.loginfo("Path and boundaries received!")
+        rospy.logerr("Starting minimum curvature calculation...")
         t_start = time.perf_counter()
-        header = self.header
 
         # ----------------------------------------------------------------------------------------------------------------------
         # PREPROCESSING TRACK --------------------------------------------------------------------------------------------------
         # ----------------------------------------------------------------------------------------------------------------------
 
-        t_start_prep = time.perf_counter()
+        t_prep_start = time.perf_counter()
+        rospy.loginfo("Starting preprocessing...")
         (
             prepped_track,
             self.bound_left,
@@ -208,18 +187,18 @@ class MinimumCurvature(ManagedNode):
             trajectory=self.reference_line,
             cones_left=self.cones_left,
             cones_right=self.cones_right,
-            min_left_distance=self.min_distance,
-            min_right_distance=self.min_distance,
+            min_track_width=self.min_track_width,
             stepsize_trajectory=self.stepsize_prep_trajectory,
             stepsize_boundaries=self.stepsize_prep_boundaries,
             sf_trajectory=self.smoothing_factor_prep_trajectory,
             sf_boundaries=self.smoothing_factor_prep_boundaries,
-            debug_info=False,
-            plot_prep=False,
+            debug_info=self.print_debug_prep,
+            plot_prep=self.plot_prep,
         )
+        rospy.loginfo("Preprocessing done!")
 
         rospy.logwarn(
-            f"Total time elapsed during preprocessing: {time.perf_counter() - t_start_prep}"
+            f"Total time elapsed during preprocessing: {time.perf_counter() - t_prep_start}"
         )
 
         # ----------------------------------------------------------------------------------------------------------------------
@@ -243,20 +222,37 @@ class MinimumCurvature(ManagedNode):
             psi=psi_prepped_track,
             kappa=kappa_prepped_track,
             dkappa=dkappa_prepped_track,
-            kappa_bound=1.0,
+            kappa_bound=self.kappa_max,
             w_veh=self.car_width_with_margins,
-            print_debug=True,
-            plot_debug=False,
+            print_debug=self.print_debug_opt,
+            plot_debug=self.plot_opt,
             stepsize_interp=self.stepsize_opt,
-            iters_min=3,
-            curv_error_allowed=0.1,
+            iters_min=self.min_iterations_iqp,
+            curv_error_allowed=self.curv_error_allowed,
         )
         rospy.logerr(
             f"Total time elapsed during iqp optimisation: {time.perf_counter() - t_start_iqp_optimization}"
         )
 
-        if self.vel:
+        if self.vel_calc:
             vel_start = time.perf_counter()
+
+            ggv = calc_ggv(
+                v_max=self.v_max,
+                acc_limit_long=self.acc_limit_long,
+                acc_limit_lat=self.acc_limit_lat,
+            )
+
+            ax_max_motors = calc_ax_max_motors(
+                v_max=self.v_max,
+                T_motor_max=self.T_motor_max,
+                P_max=self.P_max,
+                num_motors=self.num_motors,
+                gear_ratio=self.gear_ratio,
+                wheel_radius=self.wheel_radius,
+                car_mass=self.car_mass,
+            )
+
             # Interpolate splines to small distances between raceline points
             (
                 raceline_interp,
@@ -289,8 +285,8 @@ class MinimumCurvature(ManagedNode):
 
             # Calculate velocity and acceleration profile
             vx_profile_opt = calc_vel_profile(
-                ggv=self.ggv,
-                ax_max_machines=self.ax_max_machines,
+                ggv=ggv,
+                ax_max_machines=ax_max_motors,
                 drag_coeff=self.drag_coeff,
                 m_veh=self.car_mass,
                 kappa=kappa_opt,
@@ -348,15 +344,15 @@ class MinimumCurvature(ManagedNode):
                 width_veh=self.car_width,
                 debug=True,
                 trajectory=traj_race_cl,
-                ggv=self.ggv,
-                ax_max_machines=self.ax_max_machines,
+                ggv=ggv,
+                ax_max_machines=ax_max_motors,
                 v_max=self.v_max,
-                curvlim=self.curvlim,
+                curvlim=self.kappa_max,
                 mass_veh=self.car_mass,
                 dragcoeff=self.drag_coeff,
             )
 
-        if self.plot:
+        if self.plot_final:
             s_points = np.cumsum(el_lengths_opt_interp[:-1])
             s_points = np.insert(s_points, 0, 0.0)
 
@@ -370,34 +366,10 @@ class MinimumCurvature(ManagedNode):
             self.bound1_imp = None
             self.bound2_imp = None
 
-            if self.imported_bounds:
-                # try to extract four times as many points as in the interpolated version (in order to hold more details)
-                n_skip = max(
-                    int(self.reference_line.shape[0] / (bound1.shape[0] * 4)), 1
-                )
-
-                _, _, _, normvec_imp = calc_splines(
-                    path=np.vstack(
-                        (
-                            self.reference_line[::n_skip, 0:2],
-                            self.reference_line[0, 0:2],
-                        )
-                    )
-                )
-
-                self.bound1_imp = self.reference_line[
-                    ::n_skip, :2
-                ] + normvec_imp * np.expand_dims(self.reference_line[::n_skip, 2], 1)
-                self.bound2_imp = self.reference_line[
-                    ::n_skip, :2
-                ] - normvec_imp * np.expand_dims(self.reference_line[::n_skip, 3], 1)
-
             # Loopclosure for plots
             trajectory_opt = np.vstack((trajectory_opt, trajectory_opt[0]))
             self.bound_left = np.vstack((self.bound_left, self.bound_left[0]))
             self.bound_right = np.vstack((self.bound_right, self.bound_right[0]))
-            # self.bound1_imp = np.vstack((self.bound1_imp, self.bound1_imp[0]))
-            # self.bound2_imp = np.vstack((self.bound2_imp, self.bound2_imp[0]))
             bound1 = np.vstack((bound1, bound1[0]))
             bound2 = np.vstack((bound2, bound2[0]))
 
@@ -430,32 +402,26 @@ class MinimumCurvature(ManagedNode):
                 bound_right=self.bound_right,
             )
 
-        path_result_iqp = track_iqp[:, 0:2] + normvec_normalized_iqp * np.expand_dims(
-            alpha_mincurv_iqp, axis=1
-        )
-
-        path_iqp = B_spline_smoothing(path_result_iqp, smoothing_factor=2)
-
-        path_iqp = np.vstack((path_iqp, path_iqp[0]))
+        path_mincurv = trajectory_opt[:, 1:3]
 
         iqp_msg = Path()
         iqp_msg.poses = []
-        for point in path_iqp:
+        for point in path_mincurv:
             pose = PoseStamped()
             pose.pose.position.x = point[0]
             pose.pose.position.y = point[1]
-            pose.header = header
+            pose.header = self.header
             iqp_msg.poses.append(pose)
-        iqp_msg.header = header
-        self.path_iqp_pub.publish(iqp_msg)
+        iqp_msg.header = self.header
+        self.path_mincurv_pub.publish(iqp_msg)
         rospy.logerr("Minimum Curvature path was published!")
 
-        if self.plot:
-            plt.show()
         self.calculate = False
+        rospy.logerr(
+            f"Total time elapsed during minimum curvature calculation: {time.perf_counter() - t_start}"
+        )
 
-        # TODO: Fix ggv acceleration limits
-        # TODO: Fix better values for drag, weight, etc...
+        # TODO: Fix better values for drag
         # TODO: Fix loop_closure in plots
 
 
