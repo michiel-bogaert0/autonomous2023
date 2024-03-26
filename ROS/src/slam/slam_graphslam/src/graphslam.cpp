@@ -198,6 +198,12 @@ void GraphSLAM::handleObservations(
   }
 } // handleObservations method
 
+void GraphSLAM::active() {
+  if (!this->doSynchronous) {
+    this->step();
+  }
+}
+
 void GraphSLAM::step() {
   if (!this->isActive() || !this->gotFirstObservations) {
     return;

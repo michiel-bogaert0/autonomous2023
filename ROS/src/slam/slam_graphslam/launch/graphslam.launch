@@ -12,7 +12,7 @@
     <param name="lidar_frame" value="$(arg lidar_frame)" />
 
     # Parameters
-    <param name="target_rate" value="45"/> <!-- Hz -->
+    <param name="target_rate" value="50"/> <!-- Hz -->
     <param name="publish_rate" value="10"/> <!-- Hz -->
     <param name="synchronous" value="false"/> 
     <param name="debug" value="true"/> <!-- Publish edges -->
