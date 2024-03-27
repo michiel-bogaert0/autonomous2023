@@ -282,7 +282,7 @@ class MPC(ManagedNode):
 
                         # Brake fully
                         # TODO: this causes the car to accelerate backwards
-                        self.velocity_cmd.data = -50.0
+                        self.velocity_cmd.data = -100.0
 
                         # Publish to velocity and position steering controller
                         self.steering_pub.publish(self.steering_cmd)
