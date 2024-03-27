@@ -79,7 +79,7 @@ class MinimumCurvature(ManagedNode):
         self.num_motors = rospy.get_param("~num_motors", 2)
         self.gear_ratio = rospy.get_param("~gear_ratio", 3.405)
         self.wheel_radius = rospy.get_param("~wheel_radius", 0.206)
-        self.drag_coeff = rospy.get_param("~drag_coeff", 1.00)
+        self.drag_coeff = rospy.get_param("~drag_coeff", 1.649217)
         self.acc_limit_long = rospy.get_param("~acc_limit_long", 15.69)
         self.acc_limit_lat = rospy.get_param("~acc_limit_lat", 15.69)
 

@@ -588,8 +588,8 @@ def prep_track(
         )
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
-        plt.xlabel("east in m")
-        plt.ylabel("north in m")
+        plt.xlabel("x-distance from original car position in m")
+        plt.ylabel("y-distance from original car position in m")
 
         plt.show()
 
@@ -694,8 +694,8 @@ def prep_track(
         )
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
-        plt.xlabel("east in m")
-        plt.ylabel("north in m")
+        plt.xlabel("x-distance from original car position in m")
+        plt.ylabel("y-distance from original car position in m")
 
         plt.show()
 
@@ -828,8 +828,8 @@ def prep_track(
         )
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
-        plt.xlabel("east in m")
-        plt.ylabel("north in m")
+        plt.xlabel("x-distance from original car position in m")
+        plt.ylabel("y-distance from original car position in m")
 
         plt.show()
 
@@ -967,8 +967,8 @@ def prep_track(
         )
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
-        plt.xlabel("east in m")
-        plt.ylabel("north in m")
+        plt.xlabel("x-distance from original car position in m")
+        plt.ylabel("y-distance from original car position in m")
 
         plt.show()
 
@@ -1036,8 +1036,8 @@ def prep_track(
         )
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
-        plt.xlabel("east in m")
-        plt.ylabel("north in m")
+        plt.xlabel("x-distance from original car position in m")
+        plt.ylabel("y-distance from original car position in m")
 
         plt.show()
 
@@ -1061,7 +1061,7 @@ def prep_track(
             label="Curvature preprocessed trajectory",
         )
         plt.legend()
-        plt.xlabel("distance from start in m")
+        plt.xlabel("distance from original car position in m")
         plt.ylabel("curvature in rad/m")
 
         plt.show()
@@ -1137,8 +1137,8 @@ def prep_track(
                 "Curvature preprocessed trajectory",
             ],
         )
-        ax_curvature3D.set_xlabel("east in m")
-        ax_curvature3D.set_ylabel("north in m")
+        ax_curvature3D.set_xlabel("x-distance from original car position in m")
+        ax_curvature3D.set_ylabel("y-distance from original car position in m")
         ax_curvature3D.set_zlabel("curvature in rad/m")
         ax_curvature3D.set_aspect("equalxy")
 
@@ -1164,7 +1164,7 @@ def prep_track(
             label="Curvature derivative preprocessed trajectory",
         )
         plt.legend()
-        plt.xlabel("distance from start in m")
+        plt.xlabel("distance from original car postion in m")
         plt.ylabel("curvature derivative in rad/m²")
 
         plt.show()
@@ -1240,8 +1240,8 @@ def prep_track(
                 "Curvature derivative preprocessed trajectory",
             ],
         )
-        ax_Dcurvature3D.set_xlabel("east in m")
-        ax_Dcurvature3D.set_ylabel("north in m")
+        ax_Dcurvature3D.set_xlabel("x-distance from original car postion in m")
+        ax_Dcurvature3D.set_ylabel("y-distance from original car postion in m")
         ax_Dcurvature3D.set_zlabel("curvature derivative in rad/m²")
         ax_Dcurvature3D.set_aspect("equalxy")
 
@@ -3983,11 +3983,16 @@ def result_plots(
         point2_arrow = refline[2]
         vec_arrow = point2_arrow - point1_arrow
 
+        refline_plot = np.vstack((refline, refline[0]))
+
         # plot track including optimized path
-        plt.figure()
-        plt.plot(
-            refline[:, 0],
-            refline[:, 1],
+        plt.figure("Minimum curvature racing line")
+        plt.title("Minimum curvature racing line")
+        plt.grid()
+
+        mincurv_path_1 = plt.plot(
+            refline_plot[:, 0],
+            refline_plot[:, 1],
             color=normalize_color((0, 0, 0)),
             linestyle="dashed",
             linewidth=0.7,
@@ -3995,7 +4000,7 @@ def result_plots(
             markersize=2,
             markerfacecolor=normalize_color((0, 0, 0)),
         )
-        plt.plot(
+        mincurv_path_2 = plt.plot(
             veh_bound1_virt[:, 0],
             veh_bound1_virt[:, 1],
             color=normalize_color((255, 0, 255)),
@@ -4007,7 +4012,7 @@ def result_plots(
             color=normalize_color((255, 0, 255)),
             linewidth=0.5,
         )
-        plt.plot(
+        mincurv_path_4 = plt.plot(
             veh_bound1_real[:, 0],
             veh_bound1_real[:, 1],
             color=normalize_color((0, 255, 0)),
@@ -4019,42 +4024,39 @@ def result_plots(
             color=normalize_color((0, 255, 0)),
             linewidth=0.5,
         )
-        plt.plot(
+        mincurv_path_6 = plt.plot(
             trajectory[:, 1],
             trajectory[:, 2],
             color=normalize_color((255, 0, 0)),
             linewidth=0.7,
         )
-        plt.scatter(
+        mincurv_path_7 = plt.scatter(
             cones_left[:, 0],
             cones_left[:, 1],
             color=normalize_color((255, 0, 0)),
-            marker="X",
-            s=5,
+            marker="o",
+            s=25,
         )
         plt.scatter(
             cones_right[:, 0],
             cones_right[:, 1],
             color=normalize_color((255, 0, 0)),
-            marker="X",
-            s=5,
+            marker="o",
+            s=25,
         )
-        plt.plot(
+        mincurv_path_9 = plt.plot(
             bound_left[:, 0],
             bound_left[:, 1],
             color=normalize_color((0, 0, 255)),
             linewidth=1.0,
         )
-        plt.plot(
+        mincurv_path_10 = plt.plot(
             bound_right[:, 0],
             bound_right[:, 1],
             color=normalize_color((230, 245, 0)),
             linewidth=1.0,
         )
-
-        plt.grid()
-        ax = plt.gca()
-        ax.arrow(
+        mincurv_path_11 = plt.arrow(
             point1_arrow[0],
             point1_arrow[1],
             vec_arrow[0],
@@ -4065,15 +4067,44 @@ def result_plots(
             fc="g",
             ec="g",
         )
+
+        plt.legend(
+            [
+                mincurv_path_1[0],
+                mincurv_path_2[0],
+                mincurv_path_4[0],
+                mincurv_path_6[0],
+                mincurv_path_7,
+                mincurv_path_9[0],
+                mincurv_path_10[0],
+                mincurv_path_11,
+            ],
+            [
+                "Reference line",
+                "Vehicle boundary (virtual)",
+                "Vehicle boundary (real)",
+                "Minimum curvature path",
+                "Cones",
+                "Left boundary",
+                "Right boundary",
+                "Driving direction",
+            ],
+            handler_map={
+                mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
+            },
+        )
+
+        ax = plt.gca()
         ax.set_aspect("equal", "datalim")
-        plt.xlabel("east in m")
-        plt.ylabel("north in m")
+        plt.xlabel("x-distance from original car position in m")
+        plt.ylabel("y-distance from original car position in m")
         plt.show()
 
     if plot_opts["raceline_curv"]:
         # plot curvature profile
-        plt.figure()
-        plt.plot(trajectory[:, 0], trajectory[:, 4])
+        plt.figure("Curvature profile")
+        plt.title("Curvature profile")
+        plt.plot(trajectory[:-1, 0], trajectory[:-1, 4])
         plt.grid()
         plt.xlabel("distance in m")
         plt.ylabel("curvature in rad/m")

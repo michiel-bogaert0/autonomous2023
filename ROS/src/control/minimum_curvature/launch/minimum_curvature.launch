@@ -35,13 +35,13 @@
         <param name="num_motors" value="2" />
         <param name="gear_ratio" value="3.405" />
         <param name="wheel_radius" value="0.206" />
-        <param name="drag_coeff" value="1.00" />
+        <param name="drag_coeff" value="1.649217" />
         <param name="acc_limit_long" value="15.69" />
         <param name="acc_limit_lat" value="15.69" />
 
-        <param name="plot" value="False" />
+        <param name="plot" value="True" />
         <param name="plot_prep" value="False" />
-        <param name="plot_opt" value="True" />
+        <param name="plot_opt" value="False" />
         <param name="plot_post" value="False" />
         <param name="plot_final" value="True" />
 
