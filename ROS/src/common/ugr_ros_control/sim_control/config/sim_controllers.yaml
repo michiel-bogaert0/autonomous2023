@@ -28,15 +28,20 @@ joint_state_controller:
 
 # Joint position controller for steering
 steering_position_controller:
+   type: velocity_controllers/JointPositionController
+   joint: axis_steering
+   pid: {p: 100.0, i: 0.0, d: 0.0}
+
+# Joint velocity controller for steering
+steering_velocity_controller:
    type: velocity_controllers/JointVelocityController
    joint: axis_steering
-   pid: {p: 1.0, i: 0.0, d: 0.0}
 
 # Velocity controller for drive
 drive_velocity_controller:
-   type: effort_controllers/JointEffortController
+   type: effort_controllers/JointVelocityController
    joint: axis0
-   pid: {p: 1.0, i: 0.0, d: 0.0, i_clamp_max: 100.0, i_clamp_min: -100.0, antiwindup: False, publish_state: True}
+   pid: {p: 100.0, i: 5.0, d: 0.0, i_clamp_max: 100.0, i_clamp_min: -100.0, antiwindup: True, publish_state: True}
 
 drive_effort_controller:
    type: effort_controllers/JointEffortController

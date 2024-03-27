@@ -2,6 +2,7 @@
 import numpy as np
 import rospy
 import tf2_ros as tf
+from controller_manager_msgs.srv import SwitchController, SwitchControllerRequest
 from environments.bicycle_model import BicycleModel
 from geometry_msgs.msg import PointStamped, PoseStamped
 from nav_msgs.msg import Odometry, Path
@@ -141,8 +142,32 @@ class MPC(ManagedNode):
         self.set_constraints(5, self.max_steering_angle)
 
     def doActivate(self):
-        # Do this here because some parameters are set in the mission yaml files
-        self.trajectory = Trajectory()
+        # Launch ros_control controllers
+        rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
+        try:
+            switch_controller = rospy.ServiceProxy(
+                "/ugr/car/controller_manager/switch_controller", SwitchController
+            )
+
+            req = SwitchControllerRequest()
+            req.start_controllers = [
+                "joint_state_controller",
+                "steering_velocity_controller",
+                "drive_effort_controller",
+            ]
+            req.stop_controllers = []
+            req.strictness = SwitchControllerRequest.STRICT
+
+            response = switch_controller(req)
+
+            if response.ok:
+                # Do this here because some parameters are set in the mission yaml files
+                self.trajectory = Trajectory()
+
+            else:
+                rospy.logerr("Could not start controllers")
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Service call failed: {e}")
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
