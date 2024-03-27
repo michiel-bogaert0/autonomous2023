@@ -56,6 +56,7 @@ def car_to_real_transform(
 def get_local_poses(
     blue_cones: List[QtC.QPointF],
     yellow_cones: List[QtC.QPointF],
+    orange_cones: List[QtC.QPointF],
     car_pos: QtC.QPointF,
     car_rot: QtC.QPointF,
 ) -> np.ndarray:
@@ -77,7 +78,16 @@ def get_local_poses(
             )
         )
 
-    visible_poses = np.vstack((yellow_poses, blue_poses))
+    orange_poses = np.empty((0, 3))
+    if len(orange_cones) > 0:
+        orange_poses = np.column_stack(
+            (
+                real_to_car_transform(orange_cones, car_pos, car_rot),
+                np.full(len(orange_cones), 2),
+            )
+        )
+
+    visible_poses = np.vstack((yellow_poses, blue_poses, orange_poses))
     return visible_poses
 
 
