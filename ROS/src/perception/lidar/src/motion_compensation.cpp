@@ -40,6 +40,9 @@ sensor_msgs::PointCloud2 MotionCompensator::correctRawPointcloud(
   ros::Time t_end = pointcloud_msg.header.stamp +
                     ros::Duration((--pointcloud.points.end())->t * 1e-9);
 
+  std::cout << pointcloud.points.begin()->t << std::endl;
+  std::cout << (--pointcloud.points.end())->t << std::endl;
+
   try {
     // Wait for all transforms to become available
     if (!waitForTransform(lidar_frame_, fixed_frame_, t_end, 0.05,
@@ -68,6 +71,7 @@ sensor_msgs::PointCloud2 MotionCompensator::correctRawPointcloud(
       // Check if the current point's timestamp differs from the previous one
       // If so, lookup the new corresponding transform
       if (point.t != last_transform_update_t) {
+        std::cout << "inside loop " << std::endl;
         last_transform_update_t = point.t;
         ros::Time point_t =
             pointcloud_msg.header.stamp + ros::Duration(0, point.t);
