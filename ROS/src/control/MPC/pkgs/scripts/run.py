@@ -385,8 +385,8 @@ class MPC(ManagedNode):
                     # rospy.loginfo(f"x closed loop: {X_closed_loop}")
                     # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
                     # rospy.loginfo(f"u closed loop: {U_closed_loop}")
-                    rospy.loginfo(f"u return: {u}")
-                    rospy.loginfo(f"actual speed: {self.actual_speed}")
+                    # rospy.loginfo(f"u return: {u}")
+                    # rospy.loginfo(f"actual speed: {self.actual_speed}")
 
                     # Visualise MPC prediction
                     self.vis_path(
