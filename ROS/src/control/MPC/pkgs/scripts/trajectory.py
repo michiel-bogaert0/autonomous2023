@@ -142,7 +142,6 @@ class Trajectory:
         ]
 
         if self.change_index:
-            # TODO: actually get closest point instead of closest index
             self.closest_index = np.argmin(
                 np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
             )
@@ -151,7 +150,7 @@ class Trajectory:
             # Add a large distance to all indices 20 further than self.closest_idnex
             # To avoid mistake at skidpad overlap
             distances_temp = np.where(
-                abs(np.arange(len(distances_temp)) - self.closest_index) < 50,
+                abs(np.arange(len(distances_temp)) - self.closest_index) < 20,
                 distances_temp,
                 distances_temp + 1000,
             )
