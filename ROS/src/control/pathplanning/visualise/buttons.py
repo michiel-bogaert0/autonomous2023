@@ -119,16 +119,20 @@ class Buttons:
     def select_all_clicked(self):
         self.widget.selected_blue_cones = []
         self.widget.selected_yellow_cones = []
+        self.widget.selected_orange_cones = []
         for cone in self.widget.yellow_cones:
             self.widget.selected_yellow_cones.append(cone)
         for cone in self.widget.blue_cones:
             self.widget.selected_blue_cones.append(cone)
+        for cone in self.widget.orange_cones:
+            self.widget.selected_orange_cones.append(cone)
         self.widget.publish_local_map()
         self.widget.update()
 
     def deselect_all_clicked(self):
         self.widget.selected_blue_cones = []
         self.widget.selected_yellow_cones = []
+        self.widget.selected_orange_cones = []
         self.widget.publish_local_map()
         self.widget.update()
 
