@@ -1,5 +1,5 @@
 import copy
-from typing import Callable, List
+from typing import Callable
 
 import casadi
 import numpy as np
@@ -45,6 +45,10 @@ class Ocp:
         self.U = self.opti.variable(self.nu, N)
         self.x0 = self.opti.parameter(self.nx)
         self.u_prev = self.opti.parameter(self.nu)
+
+        # Soften constraints
+        self.Sc = self.opti.variable(1, N)
+        self.sc = casadi.SX.sym("sc", 1)
 
         self._x_reference = self.opti.parameter(self.nx, self.N)
         self.params = []  # additional parameters
@@ -127,7 +131,7 @@ class Ocp:
 
     def set_cost(
         self,
-        cost_fun: Callable[[List[float], List[float], List[float]], List[float]] = None,
+        cost_fun=None,
     ):
         if cost_fun is not None:
             self.cost_fun = cost_fun
@@ -139,6 +143,7 @@ class Ocp:
                         self.U[:, i],
                         (self.U[:, i] - self.u_prev),
                         self._x_reference[:, i],
+                        self.Sc[i],
                     )
                 else:
                     L_run += cost_fun(
@@ -146,12 +151,13 @@ class Ocp:
                         self.U[:, i],
                         (self.U[:, i] - self.U[:, i - 1]),
                         self._x_reference[:, i],
+                        self.Sc[i],
                     )
                 # This constraint works with halspaces (not implemented properly yet)
                 # self.opti.subject_to((self.a * self.X[0, i] + self.b - self.X[1, i]) * (self.c * self.X[0, i] + self.d - self.X[1, i]) < 0)
 
                 # This one works with circles, but causes convergence issues
-                # self.opti.subject_to(((self.X[0, i+1] - self._x_reference[0, i]) ** 2 + (self.X[1, i+1] - self._x_reference[1, i]) ** 2) < (2 ** 2))
+                # self.opti.subject_to(((self.X[0, i+1] - self._x_reference[0, i]) ** 2 + (self.X[1, i+1] - self._x_reference[1, i]) ** 2) < (2 ** 2) + self.Sc[i])
             self.cost["run"] = L_run
 
         self.cost["total"] = self.cost["run"]
@@ -165,7 +171,7 @@ class Ocp:
     def running_cost(self, symbolic_cost):
         cost_fun = casadi.Function(
             "cost_fun",
-            [self.x, self.u, self.u_delta, self.x_reference],
+            [self.x, self.u, self.u_delta, self.x_reference, self.sc],
             [symbolic_cost],
         )
         self.set_cost(cost_fun=cost_fun)
@@ -253,6 +259,8 @@ class Ocp:
             self.opti.set_initial(self.U, U0)
         else:
             self.opti.set_initial(self.U, np.zeros((self.nu, self.N)))
+
+        self.opti.set_initial(self.Sc, np.ones((1, self.N)) * 1e-1)
 
         try:
             with self.timer:

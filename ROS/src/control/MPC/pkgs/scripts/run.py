@@ -265,12 +265,16 @@ class MPC(ManagedNode):
         """
         Set costs for the MPC
         """
+        qs = 0
+        qss = 0
         self.ocp.running_cost = (
             (self.ocp.x - self.ocp.x_reference).T
             @ Qn
             @ (self.ocp.x - self.ocp.x_reference)
             + self.ocp.u.T @ R @ self.ocp.u
             + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
+            + qs @ self.ocp.sc
+            + qss @ self.ocp.sc**2
         )
 
     def start_sender(self):
