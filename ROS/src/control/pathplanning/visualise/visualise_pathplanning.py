@@ -90,6 +90,7 @@ class MapWidget(QtW.QFrame):
         self.orange_cones = oranges
         self.selected_yellow_cones = []
         self.selected_blue_cones = []
+        self.selected_orange_cones = []
 
         self.is_closed = bool(closed)
         self.place_cones = bool(place_cones)
@@ -141,6 +142,7 @@ class MapWidget(QtW.QFrame):
         cones = get_local_poses(
             self.selected_blue_cones,
             self.selected_yellow_cones,
+            self.selected_orange_cones,
             self.car_pos,
             self.car_rot,
         )
@@ -275,6 +277,8 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                 elif selected_cone in self.orange_cones:
                     self.orange_cones.remove(selected_cone)
+                    if selected_cone in self.selected_orange_cones:
+                        self.selected_orange_cones.remove(selected_cone)
                 self.publish_local_map()
                 self.update()
             elif event.modifiers() == QtC.Qt.AltModifier:
@@ -288,6 +292,11 @@ class MapWidget(QtW.QFrame):
                         self.selected_blue_cones.remove(selected_cone)
                     else:
                         self.selected_blue_cones.append(selected_cone)
+                elif selected_cone in self.orange_cones:
+                    if selected_cone in self.selected_orange_cones:
+                        self.selected_orange_cones.remove(selected_cone)
+                    else:
+                        self.selected_orange_cones.append(selected_cone)
                 self.publish_local_map()
                 self.update()
 
@@ -303,7 +312,9 @@ class MapWidget(QtW.QFrame):
         elif self.place_cones:
             # orange cones with alt key
             if event.modifiers() == QtC.Qt.AltModifier:
-                self.orange_cones.append(self.screenToCoordinate(event.pos()))
+                point = self.screenToCoordinate(event.pos())
+                self.orange_cones.append(point)
+                self.selected_orange_cones.append(point)
             # Place a yellow cone
             elif event.button() == QtC.Qt.LeftButton and not (
                 event.modifiers() & QtC.Qt.ShiftModifier
@@ -312,7 +323,6 @@ class MapWidget(QtW.QFrame):
                 point = self.screenToCoordinate(event.pos())
                 self.yellow_cones.append(point)
                 self.selected_yellow_cones.append(point)
-                # Trigger a repaint of the MapWidget to update the visual points
             # Place a blue cone
             elif event.button() == QtC.Qt.RightButton and not (
                 event.modifiers() & QtC.Qt.ShiftModifier
@@ -321,7 +331,6 @@ class MapWidget(QtW.QFrame):
                 point = self.screenToCoordinate(event.pos())
                 self.blue_cones.append(point)
                 self.selected_blue_cones.append(point)
-                # Trigger a repaint of the MapWidget to update the visual points
             self.publish_local_map()
             self.update()
 
