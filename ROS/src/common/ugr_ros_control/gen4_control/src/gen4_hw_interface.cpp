@@ -121,7 +121,7 @@ void Gen4HWInterface::init()
 
   // parametes for torque vectoring
   this->use_torque_vectoring = nh.param("use_torque_vectoring", false);
-  this->l_wheelbase = nh.param("l_wheelbase", 2);
+  this->l_wheelbase = nh.param("l_wheelbase", 1.518);
   this->COG = nh.param("COG", 0.5);
   this->Cyf = nh.param("Cyf", 444);
   this->Cyr = nh.param("Cyr", 444);
