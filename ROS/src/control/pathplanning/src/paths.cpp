@@ -20,6 +20,7 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
   int iteration = 0;
 
   while (!queue.empty()) {
+    bool close_path = false;
     iteration++;
 
     if (iteration >= this->max_iter)
@@ -100,6 +101,14 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
       next_nodes = sort_closest_to(center_points, {parent->x, parent->y},
                                    this->continuous_dist_);
 
+      // if first point of path close to last point of path, stop loop
+      if (path.size() > 10 &&
+          distance_squared(path[1][0], path[1][1], next_nodes[0][0],
+                           next_nodes[0][1]) < this->close_path_dist) {
+        close_path = true;
+        break;
+      }
+
       child_found = false;
 
       for (auto next_pos : next_nodes) {
@@ -129,6 +138,10 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
           break;
         }
       }
+    }
+    if (close_path) {
+      leaves.push_back(parent);
+      break;
     }
     // Now we are at the second stage. We basically look for a node in the
     // distance (to bridge a gap) and add it to the stack to explore further We
