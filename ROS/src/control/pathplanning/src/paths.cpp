@@ -102,7 +102,7 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
                                    this->continuous_dist_);
 
       // if first point of path close to last point of path, stop loop
-      if (path.size() > 10 &&
+      if (path.size() > 20 &&
           distance_squared(path[1][0], path[1][1], next_nodes[0][0],
                            next_nodes[0][1]) < this->close_path_dist) {
         close_path = true;
