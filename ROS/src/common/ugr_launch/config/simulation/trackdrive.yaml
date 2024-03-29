@@ -14,7 +14,7 @@ slam_controller:
       - loopclosure
 
       # Control
-      - pure_pursuit_control
+      - front_wheel_feedback_control
       - pathplanning
 
 slam_mcl:
