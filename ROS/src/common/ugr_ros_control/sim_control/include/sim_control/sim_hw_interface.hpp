@@ -108,6 +108,7 @@ private:
 
   // parameters for torque vectoring
   bool use_torque_vectoring;
+  float max_dT;
   float l_wheelbase;
   float COG;
   float Cyf;

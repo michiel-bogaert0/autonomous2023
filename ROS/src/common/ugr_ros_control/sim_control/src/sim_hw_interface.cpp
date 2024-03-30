@@ -113,7 +113,7 @@ void SimHWInterface::init()
 
   // PID for Torque vectoring
   this->Kp = nh.param("Kp", 1);
-  this->Ki = nh.param("Ki", 0.01);
+  this->Ki = nh.param("Ki", 0.0);
   this->Kd = nh.param("Kd", 0.0);
   this->integral = 0.0;
   this->prev_error = 0.0;
@@ -122,6 +122,7 @@ void SimHWInterface::init()
 
   // parametes for torque vectoring
   this->use_torque_vectoring = nh.param("use_torque_vectoring", false);
+  this->max_dT = nh.param("max_dT", 4.0);
   this->l_wheelbase = nh.param("l_wheelbase", 2);
   this->COG = nh.param("COG", 0.5);
   this->Cyf = nh.param("Cyf", 444);
@@ -160,7 +161,8 @@ void SimHWInterface::write(ros::Duration& elapsed_time)
   std_msgs::Float32 msg1;
   msg1.data = axis0;
 
-  if (car_speed > 0.0)
+  // no TV at low speeds
+  if (car_speed > 5.0)
   {
     float dT = torque_vectoring(axis0, delta);
     msg0.data -= dT / 2;
@@ -289,7 +291,8 @@ float SimHWInterface::torque_vectoring(float axis0, float delta)
   // difference = 0.0, otherwise the difference is inf
   float difference = 0.0;
 
-  dT = this->Kp * yaw_rate_error + this->Ki * this->integral + this->Kd * difference;
+  dT = std::min(std::max(this->Kp * yaw_rate_error + this->Ki * this->integral + this->Kd * difference, -this->max_dT),
+                this->max_dT);
 
   this->prev_error = yaw_rate_error;
   this->prev_time = now_time;

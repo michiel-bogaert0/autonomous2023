@@ -26,6 +26,7 @@
 
       <!-- Torque vectoring -->
       <param name="use_torque_vectoring" value="false" />
+      <param name="max_dT" value="4.0" />
       <param name="l_wheelbase" value="2" />
       <param name="COG" value="0.5" />
       <param name="Cyf" value="444" />

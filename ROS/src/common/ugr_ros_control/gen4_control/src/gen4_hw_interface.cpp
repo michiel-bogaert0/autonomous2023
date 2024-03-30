@@ -121,6 +121,7 @@ void Gen4HWInterface::init()
 
   // parametes for torque vectoring
   this->use_torque_vectoring = nh.param("use_torque_vectoring", false);
+  this->max_dT = nh.param("max_dT", 4.0);
   this->l_wheelbase = nh.param("l_wheelbase", 1.518);
   this->COG = nh.param("COG", 0.5);
   this->Cyf = nh.param("Cyf", 444);
@@ -194,9 +195,7 @@ void Gen4HWInterface::can_callback_steering(const std_msgs::Float32::ConstPtr& m
 
 void Gen4HWInterface::handle_vel_msg(const std_msgs::Float32::ConstPtr& msg, uint32_t axis_id)
 {
-  double motor_speed = msg->data;  // in rpm received from motor -> /60 to get rps -> * (pi*diameter) to get m/s
-  // double wheel_speed = speed / this->gear_ratio;  // in rpm
-  // double car_speed = wheel_speed * M_PI * this->wheel_diameter / 60;
+  double motor_speed = msg->data;  // rpm
 
   // Set cur_velocity_axis
   if (axis_id == 1)
@@ -225,8 +224,10 @@ void Gen4HWInterface::publish_steering_msg(float steering)
 void Gen4HWInterface::publish_torque_msg(float axis)
 {
   float mean_axis_speed = (this->cur_velocity_axis0 + this->cur_velocity_axis1) / 2;
-  float car_speed = mean_axis_speed / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s
-  // for speed lower than 5 m/s no torque vectoring is used
+  float car_speed =
+      mean_axis_speed / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s, mean speed if no slip
+
+  // no TV at low speeds
   if (car_speed > 5 && this->use_torque_vectoring == true)
   {
     // float dT = this->torque_vectoring();
@@ -271,13 +272,14 @@ float Gen4HWInterface::torque_vectoring()
 
   float yaw_rate_error = yaw_rate_desired - this->yaw_rate;
 
-  // PID controller calculates the difference in torque dT, based on the yaw rate error
-  // Recommended to use D = 0
+  // PI(D) controller calculates the difference in torque dT, based on the yaw rate error
   float now_time = ros::Time::now().toSec();
   this->integral += yaw_rate_error * (now_time - this->prev_time);
   float difference = (yaw_rate_error - this->prev_error) / (now_time - this->prev_time);
 
-  float dT = this->Kp * yaw_rate_error + this->Ki * this->integral + this->Kd * difference;
+  float dT =
+      std::min(std::max(this->Kp * yaw_rate_error + this->Ki * this->integral + this->Kd * difference, -this->max_dT),
+               this->max_dT);
 
   this->prev_error = yaw_rate_error;
   this->prev_time = now_time;
