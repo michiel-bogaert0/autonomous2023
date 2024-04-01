@@ -41,7 +41,7 @@ class FrontWheelFeedback(KinematicTrackingNode):
         trans_error, heading_error = self.trajectory.calculate_transversal_error()
 
         # Steering transmission is already being applied here, as the error is related to the steering angle (arcsin or arctan)
-        pid_e = (trans_error / self.actual_speed) / self.steering_transmission
+        pid_e = trans_error / self.actual_speed
 
         self.integral += pid_e * dt
 
@@ -55,6 +55,7 @@ class FrontWheelFeedback(KinematicTrackingNode):
 
         # Convert to steering angle
         self.steering_cmd.data = np.arctan(pid_u) + heading_error
+        self.steering_cmd.data /= self.steering_transmission
 
         # Velocity point
         self.speed_target = rospy.get_param("/speed/target", 3.0)
