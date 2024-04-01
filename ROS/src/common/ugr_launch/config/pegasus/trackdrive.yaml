@@ -2,8 +2,8 @@ slam_controller:
   node_management:
     exploration:
       # SLAM
-      # - fastslam
-      - graphslam
+      - fastslam
+      # - graphslam
 
     racing:
       # SLAM
@@ -23,8 +23,8 @@ loopclosure:
   finishpoint: [0, 0, 0]
 speed:
   target: 1.0
-  target_racing: 5.0
-  LC_adaptive_velocity: True
+  target_racing: 2.0
+  LC_adaptive_velocity: False
   LC_max_acceleration: 0.5 # TO BE VERIFIED
   LC_min: 1.0
   LC_max: 4.0
