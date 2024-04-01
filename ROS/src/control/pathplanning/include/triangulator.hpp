@@ -41,6 +41,7 @@ private:
   int stage2_threshold_center_points_;
   int max_depth_;
   double continuous_dist_;
+  double close_path_dist_;
   double range_front_;
   double range_behind_;
   double range_sides_;

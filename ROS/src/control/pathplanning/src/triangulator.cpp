@@ -24,6 +24,7 @@ Triangulator::Triangulator(ros::NodeHandle &n)
           n.param<int>("stage2_threshold_center_points", 3)),
       max_depth_(n.param<int>("max_depth", 5)),
       continuous_dist_(n.param<double>("continuous_dist", 4.0)),
+      close_path_dist_(n.param<double>("close_path_dist", 9.0)),
       range_front_(n.param<double>("range_front", 20.0)),
       range_behind_(n.param<double>("range_behind", 0.0)),
       range_sides_(n.param<double>("range_sides", 3.0)),
@@ -36,7 +37,7 @@ Triangulator::Triangulator(ros::NodeHandle &n)
           stage1_rect_width_, stage1_threshold_bad_points_,
           stage1_threshold_center_points_, stage2_rect_width_,
           stage2_threshold_bad_points_, stage2_threshold_center_points_,
-          max_depth_, continuous_dist_) {
+          max_depth_, continuous_dist_, close_path_dist_) {
   this->vis_points_ = ros::Publisher();
   this->vis_lines_ = ros::Publisher();
 
