@@ -3,7 +3,6 @@ slam_controller:
     exploration:
       # SLAM
       - graphslam
-      # - fastslam
 
     racing:
       # SLAM
