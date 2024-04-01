@@ -154,7 +154,7 @@
       false, false, false]</rosparam>
 
     <param name="odom0"
-      value="ugr/car/odometry/filtered/fastslam" />
+      value="ugr/car/odometry/filtered/slam" />
     <param name="odom0_differential" value="false" />
     <rosparam param="odom0_config">
       [true, true, false,

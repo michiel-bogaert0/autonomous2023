@@ -103,6 +103,11 @@ RUN pip install -r requirements.txt
 RUN wget -O neoapi-1.2.1-cp38-cp38-linux_x86_64.whl https://github.com/UgentRacing/autonomous_public_binaries/blob/main/modules/neoapi-1.2.1-cp38-cp38-linux_x86_64.whl?raw=true
 RUN python3 -m pip install neoapi-1.2.1-cp38-cp38-linux_x86_64.whl
 
+# Download and unzip G2O
+RUN wget -O g2o.tar.gz https://github.com/RainerKuemmerle/g2o/archive/refs/tags/20230806_git.tar.gz && mkdir g2o && tar -xf g2o.tar.gz -C g2o --strip-components=1
+# Install G2O
+RUN cd g2o && mkdir build && cd build && cmake .. && make && cd ../..
+
 # Handy commands
 RUN echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.zshrc && \
     echo "alias sdev=\"source ~/autonomous2023/ROS/devel/setup.zsh\"" >> ~/.zshrc && \

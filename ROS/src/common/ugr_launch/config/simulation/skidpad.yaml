@@ -1,7 +1,6 @@
 slam_controller:
   node_management:
     always:
-
       # SLAM
       - slam_mcl
       - loopclosure

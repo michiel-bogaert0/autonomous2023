@@ -11,6 +11,9 @@
   <!-- ? FastSLAM -->
   <include file="$(find slam_fastslam)/launch/fastslam1.launch" pass_all_args="true" />
 
+  <!-- ? GraphSLAM -->
+  <include file="$(find slam_graphslam)/launch/graphslam.launch" pass_all_args="true" />
+
   <!-- ? SLAM MCL -->
   <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
     <arg name="path_to_map" value="/ugr/car/map/global"/>
