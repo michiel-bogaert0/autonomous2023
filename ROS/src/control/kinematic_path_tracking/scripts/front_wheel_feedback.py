@@ -40,7 +40,6 @@ class FrontWheelFeedback(KinematicTrackingNode):
         # Calculate the transversal error
         trans_error, heading_error = self.trajectory.calculate_transversal_error()
 
-        # Steering transmission is already being applied here, as the error is related to the steering angle (arcsin or arctan)
         pid_e = trans_error / self.actual_speed
 
         self.integral += pid_e * dt
