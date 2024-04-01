@@ -1,0 +1,4 @@
+<launch>
+
+  <node pkg="dio_driver" output="screen" type="run_driver.py" name="dio_driver" launch-prefix="sudo"></node>
+</launch>
