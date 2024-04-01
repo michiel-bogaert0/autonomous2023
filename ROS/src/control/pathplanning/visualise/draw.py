@@ -128,6 +128,9 @@ class Draw:
         self.draw_unvisible_cones(
             self.widget.yellow_cones, painter, QtG.QColor(QtC.Qt.yellow)
         )
+        self.draw_unvisible_cones(
+            self.widget.orange_cones, painter, QtG.QColor(255, 165, 0)
+        )
         self.draw_visible_cones(
             self.widget.selected_blue_cones, painter, QtG.QColor(QtC.Qt.blue)
         )
@@ -135,7 +138,7 @@ class Draw:
             self.widget.selected_yellow_cones, painter, QtG.QColor(QtC.Qt.yellow)
         )
         self.draw_visible_cones(
-            self.widget.orange_cones, painter, QtG.QColor(255, 165, 0)
+            self.widget.selected_orange_cones, painter, QtG.QColor(255, 165, 0)
         )
         self.draw_indexes(self.widget.blue_cones, painter, QtG.QColor(QtC.Qt.white))
         self.draw_indexes(self.widget.yellow_cones, painter, QtG.QColor(QtC.Qt.black))
