@@ -17,7 +17,7 @@
         <remap from="/input/loopClosure" to="/ugr/car/loopclosure"/>
         <remap from="/input/observations" to="/ugr/car/observations/lidar" />
         <remap from="/input/map" to="/ugr/car/map/gt" />
-        <remap from="/input/obs/fslam" to="/ugr/car/map/fastslam/global"/>
+        <remap from="/input/obs/fslam" to="/ugr/car/map/slam/global"/>
 
         <remap from="/output/trajectorEvaluation" to="/ugr/car/evaluation/info"/>
         <remap from="/output/trajectorEvaluationMap" to="/ugr/car/evaluation/infoMap"/>

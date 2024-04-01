@@ -96,6 +96,11 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 COPY requirements.nogpu.txt requirements.txt
 RUN pip install -r requirements.txt
 
+# Download and unzip G2O
+RUN wget -O g2o.tar.gz https://github.com/RainerKuemmerle/g2o/archive/refs/tags/20230806_git.tar.gz && mkdir g2o && tar -xf g2o.tar.gz -C g2o --strip-components=1
+# Install G2O
+RUN cd g2o && mkdir build && cd build && cmake .. && make && cd ../..
+
 # Handy commands
 RUN echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.zshrc && \
     echo "alias sdev=\"source ~/autonomous2023/ROS/devel/setup.zsh\"" >> ~/.zshrc && \

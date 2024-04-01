@@ -69,14 +69,16 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
         double x_coord = (coords[index1] + coords[index2]) / 2;
         double y_coord = (coords[index1 + 1] + coords[index2 + 1]) / 2;
 
-        // If this is true, this means that the two points that make up the
+        // If this is false, this means that the two points that make up the
         // centerpoint are the same color (except for orange cones). So then we
         // have a bad point!
 
-        int compound_class = classes[triangles[3 * i + j]] +
-                             classes[triangles[(3 * i + j + 1) % 3 + 3 * i]];
+        int class1 = classes[triangles[3 * i + j]];
+        int class2 = classes[triangles[(3 * i + j + 1) % 3 + 3 * i]];
 
-        if (compound_class == 1 || compound_class == 4) {
+        int compound_class = class1 + class2;
+
+        if (compound_class == 1 || class1 == 2 || class2 == 2) {
           filtered_coords.push_back(coords[2 * triangles[3 * i]]);
           filtered_coords.push_back(coords[2 * triangles[3 * i] + 1]);
           center_points.push_back({x_coord, y_coord});
@@ -120,7 +122,7 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
 
   // Add closest center in front of you as this one will not be duplicated
   std::vector<std::vector<double>> closest_centers =
-      sort_closest_to(duplicated_centers, {0.0, 0.0}, range_front);
+      sort_closest_to(center_points, {0.0, 0.0}, range_front);
   if (!closest_centers.empty()) {
     duplicated_centers.push_back(closest_centers.front());
   } else {

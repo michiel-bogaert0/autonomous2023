@@ -8,12 +8,13 @@
         <param name="max_angle_change" value="1.5" />
         <param name="max_path_distance" value="10" />
         <param name="safety_dist" value="0.3" />
+        <param name="close_path_dist" value="7.0" />
 
         <param name="range_front" value="100" />
         <param name="range_sides" value="100" />
         <param name="range_behind" value="100" />
         
-        <remap from="/input/local_map" to="/ugr/car/map/fastslam/local"/>
+        <remap from="/input/local_map" to="/ugr/car/map/slam/local"/>
         <remap from="/output/path" to="/pathplanning/poses"/>
 
         <param name="debug_visualisation" value="true" />

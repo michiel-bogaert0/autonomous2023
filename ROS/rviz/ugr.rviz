@@ -253,7 +253,7 @@ Visualization Manager:
           Enabled: true
           Name: GT
           Queue Size: 10
-          Realistic: true
+          Realistic: false
           Topic: /ugr/car/map/gt
           Unreliable: false
           Value: true
@@ -279,12 +279,48 @@ Visualization Manager:
           Class 3 color: 255; 69; 0
           Class 4 color: 0; 0; 0
           Enabled: true
-          Name: Map
+          Name: Map SLAM
           Queue Size: 10
           Realistic: true
-          Topic: /ugr/car/map/fastslam/global
+          Topic: /ugr/car/map/slam/global
           Unreliable: false
           Value: true
+        - Alpha: 1
+          Arrow Length: 0.30000001192092896
+          Axes Length: 0.30000001192092896
+          Axes Radius: 0.009999999776482582
+          Class: rviz/PoseArray
+          Color: 255; 255; 0
+          Enabled: true
+          Head Length: 0.3
+          Head Radius: 0.25
+          Name: GraphSLAM poses
+          Queue Size: 10
+          Shaft Length: 0.3
+          Shaft Radius: 0.05
+          Shape: Arrow (3D)
+          Topic: /graphslam/debug/vertices/poses
+          Unreliable: false
+          Value: false
+          Enabled: false
+        - Class: rviz/Marker
+          Enabled: true
+          Marker Topic: /graphslam/debug/edges/poses
+          Name: GraphSLAM edges poses
+          Namespaces:
+            {}
+          Queue Size: 10
+          Value: false
+          Enabled: false
+        - Class: rviz/Marker
+          Enabled: true
+          Marker Topic: /graphslam/debug/edges/landmarks
+          Name: GraphSLAM edges landmarks
+          Namespaces:
+            {}
+          Queue Size: 10
+          Value: false
+          Enabled: false
         - Alpha: 1
           Arrow Length: 0.30000001192092896
           Axes Length: 0.30000001192092896
@@ -334,7 +370,7 @@ Visualization Manager:
             Shaft Length: 0.5
             Shaft Radius: 0.05000000074505806
             Value: Arrow
-          Topic: /ugr/car/odometry/filtered/fastslam
+          Topic: /ugr/car/odometry/filtered/slam
           Unreliable: false
           Value: false
         - Angle Tolerance: 0.10000000149011612
