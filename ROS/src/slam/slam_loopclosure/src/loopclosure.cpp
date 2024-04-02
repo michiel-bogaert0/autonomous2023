@@ -175,6 +175,7 @@ void LoopClosure::ResetLoop() {
 }
 
 void LoopClosure::ResetClosure() {
+  ros::Rate loop_rate(50); // Set the loop rate to 50 Hz
   // Fetch startposition from /tf
   ROS_INFO("Resetting counter. Waiting for initial pose...");
   while (!tfBuffer.canTransform(this->world_frame, this->base_link_frame,
@@ -183,6 +184,9 @@ void LoopClosure::ResetClosure() {
     if (!ros::ok()) {
       return;
     }
+
+    // Sleep to maintain the desired loop rate
+    loop_rate.sleep();
   }
   ROS_INFO("Got initial pose!");
 
