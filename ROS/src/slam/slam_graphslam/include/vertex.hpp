@@ -38,6 +38,7 @@ public:
   float beliefs[3];
 
   void setColor(int c, float b);
+  void addBeliefs(float b0, float b1, float b2);
   int getColor();
 
   virtual void setToOriginImpl() { _estimate.setZero(); }
