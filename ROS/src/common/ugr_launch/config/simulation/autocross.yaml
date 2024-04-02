@@ -2,7 +2,7 @@ slam_controller:
   node_management:
     exploration:
       # SLAM
-      - fastslam
+      - graphslam
 
     always:
       # SLAM
@@ -13,7 +13,7 @@ slam_controller:
       - pathplanning
 
 slam_mcl:
-  path_to_map: "/ugr/car/map/fastslam/global"
+  path_to_map: "/ugr/car/map/slam/global"
 loopclosure:
   finishpoint: [0, 0, 0]
 speed:

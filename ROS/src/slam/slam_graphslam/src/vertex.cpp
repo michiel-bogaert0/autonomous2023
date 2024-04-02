@@ -36,6 +36,12 @@ LandmarkVertex::LandmarkVertex() : BaseVertex<2, Vector2d>() {
 
 void LandmarkVertex::setColor(int c, float b) { this->beliefs[c] += b; }
 
+void LandmarkVertex::addBeliefs(float b0, float b1, float b2) {
+  this->beliefs[0] += b0;
+  this->beliefs[1] += b1;
+  this->beliefs[2] += b2;
+}
+
 int LandmarkVertex::getColor() {
   float max_belief = this->beliefs[0];
   int max_index = 0;
