@@ -15,6 +15,7 @@
     <param name="maximum_output_current" value="20" />
     <param name="minimum_input_current" value="4" />
     <param name="maximum_input_current" value="20" />
+    <remap from="/input0" to="/iologik/input0" />
     <remap from="/input1" to="/iologik/input1" />
     <remap from="/input2" to="/iologik/input2" />
     <remap from="/input3" to="/iologik/input3" />
@@ -22,8 +23,7 @@
     <remap from="/input5" to="/iologik/input5" />
     <remap from="/input6" to="/iologik/input6" />
     <remap from="/input7" to="/iologik/input7" />
-    <remap from="/input8" to="/iologik/input8" />
+    <remap from="/output0" to="/iologik/output0" />
     <remap from="/output1" to="/iologik/output1" />
-    <remap from="/output2" to="/iologik/output2" />
   </node>
 </launch>

@@ -23,6 +23,16 @@ void iologik::doConfigure() {
   n_.param<bool>("enable_i5", enable_i5, false);
   n_.param<bool>("enable_i6", enable_i6, false);
   n_.param<bool>("enable_i7", enable_i7, false);
+  std::vector<bool> enables = {enable_i0, enable_i1, enable_i2, enable_i3,
+                               enable_i4, enable_i5, enable_i6, enable_i7};
+  for (int i = 0; i < enables.size(); i++) {
+    if (enables[i]) {
+      if (start_channel == -1) {
+        start_channel = i;
+      }
+      enabled_channels++;
+    }
+  }
   n_.param<bool>("enable_o0", enable_o0, false);
   n_.param<bool>("enable_o1", enable_o1, false);
   n_.param<double>("minimum_output_current", minimum_output_current, 4);
@@ -38,6 +48,7 @@ void iologik::output0Callback(std_msgs::Float64 msg) {
     return; // don't change output to incorrect values
   }
   output0 = msg.data;
+  o0_changed = true;
 }
 void iologik::output1Callback(std_msgs::Float64 msg) {
   if (msg.data < minimum_output_current || msg.data > maximum_output_current) {
@@ -47,6 +58,7 @@ void iologik::output1Callback(std_msgs::Float64 msg) {
     return; // don't change output to incorrect values
   }
   output1 = msg.data;
+  o1_changed = true;
 }
 
 void iologik::doActivate() { this->open(); }
@@ -66,81 +78,87 @@ void iologik::close() {
 void iologik::active() {
   // Read the input registers
   double dwValues[8] = {0};
-  iRet = AI_Reads(iHandle,   // the handle for a connection
-                  0,         // unused
-                  0,         // starting channel
-                  8,         // read channel count
-                  dwValues); // DI reading value
-  CheckErr(iHandle, iRet, (char *)"DI_Reads");
-  std_msgs::Float64 msg;
-  for (int i = 0; i < 8; ++i) {
-    msg.data = dwValues[i];
-    switch (i) {
-    case 0:
-      if (enable_i0) {
-        CheckInput(0, msg.data);
-        input0_pub_.publish(msg);
+  if (start_channel != -1) {
+    iRet = AI_Reads(
+        iHandle,                   // the handle for a connection
+        0,                         // unused
+        start_channel,             // starting channel
+        enabled_channels,          // read channel count
+        &dwValues[start_channel]); // DI reading value, make sure the inputs get
+                                   // written at the correct index
+    CheckErr(iHandle, iRet, (char *)"DI_Reads");
+    std_msgs::Float64 msg;
+    for (int i = 0; i < 8; ++i) {
+      msg.data = dwValues[i];
+      switch (i) {
+      case 0:
+        if (enable_i0) {
+          CheckInput(0, msg.data);
+          input0_pub_.publish(msg);
+        }
+        break;
+      case 1:
+        if (enable_i1) {
+          CheckInput(1, msg.data);
+          input1_pub_.publish(msg);
+        }
+        break;
+      case 2:
+        if (enable_i2) {
+          CheckInput(2, msg.data);
+          input2_pub_.publish(msg);
+        }
+        break;
+      case 3:
+        if (enable_i3) {
+          CheckInput(3, msg.data);
+          input3_pub_.publish(msg);
+        }
+        break;
+      case 4:
+        if (enable_i4) {
+          CheckInput(4, msg.data);
+          input4_pub_.publish(msg);
+        }
+        break;
+      case 5:
+        if (enable_i5) {
+          CheckInput(5, msg.data);
+          input5_pub_.publish(msg);
+        }
+        break;
+      case 6:
+        if (enable_i6) {
+          CheckInput(6, msg.data);
+          input6_pub_.publish(msg);
+        }
+        break;
+      case 7:
+        if (enable_i7) {
+          CheckInput(7, msg.data);
+          input7_pub_.publish(msg);
+        }
+        break;
       }
-      break;
-    case 1:
-      if (enable_i1) {
-        CheckInput(1, msg.data);
-        input1_pub_.publish(msg);
-      }
-      break;
-    case 2:
-      if (enable_i2) {
-        CheckInput(2, msg.data);
-        input2_pub_.publish(msg);
-      }
-      break;
-    case 3:
-      if (enable_i3) {
-        CheckInput(3, msg.data);
-        input3_pub_.publish(msg);
-      }
-      break;
-    case 4:
-      if (enable_i4) {
-        CheckInput(4, msg.data);
-        input4_pub_.publish(msg);
-      }
-      break;
-    case 5:
-      if (enable_i5) {
-        CheckInput(5, msg.data);
-        input5_pub_.publish(msg);
-      }
-      break;
-    case 6:
-      if (enable_i6) {
-        CheckInput(6, msg.data);
-        input6_pub_.publish(msg);
-      }
-      break;
-    case 7:
-      if (enable_i7) {
-        CheckInput(7, msg.data);
-        input7_pub_.publish(msg);
-      }
-      break;
     }
   }
   // Write the output register
-  if (enable_o0) {
+  if (enable_o0 && o0_changed) {
     iRet = AO_Write(iHandle, 0,
                     0,      // Selected channel
                     output0 // Value
     );
     CheckErr(iHandle, iRet, (char *)"AO0_Writes");
+    o0_changed = false;
   }
 
-  if (enable_o1) {
+  if (enable_o1 && o1_changed) {
     iRet = AO_Write(iHandle, 0,
                     1,      // Selected channel
                     output1 // Value
     );
     CheckErr(iHandle, iRet, (char *)"AO1_Writes");
+    o1_changed = false;
   }
 }
 
@@ -258,8 +276,7 @@ void iologik::CheckErr(int iHandle, int iRet, char *szFunctionName) {
 void iologik::CheckInput(int channel, double input) {
 
   if ((input < minimum_input_current) || (input > maximum_input_current)) {
-    ROS_INFO("%f and %f and %f", minimum_input_current, maximum_input_current,
-             input);
+    // go into error when the input values are not within the right range
     ROS_ERROR("Input value of %f on channel %d not within the right range",
               input, channel);
     this->setHealthStatus(diagnostic_msgs::DiagnosticStatus::ERROR,
