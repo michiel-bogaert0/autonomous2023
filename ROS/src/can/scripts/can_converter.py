@@ -36,6 +36,7 @@ class CanConverter(ManagedNode):
 
     def listen_on_can(self) -> None:
         """Listens to CAN and publishes all incoming messages to a topic (still non-readable format)"""
+        """can_processor is used to decode the messages and publish them to a specific topic"""
 
         # iterate over received messages, keeps looping forever
         for msg in self.bus:
