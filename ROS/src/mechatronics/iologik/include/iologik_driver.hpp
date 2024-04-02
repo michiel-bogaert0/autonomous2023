@@ -60,4 +60,4 @@ private:
   int iHandle; // handle
 };
 
-#endif // iologik_HPP
+#endif // iologik_driver_HPP
