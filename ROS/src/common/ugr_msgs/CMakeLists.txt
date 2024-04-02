@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
     sensor_msgs
     fs_msgs
     nav_msgs
+    diagnostic_msgs
 )
 
 add_message_files(
@@ -36,6 +37,7 @@ add_message_files(
   ObservationWithCovarianceArrayStamped.msg
   ObservationArrayWithCovarianceStamped.msg
   Boundaries.msg
+  CanFrame.msg
   PathArray.msg
   TrajectoryError.msg
   TrajectoryInfo.msg
@@ -48,6 +50,7 @@ generate_messages(
   geometry_msgs
   sensor_msgs
   fs_msgs
+  diagnostic_msgs
   nav_msgs
 )
 
