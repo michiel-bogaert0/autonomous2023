@@ -83,7 +83,7 @@ class CanConverter(ManagedNode):
 
         signals_dict = {}
         for signal in msg.signals:
-            signals_dict[signal.key] = float(signal.value)
+            signals_dict[signal.key] = signal.value
 
         encoded_msg = db_msg.encode(signals_dict)
 

@@ -1,3 +1,3 @@
 std_msgs/Header header
 string message
-diagnostic_msgs/KeyValue[] signals
+ugr_msgs/KeyValueFloat[] signals

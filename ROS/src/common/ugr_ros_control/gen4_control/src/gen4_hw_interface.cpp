@@ -230,10 +230,23 @@ void Gen4HWInterface::publish_torque_msg(float axis)
   // no TV at low speeds
   if (car_speed > 5 && this->use_torque_vectoring == true)
   {
-    // float dT = this->torque_vectoring();
-    // float axis0 = axis - dT / 2;
-    // float axis1 = axis + dT / 2;
+    float dT = this->torque_vectoring();
+    float axis0 = axis - dT / 2;
+    float axis1 = axis + dT / 2;
   }
+
+  std::vector<diagnostic_msgs::KeyValue> msg;
+  // header
+  msg.header.stamp = ros::Time::now();
+  // message
+  msg.message = "HV500_SetAcCurrent"
+  // signal
+  diagnostic_msgs::KeyValue kv;
+  kv.key = "CMD_TargetAcCurrent";
+  kv.value = axis0;
+  msg.push_back(kv) 
+  // publish
+  can_pub.publish(msg)
 
   // TODO : look for the can id's in dbc file (id's for cmd_target_speed or cmd_target_position or (cmd_target_current))
   // TODO : send the motor commands in can_msgs::Frame format on the can bus
