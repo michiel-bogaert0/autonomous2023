@@ -175,6 +175,7 @@ void LapCounter::ResetLoop() {
 }
 
 void LapCounter::ResetClosure() {
+  ros::Rate loop_rate(50);
   // Fetch startposition from /tf
   ROS_INFO("Resetting counter. Waiting for initial pose...");
   while (!tfBuffer.canTransform(this->world_frame, this->base_link_frame,
@@ -183,6 +184,7 @@ void LapCounter::ResetClosure() {
     if (!ros::ok()) {
       return;
     }
+    loop_rate.sleep();
   }
   ROS_INFO("Got initial pose!");
 
