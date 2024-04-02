@@ -59,6 +59,8 @@ class PerceptionSimulator(StageSimulator):
             "~cone_noise", 0.0 / 20
         )  # Noise per meter distance. Gets scaled with range
 
+        self.color_prob = rospy.get_param("~color_prob", 0.05)
+
         # Diagnostics Publisher
         self.diagnostics = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
@@ -142,10 +144,26 @@ class PerceptionSimulator(StageSimulator):
             ) > self.fov:
                 continue
 
+            range = (cone[0] ** 2 + cone[1] ** 2) ** (1 / 2)
             if self.add_noise:
-                range = (cone[0] ** 2 + cone[1] ** 2) ** (1 / 2)
                 cone[0] += np.random.randn() * self.cone_noise * range
                 cone[1] += np.random.randn() * self.cone_noise * range
+
+            cov = [
+                (self.cone_noise * range) ** 2,
+                0.0,
+                0.0,
+                0.0,
+                (self.cone_noise * range) ** 2,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ]
+
+            if cone[3] == 0 or cone[3] == 1:
+                if np.random.rand() < self.color_prob:
+                    cone[3] = 1 - cone[3]
 
             filtered_cones.append(
                 ObservationWithCovariance(
@@ -153,7 +171,8 @@ class PerceptionSimulator(StageSimulator):
                         belief=1.0,
                         location=Point(x=cone[0], y=cone[1], z=cone[2]),
                         observation_class=int(cone[3]),
-                    )
+                    ),
+                    covariance=cov,
                 )
             )
 
