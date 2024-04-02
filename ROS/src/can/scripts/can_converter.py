@@ -4,7 +4,8 @@ import cantools
 import rospy
 from can_msgs.msg import Frame
 from can_processor import CanProcessor
-from node_fixture.managed_node import ManagedNode
+from node_fixture.managed_node import ManagedNode, NodeManagingStatesEnum
+from ugr_msgs.msg import CanFrame
 
 
 class CanConverter(ManagedNode):
@@ -37,7 +38,7 @@ class CanConverter(ManagedNode):
             interface="socketcan",
         )
 
-        rospy.Subscriber("ugr/send_can", Frame, self.send_on_can)
+        rospy.Subscriber("ugr/send_can", CanFrame, self.send_on_can)
 
     def listen_on_can(self) -> None:
         """Listens to CAN and publishes all incoming messages to a topic (still non-readable format)"""
@@ -45,24 +46,25 @@ class CanConverter(ManagedNode):
 
         # iterate over received messages, keeps looping forever
         for msg in self.bus:
-            # publish message on ROS
-            can_msg = Frame()
-            can_msg.header.stamp = rospy.Time.from_sec(msg.timestamp)
-            can_msg.id = msg.arbitration_id
-            can_msg.data = msg.data
-            self.can_pub.publish(can_msg)
+            if self.state == NodeManagingStatesEnum.ACTIVE:
+                # publish message on ROS
+                can_msg = Frame()
+                can_msg.header.stamp = rospy.Time.from_sec(msg.timestamp)
+                can_msg.id = msg.arbitration_id
+                can_msg.data = msg.data
+                self.can_pub.publish(can_msg)
 
-            # publish message on specific topic (without making duplicates of the same topic)
-            if can_msg.id not in self.can_ids:
-                self.specific_pubs[str(can_msg.id)] = rospy.Publisher(
-                    f"ugr/can/{can_msg.id}", Frame, queue_size=10
-                )
-                self.can_ids.append(can_msg.id)
+                # publish message on specific topic (without making duplicates of the same topic)
+                if can_msg.id not in self.can_ids:
+                    self.specific_pubs[str(can_msg.id)] = rospy.Publisher(
+                        f"ugr/can/{can_msg.id}", Frame, queue_size=10
+                    )
+                    self.can_ids.append(can_msg.id)
 
-            pub = self.specific_pubs[str(can_msg.id)]
-            pub.publish(can_msg)
+                pub = self.specific_pubs[str(can_msg.id)]
+                pub.publish(can_msg)
 
-            self.can_processor.receive_can_frame(can_msg)
+                self.can_processor.receive_can_frame(can_msg)
 
             # Check for external shutdown
             if rospy.is_shutdown():
@@ -70,21 +72,30 @@ class CanConverter(ManagedNode):
 
             self.update()
 
-    def send_on_can(self, msg: Frame) -> None:
+    def send_on_can(self, msg: CanFrame) -> None:
         """ "Sends all messages, published on ugr/send_can, to the can bus"""
 
+        if self.state != NodeManagingStatesEnum.ACTIVE:
+            return
+
         # encode the message
-        encoded_msg = self.db.encode_message(msg.id, msg.data)
+        db_msg = self.db.get_message_by_name(msg.message)
+
+        signals_dict = {}
+        for signal in msg.signals:
+            signals_dict[signal.key] = float(signal.value)
+
+        encoded_msg = db_msg.encode(signals_dict)
 
         # send the message
         self.bus.send(
             can.Message(
                 timestamp=msg.header.stamp.to_sec(),
-                is_error_frame=encoded_msg.is_error,
-                is_remote_frame=encoded_msg.is_rtr,
-                dlc=len(encoded_msg.data),
-                arbitration_id=encoded_msg.id,
-                data=list(encoded_msg.data),
+                is_error_frame=False,
+                is_remote_frame=False,
+                dlc=len(encoded_msg),
+                arbitration_id=db_msg.frame_id,
+                data=list(encoded_msg),
             )
         )
 
