@@ -27,6 +27,11 @@ class MergeNode:
             ObservationWithCovarianceArrayStamped,
             self.handle_observations,
         )
+        rospy.Subscriber(
+            "/input/early_fusion_observations",
+            ObservationWithCovarianceArrayStamped,
+            self.handle_observations,
+        )
 
         self.result_publisher = rospy.Publisher(
             "/output/topic", ObservationWithCovarianceArrayStamped, queue_size=10
@@ -42,15 +47,11 @@ class MergeNode:
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
 
         #   Topics
-        self.lidar_input_topic, self.camera_input_topic = (
-            "/input/lidar_observations",
-            "/input/camera_observations",
-        )
-        self.lidar_sensor_name, self.camera_sensor_name = (
+        self.input_sensors = [
             "os_sensor",
             "ugr/car_base_link/cam0",
-        )
-        self.input_sensors = ["os_sensor", "ugr/car_base_link/cam0"]
+            "???earlyfusion???",
+        ]
 
         #   Fusion parameters
         self.max_fusion_eucl_distance = float(

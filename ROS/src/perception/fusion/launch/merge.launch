@@ -8,6 +8,7 @@
     <param name="sensor_time_diff_ms" value="100" />
     <remap from="/input/lidar_observations" to="/ugr/car/observations/lidar"/>
     <remap from="/input/camera_observations" to="/ugr/car/observations/camera"/>
+    <remap from="/input/early_fusion_observations" to="/ugr/car/observations/early_fused"/>
     <remap from="/output/topic" to="/ugr/car/observations/fused"/>
   </node>
 </launch>
