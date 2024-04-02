@@ -362,14 +362,14 @@ void GraphSLAM::step() {
 
     this->vertexCounter++;
 
-    // covarianceMatrix << observation.covariance[0], observation.covariance[1],
-    //     observation.covariance[3],
-    //     observation.covariance[4]; // observation gives 3x3 matrix only first
-    //     2 rows and columns are used
-    // landmarkObservation->setInformation(covarianceMatrix.inverse());
+    Eigen::Matrix2d covarianceMatrix;
+    // observation gives 3x3 matrix only first 2 rows and columns are used
+    covarianceMatrix << observation.covariance[0], observation.covariance[1],
+        observation.covariance[3], observation.covariance[4];
+    landmarkObservation->setInformation(covarianceMatrix.inverse());
 
     // set the information matrix to the inverse of the covariance matrix
-    landmarkObservation->setInformation(this->information_landmark);
+    // landmarkObservation->setInformation(this->information_landmark);
     this->optimizer.addEdge(landmarkObservation);
   }
 
@@ -438,9 +438,17 @@ void GraphSLAM::step() {
             if (neighbor.index > node.index &&
                 find(merged_indices.begin(), merged_indices.end(),
                      neighbor.index) == merged_indices.end()) {
-              this->optimizer.mergeVertices(
-                  this->optimizer.vertex(node.index),
-                  this->optimizer.vertex(neighbor.index), true);
+              LandmarkVertex *firstLandmark = dynamic_cast<LandmarkVertex *>(
+                  this->optimizer.vertex(node.index));
+              LandmarkVertex *secondLandmark = dynamic_cast<LandmarkVertex *>(
+                  this->optimizer.vertex(neighbor.index));
+
+              firstLandmark->addBeliefs(secondLandmark->beliefs[0],
+                                        secondLandmark->beliefs[1],
+                                        secondLandmark->beliefs[2]);
+
+              this->optimizer.mergeVertices(firstLandmark, secondLandmark,
+                                            true);
               merged_indices.push_back(neighbor.index);
             }
           }
