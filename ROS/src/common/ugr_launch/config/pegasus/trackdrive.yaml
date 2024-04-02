@@ -11,7 +11,7 @@ slam_controller:
 
     always:
       # SLAM
-      - loopclosure
+      - lap_counter
 
       # Control
       - front_wheel_feedback_control
@@ -19,7 +19,7 @@ slam_controller:
 
 slam_mcl:
   path_to_map: "/ugr/car/map/fastslam/global"
-loopclosure:
+lap_counter:
   finishpoint: [0, 0, 0]
 speed:
   target: 1.0

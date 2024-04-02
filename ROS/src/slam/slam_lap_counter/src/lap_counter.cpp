@@ -1,4 +1,4 @@
-#include "loopclosure.hpp"
+#include "lap_counter.hpp"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include "std_msgs/UInt16.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
@@ -7,10 +7,10 @@
 #include <tf2_ros/transform_listener.h>
 
 namespace slam {
-LoopClosure::LoopClosure(ros::NodeHandle &n)
-    : ManagedNode(n, "loopclosure"), n(n), tfListener(tfBuffer) {}
+LapCounter::LapCounter(ros::NodeHandle &n)
+    : ManagedNode(n, "lap_counter"), n(n), tfListener(tfBuffer) {}
 
-void LoopClosure::doConfigure() {
+void LapCounter::doConfigure() {
   this->base_link_frame =
       n.param<std::string>("base_link_frame", "ugr/car_base_link");
   this->world_frame = n.param<std::string>("world_frame", "ugr/map");
@@ -26,20 +26,20 @@ void LoopClosure::doConfigure() {
   diagnosticPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(
       new node_fixture::DiagnosticPublisher(n, "SLAM LC"));
   loopClosedPublisher =
-      n.advertise<std_msgs::UInt16>("/output/loopClosure", 5, true);
+      n.advertise<std_msgs::UInt16>("/output/lapComplete", 5, true);
   reset_service = n.advertiseService(
-      "/reset_closure", &slam::LoopClosure::handleResetClosureService, this);
+      "/reset_closure", &slam::LapCounter::handleResetClosureService, this);
   adjust_finish = n.advertiseService(
-      "/adjust_finish", &slam::LoopClosure::handleAdjustFinishLine, this);
+      "/adjust_finish", &slam::LapCounter::handleAdjustFinishLine, this);
   adjust_targetpoint = n.advertiseService(
-      "/adjust_targetpoint", &slam::LoopClosure::handleAdjustTargetPoint, this);
+      "/adjust_targetpoint", &slam::LapCounter::handleAdjustTargetPoint, this);
 
   ResetClosure();
 
   ROS_INFO("Loop closure detection started!");
 }
 
-void LoopClosure::active() {
+void LapCounter::active() {
 
   if (this->latestTime - ros::Time::now().toSec() > 0.5 &&
       this->latestTime > 0.0) {
@@ -64,10 +64,10 @@ void LoopClosure::active() {
   }
 
   // ros::ServiceClient client =
-  // n.serviceClient<slam_loopclosure::FinishPoint>("/adjust_targetpoint");
+  // n.serviceClient<slam_lap_counter::FinishPoint>("/adjust_targetpoint");
 
   // Create a request message and populate the parameters
-  slam_loopclosure::FinishPoint req;
+  slam_lap_counter::FinishPoint req;
   req.request.point = startPosition;
 
   // calculate the vector from startpos to current pos
@@ -165,16 +165,16 @@ void LoopClosure::active() {
     }
   }
 }
-float LoopClosure::DotProduct(const geometry_msgs::Point &a,
-                              const geometry_msgs::Point &b) {
+float LapCounter::DotProduct(const geometry_msgs::Point &a,
+                             const geometry_msgs::Point &b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
-void LoopClosure::ResetLoop() {
+void LapCounter::ResetLoop() {
   doNotCheckDistance = false;
   checkDistanceGoingUpWhenInRange = false;
 }
 
-void LoopClosure::ResetClosure() {
+void LapCounter::ResetClosure() {
   // Fetch startposition from /tf
   ROS_INFO("Resetting counter. Waiting for initial pose...");
   while (!tfBuffer.canTransform(this->world_frame, this->base_link_frame,
@@ -206,7 +206,7 @@ void LoopClosure::ResetClosure() {
   runLoopClosureDetection = true;
 }
 
-void LoopClosure::publish() {
+void LapCounter::publish() {
 
   if (!this->isActive()) {
     return;
@@ -219,7 +219,7 @@ void LoopClosure::publish() {
       "#laps: " + std::to_string(amountOfLaps));
 }
 
-bool LoopClosure::handleResetClosureService(
+bool LapCounter::handleResetClosureService(
     std_srvs::Empty::Request &request, std_srvs::Empty::Response &response) {
   if (this->isActive()) {
     return false;
@@ -229,18 +229,18 @@ bool LoopClosure::handleResetClosureService(
   return true;
 }
 
-bool LoopClosure::handleAdjustFinishLine(
-    slam_loopclosure::FinishPoint::Request &request,
-    slam_loopclosure::FinishPoint::Response &response) {
+bool LapCounter::handleAdjustFinishLine(
+    slam_lap_counter::FinishPoint::Request &request,
+    slam_lap_counter::FinishPoint::Response &response) {
   ROS_INFO("Finish line is changed");
   this->finishPoint = request.point;
   isLoopingTarget = false;
   return true;
 }
 
-bool LoopClosure::handleAdjustTargetPoint(
-    slam_loopclosure::FinishPoint::Request &request,
-    slam_loopclosure::FinishPoint::Response &response) {
+bool LapCounter::handleAdjustTargetPoint(
+    slam_lap_counter::FinishPoint::Request &request,
+    slam_lap_counter::FinishPoint::Response &response) {
   ROS_INFO("Target point is changed");
   this->targetPoint = request.point;
   isLoopingTarget = true;

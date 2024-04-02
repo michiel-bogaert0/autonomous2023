@@ -8,13 +8,13 @@
     <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
         <arg name="path_to_map" value="/ugr/car/map/gt"/>
     </include>
-    <node pkg="slam_loopclosure" output="screen" respawn="true" type="loopclosure" name="loopclosure">
+    <node pkg="slam_lap_counter" output="screen" respawn="true" type="lap_counter" name="lap_counter">
         <param name="world_frame" value="$(arg world_frame)" />
         <param name="base_link_frame" value="$(arg base_link_frame)" />
         <rosparam param="finishpoint">[0,0,0]</rosparam>
         
-        <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
-        <remap from="/reset_closure" to="/ugr/srv/reset_loopclosure"/>
+        <remap from="/output/lapComplete" to="/ugr/car/lap_counter"/>
+        <remap from="/reset_closure" to="/ugr/srv/reset_lap_counter"/>
         <remap from="/adjust_finish" to="/ugr/srv/adjust_finish"/>
         <remap from="/adjust_targetpoint" to="/ugr/srv/adjust_targetpoint"/>
     </node>
