@@ -11,12 +11,22 @@ class CanConverter(ManagedNode):
     def __init__(self):
         super().__init__("can_driver_converter")
 
-        self.spin()
+        self.doConfigure()
+
+        self.listen_on_can()
 
     def doConfigure(self):
-        self.can_processor = CanProcessor()
+        self.db_adress = rospy.get_param("~db_adress", "motor.dbc")
 
-        self.can_pub = super.AddPublisher("ugr/can", Frame, queue_size=10)
+        db_address = __file__.split("/")[:-1]
+        db_address += ["..", "dbc", self.db_adress]
+        self.db_adress = "/".join(db_address)
+
+        self.db = cantools.database.load_file(self.db_adress)
+
+        self.can_processor = CanProcessor(db=self.db)
+
+        self.can_pub = self.AddPublisher("ugr/can", Frame, queue_size=10)
         self.can_ids = []
         self.specific_pubs = {}
 
@@ -24,15 +34,10 @@ class CanConverter(ManagedNode):
         self.bus = can.interface.Bus(
             channel=rospy.get_param("~can_interface", "can0"),
             bitrate=rospy.get_param("~can_baudrate", 250000),
+            interface="socketcan",
         )
 
         rospy.Subscriber("ugr/send_can", Frame, self.send_on_can)
-
-    def active(self):
-        try:
-            self.listen_on_can()
-        except rospy.ROSInterruptException:
-            pass
 
     def listen_on_can(self) -> None:
         """Listens to CAN and publishes all incoming messages to a topic (still non-readable format)"""
@@ -63,13 +68,10 @@ class CanConverter(ManagedNode):
             if rospy.is_shutdown():
                 return
 
+            self.update()
+
     def send_on_can(self, msg: Frame) -> None:
         """ "Sends all messages, published on ugr/send_can, to the can bus"""
-
-        self.db_adress = rospy.get_param(
-            "~db_adress", "autonomous2023/ROS/src/can/dbc/motor.dbc"
-        )
-        self.db = cantools.database.load_file(self.db_adress)
 
         # encode the message
         encoded_msg = self.db.encode_message(msg.id, msg.data)

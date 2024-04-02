@@ -1,8 +1,7 @@
 <launch>
-    <node pkg="can_node" type="can_converter.py" name="can_converter" respawn="true" output="screen">
+    <node pkg="can" type="can_converter.py" name="can_cvrt" respawn="false" output="screen">
         <param name="can_interface" type="string" value="can0"/>
         <param name="can_baudrate" type="int" value="1000000"/>
-        <param name="db_adress" type="string" value="autonomous2023/ROS/src/can/dbc/motor_leftright.dbc"/>
-
+        <param name="db_adress" type="string" value="PDU.dbc"/>
     </node>
 </launch>

@@ -1,28 +1,32 @@
 #!/usr/bin/env python3
-import cantools
 import rospy
 from can_msgs.msg import Frame
 from dictionaries import messages, publishers
 
 
 class CanProcessor:
-    def __init__(self):
+    def __init__(self, db):
         self.messages = messages
         self.publishers = publishers
 
-        self.db_adress = rospy.get_param(
-            "~db_adress", "autonomous2023/ROS/src/can/dbc/motor.dbc"
-        )
-        self.db = cantools.database.load_file(self.db_adress)
+        self.db = db
 
     def receive_can_frame(self, msg: Frame) -> None:
         """Receives CAN frames, converts them to readable format and publishes them to a topic"""
 
         # decode the message
-        decoded_msg = self.db.decode_message(msg.id, msg.data)
+        try:
+            decoded_msg = self.db.decode_message(msg.id, msg.data)
+        except KeyError as e:
+            # This means that the message is not in the database...
+            # Just log a warning and return...
+            rospy.logwarn(f"Message not in database {e}")
+            return
 
         # send the message
         for topic_name, msg in decoded_msg.items():
+            topic_name = topic_name.lower().replace(" ", "_")
+
             # create ros msg
             type_name = str(type(msg))
             if type_name not in self.messages.keys():
