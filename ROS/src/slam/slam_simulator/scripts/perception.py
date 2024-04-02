@@ -142,10 +142,23 @@ class PerceptionSimulator(StageSimulator):
             ) > self.fov:
                 continue
 
+            cov = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
             if self.add_noise:
                 range = (cone[0] ** 2 + cone[1] ** 2) ** (1 / 2)
                 cone[0] += np.random.randn() * self.cone_noise * range
                 cone[1] += np.random.randn() * self.cone_noise * range
+                cov = [
+                    (self.cone_noise * range) ** 2,
+                    0.0,
+                    0.0,
+                    0.0,
+                    (self.cone_noise * range) ** 2,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
 
             filtered_cones.append(
                 ObservationWithCovariance(
@@ -153,7 +166,8 @@ class PerceptionSimulator(StageSimulator):
                         belief=1.0,
                         location=Point(x=cone[0], y=cone[1], z=cone[2]),
                         observation_class=int(cone[3]),
-                    )
+                    ),
+                    covariance=cov,
                 )
             )
 
