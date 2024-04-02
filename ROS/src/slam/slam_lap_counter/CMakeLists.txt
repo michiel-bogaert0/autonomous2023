@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(slam_loopclosure)
+project(slam_lap_counter)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -49,10 +49,10 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -O3")
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
-file(GLOB srcs src/loopclosure.cpp src/run_loopclosure.cpp include/loopclosure.hpp)
+file(GLOB srcs src/lap_counter.cpp src/run_lap_counter.cpp include/lap_counter.hpp)
 
 
 
-add_executable(loopclosure ${srcs})
-add_dependencies(loopclosure ${catkin_EXPORTED_TARGETS})
-target_link_libraries(loopclosure ${catkin_LIBRARIES})
+add_executable(lap_counter ${srcs})
+add_dependencies(lap_counter ${catkin_EXPORTED_TARGETS})
+target_link_libraries(lap_counter ${catkin_LIBRARIES})

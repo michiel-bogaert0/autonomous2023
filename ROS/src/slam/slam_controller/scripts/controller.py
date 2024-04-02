@@ -34,7 +34,7 @@ class Controller(NodeManager):
         self.change_mission_thread = Thread(target=self.change_mission)
 
         rospy.Subscriber("/state", State, self.handle_state_change)
-        rospy.Subscriber("/input/loopclosure", UInt16, self.lapFinished)
+        rospy.Subscriber("/input/lapComplete", UInt16, self.lapFinished)
 
         self.diagnostics_publisher = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10

@@ -7,7 +7,7 @@ slam_controller:
 
     always:
       # SLAM
-      - loopclosure
+      - lap_counter
 
       # Control
       - front_wheel_feedback_control

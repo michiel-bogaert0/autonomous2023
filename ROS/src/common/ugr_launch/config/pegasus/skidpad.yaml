@@ -3,7 +3,7 @@ slam_controller:
     always:
       # SLAM
       - slam_mcl
-      - loopclosure
+      - lap_counter
       - map_publisher
 
       # Control
@@ -12,7 +12,7 @@ slam_controller:
 
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
-loopclosure:
+lap_counter:
   finishpoint: [24, 0, 0]
 map_publisher:
   map_pkg: "slam_simulator"

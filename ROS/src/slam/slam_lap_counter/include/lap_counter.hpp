@@ -1,6 +1,6 @@
 #include "managed_node.hpp"
 #include "node_fixture/node_fixture.hpp"
-#include "slam_loopclosure/FinishPoint.h"
+#include "slam_lap_counter/FinishPoint.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2_ros/buffer.h"
 #include <geometry_msgs/Point.h>
@@ -11,18 +11,18 @@
 #include <tf2_ros/transform_listener.h>
 
 namespace slam {
-class LoopClosure : public node_fixture::ManagedNode {
+class LapCounter : public node_fixture::ManagedNode {
 public:
-  explicit LoopClosure(ros::NodeHandle &n);
+  explicit LapCounter(ros::NodeHandle &n);
 
   bool handleResetClosureService(std_srvs::Empty::Request &request,
                                  std_srvs::Empty::Response &response);
   bool
-  handleAdjustFinishLine(slam_loopclosure::FinishPoint::Request &request,
-                         slam_loopclosure::FinishPoint::Response &response);
+  handleAdjustFinishLine(slam_lap_counter::FinishPoint::Request &request,
+                         slam_lap_counter::FinishPoint::Response &response);
   bool
-  handleAdjustTargetPoint(slam_loopclosure::FinishPoint::Request &request,
-                          slam_loopclosure::FinishPoint::Response &response);
+  handleAdjustTargetPoint(slam_lap_counter::FinishPoint::Request &request,
+                          slam_lap_counter::FinishPoint::Response &response);
 
   void active() override;
 
