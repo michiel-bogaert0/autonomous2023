@@ -20,8 +20,9 @@ public:
   void doDeactivate() override;
 
 private:
-  ros::Publisher input0_pub_; // inputs, they need to be grouped to make sure
-                              // the reading is efficient
+  ros::Publisher
+      input0_pub_; // inputs need to be grouped to make sure
+                   // the reading is efficient (otherwise it won't work)
   ros::Publisher input1_pub_;
   ros::Publisher input2_pub_;
   ros::Publisher input3_pub_;
@@ -61,7 +62,7 @@ private:
   bool o0_changed = false; // so that we don't keep writing the same value but
                            // only when the value is changed
   bool o1_changed = false;
-  int iRet;    // return value
+  int iRet;    // return value from the CheckErr function
   int iHandle; // handle
 };
 

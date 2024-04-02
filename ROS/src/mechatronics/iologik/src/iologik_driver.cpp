@@ -25,12 +25,14 @@ void iologik::doConfigure() {
   n_.param<bool>("enable_i7", enable_i7, false);
   std::vector<bool> enables = {enable_i0, enable_i1, enable_i2, enable_i3,
                                enable_i4, enable_i5, enable_i6, enable_i7};
-  for (int i = 0; i < enables.size(); i++) {
+  for (int i = 0; i < enables.size(); i++) { // find the index of the lowest
+                                             // enabled input
     if (enables[i]) {
       if (start_channel == -1) {
         start_channel = i;
       }
-      enabled_channels++;
+      enabled_channels++; // count the number of enabled channels so that we
+                          // know how many should be read
     }
   }
   n_.param<bool>("enable_o0", enable_o0, false);
@@ -40,6 +42,14 @@ void iologik::doConfigure() {
   n_.param<double>("minimum_input_current", minimum_input_current, 4);
   n_.param<double>("maximum_input_current", maximum_input_current, 20);
 }
+
+/**
+ * @brief The callbacks for the output topics, these also check whether the
+ * published value is within the right range and set the health status to warn
+ * if it is not
+ *
+ * @arg msg: the float message containing the published output value
+ */
 void iologik::output0Callback(std_msgs::Float64 msg) {
   if (msg.data < minimum_output_current || msg.data > maximum_output_current) {
     ROS_WARN("Value given to output0 of iologik is not within the right range");
@@ -75,6 +85,11 @@ void iologik::close() {
   CheckErr(iHandle, iRet, (char *)"MXEIO_Disconnect");
 }
 
+/**
+ * @brief The main loop which will read in all enabled inputs and write the
+ * enabled outputs if those have been changed
+ *
+ */
 void iologik::active() {
   // Read the input registers
   double dwValues[8] = {0};
@@ -162,6 +177,16 @@ void iologik::active() {
   }
 }
 
+/**
+ * @brief Checks for errors after each MXIO function call. If the function call
+ * fails, the node will go into error and exit
+ *
+ * @arg iHandle: the handle for the connection
+ *
+ * @arg iRet: the return value of the function call
+ *
+ * @arg szFunctionName: the name of the function that was called
+ */
 void iologik::CheckErr(int iHandle, int iRet, char *szFunctionName) {
   if (iRet != MXIO_OK) {
     const char *szErrMsg;
@@ -257,8 +282,8 @@ void iologik::CheckErr(int iHandle, int iRet, char *szFunctionName) {
     case FUNCTION_NOT_SUPPORT:
       szErrMsg = "FUNCTION_NOT_SUPPORT";
       break;
-    case OUTPUT_VALUE_OUT_OF_RANGE: // can't happen (see callback for output
-                                    // topics)
+    case OUTPUT_VALUE_OUT_OF_RANGE: // this can't happen (see callback for
+                                    // output topics)
       szErrMsg = "OUTPUT_VALUE_OUT_OF_RANGE";
       break;
     case INPUT_VALUE_OUT_OF_RANGE: // could mean there is a broken cable/sensor
@@ -273,6 +298,15 @@ void iologik::CheckErr(int iHandle, int iRet, char *szFunctionName) {
     exit(1);
   }
 }
+
+/**
+ * @brief Checks whether the input values are within the right range. If this is
+ * not the case, the node will go into error and exit
+ *
+ * @arg channel: the index of the input channel that is being checked
+ *
+ * @arg input: the input value that is being checked
+ */
 void iologik::CheckInput(int channel, double input) {
 
   if ((input < minimum_input_current) || (input > maximum_input_current)) {
