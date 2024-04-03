@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="dio_driver" output="screen" type="run_driver" name="dio_driver_1" launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
+  <node pkg="dio_driver" output="screen" type="run_driver" respawn="true" name="dio_driver_1" launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
 
     <param name="rate" value="10" />
 
@@ -27,7 +27,7 @@
     <param name="enable_DO7" value="true" />
   </node>
   
-  <node pkg="dio_driver" output="screen" type="run_driver" name="dio_driver_2" launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
+  <node pkg="dio_driver" output="screen" type="run_driver" respawn="true" name="dio_driver_2" launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
 
     <param name="rate" value="10" />
 
