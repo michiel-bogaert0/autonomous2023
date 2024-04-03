@@ -1,10 +1,10 @@
 <launch>
-  <node pkg="dio_driver" output="screen" type="run_driver" name="dio_driver_1" launch-prefix="sudo -H">
+  <node pkg="dio_driver" output="screen" type="run_driver" name="dio_driver_1" launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
 
     <param name="rate" value="10" />
 
     <!-- Bank (1/2) -->
-    <param name="bank" type="int" value="1"/>
+    <param name="bank_id" type="int" value="1"/>
 
     <!-- Inputs READ BY IPC -->
     <param name="enable_DI0" value="true" />
@@ -27,12 +27,12 @@
     <param name="enable_DO7" value="true" />
   </node>
   
-  <node pkg="dio_driver" output="screen" type="run_driver" name="dio_driver_2" launch-prefix="sudo">
+  <node pkg="dio_driver" output="screen" type="run_driver" name="dio_driver_2" launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
 
     <param name="rate" value="10" />
 
     <!-- Bank (1/2) -->
-    <param name="bank" type="int" value="2"/>
+    <param name="bank_id" type="int" value="2"/>
 
     <!-- Inputs READ BY IPC -->
     <param name="enable_DI0" value="true" />
