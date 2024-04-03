@@ -48,6 +48,8 @@ void DIODriver::doCleanup() {
       this->di_pub[i].shutdown();
     }
   }
+
+  this->setHealthStatus(0, "OK", {});
 }
 
 void DIODriver::active() {
@@ -107,6 +109,8 @@ void DIODriver::doConfigure() {
   if (this->enable_temp) {
     this->cpu_temp_pub = this->nh.advertise<std_msgs::Int8>("cpu_temp", 1);
   }
+
+  this->setHealthStatus(0, "OK", {});
 }
 
 bool DIODriver::isError(bool ret_val, std::string msg) {
