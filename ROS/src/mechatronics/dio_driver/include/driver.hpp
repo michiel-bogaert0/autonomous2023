@@ -9,6 +9,8 @@
 #define _STDCALL_
 #define LLIB dlsym
 
+// Typedefs for libvecow stuff
+
 typedef BOOL(_STDCALL_ *_B_IBIBIWIW)(BYTE *I1, BYTE *I2, WORD *I3,
                                      WORD *I4);     // return_dll_version
 typedef BOOL(_STDCALL_ *_B_OBOB)(BYTE O1, BYTE O2); // initial_SIO
@@ -29,15 +31,50 @@ class DIODriver : public node_fixture::ManagedNode {
 public:
   explicit DIODriver(ros::NodeHandle &n, int bank_id);
 
+  /**
+   * @brief Configure the node
+   *
+   * This function is called by the ManagedNode base class to configure the
+   * node. Basically reads parameters and makes publishers/subscribers
+   */
   virtual void doConfigure();
+
+  /**
+   * @brief Cleanup the node
+   *
+   * This function is called by the ManagedNode base class to cleanup the node.
+   * Basically removes publishers/subscribers
+   */
   virtual void doCleanup();
+
+  /**
+   * @brief Activate the node
+   *
+   * This function is called by the ManagedNode base class to activate the node.
+   * Basically reads inputs and writes outputs
+   */
   virtual void active();
 
 private:
+  /**
+   * @brief Check if there is an error
+   *
+   * This function checks if there is an error and prints a message if there is
+   * Also sets the health to error in that case
+   *
+   * Returns true if there is an error, false otherwise
+   */
   bool isError(bool ret_val, std::string msg);
 
+  /**
+   * @brief Set the output callback
+   *
+   * This function is called when a message is received on the "set output"
+   * topics It sets the output value of the corresponding output "i"
+   */
   void SetOutputCallback(const std_msgs::Bool::ConstPtr &msg, int i);
 
+private:
   ros::NodeHandle nh;
 
   int bank_id;
