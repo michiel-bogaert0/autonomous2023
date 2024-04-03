@@ -5,6 +5,7 @@
 #include "managed_node.hpp"
 #include "ros/ros.h"
 #include "std_msgs/Bool.h"
+#include "std_msgs/Int8.h"
 
 #define _STDCALL_
 #define LLIB dlsym
@@ -25,6 +26,7 @@ typedef BOOL(_STDCALL_ *_B_IBIB)(BYTE *I1, BYTE *I2); // Get_DIO1_ Get_DIO2_
 typedef BOOL(_STDCALL_ *_B_OB)(BYTE O1);              // set_DIO1 set_DIO2
 typedef BOOL(_STDCALL_ *_B_IW)(WORD *I1);             // get_GPIO1 get_GPIO2
 typedef BOOL(_STDCALL_ *_B_OW)(WORD O1);              // set_GPIO1 set_GPIO2
+typedef BOOL(_STDCALL_ *_B_IB)(BYTE *I1);             // get_CPU_temperature
 
 class DIODriver : public node_fixture::ManagedNode {
 
@@ -79,6 +81,9 @@ private:
 
   int bank_id;
 
+  ros::Publisher cpu_temp_pub;
+  bool enable_temp;
+
   ros::Publisher di_pub[8];  // iPC INPUTS (to be read)
   ros::Subscriber do_sub[8]; // iPC OUTPUTS (to be written)
   bool enabled_do[8];        // iPC OUTPUTS (to be written)
@@ -92,6 +97,7 @@ private:
   _B_OBOBOBOW setIOconfiguration = NULL;
   _B_IBIB getDIO = NULL;
   _B_OB setDIO = NULL;
+  _B_IB getCPUtemperature = NULL;
 
   BYTE DIOISIO[2],  // DIOISIO [Group1 / Group2]
       DIONPN[2][2], // DIONPN  [Group1 / Group2] [ In / Out]

@@ -28,6 +28,8 @@ DIODriver::DIODriver(ros::NodeHandle &n, int bank_id)
   setDIO =
       (_B_OB)LLIB(lib_handle, ("set_DIO" + std::to_string(bank_id)).c_str());
 
+  getCPUtemperature = (_B_IB)LLIB(lib_handle, "get_CPU_temperature");
+
   // Initialize IO as isolated sources (not sure if needed)
   if (!initialSIO(1, 0)) {
     ROS_ERROR("Failed to initialize SIO");
@@ -65,6 +67,18 @@ void DIODriver::active() {
       this->di_pub[i].publish(msg);
     }
   }
+
+  if (this->enable_temp) {
+
+    BYTE CPUTemp = 0;
+    if (this->isError(this->getCPUtemperature(&CPUTemp),
+                      "Failed to get CPU temperature"))
+      return;
+
+    std_msgs::Int8 msg;
+    msg.data = CPUTemp;
+    this->cpu_temp_pub.publish(msg);
+  }
 }
 
 void DIODriver::doConfigure() {
@@ -86,6 +100,12 @@ void DIODriver::doConfigure() {
       this->di_pub[i] =
           this->nh.advertise<std_msgs::Bool>("DI" + std::to_string(i), 1);
     }
+  }
+
+  // Other pubs
+  this->enable_temp = this->nh.param<bool>("enable_temp", false);
+  if (this->enable_temp) {
+    this->cpu_temp_pub = this->nh.advertise<std_msgs::Int8>("cpu_temp", 1);
   }
 }
 
