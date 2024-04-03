@@ -100,9 +100,6 @@ RUN pip install nvidia-pyindex
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
-# Sudo python stuff (must be like this for the DIO driver...)
-RUN sudo pip install portio
-
 RUN wget -O neoapi-1.2.1-cp38-cp38-linux_x86_64.whl https://github.com/UgentRacing/autonomous_public_binaries/blob/main/modules/neoapi-1.2.1-cp38-cp38-linux_x86_64.whl?raw=true
 RUN python3 -m pip install neoapi-1.2.1-cp38-cp38-linux_x86_64.whl
 

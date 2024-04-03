@@ -96,9 +96,6 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 COPY requirements.nogpu.txt requirements.txt
 RUN pip install -r requirements.txt
 
-# Sudo python stuff (must be like this for the DIO driver...)
-RUN sudo pip install portio
-
 # Handy commands
 RUN echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.zshrc && \
     echo "alias sdev=\"source ~/autonomous2023/ROS/devel/setup.zsh\"" >> ~/.zshrc && \
