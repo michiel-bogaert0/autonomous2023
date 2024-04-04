@@ -32,7 +32,7 @@ class Main:
 
         # Subscribers
         rospy.Subscriber("/state", State, self.state_callback)
-        rospy.Subscriber("/ugr/car/loopclosure", UInt16, self.loopclosure_callback)
+        rospy.Subscriber("/ugr/car/lapComplete", UInt16, self.lap_counter_callback)
 
         self.simulation = 0
         self.iterations_counter = 0
@@ -151,7 +151,7 @@ class Main:
         if data.scope == StateMachineScopeEnum.AUTONOMOUS:
             self.state = data.cur_state
 
-    def loopclosure_callback(self, data):
+    def lap_counter_callback(self, data):
         rospy.loginfo("Laps finished: %s", data.data)
 
 

@@ -1,0 +1,41 @@
+<launch>
+  <arg name="world_frame" default="ugr/car_odom"/>
+  <arg name="base_link_frame" default="ugr/car_base_link"/>
+  <arg name="slam_base_link_frame" default="ugr/slam_base_link"/>
+  <arg name="lidar_frame" default="os_sensor"/>
+
+  <node pkg="slam_graphslam" output="screen" type="graphslam" name="graphslam" respawn="False">
+    # Frames
+    <param name="world_frame" value="$(arg world_frame)" />
+    <param name="base_link_frame" value="$(arg base_link_frame)" />
+    <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
+    <param name="lidar_frame" value="$(arg lidar_frame)" />
+
+    # Parameters
+    <param name="rate" value="40"/> <!-- Hz -->
+    <param name="publish_rate" value="10"/> <!-- Hz -->
+    <param name="synchronous" value="false"/> 
+    <param name="debug" value="true"/> <!-- Publish edges -->
+
+    <param name="max_iterations" value="5"/>
+    <param name="association_threshold" value="1"/>
+    <param name="max_range" value="15"/>
+    <param name="max_half_angle" value="1.57"/> <!-- ingesteld voor lidar -->
+
+    <rosparam param="covariance_pose">[0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2]</rosparam>
+
+     # Map service Parameters
+    <param name="SetMap_service" value="/ugr/srv/slam_map_server/set" />
+    <param name="globalmap_namespace" value="slam/global" />
+    <param name="localmap_namespace" value="slam/local" />
+
+    # Input/output remapping
+    <remap from="/input/observations" to="/ugr/car/observations/lidar" />
+    <remap from="/output/odom" to="/ugr/car/odometry/filtered/slam" />
+
+    # Input/output remapping debug
+    <remap from="/output/pose/vertices" to="/graphslam/debug/vertices/poses" />
+    <remap from="/output/pose/edges" to="/graphslam/debug/edges/poses" />
+    <remap from="/output/landmark/edges" to="/graphslam/debug/edges/landmarks" />
+  </node>
+</launch>

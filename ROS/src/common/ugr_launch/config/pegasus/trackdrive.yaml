@@ -3,28 +3,28 @@ slam_controller:
     exploration:
       # SLAM
       - fastslam
+      # - graphslam
 
     racing:
-
       # SLAM
       - slam_mcl
 
     always:
       # SLAM
-      - loopclosure
+      - lap_counter
 
       # Control
       - front_wheel_feedback_control
       - pathplanning
-      
+
 slam_mcl:
-  path_to_map: "/ugr/car/map/fastslam/global"
+  path_to_map: "/ugr/car/map/slam/global"
 loopclosure:
   finishpoint: [0, 0, 0]
 speed:
   target: 1.0
-  target_racing: 5.0
-  LC_adaptive_velocity: True
+  target_racing: 2.0
+  LC_adaptive_velocity: False
   LC_max_acceleration: 0.5 # TO BE VERIFIED
   LC_min: 1.0
   LC_max: 4.0
