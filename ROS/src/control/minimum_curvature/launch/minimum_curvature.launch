@@ -15,7 +15,7 @@
         <param name="min_track_width" value="3.00" />
         
         <param name="kappa_max" value="0.50" />
-        <param name="curv_error_allowed" value="0.10" />
+        <param name="curv_error_allowed" value="0.05" />
 
         <param name="stepsize_prep_trajectory" value="0.50" />
         <param name="stepsize_prep_boundaries" value="0.25" />
@@ -28,10 +28,12 @@
         <param name="min_iterations_iqp" value="3" />
         <param name="max_iterations_iqp" value="5" />
 
+        <param name="calc_shortest_path" value="False" />
+
         <param name="vel_calc" value="True" />
         <param name="v_max" value="36.00" />
-        <param name="T_motor_max" value="140" />
-        <param name="P_max" value="80000" />
+        <param name="T_motor_max" value="140.00" />
+        <param name="P_max" value="80000.00" />
         <param name="num_motors" value="2" />
         <param name="gear_ratio" value="3.405" />
         <param name="wheel_radius" value="0.206" />
@@ -41,13 +43,13 @@
 
         <param name="plot" value="True" />
         <param name="plot_prep" value="False" />
-        <param name="plot_opt" value="False" />
+        <param name="plot_opt" value="True" />
         <param name="plot_post" value="False" />
         <param name="plot_final" value="True" />
 
-        <param name="print_debug" value="False" />
+        <param name="print_debug" value="True" />
         <param name="print_debug_prep" value="False" />
-        <param name="print_debug_opt" value="False" />
+        <param name="print_debug_opt" value="True" />
         <param name="print_debug_post" value="False" />
         <param name="print_debug_final" value="False" />
 

@@ -391,7 +391,7 @@ def prep_track(
     :rtype dkappa_prepped_track:        np.ndarray
 
     .. notes::
-    Make sure the boundaries contain sufficient amount of points to accurately estimate the distance
+    Make sure the boundaries contain sufficient amount of points to accurately estimate the distance!
     Input trajectory and cones must be unclosed!
     """
 
@@ -408,6 +408,8 @@ def prep_track(
         or cones_right.shape[1] != 2
     ):
         raise RuntimeError("Trajectory and cones must be 2D arrays!")
+
+    trajectory_cl = np.vstack((trajectory, trajectory[0]))
 
     # Interpolate trajectory
     trajectory_interp_cl = interp_trajectory(
@@ -479,7 +481,27 @@ def prep_track(
         calc_dcurv=True,
     )
 
-    # Calculate the distances along the closed trajectory
+    # Calculate the spline coefficients of the reference track
+    coeffs_x_ref, coeffs_y_ref, M_ref, normvec_normalized_ref = calc_splines(
+        trajectory_cl
+    )
+
+    # Calculate the heading psi, the curvature kappa and the curvature derivative d_kappa of the interpolated track
+    psi_interp_ref, kappa_interp_ref, dkappa_interp_ref = calc_head_curv_an(
+        coeffs_x=coeffs_x_ref,
+        coeffs_y=coeffs_y_ref,
+        ind_spls=np.arange(trajectory.shape[0]),
+        t_spls=np.zeros(trajectory.shape[0]),
+        calc_curv=True,
+        calc_dcurv=True,
+    )
+
+    # Caldulate the distances along the closed reference trajectory
+    distances_along_traj_ref = calc_distances_along_trajectory(
+        trajectory=np.copy(trajectory)
+    )
+
+    # Calculate the distances along the closed preprocessed trajectory
     distances_along_traj = calc_distances_along_trajectory(
         trajectory=prepped_track[:, :2],
     )
@@ -542,13 +564,13 @@ def prep_track(
         # - Plotting the driving direction (initial_data_4)
         # ------------------------------------------------------------------------------------------------------------------
         plt.figure("Initial data")
-        plt.title("Initial data")
+        plt.title("Initial data", fontsize=20)
         plt.grid()
         initial_data_1 = plt.plot(
             trajectory_plot[:, 0],
             trajectory_plot[:, 1],
             color=normalize_color((0, 0, 0)),
-            linewidth=0.5,
+            linewidth=1.0,
             linestyle="dashed",
             marker="o",
             markersize=5,
@@ -559,14 +581,14 @@ def prep_track(
             cones_left_plot[:, 1],
             color=normalize_color((0, 0, 255)),
             marker="o",
-            s=25,
+            s=36,
         )
         initial_data_3 = plt.scatter(
             cones_right_plot[:, 0],
             cones_right_plot[:, 1],
             color=normalize_color((230, 240, 0)),
             marker="o",
-            s=25,
+            s=36,
         )
         initial_data_4 = plt.arrow(
             point1_arrow[0],
@@ -585,11 +607,12 @@ def prep_track(
             handler_map={
                 mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
             },
+            fontsize=20,
         )
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
-        plt.xlabel("x-distance from original car position in m")
-        plt.ylabel("y-distance from original car position in m")
+        plt.xlabel("x-distance from original car position in m", fontsize=20)
+        plt.ylabel("y-distance from original car position in m", fontsize=20)
 
         plt.show()
 
@@ -607,7 +630,7 @@ def prep_track(
         # - Plotting the driving direction (quad_interp_7)
         # ------------------------------------------------------------------------------------------------------------------
         plt.figure("Quadratic interpolation")
-        plt.title("Quadratic interpolation")
+        plt.title("Quadratic interpolation", fontsize=20)
         plt.grid()
         quad_interp_1 = plt.scatter(
             trajectory_plot[:, 0],
@@ -649,7 +672,7 @@ def prep_track(
             linewidth=0.5,
             linestyle="dashed",
             marker="o",
-            markersize=3,
+            markersize=4,
             markerfacecolor=normalize_color((0, 0, 255)),
         )
         quad_interp_6 = plt.plot(
@@ -659,7 +682,7 @@ def prep_track(
             linewidth=0.5,
             linestyle="dashed",
             marker="o",
-            markersize=3,
+            markersize=4,
             markerfacecolor=normalize_color((230, 240, 0)),
         )
         quad_interp_7 = plt.arrow(
@@ -691,11 +714,12 @@ def prep_track(
             handler_map={
                 mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
             },
+            fontsize=20,
         )
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
-        plt.xlabel("x-distance from original car position in m")
-        plt.ylabel("y-distance from original car position in m")
+        plt.xlabel("x-distance from original car position in m", fontsize=20)
+        plt.ylabel("y-distance from original car position in m", fontsize=20)
 
         plt.show()
 
@@ -716,7 +740,7 @@ def prep_track(
         # - Plotting the driving direction (smoothing_10)
         # ------------------------------------------------------------------------------------------------------------------
         plt.figure("BSpline smoothing")
-        plt.title("BSpline smoothing")
+        plt.title("BSpline smoothing", fontsize=20)
         plt.grid()
         smoothing_1 = plt.scatter(
             trajectory_plot[:, 0],
@@ -784,14 +808,14 @@ def prep_track(
             bound_left_smoothed_plot[:, 0],
             bound_left_smoothed_plot[:, 1],
             color=normalize_color((0, 0, 255)),
-            linewidth=1.5,
+            linewidth=2.0,
             linestyle="solid",
         )
         smoothing_9 = plt.plot(
             bound_right_smoothed_plot[:, 0],
             bound_right_smoothed_plot[:, 1],
             color=normalize_color((230, 240, 0)),
-            linewidth=1.5,
+            linewidth=2.0,
             linestyle="solid",
         )
         smoothing_10 = plt.arrow(
@@ -825,11 +849,12 @@ def prep_track(
             handler_map={
                 mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
             },
+            fontsize=20,
         )
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
-        plt.xlabel("x-distance from original car position in m")
-        plt.ylabel("y-distance from original car position in m")
+        plt.xlabel("x-distance from original car position in m", fontsize=20)
+        plt.ylabel("y-distance from original car position in m", fontsize=20)
 
         plt.show()
 
@@ -850,7 +875,7 @@ def prep_track(
         # - Plotting the driving direction (bound_dists_10)
         # ------------------------------------------------------------------------------------------------------------------
         plt.figure("Boundary distance estimation")
-        plt.title("Boundary distance estimation")
+        plt.title("Boundary distance estimation", fontsize=20)
         plt.grid()
         bound_dists_1 = plt.scatter(
             trajectory_plot[:, 0],
@@ -879,17 +904,17 @@ def prep_track(
             trajectory_smoothed_plot[:, 0],
             trajectory_smoothed_plot[:, 1],
             color=normalize_color((0, 255, 0)),
-            linewidth=1.0,
+            linewidth=1.5,
             linestyle="dashed",
             marker="o",
-            markersize=3,
+            markersize=4,
             markerfacecolor=normalize_color((0, 255, 0)),
         )
         bound_dists_5 = plt.plot(
             bound_left_smoothed_plot[:, 0],
             bound_left_smoothed_plot[:, 1],
             color=normalize_color((0, 0, 0)),
-            linewidth=0.5,
+            linewidth=1.0,
             linestyle="dashed",
         )
         # bound_dists_6
@@ -897,14 +922,14 @@ def prep_track(
             bound_right_smoothed_plot[:, 0],
             bound_right_smoothed_plot[:, 1],
             color=normalize_color((0, 0, 0)),
-            linewidth=0.5,
+            linewidth=1.0,
             linestyle="dashed",
         )
         bound_dists_7 = plt.plot(
             new_bound_left_plot[:, 0],
             new_bound_left_plot[:, 1],
             color=normalize_color((0, 0, 255)),
-            linewidth=1.0,
+            linewidth=2.0,
             linestyle="solid",
             marker="o",
             markersize=3,
@@ -914,7 +939,7 @@ def prep_track(
             new_bound_right_plot[:, 0],
             new_bound_right_plot[:, 1],
             color=normalize_color((230, 240, 0)),
-            linewidth=1.0,
+            linewidth=2.0,
             linestyle="solid",
             marker="o",
             markersize=3,
@@ -964,11 +989,12 @@ def prep_track(
             handler_map={
                 mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
             },
+            fontsize=20,
         )
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
-        plt.xlabel("x-distance from original car position in m")
-        plt.ylabel("y-distance from original car position in m")
+        plt.xlabel("x-distance from original car position in m", fontsize=20)
+        plt.ylabel("y-distance from original car position in m", fontsize=20)
 
         plt.show()
 
@@ -983,7 +1009,7 @@ def prep_track(
         # - Plotting the driving direction (prepped_track_4)
         # ------------------------------------------------------------------------------------------------------------------
         plt.figure("Preprocessed track")
-        plt.title("Preprocessed track")
+        plt.title("Preprocessed track", fontsize=20)
         plt.grid()
         prepped_track_1 = plt.plot(
             trajectory_smoothed_plot[:, 0],
@@ -1033,11 +1059,12 @@ def prep_track(
             handler_map={
                 mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
             },
+            fontsize=20,
         )
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
-        plt.xlabel("x-distance from original car position in m")
-        plt.ylabel("y-distance from original car position in m")
+        plt.xlabel("x-distance from original car position in m", fontsize=20)
+        plt.ylabel("y-distance from original car position in m", fontsize=20)
 
         plt.show()
 
@@ -1048,21 +1075,29 @@ def prep_track(
         # Curvature preprocessed track 2D ----------------------------------------------------------------------------------
         # - Plotting the curvature of the preprocessed trajectory (curvature2D_1)
         # ------------------------------------------------------------------------------------------------------------------
-        plt.figure("Curvature preprocessed track 2D")
-        plt.title("Curvature preprocessed track 2D")
+        plt.figure("Curvature comparison")
+        plt.title("Curvature comparison", fontsize=20)
         plt.grid()
         # curvature2D_1
         plt.plot(
             distances_along_traj_plot,
             kappa_prepped_track_plot,
             color=normalize_color((255, 0, 0)),
-            linewidth=1.0,
+            linewidth=2.0,
             linestyle="solid",
             label="Curvature preprocessed trajectory",
         )
-        plt.legend()
-        plt.xlabel("distance from original car position in m")
-        plt.ylabel("curvature in rad/m")
+        plt.plot(
+            distances_along_traj_ref,
+            kappa_interp_ref,
+            color=normalize_color((0, 0, 255)),
+            linewidth=2.0,
+            linestyle="dashed",
+            label="Curvature reference trajectory",
+        )
+        plt.legend(fontsize=20)
+        plt.xlabel("distance from original car position in m", fontsize=20)
+        plt.ylabel("curvature in rad/m", fontsize=20)
 
         plt.show()
 
@@ -1958,6 +1993,197 @@ def opt_min_curv(
     return alpha_mincurv, curv_error_max
 
 
+def opt_shortest_path(
+    reftrack: np.ndarray,
+    normvectors: np.ndarray,
+    w_veh: float,
+    print_debug: bool = False,
+) -> np.ndarray:
+    """
+    author:
+    Alexander Heilmeier
+
+    .. description::
+    This function uses a QP solver to minimize the summed length of a path by moving the path points along their
+    normal vectors within the track width.
+
+    Please refer to the following paper for further information:
+    Braghin, Cheli, Melzi, Sabbioni
+    Race Driver Model
+    DOI: 10.1016/j.compstruc.2007.04.028
+
+    .. inputs::
+    :param reftrack:        array containing the reference track, i.e. a reference line and the according track widths
+                            to the right and to the left [x, y, w_tr_left, w_tr_right] (unit is meter, must be unclosed)
+    :type reftrack:         np.ndarray
+    :param normvectors:     normalized normal vectors for every point of the reference track [x_component, y_component]
+                            (unit is meter, must be unclosed!)
+    :type normvectors:      np.ndarray
+    :param w_veh:           vehicle width in m. It is considered during the calculation of the allowed deviations from
+                            the reference line.
+    :type w_veh:            float
+    :param print_debug:     bool flag to print debug messages.
+    :type print_debug:      bool
+
+    .. outputs::
+    :return alpha_shpath:   solution vector of the optimization problem containing lateral shift in m for every point.
+    :rtype alpha_shpath:    np.ndarray
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # PREPARATIONS -----------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    no_points = reftrack.shape[0]
+
+    # check inputs
+    if no_points != normvectors.shape[0]:
+        raise RuntimeError("Array size of reftrack should be the same as normvectors!")
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # SET UP FINAL MATRICES FOR SOLVER ---------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    H = np.zeros((no_points, no_points))
+    f = np.zeros(no_points)
+
+    for i in range(no_points):
+        if i < no_points - 1:
+            H[i, i] += 2 * (
+                math.pow(normvectors[i, 0], 2) + math.pow(normvectors[i, 1], 2)
+            )
+            H[i, i + 1] = (
+                0.5
+                * 2
+                * (
+                    -2 * normvectors[i, 0] * normvectors[i + 1, 0]
+                    - 2 * normvectors[i, 1] * normvectors[i + 1, 1]
+                )
+            )
+            H[i + 1, i] = H[i, i + 1]
+            H[i + 1, i + 1] = 2 * (
+                math.pow(normvectors[i + 1, 0], 2) + math.pow(normvectors[i + 1, 1], 2)
+            )
+
+            f[i] += (
+                2 * normvectors[i, 0] * reftrack[i, 0]
+                - 2 * normvectors[i, 0] * reftrack[i + 1, 0]
+                + 2 * normvectors[i, 1] * reftrack[i, 1]
+                - 2 * normvectors[i, 1] * reftrack[i + 1, 1]
+            )
+            f[i + 1] = (
+                -2 * normvectors[i + 1, 0] * reftrack[i, 0]
+                - 2 * normvectors[i + 1, 1] * reftrack[i, 1]
+                + 2 * normvectors[i + 1, 0] * reftrack[i + 1, 0]
+                + 2 * normvectors[i + 1, 1] * reftrack[i + 1, 1]
+            )
+
+        else:
+            H[i, i] += 2 * (
+                math.pow(normvectors[i, 0], 2) + math.pow(normvectors[i, 1], 2)
+            )
+            H[i, 0] = (
+                0.5
+                * 2
+                * (
+                    -2 * normvectors[i, 0] * normvectors[0, 0]
+                    - 2 * normvectors[i, 1] * normvectors[0, 1]
+                )
+            )
+            H[0, i] = H[i, 0]
+            H[0, 0] += 2 * (
+                math.pow(normvectors[0, 0], 2) + math.pow(normvectors[0, 1], 2)
+            )
+
+            f[i] += (
+                2 * normvectors[i, 0] * reftrack[i, 0]
+                - 2 * normvectors[i, 0] * reftrack[0, 0]
+                + 2 * normvectors[i, 1] * reftrack[i, 1]
+                - 2 * normvectors[i, 1] * reftrack[0, 1]
+            )
+            f[0] += (
+                -2 * normvectors[0, 0] * reftrack[i, 0]
+                - 2 * normvectors[0, 1] * reftrack[i, 1]
+                + 2 * normvectors[0, 0] * reftrack[0, 0]
+                + 2 * normvectors[0, 1] * reftrack[0, 1]
+            )
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CALL QUADRATIC PROGRAMMING ALGORITHM -----------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    """
+    quadprog interface description taken from
+    https://github.com/stephane-caron/qpsolvers/blob/master/qpsolvers/quadprog_.py
+
+    Solve a Quadratic Program defined as:
+
+        minimize
+            (1/2) * alpha.T * H * alpha + f.T * alpha
+
+        subject to
+            G * alpha <= h
+            A * alpha == b
+
+    using quadprog <https://pypi.python.org/pypi/quadprog/>.
+
+    Parameters
+    ----------
+    H : numpy.array
+        Symmetric quadratic-cost matrix.
+    f : numpy.array
+        Quadratic-cost vector.
+    G : numpy.array
+        Linear inequality constraint matrix.
+    h : numpy.array
+        Linear inequality constraint vector.
+    A : numpy.array, optional
+        Linear equality constraint matrix.
+    b : numpy.array, optional
+        Linear equality constraint vector.
+    initvals : numpy.array, optional
+        Warm-start guess vector (not used).
+
+    Returns
+    -------
+    alpha : numpy.array
+            Solution to the QP, if found, otherwise ``None``.
+
+    Note
+    ----
+    The quadprog solver only considers the lower entries of `H`, therefore it
+    will use a wrong cost function if a non-symmetric matrix is provided.
+    """
+
+    # calculate allowed deviation from refline
+    dev_max_left = reftrack[:, 2] - w_veh / 2
+    dev_max_right = reftrack[:, 3] - w_veh / 2
+
+    # set minimum deviation to zero
+    dev_max_right[dev_max_right < 0.001] = 0.001
+    dev_max_left[dev_max_left < 0.001] = 0.001
+
+    # consider value boundaries (-dev_max <= alpha <= dev_max)
+    G = np.vstack((np.eye(no_points), -np.eye(no_points)))
+    h = np.ones(2 * no_points) * np.append(dev_max_right, dev_max_left)
+
+    # save start time
+    t_start = time.perf_counter()
+
+    # solve problem
+    alpha_shpath = quadprog.solve_qp(H, -f, -G.T, -h, 0)[0]
+
+    # print runtime into console window
+    if print_debug:
+        print(
+            "Solver runtime opt_shortest_path: "
+            + "{:.3f}".format(time.perf_counter() - t_start)
+            + "s"
+        )
+
+    return alpha_shpath
+
+
 ########################################################################################################################
 # PLOTTING FUNCTIONS:
 # - make_legend_arrow
@@ -2071,6 +2297,815 @@ def clear_folder(folder_path: str):
         rospy.loginfo(f"Folder '{folder_path}' does not exist.")
 
 
+def plot_optimisation(
+    cones_left_: np.ndarray,
+    cones_right_: np.ndarray,
+    initial_poses_: np.ndarray,
+    width_veh_real: float,
+    width_veh_opt: float,
+    ref_track_: np.ndarray,
+    ref_normvec_norm_: np.ndarray,
+    ref_psi_: np.ndarray,
+    ref_kappa_: np.ndarray,
+    ref_dkappa_: np.ndarray,
+    bound_left_: np.ndarray,
+    bound_right_: np.ndarray,
+    opt_track_: np.ndarray,
+    opt_normvec_norm_: np.ndarray,
+    opt_psi_: np.ndarray,
+    opt_kappa_: np.ndarray,
+    opt_dkappa_: np.ndarray,
+    plot_options: dict,
+):
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    This function plots the optimisation results.
+
+    .. inputs::
+    :param cones_left:          array containing the left track cones [x, y] (unclosed!).
+    :type cones_left:           np.ndarray
+    :param cones_right:         array containing the right track cones [x, y] (unclosed!).
+    :type cones_right:          np.ndarray
+    :param initial_poses:       array containing the poses of the trajectory from pathplanning [x, y] (unclosed!).
+    :type initial_poses:        np.ndarray
+    :param width_veh_real:      real width of the vehicle.
+    :type width_veh_real:       float
+    :param width_veh_opt:       width of the vehicle used for the optimisation.
+    :type width_veh_opt:        float
+    :param ref_track:           array containing the preprocessed reference track, i.e. a reference line and the
+                                according track widths to the left and to the right [x, y, w_tr_left, w_tr_right]
+                                (unit is meter, unclosed!)
+    :type ref_track:            np.ndarray
+    :param ref_psi:             heading for every point of the reference track [x, y] (unit is rad, unclosed!).
+    :type ref_psi:              np.ndarray
+    :param ref_kappa:           curvature for every point of the reference track [x, y] (unit is 1/m, unclosed!).
+    :type ref_kappa:            np.ndarray
+    :param ref_dkappa:          derivative of curvature for every point of the reference track [x, y]
+                                (unit is 1/m^2, unclosed!)
+    :type ref_dkappa:           np.ndarray
+    :param opt_track:           array containing the optimised track, i.e. an optimised racing line and the
+                                according track widths to the left and to the right [x, y, w_tr_left, w_tr_right]
+                                (unit is meter, unclosed!)
+    :type opt_track:            np.ndarray
+    :param opt_psi:             heading for every point of the optimised track [x, y] (unit is rad, unclosed!).
+    :type opt_psi:              np.ndarray
+    :param opt_kappa:           curvature for every point of the optimised track [x, y] (unit is 1/m, unclosed!).
+    :type opt_kappa:            np.ndarray
+    :param opt_dkappa:          derivative of curvature for every point of the optimised track [x, y]
+                                (unit is 1/m^2, unclosed!)
+    :type opt_dkappa:           np.ndarray
+    :param plot_options:        dictionary containing the plot options to determine which plots to show.
+    :type plot_options:         dict
+
+    .. notes::
+    Track inputs are unclosed! Track inputs must however be closable in the current form!
+
+    OPTIMISATION PLOTS:
+    - Preprocessed reference track with vehicle visualisation and boundaries.
+    - Optimised track with vehicle visualisation and boundaries.
+    - Comparison between the reference track and the optimised track.
+    - Curvature comparison between the reference track and the optimised track.
+    - Curvature derivative comparison between the reference track and the optimised track.
+    """
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # COPY INPUTS ------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    cones_left = np.copy(cones_left_)
+    cones_right = np.copy(cones_right_)
+    initial_poses = np.copy(initial_poses_)
+    ref_track = np.copy(ref_track_)
+    ref_normvec_norm = np.copy(ref_normvec_norm_)
+    ref_psi = np.copy(ref_psi_)
+    ref_kappa = np.copy(ref_kappa_)
+    ref_dkappa = np.copy(ref_dkappa_)
+    bound_left = np.copy(bound_left_)
+    bound_right = np.copy(bound_right_)
+    opt_track = np.copy(opt_track_)
+    opt_normvec_norm = np.copy(opt_normvec_norm_)
+    opt_psi = np.copy(opt_psi_)
+    opt_kappa = np.copy(opt_kappa_)
+    opt_dkappa = np.copy(opt_dkappa_)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CHECKING INPUTS --------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    if (
+        (cones_left[0] == cones_left[-1]).all()
+        or (cones_right[0] == cones_right[-1]).all()
+        or (initial_poses[0] == initial_poses[-1]).all()
+        or (ref_track[0] == ref_track[-1]).all()
+        or (opt_track[0] == opt_track[-1]).all()
+    ):
+        raise RuntimeError("Initial data and tracks must be unclosed!")
+    if (
+        cones_left.shape[1] != 2
+        or cones_right.shape[1] != 2
+        or initial_poses.shape[1] != 2
+    ):
+        raise RuntimeError("Initial data must have the shape [x, y]!")
+    if ref_track.shape[1] != 4 or opt_track.shape[1] != 4:
+        raise RuntimeError("Tracks must have the shape [x, y, w_tr_left, w_tr_right]!")
+    if (
+        (ref_psi is not None and ref_psi[0] == ref_psi[-1].all())
+        or (opt_psi is not None and opt_psi[0] == opt_psi[-1].all())
+        or (ref_kappa is not None and ref_kappa[0] == ref_kappa[-1].all())
+        or (opt_kappa is not None and opt_kappa[0] == opt_kappa[-1].all())
+        or (ref_dkappa is not None and ref_dkappa[0] == ref_dkappa[-1].all())
+        or (opt_dkappa is not None and opt_dkappa[0] == opt_dkappa[-1].all())
+    ):
+        raise RuntimeError(
+            "Optional heading, curvature and curvature derivative data must be unclosed!"
+        )
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # DEFINING VARIABLES -----------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    initial_poses_cl = np.vstack((initial_poses, initial_poses[0]))
+    ref_track_cl = np.vstack((ref_track, ref_track[0]))
+    opt_track_cl = np.vstack((opt_track, opt_track[0]))
+
+    # Closed boundaries
+    bound_left_cl = np.vstack((bound_left, bound_left[0]))
+    bound_right_cl = np.vstack((bound_right, bound_right[0]))
+
+    # Calculate real and virtual vehicle boundaries for the reference track
+    veh_bound_left_ref_real = ref_track[:, :2] - ref_normvec_norm * width_veh_real / 2
+    veh_bound_right_ref_real = ref_track[:, :2] + ref_normvec_norm * width_veh_real / 2
+
+    veh_bound_left_ref_virt = ref_track[:, :2] - ref_normvec_norm * width_veh_opt / 2
+    veh_bound_right_ref_virt = ref_track[:, :2] + ref_normvec_norm * width_veh_opt / 2
+
+    veh_bound_left_ref_real_cl = np.vstack(
+        (veh_bound_left_ref_real, veh_bound_left_ref_real[0])
+    )
+    veh_bound_right_ref_real_cl = np.vstack(
+        (veh_bound_right_ref_real, veh_bound_right_ref_real[0])
+    )
+    veh_bound_left_ref_virt_cl = np.vstack(
+        (veh_bound_left_ref_virt, veh_bound_left_ref_virt[0])
+    )
+    veh_bound_right_ref_virt_cl = np.vstack(
+        (veh_bound_right_ref_virt, veh_bound_right_ref_virt[0])
+    )
+
+    # Calculate real and virtual vehicle boundaries for the optimised track
+    veh_bound_left_opt_real = opt_track[:, :2] - opt_normvec_norm * width_veh_real / 2
+    veh_bound_right_opt_real = opt_track[:, :2] + opt_normvec_norm * width_veh_real / 2
+
+    veh_bound_left_opt_virt = opt_track[:, :2] - opt_normvec_norm * width_veh_opt / 2
+    veh_bound_right_opt_virt = opt_track[:, :2] + opt_normvec_norm * width_veh_opt / 2
+
+    veh_bound_left_opt_real_cl = np.vstack(
+        (veh_bound_left_opt_real, veh_bound_left_opt_real[0])
+    )
+    veh_bound_right_opt_real_cl = np.vstack(
+        (veh_bound_right_opt_real, veh_bound_right_opt_real[0])
+    )
+    veh_bound_left_opt_virt_cl = np.vstack(
+        (veh_bound_left_opt_virt, veh_bound_left_opt_virt[0])
+    )
+    veh_bound_right_opt_virt_cl = np.vstack(
+        (veh_bound_right_opt_virt, veh_bound_right_opt_virt[0])
+    )
+
+    # Caldulate the distances along the closed reference trajectory
+    distances_along_traj_ref = calc_distances_along_trajectory(
+        trajectory=np.copy(ref_track[:, :2])
+    )
+
+    # Calculate the distances along the closed preprocessed trajectory
+    distances_along_traj_opt = calc_distances_along_trajectory(
+        trajectory=np.copy(opt_track[:, :2])
+    )
+
+    # Arrow variables for the legend (driving direction)
+    point1_arrow = initial_poses[0]
+    point2_arrow = initial_poses[2]
+    vector_arrow = point2_arrow - point1_arrow
+
+    # Determine the plot options
+    opt_method = plot_options["opt_method"]
+    # calc_vel = plot_options["calc_vel"]
+    # plot_debug = plot_options["plot_debug"]
+    # show_plots = plot_options["show_plots"]
+    # save_plots = plot_options["save_plots"]
+    # folder_path = plot_options["folder_path"]
+
+    if opt_method == "shortest_path":
+        fig_2_name = "Shortest path optimised track"
+        fig_2_title = "Shortest path optimised track"
+        fig_2_10_legend = "Shortest path trajectory"
+        # fig_3_name = "shortest path"
+    elif opt_method == "iqp_mincurv":
+        fig_2_name = "Minimum curvature optimised track"
+        fig_2_title = "Minimum curvature optimised track"
+        fig_2_10_legend = "Minimum curvature trajectory"
+        # fig_3_name = "Minimum curvature vs preprocessed trajectory"
+        fig_3_title = "Minimum curvature vs preprocessed trajectory"
+
+    ####################################################################################################################
+    # PLOTTING FIGURES
+    # - FIGURE 1: Preprocessed reference track with vehicle visualisation and boundaries.
+    # - FIGURE 2: Optimised track with vehicle visualisation and boundaries.
+    # - FIGURE 3: Comparison between the reference track and the optimised track.
+    # - FIGURE 4: Curvature derivative comparison between the reference track and the optimised track.
+    ####################################################################################################################
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # FIGURE 1: Preprocessed reference track with vehicle visualisation and boundaries ---------------------------------
+    # - Left cones (fig_1_1)
+    # - Right cones (fig_1_2)
+    # - Initial poses (fig_1_3)
+    # - Left boundary (fig_1_4)
+    # - Right boundary (fig_1_5)
+    # - Left virtual vehicle boundary (fig_1_6)
+    # - Right virtual vehicle boundary (fig_1_7)
+    # - Left real vehicle boundary (fig_1_8)
+    # - Right real vehicle boundary (fig_1_9)
+    # - Reference trajectory (fig_1_10)
+    # - Driving direction arrow (fig_1_11)
+    # ------------------------------------------------------------------------------------------------------------------
+    plt.figure("Preprocessed reference track")
+    plt.grid()
+    fig_1_1 = plt.scatter(
+        cones_left[:, 0],
+        cones_left[:, 1],
+        color=normalize_color((255, 0, 0)),
+        marker="X",
+        s=25,
+    )
+    fig_1_2 = plt.scatter(
+        cones_right[:, 0],
+        cones_right[:, 1],
+        color=normalize_color((255, 0, 0)),
+        marker="X",
+        s=25,
+    )
+    fig_1_3 = plt.plot(
+        initial_poses_cl[:, 0],
+        initial_poses_cl[:, 1],
+        color=normalize_color((0, 0, 0)),
+        linewidth=1,
+        linestyle="dashed",
+        marker="o",
+        markersize=3,
+        markerfacecolor=normalize_color((0, 0, 0)),
+    )
+    fig_1_4 = plt.plot(
+        bound_left_cl[:, 0],
+        bound_left_cl[:, 1],
+        color=normalize_color((0, 0, 255)),
+        linewidth=2.0,
+    )
+    fig_1_5 = plt.plot(
+        bound_right_cl[:, 0],
+        bound_right_cl[:, 1],
+        color=normalize_color((230, 240, 0)),
+        linewidth=2.0,
+    )
+    fig_1_6 = plt.plot(
+        veh_bound_left_ref_virt_cl[:, 0],
+        veh_bound_left_ref_virt_cl[:, 1],
+        color=normalize_color((255, 0, 255)),
+        linewidth=1.0,
+        linestyle="dashed",
+    )
+    fig_1_7 = plt.plot(
+        veh_bound_right_ref_virt_cl[:, 0],
+        veh_bound_right_ref_virt_cl[:, 1],
+        color=normalize_color((255, 0, 255)),
+        linewidth=1.0,
+        linestyle="dashed",
+    )
+    fig_1_8 = plt.plot(
+        veh_bound_left_ref_real_cl[:, 0],
+        veh_bound_left_ref_real_cl[:, 1],
+        color=normalize_color((0, 255, 255)),
+        linewidth=1.0,
+    )
+    fig_1_9 = plt.plot(
+        veh_bound_right_ref_real_cl[:, 0],
+        veh_bound_right_ref_real_cl[:, 1],
+        color=normalize_color((0, 255, 255)),
+        linewidth=1.0,
+    )
+    fig_1_10 = plt.plot(
+        ref_track_cl[:, 0],
+        ref_track_cl[:, 1],
+        color=normalize_color((255, 0, 0)),
+        linewidth=2.0,
+    )
+    fig_1_11 = plt.arrow(
+        point1_arrow[0],
+        point1_arrow[1],
+        vector_arrow[0],
+        vector_arrow[1],
+        width=0.3,
+        head_width=1.0,
+        head_length=1.0,
+        fc="g",
+        ec="g",
+    )
+    plt.legend(
+        [
+            fig_1_1,
+            fig_1_3[0],
+            fig_1_4[0],
+            fig_1_5[0],
+            fig_1_6[0],
+            fig_1_8[0],
+            fig_1_10[0],
+            fig_1_11,
+        ],
+        [
+            "Cones",
+            "Initial poses",
+            "Left boundary",
+            "Right boundary",
+            "Virtual vehicle boundary",
+            "Real vehicle boundary",
+            "Reference trajectory",
+            "Driving direction",
+        ],
+        handler_map={mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)},
+        loc="upper right",
+        fontsize=20,
+    )
+    ax_1 = plt.gca()
+    ax_1.set_title("Preprocessed reference track", fontsize=20)
+    ax_1.set_aspect(aspect="equal", adjustable="datalim")
+    plt.xlabel("x-distance from original car position in m", fontsize=20)
+    plt.ylabel("y-distance from original car position in m", fontsize=20)
+    plt.show()
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # FIGURE 2: Optimised track with vehicle visualisation and boundaries ----------------------------------------------
+    # - Left cones (fig_2_1)
+    # - Right cones (fig_2_2)
+    # - Initial poses (fig_2_3)
+    # - Left boundary (fig_2_4)
+    # - Right boundary (fig_2_5)
+    # - Left virtual vehicle boundary (fig_2_6)
+    # - Right virtual vehicle boundary (fig_2_7)
+    # - Left real vehicle boundary (fig_2_8)
+    # - Right real vehicle boundary (fig_2_9)
+    # - Optimised trajectory (fig_2_10)
+    # - Driving direction arrow (fig_2_11)
+    # ------------------------------------------------------------------------------------------------------------------
+    plt.figure(fig_2_name)
+    plt.grid()
+    fig_2_1 = plt.scatter(
+        cones_left[:, 0],
+        cones_left[:, 1],
+        color=normalize_color((255, 0, 0)),
+        marker="X",
+        s=25,
+    )
+    fig_2_2 = plt.scatter(
+        cones_right[:, 0],
+        cones_right[:, 1],
+        color=normalize_color((255, 0, 0)),
+        marker="X",
+        s=25,
+    )
+    fig_2_3 = plt.plot(
+        initial_poses_cl[:, 0],
+        initial_poses_cl[:, 1],
+        color=normalize_color((0, 0, 0)),
+        linewidth=1,
+        linestyle="dashed",
+        marker="o",
+        markersize=3,
+        markerfacecolor=normalize_color((0, 0, 0)),
+    )
+    fig_2_4 = plt.plot(
+        bound_left_cl[:, 0],
+        bound_left_cl[:, 1],
+        color=normalize_color((0, 0, 255)),
+        linewidth=2.0,
+    )
+    fig_2_5 = plt.plot(
+        bound_right_cl[:, 0],
+        bound_right_cl[:, 1],
+        color=normalize_color((230, 240, 0)),
+        linewidth=2.0,
+    )
+    fig_2_6 = plt.plot(
+        veh_bound_left_opt_virt_cl[:, 0],
+        veh_bound_left_opt_virt_cl[:, 1],
+        color=normalize_color((255, 0, 255)),
+        linewidth=1.0,
+        linestyle="dashed",
+    )
+    fig_2_7 = plt.plot(
+        veh_bound_right_opt_virt_cl[:, 0],
+        veh_bound_right_opt_virt_cl[:, 1],
+        color=normalize_color((255, 0, 255)),
+        linewidth=1.0,
+        linestyle="dashed",
+    )
+    fig_2_8 = plt.plot(
+        veh_bound_left_opt_real_cl[:, 0],
+        veh_bound_left_opt_real_cl[:, 1],
+        color=normalize_color((0, 255, 255)),
+        linewidth=1.0,
+    )
+    fig_2_9 = plt.plot(
+        veh_bound_right_opt_real_cl[:, 0],
+        veh_bound_right_opt_real_cl[:, 1],
+        color=normalize_color((0, 255, 255)),
+        linewidth=1.0,
+    )
+    fig_2_10 = plt.plot(
+        opt_track_cl[:, 0],
+        opt_track_cl[:, 1],
+        color=normalize_color((255, 0, 0)),
+        linewidth=2.0,
+    )
+    fig_2_11 = plt.arrow(
+        point1_arrow[0],
+        point1_arrow[1],
+        vector_arrow[0],
+        vector_arrow[1],
+        width=0.3,
+        head_width=1.0,
+        head_length=1.0,
+        fc="g",
+        ec="g",
+    )
+    plt.legend(
+        [
+            fig_2_1,
+            fig_2_3[0],
+            fig_2_4[0],
+            fig_2_5[0],
+            fig_2_6[0],
+            fig_2_8[0],
+            fig_2_10[0],
+            fig_2_11,
+        ],
+        [
+            "Cones",
+            "Initial poses",
+            "Left boundary",
+            "Right boundary",
+            "Virtual vehicle boundary",
+            "Real vehicle boundary",
+            fig_2_10_legend,
+            "Driving direction",
+        ],
+        handler_map={mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)},
+        loc="upper right",
+        fontsize=20,
+    )
+    ax_2 = plt.gca()
+    ax_2.set_title(fig_2_title, fontsize=20)
+    ax_2.set_aspect(aspect="equal", adjustable="datalim")
+    plt.xlabel("x-distance from original car position in m", fontsize=20)
+    plt.ylabel("y-distance from original car position in m", fontsize=20)
+    plt.show()
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # FIGURE 3: Comparison between the reference track and the optimised track -----------------------------------------
+    # - Left cones (fig_3_1)
+    # - Right cones (fig_3_2)
+    # - Initial poses (fig_3_3)
+    # - Left boundary (fig_3_4)
+    # - Right boundary (fig_3_5)
+    # - Reference trajectory (fig_3_6)
+    # - Optimised trajectory (fig_3_7)
+    # - Driving direction arrow (fig_3_8)
+    # ------------------------------------------------------------------------------------------------------------------
+    plt.figure("Reference vs. optimised track")
+    plt.grid()
+    fig_3_1 = plt.scatter(
+        cones_left[:, 0],
+        cones_left[:, 1],
+        color=normalize_color((255, 0, 0)),
+        marker="X",
+        s=25,
+    )
+    fig_3_2 = plt.scatter(
+        cones_right[:, 0],
+        cones_right[:, 1],
+        color=normalize_color((255, 0, 0)),
+        marker="X",
+        s=25,
+    )
+    fig_3_3 = plt.plot(
+        initial_poses_cl[:, 0],
+        initial_poses_cl[:, 1],
+        color=normalize_color((0, 0, 0)),
+        linewidth=1,
+        linestyle="dashed",
+        marker="o",
+        markersize=3,
+        markerfacecolor=normalize_color((0, 0, 0)),
+    )
+    fig_3_4 = plt.plot(
+        bound_left_cl[:, 0],
+        bound_left_cl[:, 1],
+        color=normalize_color((0, 0, 255)),
+        linewidth=2.0,
+    )
+    fig_3_5 = plt.plot(
+        bound_right_cl[:, 0],
+        bound_right_cl[:, 1],
+        color=normalize_color((230, 240, 0)),
+        linewidth=2.0,
+    )
+    fig_3_6 = plt.plot(
+        ref_track_cl[:, 0],
+        ref_track_cl[:, 1],
+        color=normalize_color((255, 0, 0)),
+        linewidth=2.0,
+    )
+    fig_3_7 = plt.plot(
+        opt_track_cl[:, 0],
+        opt_track_cl[:, 1],
+        color=normalize_color((0, 255, 0)),
+        linewidth=2.0,
+    )
+    fig_3_8 = plt.arrow(
+        point1_arrow[0],
+        point1_arrow[1],
+        vector_arrow[0],
+        vector_arrow[1],
+        width=0.3,
+        head_width=1.0,
+        head_length=1.0,
+        fc="g",
+        ec="g",
+    )
+    plt.legend(
+        [
+            fig_3_1,
+            fig_3_3[0],
+            fig_3_4[0],
+            fig_3_5[0],
+            fig_3_6[0],
+            fig_3_7[0],
+            fig_3_8,
+        ],
+        [
+            "Cones",
+            "Initial poses",
+            "Left boundary",
+            "Right boundary",
+            "Reference trajectory",
+            "Optimised trajectory",
+            "Driving direction",
+        ],
+        handler_map={mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)},
+        loc="upper right",
+        fontsize=20,
+    )
+    ax_3 = plt.gca()
+    ax_3.set_title(fig_3_title, fontsize=20)
+    ax_3.set_aspect(aspect="equal", adjustable="datalim")
+    plt.xlabel("x-distance from original car position in m", fontsize=20)
+    plt.ylabel("y-distance from original car position in m", fontsize=20)
+    plt.show()
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # FIGURE 4: Curvature comparison between the reference track and the optimised track -------------------------------
+    # - Curvature reference track (fig_4_1)
+    # - Curvature optimised track (fig_4_2)
+    # ------------------------------------------------------------------------------------------------------------------
+    plt.figure("Curvature comparison")
+    plt.title("Curvature comparison", fontsize=20)
+    plt.grid()
+    # curvature2D_1
+    plt.plot(
+        distances_along_traj_ref,
+        ref_kappa,
+        color=normalize_color((255, 0, 0)),
+        linewidth=2.0,
+        linestyle="solid",
+        label="Curvature preprocessed trajectory",
+    )
+    plt.plot(
+        distances_along_traj_opt,
+        opt_kappa,
+        color=normalize_color((0, 0, 255)),
+        linewidth=2.0,
+        linestyle="dashed",
+        label="Curvature optimised trajectory",
+    )
+    plt.legend(fontsize=20)
+    plt.xlabel("distance from original car position in m", fontsize=20)
+    plt.ylabel("curvature in rad/m", fontsize=20)
+
+    plt.show()
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # LINTING ISSUES BUGFIX --------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    fig_1_2 = fig_1_2
+    fig_1_7 = fig_1_7
+    fig_1_9 = fig_1_9
+
+    fig_2_2 = fig_2_2
+    fig_2_7 = fig_2_7
+    fig_2_9 = fig_2_9
+
+    fig_3_2 = fig_3_2
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+
+def shortest_path_handler(
+    width_veh_real: float,
+    width_veh_opt: float,
+    ref_track_: np.ndarray,
+    ref_normvec_norm_: np.ndarray,
+    stepsize_shpath: float,
+    cones_left_: np.ndarray = None,  # Optional for plots
+    cones_right_: np.ndarray = None,  # Optional for plots
+    initial_poses_: np.ndarray = None,  # Optional for plots
+    ref_psi_: np.ndarray = None,  # Optional for plots
+    ref_kappa_: np.ndarray = None,  # Optional for plots
+    ref_dkappa_: np.ndarray = None,  # Optional for plots
+    bound_left_: np.ndarray = None,  # Optional for plots
+    bound_right_: np.ndarray = None,  # Optional for plots
+    debug_info: bool = False,
+    shpath_plot: bool = False,
+) -> np.ndarray:
+    """
+    author:
+    Kwinten Mortier
+
+
+    .. description::
+    This function handles the shortest path optimization problem.
+
+
+    .. inputs::
+    :param cones_left_:             array containing the left track cones [x, y] (unclosed!).
+    :type cones_left_:              np.ndarray
+    :param cones_right_:            array containing the right track cones [x, y] (unclosed!).
+    :type cones_right_:             np.ndarray
+    :param initial_poses_:          array containing the poses of the trajectory from pathplanning [x, y] (unclosed!).
+    :type initial_poses_:           np.ndarray
+    :param width_veh_real:          real width of the vehicle.
+    :type width_veh_real:           float
+    :param width_veh_opt:           width of the vehicle used for the optimisation.
+    :type width_veh_opt:            float
+    :param ref_track_:              array containing the preprocessed reference track, i.e. a reference line and the
+                                    according track widths to the left and to the right [x, y, w_tr_left, w_tr_right]
+                                    (unit is meter, unclosed!)
+    :type ref_track_:               np.ndarray
+    :param ref_psi_:                heading for every point of the reference track [x, y] (unit is rad, unclosed!).
+    :type ref_psi_:                 np.ndarray
+    :param ref_kappa_:              curvature for every point of the reference track [x, y] (unit is 1/m, unclosed!).
+    :type ref_kappa_:               np.ndarray
+    :param ref_dkappa_:             derivative of curvature for every point of the reference track [x, y]
+                                    (unit is 1/m^2, unclosed!)
+    :type ref_dkappa_:              np.ndarray
+    :param stepsize_shpath:         stepsize for the interpolation of the reference track.
+    :type stepsize_shpath:          float
+    :param bound_left_:             array containing the left track boundaries [x, y] (unclosed!).
+    :type bound_left_:              np.ndarray
+    :param bound_right_:            array containing the right track boundaries [x, y] (unclosed!).
+    :type bound_right_:             np.ndarray
+    :param debug_info:              flag to print debug information.
+    :type debug_info:               bool
+    :param plot_shortest_path:      flag to plot the shortest path optimisation results.
+    :type plot_shortest_path:       bool
+
+    .. outputs::
+    :return shortest_path:          the results of the shortest path optimisation.
+    :rtype shortest_path:           np.ndarray
+
+    .. notes::
+    Certain inputs are optional for plots. The track inputs must be closable in the current form!
+    """
+    # ------------------------------------------------------------------------------------------------------------------
+    # COPY INPUTS ------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    cones_left = np.copy(cones_left_)
+    cones_right = np.copy(cones_right_)
+    initial_poses = np.copy(initial_poses_)
+    ref_track = np.copy(ref_track_)
+    ref_normvec_norm = np.copy(ref_normvec_norm_)
+    ref_psi = np.copy(ref_psi_)
+    ref_kappa = np.copy(ref_kappa_)
+    ref_dkappa = np.copy(ref_dkappa_)
+    bound_left = np.copy(bound_left_)
+    bound_right = np.copy(bound_right_)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # CHECKING INPUTS --------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    if (ref_track[0] == ref_track[-1]).all() or (
+        ref_normvec_norm[0] == ref_normvec_norm[-1]
+    ).all():
+        raise RuntimeError("Reference track and normvectors must be unclosed!")
+    if ref_track.shape[0] != ref_normvec_norm.shape[0]:
+        raise RuntimeError("Array size of reftrack must be the same as normvectors!")
+    # ------------------------------------------------------------------------------------------------------------------
+    # DEFINING VARIABLES -----------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    shpath_track = np.copy(ref_track)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # SHORTEST PATH OPTIMISATION ---------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    alpha_shpath = opt_shortest_path(
+        reftrack=ref_track,
+        normvectors=ref_normvec_norm,
+        w_veh=width_veh_opt,
+        print_debug=debug_info,
+    )
+
+    # Determine the shortest path optimised track
+    shpath_track[:, :2] = (
+        ref_track[:, :2] + np.expand_dims(alpha_shpath, 1) * ref_normvec_norm
+    )
+    shpath_track[:, 2] += alpha_shpath
+    shpath_track[:, 3] -= alpha_shpath
+
+    shpath_track_cl = np.vstack((shpath_track, shpath_track[0]))
+
+    # --------------------------------------------------------------------------------------------------------------
+    # CALCULATE NEW SPLINES ON THE BASIS OF THE INTERPOLATED REFERENCE TRACK ---------------------------------------
+    # --------------------------------------------------------------------------------------------------------------
+    (
+        shpath_coeffs_x,
+        shpath_coeffs_y,
+        shpath_M,
+        shpath_normvec_norm,
+    ) = calc_splines(path=shpath_track_cl, use_dist_scaling=False)
+
+    # calculate spline lengths
+    # shpath_spline_lenghts = calc_spline_lengths(
+    #     coeffs_x=shpath_coeffs_x,
+    #     coeffs_y=shpath_coeffs_y,
+    # )
+
+    # calculate heading, curvature, and first derivative of curvature (analytically)
+    (
+        shpath_psi,
+        shpath_kappa,
+        shpath_dkappa,
+    ) = calc_head_curv_an(
+        coeffs_x=shpath_coeffs_x,
+        coeffs_y=shpath_coeffs_y,
+        ind_spls=np.arange(shpath_track.shape[0]),
+        t_spls=np.zeros(shpath_track.shape[0]),
+        calc_dcurv=True,
+    )
+
+    ########################################################################################################################
+    # Shortest path optimisation plots:
+    # - Preprocessed track
+    # - Shortest path optimised track
+    # - Curvature shortest path optimised track 2D
+    # - Curvature shortest path optimised track 3D
+    # - Curvature derivative path optimised track
+
+    # - Velocity and acceleration profile in 2D for the shortest path optimised track (OPTIONAL)
+    # - Velocity profile in 3D for the shortest path optimised track (OPTIONAL)
+
+    ########################################################################################################################
+
+    if shpath_plot:
+        plot_opts = {
+            "opt_method": "shortest_path",
+            "calc_vel": False,
+            "plot_debug": False,
+            "show_plots": True,
+            "save_plots": False,
+            "folder_path": "utils/data/plots/shortest_path_optimisation/",
+        }
+        print("Plotting shortest path optimisation results...")
+
+        plot_optimisation(
+            cones_left_=cones_left,
+            cones_right_=cones_right,
+            initial_poses_=initial_poses,
+            width_veh_real=width_veh_real,
+            width_veh_opt=width_veh_opt,
+            ref_track_=ref_track,
+            ref_normvec_norm_=ref_normvec_norm,
+            ref_psi_=ref_psi,
+            ref_kappa_=ref_kappa,
+            ref_dkappa_=ref_dkappa,
+            bound_left_=bound_left,
+            bound_right_=bound_right,
+            opt_track_=shpath_track,
+            opt_normvec_norm_=shpath_normvec_norm,
+            opt_psi_=shpath_psi,
+            opt_kappa_=shpath_kappa,
+            opt_dkappa_=shpath_dkappa,
+            plot_options=plot_opts,
+        )
+
+
 def iqp_handler(
     reftrack: np.ndarray,
     normvectors: np.ndarray,
@@ -2092,6 +3127,7 @@ def iqp_handler(
     Alexander Heilmeier
     Marvin Ochsenius
 
+
     .. description::
     This function handles the iterative call of the quadratic optimization problem (minimum curvature) during
     trajectory optimization. The interface to this function was kept as similar as possible to the interface of
@@ -2108,70 +3144,72 @@ def iqp_handler(
     Minimum Curvature Trajectory Planning and Control for an Autonomous Racecar
     DOI: 10.1080/00423114.2019.1631455
 
+
     .. inputs::
-    :param reftrack:            array containing the reference track, i.e. a reference line and the according track
-                                widths to the right and to the left [x, y, w_tr_left, w_tr_right] (unit is meter, must
-                                be unclosed!)
-    :type reftrack:             np.ndarray
-    :param normvectors:         normalized normal vectors for every point of the reference track [x, y]
-                                (unit is meter, must be unclosed!)
-    :type normvectors:          np.ndarray
-    :param A:                   linear equation system matrix for splines (applicable for both, x and y direction)
-                                -> System matrices have the form a_i, b_i * t, c_i * t^2, d_i * t^3
-                                -> see calc_splines.py for further information or to obtain this matrix
-    :type A:                    np.ndarray
-    :param spline_len:          spline lengths for every point of the reference track [x, y]
-                                (unit is meter, must be unclosed!)
-    :type spline_len:           np.ndarray
-    :param psi:                 heading for every point of the reference track [x, y]
-                                (unit is rad, must be unclosed!)
-    :type psi:                  np.ndarray
-    :param kappa:               curvature for every point of the reference track [x, y]
-                                (unit is 1/m, must be unclosed!)
-    :type kappa:                np.ndarray
-    :param dkappa:              derivative of curvature for every point of the reference track [x, y]
-                                (unit is 1/m^2, must be unclosed!)
-    :type dkappa:               np.ndarray
-    :param kappa_bound:         curvature boundary to consider during optimization.
-    :type kappa_bound:          float
-    :param w_veh:               vehicle width in m. It is considered during the calculation of the allowed deviations
-                                from the reference line.
-    :type w_veh:                float
-    :param print_debug:         bool flag to print debug messages.
-    :type print_debug:          bool
-    :param plot_debug:          bool flag to plot the curvatures that are calculated based on the original linearization
-                                and on a linearization around the solution.
-    :type plot_debug:           bool
-    :param stepsize_interp:     stepsize in meters which is used for an interpolation after the spline approximation.
-                                This stepsize determines the steps within the optimization problem.
-    :type stepsize_interp:      float
-    :param iters_min:           number if minimum iterations of the IQP (termination criterion).
-    :type iters_min:            int
-    :param curv_error_allowed:  allowed curvature error in rad/m between the original linearization and the
-                                linearization around the solution (termination criterion).
-    :type curv_error_allowed:   float
+    :param reftrack:                array containing the reference track, i.e. a reference line and the according track
+                                    widths to the right and to the left [x, y, w_tr_left, w_tr_right] (unit is meter, must
+                                    be unclosed!)
+    :type reftrack:                 np.ndarray
+    :param normvectors:             normalized normal vectors for every point of the reference track [x, y]
+                                    (unit is meter, must be unclosed!)
+    :type normvectors:              np.ndarray
+    :param A:                       linear equation system matrix for splines (applicable for both, x and y direction)
+                                    -> System matrices have the form a_i, b_i * t, c_i * t^2, d_i * t^3
+                                    -> see calc_splines.py for further information or to obtain this matrix
+    :type A:                        np.ndarray
+    :param spline_len:              spline lengths for every point of the reference track [x, y]
+                                    (unit is meter, must be unclosed!)
+    :type spline_len:               np.ndarray
+    :param psi:                     heading for every point of the reference track [x, y]
+                                    (unit is rad, must be unclosed!)
+    :type psi:                      np.ndarray
+    :param kappa:                   curvature for every point of the reference track [x, y]
+                                    (unit is 1/m, must be unclosed!)
+    :type kappa:                    np.ndarray
+    :param dkappa:                  derivative of curvature for every point of the reference track [x, y]
+                                    (unit is 1/m^2, must be unclosed!)
+    :type dkappa:                   np.ndarray
+    :param kappa_bound:             curvature boundary to consider during optimization.
+    :type kappa_bound:              float
+    :param w_veh:                   vehicle width in m. It is considered during the calculation of the allowed deviations
+                                    from the reference line.
+    :type w_veh:                    float
+    :param print_debug:             bool flag to print debug messages.
+    :type print_debug:              bool
+    :param plot_debug:              bool flag to plot the curvatures that are calculated based on the original linearization
+                                    and on a linearization around the solution.
+    :type plot_debug:               bool
+    :param stepsize_interp:         stepsize in meters which is used for an interpolation after the spline approximation.
+                                    This stepsize determines the steps within the optimization problem.
+    :type stepsize_interp:          float
+    :param iters_min:               number if minimum iterations of the IQP (termination criterion).
+    :type iters_min:                int
+    :param curv_error_allowed:      allowed curvature error in rad/m between the original linearization and the
+                                    linearization around the solution (termination criterion).
+    :type curv_error_allowed:       float
+
 
     .. outputs::
-    :return alpha_mincurv_tmp:  solution vector of the optimization problem containing the lateral shift in m for every
-                                point.
-    :rtype alpha_mincurv_tmp:   np.ndarray
-    :return reftrack_tmp:       reference track data [x, y, w_tr_left, w_tr_right] as it was used in the final iteration
-                                of the IQP.
-    :rtype reftrack_tmp:        np.ndarray
-    :return normvectors_tmp:    normalized normal vectors as they were used in the final iteration of the IQP [x, y].
-    :rtype normvectors_tmp:     np.ndarray
-    :return spline_len_tmp:     spline lengths of reference track data [x, y, w_tr_left, w_tr_right] as it was used in
-                                the final iteration of the IQP.
-    :rtype spline_len_tmp:      np.ndarray
-    :return psi_reftrack_tmp:   heading of reference track data [x, y, w_tr_left, w_tr_right] as it was used in the
-                                final iteration of the IQP.
-    :rtype psi_reftrack_tmp:    np.ndarray
-    :return kappa_reftrack_tmp: curvtaure of reference track data [x, y, w_tr_left, w_tr_right] as it was used in the
-                                final iteration of the IQP.
-    :rtype psi_reftrack_tmp:    np.ndarray
-    :return dkappa_reftrack_tmp:derivative of curvature of reference track data [x, y, w_tr_left, w_tr_right] as it was
-                                used in the final iteration of the IQP.
-    :rtype psi_reftrack_tmp:    np.ndarray
+    :return alpha_mincurv_iqp:      solution vector of the optimization problem containing the lateral shift in m for every
+                                    point.
+    :rtype alpha_mincurv_iqp:       np.ndarray
+    :return reftrack_iqp:           reference track data [x, y, w_tr_left, w_tr_right] as it was used in the final iteration
+                                    of the IQP.
+    :rtype reftrack_iqp:            np.ndarray
+    :return normvectors_iqp:        normalized normal vectors as they were used in the final iteration of the IQP [x, y].
+    :rtype normvectors_iqp:         np.ndarray
+    :return spline_len_iqp:         spline lengths of reference track data [x, y, w_tr_left, w_tr_right] as it was used in
+                                    the final iteration of the IQP.
+    :rtype spline_len_iqp:          np.ndarray
+    :return psi_reftrack_iqp:       heading of reference track data [x, y, w_tr_left, w_tr_right] as it was used in the
+                                    final iteration of the IQP.
+    :rtype psi_reftrack_iqp:        np.ndarray
+    :return kappa_reftrack_iqp:     curvtaure of reference track data [x, y, w_tr_left, w_tr_right] as it was used in the
+                                    final iteration of the IQP.
+    :rtype psi_reftrack_iqp:        np.ndarray
+    :return dkappa_reftrack_iqp:    derivative of curvature of reference track data [x, y, w_tr_left, w_tr_right] as it was
+                                    used in the final iteration of the IQP.
+    :rtype psi_reftrack_iqp:        np.ndarray
     """
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -2297,14 +3335,22 @@ def iqp_handler(
         end = time.perf_counter()
         rospy.logerr("Iteration %d finished in %f", iter_cur, end - start)
 
+    alpha_mincurv_iqp = alpha_mincurv_tmp
+    reftrack_iqp = reftrack_tmp
+    normvectors_iqp = normvectors_tmp
+    spline_len_iqp = spline_len_tmp
+    psi_reftrack_iqp = psi_reftrack_tmp
+    kappa_reftrack_iqp = kappa_reftrack_tmp
+    dkappa_reftrack_iqp = dkappa_reftrack_tmp
+
     return (
-        alpha_mincurv_tmp,
-        reftrack_tmp,
-        normvectors_tmp,
-        spline_len_tmp,
-        psi_reftrack_tmp,
-        kappa_reftrack_tmp,
-        dkappa_reftrack_tmp,
+        alpha_mincurv_iqp,
+        reftrack_iqp,
+        normvectors_iqp,
+        spline_len_iqp,
+        psi_reftrack_iqp,
+        kappa_reftrack_iqp,
+        dkappa_reftrack_iqp,
     )
 
 
@@ -4100,6 +5146,73 @@ def result_plots(
         plt.ylabel("y-distance from original car position in m")
         plt.show()
 
+        # Tijdelijk
+        # plot track including optimized path
+        plt.figure()
+        plt.grid()
+
+        bmincurv_path_1 = plt.plot(
+            refline_plot[:, 0],
+            refline_plot[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linestyle="dashed",
+            linewidth=1.0,
+        )
+        bmincurv_path_6 = plt.plot(
+            trajectory[:, 1],
+            trajectory[:, 2],
+            color=normalize_color((255, 0, 0)),
+            linewidth=2,
+        )
+        plt.plot(
+            bound_left[:, 0],
+            bound_left[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linewidth=2.0,
+        )
+        plt.plot(
+            bound_right[:, 0],
+            bound_right[:, 1],
+            color=normalize_color((0, 0, 0)),
+            linewidth=2.0,
+        )
+        bmincurv_path_11 = plt.arrow(
+            point1_arrow[0],
+            point1_arrow[1],
+            vec_arrow[0],
+            vec_arrow[1],
+            width=0.5,
+            head_width=1.0,
+            head_length=1.0,
+            fc="g",
+            ec="g",
+        )
+
+        plt.legend(
+            [
+                bmincurv_path_1[0],
+                bmincurv_path_6[0],
+                bmincurv_path_11,
+            ],
+            [
+                "Reference line",
+                "Minimum curvature racing line",
+                "Driving direction",
+            ],
+            handler_map={
+                mpatches.FancyArrow: HandlerPatch(patch_func=make_legend_arrow)
+            },
+            fontsize=20,
+            loc="lower left",
+        )
+
+        ax = plt.gca()
+        ax.set_aspect("equal", "datalim")
+        plt.tight_layout()
+        plt.xlabel("x-distance from original car position in m", fontsize=20)
+        plt.ylabel("y-distance from original car position in m", fontsize=20)
+        plt.show()
+
     if plot_opts["raceline_curv"]:
         # plot curvature profile
         plt.figure("Curvature profile")
@@ -4117,6 +5230,7 @@ def result_plots(
 
         # create 3d plot
         fig = plt.figure()
+        plt.title("3D velocity profile", fontsize=20)
         ax = fig.add_subplot(projection="3d")
 
         # recast get_proj function to use scaling factors for the axes
@@ -4132,8 +5246,8 @@ def result_plots(
 
         ax.grid()
         ax.set_aspect("equalxy")
-        ax.set_xlabel("east in m")
-        ax.set_ylabel("north in m")
+        ax.set_xlabel("x-distance from original car position in m", fontsize=10)
+        ax.set_ylabel("y-distance from original car position in m", fontsize=10)
 
         # plot velocity profile in 3D
         ax.plot(trajectory[:, 1], trajectory[:, 2], trajectory[:, 5], color="k")

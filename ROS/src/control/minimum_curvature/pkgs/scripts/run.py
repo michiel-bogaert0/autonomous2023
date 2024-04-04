@@ -21,8 +21,10 @@ from utils.utils_mincurv import (
     check_traj,
     create_raceline,
     iqp_handler,
+    plot_optimisation,
     prep_track,
     result_plots,
+    shortest_path_handler,
 )
 
 
@@ -34,8 +36,8 @@ class MinimumCurvature(ManagedNode):
     def doConfigure(self):
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
-        self.car_width = rospy.get_param("~car_width", 0.50)
-        self.car_length = rospy.get_param("~car_length", 0.72)
+        self.car_width = rospy.get_param("~car_width", 1.49)
+        self.car_length = rospy.get_param("~car_length", 3.21)
         self.car_mass = rospy.get_param("~car_mass", 270.00)
 
         self.width_margin_left = rospy.get_param("~width_margin_left", 0.15)
@@ -72,6 +74,8 @@ class MinimumCurvature(ManagedNode):
         self.min_iterations_iqp = rospy.get_param("~min_iterations_iqp", 3)
         self.max_iterations_iqp = rospy.get_param("~max_iterations_iqp", 5)
 
+        self.calc_shortest_path = rospy.get_param("~calc_shortest_path", False)
+
         self.vel_calc = rospy.get_param("~vel_calc", False)
         self.v_max = rospy.get_param("~v_max", 36.00)
         self.T_motor_max = rospy.get_param("~T_motor_max", 140.00)
@@ -82,6 +86,22 @@ class MinimumCurvature(ManagedNode):
         self.drag_coeff = rospy.get_param("~drag_coeff", 1.649217)
         self.acc_limit_long = rospy.get_param("~acc_limit_long", 15.69)
         self.acc_limit_lat = rospy.get_param("~acc_limit_lat", 15.69)
+
+        # Data needed for velocity profile calculation
+        self.vel_data = {
+            "car_width": self.car_width,
+            "car_length": self.car_length,
+            "car_mass": self.car_mass,
+            "v_max": self.v_max,
+            "T_motor_max": self.T_motor_max,
+            "P_max": self.P_max,
+            "num_motors": self.num_motors,
+            "gear_ratio": self.gear_ratio,
+            "wheel_radius": self.wheel_radius,
+            "drag_coeff": self.drag_coeff,
+            "acc_limit_long": self.acc_limit_long,
+            "acc_limit_lat": self.acc_limit_lat,
+        }
 
         # Plotting and debugging
         self.plot = rospy.get_param("~plot", False)
@@ -94,7 +114,8 @@ class MinimumCurvature(ManagedNode):
             self.plot_final = rospy.get_param("~plot_final", False)
         else:
             self.plot_prep = False
-            self.plot_opt = False
+            self.plot_opt_shpath = False
+            self.plot_opt_iqp = False
             self.plot_post = False
             self.plot_final = False
 
@@ -202,8 +223,41 @@ class MinimumCurvature(ManagedNode):
         )
 
         # ----------------------------------------------------------------------------------------------------------------------
+        # OPTIONAL: SHORTEST PATH OPTIMISATION ---------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------------------------------------------
+
+        if self.calc_shortest_path:
+            rospy.loginfo("Starting shortest path optimisation...")
+            t_start_shortest_path_optimization = perf_counter()
+
+            shortest_path_track = shortest_path_handler(
+                width_veh_real=self.car_width,
+                width_veh_opt=self.car_width_with_margins,
+                ref_track_=prepped_track,
+                ref_normvec_norm_=normvec_normalized,
+                stepsize_shpath=self.stepsize_opt,
+                cones_left_=self.cones_left,
+                cones_right_=self.cones_right,
+                initial_poses_=self.reference_line,
+                ref_psi_=psi_prepped_track,
+                ref_kappa_=kappa_prepped_track,
+                ref_dkappa_=dkappa_prepped_track,
+                bound_left_=self.bound_left,
+                bound_right_=self.bound_right,
+                debug_info=self.print_debug_opt,
+                shpath_plot=self.plot_opt,
+            )
+            shortest_path_track = shortest_path_track
+
+            rospy.loginfo("Shortest path optimisation done!")
+            rospy.logwarn(
+                f"Total time elapsed during shortest path optimisation: {time.perf_counter() - t_start_shortest_path_optimization}"
+            )
+        # ----------------------------------------------------------------------------------------------------------------------
         # IQP MINIMUM CURVATURE OPTIMISATION -----------------------------------------------------------------------------------
         # ----------------------------------------------------------------------------------------------------------------------
+
+        # TODO: Write function for IQP optimisation?
 
         t_start_iqp_optimization = perf_counter()
         (
@@ -233,6 +287,38 @@ class MinimumCurvature(ManagedNode):
         rospy.logerr(
             f"Total time elapsed during iqp optimisation: {time.perf_counter() - t_start_iqp_optimization}"
         )
+
+        if self.plot_opt:
+            plot_opts = {
+                "opt_method": "iqp_mincurv",
+                "calc_vel": False,
+                "plot_debug": False,
+                "show_plots": True,
+                "save_plots": False,
+                "folder_path": "utils/data/plots/shortest_path_optimisation/",
+            }
+            print("Plotting iqp optimisation results...")
+
+            plot_optimisation(
+                cones_left_=self.cones_left,
+                cones_right_=self.cones_right,
+                initial_poses_=self.reference_line,
+                width_veh_real=self.car_width,
+                width_veh_opt=self.car_width_with_margins,
+                ref_track_=prepped_track,
+                ref_normvec_norm_=normvec_normalized,
+                ref_psi_=psi_prepped_track,
+                ref_kappa_=kappa_prepped_track,
+                ref_dkappa_=dkappa_prepped_track,
+                bound_left_=self.bound_left,
+                bound_right_=self.bound_right,
+                opt_track_=track_iqp,
+                opt_normvec_norm_=normvec_normalized_iqp,
+                opt_psi_=psi_track_iqp,
+                opt_kappa_=kappa_reftrack_iqp,
+                opt_dkappa_=dkappa_reftrack_iqp,
+                plot_options=plot_opts,
+            )
 
         if self.vel_calc:
             vel_start = time.perf_counter()
@@ -379,6 +465,8 @@ class MinimumCurvature(ManagedNode):
                 "raceline": True,  # plot optimized path
                 "imported_bounds": False,  # plot imported bounds (analyze difference to interpolated bounds)
                 "raceline_curv": True,  # plot curvature profile of optimized path
+                "raceline_curv_3d": True,  # plot 3D curvature profile above raceline
+                "raceline_curv_3d_stepsize": 1.0,  # [m] vertical lines stepsize in 3D curvature profile plot
                 "racetraj_vel": True,  # plot velocity profile
                 "racetraj_vel_3d": True,  # plot 3D velocity profile above raceline
                 "racetraj_vel_3d_stepsize": 1.0,  # [m] vertical lines stepsize in 3D velocity profile plot
