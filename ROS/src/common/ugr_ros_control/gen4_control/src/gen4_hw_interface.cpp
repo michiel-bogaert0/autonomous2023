@@ -61,7 +61,7 @@ void Gen4HWInterface::init()
 
   nh.param("steer_max_step", steer_max_step, 1600.0f);
 
-  this->can_pub = nh.advertise<can_msgs::Frame>("ugr/send_can", 10);
+  this->can_pub = nh.advertise<ugr_msgs::CanFrame>("/ugr/send_can", 10);
   this->can_axis0_sub =
       nh.subscribe<std_msgs::Float32>("/processed/Actual_ERPM", 1, &Gen4HWInterface::can_callback_axis0, this);
   this->can_axis1_sub =
@@ -74,32 +74,22 @@ void Gen4HWInterface::init()
   this->state_sub = nh.subscribe<ugr_msgs::State>("/state", 1, &Gen4HWInterface::state_change, this);
 
   // Now check if configured joints are actually there. Also remember joint id
-  std::string drive_joint0_name = nh_.param<std::string>("hardware_interface/drive_joint", "axis0");
-  std::string drive_joint1_name = nh_.param<std::string>("hardware_interface/drive_joint", "axis1");
+  std::string drive_joint_name = nh_.param<std::string>("hardware_interface/drive_joint", "axis_rear");
   std::string steering_joint_name = nh_.param<std::string>("hardware_interface/steering_joint", "axis_steering");
 
-  this->axis0_frame = nh.param("axis0/frame", std::string("ugr/car_base_link/axis0"));
-  this->axis1_frame = nh.param("axis1/frame", std::string("ugr/car_base_link/axis1"));
+  this->axis_rear_frame = nh.param("axis_rear/frame", std::string("ugr/car_base_link/axis_rear"));
   this->wheel_diameter = nh.param("wheel_diameter", 16.0 * 2.54 / 100.0);  // in m
   this->gear_ratio = nh.param("gear_ratio", 3.405);
 
-  drive_joint0_id = std::find(joint_names_.begin(), joint_names_.end(), drive_joint0_name) - joint_names_.begin();
-  drive_joint1_id = std::find(joint_names_.begin(), joint_names_.end(), drive_joint1_name) - joint_names_.begin();
+  drive_joint_id = std::find(joint_names_.begin(), joint_names_.end(), drive_joint_name) - joint_names_.begin();
   steering_joint_id = std::find(joint_names_.begin(), joint_names_.end(), steering_joint_name) - joint_names_.begin();
 
-  ROS_INFO_STREAM("Drive joint id: " << drive_joint0_id << "Drive joint1 id: " << drive_joint1_id
-                                     << "< Steering joint id: " << steering_joint_id);
+  ROS_INFO_STREAM("Drive joint id: " << drive_joint_id << "< Steering joint id: " << steering_joint_id);
 
-  if (drive_joint0_id >= joint_names_.size())
+  if (drive_joint_id >= joint_names_.size())
   {
-    ROS_ERROR("Error: the parameter 'hardware_interface/joints_config/drive0_joint' must be given");
-    throw std::invalid_argument("hardware_interface/joints_config/drive0_joint must be given");
-  }
-
-  if (drive_joint1_id >= joint_names_.size())
-  {
-    ROS_ERROR("Error: the parameter 'hardware_interface/joints_config/drive1_joint' must be given");
-    throw std::invalid_argument("hardware_interface/joints_config/drive_joint1 must be given");
+    ROS_ERROR("Error: the parameter 'hardware_interface/joints_config/drive_joint' must be given");
+    throw std::invalid_argument("hardware_interface/joints_config/drive_joint must be given");
   }
 
   if (steering_joint_id >= joint_names_.size())
@@ -134,8 +124,7 @@ void Gen4HWInterface::init()
 // The READ function
 void Gen4HWInterface::read(ros::Duration& elapsed_time)
 {
-  joint_velocity_[drive_joint0_id] = this->cur_velocity_axis0;
-  joint_velocity_[drive_joint1_id] = this->cur_velocity_axis1;
+  joint_velocity_[drive_joint_id] = (this->cur_velocity_axis0 + this->cur_velocity_axis1) / 2;
   joint_position_[steering_joint_id] = this->cur_steering;
 }
 
@@ -147,8 +136,8 @@ void Gen4HWInterface::write(ros::Duration& elapsed_time)
 
   if (this->is_running == true)
   {
+    publish_torque_msg(joint_effort_command_[drive_joint_id]);
     publish_steering_msg(joint_position_command_[steering_joint_id]);
-    publish_torque_msg(joint_effort_command_[drive_joint0_id]);
   }
   else
   {
@@ -180,32 +169,19 @@ void Gen4HWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
 // Callback for the CAN messages: axis0, axis1 and steering
 void Gen4HWInterface::can_callback_axis0(const std_msgs::Float32::ConstPtr& msg)
 {
-  handle_vel_msg(msg, 1);
+  // convert rpm to rad/s
+  this->cur_velocity_axis0 = 2 * M_PI * msg->data / 60;
 }
 
 void Gen4HWInterface::can_callback_axis1(const std_msgs::Float32::ConstPtr& msg)
 {
-  handle_vel_msg(msg, 2);
+  // convert rpm to rad/s
+  this->cur_velocity_axis1 = 2 * M_PI * msg->data / 60;
 }
 
 void Gen4HWInterface::can_callback_steering(const std_msgs::Float32::ConstPtr& msg)
 {
   handle_steering_msg(msg);
-}
-
-void Gen4HWInterface::handle_vel_msg(const std_msgs::Float32::ConstPtr& msg, uint32_t axis_id)
-{
-  double motor_speed = msg->data;  // rpm
-
-  // Set cur_velocity_axis
-  if (axis_id == 1)
-  {
-    this->cur_velocity_axis0 = 2 * M_PI * motor_speed / 60;  // rad/s
-  }
-  else if (axis_id == 2)
-  {
-    this->cur_velocity_axis1 = 2 * M_PI * motor_speed / 60;  // rad/s
-  }
 }
 
 void Gen4HWInterface::handle_steering_msg(const std_msgs::Float32::ConstPtr& msg)
@@ -223,41 +199,39 @@ void Gen4HWInterface::publish_steering_msg(float steering)
 
 void Gen4HWInterface::publish_torque_msg(float axis)
 {
-  float mean_axis_speed = (this->cur_velocity_axis0 + this->cur_velocity_axis1) / 2;
-  float car_speed =
-      mean_axis_speed / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s, mean speed if no slip
+  float cur_velocity_rear = joint_velocity_[drive_joint_id];
+  float car_speed_estimate =
+      cur_velocity_rear / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s, mean speed if no slip
+
+  float axis0 = axis;
+  // float axis1 = axis; commented because not used yet
 
   // no TV at low speeds
-  if (car_speed > 5 && this->use_torque_vectoring == true)
+  if (car_speed_estimate > 5 && this->use_torque_vectoring == true)
   {
     float dT = this->torque_vectoring();
-    float axis0 = axis - dT / 2;
-    float axis1 = axis + dT / 2;
+    axis0 = axis - dT / 2;
+    // axis1 = axis + dT / 2; commented because not used yet
   }
 
-  std::vector<diagnostic_msgs::KeyValue> msg;
+  // create publish message, for testing now only axis0
+  ugr_msgs::CanFrame msg;
+
+  std::vector<ugr_msgs::KeyValueFloat> keyvalues;
   // header
   msg.header.stamp = ros::Time::now();
   // message
-  msg.message = "HV500_SetAcCurrent"
+  msg.message = "HV500_SetAcCurrent";
   // signal
-  diagnostic_msgs::KeyValue kv;
+  ugr_msgs::KeyValueFloat kv;
   kv.key = "CMD_TargetAcCurrent";
   kv.value = axis0;
-  msg.push_back(kv) 
+  keyvalues.push_back(kv);
+
+  msg.signals = keyvalues;
+
   // publish
-  can_pub.publish(msg)
-
-  // TODO : look for the can id's in dbc file (id's for cmd_target_speed or cmd_target_position or (cmd_target_current))
-  // TODO : send the motor commands in can_msgs::Frame format on the can bus
-
-  // make ros can frame and send on can
-  // can_msgs::Frame can_msg;
-  // can_msg.id = can_id;
-  // can_msg.data = axis0;
-  // can_msg.dlc = 8;
-
-  // can_pub.publish(can_msg);
+  can_pub.publish(msg);
 }
 
 void Gen4HWInterface::yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg)
@@ -268,8 +242,8 @@ void Gen4HWInterface::yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg)
 float Gen4HWInterface::torque_vectoring()
 {
   // returns the torque distribution for the left and right wheel
-  float mean_axis_speed = (this->cur_velocity_axis0 + this->cur_velocity_axis1) / 2;
-  float car_speed = mean_axis_speed / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s
+  float cur_velocity_rear = joint_velocity_[drive_joint_id];
+  float car_speed = cur_velocity_rear / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s
   float yaw_rate_desired = 0.0;
 
   // calculate the understeer gradient
@@ -286,7 +260,7 @@ float Gen4HWInterface::torque_vectoring()
   float yaw_rate_error = yaw_rate_desired - this->yaw_rate;
 
   // PI(D) controller calculates the difference in torque dT, based on the yaw rate error
-  float now_time = ros::Time::now().toSec();
+  double now_time = ros::Time::now().toSec();
   this->integral += yaw_rate_error * (now_time - this->prev_time);
   float difference = (yaw_rate_error - this->prev_error) / (now_time - this->prev_time);
 

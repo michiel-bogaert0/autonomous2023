@@ -13,9 +13,7 @@
 
   <link name="ugr/car_base_link/cam0" />
 
-  <link name="ugr/car_base_link/axis0" />
-
-  <link name="ugr/car_base_link/axis1" />
+  <link name="ugr/car_base_link/axis_rear" />
 
   <link name="ugr/car_base_link/front_axle" />
 
@@ -25,7 +23,7 @@
 
   <link name="ugr/car_base_link/gps1" />
 
-  <link name"ugr/car_base_link/vectornav" />
+  <link name="ugr/car_base_link/vectornav" />
 
 
   <!-- Joint definitions -->
@@ -61,30 +59,14 @@
     <child link="ugr/car_base_link/cam0" />
   </joint>
 
-  <joint name="imu0_joint" type="fixed">
-    <origin xyz="0.10 0 0.35" rpy="0 0 0" />
+  <joint name="axis_rear" type="continuous"> 
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0" /> <!-- <inner side of the tire, outer: 0.74275 -->
     <parent link="ugr/car_base_link" />
-    <child link="ugr/car_base_link/imu0" />
-  </joint>
-
-  <joint name="imu1_joint" type="fixed">
-    <origin xyz="0.10 0 0.37" rpy="3.1415 0 0" />
-    <parent link="ugr/car_base_link" />
-    <child link="ugr/car_base_link/imu1" />
-  </joint>
-
-  <joint name="axis0" type="continuous"> <!-- < linker motor dit? Dan hebben we een RH-assenstelsel en klopt de positieve zin met die van NX, anders alle y coord'n omkeren  -->
-    <origin xyz="0.0 0.5573 0" rpy="0 0 0" /> <!-- <inner side of the tire, outer: 0.74275 -->
-    <parent link="ugr/car_base_link" />
-    <child link="ugr/car_base_link/axis0" />
-
+    <child link="ugr/car_base_link/axis_rear" />
+<!-- !!!!!!!!!!!!!!!!!!!!! set reasonable limits !!!!!!!!!!!!!!!!!!!!! -->
     <limit effort="30.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
-  </joint>
+<!-- !!!!!!!!!!!!!!!!!!!!! set reasonable limits !!!!!!!!!!!!!!!!!!!!! -->
 
-  <joint name="axis1" type="continuous">  
-    <origin xyz="0.0 -0.5573 0" rpy="0 0 0" />
-    <parent link="ugr/car_base_link" />
-    <child link="ugr/car_base_link/axis1" />
   </joint>
 
   <joint name="front_axle" type="fixed">

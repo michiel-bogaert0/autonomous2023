@@ -53,6 +53,8 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <ugr_msgs/State.h>
+#include <ugr_msgs/CanFrame.h>
+#include <ugr_msgs/KeyValueFloat.h>
 
 namespace gen4_control
 {
@@ -79,7 +81,6 @@ public:
 
   void state_change(const ugr_msgs::State::ConstPtr& msg);
 
-  void handle_vel_msg(const std_msgs::Float32::ConstPtr& msg, uint32_t axis_id);
   void handle_steering_msg(const std_msgs::Float32::ConstPtr& msg);
 
   void publish_steering_msg(float steering);
@@ -94,12 +95,10 @@ public:
   float torque_vectoring();
 
 private:
-  int drive_joint0_id;
-  int drive_joint1_id;
+  int drive_joint_id;
   int steering_joint_id;
 
-  std::string axis0_frame;
-  std::string axis1_frame;
+  std::string axis_rear_frame;
 
   float wheel_diameter;
   float gear_ratio;
@@ -129,8 +128,8 @@ private:
   float Kd;
   float integral;
   float prev_error;
-  float prev_time;
-  float this_time;
+  double prev_time;
+  double this_time;
   float yaw_rate;
 
   // parameters for torque vectoring
