@@ -23,23 +23,40 @@ class Gen4State(CarState):
             "/dio_driver_1/DI4", Bool, self.handle_watchdog
         )  # watchdog status
         rospy.Subscriber(
-            "/iologik/input1", Float64, self.handle_front_bp
-        )  # front brake pressure
+            "/iologik/input1", Float64, self.handle_air_pressure1
+        )  # EBS 1 air pressure
         rospy.Subscriber(
-            "/iologik/input2", Float64, self.handle_rear_bp
+            "/iologik/input2", Float64, self.handle_air_pressure2
+        )  # EBS 2 air pressure
+        rospy.Subscriber(
+            "/iologik/input3", Float64, self.handle_front_ebs_bp
+        )  # front ebs brake pressure
+        rospy.Subscriber(
+            "/iologik/input4", Float64, self.handle_rear_ebs_bp
         )  # rear brake pressure
         self.ebs1 = rospy.Publisher("/dio_driver_1/DO1", Bool, queue_size=10)  # ebs1
         self.ebs2 = rospy.Publisher("/dio_driver_1/DO2", Bool, queue_size=10)  # ebs2
+        self.dbs = rospy.Publisher("/iologik/output1", Float64, queue_size=10)
         self.watchdog_trigger = rospy.Publisher(
             "/dio_driver_1/DO3", Bool, queue_size=10
         )  # watchdog trigger
+        self.watchdog_reset = rospy.Publisher(
+            "/dio_driver_1/DO4", Bool, queue_size=10
+        )  # watchdog reset
         self.sdc_out = rospy.Publisher(
             "/dio_driver_1/DO4", Bool, queue_size=10
         )  # sdc out start low, high when everything is ok and low in case of error
+        self.sleeping = False  # indicates whether we are waiting 200ms for watchdog
+        self.initial_checkup_done = False
+        self.toggling_watchdog = True
         self.res_go_signal = False
         self.res_estop_signal = False
-        self.front_bp = None
-        self.rear_bp = None
+        self.watchdog_status = True  # not sure
+        self.sdc_status = True  # not sure
+        self.air_pressure1 = None
+        self.air_pressure2 = None
+        self.front_ebs_bp = None
+        self.rear_ebs_bp = None
         self.as_ready_time = rospy.Time.now().to_sec()
         # DBS ACTIVATED VANAF WNR JE DIE EERSTE TEST HEBT GDN, ANDERS GWN ON
         self.state = {
@@ -93,11 +110,62 @@ class Gen4State(CarState):
         self.send_status_over_can()
 
     def initial_checkup(self):
+        # ??? to do: cm1 and cm2 filled, sj1 and sj2 closed
+
         # mission needs to be selected
         if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
-            return
+            self.activate_EBS()
 
-        # if self.state["ASMS"] != CarStateEnum.
+        # ASMS needs to be activated
+        if self.state["ASMS"] != CarStateEnum.ACTIVATED:
+            self.activate_EBS()
+
+        # check air pressures
+        if not (
+            self.air_pressure1 > 8
+            and self.air_pressure2 > 8
+            and self.air_pressure1 < 9.5
+            and self.air_pressure2 < 9.5
+        ):
+            self.activate_EBS()
+
+        # watchdog OK?
+        if not self.watchdog_status:
+            self.activate_EBS()
+
+        # is SDC closed?
+        if not self.sdc_status:
+            return  # hopefully in the next iteration this will be True, but no need for EBS
+
+        # stop toggling watchdog
+        self.toggling_watchdog = False
+
+        # wait 200 ms
+        self.sleeping = True
+        time.sleep(0.200)
+
+        # check whether the watchdog is indicating error
+        if self.watchdog_status:
+            self.activate_EBS()
+
+        # check if sdc went open
+        if self.sdc_status:
+            self.activate_EBS()
+
+        # check ebs brake pressures
+        if not (
+            self.front_ebs_bp > 90
+            and self.rear_ebs_bp > 90
+            and self.front_ebs_bp < 150
+            and self.front_ebs_bp < 150
+        ):
+            self.activate_EBS()
+
+        # start toggling watchdog
+        self.toggling_watchdog = True
+
+        # reset watchdog
+        self.watchdog_reset.publish(Bool(data=True))
 
     def send_status_over_can(self):
         # https://www.formulastudent.de/fileadmin/user_upload/all/2022/rules/FSG22_Competition_Handbook_v1.1.pdf
@@ -166,8 +234,9 @@ class Gen4State(CarState):
         self.bus.publish(serialcan_to_roscan(canmsg))
 
     def handle_sdc(self, dio1: Bool):
-        if dio1.data:  # what does 1 and 0 mean
+        if not dio1.data:  # 1 means ok
             self.activate_EBS()
+        self.sdc_
 
     def handle_ts(self, dio2: Bool):
         self.state["TS"] = CarStateEnum.ACTIVATED if dio2.data else CarStateEnum.OFF
@@ -176,14 +245,21 @@ class Gen4State(CarState):
         self.state["AMS"] = CarStateEnum.ACTIVATED if dio3.data else CarStateEnum.OFF
 
     def handle_watchdog(self, dio4: Bool):
-        if not dio4.data:  # what does 1 and 0 mean
-            self.activate_EBS()
+        if not dio4.data:  # 1 means ok
+            self.watchdog_status = dio4.data
+            self.activate_EBS()  # not 100% sure
 
-    def handle_front_bp(self, front_bp: Float64):
-        self.front_bp = front_bp.data
+    def handle_air_pressure1(self, air_pressure1: Float64):
+        self.air_pressure1 = air_pressure1.data
 
-    def handle_rear_bp(self, rear_bp: Float64):
-        self.rear_bp = rear_bp.data
+    def handle_air_pressure2(self, air_pressure2: Float64):
+        self.air_pressure2 = air_pressure2.data
+
+    def handle_front_ebs_bp(self, front_ebs_bp: Float64):
+        self.front_ebs_bp = front_ebs_bp.data
+
+    def handle_rear_ebs_bp(self, rear_ebs_bp: Float64):
+        self.rear_ebs_bp = rear_ebs_bp.data
 
     def get_state(self):
         """
@@ -191,10 +267,16 @@ class Gen4State(CarState):
             object with the (physical) state of the car systems,
             like EBS and ASSI. See general docs for info about this state
         """
+        if self.toggling_watchdog:
+            self.watchdog_trigger.publish(Bool(data=True))
+            time.sleep(0.005)
+            self.watchdog_trigger.publish(Bool(data=False))
 
-        if not self.inital_checkup_done:
+        if (
+            not self.initial_checkup_done and not self.sleeping
+        ):  # if we are busy waiting 200ms, just continue
             self.initial_checkup()
-        else:
+        elif self.initial_checkup_done:
             self.monitor()
 
         t = rospy.Time.now().to_sec()
