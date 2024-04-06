@@ -87,7 +87,7 @@ class CanConverter(ManagedNode):
 
         try:
             encoded_msg = db_msg.encode(signals_dict)
-        except cantools.database.error.EncodeError:
+        except cantools.db.errors.EncodeError:
             rospy.logwarn(f"Message not in database {msg.message}")
             return
 
