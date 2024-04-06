@@ -35,7 +35,7 @@ class Gen4State(CarState):
         )  # watchdog trigger
         self.sdc_out = rospy.Publisher(
             "/dio_driver_1/DO4", Bool, queue_size=10
-        )  # sdc out, not sure if i have to send it periodically
+        )  # sdc out start low, high when everything is ok and low in case of error
         self.res_go_signal = False
         self.res_estop_signal = False
         self.front_bp = None
@@ -43,11 +43,11 @@ class Gen4State(CarState):
         self.as_ready_time = rospy.Time.now().to_sec()
         # DBS ACTIVATED VANAF WNR JE DIE EERSTE TEST HEBT GDN, ANDERS GWN ON
         self.state = {
-            "TS": CarStateEnum.UNKOWN,
-            "ASMS": CarStateEnum.UNKOWN,
-            "R2D": CarStateEnum.UNKOWN,
+            "TS": CarStateEnum.UNKNOWN,
+            "ASMS": CarStateEnum.UNKNOWN,
+            "R2D": CarStateEnum.UNKNOWN,
             "ASB": CarStateEnum.ON,  # assumed to be on
-            "EBS": CarStateEnum.UNKOWN,
+            "EBS": CarStateEnum.UNKNOWN,
         }
 
         self.bus = rospy.Publisher("/ugr/car/can/tx", Frame, queue_size=10)
@@ -91,6 +91,13 @@ class Gen4State(CarState):
         # watchdog togglen vanboven uitzetten onderaan hoog
 
         self.send_status_over_can()
+
+    def initial_checkup(self):
+        # mission needs to be selected
+        if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
+            return
+
+        # if self.state["ASMS"] != CarStateEnum.
 
     def send_status_over_can(self):
         # https://www.formulastudent.de/fileadmin/user_upload/all/2022/rules/FSG22_Competition_Handbook_v1.1.pdf
@@ -163,10 +170,10 @@ class Gen4State(CarState):
             self.activate_EBS()
 
     def handle_ts(self, dio2: Bool):
-        self.state["TS"] = CarStateEnum.ON if dio2.data else CarStateEnum.OFF
+        self.state["TS"] = CarStateEnum.ACTIVATED if dio2.data else CarStateEnum.OFF
 
     def handle_asms(self, dio3: Bool):
-        self.state["AMS"] = CarStateEnum.ON if dio3.data else CarStateEnum.OFF
+        self.state["AMS"] = CarStateEnum.ACTIVATED if dio3.data else CarStateEnum.OFF
 
     def handle_watchdog(self, dio4: Bool):
         if not dio4.data:  # what does 1 and 0 mean

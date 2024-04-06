@@ -55,7 +55,7 @@ class AutonomousController(NodeManager):
         elif self.car_name == "simulation":
             self.car = SimulationState()
         else:
-            raise f"Unkown model! (model given was: '{self.car_name}')"
+            raise f"Unknown model! (model given was: '{self.car_name}')"
 
         self.mission_finished = False
         self.vehicle_stopped = True

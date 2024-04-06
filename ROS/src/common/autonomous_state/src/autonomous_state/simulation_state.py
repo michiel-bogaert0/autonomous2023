@@ -15,11 +15,11 @@ class SimulationState(CarState):
 
     def __init__(self) -> None:
         self.state = {
-            "TS": CarStateEnum.UNKOWN,
-            "ASMS": CarStateEnum.UNKOWN,
-            "R2D": CarStateEnum.UNKOWN,
-            "ASB": CarStateEnum.UNKOWN,
-            "EBS": CarStateEnum.UNKOWN,
+            "TS": CarStateEnum.UNKNOWN,
+            "ASMS": CarStateEnum.UNKNOWN,
+            "R2D": CarStateEnum.UNKNOWN,
+            "ASB": CarStateEnum.UNKNOWN,
+            "EBS": CarStateEnum.UNKNOWN,
         }
 
         self.start_t = rospy.Time.now().to_sec()
@@ -28,13 +28,12 @@ class SimulationState(CarState):
         self.ebs_state = CarStateEnum.ON
 
     def update(self, state: AutonomousStatesEnum):
-        
         if (
             state == AutonomousStatesEnum.ASREADY
             and self.as_state != AutonomousStatesEnum.ASREADY
         ):
             self.start_t = rospy.Time.now().to_sec()
-            
+
         self.as_state = state
 
     def activate_EBS(self):
