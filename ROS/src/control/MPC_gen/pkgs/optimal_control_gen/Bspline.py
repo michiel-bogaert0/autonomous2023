@@ -54,7 +54,11 @@ class Bspline:
         assert X.shape == (self.K, 2)
 
         A = self.evaluate_base(np.linspace(0, 1, num=self.K))  # shape=(K,K)
-        return cd.inv(A) @ X
+
+        # Do not use cd.inv for performance reasons
+        # The following makes use of sparse matrices
+        inv_A = cd.solve(A, cd.DM.eye(A.shape[0]), "csparse")
+        return inv_A @ X
 
     def compute_mixed_control_points(self, X, X_dot0, X_dot1, kk, index=0):
         """
@@ -71,7 +75,9 @@ class Bspline:
             A[0, :] = np.array([0] * 82 + [-1, 1]) * self.degree / kk
             X[0, :] = X_dot0
 
-        return cd.inv(A) @ X
+        inv_A = cd.solve(A, cd.DM.eye(A.shape[0]), "csparse")
+        return inv_A @ X
 
     def evaluate_base(self, tau):
-        return cd.densify(self.base(tau))
+        # Sparse matrix!
+        return self.base(tau)

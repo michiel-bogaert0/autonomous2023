@@ -25,7 +25,8 @@ import casadi as cas
 import cvxopt
 import numpy as np
 import scipy.linalg as la
-from piecewise import PiecewisePolynomial as ppoly
+
+# from piecewise import PiecewisePolynomial as ppoly
 from scipy.sparse import csr_matrix
 
 # from scipy.sparse.linalg import spsolve
@@ -351,29 +352,30 @@ class BSplineBasis(Basis):
 
     def as_poly(self):
         """Returns polynomial description of the basis functions"""
-        k = self.knots
-        k_min, k_max = min(self.knots), max(self.knots)
-        basis = [[ppoly([a, b], [[1]]) for (a, b) in zip(k[:-1], k[1:])]]
-        for d in range(1, self.degree + 1):
-            basis.append([])
-            for i in range(len(k) - d - 1):
-                b = ppoly([k_min, k_max], [0])
-                bottom = k[i + d] - k[i]
-                if bottom != 0:
-                    b += (
-                        ppoly([k_min, k_max], [[-k[i], 1]])
-                        * basis[d - 1][i]
-                        * (1.0 / bottom)
-                    )
-                bottom = k[i + d + 1] - k[i + 1]
-                if bottom != 0:
-                    b += (
-                        ppoly([k_min, k_max], [[k[i + d + 1], -1]])
-                        * basis[d - 1][i + 1]
-                        * (1.0 / bottom)
-                    )
-                basis[-1].append(b)
-        return basis[-1]
+        pass
+        # k = self.knots
+        # k_min, k_max = min(self.knots), max(self.knots)
+        # basis = [[ppoly([a, b], [[1]]) for (a, b) in zip(k[:-1], k[1:])]]
+        # for d in range(1, self.degree + 1):
+        #     basis.append([])
+        #     for i in range(len(k) - d - 1):
+        #         b = ppoly([k_min, k_max], [0])
+        #         bottom = k[i + d] - k[i]
+        #         if bottom != 0:
+        #             b += (
+        #                 ppoly([k_min, k_max], [[-k[i], 1]])
+        #                 * basis[d - 1][i]
+        #                 * (1.0 / bottom)
+        #             )
+        #         bottom = k[i + d + 1] - k[i + 1]
+        #         if bottom != 0:
+        #             b += (
+        #                 ppoly([k_min, k_max], [[k[i + d + 1], -1]])
+        #                 * basis[d - 1][i + 1]
+        #                 * (1.0 / bottom)
+        #             )
+        #         basis[-1].append(b)
+        # return basis[-1]
 
 
 class NurbsBasis(Basis):

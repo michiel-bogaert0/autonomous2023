@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from time import perf_counter
+
 import numpy as np
 import rospkg
 import rospy
@@ -17,9 +19,9 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from optimal_control.Bspline import Bspline
-from optimal_control.MPC_tracking import MPC_tracking
-from optimal_control.ocp import Ocp
+from optimal_control_gen.Bspline import Bspline
+from optimal_control_gen.MPC_tracking import MPC_tracking
+from optimal_control_gen.ocp import Ocp
 from scipy.interpolate import interp1d
 from std_msgs.msg import Float64
 from trajectory import Trajectory
@@ -28,12 +30,12 @@ from ugr_msgs.msg import State
 
 class MPC_gen:
     def __init__(self):
-        rospy.init_node("MPC_tracking_control")
+        rospy.init_node("MPC_generation_control")
 
         self.path_GT_centerline = rospy.get_param(
-            "~input_path", "/data/centerline_chicane.yaml"
+            "~input_path", "/data_gen/centerline_chicane.yaml"
         )
-        self.path_GT_map = rospy.get_param("~input_path", "/data/map_chicane.yaml")
+        self.path_GT_map = rospy.get_param("~input_path", "/data_gen/fsc23.yaml")
 
         # Get centerline from yaml
         self.GT_centerline = []
@@ -72,12 +74,15 @@ class MPC_gen:
         self.GT_left_boundary.append(self.GT_left_boundary[0])
         self.GT_right_boundary.append(self.GT_right_boundary[0])
 
-        self.create_spline(self.GT_centerline, "r")
+        # self.create_spline(self.GT_centerline, "r", derivative=True)
         self.create_spline(self.GT_left_boundary, "b")
-        self.create_spline(self.GT_right_boundary, "y")
+        # self.create_spline(self.GT_right_boundary, "y")
 
-        plt.xlim(-40, 20)
-        plt.ylim(-10, 20)
+        # plt.xlim(-40, 20)
+        # plt.ylim(-10, 20)
+
+        plt.xlim(-20, 50)
+        plt.ylim(-60, 10)
         plt.show()
 
         rospy.spin()
@@ -89,31 +94,74 @@ class MPC_gen:
             arr = yaml.safe_load(file)
         return arr
 
-    def create_spline(self, arr, color):
+    def create_spline(self, arr, color, derivative=False):
+        time_start = perf_counter()
         distance = np.cumsum(np.sqrt(np.sum(np.diff(arr, axis=0) ** 2, axis=1)))
         distance = np.insert(distance, 0, 0) / distance[-1]
 
         alpha = np.linspace(0, 1, len(arr) * 3)
         interpolator = interp1d(distance, arr, kind="cubic", axis=0)
         arr = interpolator(alpha)
+        time_stop = perf_counter()
+        print(f"Interpolation took {time_stop - time_start} seconds")
 
         # arr = np.vstack((arr, arr[:100]))
 
         length = len(arr)
-        degree = 2
+        degree = 3
         kk = np.linspace(0, 1, length - degree + 1)
 
         bspline = Bspline(kk, degree)
         control_points = bspline.compute_control_points(np.array(arr))
-        print(control_points.shape)
+        time_stop2 = perf_counter()
+        print(f"Control points took {time_stop2 - time_stop} seconds")
 
         spline_arr = bspline.evaluate_spline(
             control_points, tau=np.linspace(0, bspline.Ts, 1000)
         )
+        time_stop3 = perf_counter()
+        print(f"Spline evaluation took {time_stop3 - time_stop2} seconds")
 
         plt.plot(control_points[:, 0], control_points[:, 1], "o", c=color)
         plt.plot([x[0] for x in arr], [x[1] for x in arr], "--", c=color)
         plt.plot(spline_arr[:, 0], spline_arr[:, 1], c=color)
+
+        # Derivative
+        if derivative:
+            curve = bspline.gen_curve(control_points)
+            dcurve = curve.derivative(o=1)
+            der_arr = dcurve(np.linspace(0, 1, 1000))
+            print(der_arr)
+
+            # Plot the derivative vectors originating from spline points
+            for i in range(0, len(spline_arr), 1):
+                plt.scatter(
+                    spline_arr[i, 0], spline_arr[i, 1], c=color, label="Spline Points"
+                )
+                # Plot a line segment from spline_arr[i] to spline_arr[i] + der_arr[i]
+                plt.arrow(
+                    spline_arr[i, 0],
+                    spline_arr[i, 1],
+                    der_arr[i, 0],
+                    der_arr[i, 1],
+                    head_width=0.05,
+                    head_length=0.1,
+                    fc=color,
+                    ec=color,
+                    alpha=0.7,
+                )
+
+            # double derivative
+            # ddcurve = curve.derivative(o=2)
+            # der_arr = ddcurve(np.linspace(0, 1, 1000))
+
+            # # Plot curvature at each point
+            # for i in range(0, len(spline_arr), 100):
+            #     plt.plot(
+            #         [spline_arr[i, 0], spline_arr[i, 0] + der_arr[i, 0]],
+            #         [spline_arr[i, 1], spline_arr[i, 1] + der_arr[i, 1]],
+            #         c=color,
+            #     )
 
         return spline_arr
 
