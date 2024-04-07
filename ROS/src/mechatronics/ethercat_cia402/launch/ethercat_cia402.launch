@@ -1,0 +1,5 @@
+<launch>
+  <node name="iologik" pkg="iologik" type="iologik" output="screen" launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib'>
+    
+  </node>
+</launch>
