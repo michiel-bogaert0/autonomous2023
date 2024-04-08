@@ -89,7 +89,7 @@ class KinematicTrackingNode(ManagedNode):
                 "drive_velocity_controller",
             ]
             req.stop_controllers = []
-            req.strictness = SwitchControllerRequest.STRICT
+            req.strictness = SwitchControllerRequest.BEST_EFFORT
 
             response = switch_controller(req)
 
