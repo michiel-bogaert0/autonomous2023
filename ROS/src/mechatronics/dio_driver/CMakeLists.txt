@@ -47,7 +47,7 @@ add_custom_command(
     TARGET run_driver POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_CURRENT_SOURCE_DIR}/src/libvecow.so
-            ~/.ros
+            ~/.ros/libvecow.so
 )
 
 # Custom command to copy IOConfig folder
