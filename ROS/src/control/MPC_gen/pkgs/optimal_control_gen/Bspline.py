@@ -60,22 +60,23 @@ class Bspline:
         inv_A = cd.solve(A, cd.DM.eye(A.shape[0]), "csparse")
         return inv_A @ X
 
-    def compute_mixed_control_points(self, X, X_dot0, X_dot1, kk, index=0):
+    def compute_mixed_control_points(self, X, X_dot0, X_dot1, index=0):
         """
         Compute the control points with constraints to the derivative at the start and end point to result in better fitting
         Does not work atm.
         """
-        A = self.evaluate_base(np.linspace(0, 1, num=self.K))  # shape=(K,K)
+        A = cd.densify(self.evaluate_base(np.linspace(0, 1, num=self.K)))  # shape=(K,K)
         # X_dot = X[1] - X[0]
         # X_dot = X_dot.copy()
         if index == 0:
-            A[1, :] = np.array([-1, 1] + [0] * 82) * self.degree / kk
-            X[1, :] = X_dot1
-
-            A[0, :] = np.array([0] * 82 + [-1, 1]) * self.degree / kk
+            A[0, :] = np.array([-1, 1] + [0] * 250) * self.degree
             X[0, :] = X_dot0
 
-        inv_A = cd.solve(A, cd.DM.eye(A.shape[0]), "csparse")
+            A[-1, :] = np.array([-1, 1] + [0] * 250) * self.degree
+            X[-1, :] = X_dot1
+
+        # inv_A = cd.solve(A, cd.DM.eye(A.shape[0]), "csparse")
+        inv_A = cd.inv(A)
         return inv_A @ X
 
     def evaluate_base(self, tau):
