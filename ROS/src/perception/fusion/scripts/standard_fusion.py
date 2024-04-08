@@ -94,66 +94,26 @@ class StandardFusion:
                     if current_obs in sensor_msg.observations:
                         continue
 
-                    potential_matches = self.within_radius_unmatched(
-                        all_observations=all_observations,
-                        kdtree=kdtree_all,
-                        root_obs=current_obs,
-                        other_sensor_observations=sensor_msg.observations,
+                    indices, _ = kdtree_all.query_radius(
+                        [
+                            [
+                                current_obs.observation.location.x,
+                                current_obs.observation.location.y,
+                                current_obs.observation.location.z,
+                            ]
+                        ],
+                        r=self.euclidean_fusion_distance,
+                        return_distance=True,
+                        sort_results=True,
                     )
-
-                    # If no matches of sensor type are found within max radius, continue to next sensor
-                    if len(potential_matches) == 0:
-                        continue
-
-                    # If closest match is already associated, continue to next sensor
-                    if potential_matches[0] in associated_observations:
-                        continue
-
-                    # Check if closest match for current_obs also has current_obs as closest match
-                    if (
-                        self.within_radius_unmatched(
-                            all_observations=all_observations,
-                            kdtree=kdtree_all,
-                            root_obs=potential_matches[0],
-                            other_sensor_observations=current_sensor_observations.observations,
-                        )[0]
-                        == current_obs
-                    ):
-                        association.append(potential_matches[0])
+                    for i in indices[0]:
+                        if all_observations[i] in sensor_msg.observations:
+                            association.append(all_observations[i])
+                            break
 
                 associated_observations += association
                 associations.append(association)
         return associations
-
-    def within_radius_unmatched(
-        self, all_observations, kdtree, root_obs, other_sensor_observations
-    ):
-        """
-        Returns an ordered list of observations that are within max_fusion_distance radius of root_obs
-        and of specified sensor type
-        """
-
-        # Find observations within max_fusion_distance radius
-        indices, _ = kdtree.query_radius(
-            [
-                [
-                    root_obs.observation.location.x,
-                    root_obs.observation.location.y,
-                    root_obs.observation.location.z,
-                ]
-            ],
-            r=self.euclidean_fusion_distance,
-            return_distance=True,
-            sort_results=True,
-        )
-
-        # Filter out observations other than those frome sensor and return an ordered list of potential matches
-        return list(
-            filter(
-                lambda obs: obs in other_sensor_observations,
-                [all_observations[i] for i in indices[0]],
-            )
-        )
 
     def kalman_filter(self, association):
         """

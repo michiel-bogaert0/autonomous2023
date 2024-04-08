@@ -6,6 +6,7 @@ import tf2_ros as tf
 from geometry_msgs.msg import TransformStamped
 from naive_fusion import NaiveFusion
 from node_fixture.fixture import ROSNode
+from standard_fusion import StandardFusion
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
 
@@ -50,12 +51,14 @@ class MergeNode:
         self.input_sensors = [
             "os_sensor",
             "ugr/car_base_link/cam0",
-            "???earlyfusion???",
         ]
 
         #   Fusion parameters
         self.max_fusion_eucl_distance = float(
             rospy.get_param("~fusion_eucl_distance", 2.5)
+        )
+        self.standard_fusion_distance = float(
+            rospy.get_param("~standard_fusion_distance", 0.5)
         )
         self.max_sensor_time_diff = rospy.get_param("~sensor_time_diff_ms", 50)
 
@@ -65,6 +68,8 @@ class MergeNode:
 
         if self.fusion_method == "naive":
             self.fusion_pipeline = NaiveFusion(self.max_fusion_eucl_distance)
+        else:
+            self.fusion_pipeline = StandardFusion(self.max_fusion_eucl_distance)
 
         # Helper variables
         self.last_received = 0
