@@ -35,6 +35,8 @@ DIODriver::DIODriver(ros::NodeHandle &n) : ManagedNode(n, "dio_driver") {
   getDIO[1] = (_B_IBIB)LLIB(lib_handle, "get_DIO2");
   setDIO[1] = (_B_OB)LLIB(lib_handle, "set_DIO2");
 
+  getECbaseaddress = (_B_NE)LLIB(lib_handle, "get_EC_base_address");
+
   getCPUtemperature = (_B_IB)LLIB(lib_handle, "get_CPU_temperature");
 
   // Getting privileged access to IO
@@ -43,6 +45,13 @@ DIODriver::DIODriver(ros::NodeHandle &n) : ManagedNode(n, "dio_driver") {
   // Initialize IO as isolated sources (not sure if needed)
   if (!initialSIO(1, 0)) {
     ROS_ERROR("Failed to initialize SIO");
+    exit(-1);
+  }
+
+  // Set IO configuration (otherwise DO doesn't work)
+  if (!setIOconfiguration[0](1, 0, 1, 0xFF00) ||
+      !setIOconfiguration[1](1, 0, 1, 0xFF00)) {
+    ROS_ERROR("Failed to set IO config!");
     exit(-1);
   }
 }
@@ -91,7 +100,7 @@ void DIODriver::active() {
                       "Failed to get CPU temperature"))
       return;
 
-    std_msgs::Int8 msg;
+    std_msgs::UInt8 msg;
     msg.data = CPUTemp;
     this->cpu_temp_pub.publish(msg);
   }
@@ -125,7 +134,7 @@ void DIODriver::doConfigure() {
   // Other pubs
   this->enable_temp = this->nh.param<bool>("enable_temp", false);
   if (this->enable_temp) {
-    this->cpu_temp_pub = this->nh.advertise<std_msgs::Int8>("cpu_temp", 1);
+    this->cpu_temp_pub = this->nh.advertise<std_msgs::UInt8>("cpu_temp", 1);
   }
 
   this->setHealthStatus(0, "OK", {});
@@ -150,16 +159,12 @@ void DIODriver::SetOutputCallback(const std_msgs::Bool::ConstPtr &msg, int i,
                     "Failed to get DIO status"))
     return;
 
-  ROS_INFO("Set %d %d", i, j);
-
   // Set the bit
   if (msg->data) {
     statusDO |= 1 << i;
   } else {
     statusDO &= ~(1 << i);
   }
-
-  ROS_INFO("lol %d", statusDO);
 
   // Set the new status
   if (this->isError(this->setDIO[j](statusDO), "Failed to set DIO status"))

@@ -5,7 +5,7 @@
 #include "managed_node.hpp"
 #include "ros/ros.h"
 #include "std_msgs/Bool.h"
-#include "std_msgs/Int8.h"
+#include "std_msgs/UInt8.h"
 
 #define _STDCALL_
 #define LLIB dlsym
@@ -27,6 +27,7 @@ typedef BOOL(_STDCALL_ *_B_OB)(BYTE O1);              // set_DIO1 set_DIO2
 typedef BOOL(_STDCALL_ *_B_IW)(WORD *I1);             // get_GPIO1 get_GPIO2
 typedef BOOL(_STDCALL_ *_B_OW)(WORD O1);              // set_GPIO1 set_GPIO2
 typedef BOOL(_STDCALL_ *_B_IB)(BYTE *I1);             // get_CPU_temperature
+typedef BOOL(_STDCALL_ *_B_NE)();                     // get_EC_base_address
 
 #define MAX_DIO_FUNC 2
 #define GPIO_16_MASK 0xffff
@@ -102,6 +103,7 @@ private:
   _B_IBIB getDIO[2] = {NULL, NULL};
   _B_OB setDIO[2] = {NULL, NULL};
   _B_IB getCPUtemperature = NULL;
+  _B_NE getECbaseaddress = NULL;
 
   _B_IBIBIWIW returndllversion = NULL;
 
