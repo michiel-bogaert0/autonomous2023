@@ -9,23 +9,30 @@ from ugr_msgs.msg import (
 )
 
 
-class NaiveFusion:
-    def __init__(self, euclidean_max_fusion_distance):
-        self.euclidean_max_fusion_distance = euclidean_max_fusion_distance
+class StandardFusion:
+    def __init__(self, euclidean_fusion_distance):
+        self.euclidean_fusion_distance = euclidean_fusion_distance
         return
 
     def fuse_observations(self, tf_sensor_msgs):
         """
         Fuse observations using a naive approach
         """
-        results = ObservationWithCovarianceArrayStamped()
+        results = (
+            ObservationWithCovarianceArrayStamped()
+        )  # create a new msg of observations
 
-        associations = self.kd_tree_merger(tf_sensor_msgs)
+        associations = self.kd_tree_merger(
+            tf_sensor_msgs
+        )  # get associations of observations
         rospy.loginfo(
             f"\nassociations = {[[[obs.observation.location.x, obs.observation.location.y, obs.observation.location.z] for obs in association] for association in associations]}\n"
         )
-        fusion_observations = []
+
+        # Fuse observations
+        fusion_observations = []  # create array of fused observations
         for association in associations:
+            # check for isolated cones
             if len(association) == 1:
                 # Reshape covariance matrix from 3x3 to 1x9
                 association[0].covariance = tuple(
@@ -33,8 +40,10 @@ class NaiveFusion:
                 )
                 fusion_observations.append(association[0])
                 continue
+
+            # fuse associated observations using a kalman filter
             fusion_observations.append(self.kalman_filter(association))
-            # fusion_observations.append(self.euclidean_average(association))   # Use euclidean average instead of kalman filter
+
         results.observations = fusion_observations
         return results
 
@@ -43,8 +52,8 @@ class NaiveFusion:
         KDTree data association
 
         Distances between (transformed) observations are calculated using a KDTree. Detections of
-        different sensors are then linked together based on their euclidean distance.
-        Isolated cones are treated seperately and are not linked to any other cone.
+        different sensors are then linked if they are closer than the euclidean_fusion_distance, otherwise
+        they are treated as isolated cones.
         """
 
         # Create lists for all observations that have been coupled and the associations themselves
@@ -112,8 +121,7 @@ class NaiveFusion:
                     ):
                         association.append(potential_matches[0])
 
-                for obs in association:
-                    associated_observations.append(obs)
+                associated_observations += association
                 associations.append(association)
         return associations
 
@@ -134,7 +142,7 @@ class NaiveFusion:
                     root_obs.observation.location.z,
                 ]
             ],
-            r=self.euclidean_max_fusion_distance,
+            r=self.euclidean_fusion_distance,
             return_distance=True,
             sort_results=True,
         )
@@ -213,24 +221,3 @@ class NaiveFusion:
             fused_observation.observation.location.z,
         ) = tuple((new_location[0][0], new_location[1][0], new_location[2][0]))
         return fused_observation
-
-    def euclidean_average(self, association):
-        average_observation = ObservationWithCovariance()
-        average_observation.covariance = tuple(list(association[0].covariance).copy())
-
-        (
-            average_observation.observation.location.x,
-            average_observation.observation.location.y,
-            average_observation.observation.location.z,
-        ) = tuple(
-            (
-                sum([obs.observation.location.x for obs in association])
-                / len(association),
-                sum([obs.observation.location.y for obs in association])
-                / len(association),
-                sum([obs.observation.location.z for obs in association])
-                / len(association),
-            )
-        )
-
-        return average_observation
