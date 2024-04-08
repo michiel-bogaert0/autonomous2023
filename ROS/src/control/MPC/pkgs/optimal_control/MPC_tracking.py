@@ -49,12 +49,15 @@ class MPC_tracking:
     def __call__(
         self,
         state,
-        ref_state,
-        control_states,
+        reference_track,
+        a,
+        b,
+        c,
+        d,
+        u_prev,
         X0=None,
         U0=None,
         warm_start=True,
-        lin_interpol=False,
         **solver_kwargs
     ):
         """Solve the optimal control problem for the given initial state and return the first action.
@@ -82,40 +85,27 @@ class MPC_tracking:
                     X0 = np.concatenate(
                         (self.X_sol[:, 1:], self.X_sol[:, [-1]]), axis=1
                     )
-                    # X0 = np.concatenate((self.X_sol[1:, :], self.X_sol[[-1], :]), axis=0)
 
             if (U0 is None) and (self.U_sol is not None):
                 if len(self.U_sol.shape) > 1:
                     U0 = np.concatenate(
                         (self.U_sol[:, 1:], self.U_sol[:, [-1]]), axis=1
                     )
-                    # U0 = np.concatenate((self.U_sol[1:, :], self.U_sol[[-1], :]), axis=0)
                 else:
                     U0 = np.append(self.U_sol[1:], self.U_sol[-1])
 
-        if lin_interpol:
-            assert (self.X_init_guess is None) and (
-                X0 is None
-            ), "can't supply both an initial guess and interpolate"
-            X0 = np.linspace(state, ref_state, num=self.ocp.N + 1).T
-
-        # if X0 is not None:
-        #     if isinstance(self.ocp, OcpWrapper):
-        #         for i, state_i in enumerate(self.ocp.states):
-        #             self.ocp.set_initial(state_i, X0[i, :])
-        #     else:
-        #         self.ocp.set_initial(self.ocp.X, X0)
-
-        # if U0 is not None:
-        #     if isinstance(self.ocp, OcpWrapper):
-        #         for i, control_i in enumerate(self.ocp.controls):
-        #             self.ocp.set_initial(control_i, U0[i, :])
-        #     else:
-        #         self.ocp.set_initial(self.ocp.U, U0)
-
         with self.timer:
             self.U_sol, self.X_sol, info = self.ocp.solve(
-                state, ref_state, control_states, X0=X0, U0=U0, **solver_kwargs
+                state,
+                reference_track,
+                a,
+                b,
+                c,
+                d,
+                u_prev,
+                X0=X0,
+                U0=U0,
+                **solver_kwargs
             )
 
         self.X_sol_list.append(self.X_sol)
@@ -163,24 +153,24 @@ class MPC_tracking:
         # print(self.opti.g.shape)
         # print(self.opti.g[0])
 
-        x = cd.vertcat(cd.vec(self.X), self.U.T)
+        x = cd.vertcat(cd.vec(self.X_sol), self.U_sol.T)
 
         if L is None:
-            L = self.opti.f
+            L = self.ocp.f
         H, J = cd.hessian(L, x)
 
         plt.spy(H.sparsity())
         plt.show()
 
-        Jg = cd.jacobian(self.opti.g, x)
+        Jg = cd.jacobian(self.ocp.g, x)
         plt.spy(Jg.sparsity())
         plt.show()
 
     def showConvergence(self):
         import matplotlib.pyplot as plt
 
-        inf_pr = self.opti.debug.stats()["iterations"]["inf_pr"]
-        inf_du = self.opti.debug.stats()["iterations"]["inf_du"]
+        inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
+        inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
 
         fig, ax = plt.subplots()
 

@@ -21,11 +21,10 @@
     <!-- Load controller settings -->
     <rosparam file="$(find ugr_ros_control)/sim_control/config/sim_controllers.yaml" command="load" />
 
-    <!-- Load controller manager -->
-    <node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager"
-      respawn="false"
-      output="screen"
-      args="spawn joint_state_controller drive_velocity_controller steering_position_controller" />
+    <node name="ros_control_controller_manager" pkg="controller_manager" type="spawner"
+            respawn="false"
+            output="screen"
+            args="--stopped joint_state_controller drive_effort_controller drive_velocity_controller steering_velocity_controller steering_position_controller" />
 
   </group>
 

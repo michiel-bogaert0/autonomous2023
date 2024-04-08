@@ -118,6 +118,7 @@ void SimHWInterface::read(ros::Duration& elapsed_time)
 
   // Effort gets applied immediately (assumption)
   joint_effort_[drive_joint_id] = joint_effort_command_[drive_joint_id];
+  joint_velocity_[steering_joint_id] = joint_velocity_command_[steering_joint_id];
   joint_velocity_[drive_joint_id] = this->model->get_wheel_angular_velocity();
   joint_position_[steering_joint_id] = this->model->get_steering_angle();
 }

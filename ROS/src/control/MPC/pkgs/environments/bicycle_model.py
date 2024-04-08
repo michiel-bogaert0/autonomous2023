@@ -1,11 +1,10 @@
-import casadi
 import numpy as np
 from environments.Env import Env
 from environments.env_utils import Space
 
 
 class BicycleModel(Env):
-    def __init__(self, dt=0.01, R=0.1, L=1.0, Lr=0.5, mu=0.1, DC=0.025):
+    def __init__(self, dt=0.01, R=0.1, L=0.72, Lr=0.5, mu=0.1, DC=0.025):
         self.dt = dt
         self.R = R
         self.L = L
@@ -32,10 +31,8 @@ class BicycleModel(Env):
         v = s[4]
         phi = u[1]
         alpha = u[0]
-        drag_acc = casadi.if_else(v > 0.1, self.DC * casadi.power(v, 2), 0.0)
-        friction_acc = casadi.if_else(v > 0.1, self.mu, 0.0)
 
-        a = alpha * self.R - drag_acc - friction_acc
+        a = alpha * self.R
 
         # Outputs
         omega = v * np.tan(zeta) / self.L
