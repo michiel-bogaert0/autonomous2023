@@ -3,8 +3,8 @@ from typing import Callable
 
 import casadi
 import numpy as np
-from optimal_control.integrator import euler, rk4
-from utils.common_utils import Timer
+from optimal_control_gen.integrator import euler, rk4
+from utils_gen.common_utils import Timer
 
 
 class Ocp:

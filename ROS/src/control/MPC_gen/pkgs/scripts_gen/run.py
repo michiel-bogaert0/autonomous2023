@@ -18,7 +18,7 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from optimal_control_gen.MPC_tracking import MPC_tracking
+from optimal_control_gen.MPC_generation import MPC_generation
 from optimal_control_gen.ocp import Ocp
 from scipy.interpolate import interp1d
 from spline_utils import create_spline, project_on_spline
@@ -224,7 +224,7 @@ class MPC_gen:
         self.ocp.subject_to(
             self.ocp.bounded(-max_steering_angle, self.ocp.U[1, :], max_steering_angle)
         )
-        self.mpc = MPC_tracking(self.ocp)
+        self.mpc = MPC_generation(self.ocp)
 
     def doActivate(self):
         # Do this here because some parameters are set in the mission yaml files

@@ -1,13 +1,13 @@
 import casadi as cd
 import numpy as np
 from casadi import casadi
-from optimal_control.ocp import Ocp
-from utils.common_utils import Timer
+from optimal_control_gen.ocp import Ocp
+from utils_gen.common_utils import Timer
 
 
-class MPC_tracking:
+class MPC_generation:
     """
-    Abstraction of MPC, can be called to run trajectory tracking. Uses casadi
+    Abstraction of MPC, can be called to run trajectory generation. Uses casadi
     formulation to run the dynamic optimisation.
 
     Kwargs:
