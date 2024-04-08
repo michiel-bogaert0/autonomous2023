@@ -9,23 +9,30 @@ from ugr_msgs.msg import (
 )
 
 
-class NaiveFusion:
-    def __init__(self, euclidean_max_fusion_distance):
-        self.euclidean_max_fusion_distance = euclidean_max_fusion_distance
+class StandardFusion:
+    def __init__(self, euclidean_fusion_distance):
+        self.euclidean_fusion_distance = euclidean_fusion_distance
         return
 
     def fuse_observations(self, tf_sensor_msgs):
         """
         Fuse observations using a naive approach
         """
-        results = ObservationWithCovarianceArrayStamped()
+        results = (
+            ObservationWithCovarianceArrayStamped()
+        )  # create a new msg of observations
 
-        associations = self.kd_tree_merger(tf_sensor_msgs)
+        associations = self.kd_tree_merger(
+            tf_sensor_msgs
+        )  # get associations of observations
         rospy.loginfo(
             f"\nassociations = {[[[obs.observation.location.x, obs.observation.location.y, obs.observation.location.z] for obs in association] for association in associations]}\n"
         )
-        fusion_observations = []
+
+        # Fuse observations
+        fusion_observations = []  # create array of fused observations
         for association in associations:
+            # check for isolated cones
             if len(association) == 1:
                 # Reshape covariance matrix from 3x3 to 1x9
                 association[0].covariance = tuple(
@@ -33,8 +40,10 @@ class NaiveFusion:
                 )
                 fusion_observations.append(association[0])
                 continue
+
+            # fuse associated observations using a kalman filter
             fusion_observations.append(self.kalman_filter(association))
-            # fusion_observations.append(self.euclidean_average(association))   # Use euclidean average instead of kalman filter
+
         results.observations = fusion_observations
         return results
 
@@ -43,8 +52,8 @@ class NaiveFusion:
         KDTree data association
 
         Distances between (transformed) observations are calculated using a KDTree. Detections of
-        different sensors are then linked together based on their euclidean distance.
-        Isolated cones are treated seperately and are not linked to any other cone.
+        different sensors are then linked if they are closer than the euclidean_fusion_distance, otherwise
+        they are treated as isolated cones.
         """
 
         # Create lists for all observations that have been coupled and the associations themselves
@@ -85,67 +94,26 @@ class NaiveFusion:
                     if current_obs in sensor_msg.observations:
                         continue
 
-                    potential_matches = self.within_radius_unmatched(
-                        all_observations=all_observations,
-                        kdtree=kdtree_all,
-                        root_obs=current_obs,
-                        other_sensor_observations=sensor_msg.observations,
+                    indices, _ = kdtree_all.query_radius(
+                        [
+                            [
+                                current_obs.observation.location.x,
+                                current_obs.observation.location.y,
+                                current_obs.observation.location.z,
+                            ]
+                        ],
+                        r=self.euclidean_fusion_distance,
+                        return_distance=True,
+                        sort_results=True,
                     )
+                    for i in indices[0]:
+                        if all_observations[i] in sensor_msg.observations:
+                            association.append(all_observations[i])
+                            break
 
-                    # If no matches of sensor type are found within max radius, continue to next sensor
-                    if len(potential_matches) == 0:
-                        continue
-
-                    # If closest match is already associated, continue to next sensor
-                    if potential_matches[0] in associated_observations:
-                        continue
-
-                    # Check if closest match for current_obs also has current_obs as closest match
-                    if (
-                        self.within_radius_unmatched(
-                            all_observations=all_observations,
-                            kdtree=kdtree_all,
-                            root_obs=potential_matches[0],
-                            other_sensor_observations=current_sensor_observations.observations,
-                        )[0]
-                        == current_obs
-                    ):
-                        association.append(potential_matches[0])
-
-                for obs in association:
-                    associated_observations.append(obs)
+                associated_observations += association
                 associations.append(association)
         return associations
-
-    def within_radius_unmatched(
-        self, all_observations, kdtree, root_obs, other_sensor_observations
-    ):
-        """
-        Returns an ordered list of observations that are within max_fusion_distance radius of root_obs
-        and of specified sensor type
-        """
-
-        # Find observations within max_fusion_distance radius
-        indices, _ = kdtree.query_radius(
-            [
-                [
-                    root_obs.observation.location.x,
-                    root_obs.observation.location.y,
-                    root_obs.observation.location.z,
-                ]
-            ],
-            r=self.euclidean_max_fusion_distance,
-            return_distance=True,
-            sort_results=True,
-        )
-
-        # Filter out observations other than those frome sensor and return an ordered list of potential matches
-        return list(
-            filter(
-                lambda obs: obs in other_sensor_observations,
-                [all_observations[i] for i in indices[0]],
-            )
-        )
 
     def kalman_filter(self, association):
         """
@@ -213,24 +181,3 @@ class NaiveFusion:
             fused_observation.observation.location.z,
         ) = tuple((new_location[0][0], new_location[1][0], new_location[2][0]))
         return fused_observation
-
-    def euclidean_average(self, association):
-        average_observation = ObservationWithCovariance()
-        average_observation.covariance = tuple(list(association[0].covariance).copy())
-
-        (
-            average_observation.observation.location.x,
-            average_observation.observation.location.y,
-            average_observation.observation.location.z,
-        ) = tuple(
-            (
-                sum([obs.observation.location.x for obs in association])
-                / len(association),
-                sum([obs.observation.location.y for obs in association])
-                / len(association),
-                sum([obs.observation.location.z for obs in association])
-                / len(association),
-            )
-        )
-
-        return average_observation
