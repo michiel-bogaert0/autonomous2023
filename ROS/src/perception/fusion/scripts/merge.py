@@ -49,16 +49,16 @@ class MergeNode:
 
         #   Topics
         self.input_sensors = [
-            "os_sensor",
+            "ugr/car_base_link/os_sensor",
             "ugr/car_base_link/cam0",
         ]
 
         #   Fusion parameters
         self.max_fusion_eucl_distance = float(
-            rospy.get_param("~fusion_eucl_distance", 2.5)
+            rospy.get_param("~fusion_eucl_distance", 1.0)
         )
         self.standard_fusion_distance = float(
-            rospy.get_param("~standard_fusion_distance", 0.5)
+            rospy.get_param("~standard_fusion_distance", 1.0)
         )
         self.max_sensor_time_diff = rospy.get_param("~sensor_time_diff_ms", 50)
 
