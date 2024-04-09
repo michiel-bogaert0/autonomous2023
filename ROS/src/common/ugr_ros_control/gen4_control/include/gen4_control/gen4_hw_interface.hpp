@@ -81,8 +81,7 @@ public:
 
   void state_change(const ugr_msgs::State::ConstPtr& msg);
 
-  void handle_steering_msg(const std_msgs::Float32::ConstPtr& msg);
-
+  void handle_vel_msg();
   void publish_steering_msg(float steering);
   void publish_vel_msg(float vel, int axis);
   void publish_torque_msg(float axis);
@@ -108,6 +107,7 @@ private:
   int IMU_ids[2] = { 0xE2, 0xE3 };
 
   ros::Publisher can_pub;
+  ros::Publisher vel_pub;
   ros::Subscriber can_sub;
   ros::Subscriber state_sub;
   ros::Subscriber can_axis0_sub;

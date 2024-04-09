@@ -62,6 +62,8 @@ void Gen4HWInterface::init()
   nh.param("steer_max_step", steer_max_step, 1600.0f);
 
   this->can_pub = nh.advertise<ugr_msgs::CanFrame>("/ugr/send_can", 10);
+  this->vel_pub = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/vel", 10);
+
   this->can_axis0_sub =
       nh.subscribe<std_msgs::Float32>("/processed/Actual_ERPM", 1, &Gen4HWInterface::can_callback_axis0, this);
   this->can_axis1_sub =
@@ -169,24 +171,39 @@ void Gen4HWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
 // Callback for the CAN messages: axis0, axis1 and steering
 void Gen4HWInterface::can_callback_axis0(const std_msgs::Float32::ConstPtr& msg)
 {
-  // convert rpm to rad/s
-  this->cur_velocity_axis0 = 2 * M_PI * msg->data / 60;
+  this->cur_velocity_axis0 = 2 * M_PI * msg->data / 60;  // rpm to rad/s
+  this->handle_vel_msg();
 }
 
 void Gen4HWInterface::can_callback_axis1(const std_msgs::Float32::ConstPtr& msg)
 {
-  // convert rpm to rad/s
-  this->cur_velocity_axis1 = 2 * M_PI * msg->data / 60;
+  this->cur_velocity_axis1 = 2 * M_PI * msg->data / 60;  // rpm to rad/s
+  this->handle_vel_msg();
 }
 
 void Gen4HWInterface::can_callback_steering(const std_msgs::Float32::ConstPtr& msg)
 {
-  handle_steering_msg(msg);
+  this->cur_steering = msg->data;
 }
 
-void Gen4HWInterface::handle_steering_msg(const std_msgs::Float32::ConstPtr& msg)
+void Gen4HWInterface::handle_vel_msg()
 {
-  this->cur_steering = msg->data;
+  // Publish the car velocity (based on mean motor velocity) as a twist msg (used by SLAM)
+  geometry_msgs::TwistWithCovarianceStamped twist_msg = geometry_msgs::TwistWithCovarianceStamped();
+  twist_msg.header.frame_id = this->axis_rear_frame;
+  twist_msg.header.stamp = ros::Time::now();
+  twist_msg.twist = geometry_msgs::TwistWithCovariance();
+
+  // TODO Use actual covariance measurements (first we need data to estimate these)
+  twist_msg.twist.covariance = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+  twist_msg.twist.twist = geometry_msgs::Twist();
+
+  twist_msg.twist.twist.linear.x =
+      joint_velocity_[drive_joint_id] / this->gear_ratio * (this->wheel_diameter / 2);  // rad/s to m/s
+
+  vel_pub.publish(twist_msg);
 }
 
 void Gen4HWInterface::publish_steering_msg(float steering)
@@ -199,39 +216,48 @@ void Gen4HWInterface::publish_steering_msg(float steering)
 
 void Gen4HWInterface::publish_torque_msg(float axis)
 {
-  float cur_velocity_rear = joint_velocity_[drive_joint_id];
-  float car_speed_estimate =
-      cur_velocity_rear / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s, mean speed if no slip
+  float cur_vel_rear = joint_velocity_[drive_joint_id];
+  float car_vel_estimate =
+      cur_vel_rear / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s, mean vel if no slip
 
   float axis0 = axis;
-  // float axis1 = axis; commented because not used yet
+  float axis1 = axis;  // commented because not used yet
 
-  // no TV at low speeds
-  if (car_speed_estimate > 5 && this->use_torque_vectoring == true)
+  // no TV at low vel
+  if (car_vel_estimate > 5 && this->use_torque_vectoring == true)
   {
     float dT = this->torque_vectoring();
     axis0 = axis - dT / 2;
-    // axis1 = axis + dT / 2; commented because not used yet
+    axis1 = axis + dT / 2;  // commented because not used yet
   }
 
-  // create publish message, for testing now only axis0
-  ugr_msgs::CanFrame msg;
+  // create publish message for axis0
+  ugr_msgs::CanFrame msg1;
+  std::vector<ugr_msgs::KeyValueFloat> keyvalues1;
+  msg1.header.stamp = ros::Time::now();
+  msg1.message = "HV500_SetAcCurrent1";
+  // make signal
+  ugr_msgs::KeyValueFloat kv1;
+  kv1.key = "CMD_TargetAcCurrent";
+  kv1.value = axis0;
+  keyvalues1.push_back(kv1);
+  msg1.signals = keyvalues1;
 
-  std::vector<ugr_msgs::KeyValueFloat> keyvalues;
-  // header
-  msg.header.stamp = ros::Time::now();
-  // message
-  msg.message = "HV500_SetAcCurrent";
-  // signal
-  ugr_msgs::KeyValueFloat kv;
-  kv.key = "CMD_TargetAcCurrent";
-  kv.value = axis0;
-  keyvalues.push_back(kv);
-
-  msg.signals = keyvalues;
+  // create publish message for axis1
+  ugr_msgs::CanFrame msg2;
+  std::vector<ugr_msgs::KeyValueFloat> keyvalues2;
+  msg2.header.stamp = ros::Time::now();
+  msg2.message = "HV500_SetAcCurrent2";
+  // make signal
+  ugr_msgs::KeyValueFloat kv2;
+  kv2.key = "CMD_TargetAcCurrent";
+  kv2.value = axis1;
+  keyvalues2.push_back(kv2);
+  msg2.signals = keyvalues2;
 
   // publish
-  can_pub.publish(msg);
+  can_pub.publish(msg1);
+  can_pub.publish(msg2);
 }
 
 void Gen4HWInterface::yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg)
@@ -243,7 +269,7 @@ float Gen4HWInterface::torque_vectoring()
 {
   // returns the torque distribution for the left and right wheel
   float cur_velocity_rear = joint_velocity_[drive_joint_id];
-  float car_speed = cur_velocity_rear / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s
+  float car_vel = cur_velocity_rear / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s
   float yaw_rate_desired = 0.0;
 
   // calculate the understeer gradient
@@ -251,10 +277,10 @@ float Gen4HWInterface::torque_vectoring()
              this->lf * this->m / (this->Cyr * (this->lf + this->lr));
 
   // calculate the desired yaw rate, add safety for division by zero
-  if (abs(this->lr + this->lf + Ku * pow(car_speed, 2)) > 0.0001)
+  if (abs(this->lr + this->lf + Ku * pow(car_vel, 2)) > 0.0001)
     ;
   {
-    yaw_rate_desired = car_speed / (this->lr + this->lf + Ku * pow(car_speed, 2)) * this->cur_steering;
+    yaw_rate_desired = car_vel / (this->lr + this->lf + Ku * pow(car_vel, 2)) * this->cur_steering;
   }
 
   float yaw_rate_error = yaw_rate_desired - this->yaw_rate;
