@@ -5,8 +5,6 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture import AutonomousMission
-
-# from node_fixture.node_manager import set_state_active
 from scipy.interpolate import interp1d, splev, splprep
 
 
@@ -42,7 +40,6 @@ class PoseArraySmootherNode:
                     distance_lc < self.max_distance_away_from_start
                 ):
                     per = 1
-                    # set_state_active("minimum_curvature")
                     break
                 if not away_from_start and (
                     distance_lc > self.min_distance_away_from_start
