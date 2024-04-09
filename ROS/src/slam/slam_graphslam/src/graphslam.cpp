@@ -326,6 +326,8 @@ void GraphSLAM::step() {
     LandmarkVertex *landmark = new LandmarkVertex;
     landmark->setId(this->vertexCounter);
 
+    landmark->setLatestPose(this->prevPoseIndex);
+
     // set the color and belief of the landmark to the observation class
     landmark->setColor(observation.observation.observation_class,
                        observation.observation.belief);
@@ -430,6 +432,8 @@ void GraphSLAM::step() {
                                         secondLandmark->beliefs[1],
                                         secondLandmark->beliefs[2]);
 
+              firstLandmark->setLatestPose(secondLandmark->latestPoseIndex);
+
               this->optimizer.mergeVertices(firstLandmark, secondLandmark,
                                             true);
               merged_indices.push_back(neighbor.index);
@@ -437,6 +441,44 @@ void GraphSLAM::step() {
           }
         }
       }
+    }
+  }
+
+  PoseVertex *pose_vertex =
+      dynamic_cast<PoseVertex *>(this->optimizer.vertex(this->prevPoseIndex));
+  vector<int> to_remove_indices;
+  for (const auto &pair : this->optimizer.vertices()) {
+    LandmarkVertex *landmarkVertex =
+        dynamic_cast<LandmarkVertex *>(pair.second);
+
+    if (landmarkVertex) {
+      VectorXf obs(2);
+      float dx = landmarkVertex->estimate().x() -
+                 pose_vertex->estimate().translation().x();
+      float dy = landmarkVertex->estimate().y() -
+                 pose_vertex->estimate().translation().y();
+
+      obs(0) = pow(pow(dx, 2) + pow(dy, 2), 0.5);
+      obs(1) = atan2(dy, dx) - pose_vertex->estimate().rotation().angle();
+
+      if (obs(0) <= pow(this->max_range, 2) &&
+          abs(obs(1)) <= this->max_half_angle) {
+        if (landmarkVertex->latestPoseIndex != this->prevPoseIndex) {
+          if (landmarkVertex->increasePenalty()) {
+            to_remove_indices.push_back(pair.first);
+          }
+        } else {
+          landmarkVertex->decreasePenalty();
+        }
+      }
+    }
+  }
+
+  for (const int &index : to_remove_indices) {
+    LandmarkVertex *landmark =
+        dynamic_cast<LandmarkVertex *>(this->optimizer.vertex(index));
+    if (landmark) {
+      this->optimizer.removeVertex(landmark);
     }
   }
 

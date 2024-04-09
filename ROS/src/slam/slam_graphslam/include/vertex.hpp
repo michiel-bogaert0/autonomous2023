@@ -36,7 +36,12 @@ class LandmarkVertex : public BaseVertex<2, Eigen::Vector2d> {
 public:
   LandmarkVertex();
   float beliefs[3];
+  int latestPoseIndex;
+  int penalty;
 
+  bool increasePenalty();
+  void decreasePenalty();
+  void setLatestPose(int index);
   void setColor(int c, float b);
   void addBeliefs(float b0, float b1, float b2);
   int getColor();
