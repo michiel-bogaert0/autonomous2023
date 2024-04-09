@@ -35,7 +35,7 @@ class PoseArraySmootherNode:
 
             # Determine loop closure and BSpline periodicity
             for node in path:
-                distance_lc = node[0] ** 2 + node[1] ** 2
+                distance_lc = (path[0, 0] - node[0]) ** 2 + (path[0, 1] - node[1]) ** 2
                 if away_from_start and (
                     distance_lc < self.max_distance_away_from_start
                 ):

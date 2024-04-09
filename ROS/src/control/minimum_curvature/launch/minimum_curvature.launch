@@ -1,0 +1,87 @@
+<launch>
+
+    <node pkg="minimum_curvature" type="run.py" name="minimum_curvature" output="screen" respawn="true">
+
+        <param name="frame" value="ugr/car_base_link" />
+        <param name="rate" value="5" />
+
+        <!-- Minimum curvature parameters -->
+        <param name="car_width" value="1.49" />
+        <param name="carlength" value="3.21" />
+        <param name="car_mass" value="270.00" />
+
+        <param name="width_margin_left" value="0.15" />
+        <param name="width_margin_right" value="0.15" />
+        <param name="cone_width" value="0.24" />
+        <param name="min_track_width" value="3.00" />
+        
+        <param name="kappa_max" value="0.50" />
+        <param name="curv_error_allowed" value="0.05" />
+
+        <param name="stepsize_prep_trajectory" value="0.50" />
+        <param name="stepsize_prep_boundaries" value="0.10" />
+        <param name="smoothing_factor_prep_trajectory" value="2.0" />
+        <param name="smoothing_factor_prep_boundaries" value="0.1" />
+        
+        <param name="stepsize_opt" value="0.50" />
+        <param name="stepsize_post" value="0.25" />
+
+        <param name="min_iterations_iqp" value="3" />
+        <param name="max_iterations_iqp" value="10" />
+
+        <!-- Shortest path calculation -->
+        <param name="calc_shortest_path" value="False" />
+
+        <!-- Postprocessing check -->
+        <param name="postprocessing" value="False" />
+
+        <!-- All velocity calculations, plots and print statements -->
+        <param name="vel_calc_all" value="False" />
+        <param name="plot_all" value="False" />
+        <param name="print_debug_all" value="False" />
+
+        <!-- Velocity calculation flags -->
+        <param name="vel_calc" value="False" />
+        <param name="vel_calc_prep" value="False" />
+        <param name="vel_calc_shpath" value="False" />
+        <param name="vel_calc_iqp" value="False" />
+
+        <!-- Velocity calculation variables -->
+        <param name="v_max" value="36.00" />
+        <param name="T_motor_max" value="140.00" />
+        <param name="P_max" value="80000.00" />
+        <param name="num_motors" value="2" />
+        <param name="gear_ratio" value="3.405" />
+        <param name="wheel_radius" value="0.206" />
+        <param name="drag_coeff" value="1.649217" />
+        <param name="acc_limit_long" value="15.69" />
+        <param name="acc_limit_lat" value="15.69" />
+
+        <!-- Plotting and debugging flags -->
+        <param name="save_plots" value="False" />
+        
+        <param name="plot" value="False" />
+        <param name="plot_prep" value="False" />
+        <param name="plot_shpath" value="False" />
+        <param name="plot_iqp" value="False" />
+        <param name="plot_post_shpath" value="False" />
+        <param name="plot_post_iqp" value="False" />
+        <param name="plot_final" value="False" />
+
+        <param name="print_debug" value="False" />
+        <param name="print_debug_prep" value="False" />
+        <param name="print_debug_opt_shpath" value="False" />
+        <param name="print_debug_opt_iqp" value="False" />
+        <param name="print_debug_post_shpath" value="False" />
+        <param name="print_debug_post_iqp" value="False" />
+        <param name="print_debug_final" value="False" />
+
+        <!-- Inputs and outputs (Publishers and subscribers) -->
+        <remap from="/input/boundaries" to="/boundary_estimation/boundaries" />
+        <remap from="/input/path" to="/pathplanning/poses" />
+
+        <remap from="/output/path_mincurv" to="/pathplanning/path" />
+        
+    </node>
+
+</launch>

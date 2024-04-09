@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="can" type="can_converter.py" name="can_cvrt" respawn="false" output="screen">
+        <param name="can_interface" type="string" value="can0"/>
+        <param name="can_baudrate" type="int" value="500000"/>
+        <param name="db_adress" type="string" value="hv500_can2_map_v24_EID_left.dbc"/>
+    </node>
+</launch>
