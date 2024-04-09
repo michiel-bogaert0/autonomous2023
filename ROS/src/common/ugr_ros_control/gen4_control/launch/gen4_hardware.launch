@@ -45,11 +45,10 @@
     <rosparam file="$(find ugr_ros_control)/gen4_control/config/gen4_controllers.yaml" command="load" />
 
     <!-- Load controller manager -->
-    <node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager"
+    <node name="ros_control_controller_manager" pkg="controller_manager" type="spawner"
       respawn="false"
       output="screen"
-      args="spawn joint_state_controller drive_velocity_controller steering_position_controller" />
-
+      args="--stopped joint_state_controller drive_effort_controller drive_velocity_controller steering_position_controller" />
   </group>
 
 </launch>
