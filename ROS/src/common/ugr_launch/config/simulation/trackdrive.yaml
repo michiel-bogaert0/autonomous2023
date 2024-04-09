@@ -9,7 +9,7 @@ slam_controller:
       - slam_mcl
 
       # Control
-      - minimum_curvature
+      # - minimum_curvature
 
     always:
       # SLAM
