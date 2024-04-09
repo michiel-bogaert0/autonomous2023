@@ -125,3 +125,101 @@ class Trajectory:
         self.targets = targets
         self.closest_index = indexes[0]
         return self.targets
+
+    def get_reference_track(self, dt, N, actual_speed, debug=False):
+        self.path_blf = self.transform_blf()
+
+        if len(self.path_blf) == 0:
+            return []
+
+        # Find target points based on required velocity and maximum acceleration
+        speed_target = rospy.get_param("/speed/target", 3.0)
+        max_acceleration = 2.0  # TODO: create param
+        # calculate distances based on maximum acceleration and current speed
+        distances = [
+            (min(speed_target, actual_speed + dt * max_acceleration * i)) * i * dt
+            for i in range(N)
+        ]
+
+        if self.change_index:
+            self.closest_index = np.argmin(
+                np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
+            )
+        else:
+            distances_temp = np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
+            # Add a large distance to all indices 20 further than self.closest_idnex
+            # To avoid mistake at skidpad overlap
+            distances_temp = np.where(
+                abs(np.arange(len(distances_temp)) - self.closest_index) < 20,
+                distances_temp,
+                distances_temp + 1000,
+            )
+            self.closest_index = np.argmin(distances_temp)
+        if debug:
+            current_point = self.path_blf[self.closest_index]
+            print(current_point)
+
+        # Now calculate for each point the distance to the car along the path
+
+        # Shift path so that closest point is at index 0
+        shifted_path = np.roll(self.path_blf, -self.closest_index, axis=0)
+        # Compute the distance between consecutive points
+        diff = np.diff(shifted_path, axis=0)
+        distances_cumsum = np.linalg.norm(diff, axis=1)
+
+        # Append 0 and calculate cummulative sum
+        distances_relative = np.append([0], np.cumsum(distances_cumsum))
+
+        # Find points at specified distances
+        reference_path = []
+        for i in range(len(distances)):
+            # Find first value in distances_relative that is greater than distance
+            for j in range(len(distances_relative)):
+                if distances_relative[j] < distances[i]:
+                    continue
+                elif distances_relative[j] == distances[i]:
+                    # Just take point on path
+                    scaling = 1
+                elif distances_relative[j] > distances[i]:
+                    # Required distances between two points so scale between them
+                    scaling = 1 - np.abs(
+                        (distances[i] - distances_relative[j])
+                        / (distances_relative[j] - distances_relative[j - 1])
+                    )
+
+                reference_path.append(
+                    shifted_path[j - 1]
+                    + scaling * (shifted_path[j] - shifted_path[j - 1])
+                )
+                if debug:
+                    print(
+                        f"Point {j - 1} and {j} with scaling {scaling} and distance {distances[i]} and relative distance {distances_relative[j]} results in point {reference_path[-1]}"
+                    )
+                break
+
+        return reference_path
+
+    def get_tangent_line(self, reference_path):
+        point = reference_path[len(reference_path) // 2]
+        prev_point = reference_path[len(reference_path) // 2 - 1]
+        next_point = reference_path[len(reference_path) // 2 + 1]
+
+        slope = self.calculate_tangent(prev_point, next_point)
+
+        b = point[1] - slope * point[0]
+        b_left = b + 10
+        b_right = b - 10
+
+        return slope, b_left, slope, b_right
+
+    def calculate_tangent(self, point_prev, point_next):
+        # Calculate the slope using finite differences
+        dx = point_next[0] - point_prev[0]
+        dy = point_next[1] - point_prev[1]
+
+        # Avoid division by zero
+        if dx == 0:
+            return float("inf")
+
+        slope = dy / dx
+        return slope

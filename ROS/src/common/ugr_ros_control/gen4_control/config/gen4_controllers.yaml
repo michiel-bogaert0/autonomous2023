@@ -6,19 +6,19 @@ generic_hw_control_loop:
 
 # Settings for ros_control hardware interface
 hardware_interface:
-   drive_joint: axis0
+   drive_joint: axis_rear
    steering_joint: axis_steering
    joints:
-      - axis0
+      - axis_rear
       - axis_steering
    joints_config:
-      axis0:
+      axis_rear:
          interfaces:
             - velocity
             - effort
       axis_steering:
          interfaces:
-            - velocity # No feedback here, so no state interface!
+            - position
 
 # Publish all joint states ----------------------------------
 # Creates the /joint_states topic necessary in ROS
@@ -28,21 +28,16 @@ joint_state_controller:
 
 # Joint position controller for steering
 steering_position_controller:
-   type: velocity_controllers/JointPositionController
-   joint: axis_steering
-   pid: {p: 100.0, i: 0.0, d: 0.0}
-
-# Joint velocity controller for steering
-steering_velocity_controller:
-   type: velocity_controllers/JointVelocityController
+   type: position_controllers/JointPositionController
    joint: axis_steering
 
-# Velocity controller for drive
+# controllers for autonomous driving
 drive_velocity_controller:
    type: effort_controllers/JointVelocityController
-   joint: axis0
-   pid: {p: 100.0, i: 5.0, d: 0.0, i_clamp_max: 100.0, i_clamp_min: -100.0, antiwindup: True, publish_state: True}
+   joint: axis_rear
+   pid: {p: 10.0, i: 0.01, d: 0.0}
 
+# controllers for manual driving
 drive_effort_controller:
    type: effort_controllers/JointEffortController
-   joint: axis0
+   joint: axis_rear

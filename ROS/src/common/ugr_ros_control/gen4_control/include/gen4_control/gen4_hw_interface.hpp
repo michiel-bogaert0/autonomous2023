@@ -37,34 +37,36 @@
            For a more detailed simulation example, see sim_hw_interface.h
 */
 
-#ifndef SIM_CONTROL__SIM_HW_INTERFACE_H
-#define SIM_CONTROL__SIM_HW_INTERFACE_H
+#ifndef GEN4_CONTROL__GEN4_HW_INTERFACE_H
+#define GEN4_CONTROL__GEN4_HW_INTERFACE_H
 
 #include <ugr_ros_control/generic_hw_interface.hpp>
-#include <sim_control/bicycle_model.hpp>
 #include <ros/ros.h>
-#include <ros/console.h>
-#include <ros/service_client.h>
 
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/TwistWithCovariance.h>
 #include <geometry_msgs/TwistWithCovarianceStamped.h>
+#include <std_msgs/Float32.h>
 #include <sensor_msgs/Imu.h>
+#include <can_msgs/Frame.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <ugr_msgs/State.h>
+#include <ugr_msgs/CanFrame.h>
+#include <ugr_msgs/KeyValueFloat.h>
 
-#include <std_msgs/Float32.h>
-
-namespace sim_control
+namespace gen4_control
 {
 /// \brief Hardware interface for a robot
-class SimHWInterface : public ugr_ros_control::GenericHWInterface
+class Gen4HWInterface : public ugr_ros_control::GenericHWInterface
 {
 public:
   /**
    * \brief Constructor
    * \param nh - Node handle for topics.
    */
-  explicit SimHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model = NULL);
+  explicit Gen4HWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model = NULL);
 
   virtual void init();
 
@@ -77,24 +79,48 @@ public:
   /** \brief Enforce limits for all values before writing */
   virtual void enforceLimits(ros::Duration& period);
 
-  void publish_gt(const ros::TimerEvent&);
-  void apply_noise_and_quantise(float& x, std::vector<double> noise);
-  void publish_encoder(const ros::TimerEvent&);
-  void publish_imu(const ros::TimerEvent&);
+  void state_change(const ugr_msgs::State::ConstPtr& msg);
 
-  float torque_vectoring(float axis0, float delta);
+  void handle_steering_msg(const std_msgs::Float32::ConstPtr& msg);
+
+  void publish_steering_msg(float steering);
+  void publish_vel_msg(float vel, int axis);
+  void publish_torque_msg(float axis);
+  void can_callback_axis0(const std_msgs::Float32::ConstPtr& msg);
+  void can_callback_axis1(const std_msgs::Float32::ConstPtr& msg);
+  void can_callback_steering(const std_msgs::Float32::ConstPtr& msg);
+
+  void yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg);
+
+  float torque_vectoring();
 
 private:
-  BicycleModel* model;
   int drive_joint_id;
   int steering_joint_id;
 
-  ros::Publisher gt_pub, encoder_pub, imu_pub, TV_axis0, TV_axis1;
-  tf2_ros::TransformBroadcaster br;
-  std::string world_frame, gt_base_link_frame, base_link_frame;
-  std::vector<double> encoder_noise, imu_angular_velocity_noise, imu_acceleration_noise;
+  std::string axis_rear_frame;
 
-  ros::Timer gt_timer, imu_timer, encoder_timer;
+  float wheel_diameter;
+  float gear_ratio;
+
+  bool is_running = false;
+
+  int IMU_ids[2] = { 0xE2, 0xE3 };
+
+  ros::Publisher can_pub;
+  ros::Subscriber can_sub;
+  ros::Subscriber state_sub;
+  ros::Subscriber can_axis0_sub;
+  ros::Subscriber can_axis1_sub;
+  ros::Subscriber can_steering_sub;
+  ros::Subscriber jaw_rate_sub;
+  ros::Publisher vel_left_pub;
+  ros::Publisher vel_right_pub;
+  float steer_max_step;
+
+  float cur_velocity_axis0;
+  float cur_velocity_axis1;
+  float cur_steering;
 
   // PID for torque vectoring
   float Kp;
@@ -102,8 +128,8 @@ private:
   float Kd;
   float integral;
   float prev_error;
-  float prev_time;
-  float this_time;
+  double prev_time;
+  double this_time;
   float yaw_rate;
 
   // parameters for torque vectoring
@@ -119,6 +145,6 @@ private:
 
 };  // class
 
-}  // namespace sim_control
+}  // namespace gen4_control
 
 #endif
