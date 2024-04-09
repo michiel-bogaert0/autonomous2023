@@ -7,7 +7,7 @@
     <param name="frame" value="ugr/car_base_link" />
     <param name="layout" value="$(arg layout)" />
 
-    <remap from="/output/local_map" to="/ugr/car/map/fastslam/local" />
+    <remap from="/output/local_map" to="/ugr/car/map/slam/local" />
     <!-- <remap from="/output/gt_path" to="/pathplanning/poses" /> -->
     <remap from="/output/gt_path" to="/minimum_curvature/gt_path" />
 
