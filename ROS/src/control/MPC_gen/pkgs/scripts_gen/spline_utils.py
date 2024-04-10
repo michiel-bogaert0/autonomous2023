@@ -79,6 +79,11 @@ def project_on_spline(points_on_spline, der_points, point, plot=False):
     min_degree = np.argmin(np.abs(np.array(angles) - np.pi / 2))
     print(f"Angle closest to 90 degrees: {angles[min_degree] * 180 / np.pi}")
 
+    angle_derivative = np.arctan2(
+        der_points[min_degree, 1], der_points[min_degree, 0]
+    )  # in radians
+    print(angle_derivative * 180 / np.pi)
+
     if plot:
         # Car position
         plt.plot(point[0], point[1], "o", c="g")

@@ -20,15 +20,18 @@ class MPC_generation:
 
         self.X_sol = None
         self.U_sol = None
+        self.Theta_sol = None
 
         self.X_init_guess = None
 
         self.X_sol_list = []
         self.U_sol_list = []
+        self.Theta_sol_list = []
         # self.results = []
 
         self.X_trajectory = []
         self.U_trajectory = []
+        self.Theta_trajectory = []
 
         self.computation_time = []
         self.timer = Timer(verbose=False)
@@ -49,7 +52,8 @@ class MPC_generation:
     def __call__(
         self,
         state,
-        reference_track,
+        theta0,
+        curve,
         a,
         b,
         c,
@@ -57,6 +61,7 @@ class MPC_generation:
         u_prev,
         X0=None,
         U0=None,
+        Theta0=None,
         warm_start=True,
         **solver_kwargs
     ):
@@ -94,10 +99,19 @@ class MPC_generation:
                 else:
                     U0 = np.append(self.U_sol[1:], self.U_sol[-1])
 
+            if (Theta0 is None) and (self.Theta_sol is not None):
+                if len(self.Theta_sol.shape) > 1:
+                    Theta0 = np.concatenate(
+                        (self.Theta_sol[:, 1:], self.Theta_sol[:, [-1]]), axis=1
+                    )
+                else:
+                    Theta0 = np.append(self.Theta_sol[1:], self.Theta_sol[-1])
+
         with self.timer:
-            self.U_sol, self.X_sol, info = self.ocp.solve(
+            self.U_sol, self.X_sol, self.Theta_sol, info = self.ocp.solve(
                 state,
-                reference_track,
+                theta0,
+                curve,
                 a,
                 b,
                 c,
@@ -105,16 +119,19 @@ class MPC_generation:
                 u_prev,
                 X0=X0,
                 U0=U0,
+                Theta0=Theta0,
                 **solver_kwargs
             )
 
         self.X_sol_list.append(self.X_sol)
         self.U_sol_list.append(self.U_sol)
+        self.Theta_sol_list.append(self.Theta_sol)
 
         self.computation_time.append(info["time"])
 
         info["X_sol"] = self.X_sol
         info["U_sol"] = self.U_sol
+        info["Theta_sol"] = self.Theta_sol
 
         u = np.array(self.U_sol[:, 0])
         if len(u.shape) == 2:
@@ -122,6 +139,7 @@ class MPC_generation:
 
         self.X_trajectory.append(np.array(state).squeeze())
         self.U_trajectory.append(u)
+        self.Theta_trajectory.append(np.array(theta0).squeeze())
 
         self.nr_iters += 1
 
@@ -130,6 +148,7 @@ class MPC_generation:
     def reset(self, init_state=None):
         self.X_sol = None
         self.U_sol = None
+        self.Theta_sol = None
 
         self.nr_iters = 0
 
@@ -139,6 +158,7 @@ class MPC_generation:
 
         self.X_trajectory = []
         self.U_trajectory = []
+        self.Theta_trajectory = []
 
         if init_state is not None:
             self.X_trajectory.append(np.array(init_state).squeeze())

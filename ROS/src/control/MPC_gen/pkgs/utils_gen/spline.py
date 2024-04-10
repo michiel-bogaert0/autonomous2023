@@ -256,9 +256,14 @@ class BSplineBasis(Basis):
 
         This function implements the Cox-de Boor formula for B-splines
         """
+        verbose = False
+        if isinstance(x, (cd.SX, cd.MX)):
+            verbose = False
         if not isinstance(x, (cd.SX, cd.MX)):
             x = np.array(x)
-
+        # if verbose:
+        #     print(x.shape)
+        #     print(x)
         k = self.knots
         basis = [[self._ind(i, x) * 1.0 for i in range(len(k) - 1)]]
         for d in range(1, self.degree + 1):
@@ -272,8 +277,13 @@ class BSplineBasis(Basis):
                 if bottom != 0:
                     b += (k[i + d + 1] - x) * basis[d - 1][i + 1] / bottom
                 basis[-1].append(b)
+        # if verbose:
+        #     print(len(basis[0]))
+        # print(basis)
         # Consider sparse matrices?
         if isinstance(x, (cd.SX, cd.MX)):
+            if verbose:
+                print(cd.hcat(basis[-1]).shape)
             return matrix_alt(cd.hcat(basis[-1]))
 
         return csr_matrix_alt(np.c_[basis[-1]].T)
@@ -403,6 +413,13 @@ class Spline(object):
         #     self.basis._basis = cd.DMatrix(self.basis._basis)
 
     def __call__(self, x):
+        # verbose = False
+        # if isinstance(x, (cd.SX, cd.MX)):
+        #     verbose = True
+        # if verbose:
+        # print(len((self.basis(x).dot(self.coeffs))[0]))
+        # print(self.basis(x).shape)
+        # print(self.basis(x).dot(self.coeffs).shape)
         return self.basis(x).dot(self.coeffs)
 
     def __len__(self):

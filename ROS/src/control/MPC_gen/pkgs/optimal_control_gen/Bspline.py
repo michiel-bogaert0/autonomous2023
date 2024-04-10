@@ -1,7 +1,7 @@
 import casadi as cd
 import numpy as np
 from matplotlib import pyplot as plt
-from utils.spline import BSpline, BSplineBasis
+from utils_gen.spline import BSpline, BSplineBasis
 
 
 class Bspline:
