@@ -482,6 +482,7 @@ void MCL::active() {
   // apply a filter
   ugr_msgs::ObservationWithCovarianceArrayStamped transformed_obs;
   transformed_obs.header.frame_id = this->base_link_frame;
+  transformed_obs.header.stamp = ros::Time::now();
   for (auto observation : this->observations.observations) {
 
     ugr_msgs::ObservationWithCovariance transformed_ob;
@@ -494,7 +495,7 @@ void MCL::active() {
       transformed_ob.observation.location =
           this->tfBuffer
               .transform<geometry_msgs::PointStamped>(
-                  locStamped, this->observations.header.frame_id, ros::Time(0),
+                  locStamped, this->base_link_frame, transformed_obs.header.stamp,
                   this->world_frame, ros::Duration(0.1))
               .point;
     } catch (const std::exception &e) {
@@ -531,7 +532,7 @@ void MCL::active() {
   try {
     car_pose =
         this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame,
-                                       ros::Time(0), ros::Duration(0.1));
+                                       transformed_obs.header.stamp, ros::Duration(0.1));
     this->diagPublisher->publishDiagnostic(
         node_fixture::DiagnosticStatusEnum::OK, "car_pose transform",
         "Transform success!");
@@ -586,12 +587,12 @@ void MCL::active() {
   this->prev_state = {x, y, yaw};
 
   // Done ! Now produce the output
-  this->publishOutput();
+  this->publishOutput(transformed_obs.header.stamp);
 
   this->observations.observations.clear();
 }
 
-void MCL::publishOutput() {
+void MCL::publishOutput(ros::Time lookupTime) {
 
   // Calculate statistical mean and covariance of the particle filter (pose)
   // Also gather some other information while we are looping
@@ -680,7 +681,7 @@ void MCL::publishOutput() {
   // Odometry message
   nav_msgs::Odometry odom;
 
-  odom.header.stamp = ros::Time::now();
+  odom.header.stamp = lookupTime;
   odom.header.frame_id = this->map_frame;
   odom.child_frame_id = this->slam_base_link_frame;
 
@@ -701,7 +702,7 @@ void MCL::publishOutput() {
 
   geometry_msgs::TransformStamped transformMsg;
   transformMsg.header.frame_id = this->map_frame;
-  transformMsg.header.stamp = ros::Time::now();
+  transformMsg.header.stamp = lookupTime;
   transformMsg.child_frame_id = this->slam_base_link_frame;
 
   transformMsg.transform.translation.x = pose(0);
