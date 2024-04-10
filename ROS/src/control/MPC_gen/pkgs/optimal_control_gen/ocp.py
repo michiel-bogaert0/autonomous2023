@@ -146,16 +146,39 @@ class Ocp:
             X_next = self.F.map(self.N, "thread", threads)(self.X[:, :-1], self.U)
             self.opti.subject_to(self.X[:, 1:] == X_next)
 
-    def eval_cost(self, X, U, goal_state):
+    def eval_cost(self, X, U, Theta, Vk, Sc):
         """
         To test out the cost function
         """
         assert X.shape[0] == self.nx
         N = X.shape[1] - 1
+        cost_accum = 0
 
-        cost_accum = self.cost_fun.map(N)(X[:, :-1], U, casadi.repmat(goal_state, 1, N))
+        for i in range(N):
+            if i == 0:
+                cost_accum += self.cost_fun(
+                    X[:, i + 1],
+                    U[:, i],
+                    (U[:, i] - self.u_prev),
+                    self.centerline(Theta[i]).T,
+                    self.der_centerline(Theta[i]).T,
+                    Vk[i],
+                    Sc[i],
+                )
+            else:
+                cost_accum += self.cost_fun(
+                    X[:, i + 1],
+                    U[:, i],
+                    (U[:, i] - U[:, i - 1]),
+                    self.centerline(Theta[i]).T,
+                    self.der_centerline(Theta[i]).T,
+                    Vk[i],
+                    Sc[i],
+                )
 
-        return casadi.sum2(cost_accum)
+        # cost_accum = self.cost_fun.map(N)(X[:, :-1], U, (U - self.u_prev), self.centerline(Theta).T, self.der_centerline(Theta).T, Vk, Sc)
+
+        return cost_accum
 
     def set_cost(
         self,
@@ -170,8 +193,8 @@ class Ocp:
                         self.X[:, i + 1],
                         self.U[:, i],
                         (self.U[:, i] - self.u_prev),
-                        self.centerline(self.Theta[i]).T,
-                        self.der_centerline(self.Theta[i]).T,
+                        self.centerline(self.Theta[i + 1]).T,
+                        self.der_centerline(self.Theta[i + 1]).T,
                         # 0, #casadi.arctan2(der_point[1], der_point[0]),
                         self.Vk[i],
                         self.Sc[i],
@@ -181,8 +204,8 @@ class Ocp:
                         self.X[:, i + 1],
                         self.U[:, i],
                         (self.U[:, i] - self.U[:, i - 1]),
-                        self.centerline(self.Theta[i]).T,
-                        self.der_centerline(self.Theta[i]).T,
+                        self.centerline(self.Theta[i + 1]).T,
+                        self.der_centerline(self.Theta[i + 1]).T,
                         # 0, # casadi.arctan2(der_point[1], der_point[0]),
                         self.Vk[i],
                         self.Sc[i],
@@ -191,13 +214,13 @@ class Ocp:
                 # self.opti.subject_to((self.a * self.X[0, i] + self.b - self.X[1, i]) * (self.c * self.X[0, i] + self.d - self.X[1, i]) < 0)
 
                 # This one works with circles, but causes convergence issues
-                self.opti.subject_to(
-                    (
-                        (self.X[0, i + 1] - self.centerline(self.Theta[i]).T[0]) ** 2
-                        + (self.X[1, i + 1] - self.centerline(self.Theta[i]).T[1]) ** 2
-                    )
-                    < (1**2)
-                )  # + self.Sc[i])
+                # self.opti.subject_to(
+                #     (
+                #         (self.X[0, i + 1] - self.centerline(self.Theta[i+1]).T[0]) ** 2
+                #         + (self.X[1, i + 1] - self.centerline(self.Theta[i+1]).T[1]) ** 2
+                #     )
+                #     < (2**2) + self.Sc[i]
+                # )
             self.cost["run"] = L_run
 
         self.cost["total"] = self.cost["run"]

@@ -39,6 +39,8 @@ class MPC_gen:
         )
         self.path_GT_map = rospy.get_param("~input_path", "/data_gen/map_chicane.yaml")
 
+        reverse = True
+
         # Get centerline from yaml
         self.GT_centerline = []
 
@@ -54,7 +56,8 @@ class MPC_gen:
         self.GT_centerline = self.interpolate_arr(self.GT_centerline)
 
         # Reverse centerline because otherwise spline goes wrong way
-        self.GT_centerline = self.GT_centerline[::-1]
+        if reverse:
+            self.GT_centerline = self.GT_centerline[::-1]
 
         # Get left and right boundaries from yaml
         self.GT_left_boundary = []
@@ -85,8 +88,9 @@ class MPC_gen:
         self.GT_right_boundary = self.interpolate_arr(self.GT_right_boundary)
 
         # Reverse boundaries
-        self.GT_left_boundary = self.GT_left_boundary[::-1]
-        self.GT_right_boundary = self.GT_right_boundary[::-1]
+        if reverse:
+            self.GT_left_boundary = self.GT_left_boundary[::-1]
+            self.GT_right_boundary = self.GT_right_boundary[::-1]
 
         spline_centerline, curve_centerline = create_spline(
             self.GT_centerline, "r", derivative=False, plot=True
@@ -102,13 +106,13 @@ class MPC_gen:
         dcurve = curve_centerline.derivative(o=1)
         points_on_spline = curve_centerline(taus)
         der_points = dcurve(taus)
-        project_on_spline(points_on_spline, der_points, car_pos, plot=True)
+        project_on_spline(points_on_spline, der_points, car_pos, plot=False)
 
         create_spline(self.GT_left_boundary, "b", plot=True)
         create_spline(self.GT_right_boundary, "y", plot=True)
 
-        plt.xlim(-40, 20)
-        plt.ylim(-10, 20)
+        # plt.xlim(-40, 20)
+        # plt.ylim(-10, 20)
 
         # plt.xlim(-20, 50)
         # plt.ylim(-60, 10)
@@ -117,6 +121,9 @@ class MPC_gen:
         # plt.show()
 
         self.initialize_MPC()
+
+        # self.analyse_cost()
+
         self.run_mpc()
 
         rospy.spin()
@@ -144,7 +151,7 @@ class MPC_gen:
         self.steering_joint_angle = 0
         self.u = [0, 0]
 
-        self.N = 200
+        self.N = 45
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
@@ -172,10 +179,30 @@ class MPC_gen:
         self.max_steering_angle = 5  # same as pegasus.urdf
         self.set_constraints(5, self.max_steering_angle)
 
+    def analyse_cost(self):
+        """
+        Analyse the cost function
+        """
+        X = self.ocp.X
+        U = self.ocp.U
+        Theta = self.ocp.Theta
+        Vk = self.ocp.Vk
+        Sc = self.ocp.Sc
+
+        self.ocp.set_initial(X, np.zeros((self.car.nx, self.N + 1)))
+        self.ocp.set_initial(U, np.zeros((self.car.nu, self.N)))
+        self.ocp.set_initial(Theta, np.zeros((1, self.N + 1)))
+        self.ocp.set_initial(Vk, np.zeros((1, self.N)))
+        self.ocp.set_initial(Sc, np.zeros((1, self.N)))
+
+        cost = self.ocp.eval_cost(X, U, Theta, Vk, Sc)
+        print(type(cost))
+
     def set_constraints(self, velocity_limit, steering_limit):
         """
         Set constraints for the MPC
         """
+        velocity_limit = 20
         steering_limit = 5
         self.wheelradius = 0.1
         self.ocp.subject_to()
@@ -209,12 +236,12 @@ class MPC_gen:
         """
         Set costs for the MPC
         """
-        qs = 0
-        qss = 0
+        qs = 1
+        qss = 1
         qc = 1e2
         ql = 1e2
 
-        gamma = 1e7
+        gamma = 1e6
 
         # State: x, y, heading, steering angle, velocity
         # Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
