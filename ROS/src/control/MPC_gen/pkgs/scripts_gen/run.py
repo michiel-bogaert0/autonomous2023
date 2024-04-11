@@ -51,7 +51,8 @@ class MPC_gen:
             )
 
         # Close centerline
-        self.GT_centerline.append(self.GT_centerline[0])
+        self.GT_centerline = np.roll(self.GT_centerline, -10, axis=0)
+        self.GT_centerline = np.vstack((self.GT_centerline, self.GT_centerline[0]))
 
         self.GT_centerline = self.interpolate_arr(self.GT_centerline)
 
@@ -151,7 +152,7 @@ class MPC_gen:
         self.steering_joint_angle = 0
         self.u = [0, 0]
 
-        self.N = 45
+        self.N = 50
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
@@ -221,12 +222,27 @@ class MPC_gen:
         # Limit velocity
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 20))
 
-        self.ocp.subject_to(
-            self.ocp.bounded(0, self.ocp.Vk[:], 1 / self.N * self.car.dt)
-        )
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.1))
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Vk[:], 0.05))
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.5))
         # self.ocp.subject_to(self.ocp.sc > 0)
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Theta[:], 1))
+
+        for i in range(self.N):
+            self.ocp.subject_to(
+                (
+                    (
+                        self.ocp.X[0, i + 1]
+                        - self.ocp.centerline(self.ocp.Theta[i + 1]).T[0]
+                    )
+                    ** 2
+                    + (
+                        self.ocp.X[1, i + 1]
+                        - self.ocp.centerline(self.ocp.Theta[i + 1]).T[1]
+                    )
+                    ** 2
+                )
+                < (1.5**2) + self.ocp.Sc[i]
+            )
 
         self.ocp._set_continuity(1)
 
@@ -236,19 +252,19 @@ class MPC_gen:
         """
         Set costs for the MPC
         """
-        qs = 1
-        qss = 1
+        qs = 1e-1
+        qss = 1e-1
         qc = 1e2
         ql = 1e2
 
-        gamma = 1e6
+        gamma = 1e5
 
         # State: x, y, heading, steering angle, velocity
         # Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
 
         # Input: acceleration, velocity on steering angle
         R = np.diag([1e-5, 5e-2])
-        R_delta = np.diag([1e-5, 5e-3])
+        R_delta = np.diag([1e-2, 1e-2])
 
         phi = cd.if_else(
             cd.fabs(self.ocp.der_curve[1]) < 1e-3,
@@ -286,8 +302,25 @@ class MPC_gen:
         print(f"U_closed_loop: {info['U_sol']}")
         print(f"theta_closed_loop: {info['Theta_sol']}")
 
+        for i in range(self.N):
+            dist = (
+                info["X_sol"][0][i + 1]
+                - self.curve_centerline(info["Theta_sol"][0][i + 1]).T[0]
+            ) ** 2 + (
+                info["X_sol"][1][i + 1]
+                - self.curve_centerline(info["Theta_sol"][0][i + 1]).T[1]
+            ) ** 2
+            print(dist)
+
         # Plot x-y of solution
-        plt.plot(info["X_sol"][:][0], info["X_sol"][:][1], "m")
+        plt.plot(info["X_sol"][:][0], info["X_sol"][:][1], c="m")
+
+        for i in range(self.N):
+            plt.plot(
+                self.curve_centerline(info["Theta_sol"][0][i + 1]).T[0],
+                self.curve_centerline(info["Theta_sol"][0][i + 1]).T[1],
+                c="g",
+            )
 
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")

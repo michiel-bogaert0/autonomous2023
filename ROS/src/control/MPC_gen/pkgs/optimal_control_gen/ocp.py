@@ -132,7 +132,7 @@ class Ocp:
         if threads == 1:
             for i in range(self.N):
                 x_next = self.F(self.X[:, i], self.U[:, i])
-                theta_next = self.Theta[i] + self.Vk[i] / self.dt
+                theta_next = self.Theta[i] + self.Vk[i]  # / self.dt
 
                 if isinstance(x_next, np.ndarray):
                     x_next = casadi.vcat(x_next)  # convert numpy array to casadi vector
@@ -213,14 +213,6 @@ class Ocp:
                 # This constraint works with halspaces (not implemented properly yet)
                 # self.opti.subject_to((self.a * self.X[0, i] + self.b - self.X[1, i]) * (self.c * self.X[0, i] + self.d - self.X[1, i]) < 0)
 
-                # This one works with circles, but causes convergence issues
-                # self.opti.subject_to(
-                #     (
-                #         (self.X[0, i + 1] - self.centerline(self.Theta[i+1]).T[0]) ** 2
-                #         + (self.X[1, i + 1] - self.centerline(self.Theta[i+1]).T[1]) ** 2
-                #     )
-                #     < (2**2) + self.Sc[i]
-                # )
             self.cost["run"] = L_run
 
         self.cost["total"] = self.cost["run"]
@@ -340,9 +332,9 @@ class Ocp:
         else:
             self.opti.set_initial(self.Theta, np.zeros((1, self.N + 1)))
 
-        self.opti.set_initial(self.Vk, np.ones((1, self.N)) * 1 / self.N * 1e-1)
+        self.opti.set_initial(self.Vk, np.zeros((1, self.N)) * 1 / self.N * 1e-1)
 
-        self.opti.set_initial(self.Sc, np.ones((1, self.N)) * 1e-1)
+        self.opti.set_initial(self.Sc, np.zeros((1, self.N)) * 1e-1)
 
         # print(self.Theta[:][0].shape)
         # print(self.Theta[0, 0])

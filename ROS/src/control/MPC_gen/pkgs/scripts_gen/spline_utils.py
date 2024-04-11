@@ -15,7 +15,7 @@ def create_spline(arr, color, derivative=False, plot=False):
     spline_arr = curve(np.linspace(0, 1, 1000))
 
     if plot:
-        plt.plot(control_points[:, 0], control_points[:, 1], "o", c=color)
+        # plt.plot(control_points[:, 0], control_points[:, 1], "o", c=color)
         plt.plot([x[0] for x in arr], [x[1] for x in arr], "--", c=color)
         plt.plot(spline_arr[:, 0], spline_arr[:, 1], c=color)
 
