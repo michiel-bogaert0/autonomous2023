@@ -69,7 +69,7 @@ void LapCounter::active() {
     startPosition.x = car_pose.transform.translation.x;
     startPosition.y = car_pose.transform.translation.y;
     startPosition.z = car_pose.transform.translation.z;
-    
+
     return;
   }
 

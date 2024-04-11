@@ -495,8 +495,9 @@ void MCL::active() {
       transformed_ob.observation.location =
           this->tfBuffer
               .transform<geometry_msgs::PointStamped>(
-                  locStamped, this->base_link_frame, transformed_obs.header.stamp,
-                  this->world_frame, ros::Duration(0.1))
+                  locStamped, this->base_link_frame,
+                  transformed_obs.header.stamp, this->world_frame,
+                  ros::Duration(0.1))
               .point;
     } catch (const std::exception &e) {
       ROS_ERROR("observation transform failed: %s", e.what());
@@ -530,9 +531,9 @@ void MCL::active() {
 
   geometry_msgs::TransformStamped car_pose;
   try {
-    car_pose =
-        this->tfBuffer.lookupTransform(this->world_frame, this->base_link_frame,
-                                       transformed_obs.header.stamp, ros::Duration(0.1));
+    car_pose = this->tfBuffer.lookupTransform(
+        this->world_frame, this->base_link_frame, transformed_obs.header.stamp,
+        ros::Duration(0.1));
     this->diagPublisher->publishDiagnostic(
         node_fixture::DiagnosticStatusEnum::OK, "car_pose transform",
         "Transform success!");
