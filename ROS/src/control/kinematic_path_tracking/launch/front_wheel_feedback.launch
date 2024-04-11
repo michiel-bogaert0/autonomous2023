@@ -10,6 +10,8 @@
         <param name="Ki" value="0.0" />
         <param name="Kd" value="0.0" />
 
+        <param name="cog_to_front_axle" value="0.72"/>
+
         <param name="wheelradius" value="0.1" />
 
         <remap from="/input/path" to="/pathplanning/path" />
