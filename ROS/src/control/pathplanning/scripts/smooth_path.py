@@ -102,7 +102,7 @@ class PoseArraySmootherNode:
             w = np.ones(len(path[0]))
 
             # Calculate smoothing Spline
-            tck, u = splprep(path, w=w, s=2, per=per)
+            tck, u = splprep(path, w=w, s=1, per=per)
 
             # Evaluate BSpline and transpose back to (N, 2)
             smoothed_path = np.array(splev(u, tck)).T
