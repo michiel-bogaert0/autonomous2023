@@ -2,7 +2,6 @@
 
     <node pkg="minimum_curvature" type="run.py" name="minimum_curvature" output="screen" respawn="true">
 
-        <param name="frame" value="ugr/car_base_link" />
         <param name="rate" value="5" />
 
         <!-- Minimum curvature parameters -->
