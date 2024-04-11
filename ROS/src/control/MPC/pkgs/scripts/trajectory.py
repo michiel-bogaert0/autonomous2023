@@ -26,9 +26,9 @@ class Trajectory:
         self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.cog_to_front_axle = rospy.get_param("~cog_to_front_axle")
-        
-        self.reference_pose = [self.cog_to_front_axle, 0]         
-        
+
+        self.reference_pose = [self.cog_to_front_axle, 0]
+
         # For skidpad/acceleration use ugr/map, for trackdrive/autocross use ugr/car_odom
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.time_source = rospy.Time(0)
@@ -101,7 +101,9 @@ class Trajectory:
                 target_y = self.path_blf[self.closest_index][1]
 
                 # Current position is reference_pose in base_link_frame
-                distance = (self.reference_pose[0] - target_x) ** 2 + (self.reference_pose[1] - target_y) ** 2
+                distance = (self.reference_pose[0] - target_x) ** 2 + (
+                    self.reference_pose[1] - target_y
+                ) ** 2
 
                 if distance > dist**2:
                     targets.append([target_x, target_y])
