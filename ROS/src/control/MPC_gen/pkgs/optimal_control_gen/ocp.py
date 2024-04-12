@@ -126,8 +126,12 @@ class Ocp:
         return F
 
     def _set_continuity(self, threads: int):
-        self.opti.subject_to(self.X[:, 0] == self.x0)
+        # self.opti.subject_to(self.X[:, 0] == self.x0)
+        self.opti.subject_to(self.X[2, 0] == 0)
+        self.opti.subject_to(self.X[3, 0] == 0)
+        self.opti.subject_to(self.X[4, 0] == 0)
         self.opti.subject_to(self.Theta[0] == self.theta0)
+        self.opti.subject_to(self.Theta[-1] == 1)
 
         if threads == 1:
             for i in range(self.N):
@@ -145,6 +149,10 @@ class Ocp:
         else:
             X_next = self.F.map(self.N, "thread", threads)(self.X[:, :-1], self.U)
             self.opti.subject_to(self.X[:, 1:] == X_next)
+
+            # Not verified
+            Theta_next = (self.Theta[:-1] + self.Vk).T
+            self.opti.subject_to(self.Theta[1:] == Theta_next)
 
     def eval_cost(self, X, U, Theta, Vk, Sc):
         """
@@ -332,22 +340,9 @@ class Ocp:
         else:
             self.opti.set_initial(self.Theta, np.zeros((1, self.N + 1)))
 
-        self.opti.set_initial(self.Vk, np.zeros((1, self.N)) * 1 / self.N * 1e-1)
+        self.opti.set_initial(self.Vk, np.zeros((1, self.N)) * 1 / self.N)
 
         self.opti.set_initial(self.Sc, np.zeros((1, self.N)) * 1e-1)
-
-        # print(self.Theta[:][0].shape)
-        # print(self.Theta[0, 0])
-        # print(self.centerline)
-        # print(casadi.densify(self.centerline(self.Theta[0])))
-
-        print("IN OCP")
-        print(self.X[:, 3].shape)
-        print(self.centerline(self.Theta[3]).T.shape)
-
-        der_point = self.der_centerline(self.Theta[0])
-        # print(der_point)
-        print(casadi.arctan2(der_point[1], der_point[0]).shape)
 
         try:
             with self.timer:

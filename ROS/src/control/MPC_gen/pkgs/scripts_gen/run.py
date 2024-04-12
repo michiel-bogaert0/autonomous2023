@@ -136,23 +136,23 @@ class MPC_gen:
             arr = yaml.safe_load(file)
         return arr
 
-    def interpolate_arr(self, arr):
+    def interpolate_arr(self, arr, n=3):
         distance = np.cumsum(np.sqrt(np.sum(np.diff(arr, axis=0) ** 2, axis=1)))
         distance = np.insert(distance, 0, 0) / distance[-1]
 
-        alpha = np.linspace(0, 1, len(arr) * 3)
+        alpha = np.linspace(0, 1, len(arr) * n)
         interpolator = interp1d(distance, arr, kind="cubic", axis=0)
         arr = interpolator(alpha)
 
         return arr
 
     def initialize_MPC(self):
-        self.car = BicycleModel(dt=0.1)  # dt = publish rate?
+        self.car = BicycleModel(dt=0.05)  # dt = publish rate?
 
         self.steering_joint_angle = 0
         self.u = [0, 0]
 
-        self.N = 50
+        self.N = 40
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
@@ -203,7 +203,7 @@ class MPC_gen:
         """
         Set constraints for the MPC
         """
-        velocity_limit = 20
+        velocity_limit = 50
         steering_limit = 5
         self.wheelradius = 0.1
         self.ocp.subject_to()
@@ -220,12 +220,12 @@ class MPC_gen:
         # Limit angle of steering joint
         self.ocp.subject_to(self.ocp.bounded(-np.pi / 4, self.ocp.X[3, :], np.pi / 4))
         # Limit velocity
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 20))
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 100))
 
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Vk[:], 0.05))
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.5))
-        # self.ocp.subject_to(self.ocp.sc > 0)
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Theta[:], 1))
+
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.3))
 
         for i in range(self.N):
             self.ocp.subject_to(
@@ -241,7 +241,7 @@ class MPC_gen:
                     )
                     ** 2
                 )
-                < (1.5**2) + self.ocp.Sc[i]
+                < (1.2**2) + self.ocp.Sc[i] ** 2
             )
 
         self.ocp._set_continuity(1)
@@ -254,17 +254,17 @@ class MPC_gen:
         """
         qs = 1e-1
         qss = 1e-1
-        qc = 1e2
-        ql = 1e2
+        qc = 1e-4
+        ql = 1e-4
 
-        gamma = 1e5
+        gamma = 0
 
         # State: x, y, heading, steering angle, velocity
         # Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
 
         # Input: acceleration, velocity on steering angle
-        R = np.diag([1e-5, 5e-2])
-        R_delta = np.diag([1e-2, 1e-2])
+        R = np.diag([1e-7, 1e-3])
+        R_delta = np.diag([1e-7, 1e-3])
 
         phi = cd.if_else(
             cd.fabs(self.ocp.der_curve[1]) < 1e-3,
@@ -292,9 +292,111 @@ class MPC_gen:
         initial_state = [self.start_pos[0], self.start_pos[1], 0, 0, 0]
         theta0 = 0
 
+        # Theta0 = np.linspace(0, 1, self.N + 1)
+        # X0 = []
+        # U0 = []
+
+        # for i, theta in enumerate(Theta0):
+        #     x0 = self.curve_centerline(theta)[0]
+        #     # heading = self.curve_centerline(theta)[1]
+        #     steering_angle = 0
+
+        #     # calculate heading based on position
+        #     if len(X0) > 0:
+        #         heading = np.arctan2(
+        #             x0[1] - X0[-1][1], x0[0] - X0[-1][0]
+        #         )
+        #     else:
+        #         heading = 0
+
+        #     if len(X0) > 0:
+        #         steering_angle = (heading - X0[-1][2]) / self.car.dt
+        #     steering_angle = 0
+
+        #     # calculate steering angle based on position
+        #     # if len(X0) > 0:
+        #     #     # Apply inverse bicycle model
+        #     #     # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
+        #     #     R = ((x0[0] - X0[-1][0]) ** 2 + (x0[1] - X0[-1][1]) ** 2) / (
+        #     #         2 * (x0[1] - X0[-1][1])
+        #     #     )
+        #     #     steering_angle = np.arctan2(1.0, R)
+        #     # else:
+        #     #     steering_angle = 0
+
+        #     # calculate heading based on position
+        #     if len(X0) > 0:
+        #         heading = np.arctan2(
+        #             x0[1] - X0[-1][1], x0[0] - X0[-1][0]
+        #         )
+        #         # heading_delta = X0[-1][4] * np.tan(X0[-1][3]) / self.car.L
+        #         # heading = X0[-1][2] + heading_delta
+
+        #     else:
+        #         heading = 0
+
+        #     # calculate velocity based on position
+        #     if len(X0) > 0:
+        #         velocity = np.sqrt(
+        #             (x0[0] - X0[-1][0]) ** 2 + (x0[1] - X0[-1][1]) ** 2
+        #         ) / self.car.dt
+        #     else:
+        #         velocity = 0
+        #     velocity = 0
+
+        #     # # calculate steering angle based on heading
+        #     # if len(X0) > 0:
+        #     #     prev_steering_angle = X0[-1][3]
+        #     #     steering_angle_delta = np.arctan2(
+        #     #         np.sin(heading - prev_steering_angle),
+        #     #         np.cos(heading - prev_steering_angle),
+        #     #     )
+        #     #     steering_angle = prev_steering_angle + steering_angle_delta
+        #     # else:
+        #     #     steering_angle = 0
+        #     #     steering_angle_delta = 0
+
+        #     x0_state = [x0[0], x0[1], heading, steering_angle, velocity]
+        #     X0.append(x0_state)
+        #     # X0.append(self.curve_centerline(theta).T)
+        #     steering_angle_delta = steering_angle - X0[-1][3]
+
+        # # Plot x-y and heading
+        # plt.plot([x[0] for x in X0], [x[1] for x in X0], c="b")
+
+        # # Plot heading at x-y points
+        # for i in range(len(X0)):
+        #     plt.plot(
+        #         [X0[i][0], X0[i][0] + np.cos(X0[i][2])],
+        #         [X0[i][1], X0[i][1] + np.sin(X0[i][2])],
+        #         c="r",
+        #     )
+
+        # plt.show()
+
+        # for i in range(self.N):
+        #     acceleration = X0[i + 1][4] - X0[i][4]
+        #     steering_angle_delta = X0[i + 1][3] - X0[i][3]
+        #     U0.append([acceleration, steering_angle_delta])
+        # X0 = np.array(X0).T
+        # U0 = np.array(U0).T
+
+        # print(X0)
+        # print(U0)
+
         u, info = self.mpc(
-            initial_state, theta0, self.curve_centerline, 0, 0, 0, 0, self.u
+            initial_state,
+            theta0,
+            self.curve_centerline,
+            0,
+            0,
+            0,
+            0,
+            self.u,  # , X0=X0, U0=U0, Theta0=Theta0
         )
+        # u, info = self.mpc(
+        #     initial_state, theta0, self.curve_centerline, 0, 0, 0, 0, self.u, #X0=X0, U0=U0, Theta0=Theta0
+        # )
 
         # print(self.ocp.debug.value)
 
@@ -313,7 +415,22 @@ class MPC_gen:
             print(dist)
 
         # Plot x-y of solution
-        plt.plot(info["X_sol"][:][0], info["X_sol"][:][1], c="m")
+        # append first point to info x sol
+        # info["X_sol"] = np.hstack(
+        #     (info["X_sol"], np.array([info["X_sol"][:, 0]]).T)
+        # )
+
+        x_sol = info["X_sol"][:][0]
+        y_sol = info["X_sol"][:][1]
+
+        x_sol = np.append(x_sol, x_sol[0])
+        y_sol = np.append(y_sol, y_sol[0])
+
+        x_traj = self.interpolate_arr(np.vstack((x_sol, y_sol)).T, n=3)
+
+        x_traj = np.vstack((x_traj, x_traj[0]))
+        plt.plot(x_traj.T[0], x_traj.T[1], c="m")
+        plt.plot(info["X_sol"][:][0], info["X_sol"][:][1], "o", c="m")
 
         for i in range(self.N):
             plt.plot(
