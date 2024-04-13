@@ -76,6 +76,7 @@ void GraphSLAM::doConfigure() {
   this->association_threshold = n.param<double>("association_threshold", 0.5);
   this->max_range = n.param<double>("max_range", 15);
   this->max_half_angle = n.param<double>("max_half_angle", 60 * 0.0174533);
+  this->penalty_threshold = n.param<int>("penalty_threshold", 25);
 
   // Initialize covariance matrices
   vector<double> cov_pose_vector;
@@ -444,6 +445,10 @@ void GraphSLAM::step() {
     }
   }
 
+  // --------------------------------------------------------------------
+  // ------------------------ Penalty -----------------------------------
+  // --------------------------------------------------------------------
+
   PoseVertex *pose_vertex =
       dynamic_cast<PoseVertex *>(this->optimizer.vertex(this->prevPoseIndex));
   vector<int> to_remove_indices;
@@ -464,7 +469,7 @@ void GraphSLAM::step() {
       if (obs(0) <= pow(this->max_range, 2) &&
           abs(obs(1)) <= this->max_half_angle) {
         if (landmarkVertex->latestPoseIndex != this->prevPoseIndex) {
-          if (landmarkVertex->increasePenalty()) {
+          if (landmarkVertex->increasePenalty() > this->penalty_threshold) {
             to_remove_indices.push_back(pair.first);
           }
         } else {

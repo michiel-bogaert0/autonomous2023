@@ -36,9 +36,9 @@ LandmarkVertex::LandmarkVertex() : BaseVertex<2, Vector2d>() {
   this->penalty = 0;
 }
 
-bool LandmarkVertex::increasePenalty() {
+int LandmarkVertex::increasePenalty() {
   this->penalty++;
-  return this->penalty > 50;
+  return this->penalty;
 }
 
 void LandmarkVertex::decreasePenalty() { this->penalty--; }

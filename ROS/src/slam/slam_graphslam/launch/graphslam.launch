@@ -21,6 +21,7 @@
     <param name="association_threshold" value="1"/>
     <param name="max_range" value="15"/>
     <param name="max_half_angle" value="1.57"/> <!-- ingesteld voor lidar -->
+    <param name="penalty_threshold" value="30"/>
 
     <rosparam param="covariance_pose">[0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2]</rosparam>
 

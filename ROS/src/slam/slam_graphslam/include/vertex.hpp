@@ -39,7 +39,7 @@ public:
   int latestPoseIndex;
   int penalty;
 
-  bool increasePenalty();
+  int increasePenalty();
   void decreasePenalty();
   void setLatestPose(int index);
   void setColor(int c, float b);
