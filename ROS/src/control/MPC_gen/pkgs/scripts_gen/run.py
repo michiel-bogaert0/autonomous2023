@@ -7,7 +7,7 @@ import rospy
 import tf2_ros as tf
 import yaml
 from controller_manager_msgs.srv import SwitchController, SwitchControllerRequest
-from environments_gen.bicycle_model import BicycleModel
+from environments_gen.bicycle_model_spline import BicycleModelSpline
 from geometry_msgs.msg import PointStamped, PoseStamped
 from matplotlib import pyplot as plt
 from nav_msgs.msg import Odometry, Path
@@ -147,12 +147,12 @@ class MPC_gen:
         return arr
 
     def initialize_MPC(self):
-        self.car = BicycleModel(dt=0.05)  # dt = publish rate?
+        self.car = BicycleModelSpline(dt=0.05)
 
         self.steering_joint_angle = 0
-        self.u = [0, 0]
+        self.u = [0, 0, 0]
 
-        self.N = 40
+        self.N = 35
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
@@ -168,11 +168,11 @@ class MPC_gen:
         self.mpc = MPC_generation(self.ocp)
 
         # State: x, y, heading, steering angle, velocity
-        Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
+        Qn = np.diag([8e-3, 8e-3, 0, 0, 0, 0])
 
-        # Input: acceleration, velocity on steering angle
-        R = np.diag([1e-5, 5e-2])
-        R_delta = np.diag([1e-1, 5e-3])
+        # Input: acceleration, velocity on steering angle and update to progress parameter
+        R = np.diag([1e-5, 5e-2, -1e-1])
+        R_delta = np.diag([1e-1, 5e-3, 0])
 
         self.set_costs(Qn, R, R_delta)
 
@@ -187,17 +187,13 @@ class MPC_gen:
         """
         X = self.ocp.X
         U = self.ocp.U
-        Tau = self.ocp.Tau
-        Vk = self.ocp.Vk
         Sc = self.ocp.Sc
 
         self.ocp.set_initial(X, np.zeros((self.car.nx, self.N + 1)))
         self.ocp.set_initial(U, np.zeros((self.car.nu, self.N)))
-        self.ocp.set_initial(Tau, np.zeros((1, self.N + 1)))
-        self.ocp.set_initial(Vk, np.zeros((1, self.N)))
         self.ocp.set_initial(Sc, np.zeros((1, self.N)))
 
-        cost = self.ocp.eval_cost(X, U, Tau, Vk, Sc)
+        cost = self.ocp.eval_cost(X, U, Sc)
         print(type(cost))
 
     def set_constraints(self, velocity_limit, steering_limit):
@@ -223,9 +219,13 @@ class MPC_gen:
         # Limit velocity
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 100))
 
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Vk[:], 0.05))
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Tau[:], 1))
+        # Progress parameter between 0 and 1
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[5, :], 1))
 
+        # Limit update to progress parameter
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.U[2, :], 0.05))
+
+        # Limit relaxing constraint
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.3))
 
         # # For loop takes quite long to initialize
@@ -234,12 +234,12 @@ class MPC_gen:
                 (
                     (
                         self.ocp.X[0, i + 1]
-                        - self.ocp.centerline(self.ocp.Tau[i + 1]).T[0]
+                        - self.ocp.centerline(self.ocp.X[5, i + 1]).T[0]
                     )
                     ** 2
                     + (
                         self.ocp.X[1, i + 1]
-                        - self.ocp.centerline(self.ocp.Tau[i + 1]).T[1]
+                        - self.ocp.centerline(self.ocp.X[5, i + 1]).T[1]
                     )
                     ** 2
                 )
@@ -259,15 +259,15 @@ class MPC_gen:
         qc = 1e-4
         ql = 1e-4
 
-        gamma = 1e1
-
         # State: x, y, heading, steering angle, velocity
         # Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
 
-        # Input: acceleration, velocity on steering angle
-        R = np.diag([1e-7, 1e-3])
-        R_delta = np.diag([1e-7, 1e-3])
+        # Input: acceleration, velocity on steering angle, update to progress parameter
+        # Maximize progress parameter
+        R = np.diag([1e-7, 1e-3, -1e-1])
+        R_delta = np.diag([1e-7, 1e-3, 0])
 
+        # Avoid division by zero
         phi = cd.if_else(
             cd.fabs(self.ocp.der_curve[1]) < 1e-3,
             0,
@@ -283,7 +283,6 @@ class MPC_gen:
         self.ocp.running_cost = (
             qc * e_c**2
             + ql * e_l**2
-            - gamma * self.ocp.vk
             + self.ocp.u.T @ R @ self.ocp.u
             + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
             + qs @ self.ocp.sc
@@ -291,8 +290,7 @@ class MPC_gen:
         )
 
     def run_mpc(self):
-        initial_state = [self.start_pos[0], self.start_pos[1], 0, 0, 0]
-        tau0 = 0
+        initial_state = [self.start_pos[0], self.start_pos[1], 0, 0, 0, 0]
 
         # Tau0 = np.linspace(0, 1, self.N + 1)
         # X0 = []
@@ -388,39 +386,21 @@ class MPC_gen:
 
         u, info = self.mpc(
             initial_state,
-            tau0,
             self.curve_centerline,
             0,
             0,
             0,
             0,
-            self.u,  # , X0=X0, U0=U0, Tau0=Tau0
+            self.u,  # , X0=X0, U0=U0
         )
 
         # print(self.ocp.debug.value)
 
         print(f"X_closed_loop: {info['X_sol']}")
         print(f"U_closed_loop: {info['U_sol']}")
-        print(f"tau_closed_loop: {info['Tau_sol']}")
 
-        for i in range(self.N):
-            dist = (
-                info["X_sol"][0][i + 1]
-                - self.curve_centerline(info["Tau_sol"][0][i + 1]).T[0]
-            ) ** 2 + (
-                info["X_sol"][1][i + 1]
-                - self.curve_centerline(info["Tau_sol"][0][i + 1]).T[1]
-            ) ** 2
-            print(dist)
-
-        # Plot x-y of solution
-        # append first point to info x sol
-        # info["X_sol"] = np.hstack(
-        #     (info["X_sol"], np.array([info["X_sol"][:, 0]]).T)
-        # )
-
-        x_sol = info["X_sol"][:][0]
-        y_sol = info["X_sol"][:][1]
+        x_sol = info["X_sol"][0][:]
+        y_sol = info["X_sol"][1][:]
 
         x_sol = np.append(x_sol, x_sol[0])
         y_sol = np.append(y_sol, y_sol[0])
@@ -429,12 +409,12 @@ class MPC_gen:
 
         x_traj = np.vstack((x_traj, x_traj[0]))
         plt.plot(x_traj.T[0], x_traj.T[1], c="m")
-        plt.plot(info["X_sol"][:][0], info["X_sol"][:][1], "o", c="m")
+        plt.plot(info["X_sol"][0][:], info["X_sol"][1][:], "o", c="m")
 
         for i in range(self.N):
             plt.plot(
-                self.curve_centerline(info["Tau_sol"][0][i + 1]).T[0],
-                self.curve_centerline(info["Tau_sol"][0][i + 1]).T[1],
+                self.curve_centerline(info["X_sol"][5][i + 1]).T[0],
+                self.curve_centerline(info["X_sol"][5][i + 1]).T[1],
                 c="g",
             )
 

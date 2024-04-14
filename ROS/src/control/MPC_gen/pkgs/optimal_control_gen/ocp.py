@@ -51,12 +51,6 @@ class Ocp:
         self.x0 = self.opti.parameter(self.nx)
         self.u_prev = self.opti.parameter(self.nu)
 
-        self.tau0 = self.opti.parameter(1)
-        self.Tau = self.opti.variable(1, N + 1)
-
-        # Progress update of tau
-        self.Vk = self.opti.variable(1, N)
-
         # Soften constraints
         self.Sc = self.opti.variable(1, N)
         self.sc = casadi.SX.sym("sc", 1)
@@ -68,11 +62,6 @@ class Ocp:
         self.u = casadi.SX.sym("symbolic_u", self.nu)
         self.u_delta = casadi.SX.sym("symbolic_u_prev", self.nu)
         self.x_reference = casadi.SX.sym("symbolic_x_control_", self.nx)
-        self.tau = casadi.SX.sym("tau", 1)
-        self.vk = casadi.SX.sym("vk", 1)
-
-        # Tangent to point on spline
-        self.phi = casadi.SX.sym("phi", 1)
 
         # Point on curve
         self.point_curve = casadi.SX.sym("point_curve", 2)
@@ -130,30 +119,22 @@ class Ocp:
         self.opti.subject_to(self.X[2, 0] == 0)
         self.opti.subject_to(self.X[3, 0] == 0)
         self.opti.subject_to(self.X[4, 0] == 0)
-        self.opti.subject_to(self.Tau[0] == self.tau0)
-        self.opti.subject_to(self.Tau[-1] == 1)
+        self.opti.subject_to(self.X[5, 0] == 0)
+        self.opti.subject_to(self.X[5, self.N] == 1)
 
         if threads == 1:
             for i in range(self.N):
                 x_next = self.F(self.X[:, i], self.U[:, i])
-                tau_next = self.Tau[i] + self.Vk[i]  # / self.dt
 
                 if isinstance(x_next, np.ndarray):
                     x_next = casadi.vcat(x_next)  # convert numpy array to casadi vector
 
-                if isinstance(tau_next, np.ndarray):
-                    tau_next = casadi.vcat(tau_next)
-
                 self.opti.subject_to(self.X[:, i + 1] == x_next)
-                self.opti.subject_to(self.Tau[i + 1] == tau_next)
         else:
             X_next = self.F.map(self.N, "thread", threads)(self.X[:, :-1], self.U)
             self.opti.subject_to(self.X[:, 1:] == X_next)
 
-            Tau_next = self.Tau[:-1] + self.Vk
-            self.opti.subject_to(self.Tau[1:] == Tau_next)
-
-    def eval_cost(self, X, U, Tau, Vk, Sc):
+    def eval_cost(self, X, U, Sc):
         """
         To test out the cost function
         """
@@ -167,9 +148,8 @@ class Ocp:
                     X[:, i + 1],
                     U[:, i],
                     (U[:, i] - self.u_prev),
-                    self.centerline(Tau[i]).T,
-                    self.der_centerline(Tau[i]).T,
-                    Vk[i],
+                    self.centerline(X[5, i]).T,
+                    self.der_centerline(X[5, i]).T,
                     Sc[i],
                 )
             else:
@@ -177,9 +157,8 @@ class Ocp:
                     X[:, i + 1],
                     U[:, i],
                     (U[:, i] - U[:, i - 1]),
-                    self.centerline(Tau[i]).T,
-                    self.der_centerline(Tau[i]).T,
-                    Vk[i],
+                    self.centerline(X[5, i]).T,
+                    self.der_centerline(X[5, i]).T,
                     Sc[i],
                 )
 
@@ -200,10 +179,8 @@ class Ocp:
                         self.X[:, i + 1],
                         self.U[:, i],
                         (self.U[:, i] - self.u_prev),
-                        self.centerline(self.Tau[i + 1]).T,
-                        self.der_centerline(self.Tau[i + 1]).T,
-                        # 0, #casadi.arctan2(der_point[1], der_point[0]),
-                        self.Vk[i],
+                        self.centerline(self.X[5, i + 1]).T,
+                        self.der_centerline(self.X[5, i + 1]).T,
                         self.Sc[i],
                     )
                 else:
@@ -211,10 +188,8 @@ class Ocp:
                         self.X[:, i + 1],
                         self.U[:, i],
                         (self.U[:, i] - self.U[:, i - 1]),
-                        self.centerline(self.Tau[i + 1]).T,
-                        self.der_centerline(self.Tau[i + 1]).T,
-                        # 0, # casadi.arctan2(der_point[1], der_point[0]),
-                        self.Vk[i],
+                        self.centerline(self.X[5, i + 1]).T,
+                        self.der_centerline(self.X[5, i + 1]).T,
                         self.Sc[i],
                     )
                 # This constraint works with halspaces (not implemented properly yet)
@@ -239,7 +214,6 @@ class Ocp:
                 self.u_delta,
                 self.point_curve,
                 self.der_curve,
-                self.vk,
                 self.sc,
             ],
             [symbolic_cost],
@@ -287,7 +261,6 @@ class Ocp:
     def solve(
         self,
         state,
-        tau0,
         curve,
         a,
         b,
@@ -296,7 +269,6 @@ class Ocp:
         u_prev,
         X0=None,
         U0=None,
-        Tau0=None,
         show_exception=True,
     ):
         """solve the optimal control problem for the initial state and goal state
@@ -313,7 +285,6 @@ class Ocp:
             [tuple]: U_sol [nu, N], X_sol [nx, N], info
         """
         self.opti.set_value(self.x0, state)
-        self.opti.set_value(self.tau0, tau0)
 
         self.centerline = curve
         self.der_centerline = curve.derivative(o=1)
@@ -334,13 +305,6 @@ class Ocp:
         else:
             self.opti.set_initial(self.U, np.zeros((self.nu, self.N)))
 
-        if Tau0 is not None:
-            self.opti.set_initial(self.Tau, Tau0)
-        else:
-            self.opti.set_initial(self.Tau, np.zeros((1, self.N + 1)))
-
-        self.opti.set_initial(self.Vk, np.zeros((1, self.N)) * 1 / self.N)
-
         self.opti.set_initial(self.Sc, np.zeros((1, self.N)) * 1e-1)
 
         try:
@@ -351,7 +315,6 @@ class Ocp:
                 self.sol.value(self.U)
             )  # array in case of scalar control
             self.X_sol = self.sol.value(self.X)
-            self.Tau_sol = self.sol.value(self.Tau)
             success = self.sol.stats()["success"]
             if "t_proc_total" in self.sol.stats().keys():
                 time = self.sol.stats()["t_proc_total"]
@@ -377,7 +340,6 @@ class Ocp:
             self.sol = self.opti.debug
             self.U_sol = self.sol.value(self.U)
             self.X_sol = self.sol.value(self.X)
-            self.Tau_sol = self.sol.value(self.Tau)
             success = False
             time = self.timer.time
 
@@ -392,7 +354,6 @@ class Ocp:
         return (
             self.U_sol.reshape((-1, self.N)),
             self.X_sol.reshape((-1, self.N + 1)),
-            self.Tau_sol.reshape((-1, self.N + 1)),
             info,
         )
         # return self.U_sol.reshape((self.N, -1)), self.X_sol.reshape((self.N+1, -1)), info

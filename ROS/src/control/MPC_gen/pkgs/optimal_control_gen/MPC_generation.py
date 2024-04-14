@@ -20,18 +20,15 @@ class MPC_generation:
 
         self.X_sol = None
         self.U_sol = None
-        self.Tau_sol = None
 
         self.X_init_guess = None
 
         self.X_sol_list = []
         self.U_sol_list = []
-        self.Tau_sol_list = []
         # self.results = []
 
         self.X_trajectory = []
         self.U_trajectory = []
-        self.Tau_trajectory = []
 
         self.computation_time = []
         self.timer = Timer(verbose=False)
@@ -52,7 +49,6 @@ class MPC_generation:
     def __call__(
         self,
         state,
-        tau0,
         curve,
         a,
         b,
@@ -61,7 +57,6 @@ class MPC_generation:
         u_prev,
         X0=None,
         U0=None,
-        Tau0=None,
         warm_start=True,
         **solver_kwargs
     ):
@@ -99,37 +94,18 @@ class MPC_generation:
                 else:
                     U0 = np.append(self.U_sol[1:], self.U_sol[-1])
 
-            if (Tau0 is None) and (self.Tau_sol is not None):
-                if len(self.Tau_sol.shape) > 1:
-                    Tau0 = self.Tau_sol
-                else:
-                    Tau0 = np.append(self.Tau_sol[1:], self.Tau_sol[-1])
-
         with self.timer:
-            self.U_sol, self.X_sol, self.Tau_sol, info = self.ocp.solve(
-                state,
-                tau0,
-                curve,
-                a,
-                b,
-                c,
-                d,
-                u_prev,
-                X0=X0,
-                U0=U0,
-                Tau0=Tau0,
-                **solver_kwargs
+            self.U_sol, self.X_sol, info = self.ocp.solve(
+                state, curve, a, b, c, d, u_prev, X0=X0, U0=U0, **solver_kwargs
             )
 
         self.X_sol_list.append(self.X_sol)
         self.U_sol_list.append(self.U_sol)
-        self.Tau_sol_list.append(self.Tau_sol)
 
         self.computation_time.append(info["time"])
 
         info["X_sol"] = self.X_sol
         info["U_sol"] = self.U_sol
-        info["Tau_sol"] = self.Tau_sol
 
         u = np.array(self.U_sol[:, 0])
         if len(u.shape) == 2:
@@ -137,7 +113,6 @@ class MPC_generation:
 
         self.X_trajectory.append(np.array(state).squeeze())
         self.U_trajectory.append(u)
-        self.Tau_trajectory.append(np.array(tau0).squeeze())
 
         self.nr_iters += 1
 
@@ -146,7 +121,6 @@ class MPC_generation:
     def reset(self, init_state=None):
         self.X_sol = None
         self.U_sol = None
-        self.Tau_sol = None
 
         self.nr_iters = 0
 
@@ -156,7 +130,6 @@ class MPC_generation:
 
         self.X_trajectory = []
         self.U_trajectory = []
-        self.Tau_trajectory = []
 
         if init_state is not None:
             self.X_trajectory.append(np.array(init_state).squeeze())
