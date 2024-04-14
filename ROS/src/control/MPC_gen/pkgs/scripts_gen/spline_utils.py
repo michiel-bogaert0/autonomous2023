@@ -115,3 +115,30 @@ def project_on_spline(points_on_spline, der_points, point, plot=False):
             [point[1], points_on_spline[min_degree, 1]],
             c="g",
         )
+
+
+def get_boundary_constraints(spline, tau, width, plot=False):
+    """
+    Get the boundary constraints for the spline
+    """
+    point = np.squeeze(spline(tau))
+
+    # Get the derivative of the spline
+    dcurve = spline.derivative(o=1)
+    der_point = np.squeeze(dcurve(tau))
+
+    tangent = np.array([der_point[0], der_point[1]])
+
+    pos_outer = point + width * tangent
+    pos_inner = point - width * tangent
+
+    track_constraint_lower = np.sum(tangent * pos_inner)
+    track_constraint_upper = np.sum(tangent * pos_outer)
+
+    print(f"Track constraint lower: {track_constraint_lower}")
+    print(f"Track constraint upper: {track_constraint_upper}")
+
+    if plot:
+        plt.plot(point[0], point[1], "o", c="r")
+        plt.plot(pos_inner[0], pos_inner[1], "o", c="b")
+        plt.plot(pos_outer[0], pos_outer[1], "o", c="y")

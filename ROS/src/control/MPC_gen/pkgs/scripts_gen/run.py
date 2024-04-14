@@ -24,7 +24,7 @@ from optimal_control_gen.MPC_generation import MPC_generation
 from optimal_control_gen.ocp import Ocp
 from scipy.interpolate import interp1d
 from sensor_msgs.msg import JointState
-from spline_utils import create_spline, project_on_spline
+from spline_utils import create_spline, project_on_spline  # , get_boundary_constraints
 from std_msgs.msg import Float64
 from trajectory import Trajectory
 from ugr_msgs.msg import State
@@ -98,9 +98,7 @@ class MPC_gen:
         )
 
         self.curve_centerline = curve_centerline
-        print(curve_centerline(0))
 
-        car_pos = np.array([1, -2])
         car_pos = np.squeeze(curve_centerline(0))
         self.start_pos = car_pos
         taus = np.linspace(0, 1, 10000)
@@ -111,6 +109,8 @@ class MPC_gen:
 
         create_spline(self.GT_left_boundary, "b", plot=True)
         create_spline(self.GT_right_boundary, "y", plot=True)
+
+        # get_boundary_constraints(curve_centerline, 0.5, 1, plot=True)
 
         # plt.xlim(-40, 20)
         # plt.ylim(-10, 20)
@@ -163,6 +163,7 @@ class MPC_gen:
             show_execution_time=True,
             silent=False,
             store_intermediate=True,
+            threads=1,
         )
         self.mpc = MPC_generation(self.ocp)
 
@@ -186,17 +187,17 @@ class MPC_gen:
         """
         X = self.ocp.X
         U = self.ocp.U
-        Theta = self.ocp.Theta
+        Tau = self.ocp.Tau
         Vk = self.ocp.Vk
         Sc = self.ocp.Sc
 
         self.ocp.set_initial(X, np.zeros((self.car.nx, self.N + 1)))
         self.ocp.set_initial(U, np.zeros((self.car.nu, self.N)))
-        self.ocp.set_initial(Theta, np.zeros((1, self.N + 1)))
+        self.ocp.set_initial(Tau, np.zeros((1, self.N + 1)))
         self.ocp.set_initial(Vk, np.zeros((1, self.N)))
         self.ocp.set_initial(Sc, np.zeros((1, self.N)))
 
-        cost = self.ocp.eval_cost(X, U, Theta, Vk, Sc)
+        cost = self.ocp.eval_cost(X, U, Tau, Vk, Sc)
         print(type(cost))
 
     def set_constraints(self, velocity_limit, steering_limit):
@@ -223,21 +224,22 @@ class MPC_gen:
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 100))
 
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Vk[:], 0.05))
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Theta[:], 1))
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Tau[:], 1))
 
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.3))
 
+        # # For loop takes quite long to initialize
         for i in range(self.N):
             self.ocp.subject_to(
                 (
                     (
                         self.ocp.X[0, i + 1]
-                        - self.ocp.centerline(self.ocp.Theta[i + 1]).T[0]
+                        - self.ocp.centerline(self.ocp.Tau[i + 1]).T[0]
                     )
                     ** 2
                     + (
                         self.ocp.X[1, i + 1]
-                        - self.ocp.centerline(self.ocp.Theta[i + 1]).T[1]
+                        - self.ocp.centerline(self.ocp.Tau[i + 1]).T[1]
                     )
                     ** 2
                 )
@@ -257,7 +259,7 @@ class MPC_gen:
         qc = 1e-4
         ql = 1e-4
 
-        gamma = 0
+        gamma = 1e1
 
         # State: x, y, heading, steering angle, velocity
         # Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
@@ -290,15 +292,15 @@ class MPC_gen:
 
     def run_mpc(self):
         initial_state = [self.start_pos[0], self.start_pos[1], 0, 0, 0]
-        theta0 = 0
+        tau0 = 0
 
-        # Theta0 = np.linspace(0, 1, self.N + 1)
+        # Tau0 = np.linspace(0, 1, self.N + 1)
         # X0 = []
         # U0 = []
 
-        # for i, theta in enumerate(Theta0):
-        #     x0 = self.curve_centerline(theta)[0]
-        #     # heading = self.curve_centerline(theta)[1]
+        # for i, tau in enumerate(Tau0):
+        #     x0 = self.curve_centerline(tau)[0]
+        #     # heading = self.curve_centerline(tau)[1]
         #     steering_angle = 0
 
         #     # calculate heading based on position
@@ -358,7 +360,7 @@ class MPC_gen:
 
         #     x0_state = [x0[0], x0[1], heading, steering_angle, velocity]
         #     X0.append(x0_state)
-        #     # X0.append(self.curve_centerline(theta).T)
+        #     # X0.append(self.curve_centerline(tau).T)
         #     steering_angle_delta = steering_angle - X0[-1][3]
 
         # # Plot x-y and heading
@@ -386,31 +388,28 @@ class MPC_gen:
 
         u, info = self.mpc(
             initial_state,
-            theta0,
+            tau0,
             self.curve_centerline,
             0,
             0,
             0,
             0,
-            self.u,  # , X0=X0, U0=U0, Theta0=Theta0
+            self.u,  # , X0=X0, U0=U0, Tau0=Tau0
         )
-        # u, info = self.mpc(
-        #     initial_state, theta0, self.curve_centerline, 0, 0, 0, 0, self.u, #X0=X0, U0=U0, Theta0=Theta0
-        # )
 
         # print(self.ocp.debug.value)
 
         print(f"X_closed_loop: {info['X_sol']}")
         print(f"U_closed_loop: {info['U_sol']}")
-        print(f"theta_closed_loop: {info['Theta_sol']}")
+        print(f"tau_closed_loop: {info['Tau_sol']}")
 
         for i in range(self.N):
             dist = (
                 info["X_sol"][0][i + 1]
-                - self.curve_centerline(info["Theta_sol"][0][i + 1]).T[0]
+                - self.curve_centerline(info["Tau_sol"][0][i + 1]).T[0]
             ) ** 2 + (
                 info["X_sol"][1][i + 1]
-                - self.curve_centerline(info["Theta_sol"][0][i + 1]).T[1]
+                - self.curve_centerline(info["Tau_sol"][0][i + 1]).T[1]
             ) ** 2
             print(dist)
 
@@ -434,8 +433,8 @@ class MPC_gen:
 
         for i in range(self.N):
             plt.plot(
-                self.curve_centerline(info["Theta_sol"][0][i + 1]).T[0],
-                self.curve_centerline(info["Theta_sol"][0][i + 1]).T[1],
+                self.curve_centerline(info["Tau_sol"][0][i + 1]).T[0],
+                self.curve_centerline(info["Tau_sol"][0][i + 1]).T[1],
                 c="g",
             )
 
