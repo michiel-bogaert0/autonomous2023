@@ -150,8 +150,7 @@ class Ocp:
             X_next = self.F.map(self.N, "thread", threads)(self.X[:, :-1], self.U)
             self.opti.subject_to(self.X[:, 1:] == X_next)
 
-            # Not verified
-            Theta_next = (self.Theta[:-1] + self.Vk).T
+            Theta_next = self.Theta[:-1] + self.Vk
             self.opti.subject_to(self.Theta[1:] == Theta_next)
 
     def eval_cost(self, X, U, Theta, Vk, Sc):

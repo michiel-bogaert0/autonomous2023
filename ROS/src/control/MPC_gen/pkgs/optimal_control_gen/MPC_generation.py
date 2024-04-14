@@ -101,9 +101,7 @@ class MPC_generation:
 
             if (Theta0 is None) and (self.Theta_sol is not None):
                 if len(self.Theta_sol.shape) > 1:
-                    Theta0 = np.concatenate(
-                        (self.Theta_sol[:, 1:], self.Theta_sol[:, [-1]]), axis=1
-                    )
+                    Theta0 = self.Theta_sol
                 else:
                     Theta0 = np.append(self.Theta_sol[1:], self.Theta_sol[-1])
 
