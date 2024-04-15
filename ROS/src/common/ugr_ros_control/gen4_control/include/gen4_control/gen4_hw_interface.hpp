@@ -99,9 +99,6 @@ private:
 
   std::string axis_rear_frame;
 
-  float wheel_diameter;
-  float gear_ratio;
-
   bool is_running = false;
 
   int IMU_ids[2] = { 0xE2, 0xE3 };
@@ -118,6 +115,12 @@ private:
   ros::Publisher vel_right_pub;
   float steer_max_step;
 
+  // harware parameters
+  float n_polepairs;
+  float wheel_diameter;
+  float gear_ratio;
+
+  // state variables
   float cur_velocity_axis0;
   float cur_velocity_axis1;
   float cur_steering;

@@ -171,13 +171,15 @@ void Gen4HWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
 // Callback for the CAN messages: axis0, axis1 and steering
 void Gen4HWInterface::can_callback_axis0(const std_msgs::Float32::ConstPtr& msg)
 {
-  this->cur_velocity_axis0 = 2 * M_PI * msg->data / 60;  // rpm to rad/s
+  float motor_rpm = msg->data / this->n_polepairs;
+  this->cur_velocity_axis0 = 2 * M_PI * motor_rpm / 60;  // rpm to rad/s
   this->handle_vel_msg();
 }
 
 void Gen4HWInterface::can_callback_axis1(const std_msgs::Float32::ConstPtr& msg)
 {
-  this->cur_velocity_axis1 = 2 * M_PI * msg->data / 60;  // rpm to rad/s
+  float motor_rpm = msg->data / this->n_polepairs;
+  this->cur_velocity_axis1 = 2 * M_PI * motor_rpm / 60;  // rpm to rad/s
   this->handle_vel_msg();
 }
 
