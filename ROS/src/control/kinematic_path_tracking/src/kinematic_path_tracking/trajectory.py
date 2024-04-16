@@ -143,6 +143,7 @@ class Trajectory:
 
         # Transfom path to most recent blf
         self.path_blf = self.transform_blf()
+        self.path_blf = self.path_blf[:-1]
 
         # No path received
         if len(self.path_blf) == 0:
