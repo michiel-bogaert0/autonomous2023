@@ -29,7 +29,7 @@ class CanConverter(ManagedNode):
         rospy.Subscriber("ugr/send_can", CanFrame, self.send_on_can)
 
         self.can_processor = CanProcessor(db=self.db)
-        
+
         self.can_pub = self.AddPublisher("ugr/can", Frame, queue_size=10)
         self.can_ids = []
         self.specific_pubs = {}
@@ -40,7 +40,6 @@ class CanConverter(ManagedNode):
             bitrate=rospy.get_param("~can_baudrate", 250000),
             interface="socketcan",
         )
-
 
     def listen_on_can(self) -> None:
         """Listens to CAN and publishes all incoming messages to a topic (still non-readable format)"""
