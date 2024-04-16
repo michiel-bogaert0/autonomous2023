@@ -40,8 +40,8 @@ private:
   void CheckErr(int iHandle, int iRet,
                 char *szFunctionName); // check function execution result
   void CheckInput(int channel, double input);
-  double output0 = 4;
-  double output1 = 4;
+  double output0;
+  double output1;
   double minimum_output_current;
   double maximum_output_current;
   double minimum_input_current;

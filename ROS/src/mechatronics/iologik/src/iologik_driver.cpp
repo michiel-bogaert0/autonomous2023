@@ -57,6 +57,7 @@ void iologik::output0Callback(std_msgs::Float64 msg) {
                           "OUTPUT_VALUE_OUT_OF_RANGE", {});
     return; // don't change output to incorrect values
   }
+  this->setHealthStatus(diagnostic_msgs::DiagnosticStatus::OK, "OK", {});
   output0 = msg.data;
   o0_changed = true;
 }
@@ -67,6 +68,7 @@ void iologik::output1Callback(std_msgs::Float64 msg) {
                           "OUTPUT_VALUE_OUT_OF_RANGE", {});
     return; // don't change output to incorrect values
   }
+  this->setHealthStatus(diagnostic_msgs::DiagnosticStatus::OK, "OK", {});
   output1 = msg.data;
   o1_changed = true;
 }

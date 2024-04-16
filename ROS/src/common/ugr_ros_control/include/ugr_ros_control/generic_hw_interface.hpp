@@ -53,6 +53,8 @@
 #include <joint_limits_interface/joint_limits_interface.h>
 #include <joint_limits_interface/joint_limits_rosparam.h>
 #include <joint_limits_interface/joint_limits_urdf.h>
+#include <ugr_msgs/KeyValueFloat.h>
+#include <ugr_msgs/CanFrame.h>
 
 namespace ugr_ros_control
 {

@@ -1,0 +1,5 @@
+<launch>
+  <include file="$(find minimum_curvature)/launch/minimum_curvature.launch" pass_all_args="true" />
+  <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true" />
+  <include file="$(find minimum_curvature)/launch/visualiser_mincurv.launch" pass_all_args="true" />
+</launch>

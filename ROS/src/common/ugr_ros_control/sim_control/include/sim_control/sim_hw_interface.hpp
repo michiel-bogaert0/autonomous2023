@@ -43,12 +43,16 @@
 #include <ugr_ros_control/generic_hw_interface.hpp>
 #include <sim_control/bicycle_model.hpp>
 #include <ros/ros.h>
+#include <ros/console.h>
+#include <ros/service_client.h>
 
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <sensor_msgs/Imu.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
+
+#include <std_msgs/Float32.h>
 
 namespace sim_control
 {
@@ -78,17 +82,40 @@ public:
   void publish_encoder(const ros::TimerEvent&);
   void publish_imu(const ros::TimerEvent&);
 
+  float torque_vectoring(float axis0, float delta);
+
 private:
   BicycleModel* model;
   int drive_joint_id;
   int steering_joint_id;
 
-  ros::Publisher gt_pub, encoder_pub, imu_pub;
+  ros::Publisher gt_pub, encoder_pub, imu_pub, TV_axis0, TV_axis1;
   tf2_ros::TransformBroadcaster br;
   std::string world_frame, gt_base_link_frame, base_link_frame;
   std::vector<double> encoder_noise, imu_angular_velocity_noise, imu_acceleration_noise;
 
   ros::Timer gt_timer, imu_timer, encoder_timer;
+
+  // PID for torque vectoring
+  float Kp;
+  float Ki;
+  float Kd;
+  float integral;
+  float prev_error;
+  float prev_time;
+  float this_time;
+  float yaw_rate;
+
+  // parameters for torque vectoring
+  bool use_torque_vectoring;
+  float max_dT;
+  float l_wheelbase;
+  float COG;
+  float Cyf;
+  float Cyr;
+  float m;
+  float lr;
+  float lf;
 
 };  // class
 

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot name="gen4">
+
+  <link name="ugr/car_base_link" />
+
+  <link name="ugr/car_base_link/lidar0" />
+
+  <link name="ugr/car_base_link/os_sensor" />
+
+  <link name="ugr/car_base_link/os_imu" />
+
+  <link name="ugr/car_base_link/os_lidar" />
+
+  <link name="ugr/car_base_link/cam0" />
+
+  <link name="ugr/car_base_link/axis_rear" />
+
+  <link name="ugr/car_base_link/front_axle" />
+
+  <link name="ugr/car_base_link/axis_steering" />
+
+  <link name="ugr/car_base_link/gps0" />
+
+  <link name="ugr/car_base_link/gps1" />
+
+  <link name="ugr/car_base_link/vectornav" />
+
+
+  <!-- Joint definitions -->
+
+
+  <joint name="lidar0_joint" type="fixed">
+    <origin xyz="0.6765 -0.0022 0.7870" rpy="3.1415 0 0" />
+    <parent link="ugr/car_base_link" />
+    <child link="ugr/car_base_link/lidar0" />
+  </joint>
+
+  <joint name="os_sensor_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="ugr/car_base_link/lidar0" />
+    <child link="ugr/car_base_link/os_sensor" />
+  </joint>
+
+  <joint name="os_imu_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="ugr/car_base_link/os_sensor" />
+    <child link="ugr/car_base_link/os_imu" />
+  </joint>
+
+  <joint name="os_lidar_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 -0.0087197" />
+    <parent link="ugr/car_base_link/os_sensor" />
+    <child link="ugr/car_base_link/os_lidar" />
+  </joint>
+
+  <joint name="cam0_joint" type="fixed">
+    <origin xyz="0.6814 -0.0824 0.8230" rpy="0 0 3.1415" />
+    <parent link="ugr/car_base_link" />
+    <child link="ugr/car_base_link/cam0" />
+  </joint>
+
+  <joint name="axis_rear" type="continuous"> 
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0" /> <!-- <inner side of the tire, outer: 0.74275 -->
+    <parent link="ugr/car_base_link" />
+    <child link="ugr/car_base_link/axis_rear" />
+<!-- !!!!!!!!!!!!!!!!!!!!! set reasonable limits !!!!!!!!!!!!!!!!!!!!! -->
+    <limit effort="30.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
+<!-- !!!!!!!!!!!!!!!!!!!!! set reasonable limits !!!!!!!!!!!!!!!!!!!!! -->
+
+  </joint>
+
+  <joint name="front_axle" type="fixed">
+    <origin xyz="1.5180 0.0 0" rpy="0 0 0" />
+    <parent link="ugr/car_base_link" />
+    <child link="ugr/car_base_link/front_axle" />
+  </joint>
+
+  <joint name="axis_steering" type="revolute">
+    <origin xyz="0.0 0.0 0" rpy="0 0 0" />
+    <parent link="ugr/car_base_link/front_axle" />
+    <child link="ugr/car_base_link/axis_steering" />
+
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="5.0" />  <!-- < ask electrical for limitations  -->
+  </joint>
+
+  <joint name="gps_ublox_right_joint" type="fixed">
+    <origin xyz="2.5266 -0.0007 0.2714" rpy="0 -1.4101 0" />
+    <parent link="ugr/car_base_link" />
+    <child link="ugr/car_base_link/gps0" />
+  </joint>
+
+  <joint name="gps_ublox_left_joint" type="fixed">
+    <origin xyz="2.5266 -0.0007 0.2714" rpy="0 -1.4101 0" />
+    <parent link="ugr/car_base_link" />
+    <child link="ugr/car_base_link/gps1" />
+  </joint>
+
+  <joint name="vectornav_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="ugr/car_base_link" />
+    <child link="ugr/car_base_link/vectornav" />
+  </joint>
+ 
+</robot>
