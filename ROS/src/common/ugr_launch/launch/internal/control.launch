@@ -23,4 +23,8 @@
 
   <!-- Boundary Estimation -->
   <include file="$(find boundary_estimation)/launch/boundary_estimation.launch" pass_all_args="true" />
+
+  <!-- Minimum Curvature -->
+  <include file="$(find minimum_curvature)/launch/minimum_curvature.launch" pass_all_args="true" />
+
 </launch>

@@ -32,6 +32,11 @@ steering_position_controller:
    joint: axis_steering
    pid: {p: 100.0, i: 0.0, d: 0.0}
 
+# Joint velocity controller for steering
+steering_velocity_controller:
+   type: velocity_controllers/JointVelocityController
+   joint: axis_steering
+
 # Velocity controller for drive
 drive_velocity_controller:
    type: effort_controllers/JointVelocityController

@@ -201,10 +201,8 @@ class NaiveFusion:
         ].observation.observation_class
 
         belief = association[0].observation.belief
-        for obs in association:
-            if obs == "camera":
-                belief = obs.observation.belief
-                break
+        # < -- Add code to favor one observation's belief here -- >
+
         fused_observation.observation.belief = belief
         fused_observation.covariance = tuple(
             np.reshape(new_covariance, (1, 9)).tolist()[0]

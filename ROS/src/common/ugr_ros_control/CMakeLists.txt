@@ -90,6 +90,7 @@ target_link_libraries(${PROJECT_NAME}_keyboard_teleop
 
 add_subdirectory(sim_control)
 add_subdirectory(pegasus_control)
+add_subdirectory(gen4_control)
 
 ## Install ------------------------------------------------------------
 

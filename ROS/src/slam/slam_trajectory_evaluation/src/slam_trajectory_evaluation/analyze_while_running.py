@@ -62,8 +62,8 @@ class analyze_while_running:
 
         self.subOdo = rospy.Subscriber("/input/odometry", Odometry, self.addDataOdom)
         self.subGps = rospy.Subscriber("/input/gps", Odometry, self.addDataGps)
-        self.subLoopClosure = rospy.Subscriber(
-            "/input/loopClosure", UInt16, self.loopIsClosed
+        self.subLapCounter = rospy.Subscriber(
+            "/input/lapComplete", UInt16, self.loopIsClosed
         )
         self.stateChange = rospy.Subscriber("/state", State, self.stateChanged)
         self.resetTrajectory = rospy.Service(

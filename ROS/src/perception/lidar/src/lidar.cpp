@@ -7,7 +7,7 @@
 // Constructor
 namespace ns_lidar {
 Lidar::Lidar(ros::NodeHandle &n)
-    : n_(n), cone_clustering_(n), ground_removal_(n) {
+    : n_(n), cone_clustering_(n), ground_removal_(n), motion_compensator_(n) {
   // Subscribe to the raw lidar topic
   // rawLidarSubscriber_ = n.subscribe("perception/raw_pc", 10,
   // &Lidar::rawPcCallback, this);
@@ -17,6 +17,7 @@ Lidar::Lidar(ros::NodeHandle &n)
   n.param<bool>("publish_preprocessing", publish_preprocessing_, false);
   n.param<bool>("publish_ground", publish_ground_, false);
   n.param<bool>("publish_clusters", publish_clusters_, true);
+  n.param<bool>("motion_compensation", motion_compensation_, true); 
   // Publish to the filtered and clustered lidar topic
   if (publish_preprocessing_)
     preprocessedLidarPublisher_ =
@@ -26,6 +27,10 @@ Lidar::Lidar(ros::NodeHandle &n)
         n.advertise<sensor_msgs::PointCloud2>("perception/groundremoval_pc", 5);
     groundColoredPublisher_ =
         n.advertise<sensor_msgs::PointCloud2>("/perception/ground_colored", 5);
+  }
+  if (motion_compensation_){
+    motionCompensatorPublisher_ = 
+      n.advertise<sensor_msgs::PointCloud2>("/perception/motion_compensation", 5);
   }
 
   clusteredLidarPublisher_ =
@@ -58,6 +63,12 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   preprocessing(raw_pc_, preprocessed_pc);
   publishDiagnostic(OK, "[perception] preprocessed points",
                     "#points: " + std::to_string(preprocessed_pc->size()));
+
+  // Motion compensation
+  if (motion_compensation_){
+    sensor_msgs::PointCloud2 corrected_msg = motion_compensator_.correctRawPointcloud(msg);
+    motionCompensatorPublisher_.publish(corrected_msg);
+  }
 
   if (publish_preprocessing_) {
     sensor_msgs::PointCloud2 preprocessed_msg;

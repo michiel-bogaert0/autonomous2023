@@ -81,6 +81,8 @@ void SimHWInterface::init()
   this->gt_pub = nh.advertise<nav_msgs::Odometry>("/output/gt_odometry", 5);
   this->encoder_pub = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/encoder0", 5);
   this->imu_pub = nh.advertise<sensor_msgs::Imu>("/output/imu0", 5);
+  this->TV_axis0 = nh.advertise<std_msgs::Float32>("/ugr/car/TV_axis0", 0.0);
+  this->TV_axis1 = nh.advertise<std_msgs::Float32>("/ugr/car/TV_axis1", 0.0);
 
   this->gt_timer = nh.createTimer(ros::Duration(1 / gt_publish_rate), &SimHWInterface::publish_gt, this);
   this->encoder_timer = nh.createTimer(ros::Duration(1 / encoder_publish_rate), &SimHWInterface::publish_encoder, this);
@@ -108,6 +110,26 @@ void SimHWInterface::init()
   }
 
   ROS_INFO_NAMED("sim_hw_interface", "SimHWInterface init'd.");
+
+  // PID for Torque vectoring
+  this->Kp = nh.param("Kp", 1);
+  this->Ki = nh.param("Ki", 0.0);
+  this->Kd = nh.param("Kd", 0.0);
+  this->integral = 0.0;
+  this->prev_error = 0.0;
+  this->prev_time = ros::Time::now().toSec();
+  this->yaw_rate = 0.0;
+
+  // parametes for torque vectoring
+  this->use_torque_vectoring = nh.param("use_torque_vectoring", false);
+  this->max_dT = nh.param("max_dT", 4.0);
+  this->l_wheelbase = nh.param("l_wheelbase", 2);
+  this->COG = nh.param("COG", 0.5);
+  this->Cyf = nh.param("Cyf", 444);
+  this->Cyr = nh.param("Cyr", 444);
+  this->m = nh.param("m", 320);
+  this->lr = this->COG * this->l_wheelbase;
+  this->lf = (1 - this->COG) * this->l_wheelbase;
 }
 
 void SimHWInterface::read(ros::Duration& elapsed_time)
@@ -118,6 +140,7 @@ void SimHWInterface::read(ros::Duration& elapsed_time)
 
   // Effort gets applied immediately (assumption)
   joint_effort_[drive_joint_id] = joint_effort_command_[drive_joint_id];
+  joint_velocity_[steering_joint_id] = joint_velocity_command_[steering_joint_id];
   joint_velocity_[drive_joint_id] = this->model->get_wheel_angular_velocity();
   joint_position_[steering_joint_id] = this->model->get_steering_angle();
 }
@@ -128,6 +151,27 @@ void SimHWInterface::write(ros::Duration& elapsed_time)
   enforceLimits(elapsed_time);
 
   // TODO add logic for when using a feedforward velocity controller instead of effort interface / joint velocity controller
+
+  // Torque control
+  float axis0 = joint_effort_command_[drive_joint_id];
+  float car_speed = axis0 * M_PI * 0.2 / 60;  // m/s (wheeldiam = 0.2m, no gear ratio)
+  float delta = joint_position_[steering_joint_id];
+
+  std_msgs::Float32 msg0;
+  msg0.data = axis0;
+  std_msgs::Float32 msg1;
+  msg1.data = axis0;
+
+  // no TV at low speeds
+  if (car_speed > 5.0)
+  {
+    float dT = torque_vectoring(axis0, delta);
+    msg0.data -= dT / 2;
+    msg1.data += dT / 2;
+  }
+
+  this->TV_axis0.publish(msg0);
+  this->TV_axis1.publish(msg1);
 
   // Feed to bicycle model
   this->model->update(elapsed_time.toSec(), joint_effort_command_[drive_joint_id],
@@ -216,6 +260,45 @@ void SimHWInterface::publish_imu(const ros::TimerEvent&)
   imu.angular_velocity.z = noisy_omega;
 
   this->imu_pub.publish(imu);
+  this->yaw_rate = noisy_omega;
+}
+
+float SimHWInterface::torque_vectoring(float axis0, float delta)
+{
+  // returns the torque distribution for the left and right wheel
+
+  float car_speed = axis0 * M_PI * 0.2 / 60;  // m/s (wheeldiam = 0.2m, no gear ratio)
+  float yaw_rate_desired = 0.0;
+
+  // calculate the understeer gradient
+  float Ku = this->lr * this->m / (this->Cyf * (this->lf + this->lr)) -
+             this->lf * this->m / (this->Cyr * (this->lf + this->lr));
+  float dT = 0.0;
+
+  // calculate the desired yaw rate, add safety for division by zero
+  if (abs(this->lr + this->lf + Ku * pow(car_speed, 2)) > 0.0001)
+    ;
+  {
+    yaw_rate_desired = car_speed / (this->lr + this->lf + Ku * pow(car_speed, 2)) * delta;
+  }
+
+  float yaw_rate_error = yaw_rate_desired - this->yaw_rate;
+
+  // // PID controller calculates the difference in torque dT, based on the yaw rate error
+  // // Recommended to use D = 0
+  float now_time = ros::Time::now().toSec();
+  this->integral += yaw_rate_error * (now_time - this->prev_time);
+  // float difference = (yaw_rate_error - this->prev_error) / (now_time - this->prev_time);
+  // difference = 0.0, otherwise the difference is inf
+  float difference = 0.0;
+
+  dT = std::min(std::max(this->Kp * yaw_rate_error + this->Ki * this->integral + this->Kd * difference, -this->max_dT),
+                this->max_dT);
+
+  this->prev_error = yaw_rate_error;
+  this->prev_time = now_time;
+
+  return dT;
 }
 
 }  // namespace sim_control

@@ -38,12 +38,14 @@ public:
   float beliefs[3];
   int latestPoseIndex;
   int penalty;
+  std::vector<uint32_t> merged_ids;
 
   int increasePenalty();
   void decreasePenalty();
   void setLatestPose(int index);
   void setColor(int c, float b);
   void addBeliefs(float b0, float b1, float b2);
+  void addMergeId(int id);
   int getColor();
 
   virtual void setToOriginImpl() { _estimate.setZero(); }

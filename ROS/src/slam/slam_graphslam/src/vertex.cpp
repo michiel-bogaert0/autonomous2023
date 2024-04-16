@@ -57,6 +57,8 @@ void LandmarkVertex::addBeliefs(float b0, float b1, float b2) {
   this->beliefs[2] += b2;
 }
 
+void LandmarkVertex::addMergeId(int id) { this->merged_ids.push_back(id); }
+
 int LandmarkVertex::getColor() {
   float max_belief = this->beliefs[0];
   int max_index = 0;
