@@ -7,6 +7,7 @@ messages = {
     "<class 'int'>": lambda msg: Int64(msg),
 }
 
+
 publishers = {
     # Empty by design. Will be filled with publishers on the fly
 }
