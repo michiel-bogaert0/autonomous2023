@@ -85,6 +85,7 @@ public:
   void publish_steering_msg(float steering);
   void publish_vel_msg(float vel, int axis);
   void publish_torque_msg(float axis);
+  void send_torque_on_can(float axis, int id);
   void can_callback_axis0(const std_msgs::Float32::ConstPtr& msg);
   void can_callback_axis1(const std_msgs::Float32::ConstPtr& msg);
   void can_callback_steering(const std_msgs::Float32::ConstPtr& msg);

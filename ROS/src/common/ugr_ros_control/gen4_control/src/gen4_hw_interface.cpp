@@ -223,43 +223,37 @@ void Gen4HWInterface::publish_torque_msg(float axis)
       cur_vel_rear / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s, mean vel if no slip
 
   float axis0 = axis;
-  float axis1 = axis;  // commented because not used yet
+  float axis1 = axis;
 
   // no TV at low vel
   if (car_vel_estimate > 5 && this->use_torque_vectoring == true)
   {
     float dT = this->torque_vectoring();
     axis0 = axis - dT / 2;
-    axis1 = axis + dT / 2;  // commented because not used yet
+    axis1 = axis + dT / 2;
   }
 
-  // create publish message for axis0
-  ugr_msgs::CanFrame msg1;
-  std::vector<ugr_msgs::KeyValueFloat> keyvalues1;
-  msg1.header.stamp = ros::Time::now();
-  msg1.message = "HV500_SetAcCurrent1";
-  // make signal
-  ugr_msgs::KeyValueFloat kv1;
-  kv1.key = "CMD_TargetAcCurrent";
-  kv1.value = axis0;
-  keyvalues1.push_back(kv1);
-  msg1.signals = keyvalues1;
+  // send on CAN
+  send_torque_on_can(axis0, 0);
+  send_torque_on_can(axis1, 1);
+}
 
-  // create publish message for axis1
-  ugr_msgs::CanFrame msg2;
-  std::vector<ugr_msgs::KeyValueFloat> keyvalues2;
-  msg2.header.stamp = ros::Time::now();
-  msg2.message = "HV500_SetAcCurrent2";
+void Gen4HWInterface::send_torque_on_can(float axis, int id)
+{
+  // create publish message
+  ugr_msgs::CanFrame msg;
+  std::vector<ugr_msgs::KeyValueFloat> keyvalues;
+  msg.header.stamp = ros::Time::now();
+  msg.message = "HV500_SetAcCurrent" + std::to_string(id);
   // make signal
-  ugr_msgs::KeyValueFloat kv2;
-  kv2.key = "CMD_TargetAcCurrent";
-  kv2.value = axis1;
-  keyvalues2.push_back(kv2);
-  msg2.signals = keyvalues2;
+  ugr_msgs::KeyValueFloat kv;
+  kv.key = "CMD_TargetAcCurrent";
+  kv.value = axis;
+  keyvalues.push_back(kv);
+  msg.signals = keyvalues;
 
   // publish
-  can_pub.publish(msg1);
-  can_pub.publish(msg2);
+  can_pub.publish(msg);
 }
 
 void Gen4HWInterface::yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg)
