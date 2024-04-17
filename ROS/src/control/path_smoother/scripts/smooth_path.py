@@ -6,13 +6,16 @@ import tf2_ros as tf
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture import AutonomousMission, ROSNode
+from node_fixture.managed_node import ManagedNode
 from scipy.interpolate import interp1d, splev, splprep
 
 
-class PoseArraySmootherNode:
+class PathSmoother(ManagedNode):
     def __init__(self):
-        rospy.init_node("pose_array_smoother_node", anonymous=True)
+        super().__init__("path_smoother")
+        self.spin()
 
+    def doConfigure(self):
         self.max_distance_away_from_start = rospy.get_param(
             "~max_distance_away_from_start", 9
         )
@@ -24,14 +27,14 @@ class PoseArraySmootherNode:
         self.tf_listener = tf.TransformListener(self.tf_buffer)
 
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
-
-        # Subscriber and publisher
-        self.subscriber = rospy.Subscriber(
-            "/input/path", Path, self.pose_array_callback
-        )
-        self.publisher = rospy.Publisher("/output/path", Path, queue_size=10)
-        self.publisher_vis_path = rospy.Publisher(
+        self.publisher = super().AddPublisher("/output/path", Path, queue_size=10)
+        self.publisher_vis_path = super().AddPublisher(
             "/output/vis_path", Path, queue_size=10
+        )
+
+    def doActivate(self):
+        self.subscriber = super().AddSubscriber(
+            "/input/path", Path, self.pose_array_callback
         )
 
     def pose_array_callback(self, msg: Path):
@@ -141,9 +144,4 @@ class PoseArraySmootherNode:
             self.publisher.publish(msg)
 
 
-if __name__ == "__main__":
-    try:
-        node = PoseArraySmootherNode()
-        rospy.spin()
-    except rospy.ROSInterruptException:
-        pass
+PathSmoother()
