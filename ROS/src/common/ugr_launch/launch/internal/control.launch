@@ -18,6 +18,9 @@
   <!-- Path_publisher -->
   <include file="$(find path_publisher)/launch/path_publisher.launch" pass_all_args="true" />
 
+    <!-- Path Smoother -->
+  <include file="$(find path_smoother)/launch/path_smoother.launch" pass_all_args="true" />
+
   <!-- Pathplanning -->
   <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true" />
 
