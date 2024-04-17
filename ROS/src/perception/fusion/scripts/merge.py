@@ -111,7 +111,6 @@ class MergeNode:
         # If all messages have been received, send through pipeline
         if all_received:
             self.msg_wait_timer.shutdown()
-            rospy.loginfo("All msgs received")
             self.handle_timeout()
             return
         return
@@ -122,9 +121,6 @@ class MergeNode:
         send_msgs = self.msg_buffer.copy()
         self.msg_buffer = []
 
-        rospy.loginfo("\n\n * Send through fusion pipeline:\n")
-        for sensormsg in send_msgs:
-            rospy.loginfo(f"    * {sensormsg.header.frame_id}\n")
         if len(send_msgs) >= 1:
             self.run_fusion(send_msgs)
         return

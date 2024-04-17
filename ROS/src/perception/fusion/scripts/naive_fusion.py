@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import rospy
 from sklearn.neighbors import KDTree
 from ugr_msgs.msg import (
     ObservationWithCovariance,
@@ -21,9 +20,6 @@ class NaiveFusion:
         results = ObservationWithCovarianceArrayStamped()
 
         associations = self.kd_tree_merger(tf_sensor_msgs)
-        rospy.loginfo(
-            f"\nassociations = {[[[obs.observation.location.x, obs.observation.location.y, obs.observation.location.z] for obs in association] for association in associations]}\n"
-        )
         fusion_observations = []
         for association in associations:
             if len(association) == 1:
