@@ -30,6 +30,9 @@ class PoseArraySmootherNode:
             "/input/path", Path, self.pose_array_callback
         )
         self.publisher = rospy.Publisher("/output/path", Path, queue_size=10)
+        self.publisher_vis_path = rospy.Publisher(
+            "/output/vis_path", Path, queue_size=10
+        )
 
     def pose_array_callback(self, msg: Path):
         """
@@ -106,6 +109,11 @@ class PoseArraySmootherNode:
 
             # Evaluate BSpline and transpose back to (N, 2)
             smoothed_path = np.array(splev(u, tck)).T
+            vis_path = smoothed_path
+
+            if per and mission == AutonomousMission.TRACKDRIVE:
+                # Throw away last point to avoid weird FWF bug (see wiki)
+                smoothed_path = smoothed_path[:-1]
 
             smoothed_msg = msg
             smoothed_msg.header.frame_id = msg_frame_id
@@ -117,6 +125,17 @@ class PoseArraySmootherNode:
                 smoothed_msg.poses.append(pose)
 
             self.publisher.publish(smoothed_msg)
+
+            vis_msg = msg
+            vis_msg.header.frame_id = msg_frame_id
+            vis_msg.poses = []
+            for point in vis_path:
+                pose = PoseStamped()
+                pose.pose.position.x = point[0]
+                pose.pose.position.y = point[1]
+                vis_msg.poses.append(pose)
+
+            self.publisher_vis_path.publish(vis_msg)
         except Exception as e:
             rospy.logerr("Error occurred while smoothing PoseArray: {}".format(e))
             self.publisher.publish(msg)

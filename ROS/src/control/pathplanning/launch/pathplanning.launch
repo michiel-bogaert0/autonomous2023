@@ -33,5 +33,6 @@
 
         <remap from="/input/path" to="/pathplanning/poses"/>
         <remap from="/output/path" to="/pathplanning/path"/>
+        <remap from="/output/vis_path" to="/pathplanning/vis_path"/>
     </node>
 </launch>
