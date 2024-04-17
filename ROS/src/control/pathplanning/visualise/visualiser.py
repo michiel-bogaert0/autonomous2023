@@ -46,8 +46,12 @@ class Visualiser:
 
         self.frame = rospy.get_param("~frame", "ugr/car_base_link")
         self.track_file = rospy.get_param("~layout", "")
+        rospy.wait_for_service("/node_managing/path_smoother/get", timeout=1.0)
+
         configure_node("pathplanning")
         set_state_active("pathplanning")
+        configure_node("path_smoother")
+        set_state_active("path_smoother")
         configure_node("boundary_estimation")
         set_state_active("boundary_estimation")
         # Initialize and start Qt application
