@@ -7,8 +7,9 @@ Panels:
         - /Global Options1
         - /Status1
         - /Perception1/Lidar Raw1
+        - /SLAM1
+        - /SLAM1/TF1/Status1
         - /SLAM1/TF1/Frames1
-        - /SLAM1/TF1/Tree1
         - /SLAM1/MCL1/Shape1
         - /Control1/Path1
         - /Control1/MPC Prediction1
@@ -32,7 +33,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Camera
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz_plugin_tutorials/Teleop
@@ -162,7 +163,7 @@ Visualization Manager:
           Topic: /ugr/car/observations/lidar
           Unreliable: false
           Value: true
-      Enabled: true
+      Enabled: false
       Name: Perception
     - Class: rviz/Group
       Displays:
@@ -339,7 +340,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: false
-          Enabled: false
+          Enabled: true
           Keep: 20
           Name: SLAM
           Position Tolerance: 0.10000000149011612
@@ -356,7 +357,7 @@ Visualization Manager:
             Value: Arrow
           Topic: /ugr/car/odometry/filtered/slam
           Unreliable: false
-          Value: false
+          Value: true
         - Angle Tolerance: 0.10000000149011612
           Class: rviz/Odometry
           Covariance:
@@ -389,7 +390,7 @@ Visualization Manager:
             Shaft Length: 0.5
             Shaft Radius: 0.05000000074505806
             Value: Arrow
-          Topic: /ugr/car/odometry/filtered/odom/inmap
+          Topic: /ugr/car/odometry/filtered/odom
           Unreliable: false
           Value: true
         - Angle Tolerance: 0.10000000149011612
@@ -715,7 +716,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -4.785023212432861
+      Angle: -6.290025234222412
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -725,10 +726,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: -27.339086532592773
+      Scale: -24.720157623291016
       Target Frame: <Fixed Frame>
-      X: 3.1845290660858154
-      Y: 1.3711295127868652
+      X: -11.722004890441895
+      Y: 1.018802523612976
     Saved: ~
 Window Geometry:
   Camera:
