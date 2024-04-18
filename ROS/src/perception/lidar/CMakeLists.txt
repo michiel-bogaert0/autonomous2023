@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   diagnostic_msgs
   pcl_msgs
   pcl_ros
+  ouster_ros
 )
 find_package(PCL REQUIRED)
 find_package(Boost REQUIRED)
@@ -18,7 +19,7 @@ find_package(Boost REQUIRED)
 catkin_package(
   INCLUDE_DIRS
   LIBRARIES
-  CATKIN_DEPENDS pcl_conversions pcl_msgs pcl_ros
+  CATKIN_DEPENDS pcl_conversions pcl_msgs pcl_ros ouster_ros
   DEPENDS
 )
 
@@ -37,6 +38,7 @@ add_executable(${PROJECT_NAME}
   src/ground_removal.cpp
   src/cone_clustering.cpp
   src/cone_classification.cpp
+  src/motion_compensation.cpp
   src/run.cpp
   )
 target_link_libraries(${PROJECT_NAME}
@@ -44,3 +46,7 @@ target_link_libraries(${PROJECT_NAME}
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
   )
+
+add_dependencies(${PROJECT_NAME}
+  ${catkin_EXPORTED_TARGETS}
+)

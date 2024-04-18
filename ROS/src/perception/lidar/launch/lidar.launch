@@ -66,5 +66,6 @@
         <remap from="lidar/perception/cones_lidar" to="ugr/vis/lidar/cones"/>
         <remap from="lidar/perception/clusters_colored" to="ugr/vis/lidar/clusters"/>
         <remap from="lidar/perception/ground_colored" to="ugr/vis/lidar/coloredground"/>
+        <remap from="lidar/perception/motion_compensation" to="ugr/vis/lidar/motion_compensation"/>
     </node>
 </launch>

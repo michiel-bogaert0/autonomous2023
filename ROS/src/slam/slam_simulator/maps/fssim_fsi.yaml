@@ -1735,8 +1735,8 @@ observations:
   observation:
     belief: 1
     location:
-      x: 32.55500030517578
-      y: -15.008000373840332
+      x: 33.12973739759417
+      y: -14.761684477089592
       z: 0
     observation_class: 1
 - covariance:
@@ -1752,8 +1752,8 @@ observations:
   observation:
     belief: 1
     location:
-      x: 31.895000457763672
-      y: -14.732000350952148
+      x: 31.47421080081449
+      y: -14.896210948785974
       z: 0
     observation_class: 1
 - covariance:
