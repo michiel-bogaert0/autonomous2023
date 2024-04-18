@@ -3,7 +3,6 @@
 
 #include "cone_clustering.hpp"
 #include "ground_removal.hpp"
-#include "motion_compensation.hpp"
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -34,16 +33,13 @@ private:
   ros::Publisher conePublisher_;
   ros::Publisher diagnosticPublisher_;
   ros::Publisher groundColoredPublisher_;
-  ros::Publisher motionCompensatorPublisher_;
 
   ConeClustering cone_clustering_;
   GroundRemoval ground_removal_;
-  MotionCompensator motion_compensator_;
 
   bool publish_preprocessing_; // publish the preprocessed pointcloud
   bool publish_ground_;        // publish the debug ground pointclouds
   bool publish_clusters_;      // color the clusters and publish them
-  bool motion_compensation_;
   std::string blue_url_ = "https://storage.googleapis.com/"
                           "learnmakeshare_cdn_public/blue_cone_final.dae";
   std::string yellow_url_ = "https://storage.googleapis.com/"

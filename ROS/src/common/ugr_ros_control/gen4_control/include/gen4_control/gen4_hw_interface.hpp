@@ -81,11 +81,11 @@ public:
 
   void state_change(const ugr_msgs::State::ConstPtr& msg);
 
-  void handle_steering_msg(const std_msgs::Float32::ConstPtr& msg);
-
+  void handle_vel_msg();
   void publish_steering_msg(float steering);
   void publish_vel_msg(float vel, int axis);
   void publish_torque_msg(float axis);
+  void send_torque_on_can(float axis, int id);
   void can_callback_axis0(const std_msgs::Float32::ConstPtr& msg);
   void can_callback_axis1(const std_msgs::Float32::ConstPtr& msg);
   void can_callback_steering(const std_msgs::Float32::ConstPtr& msg);
@@ -100,14 +100,12 @@ private:
 
   std::string axis_rear_frame;
 
-  float wheel_diameter;
-  float gear_ratio;
-
   bool is_running = false;
 
   int IMU_ids[2] = { 0xE2, 0xE3 };
 
   ros::Publisher can_pub;
+  ros::Publisher vel_pub;
   ros::Subscriber can_sub;
   ros::Subscriber state_sub;
   ros::Subscriber can_axis0_sub;
@@ -118,6 +116,12 @@ private:
   ros::Publisher vel_right_pub;
   float steer_max_step;
 
+  // harware parameters
+  float n_polepairs;
+  float wheel_diameter;
+  float gear_ratio;
+
+  // state variables
   float cur_velocity_axis0;
   float cur_velocity_axis1;
   float cur_steering;

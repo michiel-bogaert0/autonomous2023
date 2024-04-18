@@ -192,7 +192,12 @@ function stop {
 
 function build-stack {
     docker compose up -d --remove-orphans dev
+
+    if [ ! -z "$1" ]; then
+    docker exec dev /bin/zsh -c "cd ~/autonomous2023/ROS && source ~/.zshrc || catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build -j $1"
+    else    
     docker exec dev /bin/zsh -c "cd ~/autonomous2023/ROS && source ~/.zshrc || catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release && catkin build"
+    fi
 }
 
 function clean-stack {

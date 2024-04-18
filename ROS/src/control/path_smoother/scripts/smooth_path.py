@@ -6,13 +6,16 @@ import tf2_ros as tf
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture import AutonomousMission, ROSNode
+from node_fixture.managed_node import ManagedNode
 from scipy.interpolate import interp1d, splev, splprep
 
 
-class PoseArraySmootherNode:
+class PathSmoother(ManagedNode):
     def __init__(self):
-        rospy.init_node("pose_array_smoother_node", anonymous=True)
+        super().__init__("path_smoother")
+        self.spin()
 
+    def doConfigure(self):
         self.max_distance_away_from_start = rospy.get_param(
             "~max_distance_away_from_start", 9
         )
@@ -24,12 +27,15 @@ class PoseArraySmootherNode:
         self.tf_listener = tf.TransformListener(self.tf_buffer)
 
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
+        self.publisher = super().AddPublisher("/output/path", Path, queue_size=10)
+        self.publisher_vis_path = super().AddPublisher(
+            "/output/vis_path", Path, queue_size=10
+        )
 
-        # Subscriber and publisher
-        self.subscriber = rospy.Subscriber(
+    def doActivate(self):
+        self.subscriber = super().AddSubscriber(
             "/input/path", Path, self.pose_array_callback
         )
-        self.publisher = rospy.Publisher("/output/path", Path, queue_size=10)
 
     def pose_array_callback(self, msg: Path):
         """
@@ -106,6 +112,11 @@ class PoseArraySmootherNode:
 
             # Evaluate BSpline and transpose back to (N, 2)
             smoothed_path = np.array(splev(u, tck)).T
+            vis_path = smoothed_path
+
+            if per and mission == AutonomousMission.TRACKDRIVE:
+                # Throw away last point to avoid weird FWF bug (see wiki)
+                smoothed_path = smoothed_path[:-1]
 
             smoothed_msg = msg
             smoothed_msg.header.frame_id = msg_frame_id
@@ -117,14 +128,20 @@ class PoseArraySmootherNode:
                 smoothed_msg.poses.append(pose)
 
             self.publisher.publish(smoothed_msg)
+
+            vis_msg = msg
+            vis_msg.header.frame_id = msg_frame_id
+            vis_msg.poses = []
+            for point in vis_path:
+                pose = PoseStamped()
+                pose.pose.position.x = point[0]
+                pose.pose.position.y = point[1]
+                vis_msg.poses.append(pose)
+
+            self.publisher_vis_path.publish(vis_msg)
         except Exception as e:
             rospy.logerr("Error occurred while smoothing PoseArray: {}".format(e))
             self.publisher.publish(msg)
 
 
-if __name__ == "__main__":
-    try:
-        node = PoseArraySmootherNode()
-        rospy.spin()
-    except rospy.ROSInterruptException:
-        pass
+PathSmoother()
