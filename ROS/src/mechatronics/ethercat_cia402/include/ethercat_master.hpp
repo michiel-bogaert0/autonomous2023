@@ -66,7 +66,42 @@ volatile int wkc;
 typedef struct {
   uint16 controlword;
   uint32 target;
-} __attribute__((packed)) our_outputs;
+} __attribute__((packed)) master_outputs;
+
+/**
+ * @brief Structure to hold the outputs from the EtherCAT Slave
+ */
+typedef struct {
+  uint32 position;
+  uint16 statusword;
+  uint32 velocity;
+  uint16 torque;
+  uint32 erroract;
+} __attribute__((packed)) CSP_inputs;
+typedef CSP_inputs CSV_inputs;
+
+void set_output(uint16_t slave_nb, uint16_t controlword, uint32_t value)
+{
+   master_outputs *data_ptr;
+
+   data_ptr = (master_outputs *)ec_slave[slave_nb].outputs;
+   data_ptr->controlword = controlword;
+   data_ptr->target = value;
+}
+
+CSP_inputs get_CSP_input(uint16_t slave_nb)
+{
+   CSP_inputs *inputs = (CSP_inputs *)ec_slave[slave_nb].inputs;
+
+   return *inputs;
+}
+
+CSV_inputs get_CSV_input(uint16_t slave_nb)
+{
+   CSV_inputs *inputs = (CSV_inputs *)ec_slave[slave_nb].inputs;
+
+   return *inputs;
+}
 
 int initialize_ethercat(const char *ifname);
 
