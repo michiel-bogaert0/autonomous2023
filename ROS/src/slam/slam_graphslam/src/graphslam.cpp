@@ -470,9 +470,8 @@ void GraphSLAM::step() {
       obs(0) = pow(pow(dx, 2) + pow(dy, 2), 0.5);
       obs(1) = atan2(dy, dx) - pose_vertex->estimate().rotation().angle();
 
-      if (obs(0) <= pow(this->max_range, 2) &&
-          abs(obs(1)) <= this->max_half_angle) {
-        if (landmarkVertex->latestPoseIndex != this->prevPoseIndex) {
+      if (obs(0) <= this->max_range && abs(obs(1)) <= this->max_half_angle) {
+        if (landmarkVertex->latestPoseIndex < this->prevPoseIndex) {
           if (landmarkVertex->increasePenalty() > this->penalty_threshold) {
             to_remove_indices.push_back(pair.first);
           }
