@@ -17,13 +17,16 @@ class CanConverter(ManagedNode):
         self.listen_on_can()
 
     def doConfigure(self):
-        self.db_adress = rospy.get_param("~db_adress", "motor.dbc")
-
+        # adress of the dbc file
+        dbc_filename = rospy.get_param("~db_adress", "hv500_can2_map_v24_EID_both.dbc")
         db_address = __file__.split("/")[:-1]
-        db_address += ["..", "dbc", self.db_adress]
+        db_address += ["..", "dbc", dbc_filename]
         self.db_adress = "/".join(db_address)
 
+        # load dbc
         self.db = cantools.database.load_file(self.db_adress)
+
+        rospy.Subscriber("ugr/send_can", CanFrame, self.send_on_can)
 
         self.can_processor = CanProcessor(db=self.db)
 
@@ -37,8 +40,6 @@ class CanConverter(ManagedNode):
             bitrate=rospy.get_param("~can_baudrate", 250000),
             interface="socketcan",
         )
-
-        rospy.Subscriber("ugr/send_can", CanFrame, self.send_on_can)
 
     def listen_on_can(self) -> None:
         """Listens to CAN and publishes all incoming messages to a topic (still non-readable format)"""

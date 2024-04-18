@@ -1,57 +1,59 @@
 <launch>
-  <node pkg="dio_driver" output="screen" type="run_driver" respawn="true" name="dio_driver_1" launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
 
-    <param name="rate" value="10" />
+  <node pkg="dio_driver" output="screen" type="run_driver" respawn="true" name="dio_driver"
+    launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
 
-    <!-- Bank (1/2) -->
-    <param name="bank_id" type="int" value="1"/>
+      <param name="enable_temp" value="true"/>
 
-    <!-- Inputs READ BY IPC -->
-    <param name="enable_DI0" value="true" />
-    <param name="enable_DI1" value="true" />
-    <param name="enable_DI2" value="true" />
-    <param name="enable_DI3" value="true" />
-    <param name="enable_DI4" value="true" />
-    <param name="enable_DI5" value="true" />
-    <param name="enable_DI6" value="true" />
-    <param name="enable_DI7" value="true" />
-
-    <!-- Outputs SENT BY IPC -->
-    <param name="enable_DO0" value="true" />
-    <param name="enable_DO1" value="true" />
-    <param name="enable_DO2" value="true" />
-    <param name="enable_DO3" value="true" />
-    <param name="enable_DO4" value="true" />
-    <param name="enable_DO5" value="true" />
-    <param name="enable_DO6" value="true" />
-    <param name="enable_DO7" value="true" />
-  </node>
+      <!-- BANK 1 -->
   
-  <node pkg="dio_driver" output="screen" type="run_driver" respawn="true" name="dio_driver_2" launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
+      <!-- Inputs READ BY IPC -->
 
-    <param name="rate" value="10" />
+      <param name="bank1/enable_DI0" value="true" />
+      <param name="bank1/enable_DI1" value="true" />
+      <param name="bank1/enable_DI2" value="true" />
+      <param name="bank1/enable_DI3" value="true" />
+      <param name="bank1/enable_DI4" value="true" />
+      <param name="bank1/enable_DI5" value="true" />
+      <param name="bank1/enable_DI6" value="true" />
+      <param name="bank1/enable_DI7" value="true" />
 
-    <!-- Bank (1/2) -->
-    <param name="bank_id" type="int" value="2"/>
+      <!-- Outputs SENT BY IPC -->
+      <param name="bank1/enable_DO0" value="true" />
+      <param name="bank1/enable_DO1" value="true" />
+      <param name="bank1/enable_DO2" value="true" />
+      <param name="bank1/enable_DO3" value="true" />
+      <param name="bank1/enable_DO4" value="true" />
+      <param name="bank1/enable_DO5" value="true" />
+      <param name="bank1/enable_DO6" value="true" />
+      <param name="bank1/enable_DO7" value="true" />
 
-    <!-- Inputs READ BY IPC -->
-    <param name="enable_DI0" value="true" />
-    <param name="enable_DI1" value="true" />
-    <param name="enable_DI2" value="true" />
-    <param name="enable_DI3" value="true" />
-    <param name="enable_DI4" value="true" />
-    <param name="enable_DI5" value="true" />
-    <param name="enable_DI6" value="true" />
-    <param name="enable_DI7" value="true" />
 
-    <!-- Outputs SENT BY IPC -->
-    <param name="enable_DO0" value="true" />
-    <param name="enable_DO1" value="true" />
-    <param name="enable_DO2" value="true" />
-    <param name="enable_DO3" value="true" />
-    <param name="enable_DO4" value="true" />
-    <param name="enable_DO5" value="true" />
-    <param name="enable_DO6" value="true" />
-    <param name="enable_DO7" value="true" />
+      <!-- BANK 2 -->
+
+    
+      <!-- Inputs READ BY IPC -->
+
+      <param name="bank2/enable_DI0" value="true" />
+      <param name="bank2/enable_DI1" value="true" />
+      <param name="bank2/enable_DI2" value="true" />
+      <param name="bank2/enable_DI3" value="true" />
+      <param name="bank2/enable_DI4" value="true" />
+      <param name="bank2/enable_DI5" value="true" />
+      <param name="bank2/enable_DI6" value="true" />
+      <param name="bank2/enable_DI7" value="true" />
+
+      <!-- Outputs SENT BY IPC -->
+      <param name="bank2/enable_DO0" value="true" />
+      <param name="bank2/enable_DO1" value="true" />
+      <param name="bank2/enable_DO2" value="true" />
+      <param name="bank2/enable_DO3" value="true" />
+      <param name="bank2/enable_DO4" value="true" />
+      <param name="bank2/enable_DO5" value="true" />
+      <param name="bank2/enable_DO6" value="true" />
+      <param name="bank2/enable_DO7" value="true" />
+    
   </node>
+
+
 </launch>

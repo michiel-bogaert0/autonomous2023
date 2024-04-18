@@ -4,7 +4,7 @@
 
   <node name="visualiser_mincurv" pkg="minimum_curvature" type="visualiser.py" output="screen" >
 
-    <param name="frame" value="ugr/car_base_link" />
+    <param name="frame" value="ugr/map" />
     <param name="layout" value="$(arg layout)" />
 
     <remap from="/output/local_map" to="/ugr/car/map/slam/local" />
