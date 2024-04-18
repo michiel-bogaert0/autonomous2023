@@ -11,8 +11,6 @@
         <param name="distance_start" value="3" />
         <param name="distance_stop" value="6" /> 
 
-        <param name="cog_to_front_axle" value="0.72"/>
-
         <param name="wheelradius" value="0.1" />
 
         <remap from="/input/path" to="/pathplanning/path" />
