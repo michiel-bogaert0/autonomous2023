@@ -393,7 +393,7 @@ int configure_servo() {
   } else if (state.mode == operational_mode_t::CSV) {
 
     // CSV
-    u8val = 8;
+    u8val = 9;
     retval = ec_SDOwrite(slave, 0x7010, 0x0003, FALSE, sizeof(u8val), &u8val,
                          EC_TIMEOUTSAFE);
     if (retval == 0)
