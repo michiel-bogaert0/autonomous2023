@@ -20,9 +20,9 @@ typedef enum { INIT = 1, PREOP = 2, SAFEOP = 4, OP = 8 } ethercat_states_t;
 typedef enum {
   Not_ready_to_switch_on = 0x0,
   Switch_on_disabled = 1 << 6,
-  Ready_to_switch_on = (1 << 5) | 1,
-  Switch_on = (1 << 5) | 3,
-  Operation_enabled = (1 << 5) | 7,
+  Ready_to_switch_on = 1,
+  Switch_on = 3,
+  Operation_enabled = 0x7 | (1 << 12),
   Quick_stop_active = 0x7,
   Fault_reaction_active = 0x0f,
   Fault = 1 << 3
@@ -49,11 +49,13 @@ typedef struct {
   statusword_state_t statusword_state;
 } control_state_t;
 
-control_state_t state{.mode = CSP,
-                      .ethercat_state = INIT,
-                      .statusword_state = Not_ready_to_switch_on};
+control_state_t state{
+  .mode = CSP,
+  .ethercat_state = INIT,
+  .statusword_state = Not_ready_to_switch_on
+};
 
-char[8096] IOMap;
+char IOMap[8096];
 OSAL_THREAD_HANDLE check_thread;
 
 pthread_t main_thread;

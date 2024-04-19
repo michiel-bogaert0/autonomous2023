@@ -1,11 +1,12 @@
 #include "ethercat_master.hpp"
 
 // BEGIN variables with possible race conditions
-int expectedWKC = 0;
 bool needlf = false;
+// Also includes `state.expectedWKC` from the header file
 // END variables with possible race conditions
 
 std::atomic_uint32_t target = 0;
+std::atomic_bool loop_flag = false;
 
 void *loop(void *mode_ptr) {
   operational_mode_t mode = *(operational_mode_t *)mode_ptr;
@@ -67,8 +68,12 @@ void *loop(void *mode_ptr) {
   uint32_t relative_offset = 0;
   int direction = 1;
 
+  int i = 0;
+  int operation_enabled = 0;
+  int error = 0;
+
   // Start control loop
-  while (1) {
+  while (loop_flag) {
     // Start precise timer for 2000us
     do {
       clock_gettime(CLOCK_MONOTONIC, &tcur);
@@ -91,7 +96,12 @@ void *loop(void *mode_ptr) {
       assert(0 && "Mode not supported");
     }
 
-    if (wkc >= expectedWKC) {
+    if(error) {
+      // TODO: Print error to ros including statusword, positoin, error, ...
+      break;
+    }
+
+    if (wkc >= state.expectedWKC) {
 
       needlf = true;
 
@@ -109,115 +119,97 @@ void *loop(void *mode_ptr) {
       statusword = statusword &
       ~((1 << 4) | (1 << 5) | (1 << 8) | (1 << 9) | (1 << 14) | (1 << 15));
 
-      // TODO: Redo logic
-      if (operation_enabled == 0) {
-        switch (statusword) {
+      // Do logic
+      switch (statusword) {
         case (Not_ready_to_switch_on): {
           /* Now the FSM should automatically go to Switch_on_disabled*/
           break;
         }
-        case (Switch_on_disabled):
-        case (Switch_on_disabled | (0b1 << 5)): {
+        case (Switch_on_disabled): {
           /* Automatic transition (2)*/
           controlword = 0;
           controlword |=
               (1 << control_enable_voltage) | (1 << control_quick_stop);
+
+          // Periodically send fault reset
           if (i % 10 == 0) {
             controlword |= 1 << control_fault_reset;
+            i = 1;
+          } else {
+            i++;
           }
           break;
         }
-        case (Ready_to_switch_on):
-          // case (Ready_to_switch_on | (0b1 << 5)):
-          {
-            /* Switch on command for transition (3) */
-            controlword |= 1 << control_switch_on;
-            controlword = 0x07;
-            break;
-          }
+        case (Ready_to_switch_on):{
+          /* Switch on command for transition (3) */
+          controlword |= 1 << control_switch_on;
+          break;
+        }
         case (Switch_on): {
           /* Enable operation command for transition (4) */
           controlword |= 1 << control_enable_operation;
           break;
         }
         case (Operation_enabled): {
-          /* Setting modes of operation
-                    * Value Description
-                    -128...-2 Reserved
-                    -1 No mode
-                    0 Reserved
-                    1 Profile position mode
-                    2 Velocity (not supported)
-                    3 Profiled velocity mode
-                    4 Torque profiled mode
-                    5 Reserved
-                    6 Homing mode
-                    7 Interpolated position mode
-                    8 Cyclic Synchronous position
-                    ...127 Reserved*/
-
-          uint16_t mode = 1; /* Setting Cyclic Synchronous position */
-          int mode_size = sizeof(mode);
-          // int SDO_result = ec_SDOwrite(1, MODES_OF_OPERATION_INDEX, 0,
-          //                              0, mode_size, &mode,
-          // EC_TIMEOUTRXM); controlword |= 0x1f;
+          controlword = 0x1f;
 
           operation_enabled = 1;
           break;
         }
-        case (Quick_stop_active): {
-          break;
-        }
-        case (Fault_reaction_active): {
-          break;
-        }
         case (Fault):
-        case (0x28): {
+        default: {
+          if(operation_enabled == 1) {
+            error = 1;
+            operation_enabled = 0;
+          }
+
           /* Returning to Switch on Disabled */
           controlword = (1 << control_fault_reset);
           controlword |=
               (1 << control_enable_voltage) | (1 << control_quick_stop);
           break;
         }
-        default: {
-          printf("Unrecognized status\n");
-          break;
+      }
+
+      // Check for faults (extra)
+      if(statusword & Fault) {
+        if(operation_enabled == 1) {
+          error = 1;
+          operation_enabled = 0;
         }
+
+        controlword = (1 << control_fault_reset);
+        controlword |=
+            (1 << control_enable_voltage) | (1 << control_quick_stop);
+      }
+
+      // printf("Target: %d ", target);
+      // printf("Value: %d ", inputs.position);
+      // printf("Relative offset: %d ", relative_offset);
+      // printf("Velocity %d ", inputs.velocity);
+      // printf("Torque %d ", inputs.torque);
+      // printf("Controlword: %#x ", controlword);
+      // printf("Statusword: %#x (%d) ", statusword, statusword);
+      // printf("Error: %d\r", inputs.erroract);
+
+      if(operation_enabled) {
+        set_output(1, controlword, target);
+      } else {
+        // Send input value as output
+        if(mode == operational_mode_t::CSP) {
+          set_output(1, controlword, csp_inputs.position);
+        } else if(mode == operational_mode_t::CSV) {
+          set_output(1, controlword, csv_inputs.position);
+        } else {
+          // TODO CST not supported yet
+          assert(0 && "Mode not supported");
         }
       }
 
-      relative_offset += 500 * direction;
-
-      if (direction == 1 &&
-          (int32_t)target - (int32_t)inputs.position > 250000) {
-        relative_offset = 250000; // target - inputs.position;
-      } else if (direction == -1 &&
-                  (int32_t)inputs.position - (int32_t)target > 250000) {
-        relative_offset = -250000; // target - inputs.position;
-      }
-
-      target = 125000000 * direction;
-
-      printf("Target: %d ", target);
-      printf("Value: %d ", inputs.position);
-      printf("Relative offset: %d ", relative_offset);
-      printf("Velocity %d ", inputs.velocity);
-      printf("Torque %d ", inputs.torque);
-      printf("Controlword: %#x ", controlword);
-      printf("Statusword: %#x (%d) ", statusword, statusword);
-      printf("Error: %d\r", inputs.erroract);
-
-      set_output(1, controlword, target);
-    }
-
-    // Increment chk
-    chk--;
-
-    if (chk % 200 == 0) {
-      direction = -direction;
     }
   }
 
+  // Gracefully shutdown
   pthread_exit(NULL);
 
   return NULL;
@@ -261,13 +253,16 @@ int start_loop(operational_mode_t mode) {
 
   pthread_attr_setschedparam(&attr, &param);
 
+  // Set loop flag to enable loop
+  loop_flag = true;
+
   // Create thread
   pthread_create(&main_thread, &attr, loop, (void *)&mode);
 }
 
 void stop_loop() {
-  // TODO: Verify graceful shutdown, signals might also be send to self
-  pthread_kill(main_thread, SIGKILL);
+  // Graceful shutdown
+  loop_flag = false;
   pthread_join(main_thread, NULL);
 }
 
@@ -309,7 +304,7 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
 
   while (1) {
     if (state.ethercat_state == OP &&
-        ((wkc < expectedWKC) || ec_group[currentgroup].docheckstate)) {
+        ((wkc < state.expectedWKC) || ec_group[currentgroup].docheckstate)) {
       if (needlf) {
         needlf = FALSE;
         printf("\n");
@@ -372,6 +367,21 @@ int configure_servo() {
   int retval = 0;
 
   // Set mode of operation
+  /* Value Description
+  -128...-2 Reserved
+  -1 No mode
+  0 Reserved
+  1 Profile position mode
+  2 Velocity (not supported)
+  3 Profiled velocity mode
+  4 Torque profiled mode
+  5 Reserved
+  6 Homing mode
+  7 Interpolated position mode
+  8 Cyclic Synchronous position
+  9 Cyclic Synchronous velocity
+  10 Cyclic Synchronous Torque
+  ...127 Reserved*/
   if (state.mode == operational_mode_t::CSP) {
     // CSP
     u8val = 8;
