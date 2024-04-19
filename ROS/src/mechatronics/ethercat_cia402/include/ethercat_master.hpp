@@ -6,11 +6,14 @@ extern "C" {
 #endif
 
 #include "ethercat.h"
+#include <assert.h>
 #include <inttypes.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <atomic>
 
 typedef enum { INIT = 1, PREOP = 2, SAFEOP = 4, OP = 8 } ethercat_states_t;
 

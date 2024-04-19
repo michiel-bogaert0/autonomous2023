@@ -1,11 +1,14 @@
 #include "ethercat_master.hpp"
 
-#include <atomic>
+// BEGIN variables with possible race conditions
+int expectedWKC = 0;
+bool needlf = false;
+// END variables with possible race conditions
 
 std::atomic_uint32_t target = 0;
 
-void *loop(void *mode) {
-  operational_mode_t mode = *(operational_mode_t *)mode;
+void *loop(void *mode_ptr) {
+  operational_mode_t mode = *(operational_mode_t *)mode_ptr;
 
   CSP_inputs csp_inputs;
   CSV_inputs csv_inputs;
@@ -31,6 +34,35 @@ void *loop(void *mode) {
     // TODO CST not supported yet
     assert(0 && "Mode not supported");
   }
+
+  /**Statusword
+    * Bit 0 : Ready to switch on
+    * Bit 1 : Switched on
+    * Bit 2 : Operation enabled
+    * Bit 3 : Fault
+    * Bit 4 : Reserved / Voltage enabled
+    * Bit 5 : Reserved / Quick stop
+    * Bit 6 : Switch on disabled
+    * Bit 7 : Warning
+    * Bit 8 + 9 : Reserved
+    * Bit 10 : TxPDOToggle
+    * Bit 11 : Internal limit active
+    * Bit 12 : Drive follows the command value
+    * Bit 13 : Input cycle counter
+    * Bit 14 + 15 : Reserved
+    */
+  uint16_t statusword;
+
+  /**Controlword
+   * Bit 0 : Switch on
+   * Bit 1 : Enable voltage
+   * Bit 2 : Reserved / Quick stop
+   * Bit 3 : Enable operation
+   * Bit 4 - 6 : Reserved
+   * Bit 7 : Fault reset
+   * Bit 8 - 15 : Reserved
+   */
+  uint16_t controlword = 0;
 
   uint32_t relative_offset = 0;
   int direction = 1;
@@ -61,10 +93,9 @@ void *loop(void *mode) {
 
     if (wkc >= expectedWKC) {
 
-      needlf = TRUE;
+      needlf = true;
 
       // Get statusword depending on mode
-      uint16_t statusword;
       if (mode == operational_mode_t::CSP) {
         statusword = csp_inputs.statusword;
       } else if (mode == operational_mode_t::CSV) {
@@ -176,7 +207,7 @@ void *loop(void *mode) {
       printf("Statusword: %#x (%d) ", statusword, statusword);
       printf("Error: %d\r", inputs.erroract);
 
-      set_output_int16(1, controlword, target);
+      set_output(1, controlword, target);
     }
 
     // Increment chk
@@ -359,7 +390,7 @@ int configure_servo() {
                           map_position_1c13, EC_TIMEOUTSAFE);
     if (retval != 2)
       return 0;
-  } else if (mode == operational_mode_t::CSV) {
+  } else if (state.mode == operational_mode_t::CSV) {
 
     // CSV
     u8val = 8;
