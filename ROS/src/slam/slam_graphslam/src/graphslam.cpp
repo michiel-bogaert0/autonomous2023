@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 
 #include "g2o/core/block_solver.h"
 #include "g2o/core/factory.h"
@@ -195,6 +196,12 @@ void GraphSLAM::step() {
     return;
   }
 
+  std::vector<double> times;
+  std::chrono::steady_clock::time_point t1;
+  std::chrono::steady_clock::time_point t2;
+
+  t1 = std::chrono::steady_clock::now();
+
   // --------------------------------------------------------------------
   // ------------------- Transform observations -------------------------
   // --------------------------------------------------------------------
@@ -244,6 +251,12 @@ void GraphSLAM::step() {
     transformed_obs.observations.push_back(transformed_ob);
   }
 
+  t2 = std::chrono::steady_clock::now();
+  times.push_back(
+      std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
+          .count());
+  t1 = std::chrono::steady_clock::now();
+
   // --------------------------------------------------------------------
   // ---------------------- Fetch odometry ------------------------------
   // --------------------------------------------------------------------
@@ -277,6 +290,12 @@ void GraphSLAM::step() {
   SE2 poseSE2(x, y, yaw);
   // calculate the transformation from the previous pose to the new pose
   SE2 pose_trans = prev_poseSE2.inverse() * poseSE2;
+
+  t2 = std::chrono::steady_clock::now();
+  times.push_back(
+      std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
+          .count());
+  t1 = std::chrono::steady_clock::now();
   // --------------------------------------------------------------------
   // ---------------------- Add odometry to graph -----------------------
   // --------------------------------------------------------------------
@@ -309,6 +328,12 @@ void GraphSLAM::step() {
   // pose and to add the landmark edges between the new pose and the landmarks
   this->prevPoseIndex = this->vertexCounter;
   this->vertexCounter++;
+
+  t2 = std::chrono::steady_clock::now();
+  times.push_back(
+      std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
+          .count());
+  t1 = std::chrono::steady_clock::now();
   // --------------------------------------------------------------------
   // ---------------------- Add observations to graph -------------------
   // --------------------------------------------------------------------
@@ -359,6 +384,11 @@ void GraphSLAM::step() {
     this->optimizer.addEdge(landmarkObservation);
   }
 
+  t2 = std::chrono::steady_clock::now();
+  times.push_back(
+      std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
+          .count());
+  t1 = std::chrono::steady_clock::now();
   // --------------------------------------------------------------------
   // ------------------------ Optimization ------------------------------
   // --------------------------------------------------------------------
@@ -375,6 +405,11 @@ void GraphSLAM::step() {
   this->optimizer.initializeOptimization();
   this->optimizer.optimize(this->max_iterations);
 
+  t2 = std::chrono::steady_clock::now();
+  times.push_back(
+      std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
+          .count());
+  t1 = std::chrono::steady_clock::now();
   // --------------------------------------------------------------------
   // ------------------------ Kdtree ------------------------------------
   // --------------------------------------------------------------------
@@ -449,6 +484,11 @@ void GraphSLAM::step() {
     }
   }
 
+  t2 = std::chrono::steady_clock::now();
+  times.push_back(
+      std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
+          .count());
+  t1 = std::chrono::steady_clock::now();
   // --------------------------------------------------------------------
   // ------------------------ Penalty -----------------------------------
   // --------------------------------------------------------------------
@@ -490,11 +530,35 @@ void GraphSLAM::step() {
     }
   }
 
+  t2 = std::chrono::steady_clock::now();
+  times.push_back(
+      std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
+          .count());
+  t1 = std::chrono::steady_clock::now();
   // --------------------------------------------------------------------
   // ------------------------ Publish -----------------------------------
   // --------------------------------------------------------------------
   // publish the odometry and the landmarks
   this->publishOutput(transformed_obs.header.stamp);
+
+  t2 = std::chrono::steady_clock::now();
+  times.push_back(
+      std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
+          .count());
+
+  // double totalTime = std::accumulate(times.begin(), times.end(), 0.0);
+
+  // ROS_INFO("Time taken for each step: ");
+  // ROS_INFO("Transform observations: %f", times[0]);
+  // ROS_INFO("Fetch odometry: %f", times[1]);
+  // ROS_INFO("Add odometry to graph: %f", times[2]);
+  // ROS_INFO("Add observations to graph: %f", times[3]);
+  // ROS_INFO("Optimization: %f", times[4]);
+  // ROS_INFO("Kdtree: %f", times[5]);
+  // ROS_INFO("Penalty: %f", times[6]);
+  // ROS_INFO("Publish: %f", times[7]);
+  // ROS_INFO("Total time: %f", totalTime);
+
 } // step method
 
 void GraphSLAM::publishOutput(ros::Time lookupTime) {
