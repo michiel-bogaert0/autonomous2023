@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 
 
+import copy
+
 import rospy
 import tf2_ros as tf
 from geometry_msgs.msg import TransformStamped
 from naive_fusion import NaiveFusion
 from node_fixture.fixture import ROSNode
 from standard_fusion import StandardFusion
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
+from ugr_msgs.msg import (
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+    ObservationWithCovarianceStamped,
+    ObservationWithCovarianceStampedArrayStamped,
+)
 
 
 class MergeNode:
@@ -21,17 +28,17 @@ class MergeNode:
         rospy.Subscriber(
             "/input/lidar_observations",
             ObservationWithCovarianceArrayStamped,
-            self.handle_observations,
+            self.handle_lidar,
         )
         rospy.Subscriber(
             "/input/camera_observations",
             ObservationWithCovarianceArrayStamped,
-            self.handle_observations,
+            self.handle_camera,
         )
         rospy.Subscriber(
             "/input/early_fusion_observations",
             ObservationWithCovarianceArrayStamped,
-            self.handle_observations,
+            self.handle_early_fusion,
         )
 
         self.result_publisher = rospy.Publisher(
@@ -48,10 +55,7 @@ class MergeNode:
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
 
         #   Topics
-        self.input_sensors = [
-            "ugr/car_base_link/os_sensor",
-            "ugr/car_base_link/cam0",
-        ]
+        self.input_sensors = ["lidar", "camera", "early_fusion"]
 
         #   Fusion parameters
         self.max_fusion_eucl_distance = float(
@@ -84,14 +88,39 @@ class MergeNode:
         """
         self.result_publisher.publish(msg)
 
-    def handle_observations(self, observations: ObservationWithCovarianceArrayStamped):
+    def handle_lidar(self, observations: ObservationWithCovarianceArrayStamped):
+        all_stamped_observations = self.stamp_all_observations(
+            observations, self.input_sensors[0]
+        )
+        self.handle_observations(all_stamped_observations, self.input_sensors[0])
+        return
+
+    def handle_camera(self, observations: ObservationWithCovarianceArrayStamped):
+        all_stamped_observations = self.stamp_all_observations(
+            observations, self.input_sensors[1]
+        )
+        self.handle_observations(all_stamped_observations, self.input_sensors[1])
+        return
+
+    def handle_early_fusion(self, observations: ObservationWithCovarianceArrayStamped):
+        all_stamped_observations = self.stamp_all_observations(
+            observations, self.input_sensors[2]
+        )
+        self.handle_observations(all_stamped_observations, self.input_sensors[2])
+        return
+
+    def handle_observations(
+        self,
+        observations: ObservationWithCovarianceStampedArrayStamped,
+        sensor_name: str,
+    ):
         """
         Handle incoming observations and send through pipeline
         Wait for either all messages specified in self.input_sensors to arrive or for a timeout,
         then send all received messages through the fusion pipeline
         """
         self.msg_buffer.append(observations)
-        self.sensors_received.append(observations.header.frame_id)
+        self.sensors_received.append(sensor_name)
 
         if self.is_first_received:
             self.is_first_received = False
@@ -135,6 +164,7 @@ class MergeNode:
 
         # Fuse transformed observations
         results = self.fusion_pipeline.fuse_observations(transformed_msgs)
+        results = self.unstamp_all_observations(results)
 
         self.log_plot_info(transformed_msgs, results)
 
@@ -158,6 +188,9 @@ class MergeNode:
             ].header.stamp  # Time to which observations messages are transformed
 
             for sensor_msg in sensor_msgs:
+                sensor_name = ""
+                if len(sensor_msg.observations) > 0:
+                    sensor_name = sensor_msg.observations[0].header.frame_id
                 transform: TransformStamped = self.tf_buffer.lookup_transform_full(
                     target_frame=self.base_link_frame,
                     target_time=tf_source_time,
@@ -167,9 +200,13 @@ class MergeNode:
                     timeout=rospy.Duration(0.1),  # Time-out
                 )
                 tf_sensor_msg: ObservationWithCovarianceArrayStamped = (
-                    ROSNode.do_transform_observations(sensor_msg, transform)
+                    ROSNode.do_transform_observations(
+                        self.unstamp_all_observations(sensor_msg), transform
+                    )
                 )
-                transformed_msgs.append(tf_sensor_msg)
+                transformed_msgs.append(
+                    self.stamp_all_observations(tf_sensor_msg, sensor_name)
+                )
 
             return transformed_msgs, tf_source_time
 
@@ -178,6 +215,34 @@ class MergeNode:
                 f"Mergenode has caught an exception during transformation. Exception: {e}"
             )
         return [], None
+
+    def stamp_all_observations(
+        self, observations: ObservationWithCovarianceArrayStamped, sensor_name: str
+    ):
+        new_observations_object = ObservationWithCovarianceStampedArrayStamped()
+        new_observations_object.header = observations.header
+        new_observations_object.observations = []
+        for obs in observations.observations:
+            new_obs = ObservationWithCovarianceStamped()
+            new_obs.header = copy.deepcopy(observations.header)
+            new_obs.header.frame_id = sensor_name
+            new_obs.observation.observation = obs.observation
+            new_obs.observation.covariance = obs.covariance
+            new_observations_object.observations.append(new_obs)
+        return new_observations_object
+
+    def unstamp_all_observations(
+        self, observations: ObservationWithCovarianceStampedArrayStamped
+    ):
+        new_observations_object = ObservationWithCovarianceArrayStamped()
+        new_observations_object.header = observations.header
+        new_observations_object.observations = []
+        for obs in observations.observations:
+            new_obs = ObservationWithCovariance()
+            new_obs.observation = obs.observation.observation
+            new_obs.covariance = obs.observation.covariance
+            new_observations_object.observations.append(new_obs)
+        return new_observations_object
 
     def log_plot_info(self, msgs, fused_obs):
         """ """
@@ -188,9 +253,9 @@ class MergeNode:
         all_points = list(
             map(
                 lambda obs: [
-                    obs.observation.location.x,
-                    obs.observation.location.y,
-                    obs.observation.location.z,
+                    obs.observation.observation.location.x,
+                    obs.observation.observation.location.y,
+                    obs.observation.observation.location.z,
                 ],
                 all_observations,
             )
@@ -209,7 +274,7 @@ class MergeNode:
         # Print location of all observations, predicted colors and fused observation locations
         rospy.loginfo(f"\npoints = {all_points}")
         rospy.loginfo(
-            f"\ncolors = {[observation.observation.observation_class for observation in all_observations]}"
+            f"\ncolors = {[observation.observation.observation.observation_class for observation in all_observations]}"
         )
         rospy.loginfo(f"\ncenters = {centers}")
 
