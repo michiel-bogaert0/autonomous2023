@@ -360,6 +360,7 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
 }
 
 int configure_servo() {
+  uint16 slave = 1;
 
   uint8 u8val;
   uint16 u16val;
