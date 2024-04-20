@@ -1,6 +1,11 @@
 #ifndef ETHERCAT_MASTER_HPP
 #define ETHERCAT_MASTER_HPP
 
+#include <atomic>
+#define EC_TIMEOUTMON 500
+#define STATUS_WORD_MASK(x)                                                    \
+  (x &= ~((1 << 4) | (1 << 5) | (1 << 8) | (1 << 9) | (1 << 14) | (1 << 15)))
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -12,8 +17,6 @@ extern "C" {
 #include <sched.h>
 #include <stdio.h>
 #include <string.h>
-
-#include <atomic>
 
 typedef enum { INIT = 1, PREOP = 2, SAFEOP = 4, OP = 8 } ethercat_states_t;
 
@@ -49,20 +52,16 @@ typedef struct {
   statusword_state_t statusword_state;
 } control_state_t;
 
-control_state_t state{
-  .mode = CSP,
-  .ethercat_state = INIT,
-  .statusword_state = Not_ready_to_switch_on
-};
+extern control_state_t state;
 
-char IOMap[8096];
-OSAL_THREAD_HANDLE check_thread;
+extern char IOMap[8096];
+extern OSAL_THREAD_HANDLE check_thread;
 
-pthread_t main_thread;
-pthread_attr_t attr;
-cpu_set_t cpuset;
-struct sched_param param;
-volatile int wkc;
+extern pthread_t main_thread;
+extern pthread_attr_t attr;
+extern cpu_set_t cpuset;
+extern struct sched_param param;
+extern volatile int wkc;
 
 /**
  * @brief Structure to hold the inputs from the EtherCAT Slave
@@ -85,36 +84,35 @@ typedef struct {
 } __attribute__((packed)) CSP_inputs;
 typedef CSP_inputs CSV_inputs;
 
-void set_output(uint16_t slave_nb, uint16_t controlword, uint32_t value)
-{
-   master_outputs *data_ptr;
+inline void set_output(uint16_t slave_nb, uint16_t controlword,
+                       uint32_t value) {
+  master_outputs *data_ptr;
 
-   data_ptr = (master_outputs *)ec_slave[slave_nb].outputs;
-   data_ptr->controlword = controlword;
-   data_ptr->target = value;
+  data_ptr = reinterpret_cast<master_outputs *>(ec_slave[slave_nb].outputs);
+  data_ptr->controlword = controlword;
+  data_ptr->target = value;
 }
 
-CSP_inputs get_CSP_input(uint16_t slave_nb)
-{
-   CSP_inputs *inputs = (CSP_inputs *)ec_slave[slave_nb].inputs;
+inline CSP_inputs get_CSP_input(uint16_t slave_nb) {
+  CSP_inputs inputs =
+      *reinterpret_cast<CSP_inputs *>(ec_slave[slave_nb].inputs);
 
-   return *inputs;
+  return inputs;
 }
 
-CSV_inputs get_CSV_input(uint16_t slave_nb)
-{
-   CSV_inputs *inputs = (CSV_inputs *)ec_slave[slave_nb].inputs;
+inline CSV_inputs get_CSV_input(uint16_t slave_nb) {
+  CSV_inputs inputs =
+      *reinterpret_cast<CSV_inputs *>(ec_slave[slave_nb].inputs);
 
-   return *inputs;
+  return inputs;
 }
 
 int initialize_ethercat(const char *ifname);
 
 /**
  * @brief Configures the servo when going from PREOP -> SAFEOP
- * mode: 0 = CSP, 1 = CSV, 2 = CST
  */
-int configure_servo(int mode);
+int configure_servo(uint16 slave);
 
 /**
  * @brief Function that checks if the slave is still ok and

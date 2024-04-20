@@ -1,22 +1,35 @@
 #include "ethercat_master.hpp"
 
+control_state_t state{.mode = CSP,
+                      .ethercat_state = INIT,
+                      .statusword_state = Not_ready_to_switch_on};
+
+char IOMap[8096];
+OSAL_THREAD_HANDLE check_thread;
+
+pthread_t main_thread;
+pthread_attr_t attr;
+cpu_set_t cpuset;
+struct sched_param param;
+volatile int wkc;
+
 // BEGIN variables with possible race conditions
 bool needlf = false;
 // Also includes `state.expectedWKC` from the header file
 // END variables with possible race conditions
 
-std::atomic_uint32_t target = 0;
-std::atomic_bool loop_flag = false;
+std::atomic_uint32_t *target = new std::atomic_uint32_t(0);
+std::atomic_bool *loop_flag = new std::atomic_bool(false);
 
 void *loop(void *mode_ptr) {
-  operational_mode_t mode = *(operational_mode_t *)mode_ptr;
+  operational_mode_t mode = *static_cast<operational_mode_t *>(mode_ptr);
 
   CSP_inputs csp_inputs;
   CSV_inputs csv_inputs;
 
   // Start precise timer for 2000us
   // use clock_gettime(CLOCK_MONOTONIC, &ts) for better precision
-  struct timespec tcur = {0, 0}, tprev = {0, 0};
+  struct timespec tcur = {0, 0}, tprev;
   clock_gettime(CLOCK_MONOTONIC, &tcur);
   tprev = tcur;
 
@@ -27,31 +40,31 @@ void *loop(void *mode_ptr) {
   // Get inputs and set initial target depending on mode
   if (mode == operational_mode_t::CSP) {
     csp_inputs = get_CSP_input(1);
-    target = csp_inputs.position;
+    *target = csp_inputs.position;
   } else if (mode == operational_mode_t::CSV) {
     csv_inputs = get_CSV_input(1);
-    target = csv_inputs.position;
+    *target = csv_inputs.position;
   } else {
     // TODO CST not supported yet
     assert(0 && "Mode not supported");
   }
 
   /**Statusword
-    * Bit 0 : Ready to switch on
-    * Bit 1 : Switched on
-    * Bit 2 : Operation enabled
-    * Bit 3 : Fault
-    * Bit 4 : Reserved / Voltage enabled
-    * Bit 5 : Reserved / Quick stop
-    * Bit 6 : Switch on disabled
-    * Bit 7 : Warning
-    * Bit 8 + 9 : Reserved
-    * Bit 10 : TxPDOToggle
-    * Bit 11 : Internal limit active
-    * Bit 12 : Drive follows the command value
-    * Bit 13 : Input cycle counter
-    * Bit 14 + 15 : Reserved
-    */
+   * Bit 0 : Ready to switch on
+   * Bit 1 : Switched on
+   * Bit 2 : Operation enabled
+   * Bit 3 : Fault
+   * Bit 4 : Reserved / Voltage enabled
+   * Bit 5 : Reserved / Quick stop
+   * Bit 6 : Switch on disabled
+   * Bit 7 : Warning
+   * Bit 8 + 9 : Reserved
+   * Bit 10 : TxPDOToggle
+   * Bit 11 : Internal limit active
+   * Bit 12 : Drive follows the command value
+   * Bit 13 : Input cycle counter
+   * Bit 14 + 15 : Reserved
+   */
   uint16_t statusword;
 
   /**Controlword
@@ -65,27 +78,24 @@ void *loop(void *mode_ptr) {
    */
   uint16_t controlword = 0;
 
-  uint32_t relative_offset = 0;
-  int direction = 1;
-
   int i = 0;
   int operation_enabled = 0;
   int error = 0;
 
   // Start control loop
-  while (loop_flag) {
+  while (*loop_flag) {
     // Start precise timer for 2000us
     do {
       clock_gettime(CLOCK_MONOTONIC, &tcur);
     } while ((tcur.tv_sec - tprev.tv_sec) * 1000000000 +
-                  (tcur.tv_nsec - tprev.tv_nsec) <
-              2000000);
+                 (tcur.tv_nsec - tprev.tv_nsec) <
+             2000000);
     tprev = tcur;
 
     // Do logic
     ec_send_processdata();
     wkc = ec_receive_processdata(EC_TIMEOUTRET);
-    
+
     // Get input depending on mode
     if (mode == operational_mode_t::CSP) {
       csp_inputs = get_CSP_input(1);
@@ -96,7 +106,7 @@ void *loop(void *mode_ptr) {
       assert(0 && "Mode not supported");
     }
 
-    if(error) {
+    if (error) {
       // TODO: Print error to ros including statusword, positoin, error, ...
       break;
     }
@@ -116,64 +126,63 @@ void *loop(void *mode_ptr) {
       }
 
       // Mask/Ignore reserved bits (4,5,8,9,14,15) of status word
-      statusword = statusword &
-      ~((1 << 4) | (1 << 5) | (1 << 8) | (1 << 9) | (1 << 14) | (1 << 15));
+      STATUS_WORD_MASK(statusword);
 
       // Do logic
       switch (statusword) {
-        case (Not_ready_to_switch_on): {
-          /* Now the FSM should automatically go to Switch_on_disabled*/
-          break;
-        }
-        case (Switch_on_disabled): {
-          /* Automatic transition (2)*/
-          controlword = 0;
-          controlword |=
-              (1 << control_enable_voltage) | (1 << control_quick_stop);
+      case (Not_ready_to_switch_on): {
+        /* Now the FSM should automatically go to Switch_on_disabled*/
+        break;
+      }
+      case (Switch_on_disabled): {
+        /* Automatic transition (2)*/
+        controlword = 0;
+        controlword |=
+            (1 << control_enable_voltage) | (1 << control_quick_stop);
 
-          // Periodically send fault reset
-          if (i % 10 == 0) {
-            controlword |= 1 << control_fault_reset;
-            i = 1;
-          } else {
-            i++;
-          }
-          break;
+        // Periodically send fault reset
+        if (i % 10 == 0) {
+          controlword |= 1 << control_fault_reset;
+          i = 1;
+        } else {
+          i++;
         }
-        case (Ready_to_switch_on):{
-          /* Switch on command for transition (3) */
-          controlword |= 1 << control_switch_on;
-          break;
-        }
-        case (Switch_on): {
-          /* Enable operation command for transition (4) */
-          controlword |= 1 << control_enable_operation;
-          break;
-        }
-        case (Operation_enabled): {
-          controlword = 0x1f;
+        break;
+      }
+      case (Ready_to_switch_on): {
+        /* Switch on command for transition (3) */
+        controlword |= 1 << control_switch_on;
+        break;
+      }
+      case (Switch_on): {
+        /* Enable operation command for transition (4) */
+        controlword |= 1 << control_enable_operation;
+        break;
+      }
+      case (Operation_enabled): {
+        controlword = 0x1f;
 
-          operation_enabled = 1;
-          break;
+        operation_enabled = 1;
+        break;
+      }
+      case (Fault):
+      default: {
+        if (operation_enabled == 1) {
+          error = 1;
+          operation_enabled = 0;
         }
-        case (Fault):
-        default: {
-          if(operation_enabled == 1) {
-            error = 1;
-            operation_enabled = 0;
-          }
 
-          /* Returning to Switch on Disabled */
-          controlword = (1 << control_fault_reset);
-          controlword |=
-              (1 << control_enable_voltage) | (1 << control_quick_stop);
-          break;
-        }
+        /* Returning to Switch on Disabled */
+        controlword = (1 << control_fault_reset);
+        controlword |=
+            (1 << control_enable_voltage) | (1 << control_quick_stop);
+        break;
+      }
       }
 
       // Check for faults (extra)
-      if(statusword & Fault) {
-        if(operation_enabled == 1) {
+      if (statusword & Fault) {
+        if (operation_enabled == 1) {
           error = 1;
           operation_enabled = 0;
         }
@@ -192,20 +201,19 @@ void *loop(void *mode_ptr) {
       // printf("Statusword: %#x (%d) ", statusword, statusword);
       // printf("Error: %d\r", inputs.erroract);
 
-      if(operation_enabled) {
-        set_output(1, controlword, target);
+      if (operation_enabled) {
+        set_output(1, controlword, *target);
       } else {
         // Send input value as output
-        if(mode == operational_mode_t::CSP) {
+        if (mode == operational_mode_t::CSP) {
           set_output(1, controlword, csp_inputs.position);
-        } else if(mode == operational_mode_t::CSV) {
+        } else if (mode == operational_mode_t::CSV) {
           set_output(1, controlword, csv_inputs.position);
         } else {
           // TODO CST not supported yet
           assert(0 && "Mode not supported");
         }
       }
-
     }
   }
 
@@ -218,7 +226,8 @@ void *loop(void *mode_ptr) {
 int start_loop(operational_mode_t mode) {
 
   // Start the check thread
-  osal_thread_create(&check_thread, 128000, &ecatcheck, NULL);
+  osal_thread_create(&check_thread, 128000,
+                     reinterpret_cast<void *>(&ecatcheck), NULL);
 
   // Set the state to operational
   state.expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
@@ -254,15 +263,16 @@ int start_loop(operational_mode_t mode) {
   pthread_attr_setschedparam(&attr, &param);
 
   // Set loop flag to enable loop
-  loop_flag = true;
+  *loop_flag = true;
 
   // Create thread
-  pthread_create(&main_thread, &attr, loop, (void *)&mode);
+  pthread_create(&main_thread, &attr, loop, static_cast<void *>(&mode));
+  return 1;
 }
 
 void stop_loop() {
   // Graceful shutdown
-  loop_flag = false;
+  *loop_flag = false;
   pthread_join(main_thread, NULL);
 }
 
@@ -277,7 +287,7 @@ int initialize_ethercat(const char *ifname, operational_mode_t mode) {
       printf("%d slaves found and configured.\n", ec_slavecount);
 
       ec_slave[1].PO2SOconfig = configure_servo;
-      ec_config_map(&IOmap);
+      ec_config_map(&IOMap);
       ec_configdc();
 
       printf("Slaves mapped, state to SAFE_OP.\n");
@@ -288,6 +298,7 @@ int initialize_ethercat(const char *ifname, operational_mode_t mode) {
       //!! VERY IMPORTANT. THE SERVO NEEDS SOME TIME, OTHERWISE YOU'LL GET STUCK
       //!!!
       osal_usleep(100000);
+      return 0;
     } else {
       printf("No slaves found!\n");
       return 1;
@@ -300,7 +311,8 @@ int initialize_ethercat(const char *ifname, operational_mode_t mode) {
 
 OSAL_THREAD_FUNC ecatcheck(void *ptr) {
   int slave;
-  (void)ptr; /* Not used */
+  (void)ptr;            /* Not used */
+  int currentgroup = 0; /* Originally global variable */
 
   while (1) {
     if (state.ethercat_state == OP &&
@@ -359,13 +371,11 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
   }
 }
 
-int configure_servo() {
-  uint16 slave = 1;
-
+int configure_servo(uint16 slave) {
   uint8 u8val;
   uint16 u16val;
   uint32 u32val;
-  int retval = 0;
+  uint16 retval = 0;
 
   // Set mode of operation
   /* Value Description
@@ -411,7 +421,7 @@ int configure_servo() {
       return 0;
 
     uint16_t map_velocity_1c12[] = {0x0002, 0x1600, 0x1606};
-    uint16_t map_velocity_1c12[] = {0x0005, 0x1A00, 0x1A01,
+    uint16_t map_velocity_1c13[] = {0x0005, 0x1A00, 0x1A01,
                                     0x1A02, 0x1A03, 0x1A06};
 
     retval = ec_SDOwrite(slave, 0x1c12, 0x00, TRUE, sizeof(map_velocity_1c12),
@@ -420,8 +430,7 @@ int configure_servo() {
                           map_velocity_1c13, EC_TIMEOUTSAFE);
     if (retval != 2)
       return 0;
-  }
-  else {
+  } else {
     // TODO CST not supported yet
     assert(0 && "Mode not supported");
   }
