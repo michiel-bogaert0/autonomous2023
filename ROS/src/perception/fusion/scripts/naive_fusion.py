@@ -204,6 +204,8 @@ class NaiveFusion:
         fused_observation.observation.observation.belief = association[
             0
         ].observation.observation.belief
+
+        cam_in_obs = False
         for obs in association:
             if obs.header.frame_id == "camera":
                 fused_observation.observation.observation.observation_class = (
@@ -212,7 +214,18 @@ class NaiveFusion:
                 fused_observation.observation.observation.belief = (
                     obs.observation.observation.belief
                 )
+                cam_in_obs = True
                 break
+        if not cam_in_obs:
+            for obs in association:
+                if obs.header.frame_id == "early_fusion":
+                    fused_observation.observation.observation.observation_class = (
+                        obs.observation.observation.observation_class
+                    )
+                    fused_observation.observation.observation.belief = (
+                        obs.observation.observation.belief
+                    )
+                    break
 
         fused_observation.observation.covariance = tuple(
             np.reshape(new_covariance, (1, 9)).tolist()[0]

@@ -4,8 +4,8 @@ import numpy as np
 import rospy
 from sklearn.neighbors import KDTree
 from ugr_msgs.msg import (
-    ObservationWithCovariance,
-    ObservationWithCovarianceArrayStamped,
+    ObservationWithCovarianceStamped,
+    ObservationWithCovarianceStampedArrayStamped,
 )
 
 
@@ -19,7 +19,7 @@ class StandardFusion:
         Fuse observations using a naive approach
         """
         results = (
-            ObservationWithCovarianceArrayStamped()
+            ObservationWithCovarianceStampedArrayStamped()
         )  # create a new msg of observations
 
         associations = self.kd_tree_merger(
@@ -35,8 +35,10 @@ class StandardFusion:
             # check for isolated cones
             if len(association) == 1:
                 # Reshape covariance matrix from 3x3 to 1x9
-                association[0].covariance = tuple(
-                    np.reshape(np.array(association[0].covariance), (1, 9))[0].tolist()
+                association[0].observation.covariance = tuple(
+                    np.reshape(np.array(association[0].observation.covariance), (1, 9))[
+                        0
+                    ].tolist()
                 )
                 fusion_observations.append(association[0])
                 continue
@@ -70,9 +72,9 @@ class StandardFusion:
         all_points = list(
             map(
                 lambda obs: [
-                    obs.observation.location.x,
-                    obs.observation.location.y,
-                    obs.observation.location.z,
+                    obs.observation.observation.location.x,
+                    obs.observation.observation.location.y,
+                    obs.observation.observation.location.z,
                 ],
                 all_observations,
             )
@@ -97,9 +99,9 @@ class StandardFusion:
                     indices, _ = kdtree_all.query_radius(
                         [
                             [
-                                current_obs.observation.location.x,
-                                current_obs.observation.location.y,
-                                current_obs.observation.location.z,
+                                current_obs.observation.observation.location.x,
+                                current_obs.observation.observation.location.y,
+                                current_obs.observation.observation.location.z,
                             ]
                         ],
                         r=self.euclidean_fusion_distance,
@@ -126,15 +128,16 @@ class StandardFusion:
 
         # Initialize numpy arrays
         covariance_matrices = [
-            np.reshape(np.array(obs.covariance), (3, 3)) for obs in association
+            np.reshape(np.array(obs.observation.covariance), (3, 3))
+            for obs in association
         ]
         observation_locations = [
             np.reshape(
                 np.array(
                     [
-                        obs.observation.location.x,
-                        obs.observation.location.y,
-                        obs.observation.location.z,
+                        obs.observation.observation.location.x,
+                        obs.observation.observation.location.y,
+                        obs.observation.observation.location.z,
                     ]
                 ),
                 (3, 1),
@@ -163,21 +166,45 @@ class StandardFusion:
             new_location += np.matmul(weights[i], observation_locations[i])
 
         # Create new observation
-        fused_observation = ObservationWithCovariance()
-        fused_observation.observation.observation_class = association[
+        fused_observation = ObservationWithCovarianceStamped()
+        fused_observation.header = association[0].header
+        fused_observation.header.frame_id = "kalman_fused"
+
+        fused_observation.observation.observation.observation_class = association[
             0
-        ].observation.observation_class
+        ].observation.observation.observation_class
+        fused_observation.observation.observation.belief = association[
+            0
+        ].observation.observation.belief
 
-        belief = association[0].observation.belief
-        # < -- Add code to favor one observation's belief here -- >
+        cam_in_obs = False
+        for obs in association:
+            if obs.header.frame_id == "camera":
+                fused_observation.observation.observation.observation_class = (
+                    obs.observation.observation.observation_class
+                )
+                fused_observation.observation.observation.belief = (
+                    obs.observation.observation.belief
+                )
+                cam_in_obs = True
+                break
+        if not cam_in_obs:
+            for obs in association:
+                if obs.header.frame_id == "early_fusion":
+                    fused_observation.observation.observation.observation_class = (
+                        obs.observation.observation.observation_class
+                    )
+                    fused_observation.observation.observation.belief = (
+                        obs.observation.observation.belief
+                    )
+                    break
 
-        fused_observation.observation.belief = belief
-        fused_observation.covariance = tuple(
+        fused_observation.observation.covariance = tuple(
             np.reshape(new_covariance, (1, 9)).tolist()[0]
         )
         (
-            fused_observation.observation.location.x,
-            fused_observation.observation.location.y,
-            fused_observation.observation.location.z,
+            fused_observation.observation.observation.location.x,
+            fused_observation.observation.observation.location.y,
+            fused_observation.observation.observation.location.z,
         ) = tuple((new_location[0][0], new_location[1][0], new_location[2][0]))
         return fused_observation
