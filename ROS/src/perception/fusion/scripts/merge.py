@@ -65,6 +65,7 @@ class MergeNode:
             rospy.get_param("~standard_fusion_distance", 1.0)
         )
         self.max_sensor_time_diff = rospy.get_param("~sensor_time_diff_ms", 50)
+        self.log_observations = rospy.get_param("~log_observations", False)
 
         #   Initialize fusion pipeline
         self.fusion_pipeline = None
@@ -166,8 +167,8 @@ class MergeNode:
         # Fuse transformed observations
         results = self.fusion_pipeline.fuse_observations(transformed_msgs)
         results = self.unstamp_all_observations(results)
-
-        self.log_plot_info(transformed_msgs, results)
+        if self.log_observations:
+            self.log_plot_info(transformed_msgs, results)
 
         # Publish fused observations
         results.header.stamp = results_time
