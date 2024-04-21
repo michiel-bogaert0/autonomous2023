@@ -161,7 +161,8 @@ class MergeNode:
 
         # Transform all observations to a common frame and time
         transformed_msgs, results_time = self.transform_observations(sensor_msgs)
-
+        if transformed_msgs == []:
+            return
         # Fuse transformed observations
         results = self.fusion_pipeline.fuse_observations(transformed_msgs)
         results = self.unstamp_all_observations(results)
@@ -171,7 +172,6 @@ class MergeNode:
         # Publish fused observations
         results.header.stamp = results_time
         results.header.frame_id = self.base_link_frame
-
         self.publish(results)
         return
 
