@@ -3,7 +3,7 @@
   <node pkg="fusion" output="screen" type="merge.py" name="topic_merger" respawn="False">
     <param name="base_link_frame" value="ugr/car_base_link" />
     <param name="world_frame" value="ugr/car_odom" />
-    <param name="fusion_method" value="standard" /> <!-- options: naive, standard -->
+    <param name="fusion_method" value="naive" /> <!-- options: naive, standard -->
     <param name="naive_fusion_distance" value="1.25" />
     <param name="standard_fusion_distance" value="1.25" />
     <param name="sensor_time_diff_ms" value="50" />
