@@ -4,13 +4,13 @@
     <param name="base_link_frame" value="ugr/car_base_link" />
     <param name="world_frame" value="ugr/car_odom" />
     <param name="fusion_method" value="standard" /> <!-- options: naive, standard -->
-    <param name="naive_fusion_distance" value="1.5" />
-    <param name="standard_fusion_distance" value="1.5" />
+    <param name="naive_fusion_distance" value="1.25" />
+    <param name="standard_fusion_distance" value="1.25" />
     <param name="sensor_time_diff_ms" value="50" />
     <param name="log_observations" value="false" />
     <remap from="/input/lidar_observations" to="/ugr/car/observations/lidar"/>
     <remap from="/input/camera_observations" to="/ugr/car/observations/camera"/>
     <remap from="/input/early_fusion_observations" to="/ugr/car/observations/early_fused"/>
-    <remap from="/output/topic" to="/ugr/car/observations/fused"/>
+    <remap from="/output/topic" to="/ugr/car/observations/fused2"/>
   </node>
 </launch>
