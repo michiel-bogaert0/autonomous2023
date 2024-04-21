@@ -58,8 +58,8 @@ class MergeNode:
         self.input_sensors = ["lidar", "camera", "early_fusion"]
 
         #   Fusion parameters
-        self.max_fusion_eucl_distance = float(
-            rospy.get_param("~fusion_eucl_distance", 1.0)
+        self.naive_fusion_distance = float(
+            rospy.get_param("~naive_fusion_distance", 1.0)
         )
         self.standard_fusion_distance = float(
             rospy.get_param("~standard_fusion_distance", 1.0)
@@ -71,9 +71,9 @@ class MergeNode:
         self.fusion_method = rospy.get_param("~fusion_method", "naive")
 
         if self.fusion_method == "naive":
-            self.fusion_pipeline = NaiveFusion(self.max_fusion_eucl_distance)
+            self.fusion_pipeline = NaiveFusion(self.naive_fusion_distance)
         else:
-            self.fusion_pipeline = StandardFusion(self.max_fusion_eucl_distance)
+            self.fusion_pipeline = StandardFusion(self.standard_fusion_distance)
 
         # Helper variables
         self.last_received = 0
