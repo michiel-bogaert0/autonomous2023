@@ -94,21 +94,18 @@ class MergeNode:
             observations, self.input_sensors[0]
         )
         self.handle_observations(all_stamped_observations, self.input_sensors[0])
-        return
 
     def handle_camera(self, observations: ObservationWithCovarianceArrayStamped):
         all_stamped_observations = self.stamp_all_observations(
             observations, self.input_sensors[1]
         )
         self.handle_observations(all_stamped_observations, self.input_sensors[1])
-        return
 
     def handle_early_fusion(self, observations: ObservationWithCovarianceArrayStamped):
         all_stamped_observations = self.stamp_all_observations(
             observations, self.input_sensors[2]
         )
         self.handle_observations(all_stamped_observations, self.input_sensors[2])
-        return
 
     def handle_observations(
         self,
@@ -143,7 +140,6 @@ class MergeNode:
             self.msg_wait_timer.shutdown()
             self.handle_timeout()
             return
-        return
 
     def handle_timeout(self, event=None):
         self.sensors_received = []
@@ -153,7 +149,6 @@ class MergeNode:
 
         if len(send_msgs) >= 1:
             self.run_fusion(send_msgs)
-        return
 
     def run_fusion(self, sensor_msgs):
         """
@@ -202,7 +197,6 @@ class MergeNode:
         results.header.stamp = results_time
         results.header.frame_id = self.base_link_frame
         self.publish(results)
-        return
 
     def transform_observations(self, sensor_msgs):
         """

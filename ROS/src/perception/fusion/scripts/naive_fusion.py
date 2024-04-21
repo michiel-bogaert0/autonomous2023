@@ -11,7 +11,6 @@ from ugr_msgs.msg import (
 class NaiveFusion:
     def __init__(self, euclidean_max_fusion_distance):
         self.euclidean_max_fusion_distance = euclidean_max_fusion_distance
-        return
 
     def fuse_observations(self, tf_sensor_msgs):
         """
