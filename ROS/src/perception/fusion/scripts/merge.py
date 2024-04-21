@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-
 import copy
+import math
 
 import rospy
 import tf2_ros as tf
@@ -159,24 +159,37 @@ class MergeNode:
         """
         Process incoming messages through fusion pipeline
         """
-        # Check for NaN values in observations
+        # Check for inf values in observations
+        cleaned_sensor_msgs = []
         for sensor_msg in sensor_msgs:
             clean_observations = []
             for obs in sensor_msg.observations:
-                if any(map(lambda x: x != x, obs.observation.observation.location)):
-                    rospy.logwarn(
-                        f"Sensor {sensor_msg.header.frame_id} has NaN values in observations"
+                if any(
+                    map(
+                        lambda x: math.isinf(x),
+                        [
+                            obs.observation.observation.location.x,
+                            obs.observation.observation.location.y,
+                            obs.observation.observation.location.z,
+                        ],
                     )
+                ):
+                    # rospy.logwarn(
+                    #     f"Sensor {sensor_msg.header.frame_id} has inf values in observations"
+                    # )
+                    continue
                 else:
                     clean_observations.append(
                         obs
-                    )  # Add observation to clean list if it doesn't contain NaN values
+                    )  # Add observation to clean list if it doesn't contain inf values
             sensor_msg.observations = (
                 clean_observations  # Replace original observations with clean list
             )
-
+            cleaned_sensor_msgs.append(sensor_msg)
         # Transform all observations to a common frame and time
-        transformed_msgs, results_time = self.transform_observations(sensor_msgs)
+        transformed_msgs, results_time = self.transform_observations(
+            cleaned_sensor_msgs
+        )
         if transformed_msgs == []:
             return
         # Fuse transformed observations
