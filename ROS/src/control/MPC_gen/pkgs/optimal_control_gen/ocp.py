@@ -52,7 +52,7 @@ class Ocp:
         self.u_prev = self.opti.parameter(self.nu)
 
         # Soften constraints
-        self.Sc = self.opti.variable(1, N)
+        self.Sc = self.opti.variable(1, N + 1)
         self.sc = casadi.SX.sym("sc", 1)
 
         self.params = []  # additional parameters
@@ -101,6 +101,7 @@ class Ocp:
     def discretize(self, f, DT, M, integrator="rk4"):
         x = casadi.SX.sym("x", self.nx)
         u = casadi.SX.sym("u", self.nu)
+        # dt = casis..;
 
         if integrator == "rk4":
             x_new = rk4(f, x, u, DT, M)
@@ -115,16 +116,17 @@ class Ocp:
         return F
 
     def _set_continuity(self, threads: int):
-        # self.opti.subject_to(self.X[:, 0] == self.x0)
+        # self.opti.subject_to(self.X[:, 0] == self.x0) # doing this somehow causes crash issue
+        # self.opti.subject_to(self.X[0, 0] == self.x0[0])
         self.opti.subject_to(self.X[2, 0] == 0)
         self.opti.subject_to(self.X[3, 0] == 0)
-        self.opti.subject_to(self.X[4, 0] == 0)
-        self.opti.subject_to(self.X[5, 0] == 0)
-        self.opti.subject_to(self.X[5, self.N] == 1)
+        self.opti.subject_to(self.X[4, 0] == self.x0[4])
+        self.opti.subject_to(self.X[5, 0] == 0.01)
+        # self.opti.subject_to(self.X[5, self.N] == 1)
 
         if threads == 1:
             for i in range(self.N):
-                x_next = self.F(self.X[:, i], self.U[:, i])
+                x_next = self.F(self.X[:, i], self.U[:, i])  # hier self.DT_sym meegeven
 
                 if isinstance(x_next, np.ndarray):
                     x_next = casadi.vcat(x_next)  # convert numpy array to casadi vector
@@ -135,36 +137,42 @@ class Ocp:
             self.opti.subject_to(self.X[:, 1:] == X_next)
 
     def eval_cost(self, X, U, Sc):
-        """
-        To test out the cost function
-        """
+        # Function not tested
         assert X.shape[0] == self.nx
-        N = X.shape[1] - 1
-        cost_accum = 0
+        # N = X.shape[1] - 1
 
-        for i in range(N):
+        L_run = 0  # cost over the horizon
+        for i in range(self.N):
             if i == 0:
-                cost_accum += self.cost_fun(
+                L_run += self.cost_fun(
                     X[:, i + 1],
                     U[:, i],
                     (U[:, i] - self.u_prev),
-                    self.centerline(X[5, i]).T,
-                    self.der_centerline(X[5, i]).T,
+                    self.centerline(X[5, i + 1]).T,
+                    self.der_centerline(X[5, i + 1]).T,
                     Sc[i],
                 )
+                temp = self.cost_fun(
+                    X[:, i + 1],
+                    U[:, i],
+                    (U[:, i] - self.u_prev),
+                    self.centerline(X[5, i + 1]).T,
+                    self.der_centerline(X[5, i + 1]).T,
+                    Sc[i],
+                )
+                print(temp)
+                # print(L_run)
             else:
-                cost_accum += self.cost_fun(
+                L_run += self.cost_fun(
                     X[:, i + 1],
                     U[:, i],
                     (U[:, i] - U[:, i - 1]),
-                    self.centerline(X[5, i]).T,
-                    self.der_centerline(X[5, i]).T,
+                    self.centerline(X[5, i + 1]).T,
+                    self.der_centerline(X[5, i + 1]).T,
                     Sc[i],
                 )
 
-        # cost_accum = self.cost_fun.map(N)(X[:, :-1], U, (U - self.u_prev), self.centerline(Tau).T, self.der_centerline(Tau).T, Vk, Sc)
-
-        return cost_accum
+        return casadi.sum2(L_run)
 
     def set_cost(
         self,
@@ -192,8 +200,6 @@ class Ocp:
                         self.der_centerline(self.X[5, i + 1]).T,
                         self.Sc[i],
                     )
-                # This constraint works with halspaces (not implemented properly yet)
-                # self.opti.subject_to((self.a * self.X[0, i] + self.b - self.X[1, i]) * (self.c * self.X[0, i] + self.d - self.X[1, i]) < 0)
 
             self.cost["run"] = L_run
 
@@ -305,7 +311,7 @@ class Ocp:
         else:
             self.opti.set_initial(self.U, np.zeros((self.nu, self.N)))
 
-        self.opti.set_initial(self.Sc, np.zeros((1, self.N)) * 1e-1)
+        self.opti.set_initial(self.Sc, np.zeros((1, self.N + 1)) * 1e-1)
 
         try:
             with self.timer:

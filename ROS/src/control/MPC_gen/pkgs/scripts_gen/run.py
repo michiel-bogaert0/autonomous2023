@@ -4,30 +4,18 @@ import casadi as cd
 import numpy as np
 import rospkg
 import rospy
-import tf2_ros as tf
 import yaml
-from controller_manager_msgs.srv import SwitchController, SwitchControllerRequest
 from environments_gen.bicycle_model_spline import BicycleModelSpline
-from geometry_msgs.msg import PointStamped, PoseStamped
 from matplotlib import pyplot as plt
-from nav_msgs.msg import Odometry, Path
-from node_fixture.fixture import (
-    DiagnosticArray,
-    DiagnosticStatus,
-    NodeManagingStatesEnum,
-    ROSNode,
-    SLAMStatesEnum,
-    StateMachineScopeEnum,
-    create_diagnostic_message,
-)
 from optimal_control_gen.MPC_generation import MPC_generation
 from optimal_control_gen.ocp import Ocp
 from scipy.interpolate import interp1d
-from sensor_msgs.msg import JointState
-from spline_utils import create_spline, project_on_spline  # , get_boundary_constraints
-from std_msgs.msg import Float64
-from trajectory import Trajectory
-from ugr_msgs.msg import State
+from spline_utils import (
+    create_spline,
+    get_boundary_constraints,
+    get_boundary_constraints_casadi,
+    project_on_spline,
+)
 
 
 class MPC_gen:
@@ -110,7 +98,7 @@ class MPC_gen:
         create_spline(self.GT_left_boundary, "b", plot=True)
         create_spline(self.GT_right_boundary, "y", plot=True)
 
-        # get_boundary_constraints(curve_centerline, 0.5, 1, plot=True)
+        get_boundary_constraints(curve_centerline, 0.2, 1.5, plot=True)
 
         # plt.xlim(-40, 20)
         # plt.ylim(-10, 20)
@@ -126,6 +114,8 @@ class MPC_gen:
         # self.analyse_cost()
 
         self.run_mpc()
+
+        self.save_solution()
 
         rospy.spin()
 
@@ -147,12 +137,12 @@ class MPC_gen:
         return arr
 
     def initialize_MPC(self):
-        self.car = BicycleModelSpline(dt=0.05)
+        self.car = BicycleModelSpline(dt=0.1)
 
         self.steering_joint_angle = 0
         self.u = [0, 0, 0]
 
-        self.N = 35
+        self.N = 21
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
@@ -171,8 +161,8 @@ class MPC_gen:
         Qn = np.diag([8e-3, 8e-3, 0, 0, 0, 0])
 
         # Input: acceleration, velocity on steering angle and update to progress parameter
-        R = np.diag([1e-5, 5e-2, -1e-1])
-        R_delta = np.diag([1e-1, 5e-3, 0])
+        R = np.diag([1e-5, 5e-1, -1e1])
+        R_delta = np.diag([1e-1, 5e-1, 0])
 
         self.set_costs(Qn, R, R_delta)
 
@@ -185,16 +175,69 @@ class MPC_gen:
         """
         Analyse the cost function
         """
-        X = self.ocp.X
-        U = self.ocp.U
-        Sc = self.ocp.Sc
+        # X_closed_loop = np.load(
+        #     rospkg.RosPack().get_path("mpc_gen") + "/data_gen/X_closed_loop.npy"
+        # )
+        # U_closed_loop = np.load(
+        #     rospkg.RosPack().get_path("mpc_gen") + "/data_gen/U_closed_loop.npy"
+        # )
 
-        self.ocp.set_initial(X, np.zeros((self.car.nx, self.N + 1)))
-        self.ocp.set_initial(U, np.zeros((self.car.nu, self.N)))
-        self.ocp.set_initial(Sc, np.zeros((1, self.N)))
+        # Sc = np.zeros((1, self.N))
 
-        cost = self.ocp.eval_cost(X, U, Sc)
-        print(type(cost))
+        # der_curve = self.curve_centerline.derivative(o=1)
+
+        # qs = 1e-1
+        # qss = 1e-1
+        # qc = 1e-2
+        # ql = 1e-2
+
+        # R = np.diag([1e-7, 1e-3, -1e-1])
+        # R_delta = np.diag([1e-7, 1e-3, 0])
+
+        # total_cost = 0
+
+        # for i in range(self.N):
+
+        #     point_curve = np.squeeze(self.curve_centerline(X_closed_loop[5][i+1]))
+        #     der_point = np.squeeze(der_curve(X_closed_loop[5][i+1]))
+
+        #     print(point_curve)
+        #     print(der_point)
+        #     phi = np.arctan2(der_point[1], der_point[0]) if np.abs(der_point[1]) > 1e-3 else 0
+        #     print(np.degrees(phi))
+
+        #     # Plot x-y and heading
+        #     plt.plot(point_curve[0], point_curve[1], "o", c="r")
+        #     plt.plot(
+        #         [point_curve[0], point_curve[0] + np.cos(phi)],
+        #         [point_curve[1], point_curve[1] + np.sin(phi)],
+        #         c="m",
+        #     )
+
+        #     e_c = np.sin(phi) * (X_closed_loop[0][i] - point_curve[0]) - np.cos(phi) * (
+        #         X_closed_loop[1][i] - point_curve[1]
+        #     )
+        #     e_l = -np.cos(phi) * (X_closed_loop[0][i] - point_curve[0]) - np.sin(phi) * (
+        #         X_closed_loop[1][i] - point_curve[1]
+        #     )
+
+        #     if i == 0:
+        #         u_delta = U_closed_loop[:, i]
+        #     else:
+        #         u_delta = U_closed_loop[:, i] - U_closed_loop[:, i-1]
+
+        #     contouring_cost = qc * e_c**2
+        #     lag_cost = ql * e_l**2
+        #     input_cost = U_closed_loop[:, i] @ R @ U_closed_loop[:, i]
+        #     input_delta_cost = u_delta @ R_delta @ u_delta
+        #     relaxing_cost = qs * Sc + qss * Sc**2
+
+        #     print(f"iteration {i} | contouring cost: {contouring_cost} | lag cost: {lag_cost} | input cost: {input_cost} | input delta cost: {input_delta_cost} | relaxing cost: {relaxing_cost}")
+
+        # total_cost += cost
+        plt.show()
+
+        # print(total_cost)
 
     def set_constraints(self, velocity_limit, steering_limit):
         """
@@ -223,30 +266,62 @@ class MPC_gen:
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[5, :], 1))
 
         # Limit update to progress parameter
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.U[2, :], 0.05))
+        # Starts from 0.01 because otherwise casadi optimizes to very small negative values
+        self.ocp.subject_to(self.ocp.bounded(0.01, self.ocp.U[2, :], 0.2))
 
         # Limit relaxing constraint
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.3))
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.1))
+
+        # Make sure neither x and y are zero at the same time by limiting square to be larger than 0
+        # self.ocp.subject_to(self.ocp.X[0, :] ** 2 + self.ocp.X[1, :] ** 2 > 1e-3)
 
         # # For loop takes quite long to initialize
+        # center_points = self.ocp.centerline(self.ocp.X[5, :].T)
+        # for i in range(self.N + 1):
+        #     self.ocp.subject_to(
+        #         (
+        #             (
+        #                 self.ocp.X[0, i]
+        #                 # - self.ocp.centerline(self.ocp.X[5, i]).T[0]
+        #                 - center_points[i, 0]
+        #             )
+        #             ** 2
+        #             + (
+        #                 self.ocp.X[1, i]
+        #                 # - self.ocp.centerline(self.ocp.X[5, i]).T[1]
+        #                 - center_points[i, 1]
+        #             )
+        #             ** 2
+        #         )
+        #         < (1.2**2)  # + self.ocp.Sc[i] ** 2
+        #     )
         for i in range(self.N):
+            # slope_inner, intersect_inner, slope_outer, interesect_outer = get_boundary_constraints_casadi(self.curve_centerline, self.ocp.X[5, i], 2, plot=True)
+            # print(slope_inner)
+            (
+                slope_inner,
+                intersect_inner,
+                slope_outer,
+                intersect_outer,
+            ) = get_boundary_constraints_casadi(
+                self.curve_centerline, self.ocp.X[5, i + 1], 1.5
+            )
             self.ocp.subject_to(
                 (
-                    (
-                        self.ocp.X[0, i + 1]
-                        - self.ocp.centerline(self.ocp.X[5, i + 1]).T[0]
-                    )
-                    ** 2
-                    + (
-                        self.ocp.X[1, i + 1]
-                        - self.ocp.centerline(self.ocp.X[5, i + 1]).T[1]
-                    )
-                    ** 2
+                    slope_inner * self.ocp.X[0, i + 1]
+                    + intersect_inner
+                    - self.ocp.X[1, i + 1]
                 )
-                < (1.2**2) + self.ocp.Sc[i] ** 2
+                * (
+                    slope_outer * self.ocp.X[0, i + 1]
+                    + intersect_outer
+                    - self.ocp.X[1, i + 1]
+                )
+                < 0
             )
 
         self.ocp._set_continuity(1)
+        # plt.show()
 
         print("Constraints set")
 
@@ -256,23 +331,25 @@ class MPC_gen:
         """
         qs = 1e-1
         qss = 1e-1
-        qc = 1e-4
-        ql = 1e-4
+        qc = 5e-3
+        ql = 5e-3
 
         # State: x, y, heading, steering angle, velocity
         # Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
 
         # Input: acceleration, velocity on steering angle, update to progress parameter
         # Maximize progress parameter
-        R = np.diag([1e-7, 1e-3, -1e-1])
-        R_delta = np.diag([1e-7, 1e-3, 0])
+        R = np.diag([1e-7, 1e-1, -1e1])
+        R_delta = np.diag([1e-7, 1e-1, 0])
 
         # Avoid division by zero
-        phi = cd.if_else(
-            cd.fabs(self.ocp.der_curve[1]) < 1e-3,
-            0,
-            cd.atan2(self.ocp.der_curve[1], self.ocp.der_curve[0]),
-        )
+        # phi = cd.if_else(
+        #     cd.fabs(self.ocp.der_curve[1]) < 1e-3,
+        #     0,
+        #     cd.atan2(self.ocp.der_curve[1], self.ocp.der_curve[0]),
+        # )
+        # Add small noise to avoid division by zero in derivative
+        phi = cd.atan2(self.ocp.der_curve[1] + 1e-10, self.ocp.der_curve[0] + 1e-10)
         e_c = cd.sin(phi) * (self.ocp.x[0] - self.ocp.point_curve[0]) - cd.cos(phi) * (
             self.ocp.x[1] - self.ocp.point_curve[1]
         )
@@ -290,114 +367,106 @@ class MPC_gen:
         )
 
     def run_mpc(self):
-        initial_state = [self.start_pos[0], self.start_pos[1], 0, 0, 0, 0]
+        initial_state = [self.start_pos[0], self.start_pos[1], 0, 0, 50, 0.01]
 
-        # Tau0 = np.linspace(0, 1, self.N + 1)
-        # X0 = []
-        # U0 = []
+        Tau0 = np.linspace(0.01, 0.5, self.N + 1)
+        X0 = []
+        U0 = []
 
-        # for i, tau in enumerate(Tau0):
-        #     x0 = self.curve_centerline(tau)[0]
-        #     # heading = self.curve_centerline(tau)[1]
-        #     steering_angle = 0
+        for tau in Tau0:
+            x0 = self.curve_centerline(tau)[0]
+            # heading = self.curve_centerline(tau)[1]
+            steering_angle = 0
 
-        #     # calculate heading based on position
-        #     if len(X0) > 0:
-        #         heading = np.arctan2(
-        #             x0[1] - X0[-1][1], x0[0] - X0[-1][0]
-        #         )
-        #     else:
-        #         heading = 0
+            # calculate heading based on position
+            # center_point = n
+            if len(X0) > 0:
+                heading = np.arctan2(x0[1] - X0[-1][1], x0[0] - X0[-1][0])
+            else:
+                heading = 0
 
-        #     if len(X0) > 0:
-        #         steering_angle = (heading - X0[-1][2]) / self.car.dt
-        #     steering_angle = 0
+            # calculate steering angle based on position
+            if len(X0) > 0:
+                # Apply inverse bicycle model
+                # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
+                R = ((x0[0] - X0[-1][0]) ** 2 + (x0[1] - X0[-1][1]) ** 2) / (
+                    2 * (x0[1] - X0[-1][1])
+                )
+                steering_angle = np.arctan2(1.0, R)
+                max_angle = np.pi / 4
+                steering_angle = (steering_angle + max_angle) % (
+                    2 * max_angle
+                ) - max_angle
+            else:
+                steering_angle = 0
 
-        #     # calculate steering angle based on position
-        #     # if len(X0) > 0:
-        #     #     # Apply inverse bicycle model
-        #     #     # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-        #     #     R = ((x0[0] - X0[-1][0]) ** 2 + (x0[1] - X0[-1][1]) ** 2) / (
-        #     #         2 * (x0[1] - X0[-1][1])
-        #     #     )
-        #     #     steering_angle = np.arctan2(1.0, R)
-        #     # else:
-        #     #     steering_angle = 0
+            # calculate velocity based on position
+            if len(X0) > 0:
+                velocity = (
+                    np.sqrt((x0[0] - X0[-1][0]) ** 2 + (x0[1] - X0[-1][1]) ** 2)
+                    / self.car.dt
+                )
+            else:
+                velocity = 50
+            # velocity = 50
 
-        #     # calculate heading based on position
-        #     if len(X0) > 0:
-        #         heading = np.arctan2(
-        #             x0[1] - X0[-1][1], x0[0] - X0[-1][0]
-        #         )
-        #         # heading_delta = X0[-1][4] * np.tan(X0[-1][3]) / self.car.L
-        #         # heading = X0[-1][2] + heading_delta
+            # # calculate steering angle based on heading
+            # if len(X0) > 0:
+            #     prev_steering_angle = X0[-1][3]
+            #     steering_angle_delta = np.arctan2(
+            #         np.sin(heading - prev_steering_angle),
+            #         np.cos(heading - prev_steering_angle),
+            #     )
+            #     steering_angle = prev_steering_angle + steering_angle_delta
+            # else:
+            #     steering_angle = 0
+            #     steering_angle_delta = 0
 
-        #     else:
-        #         heading = 0
+            x0_state = [x0[0], x0[1], heading, steering_angle, velocity, tau]
+            X0.append(x0_state)
+            # X0.append(self.curve_centerline(tau).T)
+            steering_angle_delta = steering_angle - X0[-1][3]
 
-        #     # calculate velocity based on position
-        #     if len(X0) > 0:
-        #         velocity = np.sqrt(
-        #             (x0[0] - X0[-1][0]) ** 2 + (x0[1] - X0[-1][1]) ** 2
-        #         ) / self.car.dt
-        #     else:
-        #         velocity = 0
-        #     velocity = 0
+        # Plot x-y and heading
+        plt.plot([x[0] for x in X0], [x[1] for x in X0], c="b")
 
-        #     # # calculate steering angle based on heading
-        #     # if len(X0) > 0:
-        #     #     prev_steering_angle = X0[-1][3]
-        #     #     steering_angle_delta = np.arctan2(
-        #     #         np.sin(heading - prev_steering_angle),
-        #     #         np.cos(heading - prev_steering_angle),
-        #     #     )
-        #     #     steering_angle = prev_steering_angle + steering_angle_delta
-        #     # else:
-        #     #     steering_angle = 0
-        #     #     steering_angle_delta = 0
+        # Plot heading at x-y points
+        for i in range(len(X0)):
+            plt.plot(
+                [X0[i][0], X0[i][0] + np.cos(X0[i][2])],
+                [X0[i][1], X0[i][1] + np.sin(X0[i][2])],
+                c="r",
+            )
 
-        #     x0_state = [x0[0], x0[1], heading, steering_angle, velocity]
-        #     X0.append(x0_state)
-        #     # X0.append(self.curve_centerline(tau).T)
-        #     steering_angle_delta = steering_angle - X0[-1][3]
+        for i in range(self.N):
+            acceleration = (X0[i + 1][4] - X0[i][4]) / self.car.dt * self.wheelradius
+            steering_angle_delta = (X0[i + 1][3] - X0[i][3]) / self.car.dt
+            dtau = X0[i + 1][5] - X0[i][5]
+            U0.append([acceleration, steering_angle_delta, dtau])
 
-        # # Plot x-y and heading
-        # plt.plot([x[0] for x in X0], [x[1] for x in X0], c="b")
+        self.u = U0[0]
+        # U0.append([0, 0, 0])
+        X0 = np.array(X0).T
+        U0 = np.array(U0).T
 
-        # # Plot heading at x-y points
-        # for i in range(len(X0)):
-        #     plt.plot(
-        #         [X0[i][0], X0[i][0] + np.cos(X0[i][2])],
-        #         [X0[i][1], X0[i][1] + np.sin(X0[i][2])],
-        #         c="r",
-        #     )
+        print(X0)
+        print(U0)
 
         # plt.show()
 
-        # for i in range(self.N):
-        #     acceleration = X0[i + 1][4] - X0[i][4]
-        #     steering_angle_delta = X0[i + 1][3] - X0[i][3]
-        #     U0.append([acceleration, steering_angle_delta])
-        # X0 = np.array(X0).T
-        # U0 = np.array(U0).T
-
-        # print(X0)
-        # print(U0)
-
         u, info = self.mpc(
-            initial_state,
-            self.curve_centerline,
-            0,
-            0,
-            0,
-            0,
-            self.u,  # , X0=X0, U0=U0
+            initial_state, self.curve_centerline, 0, 0, 0, 0, self.u, X0=X0, U0=U0
         )
 
         # print(self.ocp.debug.value)
 
         print(f"X_closed_loop: {info['X_sol']}")
         print(f"U_closed_loop: {info['U_sol']}")
+
+        # Save X and U to file
+        # path = rospkg.RosPack().get_path("mpc_gen")
+        # np.save(path + "/data_gen/X_closed_loop.npy", info["X_sol"])
+        # np.save(path + "/data_gen/U_closed_loop.npy", info["U_sol"])
 
         x_sol = info["X_sol"][0][:]
         y_sol = info["X_sol"][1][:]
@@ -408,424 +477,42 @@ class MPC_gen:
         x_traj = self.interpolate_arr(np.vstack((x_sol, y_sol)).T, n=3)
 
         x_traj = np.vstack((x_traj, x_traj[0]))
-        plt.plot(x_traj.T[0], x_traj.T[1], c="m")
+        # plt.plot(x_traj.T[0], x_traj.T[1], c="m")
+        plt.plot(info["X_sol"][0][:], info["X_sol"][1][:], c="m")
         plt.plot(info["X_sol"][0][:], info["X_sol"][1][:], "o", c="m")
+        print(info["X_sol"][5].shape)
+        print(info["X_sol"][1].shape)
 
-        for i in range(self.N):
+        for i in range(self.N + 1):
             plt.plot(
-                self.curve_centerline(info["X_sol"][5][i + 1]).T[0],
-                self.curve_centerline(info["X_sol"][5][i + 1]).T[1],
+                self.curve_centerline(info["X_sol"][5][i]).T[0],
+                self.curve_centerline(info["X_sol"][5][i]).T[1],
+                "o",
                 c="g",
             )
+            # get_boundary_constraints_casadi(self.curve_centerline, info["X_sol"][5][i + 1], 1.5, plot=True)
+        # test_point = (self.curve_centerline(0.5)).T
+        # plt.plot(test_point[0], test_point[1], "o", c="g")
 
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
         plt.show()
 
-    def doConfigure(self):
-        self.tf_buffer = tf.Buffer()
-        self.tf_listener = tf.TransformListener(self.tf_buffer)
-        self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
+    def save_solution(self):
+        # Get convergence information
+        inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
+        inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
+        inf_obj = self.ocp.debug.stats()["iterations"]["obj"]
+        print(self.ocp.debug.show_infeasibilities())
 
-        self.wheelradius = rospy.get_param("~wheelradius", 0.1)
-
-        self.velocity_cmd = Float64(0.0)
-        self.steering_cmd = Float64(0.0)
-        self.actual_speed = 0.0
-
-        # Publishers for the controllers
-        self.drive_effort_pub = super().AddPublisher(
-            "/output/drive_effort_controller/command", Float64, queue_size=10
+        np.savez(
+            "/home/ugr/autonomous2023/ROS/src/control/MPC_gen/data_gen/solution.npz",
+            U_sol_intermediate=self.mpc.U_sol_intermediate,
+            X_sol_intermediate=self.mpc.X_sol_intermediate,
+            info_pr=inf_pr,
+            info_du=inf_du,
+            info_obj=inf_obj,
         )
-        self.drive_velocity_pub = super().AddPublisher(
-            "/output/drive_velocity_controller/command", Float64, queue_size=10
-        )
-        self.steering_velocity_pub = super().AddPublisher(
-            "/output/steering_velocity_controller/command", Float64, queue_size=10
-        )
-        self.steering_position_pub = super().AddPublisher(
-            "/output/steering_position_controller/command", Float64, queue_size=10
-        )
-
-        self.switched_controllers = False
-
-        # For visualization
-        self.vis_pub = super().AddPublisher(
-            "/output/target_point",
-            PointStamped,
-            queue_size=10,  # warning otherwise
-        )
-
-        self.x_vis_pub = super().AddPublisher(
-            "/output/x_prediction",
-            Path,
-            queue_size=10,  # warning otherwise
-        )
-
-        self.ref_track_pub = super().AddPublisher(
-            "/output/ref_track",
-            Path,
-            queue_size=10,  # warning otherwise
-        )
-
-        self.left_line_pub = super().AddPublisher(
-            "/output/left_line",
-            Path,
-            queue_size=10,  # warning otherwise
-        )
-
-        self.right_line_pub = super().AddPublisher(
-            "/output/right_line",
-            Path,
-            queue_size=10,  # warning otherwise
-        )
-
-        # Diagnostics Publisher
-        self.diagnostics_pub = super().AddPublisher(
-            "/diagnostics", DiagnosticArray, queue_size=10
-        )
-
-        # Subscriber for path
-        self.path_sub = super().AddSubscriber(
-            "/input/path", Path, self.getPathplanningUpdate
-        )
-
-        self.received_path = None
-
-        self.odom_sub = super().AddSubscriber(
-            "/input/odom", Odometry, self.get_odom_update
-        )
-
-        self.joint_state_sub = super().AddSubscriber(
-            "/ugr/car/joint_states", JointState, self.get_joint_states
-        )
-
-        self.speed_target = rospy.get_param("/speed/target", 3.0)
-
-        self.steering_transmission = rospy.get_param(
-            "ugr/car/steering/transmission", 0.25
-        )  # Factor from actuator to steering angle
-
-    def doActivate(self):
-        # Launch ros_control controllers
-        rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
-        try:
-            switch_controller = rospy.ServiceProxy(
-                "/ugr/car/controller_manager/switch_controller", SwitchController
-            )
-
-            req = SwitchControllerRequest()
-            req.start_controllers = [
-                "joint_state_controller",
-                "steering_velocity_controller",
-                "drive_effort_controller",
-            ]
-            req.stop_controllers = []
-            req.strictness = SwitchControllerRequest.STRICT
-
-            response = switch_controller(req)
-
-            if response.ok:
-                # Do this here because some parameters are set in the mission yaml files
-                self.trajectory = Trajectory()
-
-            else:
-                rospy.logerr("Could not start controllers")
-        except rospy.ServiceException as e:
-            rospy.logerr(f"Service call failed: {e}")
-
-    def get_odom_update(self, msg: Odometry):
-        self.actual_speed = msg.twist.twist.linear.x
-
-    def get_joint_states(self, msg: JointState):
-        self.steering_joint_angle = msg.position[msg.name.index("axis_steering")]
-
-    def handle_state_change(self, msg: State):
-        if msg.scope == StateMachineScopeEnum.SLAM:
-            self.slam_state = msg.cur_state
-
-    def getPathplanningUpdate(self, msg: Path):
-        """
-        Takes in a new exploration path coming from the mapping algorithm.
-        The path should be relative to self.base_link_frame. Otherwise it will transform to it
-        """
-
-        if msg is None:
-            return
-
-        self.received_path = msg
-
-    def doUpdate(self):
-        """
-        Actually processes a new path
-        The path should be relative to self.base_link_frame. Otherwise it will transform to it
-        """
-
-        if self.received_path is None:
-            return
-
-        msg = self.received_path
-
-        # Transform received message to self.base_link_frame
-        trans = self.tf_buffer.lookup_transform(
-            self.base_link_frame,
-            msg.header.frame_id,
-            msg.header.stamp,
-        )
-        transformed_path = ROSNode.do_transform_path(msg, trans)
-
-        # Create a new path
-        current_path = np.zeros((0, 2))
-        for pose in transformed_path.poses:
-            current_path = np.vstack(
-                (current_path, [pose.pose.position.x, pose.pose.position.y])
-            )
-
-        # Save current path and time of transformation to self.trajectory
-        self.trajectory.points = current_path
-        self.trajectory.time_source = msg.header.stamp
-        self.trajectory.path = transformed_path
-
-        self.received_path = None
-
-    def symmetrically_bound_angle(self, angle, max_angle):
-        """
-        Helper function to bound {angle} to [-max_angle, max_angle]
-        """
-        return (angle + max_angle) % (2 * max_angle) - max_angle
-
-    def start_sender(self):
-        """
-        Start sending updates. If the data is too old, brake.
-        """
-        rate = rospy.Rate(self.publish_rate)
-        while not rospy.is_shutdown():
-            if self.state == NodeManagingStatesEnum.ACTIVE:
-                try:
-                    self.doUpdate()
-
-                    self.speed_target = rospy.get_param("/speed/target", 3.0)
-
-                    # Stop the car
-                    # Do this by switching the controllers and using pure pursuit
-                    if self.speed_target == 0.0:
-                        if not self.switched_controllers:
-                            rospy.wait_for_service(
-                                "/ugr/car/controller_manager/switch_controller"
-                            )
-                            try:
-                                switch_controller = rospy.ServiceProxy(
-                                    "/ugr/car/controller_manager/switch_controller",
-                                    SwitchController,
-                                )
-
-                                # Switch to correct controllers for pure pursuit
-                                req = SwitchControllerRequest()
-                                req.start_controllers = [
-                                    "steering_position_controller",
-                                    "drive_velocity_controller",
-                                ]
-                                req.stop_controllers = [
-                                    "steering_velocity_controller",
-                                    "drive_effort_controller",
-                                ]
-                                req.strictness = SwitchControllerRequest.STRICT
-
-                                response = switch_controller(req)
-
-                                if response.ok:
-                                    self.switched_controllers = True
-
-                                else:
-                                    rospy.logerr("Could not start controllers")
-                            except rospy.ServiceException as e:
-                                rospy.logerr(f"Service call failed: {e}")
-
-                        if self.switched_controllers:
-                            # Put target at 2m
-                            target = self.trajectory.calculate_target_points([2])[0]
-                            # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-                            R = ((target[0] - 0) ** 2 + (target[1] - 0) ** 2) / (
-                                2 * (target[1] - 0)
-                            )
-
-                            self.steering_cmd.data = self.symmetrically_bound_angle(
-                                np.arctan2(1.0, R), np.pi / 2
-                            )
-                            self.steering_cmd.data /= self.steering_transmission
-                            self.steering_position_pub.publish(self.steering_cmd)
-
-                            self.velocity_cmd.data = 0.0
-                            self.drive_velocity_pub.publish(self.velocity_cmd)
-                            rate.sleep()
-                            continue
-
-                        else:
-                            # Somehow could not switch controllers, so brake manually
-                            self.velocity_cmd.data = -100.0
-                            self.steering_cmd.data = 0.0
-                            self.drive_effort_pub.publish(self.velocity_cmd)
-                            self.steering_velocity_pub.publish(self.steering_cmd)
-                            rate.sleep()
-                            continue
-
-                    ref_track = self.trajectory.get_reference_track(
-                        self.car.dt, self.N, self.actual_speed
-                    )
-
-                    # Stop the car if no path
-                    if len(ref_track) == 0:
-                        self.diagnostics_pub.publish(
-                            create_diagnostic_message(
-                                level=DiagnosticStatus.WARN,
-                                name="[CTRL MPC] Reference Track Status",
-                                message="No reference track found.",
-                            )
-                        )
-
-                        # TODO: this should probably cause the car to brake
-                        # But doing this causes startup issues when no path is available yet
-                        self.velocity_cmd.data = 0.0
-                        self.steering_cmd.data = 0.0
-                        self.drive_effort_pub.publish(self.velocity_cmd)
-                        self.steering_velocity_pub.publish(self.steering_cmd)
-                        rate.sleep()
-                        continue
-
-                    reference_track = []
-                    for ref_point in ref_track:
-                        reference_track.append(
-                            [
-                                ref_point[0],
-                                ref_point[1],
-                                0,
-                                self.steering_joint_angle,
-                                self.speed_target,
-                            ]
-                        )
-                    self.vis_path(reference_track, self.ref_track_pub)
-
-                    ############################################################################
-                    #     The next part is uncorrect but kept here for future reference        #
-                    ############################################################################
-
-                    # Get left and right boundary halfspaces
-                    # NOTE: works terrible without BE
-                    a, b, c, d = self.trajectory.get_tangent_line(ref_track)
-
-                    left_point = ref_track[len(ref_track) // 2]
-                    x_points_left = np.linspace(left_point[0] - 5, left_point[0] + 5)
-                    y_points_left = a * x_points_left + b
-                    self.vis_path(
-                        list(zip(x_points_left, y_points_left)), self.left_line_pub
-                    )
-
-                    right_point = ref_track[len(ref_track) // 2]
-                    x_points_right = np.linspace(right_point[0] - 5, right_point[0] + 5)
-                    y_points_right = c * x_points_right + d
-                    self.vis_path(
-                        list(zip(x_points_right, y_points_right)), self.right_line_pub
-                    )
-
-                    ############################################################################
-
-                    if self.slam_state == SLAMStatesEnum.RACING:
-                        # Scale steering penalty based on current speed
-                        # Qn = np.diag([8, 8, 0, 0, 0])
-                        # R = np.diag([5e-2, 100])
-                        # R_delta = np.diag(
-                        #     [10, 0]  # * self.actual_speed / self.speed_target]
-                        # )
-
-                        # Costs below are quite stable for skidpad and trackdrive
-                        Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
-                        R = np.diag([1e-5, 5e-4])
-                        R_delta = np.diag(
-                            [1e-2, 6e-1]  # * self.actual_speed / self.speed_target]
-                        )
-
-                        self.set_costs(Qn, R, R_delta)
-
-                    current_state = [
-                        0,
-                        0,
-                        0,
-                        self.steering_joint_angle,
-                        self.actual_speed,
-                    ]
-
-                    # Run MPC
-                    u, info = self.mpc(
-                        current_state, reference_track, a, b, c, d, self.u
-                    )
-                    self.u = u
-
-                    # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
-                    # rospy.loginfo(f"x closed loop: {X_closed_loop}")
-                    # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
-                    # rospy.loginfo(f"u closed loop: {U_closed_loop}")
-                    # rospy.loginfo(f"u return: {u}")
-                    # rospy.loginfo(f"actual speed: {self.actual_speed}")
-
-                    # Visualise MPC prediction
-                    self.vis_path(
-                        list(zip(info["X_sol"][:][0], info["X_sol"][:][1])),
-                        self.x_vis_pub,
-                    )
-
-                    self.velocity_cmd.data = u[0]
-                    self.steering_cmd.data = u[1]
-
-                    # Publish to velocity and position steering controller
-                    self.steering_velocity_pub.publish(self.steering_cmd)
-                    self.drive_effort_pub.publish(self.velocity_cmd)
-
-                except Exception as e:
-                    rospy.logwarn(f"MPC has caught an exception: {e}")
-                    import traceback
-
-                    print(traceback.format_exc())
-
-            rate.sleep()
-
-        # Store solution in npz file for later analysis
-        if self.save_solution:
-            # Get convergence information
-            inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
-            inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
-
-            np.savez(
-                "/home/ugr/autonomous2023/ROS/src/control/MPC/data/solution.npz",
-                U_sol_intermediate=self.mpc.U_sol_intermediate,
-                X_sol_intermediate=self.mpc.X_sol_intermediate,
-                info_pr=inf_pr,
-                info_du=inf_du,
-            )
-
-    def vis_path(self, path, publisher, stamp=None, frame_id=None):
-        """
-        Publishes a path to the specified topic
-        """
-        if publisher is None or len(path) == 0:
-            return
-
-        if stamp is None:
-            stamp = self.trajectory.time_source
-
-        if frame_id is None:
-            frame_id = self.base_link_frame
-
-        path_msg = Path()
-        path_msg.header.stamp = stamp
-        path_msg.header.frame_id = frame_id
-
-        for point in path:
-            pose = PoseStamped()
-            pose.pose.position.x = point[0]
-            pose.pose.position.y = point[1]
-            path_msg.poses.append(pose)
-
-        publisher.publish(path_msg)
 
 
 node = MPC_gen()
