@@ -12,7 +12,9 @@ class BicycleModelSpline(Env):
         self.mu = mu
         self.DC = DC
 
-        self.action_space = Space(low=[-20, -np.pi, 0], high=[20, np.pi, 1])
+        self.action_space = Space(
+            low=[-np.inf, -np.inf, np.inf], high=[np.inf, np.inf, np.inf]
+        )
 
         high_state_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf, np.inf])
         self.state_space = Space(low=-high_state_space, high=high_state_space)
