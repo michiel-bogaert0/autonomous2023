@@ -1,6 +1,6 @@
 import casadi
 import numpy as np
-from optimal_control.integrator import euler, rk4
+from optimal_control_gen.integrator import euler, rk4
 
 
 class Env:

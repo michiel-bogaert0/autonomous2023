@@ -1,6 +1,6 @@
 import numpy as np
-from environments.Env import Env
-from environments.env_utils import Space
+from environments_gen.Env import Env
+from environments_gen.env_utils import Space
 
 g = 9.81
 

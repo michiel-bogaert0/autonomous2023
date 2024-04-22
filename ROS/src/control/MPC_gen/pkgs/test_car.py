@@ -1,20 +1,22 @@
 # %%
 import matplotlib.pyplot as plt
 import numpy as np
-from environments.bicycle_model import BicycleModel
-from environments.kinematic_car import KinematicCar
+from environments_gen.bicycle_model import BicycleModel
+from environments_gen.bicycle_model_spline import BicycleModelSpline
+from environments_gen.kinematic_car import KinematicCar
 
 # %%
 car = KinematicCar(dt=0.05)
 car = BicycleModel(dt=0.05)
-car.state = [0, 0, 0, 0, 0]  # [x, y, ψ, vx, vy, ω, δ]
+car = BicycleModelSpline(dt=0.05)
+car.state = [0, 0, 0, 0, 0, 0]  # [x, y, ψ, vx, vy, ω, δ]
 
 state = car.state
 states = [state]
 
 for i in range(50):
     if i < 50:
-        u = [0.2, 0.0]  # [v, psi]
+        u = [0.2, 0.0, 0.02]  # [v, psi]
     elif i < 100:
         u = [-5, np.pi]
     else:
@@ -24,11 +26,12 @@ for i in range(50):
     states.append(state)
 
 # %%
-fig, axs = plt.subplots(3, 1)
+fig, axs = plt.subplots(4, 1)
 states_array = np.array(states)
 axs[0].plot(states_array[:, 0:2], label=["x", "y"])
 axs[1].plot(states_array[:, 2] * 180 / np.pi, label="psi")
 axs[2].plot(states_array[:, 4], label="v")
+axs[3].plot(states_array[:, 5], label="tau")
 [ax.legend() for ax in axs]
 fig.tight_layout()
 # %%
