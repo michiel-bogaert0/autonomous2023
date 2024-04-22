@@ -122,6 +122,9 @@ class Ocp:
             self.opti.subject_to(self.X[:, 1:] == X_next)
 
     def eval_cost(self, X, U, goal_state):
+        """
+        Not used
+        """
         assert X.shape[0] == self.nx
         N = X.shape[1] - 1
 
@@ -139,9 +142,9 @@ class Ocp:
             for i in range(self.N):
                 if i == 0:
                     L_run += cost_fun(
-                        self.X[:, i + 1],
+                        self.X[:, 0],
                         self.U[:, i],
-                        (self.U[:, i] - self.u_prev),
+                        (self.U[:, 0] - self.u_prev),
                         self._x_reference[:, i],
                         self.Sc[i],
                     )
@@ -157,7 +160,7 @@ class Ocp:
                 # self.opti.subject_to((self.a * self.X[0, i] + self.b - self.X[1, i]) * (self.c * self.X[0, i] + self.d - self.X[1, i]) < 0)
 
                 # This one works with circles, but causes convergence issues
-                # self.opti.subject_to(((self.X[0, i+1] - self._x_reference[0, i]) ** 2 + (self.X[1, i+1] - self._x_reference[1, i]) ** 2) < (2 ** 2) + self.Sc[i])
+
             self.cost["run"] = L_run
 
         self.cost["total"] = self.cost["run"]
@@ -241,6 +244,7 @@ class Ocp:
             [tuple]: U_sol [nu, N], X_sol [nx, N], info
         """
         self.opti.set_value(self.x0, state)
+        # self.opti.set_value(self._x_reference, reference_track)
         for i in range(self.N):
             self.opti.set_value(self._x_reference[:, i], reference_track[i])
 

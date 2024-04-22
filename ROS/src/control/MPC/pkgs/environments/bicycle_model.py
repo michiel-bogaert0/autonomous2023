@@ -23,18 +23,20 @@ class BicycleModel(Env):
         self.F = self.discretize(self.dynamics, self.dt)
 
     def dynamics(self, s, u):
-        # Inputs
+        # States
         # x = s[0]
         # y = s[1]
         theta = s[2]
         zeta = s[3]
         v = s[4]
-        phi = u[1]
-        alpha = u[0]
 
-        a = alpha * self.R
+        # Inputs
+        alpha = u[0]
+        phi = u[1]
 
         # Outputs
+        a = alpha * self.R
+
         omega = v * np.tan(zeta) / self.L
 
         dx = v * np.cos(theta)

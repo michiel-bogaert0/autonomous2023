@@ -265,6 +265,14 @@ class MPC(ManagedNode):
         self.ocp.subject_to(self.ocp.bounded(-np.pi / 4, self.ocp.X[3, :], np.pi / 4))
         # Limit velocity
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 20))
+        for i in range(self.N):
+            self.ocp.subject_to(
+                (
+                    (self.ocp.X[0, i + 1] - self.ocp._x_reference[0, i]) ** 2
+                    + (self.ocp.X[1, i + 1] - self.ocp._x_reference[1, i]) ** 2
+                )
+                < (2**2) + self.ocp.Sc[i]
+            )
         self.ocp._set_continuity(1)
 
     def set_costs(self, Qn, R, R_delta):
