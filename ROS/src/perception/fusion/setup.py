@@ -3,10 +3,6 @@ from distutils.core import setup
 from catkin_pkg.python_setup import generate_distutils_setup
 
 d = generate_distutils_setup(
-    packages=[
-        "keypoint_detection",
-        "publisher_abstract",
-    ],
     package_dir={"": "pkgs"},
     install_requires=[
         "torch>=0.10",
