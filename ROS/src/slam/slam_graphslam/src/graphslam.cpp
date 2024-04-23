@@ -426,6 +426,10 @@ void GraphSLAM::step() {
               LandmarkVertex *secondLandmark = dynamic_cast<LandmarkVertex *>(
                   this->optimizer.vertex(neighbor.index));
 
+              if (neighbor.index < prevPoseIndex) {
+                firstLandmark->addMergeId(neighbor.index);
+              }
+
               firstLandmark->addBeliefs(secondLandmark->beliefs[0],
                                         secondLandmark->beliefs[1],
                                         secondLandmark->beliefs[2]);
@@ -540,8 +544,11 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
       global_ob.observation.belief = 0; // mss aantal edges
       local_ob.observation.belief = 0;
 
-      global_ob.observation.index = pair.first;
-      local_ob.observation.index = pair.first;
+      global_ob.observation.id = pair.first;
+      local_ob.observation.id = pair.first;
+
+      global_ob.observation.merged_ids = landmarkVertex->merged_ids;
+      local_ob.observation.merged_ids = landmarkVertex->merged_ids;
 
       global_ob.observation.location.x = landmarkVertex->estimate().x();
       global_ob.observation.location.y = landmarkVertex->estimate().y();

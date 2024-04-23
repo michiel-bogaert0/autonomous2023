@@ -1,0 +1,11 @@
+<launch>
+
+  <arg name="car"/>
+
+   <param name="robot_description" command="$(find xacro)/xacro --inorder $(find ugr_urdf)/urdf/$(env UGR_CAR).urdf" />
+
+  <!-- Launch the robot_state_publisher node -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+   
+  </node>
+</launch>

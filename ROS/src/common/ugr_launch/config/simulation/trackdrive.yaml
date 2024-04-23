@@ -8,6 +8,9 @@ slam_controller:
       # SLAM
       - slam_mcl
 
+      # Control
+      # - minimum_curvature
+
     always:
       # SLAM
       - lap_counter
@@ -15,6 +18,7 @@ slam_controller:
       # Control
       - front_wheel_feedback_control
       - pathplanning
+      - path_smoother
 
 slam_mcl:
   path_to_map: "/ugr/car/map/slam/global"
