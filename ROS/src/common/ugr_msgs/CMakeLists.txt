@@ -35,6 +35,7 @@ add_message_files(
   ObservationWithCovarianceArray.msg
   ObservationWithCovarianceArrayStamped.msg
   ObservationArrayWithCovarianceStamped.msg
+  ObservationWithCovarianceStampedArrayStamped.msg
   Boundaries.msg
   CanFrame.msg
   PathArray.msg
