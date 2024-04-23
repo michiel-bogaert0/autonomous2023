@@ -7,10 +7,13 @@ Panels:
         - /Global Options1
         - /Status1
         - /Perception1/Lidar Raw1
+        - /SLAM1
+        - /SLAM1/TF1/Status1
         - /SLAM1/TF1/Frames1
-        - /SLAM1/TF1/Tree1
         - /SLAM1/MCL1/Shape1
+        - /Control1/Path1
         - /Control1/MPC Prediction1
+        - /Control1/right_line1
       Splitter Ratio: 0.4060402810573578
     Tree Height: 760
   - Class: rviz/Selection
@@ -30,7 +33,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Camera
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz_plugin_tutorials/Teleop
@@ -160,7 +163,7 @@ Visualization Manager:
           Topic: /ugr/car/observations/lidar
           Unreliable: false
           Value: true
-      Enabled: true
+      Enabled: false
       Name: Perception
     - Class: rviz/Group
       Displays:
@@ -171,19 +174,11 @@ Visualization Manager:
           Frame Timeout: 15
           Frames:
             All Enabled: true
-            os_imu:
-              Value: true
-            os_lidar:
-              Value: true
-            os_sensor:
-              Value: true
             ugr/car_base_link:
               Value: true
-            ugr/car_base_link/axis0:
-              Value: true
-            ugr/car_base_link/axis1:
-              Value: true
             ugr/car_base_link/cam0:
+              Value: true
+            ugr/car_base_link/front_axle:
               Value: true
             ugr/car_base_link/gps0:
               Value: true
@@ -195,13 +190,15 @@ Visualization Manager:
               Value: true
             ugr/car_base_link/lidar0:
               Value: true
-            ugr/car_odom:
+            ugr/car_base_link/os_imu:
+              Value: true
+            ugr/car_base_link/os_lidar:
+              Value: true
+            ugr/car_base_link/os_sensor:
               Value: true
             ugr/gt_base_link:
               Value: true
             ugr/map:
-              Value: true
-            ugr/slam_base_link:
               Value: true
           Marker Alpha: 1
           Marker Scale: 1
@@ -210,32 +207,27 @@ Visualization Manager:
           Show Axes: true
           Show Names: true
           Tree:
-            ugr/map:
-              ugr/car_odom:
-                ugr/car_base_link:
-                  ugr/car_base_link/axis0:
-                    {}
-                  ugr/car_base_link/axis1:
-                    {}
-                  ugr/car_base_link/cam0:
-                    {}
-                  ugr/car_base_link/gps0:
-                    {}
-                  ugr/car_base_link/gps1:
-                    {}
-                  ugr/car_base_link/imu0:
-                    {}
-                  ugr/car_base_link/imu1:
-                    {}
-                  ugr/car_base_link/lidar0:
-                    os_sensor:
-                      os_imu:
-                        {}
-                      os_lidar:
-                        {}
-              ugr/gt_base_link:
+            ugr/car_base_link:
+              ugr/car_base_link/cam0:
                 {}
-              ugr/slam_base_link:
+              ugr/car_base_link/front_axle:
+                {}
+              ugr/car_base_link/gps0:
+                {}
+              ugr/car_base_link/gps1:
+                {}
+              ugr/car_base_link/imu0:
+                {}
+              ugr/car_base_link/imu1:
+                {}
+              ugr/car_base_link/lidar0:
+                ugr/car_base_link/os_sensor:
+                  ugr/car_base_link/os_imu:
+                    {}
+                  ugr/car_base_link/os_lidar:
+                    {}
+            ugr/map:
+              ugr/gt_base_link:
                 {}
           Update Interval: 0
           Value: true
@@ -249,7 +241,7 @@ Visualization Manager:
           Enabled: true
           Name: GT
           Queue Size: 10
-          Realistic: true
+          Realistic: false
           Topic: /ugr/car/map/gt
           Unreliable: false
           Value: true
@@ -275,12 +267,45 @@ Visualization Manager:
           Class 3 color: 255; 69; 0
           Class 4 color: 0; 0; 0
           Enabled: true
-          Name: Map
+          Name: Map SLAM
           Queue Size: 10
           Realistic: true
-          Topic: /ugr/car/map/fastslam/global
+          Topic: /ugr/car/map/slam/global
           Unreliable: false
           Value: true
+        - Alpha: 1
+          Arrow Length: 0.30000001192092896
+          Axes Length: 0.30000001192092896
+          Axes Radius: 0.009999999776482582
+          Class: rviz/PoseArray
+          Color: 255; 255; 0
+          Enabled: false
+          Head Length: 0.30000001192092896
+          Head Radius: 0.25
+          Name: GraphSLAM poses
+          Queue Size: 10
+          Shaft Length: 0.30000001192092896
+          Shaft Radius: 0.05000000074505806
+          Shape: Arrow (3D)
+          Topic: /graphslam/debug/vertices/poses
+          Unreliable: false
+          Value: false
+        - Class: rviz/Marker
+          Enabled: false
+          Marker Topic: /graphslam/debug/edges/poses
+          Name: GraphSLAM edges poses
+          Namespaces:
+            {}
+          Queue Size: 10
+          Value: false
+        - Class: rviz/Marker
+          Enabled: false
+          Marker Topic: /graphslam/debug/edges/landmarks
+          Name: GraphSLAM edges landmarks
+          Namespaces:
+            {}
+          Queue Size: 10
+          Value: false
         - Alpha: 1
           Arrow Length: 0.30000001192092896
           Axes Length: 0.30000001192092896
@@ -315,7 +340,7 @@ Visualization Manager:
               Scale: 1
               Value: true
             Value: false
-          Enabled: false
+          Enabled: true
           Keep: 20
           Name: SLAM
           Position Tolerance: 0.10000000149011612
@@ -330,9 +355,9 @@ Visualization Manager:
             Shaft Length: 0.5
             Shaft Radius: 0.05000000074505806
             Value: Arrow
-          Topic: /ugr/car/odometry/filtered/fastslam
+          Topic: /ugr/car/odometry/filtered/slam
           Unreliable: false
-          Value: false
+          Value: true
         - Angle Tolerance: 0.10000000149011612
           Class: rviz/Odometry
           Covariance:
@@ -365,7 +390,7 @@ Visualization Manager:
             Shaft Length: 0.5
             Shaft Radius: 0.05000000074505806
             Value: Arrow
-          Topic: /ugr/car/odometry/filtered/odom/inmap
+          Topic: /ugr/car/odometry/filtered/odom
           Unreliable: false
           Value: true
         - Angle Tolerance: 0.10000000149011612
@@ -506,7 +531,7 @@ Visualization Manager:
           Radius: 0.029999999329447746
           Shaft Diameter: 0.10000000149011612
           Shaft Length: 0.10000000149011612
-          Topic: /pathplanning/path
+          Topic: /pathplanning/vis_path
           Unreliable: false
           Value: true
         - Alpha: 1
@@ -592,6 +617,78 @@ Visualization Manager:
           Topic: /mpc/x_prediction
           Unreliable: false
           Value: true
+        - Alpha: 1
+          Buffer Length: 1
+          Class: rviz/Path
+          Color: 255; 0; 0
+          Enabled: true
+          Head Diameter: 0.30000001192092896
+          Head Length: 0.20000000298023224
+          Length: 0.30000001192092896
+          Line Style: Lines
+          Line Width: 0.029999999329447746
+          Name: ref_track
+          Offset:
+            X: 0
+            Y: 0
+            Z: 0
+          Pose Color: 255; 85; 255
+          Pose Style: None
+          Queue Size: 10
+          Radius: 0.029999999329447746
+          Shaft Diameter: 0.10000000149011612
+          Shaft Length: 0.10000000149011612
+          Topic: /mpc/ref_track
+          Unreliable: false
+          Value: true
+        - Alpha: 1
+          Buffer Length: 1
+          Class: rviz/Path
+          Color: 0; 0; 255
+          Enabled: false
+          Head Diameter: 0.30000001192092896
+          Head Length: 0.20000000298023224
+          Length: 0.30000001192092896
+          Line Style: Lines
+          Line Width: 0.029999999329447746
+          Name: left_line
+          Offset:
+            X: 0
+            Y: 0
+            Z: 0
+          Pose Color: 255; 85; 255
+          Pose Style: None
+          Queue Size: 10
+          Radius: 0.029999999329447746
+          Shaft Diameter: 0.10000000149011612
+          Shaft Length: 0.10000000149011612
+          Topic: /mpc/left_line
+          Unreliable: false
+          Value: false
+        - Alpha: 1
+          Buffer Length: 1
+          Class: rviz/Path
+          Color: 255; 255; 0
+          Enabled: false
+          Head Diameter: 0.30000001192092896
+          Head Length: 0.20000000298023224
+          Length: 0.30000001192092896
+          Line Style: Lines
+          Line Width: 0.029999999329447746
+          Name: right_line
+          Offset:
+            X: 0
+            Y: 0
+            Z: 0
+          Pose Color: 255; 85; 255
+          Pose Style: None
+          Queue Size: 10
+          Radius: 0.029999999329447746
+          Shaft Diameter: 0.10000000149011612
+          Shaft Length: 0.10000000149011612
+          Topic: /mpc/right_line
+          Unreliable: false
+          Value: false
       Enabled: true
       Name: Control
   Enabled: true
@@ -619,7 +716,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -4.710023880004883
+      Angle: -6.290025234222412
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -629,10 +726,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: -23.865110397338867
+      Scale: -24.720157623291016
       Target Frame: <Fixed Frame>
-      X: -6.030538558959961
-      Y: 3.3127801418304443
+      X: -11.722004890441895
+      Y: 1.018802523612976
     Saved: ~
 Window Geometry:
   Camera:
@@ -655,4 +752,4 @@ Window Geometry:
     collapsed: true
   Width: 1920
   X: 0
-  Y: 0
+  Y: 1080

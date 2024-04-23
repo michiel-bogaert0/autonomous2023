@@ -1,0 +1,20 @@
+<launch>
+
+    <arg name="layout" default= "" />
+
+  <node name="visualiser_mincurv" pkg="minimum_curvature" type="visualiser.py" output="screen" >
+
+    <param name="frame" value="ugr/map" />
+    <param name="layout" value="$(arg layout)" />
+
+    <remap from="/output/local_map" to="/ugr/car/map/slam/local" />
+    <!-- <remap from="/output/gt_path" to="/pathplanning/poses" /> -->
+    <remap from="/output/gt_path" to="/minimum_curvature/gt_path" />
+
+    <remap from="/output/gt_boundaries" to="/boundary_estimation/boundaries" />
+
+    <remap from="/input/path" to="/pathplanning/path" />
+  
+  </node>
+
+</launch>

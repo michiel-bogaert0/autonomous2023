@@ -2,6 +2,7 @@
 import numpy as np
 import rospy
 import tf2_ros as tf
+from controller_manager_msgs.srv import SwitchController, SwitchControllerRequest
 from environments.bicycle_model import BicycleModel
 from geometry_msgs.msg import PointStamped, PoseStamped
 from nav_msgs.msg import Odometry, Path
@@ -17,6 +18,7 @@ from node_fixture.fixture import (
 from node_fixture.managed_node import ManagedNode
 from optimal_control.MPC_tracking import MPC_tracking
 from optimal_control.ocp import Ocp
+from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 from trajectory import Trajectory
 from ugr_msgs.msg import State
@@ -28,6 +30,7 @@ class MPC(ManagedNode):
         super().__init__("MPC_tracking_control")
         self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.slam_state = SLAMStatesEnum.IDLE
+        self.save_solution = False
         rospy.Subscriber("/state", State, self.handle_state_change)
         self.start_sender()
         rospy.spin()
@@ -39,23 +42,29 @@ class MPC(ManagedNode):
 
         self.wheelradius = rospy.get_param("~wheelradius", 0.1)
 
+        self.cog_to_front_axle = rospy.get_param("~cog_to_front_axle", 0.72)
+        self.reference_pose = [self.cog_to_front_axle, 0]
+
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
         self.actual_speed = 0.0
-        self.speed_start = rospy.get_param("~speed_start", 10)
-        self.speed_stop = rospy.get_param("~speed_stop", 50)
-        self.distance_start = rospy.get_param("~distance_start", 1.2)
-        self.distance_stop = rospy.get_param("~distance_stop", 2.4)
 
         # Publishers for the controllers
-        # Controllers themselves spawned in the state machines respective launch files
-
-        self.velocity_pub = super().AddPublisher(
+        self.drive_effort_pub = super().AddPublisher(
+            "/output/drive_effort_controller/command", Float64, queue_size=10
+        )
+        self.drive_velocity_pub = super().AddPublisher(
             "/output/drive_velocity_controller/command", Float64, queue_size=10
         )
-        self.steering_pub = super().AddPublisher(
+        self.steering_velocity_pub = super().AddPublisher(
+            "/output/steering_velocity_controller/command", Float64, queue_size=10
+        )
+        self.steering_position_pub = super().AddPublisher(
             "/output/steering_position_controller/command", Float64, queue_size=10
         )
+
+        self.switched_controllers = False
+
         # For visualization
         self.vis_pub = super().AddPublisher(
             "/output/target_point",
@@ -65,6 +74,24 @@ class MPC(ManagedNode):
 
         self.x_vis_pub = super().AddPublisher(
             "/output/x_prediction",
+            Path,
+            queue_size=10,  # warning otherwise
+        )
+
+        self.ref_track_pub = super().AddPublisher(
+            "/output/ref_track",
+            Path,
+            queue_size=10,  # warning otherwise
+        )
+
+        self.left_line_pub = super().AddPublisher(
+            "/output/left_line",
+            Path,
+            queue_size=10,  # warning otherwise
+        )
+
+        self.right_line_pub = super().AddPublisher(
+            "/output/right_line",
             Path,
             queue_size=10,  # warning otherwise
         )
@@ -85,65 +112,84 @@ class MPC(ManagedNode):
             "/input/odom", Odometry, self.get_odom_update
         )
 
+        self.joint_state_sub = super().AddSubscriber(
+            "/ugr/car/joint_states", JointState, self.get_joint_states
+        )
+
         self.speed_target = rospy.get_param("/speed/target", 3.0)
+
         self.steering_transmission = rospy.get_param(
             "ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
-        self.car = BicycleModel(dt=0.05)  # dt = publish rate?
+        self.car = BicycleModel(dt=0.1)  # dt = publish rate?
 
-        self.N = 10
-        self.np = 2  # Number of control points to keep car close to path
+        self.steering_joint_angle = 0
+        self.u = [0, 0]
+
+        self.N = 20
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
-            np=self.np,
             N=self.N,
             F=self.car.F,
             T=self.car.dt * self.N,
-            terminal_constraint=False,
             show_execution_time=False,
             silent=True,
-        )
-
-        Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
-        Qn = np.diag([8e-3, 8e-3, 0, 0, 1e-2])
-        R = np.diag([1e-4, 6e-3])
-
-        # Weight matrices for the terminal cost
-        P = np.diag([0, 0, 0, 0, 0])
-
-        self.ocp.running_cost = (
-            (self.ocp.x - self.ocp.x_ref).T @ Q @ (self.ocp.x - self.ocp.x_ref)
-            + (self.ocp.x - self.ocp.x_control).T
-            @ Qn
-            @ (self.ocp.x - self.ocp.x_control)
-            + self.ocp.u.T @ R @ self.ocp.u
-        )
-        self.ocp.terminal_cost = (
-            (self.ocp.x - self.ocp.x_ref).T @ P @ (self.ocp.x - self.ocp.x_ref)
-        )
-
-        # constraints
-        max_steering_angle = 1
-        self.ocp.subject_to(
-            self.ocp.bounded(
-                -self.speed_target / self.wheelradius,
-                self.ocp.U[0, :],
-                self.speed_target / self.wheelradius,
-            )
-        )
-        self.ocp.subject_to(
-            self.ocp.bounded(-max_steering_angle, self.ocp.U[1, :], max_steering_angle)
+            store_intermediate=True,
         )
         self.mpc = MPC_tracking(self.ocp)
 
+        # State: x, y, heading, steering angle, velocity
+        Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
+
+        # Input: acceleration, velocity on steering angle
+        R = np.diag([1e-5, 5e-2])
+        R_delta = np.diag([1e-1, 5e-3])
+
+        self.set_costs(Qn, R, R_delta)
+
+        # constraints
+        # TODO: get these from urdf model
+        self.max_steering_angle = 5  # same as pegasus.urdf
+        self.set_constraints(5, self.max_steering_angle)
+
     def doActivate(self):
-        # Do this here because some parameters are set in the mission yaml files
-        self.trajectory = Trajectory()
+        # Launch ros_control controllers
+        rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
+        try:
+            switch_controller = rospy.ServiceProxy(
+                "/ugr/car/controller_manager/switch_controller", SwitchController
+            )
+
+            req = SwitchControllerRequest()
+            req.start_controllers = [
+                "joint_state_controller",
+                "steering_velocity_controller",
+                "drive_effort_controller",
+            ]
+            req.stop_controllers = [
+                "steering_position_controller",
+                "drive_velocity_controller",
+            ]
+            req.strictness = SwitchControllerRequest.BEST_EFFORT
+
+            response = switch_controller(req)
+
+            if response.ok:
+                # Do this here because some parameters are set in the mission yaml files
+                self.trajectory = Trajectory()
+
+            else:
+                rospy.logerr("Could not start controllers")
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Service call failed: {e}")
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
+
+    def get_joint_states(self, msg: JointState):
+        self.steering_joint_angle = msg.position[msg.name.index("axis_steering")]
 
     def handle_state_change(self, msg: State):
         if msg.scope == StateMachineScopeEnum.SLAM:
@@ -199,6 +245,44 @@ class MPC(ManagedNode):
         """
         return (angle + max_angle) % (2 * max_angle) - max_angle
 
+    def set_constraints(self, velocity_limit, steering_limit):
+        """
+        Set constraints for the MPC
+        """
+        steering_limit = 5
+        self.ocp.subject_to()
+        self.ocp.subject_to(
+            self.ocp.bounded(
+                -velocity_limit / self.wheelradius,
+                self.ocp.U[0, :],
+                velocity_limit / self.wheelradius,
+            )
+        )
+        self.ocp.subject_to(
+            self.ocp.bounded(-steering_limit, self.ocp.U[1, :], steering_limit)
+        )
+        # Limit angle of steering joint
+        self.ocp.subject_to(self.ocp.bounded(-np.pi / 4, self.ocp.X[3, :], np.pi / 4))
+        # Limit velocity
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 20))
+        self.ocp._set_continuity(1)
+
+    def set_costs(self, Qn, R, R_delta):
+        """
+        Set costs for the MPC
+        """
+        qs = 0
+        qss = 0
+        self.ocp.running_cost = (
+            (self.ocp.x - self.ocp.x_reference).T
+            @ Qn
+            @ (self.ocp.x - self.ocp.x_reference)
+            + self.ocp.u.T @ R @ self.ocp.u
+            + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
+            + qs @ self.ocp.sc
+            + qss @ self.ocp.sc**2
+        )
+
     def start_sender(self):
         """
         Start sending updates. If the data is too old, brake.
@@ -209,174 +293,183 @@ class MPC(ManagedNode):
                 try:
                     self.doUpdate()
 
-                    speed_target = rospy.get_param("/speed/target", 3.0)
+                    self.speed_target = rospy.get_param("/speed/target", 3.0)
 
-                    # Change velocity constraints when speed target changes
-                    if speed_target != self.speed_target:
-                        self.speed_target = speed_target
-
-                        # Reset constraints
-                        self.ocp.opti.subject_to()
-                        self.ocp.subject_to(
-                            self.ocp.bounded(
-                                -self.speed_target / self.wheelradius,
-                                self.ocp.U[0, :],
-                                self.speed_target / self.wheelradius,
+                    # Stop the car
+                    # Do this by switching the controllers and using pure pursuit
+                    if self.speed_target == 0.0:
+                        if not self.switched_controllers:
+                            rospy.wait_for_service(
+                                "/ugr/car/controller_manager/switch_controller"
                             )
-                        )
-                        self.ocp.opti.subject_to(
-                            self.ocp.opti.bounded(-1, self.ocp.U[1, :], 1)
-                        )
-                        self.ocp._set_continuity(1)
+                            try:
+                                switch_controller = rospy.ServiceProxy(
+                                    "/ugr/car/controller_manager/switch_controller",
+                                    SwitchController,
+                                )
 
-                    if self.slam_state == SLAMStatesEnum.RACING:
-                        # Scale steering penalty based on current speed
-                        Q = np.diag([1e-2, 1e-2, 0, 0, 1e-2])
-                        Qn = np.diag([8e-3, 8e-3, 0, 0, 1e-2])
-                        R = np.diag(
-                            [1e-5, 3e-1 * self.actual_speed / self.speed_target]
-                        )
+                                # Switch to correct controllers for pure pursuit
+                                req = SwitchControllerRequest()
+                                req.start_controllers = [
+                                    "steering_position_controller",
+                                    "drive_velocity_controller",
+                                ]
+                                req.stop_controllers = [
+                                    "steering_velocity_controller",
+                                    "drive_effort_controller",
+                                ]
+                                req.strictness = SwitchControllerRequest.STRICT
 
-                        # Weight matrices for the terminal cost
-                        P = np.diag([0, 0, 0, 0, 0])
+                                response = switch_controller(req)
 
-                        self.ocp.running_cost = (
-                            (self.ocp.x - self.ocp.x_ref).T
-                            @ Q
-                            @ (self.ocp.x - self.ocp.x_ref)
-                            + (self.ocp.x - self.ocp.x_control).T
-                            @ Qn
-                            @ (self.ocp.x - self.ocp.x_control)
-                            + self.ocp.u.T @ R @ self.ocp.u
-                        )
-                        self.ocp.terminal_cost = (
-                            (self.ocp.x - self.ocp.x_ref).T
-                            @ P
-                            @ (self.ocp.x - self.ocp.x_ref)
-                        )
+                                if response.ok:
+                                    self.switched_controllers = True
 
-                    # Change the look-ahead distance (minimal_distance) based on the current speed
-                    if self.actual_speed < self.speed_start:
-                        self.minimal_distance = self.distance_start
-                    elif self.actual_speed < self.speed_stop:
-                        self.minimal_distance = self.distance_start + (
-                            self.distance_stop - self.distance_start
-                        ) / (self.speed_stop - self.speed_start) * (
-                            self.actual_speed - self.speed_start
-                        )
-                    else:
-                        self.minimal_distance = self.distance_stop
+                                else:
+                                    rospy.logerr("Could not start controllers")
+                            except rospy.ServiceException as e:
+                                rospy.logerr(f"Service call failed: {e}")
 
-                    # Calculate target points
-                    distances = [
-                        self.minimal_distance * n
-                        for n in np.linspace(0, 1, self.np + 2)[1:]
-                    ]
-                    target_points = self.trajectory.calculate_target_points(distances)
+                        if self.switched_controllers:
+                            # Put target at 2m
+                            target = self.trajectory.calculate_target_points([2])[0]
+                            # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
+                            R = (
+                                (target[0] - self.reference_pose[0]) ** 2
+                                + (target[1] - self.reference_pose[1]) ** 2
+                            ) / (2 * (target[1] - self.reference_pose[1]))
 
-                    target_x, target_y = target_points[-1]
-                    control_targets = []
-                    for control_target in target_points[:-1]:
-                        control_targets.append(
-                            [
-                                control_target[0],
-                                control_target[1],
-                                0,
-                                0,
-                                self.speed_target,
-                            ]
-                        )
+                            self.steering_cmd.data = self.symmetrically_bound_angle(
+                                np.arctan2(1.0, R), np.pi / 2
+                            )
+                            self.steering_cmd.data /= self.steering_transmission
+                            self.steering_position_pub.publish(self.steering_cmd)
 
-                    if target_x == 0 and target_y == 0:
+                            self.velocity_cmd.data = 0.0
+                            self.drive_velocity_pub.publish(self.velocity_cmd)
+                            rate.sleep()
+                            continue
+
+                        else:
+                            # Somehow could not switch controllers, so brake manually
+                            self.velocity_cmd.data = -100.0
+                            self.steering_cmd.data = 0.0
+                            self.drive_effort_pub.publish(self.velocity_cmd)
+                            self.steering_velocity_pub.publish(self.steering_cmd)
+                            rate.sleep()
+                            continue
+
+                    ref_track = self.trajectory.get_reference_track(
+                        self.car.dt, self.N, self.actual_speed
+                    )
+
+                    # Stop the car if no path
+                    if len(ref_track) == 0:
                         self.diagnostics_pub.publish(
                             create_diagnostic_message(
                                 level=DiagnosticStatus.WARN,
-                                name="[CTRL MPC] Target Point Status",
-                                message="Target point not found.",
+                                name="[CTRL MPC] Reference Track Status",
+                                message="No reference track found.",
                             )
                         )
+
+                        # TODO: this should probably cause the car to brake
+                        # But doing this causes startup issues when no path is available yet
                         self.velocity_cmd.data = 0.0
                         self.steering_cmd.data = 0.0
-                        self.velocity_pub.publish(self.velocity_cmd)
-                        self.steering_pub.publish(self.steering_cmd)
+                        self.drive_effort_pub.publish(self.velocity_cmd)
+                        self.steering_velocity_pub.publish(self.steering_cmd)
                         rate.sleep()
                         continue
 
-                    # rospy.loginfo(f"target_x: {target_x}, target_y: {target_y}")
-                    # rospy.loginfo(f"control_targets: {control_targets}")
+                    reference_track = []
+                    for ref_point in ref_track:
+                        reference_track.append(
+                            [
+                                ref_point[0],
+                                ref_point[1],
+                                0,
+                                self.steering_joint_angle,
+                                self.speed_target,
+                            ]
+                        )
+                    self.vis_path(reference_track, self.ref_track_pub)
 
-                    self.mpc.reset()
-                    init_state = [0, 0, 0, 0, self.actual_speed]
-                    goal_state = [target_x, target_y, 0, 0, self.speed_target]
+                    ############################################################################
+                    #     The next part is uncorrect but kept here for future reference        #
+                    ############################################################################
 
-                    current_state = init_state
+                    # Get left and right boundary halfspaces
+                    # NOTE: works terrible without BE
+                    a, b, c, d = self.trajectory.get_tangent_line(ref_track)
+
+                    left_point = ref_track[len(ref_track) // 2]
+                    x_points_left = np.linspace(left_point[0] - 5, left_point[0] + 5)
+                    y_points_left = a * x_points_left + b
+                    self.vis_path(
+                        list(zip(x_points_left, y_points_left)), self.left_line_pub
+                    )
+
+                    right_point = ref_track[len(ref_track) // 2]
+                    x_points_right = np.linspace(right_point[0] - 5, right_point[0] + 5)
+                    y_points_right = c * x_points_right + d
+                    self.vis_path(
+                        list(zip(x_points_right, y_points_right)), self.right_line_pub
+                    )
+
+                    ############################################################################
+
+                    if self.slam_state == SLAMStatesEnum.RACING:
+                        # Scale steering penalty based on current speed
+                        # Qn = np.diag([8, 8, 0, 0, 0])
+                        # R = np.diag([5e-2, 100])
+                        # R_delta = np.diag(
+                        #     [10, 0]  # * self.actual_speed / self.speed_target]
+                        # )
+
+                        # Costs below are quite stable for skidpad and trackdrive
+                        Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
+                        R = np.diag([1e-5, 5e-4])
+                        R_delta = np.diag(
+                            [1e-2, 6e-1]  # * self.actual_speed / self.speed_target]
+                        )
+
+                        self.set_costs(Qn, R, R_delta)
+
+                    # TODO: unverified starting point
+                    current_state = [
+                        self.reference_pose[0],
+                        self.reference_pose[1],
+                        0,
+                        self.steering_joint_angle,
+                        self.actual_speed,
+                    ]
 
                     # Run MPC
-                    u, info = self.mpc(current_state, goal_state, control_targets)
-
-                    # X_closed_loop = np.array(self.mpc.X_trajectory)
-                    U_closed_loop = np.array(self.mpc.U_trajectory)
+                    u, info = self.mpc(
+                        current_state, reference_track, a, b, c, d, self.u
+                    )
+                    self.u = u
 
                     # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
                     # rospy.loginfo(f"x closed loop: {X_closed_loop}")
                     # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
                     # rospy.loginfo(f"u closed loop: {U_closed_loop}")
+                    # rospy.loginfo(f"u return: {u}")
                     # rospy.loginfo(f"actual speed: {self.actual_speed}")
 
-                    # Publish MPC prediction for visualization
-                    x_pred = Path()
-                    x_pred.header.stamp = self.trajectory.time_source
-                    x_pred.header.frame_id = self.base_link_frame
-                    for x, y in zip(info["X_sol"][:][0], info["X_sol"][:][1]):
-                        pose = PoseStamped()
-                        pose.pose.position.x = x
-                        pose.pose.position.y = y
-                        x_pred.poses.append(pose)
-
-                    self.x_vis_pub.publish(x_pred)
-
-                    self.steering_cmd.data = U_closed_loop[0, 1]
-                    self.velocity_cmd.data = (
-                        self.actual_speed
-                        + U_closed_loop[0, 0] * self.wheelradius * self.car.dt
-                    )  # Input is acceleration
-
-                    # Use Pure Pursuit if target speed is 0
-                    if self.speed_target == 0.0:
-                        R = ((target_x - 0) ** 2 + (target_y - 0) ** 2) / (
-                            2 * (target_y - 0)
-                        )
-
-                        self.steering_cmd.data = self.symmetrically_bound_angle(
-                            np.arctan2(1.0, R), np.pi / 2
-                        )
-
-                        self.velocity_cmd.data = 0.0
-
-                    self.diagnostics_pub.publish(
-                        create_diagnostic_message(
-                            level=DiagnosticStatus.OK,
-                            name="[CTRL MPC] Target Point Status",
-                            message="Target point found.",
-                        )
+                    # Visualise MPC prediction
+                    self.vis_path(
+                        list(zip(info["X_sol"][:][0], info["X_sol"][:][1])),
+                        self.x_vis_pub,
                     )
 
+                    self.velocity_cmd.data = u[0]
+                    self.steering_cmd.data = u[1]
+
                     # Publish to velocity and position steering controller
-                    self.steering_cmd.data /= self.steering_transmission
-                    self.steering_pub.publish(self.steering_cmd)
-
-                    self.velocity_cmd.data /= (
-                        self.wheelradius
-                    )  # Velocity to angular velocity
-                    self.velocity_pub.publish(self.velocity_cmd)
-
-                    # Publish target point for visualization
-                    point = PointStamped()
-                    point.header.stamp = self.trajectory.time_source
-                    point.header.frame_id = self.base_link_frame
-                    point.point.x = target_x
-                    point.point.y = target_y
-                    self.vis_pub.publish(point)
+                    self.steering_velocity_pub.publish(self.steering_cmd)
+                    self.drive_effort_pub.publish(self.velocity_cmd)
 
                 except Exception as e:
                     rospy.logwarn(f"MPC has caught an exception: {e}")
@@ -385,6 +478,45 @@ class MPC(ManagedNode):
                     print(traceback.format_exc())
 
             rate.sleep()
+
+        # Store solution in npz file for later analysis
+        if self.save_solution:
+            # Get convergence information
+            inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
+            inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
+
+            np.savez(
+                "/home/ugr/autonomous2023/ROS/src/control/MPC/data/solution.npz",
+                U_sol_intermediate=self.mpc.U_sol_intermediate,
+                X_sol_intermediate=self.mpc.X_sol_intermediate,
+                info_pr=inf_pr,
+                info_du=inf_du,
+            )
+
+    def vis_path(self, path, publisher, stamp=None, frame_id=None):
+        """
+        Publishes a path to the specified topic
+        """
+        if publisher is None or len(path) == 0:
+            return
+
+        if stamp is None:
+            stamp = self.trajectory.time_source
+
+        if frame_id is None:
+            frame_id = self.base_link_frame
+
+        path_msg = Path()
+        path_msg.header.stamp = stamp
+        path_msg.header.frame_id = frame_id
+
+        for point in path:
+            pose = PoseStamped()
+            pose.pose.position.x = point[0]
+            pose.pose.position.y = point[1]
+            path_msg.poses.append(pose)
+
+        publisher.publish(path_msg)
 
 
 node = MPC()

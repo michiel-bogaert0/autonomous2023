@@ -36,10 +36,12 @@ add_message_files(
   ObservationWithCovarianceArrayStamped.msg
   ObservationArrayWithCovarianceStamped.msg
   Boundaries.msg
+  CanFrame.msg
   PathArray.msg
   TrajectoryError.msg
   TrajectoryInfo.msg
   TrajectoryMapInfo.msg
+  KeyValueFloat.msg
 )
 
 generate_messages(

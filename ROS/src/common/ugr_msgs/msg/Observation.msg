@@ -2,3 +2,5 @@
 geometry_msgs/Point location
 uint8 observation_class #BLUE=0 YELLOW=1 ORANGE_BIG=2 ORANGE_SMALL=3 UNKNOWN=4
 float64 belief
+uint32 id
+uint32[] merged_ids

@@ -2,38 +2,34 @@ slam_controller:
   node_management:
     exploration:
       # SLAM
-      - fastslam
+      - graphslam
 
     racing:
-
       # SLAM
       - slam_mcl
 
+      # Control
+      # - minimum_curvature
+
     always:
       # SLAM
-      - loopclosure
+      - lap_counter
 
       # Control
       - front_wheel_feedback_control
       - pathplanning
+      - path_smoother
 
 slam_mcl:
-  path_to_map: "/ugr/car/map/fastslam/global"
-loopclosure:
+  path_to_map: "/ugr/car/map/slam/global"
+lap_counter:
   finishpoint: [0, 0, 0]
 speed:
   target: 2.0
   target_racing: 10.0
-  LC_adaptive_velocity: True
-  LC_max_acceleration: 2.0
-  LC_min: 3.0
-  LC_max: 15.0
 pure_pursuit:
   change_index: True
   minimal_distance: 1.2
-  world_frame: "ugr/map"
-front_wheel_feedback:
-  change_index: True
   world_frame: "ugr/map"
 mpc:
   change_index: True

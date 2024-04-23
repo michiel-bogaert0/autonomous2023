@@ -1,19 +1,19 @@
 slam_controller:
   node_management:
     always:
-
       # SLAM
       - slam_mcl
-      - loopclosure
+      - lap_counter
       - map_publisher
 
       # Control
       - front_wheel_feedback_control
       - path_publisher
-      
+      - path_smoother
+
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
-loopclosure:
+lap_counter:
   finishpoint: [24, 0, 0]
 map_publisher:
   map_pkg: "slam_simulator"

@@ -11,6 +11,9 @@
   <!-- ? FastSLAM -->
   <include file="$(find slam_fastslam)/launch/fastslam1.launch" pass_all_args="true" />
 
+  <!-- ? GraphSLAM -->
+  <include file="$(find slam_graphslam)/launch/graphslam.launch" pass_all_args="true" />
+
   <!-- ? SLAM MCL -->
   <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
     <arg name="path_to_map" value="/ugr/car/map/global"/>
@@ -19,16 +22,14 @@
   <!-- ? ISE -->
   <include file="$(find slam_controller)/launch/ISE.launch" pass_all_args="true"/>
 
-  <!-- SLAM loopclosure -->
-  <arg name="world_frame" default="ugr/map" />
-  <arg name="base_link_frame" default="ugr/car_base_link" />
-  <node pkg="slam_loopclosure" output="screen" respawn="true" type="loopclosure" name="loopclosure">
-      <param name="world_frame" value="$(arg world_frame)" />
-      <param name="base_link_frame" value="$(arg base_link_frame)" />
+  <!-- SLAM lap_counter -->
+  <node pkg="slam_lap_counter" output="screen" respawn="true" type="lap_counter" name="lap_counter">
+      <param name="world_frame" value="ugr/map" />
+      <param name="base_link_frame" value="ugr/slam_base_link" />
       <rosparam param="finishpoint">[0,0,0]</rosparam>
       
-      <remap from="/output/loopClosure" to="/ugr/car/loopclosure"/>
-      <remap from="/reset_closure" to="/ugr/srv/reset_loopclosure"/>
+      <remap from="/output/lapComplete" to="/ugr/car/lapComplete"/>
+      <remap from="/reset_closure" to="/ugr/srv/reset_lap_counter"/>
       <remap from="/adjust_finish" to="/ugr/srv/adjust_finish"/>
   </node>
 
