@@ -21,7 +21,7 @@
     <param name="cone_noise" value="0.02" />
     <param name="color_prob" value="0.0" /> <!-- between 0 and 1-->
 
-    <remap from="/output/observations" to="/ugr/car/observations/lidar" />
+    <remap from="/output/observations" to="/ugr/car/observations/fused" />
     <remap from="/input/track" to="$(arg gt_map_topic)" />
   </node>
 
