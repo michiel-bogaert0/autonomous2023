@@ -265,14 +265,19 @@ class MPC(ManagedNode):
         self.ocp.subject_to(self.ocp.bounded(-np.pi / 4, self.ocp.X[3, :], np.pi / 4))
         # Limit velocity
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 20))
-        for i in range(self.N):
+
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 1e-1))
+
+        # This one works with circles, but causes convergence issues
+        for i in range(self.N + 1):
             self.ocp.subject_to(
                 (
-                    (self.ocp.X[0, i + 1] - self.ocp._x_reference[0, i]) ** 2
-                    + (self.ocp.X[1, i + 1] - self.ocp._x_reference[1, i]) ** 2
+                    (self.ocp.X[0, i] - self.ocp._x_reference[0, i]) ** 2
+                    + (self.ocp.X[1, i] - self.ocp._x_reference[1, i]) ** 2
                 )
-                < (2**2) + self.ocp.Sc[i]
+                < (1.5**2) + self.ocp.Sc[i]
             )
+
         self.ocp._set_continuity(1)
 
     def set_costs(self, Qn, R, R_delta):
@@ -437,9 +442,9 @@ class MPC(ManagedNode):
 
                         # Costs below are quite stable for skidpad and trackdrive
                         Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
-                        R = np.diag([1e-5, 5e-4])
+                        R = np.diag([1e-5, 4e-2])
                         R_delta = np.diag(
-                            [1e-2, 6e-1]  # * self.actual_speed / self.speed_target]
+                            [1e-2, 2e0]  # * self.actual_speed / self.speed_target]
                         )
 
                         self.set_costs(Qn, R, R_delta)

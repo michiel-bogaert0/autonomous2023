@@ -47,10 +47,10 @@ class Ocp:
         self.u_prev = self.opti.parameter(self.nu)
 
         # Soften constraints
-        self.Sc = self.opti.variable(1, N)
+        self.Sc = self.opti.variable(1, N + 1)
         self.sc = casadi.SX.sym("sc", 1)
 
-        self._x_reference = self.opti.parameter(self.nx, self.N)
+        self._x_reference = self.opti.parameter(self.nx, self.N + 1)
         self.params = []  # additional parameters
 
         # symbolic params to define cost functions
@@ -139,18 +139,26 @@ class Ocp:
         if cost_fun is not None:
             self.cost_fun = cost_fun
             L_run = 0  # cost over the horizon
-            for i in range(self.N):
+            for i in range(self.N + 1):
                 if i == 0:
                     L_run += cost_fun(
-                        self.X[:, 0],
+                        self.X[:, i],
                         self.U[:, i],
-                        (self.U[:, 0] - self.u_prev),
+                        1 * (self.U[:, i] - self.u_prev),
+                        self._x_reference[:, i],
+                        self.Sc[i],
+                    )
+                elif i == self.N:
+                    L_run += cost_fun(
+                        self.X[:, i],
+                        0,
+                        0,
                         self._x_reference[:, i],
                         self.Sc[i],
                     )
                 else:
                     L_run += cost_fun(
-                        self.X[:, i + 1],
+                        self.X[:, i],
                         self.U[:, i],
                         (self.U[:, i] - self.U[:, i - 1]),
                         self._x_reference[:, i],
@@ -244,8 +252,7 @@ class Ocp:
             [tuple]: U_sol [nu, N], X_sol [nx, N], info
         """
         self.opti.set_value(self.x0, state)
-        # self.opti.set_value(self._x_reference, reference_track)
-        for i in range(self.N):
+        for i in range(self.N + 1):
             self.opti.set_value(self._x_reference[:, i], reference_track[i])
 
         self.opti.set_initial(self.a, a)
@@ -264,7 +271,7 @@ class Ocp:
         else:
             self.opti.set_initial(self.U, np.zeros((self.nu, self.N)))
 
-        self.opti.set_initial(self.Sc, np.ones((1, self.N)) * 1e-1)
+        self.opti.set_initial(self.Sc, np.ones((1, self.N + 1)) * 1e-2)
 
         try:
             with self.timer:
