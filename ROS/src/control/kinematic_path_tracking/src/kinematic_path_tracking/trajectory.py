@@ -31,7 +31,7 @@ class Trajectory:
         self.tf_buffer = tf_buffer
         self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
-        self.cog_to_front_axle = rospy.get_param("~cog_to_front_axle")
+        self.cog_to_front_axle = rospy.get_param("/ugr/car/cog_to_front_axle")
 
         self.reference_pose = [self.cog_to_front_axle, 0]
 
