@@ -42,7 +42,7 @@ class MPC(ManagedNode):
 
         self.wheelradius = rospy.get_param("~wheelradius", 0.1)
 
-        self.cog_to_front_axle = rospy.get_param("~cog_to_front_axle", 0.72)
+        self.cog_to_front_axle = rospy.get_param("/ugr/car/cog_to_front_axle", 0.72)
         self.reference_pose = [self.cog_to_front_axle, 0]
 
         self.velocity_cmd = Float64(0.0)

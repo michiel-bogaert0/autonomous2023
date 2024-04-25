@@ -18,8 +18,10 @@ class PurePursuit(KinematicTrackingNode):
         self.distance_start = rospy.get_param("~distance_start", 1.2)
         self.distance_stop = rospy.get_param("~distance_stop", 2.4)
 
-        self.cog_to_front_axle = rospy.get_param("~cog_to_front_axle", 0.72)
+        self.cog_to_front_axle = rospy.get_param("/ugr/car/cog_to_front_axle", 0.72)
         self.reference_pose = [self.cog_to_front_axle, 0]
+
+        self.L = rospy.get_param("/ugr/car/wheelbase", 0.72)
 
     def __process__(self):
         """
@@ -65,7 +67,7 @@ class PurePursuit(KinematicTrackingNode):
         ) / (2 * (target_y - self.reference_pose[1]))
 
         self.steering_cmd.data = self.symmetrically_bound_angle(
-            np.arctan2(1.0, R), np.pi / 2
+            np.arctan2(self.L, R), np.pi / 2
         )
         self.steering_cmd.data /= self.steering_transmission
 
