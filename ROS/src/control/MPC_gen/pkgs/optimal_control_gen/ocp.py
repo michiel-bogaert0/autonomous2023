@@ -47,6 +47,7 @@ class Ocp:
         self.der_centerline = curve.derivative(o=1)
 
         self.X = self.opti.variable(self.nx, N + 1)
+        # self.X = casadi.repmat([1e1, 1e1, 1e-1, 1, 1e2, 1], 1, self.N+1) * self.opti.variable(self.nx, N + 1)
         self.U = self.opti.variable(self.nu, N)
         self.x0 = self.opti.parameter(self.nx)
         self.u_prev = self.opti.parameter(self.nu)
@@ -67,10 +68,13 @@ class Ocp:
         self.point_curve = casadi.SX.sym("point_curve", 2)
         self.der_curve = casadi.SX.sym("der_curve", 2)
 
-        self.a = self.opti.variable(1)
-        self.b = self.opti.variable(1)
-        self.c = self.opti.variable(1)
-        self.d = self.opti.variable(1)
+        self.slopes_inner = self.opti.parameter(1, N + 1)
+        self.intercepts_inner = self.opti.parameter(1, N + 1)
+        self.slopes_outer = self.opti.parameter(1, N + 1)
+        self.intercepts_outer = self.opti.parameter(1, N + 1)
+        # self.b = self.opti.variable(1)
+        # self.c = self.opti.variable(1)
+        # self.d = self.opti.variable(1)
 
         self._set_continuity(threads)
 
@@ -116,13 +120,13 @@ class Ocp:
         return F
 
     def _set_continuity(self, threads: int):
-        # self.opti.subject_to(self.X[:, 0] == self.x0) # doing this somehow causes crash issue
+        # self.opti.subject_to(self.X[2:, 0] == self.x0[2:]) # doing this somehow causes crash issue
         # self.opti.subject_to(self.X[0, 0] == self.x0[0])
-        self.opti.subject_to(self.X[2, 0] == 0)
-        self.opti.subject_to(self.X[3, 0] == 0)
-        self.opti.subject_to(self.X[4, 0] == self.x0[4])
+        # self.opti.subject_to(self.X[2, 0] == self.x0[2])
+        # self.opti.subject_to(self.X[3, 0] == 0)
+        # self.opti.subject_to(self.X[4, 0] == self.x0[4])
         self.opti.subject_to(self.X[5, 0] == 0.01)
-        # self.opti.subject_to(self.X[5, self.N] == 1)
+        self.opti.subject_to(self.X[5, self.N] == 1)
 
         if threads == 1:
             for i in range(self.N):
@@ -142,33 +146,32 @@ class Ocp:
         # N = X.shape[1] - 1
 
         L_run = 0  # cost over the horizon
-        for i in range(self.N):
+        for i in range(self.N + 1):
             if i == 0:
                 L_run += self.cost_fun(
-                    X[:, i + 1],
+                    X[:, i],
                     U[:, i],
                     (U[:, i] - self.u_prev),
-                    self.centerline(X[5, i + 1]).T,
-                    self.der_centerline(X[5, i + 1]).T,
+                    self.centerline(X[5, i]).T,
+                    self.der_centerline(X[5, i]).T,
                     Sc[i],
                 )
-                temp = self.cost_fun(
-                    X[:, i + 1],
-                    U[:, i],
-                    (U[:, i] - self.u_prev),
-                    self.centerline(X[5, i + 1]).T,
-                    self.der_centerline(X[5, i + 1]).T,
+            elif i == self.N:
+                L_run += self.cost_fun(
+                    X[:, i],
+                    0,
+                    0,
+                    self.centerline(X[5, i]).T,
+                    self.der_centerline(X[5, i]).T,
                     Sc[i],
                 )
-                print(temp)
-                # print(L_run)
             else:
                 L_run += self.cost_fun(
-                    X[:, i + 1],
+                    X[:, i],
                     U[:, i],
                     (U[:, i] - U[:, i - 1]),
-                    self.centerline(X[5, i + 1]).T,
-                    self.der_centerline(X[5, i + 1]).T,
+                    self.centerline(X[5, i]).T,
+                    self.der_centerline(X[5, i]).T,
                     Sc[i],
                 )
 
@@ -181,23 +184,32 @@ class Ocp:
         if cost_fun is not None:
             self.cost_fun = cost_fun
             L_run = 0  # cost over the horizon
-            for i in range(self.N):
+            for i in range(self.N + 1):
                 if i == 0:
                     L_run += cost_fun(
-                        self.X[:, i + 1],
+                        self.X[:, i],
                         self.U[:, i],
                         (self.U[:, i] - self.u_prev),
-                        self.centerline(self.X[5, i + 1]).T,
-                        self.der_centerline(self.X[5, i + 1]).T,
+                        self.centerline(self.X[5, i]).T,
+                        self.der_centerline(self.X[5, i]).T,
+                        self.Sc[i],
+                    )
+                elif i == self.N:
+                    L_run += cost_fun(
+                        self.X[:, i],
+                        0,
+                        0,
+                        self.centerline(self.X[5, i]).T,
+                        self.der_centerline(self.X[5, i]).T,
                         self.Sc[i],
                     )
                 else:
                     L_run += cost_fun(
-                        self.X[:, i + 1],
+                        self.X[:, i],
                         self.U[:, i],
                         (self.U[:, i] - self.U[:, i - 1]),
-                        self.centerline(self.X[5, i + 1]).T,
-                        self.der_centerline(self.X[5, i + 1]).T,
+                        self.centerline(self.X[5, i]).T,
+                        self.der_centerline(self.X[5, i]).T,
                         self.Sc[i],
                     )
 
@@ -260,6 +272,17 @@ class Ocp:
             "max_iter": 500,
             "print_level": print_level,
             "sb": "yes",
+            # "nlp_scaling_method": "none",
+            "tol": 5e-1,
+            "dual_inf_tol": 5.0,
+            "constr_viol_tol": 1e-1,
+            "compl_inf_tol": 1e-1,
+            "acceptable_tol": 1e-2,
+            "acceptable_constr_viol_tol": 0.01,
+            "acceptable_dual_inf_tol": 1e10,
+            "acceptable_compl_inf_tol": 0.01,
+            "acceptable_obj_change_tol": 1e20,
+            "diverging_iterates_tol": 1e20,
         }
 
         return p_opts, s_opts
@@ -295,10 +318,15 @@ class Ocp:
         self.centerline = curve
         self.der_centerline = curve.derivative(o=1)
 
-        self.opti.set_initial(self.a, a)
-        self.opti.set_initial(self.b, b)
-        self.opti.set_initial(self.c, c)
-        self.opti.set_initial(self.d, d)
+        # self.opti.set_initial(self.a, a)
+        # self.opti.set_initial(self.b, b)
+        # self.opti.set_initial(self.c, c)
+        # self.opti.set_initial(self.d, d)
+        self.opti.set_value(self.slopes_inner, a)
+        self.opti.set_value(self.intercepts_inner, b)
+        self.opti.set_value(self.slopes_outer, c)
+        self.opti.set_value(self.intercepts_outer, d)
+
         self.opti.set_value(self.u_prev, u_prev)
 
         if X0 is not None:
