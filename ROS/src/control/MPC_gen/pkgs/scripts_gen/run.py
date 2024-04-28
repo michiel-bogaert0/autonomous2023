@@ -26,7 +26,7 @@ class MPC_gen:
         )
         self.path_GT_map = rospy.get_param("~input_path", "/data_gen/map_chicane.yaml")
 
-        reverse = True
+        reverse = False
 
         # Get centerline from yaml
         self.GT_centerline = []
@@ -147,7 +147,7 @@ class MPC_gen:
         self.steering_joint_angle = 0
         self.u = [0, 0, 0]
 
-        self.N = 80
+        self.N = 100
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
@@ -249,7 +249,7 @@ class MPC_gen:
         Set constraints for the MPC
         """
         velocity_limit = 50
-        steering_limit = 0.5
+        steering_limit = 5
         self.wheelradius = 0.1
         self.ocp.subject_to()
         self.ocp.subject_to(
@@ -268,11 +268,11 @@ class MPC_gen:
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 30))
 
         # Progress parameter between 0 and 1
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[5, :], 1))
+        self.ocp.subject_to(self.ocp.bounded(0.00000001, self.ocp.X[5, :], 1))
 
         # Limit update to progress parameter
         # Starts from 0.01 because otherwise casadi optimizes to very small negative values
-        self.ocp.subject_to(self.ocp.bounded(0.000001, self.ocp.U[2, :], 0.05))
+        self.ocp.subject_to(self.ocp.bounded(0.000001, self.ocp.U[2, :], 0.1))
 
         # Limit relaxing constraint
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.1))
@@ -282,41 +282,44 @@ class MPC_gen:
         # self.ocp.subject_to(der_points[:,0] ** 2 + der_points[:, 1] ** 2 > 1e-1)
 
         # # For loop takes quite long to initialize
-        center_points = self.ocp.centerline(self.ocp.X[5, :].T)
-        for i in range(self.N + 1):
-            self.ocp.subject_to(
-                (
-                    (
-                        self.ocp.X[0, i]
-                        # - self.ocp.centerline(self.ocp.X[5, i]).T[0]
-                        - center_points[i, 0]
-                    )
-                    ** 2
-                    + (
-                        self.ocp.X[1, i]
-                        # - self.ocp.centerline(self.ocp.X[5, i]).T[1]
-                        - center_points[i, 1]
-                    )
-                    ** 2
-                )
-                < (1.5**2)  # + self.ocp.Sc[i] ** 2
+        # center_points = self.ocp.centerline(self.ocp.X[5, :].T)
+        # for i in range(self.N + 1):
+        #     self.ocp.subject_to(
+        #         (
+        #             (
+        #                 self.ocp.X[0, i]
+        #                 # - self.ocp.centerline(self.ocp.X[5, i]).T[0]
+        #                 - center_points[i, 0]
+        #             )
+        #             ** 2
+        #             + (
+        #                 self.ocp.X[1, i]
+        #                 # - self.ocp.centerline(self.ocp.X[5, i]).T[1]
+        #                 - center_points[i, 1]
+        #             )
+        #             ** 2
+        #         )
+        #         < (1.5**2)  # + self.ocp.Sc[i] ** 2
+        #     )
+
+        (
+            slopes_inner,
+            intercepts_inner,
+            slopes_outer,
+            intercepts_outer,
+        ) = get_boundary_constraints_casadi(
+            self.curve_centerline, self.der_centerline, self.ocp.X[5, :].T, 1.5
+        )
+
+        self.ocp.subject_to(
+            (slopes_inner * self.ocp.X[0, :].T + intercepts_inner - self.ocp.X[1, :].T)
+            * (
+                slopes_outer * self.ocp.X[0, :].T
+                + intercepts_outer
+                - self.ocp.X[1, :].T
             )
-
-        # slopes_inner, intercepts_inner, slopes_outer, intercepts_outer = get_boundary_constraints_casadi(self.curve_centerline, self.der_centerline, self.ocp.X[5, :].T, 1.5)
-
-        # self.ocp.subject_to(
-        #     (
-        #         slopes_inner * self.ocp.X[0, :].T
-        #         + intercepts_inner
-        #         - self.ocp.X[1, :].T
-        #     )
-        #     * (
-        #         slopes_outer * self.ocp.X[0, :].T
-        #         + intercepts_outer
-        #         - self.ocp.X[1, :].T
-        #     )
-        #     < 0
-        # )
+            < 0
+        )
 
         # self.ocp.subject_to(
         #     (
@@ -332,6 +335,11 @@ class MPC_gen:
         #     < 0
         # )
 
+        # Make sure last state heading is close to first state heading
+        # self.ocp.subject_to(cd.fabs(cd.fmod(self.ocp.X[2, self.N], 2*cd.pi) - cd.fmod(self.ocp.X[2, 0], 2*cd.pi)) < 0.1)
+        # self.ocp.subject_to(cd.fabs(cd.fmod(self.ocp.X[3, self.N], 2*cd.pi) - cd.fmod(self.ocp.X[3, 0], 2*cd.pi)) < 0.1)
+        # self.ocp.subject_to(cd.fabs(self.ocp.X[4, self.N] - self.ocp.X[3, 0]) < 5)
+
         self.ocp._set_continuity(1)
 
         print("Constraints set")
@@ -342,18 +350,18 @@ class MPC_gen:
         """
         # qs = 0
         # qss = 0
-        qc = 1e-2
-        ql = 1e-2
+        qc = 1e-4
+        ql = 1e-1
 
         # State: x, y, heading, steering angle, velocity
         # Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
 
         # Input: acceleration, velocity on steering angle, update to progress parameter
         # Maximize progress parameter
-        R = np.diag([1e-2, 1e-2, 1e-2])
-        R_delta = np.diag([1e-2, 1e-2, 1e-2])
+        R = np.diag([1e-7, 1e-2, 1e-2])
+        R_delta = np.diag([1e-7, 1e-2, 3e-1])
 
-        q_obj = 1e-2
+        q_obj = 1e-1
 
         # Avoid division by zero
         # phi = cd.if_else(
@@ -362,7 +370,7 @@ class MPC_gen:
         #     cd.atan2(self.ocp.der_curve[1], self.ocp.der_curve[0]),
         # )
         # Add small noise to avoid division by zero in derivative
-        phi = cd.atan2(self.ocp.der_curve[1] + 1e-10, self.ocp.der_curve[0] + 1e-10)
+        phi = cd.atan2((self.ocp.der_curve[1] + 1e-10), (self.ocp.der_curve[0] + 1e-10))
         e_c = cd.sin(phi) * (self.ocp.x[0] - self.ocp.point_curve[0]) - cd.cos(phi) * (
             self.ocp.x[1] - self.ocp.point_curve[1]
         )
@@ -397,20 +405,24 @@ class MPC_gen:
             der_points = self.der_centerline(tau)[0]
 
             phi = np.arctan2(der_points[1], der_points[0])
-
-            # calculate heading based on position
-            # center_point = n
-            # if len(X0) > 0:
-            #     heading = np.arctan2(x0[1] - X0[-1][1], x0[0] - X0[-1][0])
-            # else:
-            #     heading = 0
+            # map to 0 to 2pi
+            # phi = (phi + 2 * np.pi) % (2 * np.pi)
             heading = phi
+            if len(X0) > 0:
+                diff_with_prev = heading - X0[-1][2]
+                # scale to [-pi, pi]
+                diff_with_prev = (diff_with_prev + np.pi) % (2 * np.pi) - np.pi
+                heading = X0[-1][2] + diff_with_prev
 
             # calculate steering angle based on position
             if len(X0) > 0:
                 # Apply inverse bicycle model
                 # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
                 alpha = heading - X0[-1][2]
+
+                # Not sure why this / 2 but gives better results
+                alpha /= 2
+
                 l_d = np.sqrt((x0[0] - X0[-1][0]) ** 2 + (x0[1] - X0[-1][1]) ** 2)
 
                 # Calculate turning radius
@@ -418,20 +430,6 @@ class MPC_gen:
 
                 steering_angle = np.arctan(self.car.L / R)
 
-                # R = ((x0[0] - X0[-1][0]) ** 2 + (x0[1] - X0[-1][1]) ** 2) / (
-                #     2 * (x0[1] - X0[-1][1])
-                # )
-                # steering_angle = np.arctan2(0.72, R)
-                # max_angle = np.pi / 4
-                # steering_angle = (steering_angle + max_angle) % (
-                #     2 * max_angle
-                # ) - max_angle
-
-                # Limit steering angle
-                # if steering_angle > self.max_steering_angle:
-                #     steering_angle = self.max_steering_angle
-                # elif steering_angle < -self.max_steering_angle:
-                #     steering_angle = -self.max_steering_angle
             else:
                 steering_angle = 0
 
@@ -443,35 +441,12 @@ class MPC_gen:
                 )
             else:
                 velocity = 20
-            # velocity = 50
-
-            # calculate steering angle based on heading
-            # if len(X0) > 0:
-            #     # prev_steering_angle = X0[-1][3]
-            #     steering_angle_delta = np.arctan2(
-            #         np.sin(heading - prev_steering_angle),
-            #         np.cos(heading - prev_steering_angle),
-            #     )
-            #     steering_angle = prev_steering_angle + steering_angle_delta
-            # else:
-            #     steering_angle = 0
-            #     steering_angle_delta = 0
-            # steering_angle = 0
 
             x0_state = [x0[0], x0[1], heading, steering_angle, velocity, tau]
             X0.append(x0_state)
-            # X0.append(self.curve_centerline(tau).T)
-            steering_angle_delta = steering_angle - X0[-1][3]
 
-        # for i in range(len(X0)):
-        #     steering_angle = 0
-        #     if i == len(X0) - 1:
-        #         steering_angle = X0[i-1][3]
-        #     # calculate steering angle based on next and previous heading
-        #     elif i > 0:
-        #         steering_angle = (X0[i+1][2] - X0[i][2]) / self.car.dt
-
-        #     X0[i][3] = steering_angle
+        # Set first velocity equal to second
+        X0[0][4] = X0[1][4]
 
         # Plot x-y and heading
         plt.plot([x[0] for x in X0], [x[1] for x in X0], c="b")
@@ -493,22 +468,16 @@ class MPC_gen:
             )
 
         for i in range(self.N):
-            acceleration = (
-                max(min((X0[i + 1][4] - X0[i][4]), 200), -200)
-                / self.car.dt
-                * self.wheelradius
-            )
-            # acceleration = (X0[i + 1][4] - X0[i][4]) / self.car.dt * self.wheelradius
-            steering_angle_delta = (
-                max(min((X0[i + 1][3] - X0[i][3]), 0.5), -0.5) / self.car.dt
-            )
-            steering_angle_delta = (X0[i + 1][3] - X0[i][3]) / self.car.dt
+            acceleration = (X0[i + 1][4] - X0[i][4]) / self.car.dt / self.wheelradius
+
+            steering_angle_delta = X0[i + 1][3] - X0[i][3]
+            steering_angle_delta /= self.car.dt
+
             dtau = X0[i + 1][5] - X0[i][5]
             U0.append([acceleration, steering_angle_delta, dtau])
 
         self.u = U0[0]
         initial_state = X0[0]
-        # U0.append([0, 0, 0])
         X0 = np.array(X0).T
         U0 = np.array(U0).T
 

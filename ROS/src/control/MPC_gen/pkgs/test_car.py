@@ -26,6 +26,8 @@ car.state = X0[:, 0]
 state = car.state
 states = [state]
 
+# %%
+
 for i in range(len(U0[0])):
     u = U0[:, i]
     print(u)
@@ -36,9 +38,14 @@ for i in range(len(U0[0])):
     print(X0[:, i + 1])
     states.append(state)
 
+# %%
+
 # for i in range(50):
 #     if i < 50:
-#         u = [0.2, 0.0, 0.02]  # [v, psi]
+#         u = [200, 0.5, 0.02]  # [v, psi]
+#         print(f"v: {state[4]}")
+#         print(f"zeta: {state[3]}")
+#         print(f"tan(zeta): {np.tan(state[3])}")
 #     elif i < 100:
 #         u = [-5, np.pi]
 #     else:
@@ -48,15 +55,19 @@ for i in range(len(U0[0])):
 #     states.append(state)
 
 # %%
-fig, axs = plt.subplots(5, 1)
+fig, axs = plt.subplots(8, 1)
 states_array = np.array(states)
-print(states_array[:, 2])
+print(states_array[:, 3])
+print(X0[3, :])
 axs[0].plot(states_array[:, 0], states_array[:, 1], label=["x", "y"])
 axs[1].plot(states_array[:, 2], label="heading")
-axs[2].plot(states_array[:, 3], label="steering angle")
-axs[3].plot(states_array[:, 4], label="v")
-axs[4].plot(states_array[:, 5], label="tau")
-[ax.legend() for ax in axs]
+axs[2].plot(X0[2, :], label="heading GT")
+axs[3].plot(states_array[:, 3], label="steering angle")
+axs[4].plot(X0[3, :], label="steering_angle GT")
+axs[5].plot(states_array[:, 4], label="v")
+axs[6].plot(X0[4, :], label="v GT")
+axs[7].plot(states_array[:, 5], label="tau")
+# [ax.legend() for ax in axs]
 # fig.tight_layout()
 # %%
 fig, ax = plt.subplots()

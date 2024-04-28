@@ -125,7 +125,7 @@ class Ocp:
         # self.opti.subject_to(self.X[2, 0] == self.x0[2])
         # self.opti.subject_to(self.X[3, 0] == 0)
         # self.opti.subject_to(self.X[4, 0] == self.x0[4])
-        self.opti.subject_to(self.X[5, 0] == 0.01)
+        self.opti.subject_to(self.X[5, 0] == self.x0[5])
         self.opti.subject_to(self.X[5, self.N] == 1)
 
         if threads == 1:
@@ -135,6 +135,13 @@ class Ocp:
                 if isinstance(x_next, np.ndarray):
                     x_next = casadi.vcat(x_next)  # convert numpy array to casadi vector
 
+                # self.opti.subject_to(self.X[0, i + 1] == x_next[0])
+                # self.opti.subject_to(self.X[1, i + 1] == x_next[1])
+                # self.opti.subject_to(casadi.fmod(self.X[2, i + 1], 2*casadi.pi) == casadi.fmod(x_next[2], 2*casadi.pi))
+                # self.opti.subject_to(casadi.fmod(self.X[3, i + 1], 2*casadi.pi) == casadi.fmod(x_next[3], 2*casadi.pi))
+                # self.opti.subject_to((self.X[3, i + 1] % 2*casadi.pi) == (x_next[3]% 2*casadi.pi))
+                # self.opti.subject_to(self.X[4, i + 1] == x_next[4])
+                # self.opti.subject_to(self.X[5, i + 1] == x_next[5])
                 self.opti.subject_to(self.X[:, i + 1] == x_next)
         else:
             X_next = self.F.map(self.N, "thread", threads)(self.X[:, :-1], self.U)
@@ -273,16 +280,10 @@ class Ocp:
             "print_level": print_level,
             "sb": "yes",
             # "nlp_scaling_method": "none",
-            "tol": 5e-1,
-            "dual_inf_tol": 5.0,
             "constr_viol_tol": 1e-1,
-            "compl_inf_tol": 1e-1,
-            "acceptable_tol": 1e-2,
-            "acceptable_constr_viol_tol": 0.01,
-            "acceptable_dual_inf_tol": 1e10,
-            "acceptable_compl_inf_tol": 0.01,
-            "acceptable_obj_change_tol": 1e20,
-            "diverging_iterates_tol": 1e20,
+            "print_user_options": "yes",
+            # "acceptable_constr_viol_tol": 1e-1,
+            # "bound_relax_factor": 10,
         }
 
         return p_opts, s_opts
