@@ -2,7 +2,7 @@
 
 ECatDriver::ECatDriver(ros::NodeHandle &n)
     : node_fixture::ManagedNode(n, "ecat_driver"), n(n),
-      mode(n.param<operational_mode_t>("mode", CSP)),
+      mode(static_cast<operational_mode_t>(n.param<int>("mode", CSP))),
       ifname(n.param<std::string>("ifname", "enp0s1")) {}
 
 void ECatDriver::doConfigure() {

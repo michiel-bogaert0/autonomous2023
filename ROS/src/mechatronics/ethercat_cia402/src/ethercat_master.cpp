@@ -312,7 +312,7 @@ extern void stop_loop() {
   pthread_join(main_thread, NULL);
   // Graceful shutdown check thread
   *check_flag = false;
-  pthread_join(check_thread, NULL);
+  pthread_join(*check_thread, NULL);
 }
 
 extern void reset_state() {
