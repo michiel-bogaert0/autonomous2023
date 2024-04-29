@@ -28,14 +28,16 @@ class Gen4State(CarState):
         rospy.Subscriber(
             "/iologik/input2", Float64, self.handle_air_pressure2
         )  # EBS 2 air pressure
+
+        # probably remove these two
         rospy.Subscriber(
             "/iologik/input3", Float64, self.handle_front_ebs_bp
         )  # front ebs brake pressure
         rospy.Subscriber(
             "/iologik/input4", Float64, self.handle_rear_ebs_bp
         )  # rear brake pressure
-        self.ebs1 = rospy.Publisher("/dio_driver_1/DO1", Bool, queue_size=10)  # ebs1
-        self.ebs2 = rospy.Publisher("/dio_driver_1/DO2", Bool, queue_size=10)  # ebs2
+        self.ebs_arm = rospy.Publisher("/dio_driver_1/DO1", Bool, queue_size=10)  # ebs1
+        self.dbs_arm = rospy.Publisher("/dio_driver_1/DO2", Bool, queue_size=10)  # ebs2
         self.dbs = rospy.Publisher("/iologik/output1", Float64, queue_size=10)
         self.watchdog_trigger = rospy.Publisher(
             "/dio_driver_1/DO3", Bool, queue_size=10
@@ -91,9 +93,9 @@ class Gen4State(CarState):
         # ebs1&2 activate bekabeling beide pinnen laag zetten
 
         self.state["EBS"] = CarStateEnum.ACTIVATED
-        self.ebs1.publish(Bool(data=False))
-        self.ebs2.publish(Bool(data=False))
-        # sdc open yeeten
+        self.ebs_arm.publish(Bool(data=False))
+        self.dbs_arm.publish(Bool(data=False))
+        self.sdc_out.publish(Bool(data=False))
 
     def update(self, state: AutonomousStatesEnum):
         # On a state transition, start 5 second timeout
@@ -157,7 +159,7 @@ class Gen4State(CarState):
             self.front_ebs_bp > 90
             and self.rear_ebs_bp > 90
             and self.front_ebs_bp < 150
-            and self.front_ebs_bp < 150
+            and self.rear_ebs_bp < 150
         ):
             self.activate_EBS()
 
@@ -166,6 +168,69 @@ class Gen4State(CarState):
 
         # reset watchdog
         self.watchdog_reset.publish(Bool(data=True))
+
+        time.sleep(0.200)
+
+        # check whether pressure is being released as expected
+        if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
+            self.activate_EBS()
+
+        # trigger ebs
+        self.ebs_arm.publish(Bool(data=False))
+        self.dbs_arm.publish(Bool(data=True))
+
+        time.sleep(0.200)
+
+        # check whether pressure is being built up as expected
+        if not (
+            self.front_ebs_bp > 40
+            and self.rear_ebs_bp > 40
+            and self.front_ebs_bp < 80
+            and self.rear_ebs_bp < 80
+        ):
+            self.activate_EBS()
+
+        # release ebs
+        self.ebs_arm.publish(Bool(data=True))
+        self.dbs_arm.publish(Bool(data=True))
+
+        time.sleep(0.200)
+
+        # check whether pressure is being released as expected
+        if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
+            self.activate_EBS()
+
+        # trigger dbs
+        self.ebs_arm.publish(Bool(data=True))
+        self.dbs_arm.publish(Bool(data=False))
+
+        time.sleep(0.200)
+
+        # check whether pressure is being built up as expected
+        if not (
+            self.front_ebs_bp > 40
+            and self.rear_ebs_bp > 40
+            and self.front_ebs_bp < 80
+            and self.rear_ebs_bp < 80
+        ):
+            self.activate_EBS()
+
+        # release dbs
+        self.ebs_arm.publish(Bool(data=True))
+        self.dbs_arm.publish(Bool(data=True))
+
+        time.sleep(0.200)
+
+        # check whether pressure is being released as expected
+        if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
+            self.activate_EBS()
+
+        # set PPR setpoint
+        self.dbs.publish(Float64(data=30))  # 30 bar, placeholder
+
+        # check whether pressure is being built up as expected
+        if not (self.front_ebs_bp > 20 and self.rear_ebs_bp > 20):
+            self.activate_EBS()
 
     def send_status_over_can(self):
         # https://www.formulastudent.de/fileadmin/user_upload/all/2022/rules/FSG22_Competition_Handbook_v1.1.pdf
@@ -255,6 +320,7 @@ class Gen4State(CarState):
     def handle_air_pressure2(self, air_pressure2: Float64):
         self.air_pressure2 = air_pressure2.data
 
+    # these will probably have to be done with can
     def handle_front_ebs_bp(self, front_ebs_bp: Float64):
         self.front_ebs_bp = front_ebs_bp.data
 
