@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5.1)
 project(slam_simulator)
 
 find_package(catkin REQUIRED rospy ugr_msgs message_generation)
