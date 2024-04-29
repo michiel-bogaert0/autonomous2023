@@ -245,7 +245,8 @@ void *loop(void *mode_ptr) {
   return NULL;
 }
 
-extern int start_loop(operational_mode_t mode) {
+// cppcheck-suppress unusedFunction
+int start_loop(operational_mode_t mode) {
 
   // Set check flag to enable check thread
   *check_flag = true;
@@ -306,7 +307,8 @@ extern int start_loop(operational_mode_t mode) {
   return 1;
 }
 
-extern void stop_loop() {
+// cppcheck-suppress unusedFunction
+void stop_loop() {
   // Graceful shutdown main thread
   *loop_flag = false;
   pthread_join(main_thread, NULL);
@@ -315,7 +317,8 @@ extern void stop_loop() {
   pthread_join(*check_thread, NULL);
 }
 
-extern void reset_state() {
+// cppcheck-suppress unusedFunction
+void reset_state() {
   // Write state to slave
   ec_slave[0].state = EC_STATE_INIT;
   ec_writestate(0);
@@ -324,7 +327,8 @@ extern void reset_state() {
   state.statusword_state = Not_ready_to_switch_on;
 }
 
-extern int initialize_ethercat(const char *ifname, operational_mode_t mode) {
+// cppcheck-suppress unusedFunction
+int initialize_ethercat(const char *ifname, operational_mode_t mode) {
   state.mode = mode;
 
   if (ec_init(ifname)) {
