@@ -48,7 +48,9 @@ class Gen4State(CarState):
         self.sdc_out = rospy.Publisher(
             "/dio_driver_1/DO4", Bool, queue_size=10
         )  # sdc out start low, high when everything is ok and low in case of error
-        self.sleeping = False  # indicates whether we are waiting 200ms for watchdog
+        self.initial_checkup_busy = (
+            False  # indicates whether we are waiting 200ms for watchdog
+        )
         self.initial_checkup_done = False
         self.toggling_watchdog = True
         self.res_go_signal = False
@@ -113,7 +115,7 @@ class Gen4State(CarState):
 
     def initial_checkup(self):
         # ??? to do: cm1 and cm2 filled, sj1 and sj2 closed
-
+        self.initial_checkup_busy = True
         # mission needs to be selected
         if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
             self.activate_EBS()
@@ -137,13 +139,13 @@ class Gen4State(CarState):
 
         # is SDC closed?
         if not self.sdc_status:
+            self.initial_checkup_busy = False
             return  # hopefully in the next iteration this will be True, but no need for EBS
 
         # stop toggling watchdog
         self.toggling_watchdog = False
 
         # wait 200 ms
-        self.sleeping = True
         time.sleep(0.200)
 
         # check whether the watchdog is indicating error
@@ -235,6 +237,8 @@ class Gen4State(CarState):
         # if TS is active, we are done, otherwise we have to wait
         if self.state["TS"] == CarStateEnum.ACTIVATED:
             self.initial_checkup_done = True
+
+        self.initial_checkup_busy = False
 
     def send_status_over_can(self):
         # https://www.formulastudent.de/fileadmin/user_upload/all/2022/rules/FSG22_Competition_Handbook_v1.1.pdf
@@ -343,7 +347,7 @@ class Gen4State(CarState):
             self.watchdog_trigger.publish(Bool(data=False))
 
         if (
-            not self.initial_checkup_done and not self.sleeping
+            not self.initial_checkup_done and not self.initial_checkup_busy
         ):  # if we are busy waiting 200ms, just continue
             self.initial_checkup()
         elif self.initial_checkup_done:
