@@ -63,6 +63,11 @@ extern cpu_set_t cpuset;
 extern struct sched_param param;
 extern volatile int wkc;
 
+extern std::atomic_uint32_t *target;
+extern std::atomic_bool *enable_servo;
+extern std::atomic_bool *loop_flag;
+extern std::atomic_bool *check_flag;
+
 /**
  * @brief Structure to hold the inputs from the EtherCAT Slave
  * Is the same for all control methods
@@ -107,7 +112,7 @@ inline CSV_inputs get_CSV_input(uint16_t slave_nb) {
   return inputs;
 }
 
-int initialize_ethercat(const char *ifname);
+int initialize_ethercat(const char *ifname, operational_mode_t mode);
 
 /**
  * @brief Configures the servo when going from PREOP -> SAFEOP
@@ -125,13 +130,18 @@ void *loop();
 /**
  * @brief Function that starts the main ethercat loop (in OP)
  */
-int start_loop(void);
+int start_loop(operational_mode_t mode);
 
 /**
  * @brief stops the main ethercat OP loop.
  * Slave will automatically go back to SAFEOP
  */
 void stop_loop(void);
+
+/**
+ * @brief Function that resets the slave to INIT
+ */
+void reset_state(void);
 
 #ifdef __cplusplus
 }

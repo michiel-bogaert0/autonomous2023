@@ -14,12 +14,14 @@ struct sched_param param;
 volatile int wkc;
 
 // BEGIN variables with possible race conditions
-bool needlf = false;
+// bool needlf = false;
 // Also includes `state.expectedWKC` from the header file
 // END variables with possible race conditions
 
 std::atomic_uint32_t *target = new std::atomic_uint32_t(0);
+std::atomic_bool *enable_servo = new std::atomic_bool(false);
 std::atomic_bool *loop_flag = new std::atomic_bool(false);
+std::atomic_bool *check_flag = new std::atomic_bool(false);
 
 void *loop(void *mode_ptr) {
   operational_mode_t mode = *static_cast<operational_mode_t *>(mode_ptr);
@@ -107,13 +109,11 @@ void *loop(void *mode_ptr) {
     }
 
     if (error) {
-      // TODO: Print error to ros including statusword, positoin, error, ...
+      // TODO: Print error to ros including statusword, position, error, ...
       break;
     }
 
     if (wkc >= state.expectedWKC) {
-
-      needlf = true;
 
       // Get statusword depending on mode
       if (mode == operational_mode_t::CSP) {
@@ -128,56 +128,75 @@ void *loop(void *mode_ptr) {
       // Mask/Ignore reserved bits (4,5,8,9,14,15) of status word
       STATUS_WORD_MASK(statusword);
 
-      // Do logic
-      switch (statusword) {
-      case (Not_ready_to_switch_on): {
-        /* Now the FSM should automatically go to Switch_on_disabled*/
-        break;
-      }
-      case (Switch_on_disabled): {
-        /* Automatic transition (2)*/
-        controlword = 0;
-        controlword |=
-            (1 << control_enable_voltage) | (1 << control_quick_stop);
+      // Set statusword in state
+      // ! Warning: may have race condition
+      state.statusword_state = static_cast<statusword_state_t>(statusword);
 
+      if (*enable_servo) {
+        // Do logic
+        switch (statusword) {
+        case (Not_ready_to_switch_on): {
+          /* Now the FSM should automatically go to Switch_on_disabled*/
+          break;
+        }
+        case (Switch_on_disabled): {
+          /* Automatic transition (2)*/
+          controlword = 0;
+          controlword |=
+              (1 << control_enable_voltage) | (1 << control_quick_stop);
+
+          // Periodically send fault reset
+          if (i > 10) {
+            controlword |= 1 << control_fault_reset;
+            i = 1;
+          } else {
+            i++;
+          }
+          break;
+        }
+        case (Ready_to_switch_on): {
+          /* Switch on command for transition (3) */
+          controlword |= 1 << control_switch_on;
+          break;
+        }
+        case (Switch_on): {
+          /* Enable operation command for transition (4) */
+          controlword |= 1 << control_enable_operation;
+          break;
+        }
+        case (Operation_enabled): {
+          controlword = 0x1f;
+
+          operation_enabled = 1;
+          break;
+        }
+        case (Fault):
+        default: {
+          if (operation_enabled == 1) {
+            error = 1;
+            operation_enabled = 0;
+          }
+
+          /* Returning to Switch on Disabled */
+          controlword = (1 << control_fault_reset);
+          controlword |=
+              (1 << control_enable_voltage) | (1 << control_quick_stop);
+          break;
+        }
+        }
+      } else {
+        // Reset operation enabled
+        operation_enabled = 0;
+
+        // Set controlword to 0 (deactivate servo)
+        controlword = 0;
         // Periodically send fault reset
-        if (i % 10 == 0) {
+        if (i > 100) {
           controlword |= 1 << control_fault_reset;
           i = 1;
         } else {
           i++;
         }
-        break;
-      }
-      case (Ready_to_switch_on): {
-        /* Switch on command for transition (3) */
-        controlword |= 1 << control_switch_on;
-        break;
-      }
-      case (Switch_on): {
-        /* Enable operation command for transition (4) */
-        controlword |= 1 << control_enable_operation;
-        break;
-      }
-      case (Operation_enabled): {
-        controlword = 0x1f;
-
-        operation_enabled = 1;
-        break;
-      }
-      case (Fault):
-      default: {
-        if (operation_enabled == 1) {
-          error = 1;
-          operation_enabled = 0;
-        }
-
-        /* Returning to Switch on Disabled */
-        controlword = (1 << control_fault_reset);
-        controlword |=
-            (1 << control_enable_voltage) | (1 << control_quick_stop);
-        break;
-      }
       }
 
       // Check for faults (extra)
@@ -188,10 +207,13 @@ void *loop(void *mode_ptr) {
         }
 
         controlword = (1 << control_fault_reset);
-        controlword |=
-            (1 << control_enable_voltage) | (1 << control_quick_stop);
+        if (*enable_servo) {
+          controlword |=
+              (1 << control_enable_voltage) | (1 << control_quick_stop);
+        }
       }
 
+      // needlf = true;
       // printf("Target: %d ", target);
       // printf("Value: %d ", inputs.position);
       // printf("Relative offset: %d ", relative_offset);
@@ -223,7 +245,10 @@ void *loop(void *mode_ptr) {
   return NULL;
 }
 
-int start_loop(operational_mode_t mode) {
+extern int start_loop(operational_mode_t mode) {
+
+  // Set check flag to enable check thread
+  *check_flag = true;
 
   // Start the check thread
   osal_thread_create(&check_thread, 128000,
@@ -251,32 +276,55 @@ int start_loop(operational_mode_t mode) {
 
   state.ethercat_state = OP;
 
+  int ret;
   // Now that the slave is in operation, start the main loop thread
-  pthread_attr_init(&attr);
+  ret = pthread_attr_init(&attr);
+  if (ret != 0)
+    return 0;
   CPU_ZERO(&cpuset);
   CPU_SET(1, &cpuset);
-  pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpuset);
-  pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+  ret = pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpuset);
+  if (ret != 0)
+    return 0;
+  ret = pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+  if (ret != 0)
+    return 0;
 
   param.sched_priority = 99;
 
-  pthread_attr_setschedparam(&attr, &param);
+  ret = pthread_attr_setschedparam(&attr, &param);
+  if (ret != 0)
+    return 0;
 
   // Set loop flag to enable loop
   *loop_flag = true;
 
   // Create thread
-  pthread_create(&main_thread, &attr, loop, static_cast<void *>(&mode));
+  ret = pthread_create(&main_thread, &attr, loop, static_cast<void *>(&mode));
+  if (ret != 0)
+    return 0;
   return 1;
 }
 
-void stop_loop() {
-  // Graceful shutdown
+extern void stop_loop() {
+  // Graceful shutdown main thread
   *loop_flag = false;
   pthread_join(main_thread, NULL);
+  // Graceful shutdown check thread
+  *check_flag = false;
+  pthread_join(check_thread, NULL);
 }
 
-int initialize_ethercat(const char *ifname, operational_mode_t mode) {
+extern void reset_state() {
+  // Write state to slave
+  ec_slave[0].state = EC_STATE_INIT;
+  ec_writestate(0);
+  // Reset state to INIT
+  state.ethercat_state = INIT;
+  state.statusword_state = Not_ready_to_switch_on;
+}
+
+extern int initialize_ethercat(const char *ifname, operational_mode_t mode) {
   state.mode = mode;
 
   if (ec_init(ifname)) {
@@ -309,18 +357,19 @@ int initialize_ethercat(const char *ifname, operational_mode_t mode) {
   }
 }
 
+// TODO: Implement updating state and sending ROS error messages
 OSAL_THREAD_FUNC ecatcheck(void *ptr) {
   int slave;
   (void)ptr;            /* Not used */
   int currentgroup = 0; /* Originally global variable */
 
-  while (1) {
+  while (*check_flag) {
     if (state.ethercat_state == OP &&
         ((wkc < state.expectedWKC) || ec_group[currentgroup].docheckstate)) {
-      if (needlf) {
-        needlf = FALSE;
-        printf("\n");
-      }
+      // if (needlf) {
+      //   needlf = FALSE;
+      //   printf("\n");
+      // }
       /* one ore more slaves are not responding */
       ec_group[currentgroup].docheckstate = FALSE;
       ec_readstate();
