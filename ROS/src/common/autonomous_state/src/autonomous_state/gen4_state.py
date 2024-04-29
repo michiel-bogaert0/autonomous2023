@@ -225,12 +225,16 @@ class Gen4State(CarState):
         if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
             self.activate_EBS()
 
-        # set PPR setpoint
+        # set PPR setpoint, actuate brake with DBS
         self.dbs.publish(Float64(data=30))  # 30 bar, placeholder
 
         # check whether pressure is being built up as expected
         if not (self.front_ebs_bp > 20 and self.rear_ebs_bp > 20):
             self.activate_EBS()
+
+        # if TS is active, we are done, otherwise we have to wait
+        if self.state["TS"] == CarStateEnum.ACTIVATED:
+            self.initial_checkup_done = True
 
     def send_status_over_can(self):
         # https://www.formulastudent.de/fileadmin/user_upload/all/2022/rules/FSG22_Competition_Handbook_v1.1.pdf
