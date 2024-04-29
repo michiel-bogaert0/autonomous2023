@@ -31,7 +31,7 @@
     <param name="localmap_namespace" value="slam/local" />
 
     # Input/output remapping
-    <remap from="/input/observations" to="/ugr/car/observations/lidar" />
+    <remap from="/input/observations" to="/ugr/car/observations/fused" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/slam" />
 
     # Input/output remapping debug
