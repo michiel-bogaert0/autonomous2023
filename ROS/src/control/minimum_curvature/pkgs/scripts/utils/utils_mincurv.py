@@ -214,8 +214,12 @@ def calc_bound_dists(
         left_point = trajectory[i] - normvec_normalized[i] * left_distance
         right_point = trajectory[i] + normvec_normalized[i] * right_distance
 
-        _, ind_left = tree_left.query(left_point, k=1)
-        _, ind_right = tree_right.query(right_point, k=1)
+        _, ind_left = tree_left.query(
+            left_point, k=1, distance_upper_bound=left_distance
+        )
+        _, ind_right = tree_right.query(
+            right_point, k=1, distance_upper_bound=right_distance
+        )
 
         dist_left = math.sqrt(
             (trajectory[i][0] - bound_left[ind_left][0]) ** 2
@@ -434,6 +438,9 @@ def prep_track(
         interpolation_method="quadratic",
     )
 
+    bound_left_interp = bound_left_interp_cl[:-1]
+    bound_right_interp = bound_right_interp_cl[:-1]
+
     # Smooth boundaries
     bound_left_smoothed_cl = B_spline_smoothing(
         trajectory_cl=bound_left_interp_cl, smoothing_factor=sf_boundaries
@@ -442,8 +449,8 @@ def prep_track(
         trajectory_cl=bound_right_interp_cl, smoothing_factor=sf_boundaries
     )
 
-    bound_left_smoothed = bound_left_smoothed_cl[:-1]
-    bound_right_smoothed = bound_right_smoothed_cl[:-1]
+    # bound_left_smoothed = bound_left_smoothed_cl[:-1]
+    # bound_right_smoothed = bound_right_smoothed_cl[:-1]
 
     # Calculate distances to boundaries
     (
@@ -456,8 +463,8 @@ def prep_track(
         normvec_normalized,
     ) = calc_bound_dists(
         trajectory_=trajectory_smoothed,
-        bound_left_=bound_left_smoothed,
-        bound_right_=bound_right_smoothed,
+        bound_left_=bound_left_interp,
+        bound_right_=bound_right_interp,
         min_track_width=min_track_width,
     )
 
