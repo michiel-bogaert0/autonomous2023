@@ -37,8 +37,8 @@
            For a more detailed simulation example, see sim_hw_interface.h
 */
 
-#ifndef GEN4_CONTROL__GEN4_HW_INTERFACE_H
-#define GEN4_CONTROL__GEN4_HW_INTERFACE_H
+#ifndef ORION_CONTROL__ORION_HW_INTERFACE_H
+#define ORION_CONTROL__ORION_HW_INTERFACE_H
 
 #include <ugr_ros_control/generic_hw_interface.hpp>
 #include <ros/ros.h>
@@ -56,17 +56,17 @@
 #include <ugr_msgs/CanFrame.h>
 #include <ugr_msgs/KeyValueFloat.h>
 
-namespace gen4_control
+namespace orion_control
 {
 /// \brief Hardware interface for a robot
-class Gen4HWInterface : public ugr_ros_control::GenericHWInterface
+class OrionHWInterface : public ugr_ros_control::GenericHWInterface
 {
 public:
   /**
    * \brief Constructor
    * \param nh - Node handle for topics.
    */
-  explicit Gen4HWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model = NULL);
+  explicit OrionHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model = NULL);
 
   virtual void init();
 
@@ -149,6 +149,6 @@ private:
 
 };  // class
 
-}  // namespace gen4_control
+}  // namespace orion_control
 
 #endif
