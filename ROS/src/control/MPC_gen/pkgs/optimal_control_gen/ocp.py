@@ -126,7 +126,9 @@ class Ocp:
         # self.opti.subject_to(self.X[3, 0] == 0)
         # self.opti.subject_to(self.X[4, 0] == self.x0[4])
         self.opti.subject_to(self.X[5, 0] == self.x0[5])
-        # self.opti.subject_to(self.X[5, self.N] == 1)
+        self.opti.subject_to(self.X[5, self.N] == 1)
+        # self.opti.subject_to(self.X[0, 0] == self.X[0, self.N])
+        # self.opti.subject_to(self.X[1, 0] == self.X[1, self.N])
 
         if threads == 1:
             for i in range(self.N):

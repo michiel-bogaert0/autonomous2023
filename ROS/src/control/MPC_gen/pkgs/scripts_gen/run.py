@@ -27,7 +27,7 @@ class MPC_gen:
         )
         self.path_GT_map = rospy.get_param("~input_path", "/data_gen/map_chicane.yaml")
 
-        reverse = False
+        reverse = True
 
         # Get centerline from yaml
         self.GT_centerline = []
@@ -147,7 +147,7 @@ class MPC_gen:
         self.steering_joint_angle = 0
         self.u = [0, 0, 0]
 
-        self.N = 105
+        self.N = 110
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
@@ -365,7 +365,7 @@ class MPC_gen:
         R = np.diag([1e-7, 1e-2, 1e-2])
         R_delta = np.diag([1e-7, 1e-2, 1e-1])
 
-        q_obj = 1e-1
+        q_obj = 1e1
 
         # Avoid division by zero
         # phi = cd.if_else(
