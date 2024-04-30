@@ -52,7 +52,7 @@ OrionHWInterface::OrionHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
   ROS_INFO_NAMED("orion_hw_interface", "OrionHWInterface Ready.");
 }
 
-void OrionHWInterfaceHWInterface::init()
+void OrionHWInterface::init()
 {
   // First do parent init
   ugr_ros_control::GenericHWInterface::init();
