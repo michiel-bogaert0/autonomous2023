@@ -45,7 +45,7 @@ class MinimumCurvature(ManagedNode):
             + 2 * self.cone_width / 2
         )
 
-        self.kappa_max = rospy.get_param("~kappa_max", 0.50)
+        self.kappa_max = rospy.get_param("~kappa_max", 0.275)
         self.curv_error_allowed = rospy.get_param("~curv_error_allowed", 0.05)
 
         self.stepsize_prep_trajectory = rospy.get_param(
