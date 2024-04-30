@@ -15,6 +15,7 @@ from spline_utils import (  # get_boundary_constraints,
     get_boundary_constraints_casadi,
     project_on_spline,
 )
+from utils_gen.plotting_mpc import plot_velocity
 
 
 class MPC_gen:
@@ -36,7 +37,6 @@ class MPC_gen:
             self.GT_centerline.append(
                 [pose["pose"]["position"]["x"], pose["pose"]["position"]["y"]]
             )
-
         # Close centerline
         self.GT_centerline = np.roll(self.GT_centerline, -5, axis=0)
         self.GT_centerline = np.vstack((self.GT_centerline, self.GT_centerline[0]))
@@ -142,12 +142,12 @@ class MPC_gen:
         return arr
 
     def initialize_MPC(self):
-        self.car = BicycleModelSpline(dt=0.05)
+        self.car = BicycleModelSpline(dt=0.02)
 
         self.steering_joint_angle = 0
         self.u = [0, 0, 0]
 
-        self.N = 100
+        self.N = 105
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
@@ -249,7 +249,7 @@ class MPC_gen:
         Set constraints for the MPC
         """
         velocity_limit = 50
-        steering_limit = 5
+        steering_limit = 0.5
         self.wheelradius = 0.1
         self.ocp.subject_to()
         self.ocp.subject_to(
@@ -265,14 +265,18 @@ class MPC_gen:
         # Limit angle of steering joint
         self.ocp.subject_to(self.ocp.bounded(-np.pi / 4, self.ocp.X[3, :], np.pi / 4))
         # Limit velocity
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 30))
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 40))
 
         # Progress parameter between 0 and 1
         self.ocp.subject_to(self.ocp.bounded(0.00000001, self.ocp.X[5, :], 1))
 
         # Limit update to progress parameter
         # Starts from 0.01 because otherwise casadi optimizes to very small negative values
-        self.ocp.subject_to(self.ocp.bounded(0.000001, self.ocp.U[2, :], 0.1))
+        self.ocp.subject_to(
+            self.ocp.bounded(
+                1 / (self.N * 10), self.ocp.U[2, :], 1 / (self.N - 0.4 * self.N)
+            )
+        )
 
         # Limit relaxing constraint
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.1))
@@ -282,44 +286,44 @@ class MPC_gen:
         # self.ocp.subject_to(der_points[:,0] ** 2 + der_points[:, 1] ** 2 > 1e-1)
 
         # # For loop takes quite long to initialize
-        # center_points = self.ocp.centerline(self.ocp.X[5, :].T)
-        # for i in range(self.N + 1):
-        #     self.ocp.subject_to(
-        #         (
-        #             (
-        #                 self.ocp.X[0, i]
-        #                 # - self.ocp.centerline(self.ocp.X[5, i]).T[0]
-        #                 - center_points[i, 0]
-        #             )
-        #             ** 2
-        #             + (
-        #                 self.ocp.X[1, i]
-        #                 # - self.ocp.centerline(self.ocp.X[5, i]).T[1]
-        #                 - center_points[i, 1]
-        #             )
-        #             ** 2
-        #         )
-        #         < (1.5**2)  # + self.ocp.Sc[i] ** 2
-        #     )
-
-        (
-            slopes_inner,
-            intercepts_inner,
-            slopes_outer,
-            intercepts_outer,
-        ) = get_boundary_constraints_casadi(
-            self.curve_centerline, self.der_centerline, self.ocp.X[5, :].T, 1.5
-        )
-
-        self.ocp.subject_to(
-            (slopes_inner * self.ocp.X[0, :].T + intercepts_inner - self.ocp.X[1, :].T)
-            * (
-                slopes_outer * self.ocp.X[0, :].T
-                + intercepts_outer
-                - self.ocp.X[1, :].T
+        center_points = self.ocp.centerline(self.ocp.X[5, :].T)
+        for i in range(self.N + 1):
+            self.ocp.subject_to(
+                (
+                    (
+                        self.ocp.X[0, i]
+                        # - self.ocp.centerline(self.ocp.X[5, i]).T[0]
+                        - center_points[i, 0]
+                    )
+                    ** 2
+                    + (
+                        self.ocp.X[1, i]
+                        # - self.ocp.centerline(self.ocp.X[5, i]).T[1]
+                        - center_points[i, 1]
+                    )
+                    ** 2
+                )
+                < (1.5**2)  # + self.ocp.Sc[i] ** 2
             )
-            < 0
-        )
+
+        # (
+        #     slopes_inner,
+        #     intercepts_inner,
+        #     slopes_outer,
+        #     intercepts_outer,
+        # ) = get_boundary_constraints_casadi(
+        #     self.curve_centerline, self.der_centerline, self.ocp.X[5, :].T, 1.5
+        # )
+
+        # self.ocp.subject_to(
+        #     (slopes_inner * self.ocp.X[0, :].T + intercepts_inner - self.ocp.X[1, :].T)
+        #     * (
+        #         slopes_outer * self.ocp.X[0, :].T
+        #         + intercepts_outer
+        #         - self.ocp.X[1, :].T
+        #     )
+        #     < 0
+        # )
 
         # self.ocp.subject_to(
         #     (
@@ -350,8 +354,8 @@ class MPC_gen:
         """
         # qs = 0
         # qss = 0
-        qc = 1e-4
-        ql = 1e-1
+        qc = 1e-3
+        ql = 5e-1
 
         # State: x, y, heading, steering angle, velocity
         # Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
@@ -359,7 +363,7 @@ class MPC_gen:
         # Input: acceleration, velocity on steering angle, update to progress parameter
         # Maximize progress parameter
         R = np.diag([1e-7, 1e-2, 1e-2])
-        R_delta = np.diag([1e-7, 1e-2, 3e-1])
+        R_delta = np.diag([1e-7, 1e-2, 1e-1])
 
         q_obj = 1e-1
 
@@ -521,6 +525,15 @@ class MPC_gen:
         # path = rospkg.RosPack().get_path("mpc_gen")
         # np.save(path + "/data_gen/X_closed_loop.npy", info["X_sol"])
         # np.save(path + "/data_gen/U_closed_loop.npy", info["U_sol"])
+
+        plot_velocity(
+            info["X_sol"].T[:, :2],
+            self.GT_left_boundary[:-1],
+            self.GT_right_boundary[:-1],
+            info["X_sol"].T[:, 4],
+            info["U_sol"].T[:, 0],
+            show_plots=True,
+        )
 
         x_sol = info["X_sol"][0][:]
         y_sol = info["X_sol"][1][:]

@@ -126,7 +126,7 @@ class Ocp:
         # self.opti.subject_to(self.X[3, 0] == 0)
         # self.opti.subject_to(self.X[4, 0] == self.x0[4])
         self.opti.subject_to(self.X[5, 0] == self.x0[5])
-        self.opti.subject_to(self.X[5, self.N] == 1)
+        # self.opti.subject_to(self.X[5, self.N] == 1)
 
         if threads == 1:
             for i in range(self.N):
@@ -276,7 +276,7 @@ class Ocp:
             "print_time": print_time,  # print information about execution time (if True, also stores it in sol stats)
         }
         s_opts = {
-            "max_iter": 500,
+            "max_iter": 1000,
             "print_level": print_level,
             "sb": "yes",
             # "nlp_scaling_method": "none",
