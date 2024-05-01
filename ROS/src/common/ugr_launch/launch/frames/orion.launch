@@ -1,7 +1,7 @@
 <launch>
 
   <param name="robot_description"
-    command="$(find xacro)/xacro '$(find gen4_description)/urdf/gen4.urdf'" />
+    command="$(find xacro)/xacro '$(find orion_description)/urdf/orion.urdf'" />
 
   <group ns="ugr/car">
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="publisher">
