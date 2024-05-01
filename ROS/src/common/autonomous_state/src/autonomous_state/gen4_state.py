@@ -277,11 +277,9 @@ class Gen4State(CarState):
         if not self.mc_can_hb:
             self.activate_EBS()
 
-        # check ipc
+        # check ipc, sensors and actuators
         if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
             self.activate_EBS()
-
-        # TODO check sensors & actuators, lidar cam servo
 
         # check output signal of watchdog
         if not self.watchdog_status:
