@@ -19,8 +19,6 @@
 
     <node pkg="tf" type="static_transform_publisher" name="ugr_axis0" args="-0.36 0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis0 10" />
     <node pkg="tf" type="static_transform_publisher" name="ugr_axis1" args="-0.36 -0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis1 10" />
-
-    <!-- rosbag filter 2024-04-09-18-56-42.bag trackdrive.bag "'/ugr/car/sensor' in topic and '/ugr/car/sensors/cam0' not in topic or '/ugr/car/observations' in topic" -->
   </group>
 
   <!-- Launch files of subteams -->
