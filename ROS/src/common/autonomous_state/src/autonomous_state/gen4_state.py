@@ -22,6 +22,7 @@ class Gen4State(CarState):
         rospy.Subscriber(
             "/dio_driver_1/DI4", Bool, self.handle_watchdog
         )  # watchdog status
+        rospy.Subscriber("/dio_driver_1/DI5", Bool, self.handle_bypass)  # bypass status
         rospy.Subscriber(
             "/iologik/input1", Float64, self.handle_air_pressure1
         )  # EBS 1 air pressure
@@ -57,10 +58,13 @@ class Gen4State(CarState):
         self.res_estop_signal = False
         self.watchdog_status = True  # not sure
         self.sdc_status = True  # not sure
+        self.monitoring = True
         self.air_pressure1 = None
         self.air_pressure2 = None
         self.front_ebs_bp = None
         self.rear_ebs_bp = None
+        self.lv_can_hb = False
+        self.mc_can_hb = False
         self.as_ready_time = rospy.Time.now().to_sec()
         # DBS ACTIVATED VANAF WNR JE DIE EERSTE TEST HEBT GDN, ANDERS GWN ON
         self.state = {
@@ -89,6 +93,14 @@ class Gen4State(CarState):
             self.res_estop_signal = not (frame.data[0] & 0b0000001)
             if self.res_estop_signal:
                 self.activate_EBS()
+
+        # LV ECU HB
+        if frame.id == 0:
+            self.lv_can_hb = frame.data[0] & 0b00000001
+
+        # MC CAN HB TODO
+        if frame.id == 0x193:
+            self.mc_can_hb = True  # placeholder
 
     def activate_EBS(self):
         # activate EBS here
@@ -234,11 +246,73 @@ class Gen4State(CarState):
         if not (self.front_ebs_bp > 20 and self.rear_ebs_bp > 20):
             self.activate_EBS()
 
+        self.state["ASB"] = CarStateEnum.ACTIVATED
+        self.dbs.publish(Float64(data=0))  # 0 bar, placeholder
+
         # if TS is active, we are done, otherwise we have to wait
         if self.state["TS"] == CarStateEnum.ACTIVATED:
             self.initial_checkup_done = True
+            self.toggling_watchdog = False
 
         self.initial_checkup_busy = False
+
+    def monitor(self):
+        # is SDC closed?
+        if not self.sdc_status:
+            if (
+                self.front_ebs_bp > 0
+                and self.rear_ebs_bp > 0
+                and self.front_ebs_bp < 100
+                and self.rear_ebs_bp < 100
+            ):
+                self.monitoring = False
+            else:
+                self.activate_EBS()
+
+        # check heartbeats of low voltage systems, includes RES
+        if not self.lv_can_hb:
+            self.activate_EBS()
+
+        # check heartbeats of motorcontrollers
+        if not self.mc_can_hb:
+            self.activate_EBS()
+
+        # check ipc
+        if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
+            self.activate_EBS()
+
+        # TODO check sensors & actuators, lidar cam servo
+
+        # check output signal of watchdog
+        if not self.watchdog_status:
+            self.activate_EBS()
+
+        # check brake pressures
+        if not (
+            self.front_ebs_bp > 0
+            and self.rear_ebs_bp > 0
+            and self.front_ebs_bp < 100
+            and self.rear_ebs_bp < 100
+        ):
+            self.activate_EBS()
+
+        # check air pressures
+        if not (
+            self.air_pressure1 > 8
+            and self.air_pressure2 > 8
+            and self.air_pressure1 < 9.5
+            and self.air_pressure2 < 9.5
+        ):
+            self.activate_EBS()
+
+        # check if bypass relay is still functioning
+        if not self.bypass_status:
+            self.activate_EBS()
+
+        # toggle watchdog
+        self.watchdog_trigger.publish(Bool(data=True))
+        time.sleep(0.005)
+        self.watchdog_trigger.publish(Bool(data=False))
 
     def send_status_over_can(self):
         # https://www.formulastudent.de/fileadmin/user_upload/all/2022/rules/FSG22_Competition_Handbook_v1.1.pdf
@@ -307,9 +381,7 @@ class Gen4State(CarState):
         self.bus.publish(serialcan_to_roscan(canmsg))
 
     def handle_sdc(self, dio1: Bool):
-        if not dio1.data:  # 1 means ok
-            self.activate_EBS()
-        self.sdc_
+        self.sdc_status = dio1.data
 
     def handle_ts(self, dio2: Bool):
         self.state["TS"] = CarStateEnum.ACTIVATED if dio2.data else CarStateEnum.OFF
@@ -318,9 +390,10 @@ class Gen4State(CarState):
         self.state["AMS"] = CarStateEnum.ACTIVATED if dio3.data else CarStateEnum.OFF
 
     def handle_watchdog(self, dio4: Bool):
-        if not dio4.data:  # 1 means ok
-            self.watchdog_status = dio4.data
-            self.activate_EBS()  # not 100% sure
+        self.watchdog_status = dio4.data
+
+    def handle_bypass(self, dio5: Bool):
+        self.bypass_status = dio5.data
 
     def handle_air_pressure1(self, air_pressure1: Float64):
         self.air_pressure1 = air_pressure1.data
@@ -335,22 +408,23 @@ class Gen4State(CarState):
     def handle_rear_ebs_bp(self, rear_ebs_bp: Float64):
         self.rear_ebs_bp = rear_ebs_bp.data
 
+    # runs at 15 hz
     def get_state(self):
         """
         Returns:
             object with the (physical) state of the car systems,
             like EBS and ASSI. See general docs for info about this state
         """
-        if self.toggling_watchdog:
+        if (
+            not self.initial_checkup_done and self.toggling_watchdog
+        ):  # toggling watchdog in continuous monitoring is done in monitor()
             self.watchdog_trigger.publish(Bool(data=True))
             time.sleep(0.005)
             self.watchdog_trigger.publish(Bool(data=False))
 
-        if (
-            not self.initial_checkup_done and not self.initial_checkup_busy
-        ):  # if we are busy waiting 200ms, just continue
+        if not self.initial_checkup_done and not self.initial_checkup_busy:
             self.initial_checkup()
-        elif self.initial_checkup_done:
+        elif self.initial_checkup_done and self.monitoring:
             self.monitor()
 
         t = rospy.Time.now().to_sec()
@@ -360,18 +434,5 @@ class Gen4State(CarState):
             self.state["R2D"] = CarStateEnum.ACTIVATED
         elif self.as_state != AutonomousStatesEnum.ASDRIVE:
             self.state["R2D"] = CarStateEnum.OFF
-
-        # ASB and EBS to on? -> later
-
-        # self.state["ASB"] = (
-        #     (
-        #         CarStateEnum.ACTIVATED
-        #         if self.state["R2D"] == CarStateEnum.OFF
-        #         else CarStateEnum.ON
-        #     )
-        #     if t - self.odrive_hb < 0.2
-        #     else CarStateEnum.OFF
-        # )
-        # TS, ASMS and EBS were assigned before
 
         return self.state
