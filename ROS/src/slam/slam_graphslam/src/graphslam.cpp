@@ -75,6 +75,7 @@ void GraphSLAM::doConfigure() {
 
   this->max_iterations = n.param<int>("max_iterations", 10);
   this->association_threshold = n.param<double>("association_threshold", 0.5);
+  this->min_range = n.param<double>("min_range", 0.1);
   this->max_range = n.param<double>("max_range", 15);
   this->max_half_angle = n.param<double>("max_half_angle", 60 * 0.0174533);
   this->penalty_threshold = n.param<int>("penalty_threshold", 25);
@@ -187,7 +188,17 @@ void GraphSLAM::handleObservations(
 
 void GraphSLAM::active() {
   if (!this->doSynchronous) {
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     this->step();
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+
+    double totalTime =
+        std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
+            .count();
+
+    if (totalTime > 0.1) {
+      // ROS_ERROR("GraphSLAM took to long: %f", totalTime);
+    }
   }
 }
 
@@ -240,7 +251,8 @@ void GraphSLAM::step() {
     z(1) = atan2(transformed_ob.observation.location.y,
                  transformed_ob.observation.location.x);
 
-    if (z(0) > pow(this->max_range, 2) || abs(z(1)) > this->max_half_angle) {
+    if (z(0) > pow(this->max_range, 2) || z(0) < pow(this->min_range, 2) ||
+        abs(z(1)) > this->max_half_angle) {
       continue;
     }
 
@@ -510,7 +522,8 @@ void GraphSLAM::step() {
       obs(0) = pow(pow(dx, 2) + pow(dy, 2), 0.5);
       obs(1) = atan2(dy, dx) - pose_vertex->estimate().rotation().angle();
 
-      if (obs(0) <= this->max_range && abs(obs(1)) <= this->max_half_angle) {
+      if (obs(0) <= this->max_range && obs(0) >= this->min_range &&
+          abs(obs(1)) <= 1) {
         if (landmarkVertex->latestPoseIndex < this->prevPoseIndex) {
           if (landmarkVertex->increasePenalty() > this->penalty_threshold) {
             to_remove_indices.push_back(pair.first);

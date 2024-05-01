@@ -15,13 +15,14 @@
     <param name="rate" value="40"/> <!-- Hz -->
     <param name="publish_rate" value="10"/> <!-- Hz -->
     <param name="synchronous" value="false"/> 
-    <param name="debug" value="false"/> <!-- Publish edges -->
+    <param name="debug" value="true"/> <!-- Publish edges -->
 
     <param name="max_iterations" value="5"/>
     <param name="association_threshold" value="1"/>
+    <param name="min_range" value="1.5"/>
     <param name="max_range" value="15"/>
     <param name="max_half_angle" value="1.57"/> <!-- ingesteld voor lidar -->
-    <param name="penalty_threshold" value="30"/>
+    <param name="penalty_threshold" value="15"/>
 
     <rosparam param="covariance_pose">[0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2]</rosparam>
 
