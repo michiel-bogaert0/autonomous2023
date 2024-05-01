@@ -1,35 +1,32 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import rospy
 from sklearn.neighbors import KDTree
 from ugr_msgs.msg import (
-    ObservationWithCovariance,
-    ObservationWithCovarianceArrayStamped,
+    ObservationWithCovarianceStamped,
+    ObservationWithCovarianceStampedArrayStamped,
 )
 
 
 class NaiveFusion:
     def __init__(self, euclidean_max_fusion_distance):
         self.euclidean_max_fusion_distance = euclidean_max_fusion_distance
-        return
 
     def fuse_observations(self, tf_sensor_msgs):
         """
         Fuse observations using a naive approach
         """
-        results = ObservationWithCovarianceArrayStamped()
+        results = ObservationWithCovarianceStampedArrayStamped()
 
         associations = self.kd_tree_merger(tf_sensor_msgs)
-        rospy.loginfo(
-            f"\nassociations = {[[[obs.observation.location.x, obs.observation.location.y, obs.observation.location.z] for obs in association] for association in associations]}\n"
-        )
         fusion_observations = []
         for association in associations:
             if len(association) == 1:
                 # Reshape covariance matrix from 3x3 to 1x9
-                association[0].covariance = tuple(
-                    np.reshape(np.array(association[0].covariance), (1, 9))[0].tolist()
+                association[0].observation.covariance = tuple(
+                    np.reshape(np.array(association[0].observation.covariance), (1, 9))[
+                        0
+                    ].tolist()
                 )
                 fusion_observations.append(association[0])
                 continue
@@ -61,9 +58,9 @@ class NaiveFusion:
         all_points = list(
             map(
                 lambda obs: [
-                    obs.observation.location.x,
-                    obs.observation.location.y,
-                    obs.observation.location.z,
+                    obs.observation.observation.location.x,
+                    obs.observation.observation.location.y,
+                    obs.observation.observation.location.z,
                 ],
                 all_observations,
             )
@@ -129,9 +126,9 @@ class NaiveFusion:
         indices, _ = kdtree.query_radius(
             [
                 [
-                    root_obs.observation.location.x,
-                    root_obs.observation.location.y,
-                    root_obs.observation.location.z,
+                    root_obs.observation.observation.location.x,
+                    root_obs.observation.observation.location.y,
+                    root_obs.observation.observation.location.z,
                 ]
             ],
             r=self.euclidean_max_fusion_distance,
@@ -158,15 +155,16 @@ class NaiveFusion:
 
         # Initialize numpy arrays
         covariance_matrices = [
-            np.reshape(np.array(obs.covariance), (3, 3)) for obs in association
+            np.reshape(np.array(obs.observation.covariance), (3, 3))
+            for obs in association
         ]
         observation_locations = [
             np.reshape(
                 np.array(
                     [
-                        obs.observation.location.x,
-                        obs.observation.location.y,
-                        obs.observation.location.z,
+                        obs.observation.observation.location.x,
+                        obs.observation.observation.location.y,
+                        obs.observation.observation.location.z,
                     ]
                 ),
                 (3, 1),
@@ -195,42 +193,68 @@ class NaiveFusion:
             new_location += np.matmul(weights[i], observation_locations[i])
 
         # Create new observation
-        fused_observation = ObservationWithCovariance()
-        fused_observation.observation.observation_class = association[
-            0
-        ].observation.observation_class
+        fused_observation = ObservationWithCovarianceStamped()
+        fused_observation.header = association[0].header
+        fused_observation.header.frame_id = "kalman_fused"
 
-        belief = association[0].observation.belief
+        fused_observation.observation.observation.observation_class = association[
+            0
+        ].observation.observation.observation_class
+        fused_observation.observation.observation.belief = association[
+            0
+        ].observation.observation.belief
+
+        cam_in_obs = False
         for obs in association:
-            if obs == "camera":
-                belief = obs.observation.belief
+            if obs.header.frame_id == "camera":
+                fused_observation.observation.observation.observation_class = (
+                    obs.observation.observation.observation_class
+                )
+                fused_observation.observation.observation.belief = (
+                    obs.observation.observation.belief
+                )
+                cam_in_obs = True
                 break
-        fused_observation.observation.belief = belief
-        fused_observation.covariance = tuple(
+        if not cam_in_obs:
+            for obs in association:
+                if obs.header.frame_id == "early_fusion":
+                    fused_observation.observation.observation.observation_class = (
+                        obs.observation.observation.observation_class
+                    )
+                    fused_observation.observation.observation.belief = (
+                        obs.observation.observation.belief
+                    )
+                    break
+
+        fused_observation.observation.covariance = tuple(
             np.reshape(new_covariance, (1, 9)).tolist()[0]
         )
         (
-            fused_observation.observation.location.x,
-            fused_observation.observation.location.y,
-            fused_observation.observation.location.z,
+            fused_observation.observation.observation.location.x,
+            fused_observation.observation.observation.location.y,
+            fused_observation.observation.observation.location.z,
         ) = tuple((new_location[0][0], new_location[1][0], new_location[2][0]))
         return fused_observation
 
     def euclidean_average(self, association):
-        average_observation = ObservationWithCovariance()
-        average_observation.covariance = tuple(list(association[0].covariance).copy())
+        average_observation = ObservationWithCovarianceStamped()
+        average_observation.header = association[0].header
+        average_observation.header.frame_id = "euclidean_fused"
+        average_observation.observation.covariance = tuple(
+            list(association[0].observation.covariance).copy()
+        )
 
         (
-            average_observation.observation.location.x,
-            average_observation.observation.location.y,
-            average_observation.observation.location.z,
+            average_observation.observation.observation.location.x,
+            average_observation.observation.observation.location.y,
+            average_observation.observation.observation.location.z,
         ) = tuple(
             (
-                sum([obs.observation.location.x for obs in association])
+                sum([obs.observation.observation.location.x for obs in association])
                 / len(association),
-                sum([obs.observation.location.y for obs in association])
+                sum([obs.observation.observation.location.y for obs in association])
                 / len(association),
-                sum([obs.observation.location.z for obs in association])
+                sum([obs.observation.observation.location.z for obs in association])
                 / len(association),
             )
         )

@@ -36,9 +36,11 @@ class LandmarkVertex : public BaseVertex<2, Eigen::Vector2d> {
 public:
   LandmarkVertex();
   float beliefs[3];
+  std::vector<uint32_t> merged_ids;
 
   void setColor(int c, float b);
   void addBeliefs(float b0, float b1, float b2);
+  void addMergeId(int id);
   int getColor();
 
   virtual void setToOriginImpl() { _estimate.setZero(); }
