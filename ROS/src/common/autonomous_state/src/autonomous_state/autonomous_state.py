@@ -14,6 +14,7 @@ from node_fixture import (
 )
 from node_fixture.fixture import NodeManagingStatesEnum
 from node_fixture.node_manager import NodeManager
+from orion_autonomous_state import OrionAutonomousState
 from pegasus_state import PegasusState
 from simulation_state import SimulationState
 from std_msgs.msg import Header
@@ -52,6 +53,8 @@ class AutonomousController(NodeManager):
 
         if self.car_name == "pegasus":
             self.car = PegasusState()
+        elif self.car_name == "orion":
+            self.car = OrionAutonomousState()
         elif self.car_name == "simulation":
             self.car = SimulationState()
         else:

@@ -9,7 +9,7 @@ from node_fixture import AutonomousMission, AutonomousStatesEnum, serialcan_to_r
 from std_msgs.msg import Bool, Float64
 
 
-class Gen4State(CarState):
+class OrionAutonomousState(CarState):
     def __init__(self) -> None:
         rospy.Subscriber("/ugr/car/can/rx", Frame, self.handle_can)
         rospy.Subscriber("/dio_driver_1/DI1", Bool, self.handle_sdc)  # sdc status
@@ -63,8 +63,8 @@ class Gen4State(CarState):
         self.air_pressure2 = None
         self.front_ebs_bp = None
         self.rear_ebs_bp = None
-        self.lv_can_hb = False
-        self.mc_can_hb = False
+        self.lv_can_hb = None
+        self.mc_can_hb = None
         self.as_ready_time = rospy.Time.now().to_sec()
         # DBS ACTIVATED VANAF WNR JE DIE EERSTE TEST HEBT GDN, ANDERS GWN ON
         self.state = {
@@ -96,11 +96,11 @@ class Gen4State(CarState):
 
         # LV ECU HB
         if frame.id == 0:
-            self.lv_can_hb = frame.data[0] & 0b00000001
+            self.lv_can_hb = rospy.Time.now().to_sec()
 
-        # MC CAN HB TODO
-        if frame.id == 0x193:
-            self.mc_can_hb = True  # placeholder
+        # MC CAN HB
+        if frame.id == 2147492865:
+            self.mc_can_hb = rospy.Time.now().to_sec()
 
     def activate_EBS(self):
         # activate EBS here
@@ -120,8 +120,6 @@ class Gen4State(CarState):
             self.as_ready_time = rospy.Time.now().to_sec()
 
         self.as_state = state
-
-        # watchdog togglen vanboven uitzetten onderaan hoog
 
         self.send_status_over_can()
 
@@ -270,11 +268,11 @@ class Gen4State(CarState):
                 self.activate_EBS()
 
         # check heartbeats of low voltage systems, includes RES
-        if not self.lv_can_hb:
+        if self.lv_can_hb is None or rospy.Time.now().to_sec() - self.lv_can_hb > 0.5:
             self.activate_EBS()
 
         # check heartbeats of motorcontrollers
-        if not self.mc_can_hb:
+        if self.mc_can_hb is None or rospy.Time.now().to_sec() - self.mc_can_hb > 0.5:
             self.activate_EBS()
 
         # check ipc, sensors and actuators
