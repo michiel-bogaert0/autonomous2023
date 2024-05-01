@@ -144,7 +144,7 @@ class Trajectory:
         # calculate distances based on maximum acceleration and current speed
         distances = [
             (min(speed_target, actual_speed + dt * max_acceleration * i)) * i * dt
-            for i in range(N)
+            for i in range(N + 1)
         ]
 
         if self.change_index:
