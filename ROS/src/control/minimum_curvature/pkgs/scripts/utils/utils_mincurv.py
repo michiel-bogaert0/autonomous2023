@@ -235,13 +235,13 @@ def calc_bound_dists(
             right_distance = dist_right
         else:
             if dist_left <= left_distance:
-                left_distance = dist_left - abs(dist_left - left_distance) / 2
+                left_distance = dist_left - abs(dist_left - left_distance)
             else:
-                left_distance = dist_left + abs(dist_left - left_distance) / 2
+                left_distance = dist_left + abs(dist_left - left_distance)
             if dist_right <= right_distance:
-                right_distance = dist_right - abs(dist_right - right_distance) / 2
+                right_distance = dist_right - abs(dist_right - right_distance)
             else:
-                right_distance = dist_right + abs(dist_right - right_distance) / 2
+                right_distance = dist_right + abs(dist_right - right_distance)
 
         min_dists[i] = np.array([dist_left, dist_right])
 
@@ -290,6 +290,115 @@ def calc_bound_dists(
         coeffs_y,
         M,
         normvec_normalized,
+    )
+
+
+def boundary_check(
+    bound_left_: np.ndarray,
+    bound_right_: np.ndarray,
+    cones_left_: np.ndarray,
+    cones_right_: np.ndarray,
+    stepsize: float = 0.00001,
+):
+    """
+    author:
+    Kwinten Mortier
+
+    .. description::
+    Checks distance from the cones to the boundaries.
+
+    .. inputs::
+    :param bound_left:          array containing the left track boundary [x, y] (Unclosed boundary!)
+    :type bound_left:           np.ndarray
+    :param bound_right:         array containing the right track boundary [x, y] (Unclosed boundary!)
+    :type bound_right:          np.ndarray
+    :param cones_left:          array containing the left track cones [x, y] (Unclosed!)
+    :type cones_left:           np.ndarray
+    :param cones_right:         array containing the right track cones [x, y] (Unclosed!)
+    :type cones_right:          np.ndarray
+    :param stepsize:            desired stepsize after interpolation in m for the boundaries
+
+    .. notes::
+    Make sure the boundaries contain sufficient amount of points to accurately estimate the distance!
+    No outputs, only prints.
+    """
+
+    # Copy inputs
+    bound_left = np.copy(bound_left_)
+    bound_right = np.copy(bound_right_)
+    cones_left = np.copy(cones_left_)
+    cones_right = np.copy(cones_right_)
+
+    # Check inputs
+    if (bound_left[0] == bound_left[-1]).all():
+        raise RuntimeError("Left boundary must be unclosed!")
+    if (bound_right[0] == bound_right[-1]).all():
+        raise RuntimeError("Right boundary must be unclosed!")
+    if (cones_left[0] == cones_left[-1]).all():
+        raise RuntimeError("Left cones must be unclosed!")
+    if (cones_right[0] == cones_right[-1]).all():
+        raise RuntimeError("Right cones must be unclosed!")
+    if (
+        bound_left.shape[1] != 2
+        or bound_right.shape[1] != 2
+        or cones_left.shape[1] != 2
+        or cones_right.shape[1] != 2
+    ):
+        raise RuntimeError("Boundaries and cones must be 2D arrays!")
+
+    # Interpolate the boundaries with a fixed stepsize
+    # Linear interpolation is used as this is what constitutes the boundaries
+    bound_left_interp_cl = interp_trajectory(
+        trajectory=bound_left, stepsize=stepsize, interpolation_method="linear"
+    )
+    bound_right_interp_cl = interp_trajectory(
+        trajectory=bound_right, stepsize=stepsize, interpolation_method="linear"
+    )
+
+    bound_left_interp = bound_left_interp_cl[:-1]
+    bound_right_interp = bound_right_interp_cl[:-1]
+
+    # Calculate the distances from the boundaries to the cones
+    tree_left = spatial.KDTree(bound_left_interp)
+    tree_right = spatial.KDTree(bound_right_interp)
+
+    distance_left_cones = []
+    distance_right_cones = []
+
+    for i in range(cones_left.shape[0]):
+        _, ind_left = tree_left.query(cones_left[i], k=1)
+
+        distance_left_cone = math.sqrt(
+            (cones_left[i][0] - bound_left_interp[ind_left][0]) ** 2
+            + (cones_left[i][1] - bound_left_interp[ind_left][1]) ** 2
+        )
+        distance_left_cones.append(distance_left_cone)
+
+    for i in range(cones_right.shape[0]):
+        _, ind_right = tree_right.query(cones_right[i], k=1)
+
+        distance_right_cone = math.sqrt(
+            (cones_right[i][0] - bound_right_interp[ind_right][0]) ** 2
+            + (cones_right[i][1] - bound_right_interp[ind_right][1]) ** 2
+        )
+        distance_right_cones.append(distance_right_cone)
+
+    mean_distance_left_cones = np.mean(distance_left_cones)
+    mean_distance_right_cones = np.mean(distance_right_cones)
+
+    max_distance_left_cones = np.max(distance_left_cones)
+    max_distance_right_cones = np.max(distance_right_cones)
+
+    rospy.logerr(
+        f"Mean distance left cones to left boundary: {mean_distance_left_cones}"
+    )
+    rospy.logerr(
+        f"Mean distance right cones to right boundary: {mean_distance_right_cones}"
+    )
+
+    rospy.logerr(f"Max distance left cones to left boundary: {max_distance_left_cones}")
+    rospy.logerr(
+        f"Max distance right cones to right boundary: {max_distance_right_cones}"
     )
 
 
@@ -441,17 +550,6 @@ def prep_track(
     bound_left_interp = bound_left_interp_cl[:-1]
     bound_right_interp = bound_right_interp_cl[:-1]
 
-    # Smooth boundaries
-    bound_left_smoothed_cl = B_spline_smoothing(
-        trajectory_cl=bound_left_interp_cl, smoothing_factor=sf_boundaries
-    )
-    bound_right_smoothed_cl = B_spline_smoothing(
-        trajectory_cl=bound_right_interp_cl, smoothing_factor=sf_boundaries
-    )
-
-    # bound_left_smoothed = bound_left_smoothed_cl[:-1]
-    # bound_right_smoothed = bound_right_smoothed_cl[:-1]
-
     # Calculate distances to boundaries
     (
         bound_dists,
@@ -475,8 +573,8 @@ def prep_track(
         bound_left_interp_cl,
         bound_right_interp_cl,
         trajectory_smoothed_cl,
-        bound_left_smoothed_cl,
-        bound_right_smoothed_cl,
+        bound_left_interp_cl,
+        bound_right_interp_cl,
         prepped_track,
         new_bound_left,
         new_bound_right,
