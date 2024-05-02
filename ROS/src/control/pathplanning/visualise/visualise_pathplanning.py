@@ -697,7 +697,7 @@ class MapWidget(QtW.QFrame):
 
         file_path = (
             pathlib.Path.home()
-            / f"autonomous2023/ROS/src/control/path_publisher/custom_paths/{get_path_name()}"
+            / f"autonomous2023/ROS/src/control/path_publisher/paths/{get_path_name()}"
         )
 
         with open(file_path, "w") as f:
