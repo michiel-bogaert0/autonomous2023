@@ -4,6 +4,15 @@
   <!-- There should be NO hardware dependencies! -->
 
   <!-- Autonomous State  -->
-  <include file="$(find autonomous_state)/launch/autonomous_state.launch" pass_all_args="true"></include>
+  <group if="$(eval env('UGR_CAR') == 'pegasus')">
+    <include file="$(find autonomous_state)/launch/autonomous_state.launch" pass_all_args="true"></include>
+  </group>
+
+  <!-- Orion State  -->
+  <group if="$(eval env('UGR_CAR') == 'orion')">
+    <include file="$(find autonomous_state)/launch/orion_state.launch" pass_all_args="true"></include>
+    <include file="$(find autonomous_state)/launch/autonomous_state.launch" pass_all_args="true"></include>
+    <include file="$(find autonomous_state)/launch/manual_state.launch" pass_all_args="true"></include>
+  </group>
 
 </launch>

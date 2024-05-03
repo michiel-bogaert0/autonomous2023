@@ -312,6 +312,13 @@ class NodeManagingStatesEnum(str, enum.Enum):
     FINALIZED = "finalized"
 
 
+# States of orion
+class OrionStatesEnum(str, enum.Enum):
+    MANUAL = "manual"
+    DRIVERLESS = "driverless"
+    IDLE = "idle"
+
+
 """
 Helper functions for CAN
 """

@@ -14,8 +14,10 @@ autonomous_state:
     always:
       - slam_controller
 
-  orion_state:
+orion_state:
+  node_management:
     driverless:
       - autonomous_state
-    
-    
+    manual:
+      - manual_state
+      

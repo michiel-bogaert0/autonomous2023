@@ -1,0 +1,7 @@
+<launch>
+  <node name="orion_state" pkg="autonomous_state" type="orion_state.py" output="screen">
+    <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom" />
+    <param name="rate" value="15"/>
+
+  </node>
+</launch>

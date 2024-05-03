@@ -30,9 +30,19 @@ class AutonomousController(NodeManager):
         such as "simulation" or "pegasus". These models are the ones responsible for
         providing the data required to set the autonomous state.
         """
+        self.car_name = rospy.get_param("car", "pegasus")
+        if (
+            self.car_name == "pegasus"
+        ):  # when we use pegasus this node needs to be activated on its own
+            super().__init__(
+                "autonomous_state", NodeManagingStatesEnum.ACTIVE
+            )  # perhaps it would be easier to automatically call doActivate and doConfigure in managed_node.py if the default state is ACTIVE
+            self.doActivate()
+        else:
+            super().__init__("autonomous_state")
+        self.spin()
 
-        super().__init__("autonomous_state", NodeManagingStatesEnum.ACTIVE)
-
+    def doActivate(self):
         self.as_state = ""
         self.ccs = {}
 
@@ -48,8 +58,6 @@ class AutonomousController(NodeManager):
         self.diagnostics_publisher = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
-
-        self.car_name = rospy.get_param("car", "pegasus")
 
         if self.car_name == "pegasus":
             self.car = PegasusState()
@@ -74,8 +82,6 @@ class AutonomousController(NodeManager):
 
         self.change_state(AutonomousStatesEnum.ASOFF)
         self.car.update(self.as_state)
-
-        self.spin()
 
     def active(self):
         """
@@ -175,7 +181,7 @@ class AutonomousController(NodeManager):
         """
         Actually changes state of this machine and publishes change
 
-        Ags:
+        Args:
             new_state: state to switch to.
         """
 

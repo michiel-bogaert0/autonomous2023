@@ -14,9 +14,6 @@ class OrionAutonomousState(CarState):
         rospy.Subscriber("/ugr/car/can/rx", Frame, self.handle_can)
         rospy.Subscriber("/dio_driver_1/DI1", Bool, self.handle_sdc)  # sdc status
         rospy.Subscriber(
-            "/dio_driver_1/DI2", Bool, self.handle_ts
-        )  # start button side (driverless) --> TS
-        rospy.Subscriber(
             "/dio_driver_1/DI3", Bool, self.handle_asms
         )  # ASMS status button
         rospy.Subscriber(
@@ -30,15 +27,14 @@ class OrionAutonomousState(CarState):
             "/iologik/input2", Float64, self.handle_air_pressure2
         )  # EBS 2 air pressure
 
-        # probably remove these two
         rospy.Subscriber(
             "/iologik/input3", Float64, self.handle_front_ebs_bp
         )  # front ebs brake pressure
         rospy.Subscriber(
             "/iologik/input4", Float64, self.handle_rear_ebs_bp
         )  # rear brake pressure
-        self.ebs_arm = rospy.Publisher("/dio_driver_1/DO1", Bool, queue_size=10)  # ebs1
-        self.dbs_arm = rospy.Publisher("/dio_driver_1/DO2", Bool, queue_size=10)  # ebs2
+        self.ebs_arm = rospy.Publisher("/dio_driver_1/DO1", Bool, queue_size=10)
+        self.dbs_arm = rospy.Publisher("/dio_driver_1/DO2", Bool, queue_size=10)
         self.dbs = rospy.Publisher("/iologik/output1", Float64, queue_size=10)
         self.watchdog_trigger = rospy.Publisher(
             "/dio_driver_1/DO3", Bool, queue_size=10
@@ -49,15 +45,13 @@ class OrionAutonomousState(CarState):
         self.sdc_out = rospy.Publisher(
             "/dio_driver_1/DO4", Bool, queue_size=10
         )  # sdc out start low, high when everything is ok and low in case of error
-        self.initial_checkup_busy = (
-            False  # indicates whether we are waiting 200ms for watchdog
-        )
+        self.initial_checkup_busy = False  # indicates whether we are waiting 200ms for watchdog in initial checkup
         self.initial_checkup_done = False
         self.toggling_watchdog = True
         self.res_go_signal = False
         self.res_estop_signal = False
-        self.watchdog_status = True  # not sure
-        self.sdc_status = True  # not sure
+        self.watchdog_status = True
+        self.sdc_status = True
         self.monitoring = True
         self.air_pressure1 = None
         self.air_pressure2 = None
@@ -66,7 +60,6 @@ class OrionAutonomousState(CarState):
         self.lv_can_hb = None
         self.mc_can_hb = None
         self.as_ready_time = rospy.Time.now().to_sec()
-        # DBS ACTIVATED VANAF WNR JE DIE EERSTE TEST HEBT GDN, ANDERS GWN ON
         self.state = {
             "TS": CarStateEnum.UNKNOWN,
             "ASMS": CarStateEnum.UNKNOWN,
@@ -86,6 +79,18 @@ class OrionAutonomousState(CarState):
         Handles incoming CAN message, but as a subscriber callback
         This way, we can put all HW/SW interfacing code in a single CAN driver.
         """
+        # DB_Commands
+        if frame.id == 768:
+            self.state["TS"] = (
+                CarStateEnum.ACTIVATED
+                if bool(frame.data[0] & 0b01000000)
+                else CarStateEnum.OFF
+            )
+            self.state["R2D"] = (
+                CarStateEnum.ACTIVATED
+                if bool(frame.data[0] & 0b10000000)
+                else CarStateEnum.OFF
+            )
 
         # RES
         if frame.id == 0x191:
@@ -103,9 +108,6 @@ class OrionAutonomousState(CarState):
             self.mc_can_hb = rospy.Time.now().to_sec()
 
     def activate_EBS(self):
-        # activate EBS here
-        # ebs1&2 activate bekabeling beide pinnen laag zetten
-
         self.state["EBS"] = CarStateEnum.ACTIVATED
         self.ebs_arm.publish(Bool(data=False))
         self.dbs_arm.publish(Bool(data=False))
@@ -124,7 +126,6 @@ class OrionAutonomousState(CarState):
         self.send_status_over_can()
 
     def initial_checkup(self):
-        # ??? to do: cm1 and cm2 filled, sj1 and sj2 closed
         self.initial_checkup_busy = True
         # mission needs to be selected
         if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
@@ -379,9 +380,6 @@ class OrionAutonomousState(CarState):
     def handle_sdc(self, dio1: Bool):
         self.sdc_status = dio1.data
 
-    def handle_ts(self, dio2: Bool):
-        self.state["TS"] = CarStateEnum.ACTIVATED if dio2.data else CarStateEnum.OFF
-
     def handle_asms(self, dio3: Bool):
         self.state["AMS"] = CarStateEnum.ACTIVATED if dio3.data else CarStateEnum.OFF
 
@@ -422,13 +420,5 @@ class OrionAutonomousState(CarState):
             self.initial_checkup()
         elif self.initial_checkup_done and self.monitoring:
             self.monitor()
-
-        t = rospy.Time.now().to_sec()
-
-        # R2D
-        if self.res_go_signal and t - self.as_ready_time > 5.0:
-            self.state["R2D"] = CarStateEnum.ACTIVATED
-        elif self.as_state != AutonomousStatesEnum.ASDRIVE:
-            self.state["R2D"] = CarStateEnum.OFF
 
         return self.state
