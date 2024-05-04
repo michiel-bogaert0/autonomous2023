@@ -115,11 +115,15 @@ class AutonomousController(NodeManager):
         # ?? Not sure if the second part (after the 'and') is required, but it's there in the original code
         # ?? Basically disables the monitoring causing an emergency when the car is in ASOFF, so no where near ready to actually drive
         # ?? Must check when integrating on real car.
-        if self.get_health_level() == DiagnosticStatus.ERROR and not (
-            self.as_state == AutonomousStatesEnum.ASOFF
-            or self.as_state == AutonomousStatesEnum.ASFINISHED
-        ):
-            self.car.activate_EBS()
+        if self.car_name == "pegasus":
+            if self.get_health_level() == DiagnosticStatus.ERROR and not (
+                self.as_state == AutonomousStatesEnum.ASOFF
+                or self.as_state == AutonomousStatesEnum.ASFINISHED
+            ):
+                self.car.activate_EBS()
+        else:
+            if self.get_health_level() == DiagnosticStatus.ERROR:
+                self.car.activate_EBS()
 
         if self.ccs["EBS"] == CarStateEnum.ACTIVATED:
             if self.mission_finished and self.vehicle_stopped:

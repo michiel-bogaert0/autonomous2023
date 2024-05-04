@@ -5,6 +5,7 @@ import rosparam
 import rospy
 from can_msgs.msg import Frame
 from car_state import CarState, CarStateEnum
+from diagnostic_msgs.msg import DiagnosticStatus
 from node_fixture import AutonomousMission, AutonomousStatesEnum, serialcan_to_roscan
 from std_msgs.msg import Bool, Float64
 
@@ -32,7 +33,7 @@ class OrionAutonomousState(CarState):
         )  # front ebs brake pressure
         rospy.Subscriber(
             "/iologik/input4", Float64, self.handle_rear_ebs_bp
-        )  # rear brake pressure
+        )  # rear ebs brake pressure
         self.ebs_arm = rospy.Publisher("/dio_driver_1/DO1", Bool, queue_size=10)
         self.dbs_arm = rospy.Publisher("/dio_driver_1/DO2", Bool, queue_size=10)
         self.dbs = rospy.Publisher("/iologik/output1", Float64, queue_size=10)
@@ -57,8 +58,13 @@ class OrionAutonomousState(CarState):
         self.air_pressure2 = None
         self.front_ebs_bp = None
         self.rear_ebs_bp = None
-        self.lv_can_hb = None
-        self.mc_can_hb = None
+        self.lv_can_hbs = {
+            "PDU": rospy.Time.now().to_sec(),
+            "ELVIS": rospy.Time.now().to_sec(),
+            "DB": rospy.Time.now().to_sec(),
+            "ASSI": rospy.Time.now().to_sec(),
+        }
+        self.mc_can_hb = rospy.Time.now().to_sec()
         self.as_ready_time = rospy.Time.now().to_sec()
         self.state = {
             "TS": CarStateEnum.UNKNOWN,
@@ -82,12 +88,10 @@ class OrionAutonomousState(CarState):
         # DB_Commands
         if frame.id == 768:
             self.state["TS"] = (
-                CarStateEnum.ACTIVATED
-                if bool(frame.data[0] & 0b01000000)
-                else CarStateEnum.OFF
+                CarStateEnum.ON if bool(frame.data[0] & 0b01000000) else CarStateEnum.ON
             )
-            self.state["R2D"] = (
-                CarStateEnum.ACTIVATED
+            self.state["R2D"] = (  # not sure for driverless
+                CarStateEnum.ON
                 if bool(frame.data[0] & 0b10000000)
                 else CarStateEnum.OFF
             )
@@ -99,9 +103,22 @@ class OrionAutonomousState(CarState):
             if self.res_estop_signal:
                 self.activate_EBS()
 
-        # LV ECU HB
-        if frame.id == 0:
-            self.lv_can_hb = rospy.Time.now().to_sec()
+        # LV ECU HBS
+        # PDU
+        if frame.id == 16:
+            self.lv_can_hbs["PDU"] = rospy.Time.now().to_sec()
+        # ELVIS TODO use the critical fault and status of elvis
+        if frame.id == 2:
+            self.lv_can_hbs["ELVIS"] = rospy.Time.now().to_sec()
+            self.elvis_critical_fault = (frame.data[0] >> 3) & 0b00000111
+            self.elvis_status = (frame.data[0] >> 6) & 0b00000111
+
+        # DB
+        if frame.id == 3:
+            self.lv_can_hbs["DB"] = rospy.Time.now().to_sec()
+        # ASSI
+        if frame.id == 4:
+            self.lv_can_hbs["ASSI"] = rospy.Time.now().to_sec()
 
         # MC CAN HB
         if frame.id == 2147492865:
@@ -109,9 +126,12 @@ class OrionAutonomousState(CarState):
 
     def activate_EBS(self):
         self.state["EBS"] = CarStateEnum.ACTIVATED
+        self.state["TS"] = CarStateEnum.OFF
+        self.state["R2D"] = CarStateEnum.OFF
         self.ebs_arm.publish(Bool(data=False))
         self.dbs_arm.publish(Bool(data=False))
         self.sdc_out.publish(Bool(data=False))
+        self.initial_checkup_busy = False
 
     def update(self, state: AutonomousStatesEnum):
         # On a state transition, start 5 second timeout
@@ -131,8 +151,8 @@ class OrionAutonomousState(CarState):
         if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
             self.activate_EBS()
 
-        # ASMS needs to be activated
-        if self.state["ASMS"] != CarStateEnum.ACTIVATED:
+        # ASMS needs to be on
+        if self.state["ASMS"] != CarStateEnum.ON:
             self.activate_EBS()
 
         # check air pressures
@@ -246,13 +266,15 @@ class OrionAutonomousState(CarState):
             self.activate_EBS()
 
         self.state["ASB"] = CarStateEnum.ACTIVATED
+        self.state["EBS"] = CarStateEnum.ON
+
         self.dbs.publish(Float64(data=0))  # 0 bar, placeholder
 
-        # if TS is active, we are done, otherwise we have to wait
-        if self.state["TS"] == CarStateEnum.ACTIVATED:
-            self.initial_checkup_done = True
-            self.toggling_watchdog = False
+        if self.state["TS"] != CarStateEnum.ON:
+            self.initial_checkup_busy = False
+            return
 
+        self.initial_checkup_done = True
         self.initial_checkup_busy = False
 
     def monitor(self):
@@ -269,15 +291,19 @@ class OrionAutonomousState(CarState):
                 self.activate_EBS()
 
         # check heartbeats of low voltage systems, includes RES
-        if self.lv_can_hb is None or rospy.Time.now().to_sec() - self.lv_can_hb > 0.5:
-            self.activate_EBS()
+        for hb in self.lv_can_hbs:
+            if rospy.Time.now().to_sec() - self.lv_can_hbs[hb] > 0.5:
+                self.activate_EBS()
 
         # check heartbeats of motorcontrollers
         if self.mc_can_hb is None or rospy.Time.now().to_sec() - self.mc_can_hb > 0.5:
             self.activate_EBS()
 
-        # check ipc, sensors and actuators
-        if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
+        # check ipc, sensors and actuators TODO add everything
+        if (
+            self.get_health_level() == DiagnosticStatus.ERROR
+            or self.as_state == AutonomousStatesEnum.ASEMERGENCY
+        ):
             self.activate_EBS()
 
         # check output signal of watchdog
@@ -311,13 +337,18 @@ class OrionAutonomousState(CarState):
         time.sleep(0.005)
         self.watchdog_trigger.publish(Bool(data=False))
 
+        self.send_heartbeat()
+
+    def send_heartbeat(self):
+        canmsg = can.Message(
+            arbitration_id=0,
+            data=[0b00000001],
+            is_extended_id=False,
+        )
+        self.bus.publish(serialcan_to_roscan(canmsg))
+
     def send_status_over_can(self):
         # https://www.formulastudent.de/fileadmin/user_upload/all/2022/rules/FSG22_Competition_Handbook_v1.1.pdf
-
-        # 0x500 whatever
-        # 0x501 whatever
-
-        # 0x502
 
         data = [0, 0, 0, 0, 0]
 
@@ -368,8 +399,6 @@ class OrionAutonomousState(CarState):
 
         data[0] |= bits << 5
 
-        # De rest whatever
-
         canmsg = can.Message(
             arbitration_id=0x502,
             data=data,
@@ -381,7 +410,7 @@ class OrionAutonomousState(CarState):
         self.sdc_status = dio1.data
 
     def handle_asms(self, dio3: Bool):
-        self.state["AMS"] = CarStateEnum.ACTIVATED if dio3.data else CarStateEnum.OFF
+        self.state["ASMS"] = CarStateEnum.ON if dio3.data else CarStateEnum.OFF
 
     def handle_watchdog(self, dio4: Bool):
         self.watchdog_status = dio4.data
@@ -395,7 +424,6 @@ class OrionAutonomousState(CarState):
     def handle_air_pressure2(self, air_pressure2: Float64):
         self.air_pressure2 = air_pressure2.data
 
-    # these will probably have to be done with can
     def handle_front_ebs_bp(self, front_ebs_bp: Float64):
         self.front_ebs_bp = front_ebs_bp.data
 
@@ -420,5 +448,19 @@ class OrionAutonomousState(CarState):
             self.initial_checkup()
         elif self.initial_checkup_done and self.monitoring:
             self.monitor()
+
+        if (
+            self.state["TS"] == CarStateEnum.ON
+            and self.initial_checkup_done
+            and self.elvis_status == 1
+        ):  # TODO change elvis status here
+            self.state["TS"] = CarStateEnum.ACTIVATED
+
+        if (
+            self.state["R2D"] == CarStateEnum.ON
+            and self.res_go_signal
+            and self.state["TS"] == CarStateEnum.ACTIVATED
+        ):
+            self.state["R2D"] = CarStateEnum.ACTIVATED
 
         return self.state
