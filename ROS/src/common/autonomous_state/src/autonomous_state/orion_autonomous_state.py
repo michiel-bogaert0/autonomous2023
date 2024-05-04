@@ -54,6 +54,9 @@ class OrionAutonomousState(CarState):
         self.watchdog_status = True
         self.sdc_status = True
         self.monitoring = True
+        self.ts_pressed = False
+        self.elvis_critical_fault = None
+        self.elvis_status = None
         self.air_pressure1 = None
         self.air_pressure2 = None
         self.front_ebs_bp = None
@@ -87,9 +90,7 @@ class OrionAutonomousState(CarState):
         """
         # DB_Commands
         if frame.id == 768:
-            self.state["TS"] = (
-                CarStateEnum.ON if bool(frame.data[0] & 0b01000000) else CarStateEnum.ON
-            )
+            self.ts_pressed = bool(frame.data[0] & 0b01000000)
             self.state["R2D"] = (  # not sure for driverless
                 CarStateEnum.ON
                 if bool(frame.data[0] & 0b10000000)
@@ -176,7 +177,7 @@ class OrionAutonomousState(CarState):
         # stop toggling watchdog
         self.toggling_watchdog = False
 
-        # wait 200 ms
+        # wait 200ms
         time.sleep(0.200)
 
         # check whether the watchdog is indicating error
@@ -186,6 +187,9 @@ class OrionAutonomousState(CarState):
         # check if sdc went open
         if self.sdc_status:
             self.activate_EBS()
+
+        # close sdc, not sure if it should be done here
+        self.sdc_out.publish(Bool(data=True))
 
         # check ebs brake pressures
         if not (
@@ -270,9 +274,7 @@ class OrionAutonomousState(CarState):
 
         self.dbs.publish(Float64(data=0))  # 0 bar, placeholder
 
-        if self.state["TS"] != CarStateEnum.ON:
-            self.initial_checkup_busy = False
-            return
+        self.state["TS"] = CarStateEnum.ON
 
         self.initial_checkup_done = True
         self.initial_checkup_busy = False
@@ -437,20 +439,10 @@ class OrionAutonomousState(CarState):
             object with the (physical) state of the car systems,
             like EBS and ASSI. See general docs for info about this state
         """
-        if (
-            not self.initial_checkup_done and self.toggling_watchdog
-        ):  # toggling watchdog in continuous monitoring is done in monitor()
-            self.watchdog_trigger.publish(Bool(data=True))
-            time.sleep(0.005)
-            self.watchdog_trigger.publish(Bool(data=False))
-
-        if not self.initial_checkup_done and not self.initial_checkup_busy:
-            self.initial_checkup()
-        elif self.initial_checkup_done and self.monitoring:
-            self.monitor()
 
         if (
             self.state["TS"] == CarStateEnum.ON
+            and self.ts_pressed
             and self.initial_checkup_done
             and self.elvis_status == 1
         ):  # TODO change elvis status here

@@ -23,7 +23,10 @@ class OrionManualState(CarState):
         self.res_estop_signal = False
         self.watchdog_status = True
         self.sdc_status = True
+        self.ts_pressed = False
         self.monitoring = True
+        self.elvis_critical_fault = None
+        self.elvis_status = None
         self.air_pressure1 = None
         self.air_pressure2 = None
         self.front_ebs_bp = None
@@ -70,12 +73,7 @@ class OrionManualState(CarState):
     def handle_can(self, frame: Frame):
         # DB_Commands
         if frame.id == 768:
-            if self.state["TS"] == CarStateEnum.ON:
-                self.state["TS"] = (
-                    CarStateEnum.ACTIVATED
-                    if bool(frame.data[0] & 0b01000000)
-                    else CarStateEnum.ON
-                )
+            self.ts_pressed = bool(frame.data[0] & 0b01000000)
             self.state["R2D"] = (
                 CarStateEnum.ON
                 if bool(frame.data[0] & 0b10000000)
@@ -89,6 +87,8 @@ class OrionManualState(CarState):
         # ELVIS TODO maybe add critical fault and elvis status
         if frame.id == 2:
             self.lv_can_hbs["ELVIS"] = rospy.Time.now().to_sec()
+            self.elvis_critical_fault = (frame.data[0] >> 3) & 0b00000111
+            self.elvis_status = (frame.data[0] >> 6) & 0b00000111
         # DB
         if frame.id == 3:
             self.lv_can_hbs["DB"] = rospy.Time.now().to_sec()
@@ -125,8 +125,29 @@ class OrionManualState(CarState):
             self.initial_checkup_busy = False
             return  # hopefully in the next iteration this will be True, no error yet
 
+        # stop toggling watchdog
+        self.toggling_watchdog = False
+
+        # wait 200ms
+        time.sleep(0.200)
+
+        # check whether the watchdog is indicating error
+        if self.watchdog_status:
+            self.send_error_to_db()
+
+        # check if sdc went open
+        if self.sdc_status:
+            self.send_error_to_db()
+
+        # close sdc, not sure if it should be done here
+        self.sdc_out.publish(Bool(data=True))
+
+        self.state["TS"] = CarStateEnum.ON
         self.initial_checkup_busy = False
         self.initial_checkup_done = True
+
+    def monitor(self):
+        return
 
     def send_heartbeat(self):
         canmsg = can.Message(
@@ -188,15 +209,24 @@ class OrionManualState(CarState):
         self.initial_checkup_busy = False
 
     def get_state(self):
-        if not self.initial_checkup_done:
-            # toggle watchdog
+        if (
+            not self.initial_checkup_done and self.toggling_watchdog
+        ):  # toggling watchdog in continuous monitoring is done in monitor()
             self.watchdog_trigger.publish(Bool(data=True))
             time.sleep(0.005)
             self.watchdog_trigger.publish(Bool(data=False))
-            if not self.initial_checkup_busy:
-                self.initial_checkup()
-        else:
+
+        if not self.initial_checkup_done and not self.initial_checkup_busy:
+            self.initial_checkup()
+        elif self.initial_checkup_done and self.monitoring:
             self.monitor()
 
+        if (
+            self.state["TS"] == CarStateEnum.ON
+            and self.ts_pressed
+            and self.initial_checkup_done
+            and self.elvis_status == 1
+        ):  # TODO change elvis status
+            self.state["TS"] = CarStateEnum.ACTIVATED
         self.send_status_over_can()  # not sure whether this needs to be sent all the time
         return self.state
