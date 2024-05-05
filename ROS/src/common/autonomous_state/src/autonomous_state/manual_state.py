@@ -1,13 +1,14 @@
 #! /usr/bin/python3
+from time import sleep
 
 import rospy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from node_fixture import create_diagnostic_message
-from node_fixture.node_manager import ManagedNode
+from node_fixture.node_manager import NodeManager
 from orion_manual_state import OrionManualState
 
 
-class ManualController(ManagedNode):  # maybe NodeManager
+class ManualController(NodeManager):
     def __init__(self) -> None:
         super().__init__("manual_state")
         self.spin()
@@ -21,9 +22,15 @@ class ManualController(ManagedNode):  # maybe NodeManager
         self.car_name = rospy.get_param("car", "orion")
 
         if self.car_name == "orion":
-            self.car = OrionManualState()
+            self.car = OrionManualState(self)
         else:
             raise f"Unknown model! (model given to manual controller was: '{self.car_name}')"
+
+        while not self.activate_nodes():  # not very sure
+            sleep(0.1)
+
+            if rospy.is_shutdown():
+                return
 
     def active(self):
         # Gets car state as reported by our helper class

@@ -11,8 +11,9 @@ from std_msgs.msg import Bool, Float64
 
 
 class OrionAutonomousState(CarState):
-    def __init__(self) -> None:
+    def __init__(self, autonomous_controller) -> None:
         rospy.Subscriber("/ugr/car/can/rx", Frame, self.handle_can)
+        self.autonomous_controller = autonomous_controller
         rospy.Subscriber("/dio_driver_1/DI1", Bool, self.handle_sdc)  # sdc status
         rospy.Subscriber(
             "/dio_driver_1/DI3", Bool, self.handle_asms
@@ -48,6 +49,7 @@ class OrionAutonomousState(CarState):
         )  # sdc out start low, high when everything is ok and low in case of error
         self.initial_checkup_busy = False  # indicates whether we are waiting 200ms for watchdog in initial checkup
         self.initial_checkup_done = False
+        self.monitored_once = False
         self.toggling_watchdog = True
         self.res_go_signal = False
         self.res_estop_signal = False
@@ -102,7 +104,7 @@ class OrionAutonomousState(CarState):
             self.res_go_signal = (frame.data[0] & 0b0000100) >> 2
             self.res_estop_signal = not (frame.data[0] & 0b0000001)
             if self.res_estop_signal:
-                self.activate_EBS()
+                self.activate_EBS("RES E-Stop signal active")
 
         # LV ECU HBS
         # PDU
@@ -125,7 +127,7 @@ class OrionAutonomousState(CarState):
         if frame.id == 2147492865:
             self.mc_can_hb = rospy.Time.now().to_sec()
 
-    def activate_EBS(self):
+    def activate_EBS(self, error_message="unknown"):
         self.state["EBS"] = CarStateEnum.ACTIVATED
         self.state["TS"] = CarStateEnum.OFF
         self.state["R2D"] = CarStateEnum.OFF
@@ -133,6 +135,9 @@ class OrionAutonomousState(CarState):
         self.dbs_arm.publish(Bool(data=False))
         self.sdc_out.publish(Bool(data=False))
         self.initial_checkup_busy = False
+        self.autonomous_controller.set_health(
+            DiagnosticStatus.ERROR, "EBS activated, reason: " + error_message
+        )
 
     def update(self, state: AutonomousStatesEnum):
         # On a state transition, start 5 second timeout
@@ -145,201 +150,6 @@ class OrionAutonomousState(CarState):
         self.as_state = state
 
         self.send_status_over_can()
-
-    def initial_checkup(self):
-        self.initial_checkup_busy = True
-        # mission needs to be selected
-        if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
-            self.activate_EBS()
-
-        # ASMS needs to be on
-        if self.state["ASMS"] != CarStateEnum.ON:
-            self.activate_EBS()
-
-        # check air pressures
-        if not (
-            self.air_pressure1 > 8
-            and self.air_pressure2 > 8
-            and self.air_pressure1 < 9.5
-            and self.air_pressure2 < 9.5
-        ):
-            self.activate_EBS()
-
-        # watchdog OK?
-        if not self.watchdog_status:
-            self.activate_EBS()
-
-        # is SDC closed?
-        if not self.sdc_status:
-            self.initial_checkup_busy = False
-            return  # hopefully in the next iteration this will be True, but no need for EBS
-
-        # stop toggling watchdog
-        self.toggling_watchdog = False
-
-        # wait 200ms
-        time.sleep(0.200)
-
-        # check whether the watchdog is indicating error
-        if self.watchdog_status:
-            self.activate_EBS()
-
-        # check if sdc went open
-        if self.sdc_status:
-            self.activate_EBS()
-
-        # close sdc, not sure if it should be done here
-        self.sdc_out.publish(Bool(data=True))
-
-        # check ebs brake pressures
-        if not (
-            self.front_ebs_bp > 90
-            and self.rear_ebs_bp > 90
-            and self.front_ebs_bp < 150
-            and self.rear_ebs_bp < 150
-        ):
-            self.activate_EBS()
-
-        # start toggling watchdog
-        self.toggling_watchdog = True
-
-        # reset watchdog
-        self.watchdog_reset.publish(Bool(data=True))
-
-        time.sleep(0.200)
-
-        # check whether pressure is being released as expected
-        if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
-            self.activate_EBS()
-
-        # trigger ebs
-        self.ebs_arm.publish(Bool(data=False))
-        self.dbs_arm.publish(Bool(data=True))
-
-        time.sleep(0.200)
-
-        # check whether pressure is being built up as expected
-        if not (
-            self.front_ebs_bp > 40
-            and self.rear_ebs_bp > 40
-            and self.front_ebs_bp < 80
-            and self.rear_ebs_bp < 80
-        ):
-            self.activate_EBS()
-
-        # release ebs
-        self.ebs_arm.publish(Bool(data=True))
-        self.dbs_arm.publish(Bool(data=True))
-
-        time.sleep(0.200)
-
-        # check whether pressure is being released as expected
-        if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
-            self.activate_EBS()
-
-        # trigger dbs
-        self.ebs_arm.publish(Bool(data=True))
-        self.dbs_arm.publish(Bool(data=False))
-
-        time.sleep(0.200)
-
-        # check whether pressure is being built up as expected
-        if not (
-            self.front_ebs_bp > 40
-            and self.rear_ebs_bp > 40
-            and self.front_ebs_bp < 80
-            and self.rear_ebs_bp < 80
-        ):
-            self.activate_EBS()
-
-        # release dbs
-        self.ebs_arm.publish(Bool(data=True))
-        self.dbs_arm.publish(Bool(data=True))
-
-        time.sleep(0.200)
-
-        # check whether pressure is being released as expected
-        if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
-            self.activate_EBS()
-
-        # set PPR setpoint, actuate brake with DBS
-        self.dbs.publish(Float64(data=30))  # 30 bar, placeholder
-
-        # check whether pressure is being built up as expected
-        if not (self.front_ebs_bp > 20 and self.rear_ebs_bp > 20):
-            self.activate_EBS()
-
-        self.state["ASB"] = CarStateEnum.ACTIVATED
-        self.state["EBS"] = CarStateEnum.ON
-
-        self.dbs.publish(Float64(data=0))  # 0 bar, placeholder
-
-        self.state["TS"] = CarStateEnum.ON
-
-        self.initial_checkup_done = True
-        self.initial_checkup_busy = False
-
-    def monitor(self):
-        # is SDC closed?
-        if not self.sdc_status:
-            if (
-                self.front_ebs_bp > 0
-                and self.rear_ebs_bp > 0
-                and self.front_ebs_bp < 100
-                and self.rear_ebs_bp < 100
-            ):
-                self.monitoring = False
-            else:
-                self.activate_EBS()
-
-        # check heartbeats of low voltage systems, includes RES
-        for hb in self.lv_can_hbs:
-            if rospy.Time.now().to_sec() - self.lv_can_hbs[hb] > 0.5:
-                self.activate_EBS()
-
-        # check heartbeats of motorcontrollers
-        if self.mc_can_hb is None or rospy.Time.now().to_sec() - self.mc_can_hb > 0.5:
-            self.activate_EBS()
-
-        # check ipc, sensors and actuators TODO add everything
-        if (
-            self.get_health_level() == DiagnosticStatus.ERROR
-            or self.as_state == AutonomousStatesEnum.ASEMERGENCY
-        ):
-            self.activate_EBS()
-
-        # check output signal of watchdog
-        if not self.watchdog_status:
-            self.activate_EBS()
-
-        # check brake pressures
-        if not (
-            self.front_ebs_bp > 0
-            and self.rear_ebs_bp > 0
-            and self.front_ebs_bp < 100
-            and self.rear_ebs_bp < 100
-        ):
-            self.activate_EBS()
-
-        # check air pressures
-        if not (
-            self.air_pressure1 > 8
-            and self.air_pressure2 > 8
-            and self.air_pressure1 < 9.5
-            and self.air_pressure2 < 9.5
-        ):
-            self.activate_EBS()
-
-        # check if bypass relay is still functioning
-        if not self.bypass_status:
-            self.activate_EBS()
-
-        # toggle watchdog
-        self.watchdog_trigger.publish(Bool(data=True))
-        time.sleep(0.005)
-        self.watchdog_trigger.publish(Bool(data=False))
-
-        self.send_heartbeat()
 
     def send_heartbeat(self):
         canmsg = can.Message(
@@ -408,6 +218,55 @@ class OrionAutonomousState(CarState):
         )
         self.bus.publish(serialcan_to_roscan(canmsg))
 
+        state_to_bits = {
+            CarStateEnum.UNKNOWN: 0,
+            CarStateEnum.OFF: 1,
+            CarStateEnum.ON: 2,  # TS_READY or R2D_READY
+            CarStateEnum.ACTIVATED: 3,  # TS_ACTIVE or R2D_START
+        }
+
+        # Get the bits for the TS and R2D states
+        ts_bits = state_to_bits.get(self.state["TS"], 0b00)
+        r2d_bits = state_to_bits.get(self.state["R2D"], 0b00)
+
+        # Create the data
+        # Bits 0-1: TS state
+        # Bits 2-3: R2D state
+        data = [(ts_bits & 0b11) | ((r2d_bits & 0b11) << 2)]
+
+        canmsg = can.Message(
+            arbitration_id=0x999,  # placeholder
+            data=data,
+            is_extended_id=False,
+        )
+        self.bus.publish(serialcan_to_roscan(canmsg))
+
+    # runs at 15 hz
+    def get_state(self):
+        """
+        Returns:
+            object with the (physical) state of the car systems,
+            like EBS and ASSI. See general docs for info about this state
+        """
+
+        if (
+            self.state["TS"] == CarStateEnum.ON
+            and self.ts_pressed
+            and self.initial_checkup_done
+            and self.monitored_once
+            and self.elvis_status == 1
+        ):  # TODO change elvis status here
+            self.state["TS"] = CarStateEnum.ACTIVATED
+
+        if (
+            self.state["R2D"] == CarStateEnum.ON
+            and self.res_go_signal
+            and self.state["TS"] == CarStateEnum.ACTIVATED
+        ):
+            self.state["R2D"] = CarStateEnum.ACTIVATED
+
+        return self.state
+
     def handle_sdc(self, dio1: Bool):
         self.sdc_status = dio1.data
 
@@ -432,27 +291,198 @@ class OrionAutonomousState(CarState):
     def handle_rear_ebs_bp(self, rear_ebs_bp: Float64):
         self.rear_ebs_bp = rear_ebs_bp.data
 
-    # runs at 15 hz
-    def get_state(self):
-        """
-        Returns:
-            object with the (physical) state of the car systems,
-            like EBS and ASSI. See general docs for info about this state
-        """
+    def initial_checkup(self):
+        self.initial_checkup_busy = True
+        # mission needs to be selected
+        if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
+            self.activate_EBS("No mission selected")
 
-        if (
-            self.state["TS"] == CarStateEnum.ON
-            and self.ts_pressed
-            and self.initial_checkup_done
-            and self.elvis_status == 1
-        ):  # TODO change elvis status here
-            self.state["TS"] = CarStateEnum.ACTIVATED
+        # ASMS needs to be on
+        if self.state["ASMS"] != CarStateEnum.ON:
+            self.activate_EBS("ASMS not on")
 
-        if (
-            self.state["R2D"] == CarStateEnum.ON
-            and self.res_go_signal
-            and self.state["TS"] == CarStateEnum.ACTIVATED
+        # check air pressures
+        if not (
+            self.air_pressure1 > 8
+            and self.air_pressure2 > 8
+            and self.air_pressure1 < 9.5
+            and self.air_pressure2 < 9.5
         ):
-            self.state["R2D"] = CarStateEnum.ACTIVATED
+            self.activate_EBS("Air pressure out of bounds")
 
-        return self.state
+        # watchdog OK?
+        if not self.watchdog_status:
+            self.activate_EBS("Watchdog not OK")
+
+        # is SDC closed?
+        if not self.sdc_status:
+            self.initial_checkup_busy = False
+            return  # hopefully in the next iteration this will be True, but no need for EBS
+
+        # stop toggling watchdog
+        self.toggling_watchdog = False
+
+        # wait 200ms
+        time.sleep(0.200)
+
+        # check whether the watchdog is indicating error
+        if self.watchdog_status:
+            self.activate_EBS("Watchdog still OK, even though we stopped toggling it")
+
+        # check if sdc went open
+        if not self.sdc_status:
+            self.activate_EBS("SDC should be open, but it is closed")
+
+        # close sdc, not sure if it should be done here
+        self.sdc_out.publish(Bool(data=True))
+
+        # check ebs brake pressures
+        if not (
+            self.front_ebs_bp > 90
+            and self.rear_ebs_bp > 90
+            and self.front_ebs_bp < 150
+            and self.rear_ebs_bp < 150
+        ):
+            self.activate_EBS("EBS brake pressures out of bounds")
+
+        # start toggling watchdog
+        self.toggling_watchdog = True
+
+        # reset watchdog
+        self.watchdog_reset.publish(Bool(data=True))
+
+        time.sleep(0.200)
+
+        # check whether pressure is being released as expected
+        if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
+            self.activate_EBS("EBS brake pressures not released as expected")
+
+        # trigger ebs
+        self.ebs_arm.publish(Bool(data=False))
+        self.dbs_arm.publish(Bool(data=True))
+
+        time.sleep(0.200)
+
+        # check whether pressure is being built up as expected
+        if not (
+            self.front_ebs_bp > 40
+            and self.rear_ebs_bp > 40
+            and self.front_ebs_bp < 80
+            and self.rear_ebs_bp < 80
+        ):
+            self.activate_EBS("EBS brake pressures not built up as expected")
+
+        # release ebs
+        self.ebs_arm.publish(Bool(data=True))
+        self.dbs_arm.publish(Bool(data=True))
+
+        time.sleep(0.200)
+
+        # check whether pressure is being released as expected
+        if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
+            self.activate_EBS("EBS brake pressures not released as expected")
+
+        # trigger dbs
+        self.ebs_arm.publish(Bool(data=True))
+        self.dbs_arm.publish(Bool(data=False))
+
+        time.sleep(0.200)
+
+        # check whether pressure is being built up as expected
+        if not (
+            self.front_ebs_bp > 40
+            and self.rear_ebs_bp > 40
+            and self.front_ebs_bp < 80
+            and self.rear_ebs_bp < 80
+        ):
+            self.activate_EBS("EBS brake pressures not built up as expected")
+
+        # release dbs
+        self.ebs_arm.publish(Bool(data=True))
+        self.dbs_arm.publish(Bool(data=True))
+
+        time.sleep(0.200)
+
+        # check whether pressure is being released as expected
+        if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
+            self.activate_EBS("EBS brake pressures not released as expected")
+
+        # set PPR setpoint, actuate brake with DBS
+        self.dbs.publish(Float64(data=30))  # 30 bar, placeholder
+
+        # check whether pressure is being built up as expected
+        if not (self.front_ebs_bp > 20 and self.rear_ebs_bp > 20):
+            self.activate_EBS("EBS brake pressures not built up as expected")
+
+        self.state["ASB"] = CarStateEnum.ACTIVATED
+        self.state["EBS"] = CarStateEnum.ON
+
+        self.dbs.publish(Float64(data=0))  # 0 bar, placeholder
+
+        self.state["TS"] = CarStateEnum.ON
+
+        self.initial_checkup_done = True
+        self.initial_checkup_busy = False
+
+    def monitor(self):
+        # is SDC closed?
+        if not self.sdc_status:
+            if (
+                self.front_ebs_bp > 0
+                and self.rear_ebs_bp > 0
+                and self.front_ebs_bp < 100
+                and self.rear_ebs_bp < 100
+            ):
+                self.monitoring = False
+            else:
+                self.activate_EBS("SDC open and brake pressures out of bounds")
+
+        # check heartbeats of low voltage systems, includes RES
+        for hb in self.lv_can_hbs:
+            if rospy.Time.now().to_sec() - self.lv_can_hbs[hb] > 0.5:
+                self.activate_EBS("Low voltage system heartbeat missing, system: " + hb)
+
+        # check heartbeats of motorcontrollers
+        if self.mc_can_hb is None or rospy.Time.now().to_sec() - self.mc_can_hb > 0.5:
+            self.activate_EBS("Motorcontroller heartbeat missing")
+
+        # check ipc, sensors and actuators TODO add everything
+        if (
+            self.autonomous_controller.get_health_level() == DiagnosticStatus.ERROR
+            or self.as_state == AutonomousStatesEnum.ASEMERGENCY
+        ):
+            self.activate_EBS("IPC, sensors or actuators not OK")
+
+        # check output signal of watchdog
+        if not self.watchdog_status:
+            self.activate_EBS("Watchdog not OK")
+
+        # check brake pressures
+        if not (
+            self.front_ebs_bp > 0
+            and self.rear_ebs_bp > 0
+            and self.front_ebs_bp < 100
+            and self.rear_ebs_bp < 100
+        ):
+            self.activate_EBS("Brake pressures out of bounds")
+
+        # check air pressures
+        if not (
+            self.air_pressure1 > 8
+            and self.air_pressure2 > 8
+            and self.air_pressure1 < 9.5
+            and self.air_pressure2 < 9.5
+        ):
+            self.activate_EBS("Air pressures out of bounds")
+
+        # check if bypass relay is still functioning
+        if not self.bypass_status:
+            self.activate_EBS("Bypass open")
+
+        # toggle watchdog
+        self.watchdog_trigger.publish(Bool(data=True))
+        time.sleep(0.005)
+        self.watchdog_trigger.publish(Bool(data=False))
+
+        self.send_heartbeat()
+        self.monitored_once = True

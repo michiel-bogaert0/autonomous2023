@@ -4,13 +4,15 @@ import can
 import rospy
 from can_msgs.msg import Frame
 from car_state import CarState, CarStateEnum
+from diagnostic_msgs.msg import DiagnosticStatus
 from node_fixture import serialcan_to_roscan
 from std_msgs.msg import Bool, Float64
 
 
 class OrionManualState(CarState):
-    def __init__(self) -> None:
+    def __init__(self, manual_controller) -> None:
         rospy.Subscriber("/ugr/car/can/rx", Frame, self.handle_can)
+        self.manual_controller = manual_controller
         self.bus = rospy.Publisher("/ugr/car/can/tx", Frame, queue_size=10)
         self.state = {
             "TS": CarStateEnum.UNKNOWN,
@@ -18,6 +20,7 @@ class OrionManualState(CarState):
         }
         self.initial_checkup_busy = False
         self.initial_checkup_done = False
+        self.monitored_once = False
         self.toggling_watchdog = True
         self.res_go_signal = False
         self.res_estop_signal = False
@@ -100,55 +103,6 @@ class OrionManualState(CarState):
         if frame.id == 2147492865:
             self.mc_can_hb = rospy.Time.now().to_sec()
 
-    def initial_checkup(self):
-        self.initial_checkup_busy = True
-
-        # ASMS needs to be off
-        if self.state("ASMS") != CarStateEnum.OFF:
-            self.send_error_to_db()
-
-        # check air pressures
-        if not (
-            self.air_pressure1 > 8
-            and self.air_pressure2 > 8
-            and self.air_pressure1 < 9.5
-            and self.air_pressure2 < 9.5
-        ):
-            self.send_error_to_db()
-
-        # watchdog OK?
-        if not self.watchdog_status:
-            self.send_error_to_db()
-
-        # is SDC closed?
-        if not self.sdc_status:
-            self.initial_checkup_busy = False
-            return  # hopefully in the next iteration this will be True, no error yet
-
-        # stop toggling watchdog
-        self.toggling_watchdog = False
-
-        # wait 200ms
-        time.sleep(0.200)
-
-        # check whether the watchdog is indicating error
-        if self.watchdog_status:
-            self.send_error_to_db()
-
-        # check if sdc went open
-        if self.sdc_status:
-            self.send_error_to_db()
-
-        # close sdc, not sure if it should be done here
-        self.sdc_out.publish(Bool(data=True))
-
-        self.state["TS"] = CarStateEnum.ON
-        self.initial_checkup_busy = False
-        self.initial_checkup_done = True
-
-    def monitor(self):
-        return
-
     def send_heartbeat(self):
         canmsg = can.Message(
             arbitration_id=0,
@@ -205,8 +159,11 @@ class OrionManualState(CarState):
     def handle_rear_ebs_bp(self, rear_ebs_bp: Float64):
         self.rear_ebs_bp = rear_ebs_bp.data
 
-    def send_error_to_db(self, error):
+    def send_error_to_db(self, error_message="unknown"):
         self.initial_checkup_busy = False
+        self.autonomous_controller.set_health(
+            DiagnosticStatus.ERROR, "Error detected, reason: " + error_message
+        )
 
     def get_state(self):
         if (
@@ -225,8 +182,102 @@ class OrionManualState(CarState):
             self.state["TS"] == CarStateEnum.ON
             and self.ts_pressed
             and self.initial_checkup_done
+            and self.monitored_once
             and self.elvis_status == 1
         ):  # TODO change elvis status
             self.state["TS"] = CarStateEnum.ACTIVATED
         self.send_status_over_can()  # not sure whether this needs to be sent all the time
         return self.state
+
+    def initial_checkup(self):
+        self.initial_checkup_busy = True
+
+        # ASMS needs to be off
+        if self.state("ASMS") != CarStateEnum.OFF:
+            self.send_error_to_db("ASMS not off")
+
+        # check air pressures
+        if not (
+            self.air_pressure1 > 8
+            and self.air_pressure2 > 8
+            and self.air_pressure1 < 9.5
+            and self.air_pressure2 < 9.5
+        ):
+            self.send_error_to_db("Air pressures not in range")
+
+        # watchdog OK?
+        if not self.watchdog_status:
+            self.send_error_to_db("Watchdog not OK")
+
+        # is SDC closed?
+        if not self.sdc_status:
+            self.initial_checkup_busy = False
+            return  # hopefully in the next iteration this will be True, no error yet
+
+        # stop toggling watchdog
+        self.toggling_watchdog = False
+
+        # wait 200ms
+        time.sleep(0.200)
+
+        # check whether the watchdog is indicating error
+        if self.watchdog_status:
+            self.send_error_to_db(
+                "Watchdog still OK, even though we stopped toggling it"
+            )
+
+        # check if sdc went open
+        if self.sdc_status:
+            self.send_error_to_db("SDC should be open, but it is closed")
+
+        # close sdc, not sure if it should be done here
+        self.sdc_out.publish(Bool(data=True))
+
+        self.state["TS"] = CarStateEnum.ON
+        self.initial_checkup_busy = False
+        self.initial_checkup_done = True
+
+    def monitor(self):
+        # is SDC closed?
+        if not self.sdc_status:
+            self.send_error_to_db("SDC open")
+
+        # check heartbeats of low voltage systems
+        for hb in self.lv_can_hbs:
+            if rospy.Time.now().to_sec() - self.lv_can_hbs[hb] > 0.5:
+                self.send_error_to_db(
+                    "Low voltage system heartbeat missing, system: " + hb
+                )
+
+        # check heartbeats of motorcontrollers
+        if self.mc_can_hb is None or rospy.Time.now().to_sec() - self.mc_can_hb > 0.5:
+            self.send_error_to_db("Motorcontroller heartbeat missing")
+
+        # check ipc, sensors and actuators TODO add everything
+        if self.manual_controller.get_health_level() == DiagnosticStatus.ERROR:
+            self.send_error_to_db("IPC, sensors or actuators not OK")
+
+        # check output signal of watchdog
+        if not self.watchdog_status:
+            self.send_error_to_db("Watchdog not OK")
+
+        # check air pressures
+        if not (
+            self.air_pressure1 > 8
+            and self.air_pressure2 > 8
+            and self.air_pressure1 < 9.5
+            and self.air_pressure2 < 9.5
+        ):
+            self.send_error_to_db("Air pressures not in range")
+
+        # check if bypass is closed
+        if self.bypass_status:
+            self.send_error_to_db("Bypass closed")
+
+        # toggle watchdog
+        self.watchdog_trigger.publish(Bool(data=True))
+        time.sleep(0.005)
+        self.watchdog_trigger.publish(Bool(data=False))
+
+        self.send_heartbeat()
+        self.monitored_once = True

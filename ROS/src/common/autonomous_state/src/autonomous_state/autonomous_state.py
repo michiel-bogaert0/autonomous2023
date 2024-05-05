@@ -62,7 +62,7 @@ class AutonomousController(NodeManager):
         if self.car_name == "pegasus":
             self.car = PegasusState()
         elif self.car_name == "orion":
-            self.car = OrionAutonomousState()
+            self.car = OrionAutonomousState(self)
         elif self.car_name == "simulation":
             self.car = SimulationState()
         else:
