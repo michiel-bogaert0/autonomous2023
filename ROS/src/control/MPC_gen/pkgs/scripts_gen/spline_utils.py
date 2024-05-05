@@ -5,7 +5,6 @@ from optimal_control_gen.Bspline import Bspline
 
 
 def create_spline(arr, color, derivative=False, derivative2=False, plot=False):
-    print(derivative2)
     degree = 2
     kk = np.linspace(0, 1, len(arr) - degree + 1)
 

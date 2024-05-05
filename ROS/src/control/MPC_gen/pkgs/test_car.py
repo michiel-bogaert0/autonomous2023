@@ -18,7 +18,7 @@ print(X0)
 # %%
 car = KinematicCar(dt=0.05)
 car = BicycleModel(dt=0.05)
-car = BicycleModelSpline(dt=0.02)
+car = BicycleModelSpline(dt=0.1)
 car.state = X0[:, 0]
 # car.state[2] = - np.pi
 # car.state = [0, 0, 0, 0, 0, 0]  # [x, y, ψ, vx, vy, ω, δ]
@@ -72,13 +72,13 @@ axs[7].plot(states_array[:, 5], label="tau")
 # %%
 fig, ax = plt.subplots()
 ax.plot(states_array[:, 0], states_array[:, 1], "o")
-plt.xlim(-40, 12)
+# plt.xlim(-40, 12)
 ax.set_aspect("equal")
 
 # %%
 fig, ax = plt.subplots()
 ax.plot(X0[0, :], X0[1, :], "o")
-plt.xlim(-40, 12)
+# plt.xlim(-40, 12)
 ax.set_aspect("equal")
 
 # %%

@@ -20,6 +20,7 @@ class Ocp:
         show_execution_time=True,
         store_intermediate=False,
         threads=1,
+        adaptive_boundaries=True,
     ):
         """optimal control abstraction
 
@@ -43,8 +44,12 @@ class Ocp:
 
         self.opti = casadi.Opti()
 
-        self.centerline = curve
-        self.der_centerline = curve.derivative(o=1)
+        if curve is not None:
+            self.centerline = curve
+            self.der_centerline = curve.derivative(o=1)
+        else:
+            self.centerline = None
+            self.der_centerline = None
 
         self.X = self.opti.variable(self.nx, N + 1)
         # self.X = casadi.repmat([1e1, 1e1, 1e-1, 1, 1e2, 1], 1, self.N+1) * self.opti.variable(self.nx, N + 1)
@@ -67,6 +72,10 @@ class Ocp:
         # Point on curve
         self.point_curve = casadi.SX.sym("point_curve", 2)
         self.der_curve = casadi.SX.sym("der_curve", 2)
+
+        self.adaptive_boundaries = adaptive_boundaries
+        if not self.adaptive_boundaries:
+            self.center_points = self.opti.parameter(2, N + 1)
 
         self.slopes_inner = self.opti.parameter(1, N + 1)
         self.intercepts_inner = self.opti.parameter(1, N + 1)
@@ -121,12 +130,14 @@ class Ocp:
 
     def _set_continuity(self, threads: int):
         # self.opti.subject_to(self.X[2:, 0] == self.x0[2:]) # doing this somehow causes crash issue
-        # self.opti.subject_to(self.X[0, 0] == self.x0[0])
-        # self.opti.subject_to(self.X[2, 0] == self.x0[2])
+        self.opti.subject_to(self.X[0, 0] == self.x0[0])
+        self.opti.subject_to(self.X[1, 0] == self.x0[1])
+        self.opti.subject_to(self.X[2, 0] == self.x0[2])
         # self.opti.subject_to(self.X[3, 0] == 0)
-        # self.opti.subject_to(self.X[4, 0] == self.x0[4])
+        self.opti.subject_to(self.X[3, 0] == self.x0[3])
+        self.opti.subject_to(self.X[4, 0] == self.x0[4])
         self.opti.subject_to(self.X[5, 0] == self.x0[5])
-        self.opti.subject_to(self.X[5, self.N] == 1)
+        # self.opti.subject_to(self.X[5, self.N] == 1)
         # self.opti.subject_to(self.X[0, 0] == self.X[0, self.N])
         # self.opti.subject_to(self.X[1, 0] == self.X[1, self.N])
 
@@ -278,7 +289,7 @@ class Ocp:
             "print_time": print_time,  # print information about execution time (if True, also stores it in sol stats)
         }
         s_opts = {
-            "max_iter": 1000,
+            "max_iter": 500,
             "print_level": print_level,
             "sb": "yes",
             # "nlp_scaling_method": "none",
@@ -325,16 +336,17 @@ class Ocp:
         # self.opti.set_initial(self.b, b)
         # self.opti.set_initial(self.c, c)
         # self.opti.set_initial(self.d, d)
-        self.opti.set_value(self.slopes_inner, a)
-        self.opti.set_value(self.intercepts_inner, b)
-        self.opti.set_value(self.slopes_outer, c)
-        self.opti.set_value(self.intercepts_outer, d)
+        # self.opti.set_value(self.slopes_inner, a)
+        # self.opti.set_value(self.intercepts_inner, b)
+        # self.opti.set_value(self.slopes_outer, c)
+        # self.opti.set_value(self.intercepts_outer, d)
 
         self.opti.set_value(self.u_prev, u_prev)
 
         if X0 is not None:
             self.opti.set_initial(self.X, X0)
         else:
+            X0 = np.zeros((self.nx, self.N + 1))
             self.opti.set_initial(self.X, np.zeros((self.nx, self.N + 1)))
 
         if U0 is not None:
@@ -343,6 +355,9 @@ class Ocp:
             self.opti.set_initial(self.U, np.zeros((self.nu, self.N)))
 
         self.opti.set_initial(self.Sc, np.zeros((1, self.N + 1)) * 1e-1)
+
+        if not self.adaptive_boundaries:
+            self.opti.set_value(self.center_points, self.centerline(X0[5, :].T).T)
 
         try:
             with self.timer:
