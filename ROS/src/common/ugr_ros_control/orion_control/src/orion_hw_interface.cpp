@@ -37,22 +37,22 @@
            For a more detailed simulation example, see sim_hw_interface.cpp
 */
 
-#include <gen4_control/gen4_hw_interface.hpp>
+#include <orion_control/orion_hw_interface.hpp>
 #include <random>
 #include <tuple>
 #include <math.h>
 
-namespace gen4_control
+namespace orion_control
 {
-Gen4HWInterface::Gen4HWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
+OrionHWInterface::OrionHWInterface(ros::NodeHandle& nh, urdf::Model* urdf_model)
   : ugr_ros_control::GenericHWInterface(nh, urdf_model)
 {
   ros::NodeHandle n("~");
 
-  ROS_INFO_NAMED("gen4_hw_interface", "Gen4HWInterface Ready.");
+  ROS_INFO_NAMED("orion_hw_interface", "OrionHWInterface Ready.");
 }
 
-void Gen4HWInterface::init()
+void OrionHWInterface::init()
 {
   // First do parent init
   ugr_ros_control::GenericHWInterface::init();
@@ -65,15 +65,15 @@ void Gen4HWInterface::init()
   this->vel_pub = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/vel", 10);
 
   this->can_axis0_sub =
-      nh.subscribe<std_msgs::Float32>("/processed/Actual_ERPM", 1, &Gen4HWInterface::can_callback_axis0, this);
+      nh.subscribe<std_msgs::Float32>("/processed/Actual_ERPM", 1, &OrionHWInterface::can_callback_axis0, this);
   this->can_axis1_sub =
-      nh.subscribe<std_msgs::Float32>("/processed/Actual_ERPM", 1, &Gen4HWInterface::can_callback_axis1, this);
+      nh.subscribe<std_msgs::Float32>("/processed/Actual_ERPM", 1, &OrionHWInterface::can_callback_axis1, this);
   this->can_steering_sub =
-      nh.subscribe<std_msgs::Float32>("/processed/steering", 1, &Gen4HWInterface::can_callback_steering, this);
+      nh.subscribe<std_msgs::Float32>("/processed/steering", 1, &OrionHWInterface::can_callback_steering, this);
 
-  this->jaw_rate_sub = nh.subscribe<sensor_msgs::Imu>("/imu", 1, &Gen4HWInterface::yaw_rate_callback, this);
+  this->jaw_rate_sub = nh.subscribe<sensor_msgs::Imu>("/imu", 1, &OrionHWInterface::yaw_rate_callback, this);
 
-  this->state_sub = nh.subscribe<ugr_msgs::State>("/state", 1, &Gen4HWInterface::state_change, this);
+  this->state_sub = nh.subscribe<ugr_msgs::State>("/state", 1, &OrionHWInterface::state_change, this);
 
   // Now check if configured joints are actually there. Also remember joint id
   std::string drive_joint_name = nh_.param<std::string>("hardware_interface/drive_joint", "axis_rear");
@@ -100,7 +100,7 @@ void Gen4HWInterface::init()
     throw std::invalid_argument("hardware_interface/joints_config/steering_joint must be given");
   }
 
-  ROS_INFO_NAMED("gen4_hw_interface", "Gen4HWInterface init'd.");
+  ROS_INFO_NAMED("orion_hw_interface", "OrionHWInterface init'd.");
 
   // PID for Torque vectoring
   this->Kp = nh.param("Kp", 1);
@@ -124,14 +124,14 @@ void Gen4HWInterface::init()
 }
 
 // The READ function
-void Gen4HWInterface::read(ros::Duration& elapsed_time)
+void OrionHWInterface::read(ros::Duration& elapsed_time)
 {
   joint_velocity_[drive_joint_id] = (this->cur_velocity_axis0 + this->cur_velocity_axis1) / 2;
   joint_position_[steering_joint_id] = this->cur_steering;
 }
 
 // The WRITE function
-void Gen4HWInterface::write(ros::Duration& elapsed_time)
+void OrionHWInterface::write(ros::Duration& elapsed_time)
 {
   // Safety
   enforceLimits(elapsed_time);
@@ -148,7 +148,7 @@ void Gen4HWInterface::write(ros::Duration& elapsed_time)
   }
 }
 
-void Gen4HWInterface::enforceLimits(ros::Duration& period)
+void OrionHWInterface::enforceLimits(ros::Duration& period)
 {
   // Enforces position and velocity
   pos_jnt_sat_interface_.enforceLimits(period);
@@ -156,7 +156,7 @@ void Gen4HWInterface::enforceLimits(ros::Duration& period)
   eff_jnt_sat_interface_.enforceLimits(period);
 }
 
-void Gen4HWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
+void OrionHWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
 {
   if (msg->scope == "autonomous")
   {
@@ -169,26 +169,26 @@ void Gen4HWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
 }
 
 // Callback for the CAN messages: axis0, axis1 and steering
-void Gen4HWInterface::can_callback_axis0(const std_msgs::Float32::ConstPtr& msg)
+void OrionHWInterface::can_callback_axis0(const std_msgs::Float32::ConstPtr& msg)
 {
   float motor_rpm = msg->data / this->n_polepairs;
   this->cur_velocity_axis0 = 2 * M_PI * motor_rpm / 60;  // rpm to rad/s
   this->handle_vel_msg();
 }
 
-void Gen4HWInterface::can_callback_axis1(const std_msgs::Float32::ConstPtr& msg)
+void OrionHWInterface::can_callback_axis1(const std_msgs::Float32::ConstPtr& msg)
 {
   float motor_rpm = msg->data / this->n_polepairs;
   this->cur_velocity_axis1 = 2 * M_PI * motor_rpm / 60;  // rpm to rad/s
   this->handle_vel_msg();
 }
 
-void Gen4HWInterface::can_callback_steering(const std_msgs::Float32::ConstPtr& msg)
+void OrionHWInterface::can_callback_steering(const std_msgs::Float32::ConstPtr& msg)
 {
   this->cur_steering = msg->data;
 }
 
-void Gen4HWInterface::handle_vel_msg()
+void OrionHWInterface::handle_vel_msg()
 {
   // Publish the car velocity (based on mean motor velocity) as a twist msg (used by SLAM)
   geometry_msgs::TwistWithCovarianceStamped twist_msg = geometry_msgs::TwistWithCovarianceStamped();
@@ -208,7 +208,7 @@ void Gen4HWInterface::handle_vel_msg()
   vel_pub.publish(twist_msg);
 }
 
-void Gen4HWInterface::publish_steering_msg(float steering)
+void OrionHWInterface::publish_steering_msg(float steering)
 {
   // Convert [-3.14, 3.14] to a steering range [-steer_max_step, steer_max_step]
 
@@ -216,7 +216,7 @@ void Gen4HWInterface::publish_steering_msg(float steering)
   // TODO place steering commmand on ros topic
 }
 
-void Gen4HWInterface::publish_torque_msg(float axis)
+void OrionHWInterface::publish_torque_msg(float axis)
 {
   float cur_vel_rear = joint_velocity_[drive_joint_id];
   float car_vel_estimate =
@@ -238,7 +238,7 @@ void Gen4HWInterface::publish_torque_msg(float axis)
   send_torque_on_can(axis1, 1);
 }
 
-void Gen4HWInterface::send_torque_on_can(float axis, int id)
+void OrionHWInterface::send_torque_on_can(float axis, int id)
 {
   // create publish message
   ugr_msgs::CanFrame msg;
@@ -256,12 +256,12 @@ void Gen4HWInterface::send_torque_on_can(float axis, int id)
   can_pub.publish(msg);
 }
 
-void Gen4HWInterface::yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg)
+void OrionHWInterface::yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg)
 {
   this->yaw_rate = msg->angular_velocity.z;
 }
 
-float Gen4HWInterface::torque_vectoring()
+float OrionHWInterface::torque_vectoring()
 {
   // returns the torque distribution for the left and right wheel
   float cur_velocity_rear = joint_velocity_[drive_joint_id];
@@ -296,4 +296,4 @@ float Gen4HWInterface::torque_vectoring()
   return dT;
 }
 
-}  // namespace gen4_control
+}  // namespace orion_control

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<robot name="gen4">
+<robot name="orion">
 
   <link name="ugr/car_base_link" />
 

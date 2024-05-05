@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>gen4_control</name>
+  <name>orion_control</name>
   <version>0.0.1</version>
-  <description>Simple simulation interface and template for setting up a hardware interface for gen4</description>
+  <description>Simple simulation interface and template for setting up a hardware interface for orion</description>
 
   <maintainer email="someone@someone.com">Someone</maintainer>
 
