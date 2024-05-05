@@ -160,6 +160,7 @@ class OrionManualState(CarState):
         self.rear_ebs_bp = rear_ebs_bp.data
 
     def send_error_to_db(self, error_message="unknown"):
+        # TODO
         self.initial_checkup_busy = False
         self.autonomous_controller.set_health(
             DiagnosticStatus.ERROR, "Error detected, reason: " + error_message
