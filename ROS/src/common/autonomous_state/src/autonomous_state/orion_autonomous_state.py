@@ -8,12 +8,16 @@ from car_state import CarState, CarStateEnum
 from diagnostic_msgs.msg import DiagnosticStatus
 from node_fixture import AutonomousMission, AutonomousStatesEnum, serialcan_to_roscan
 from std_msgs.msg import Bool, Float64
+from std_srvs.srv import Empty
 
 
 class OrionAutonomousState(CarState):
     def __init__(self, autonomous_controller) -> None:
-        rospy.Subscriber("/ugr/car/can/rx", Frame, self.handle_can)
+        self.disable_ebs_service = rospy.Service(
+            "/disable_ebs", Empty, self.disable_ebs
+        )
         self.autonomous_controller = autonomous_controller
+        rospy.Subscriber("/ugr/car/can/rx", Frame, self.handle_can)
         rospy.Subscriber("/dio_driver_1/DI1", Bool, self.handle_sdc)  # sdc status
         rospy.Subscriber(
             "/dio_driver_1/DI3", Bool, self.handle_asms
@@ -138,6 +142,7 @@ class OrionAutonomousState(CarState):
         self.autonomous_controller.set_health(
             DiagnosticStatus.ERROR, "EBS activated, reason: " + error_message
         )
+        self.monitoring = False
 
     def update(self, state: AutonomousStatesEnum):
         # On a state transition, start 5 second timeout
@@ -248,6 +253,21 @@ class OrionAutonomousState(CarState):
             object with the (physical) state of the car systems,
             like EBS and ASSI. See general docs for info about this state
         """
+        if (
+            not self.initial_checkup_done and self.toggling_watchdog
+        ):  # toggling watchdog in continuous monitoring is done in monitor()
+            self.watchdog_trigger.publish(Bool(data=True))
+            time.sleep(0.005)
+            self.watchdog_trigger.publish(Bool(data=False))
+
+        if (
+            not self.initial_checkup_done
+            and not self.initial_checkup_busy
+            and self.monitoring
+        ):
+            self.initial_checkup()
+        elif self.initial_checkup_done and self.monitoring:
+            self.monitor()
 
         if (
             self.state["TS"] == CarStateEnum.ON
@@ -290,6 +310,11 @@ class OrionAutonomousState(CarState):
 
     def handle_rear_ebs_bp(self, rear_ebs_bp: Float64):
         self.rear_ebs_bp = rear_ebs_bp.data
+
+    def handle_disable_ebs(self, req):
+        self.ebs_arm.publish(Bool(data=True))
+        self.dbs_arm.publish(Bool(data=True))
+        self.state["EBS"] = CarStateEnum.OFF
 
     def initial_checkup(self):
         self.initial_checkup_busy = True
@@ -350,8 +375,8 @@ class OrionAutonomousState(CarState):
 
         # reset watchdog
         self.watchdog_reset.publish(Bool(data=True))
-
         time.sleep(0.200)
+        self.watchdog_reset.publish(Bool(data=False))
 
         # check whether pressure is being released as expected
         if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
