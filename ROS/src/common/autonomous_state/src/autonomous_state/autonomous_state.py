@@ -32,11 +32,9 @@ class AutonomousController(NodeManager):
         """
         self.car_name = rospy.get_param("car", "pegasus")
         if (
-            self.car_name == "pegasus"
-        ):  # when we use pegasus this node needs to be activated on its own
-            super().__init__(
-                "autonomous_state", NodeManagingStatesEnum.ACTIVE
-            )  # perhaps it would be easier to automatically call doActivate and doConfigure in managed_node.py if the default state is ACTIVE
+            self.car_name == "pegasus" or self.car_name == "simulation"
+        ):  # when we use pegasus or simulation this node needs to be activated on its own
+            super().__init__("autonomous_state", NodeManagingStatesEnum.ACTIVE)
         else:
             super().__init__("autonomous_state")
         self.spin()
@@ -75,10 +73,8 @@ class AutonomousController(NodeManager):
         # Setup
         while not self.configure_nodes():
             sleep(0.1)
-
             if rospy.is_shutdown():
                 return
-
         self.change_state(AutonomousStatesEnum.ASOFF)
         self.car.update(self.as_state)
 
@@ -91,10 +87,8 @@ class AutonomousController(NodeManager):
         - https://www.formulastudent.de/fileadmin/user_upload/all/2023/rules/FS-Rules_2023_v1.1.pdf
         - https://www.formulastudent.de/fileadmin/user_upload/all/2023/important_docs/FSG23_AS_Beginners_Guide_v1.1.pdf
         """
-
         # Gets car state as reported by our helper class (can be simulated or a specific car such as Peggy)
         self.ccs = self.car.get_state()
-
         self.diagnostics_publisher.publish(
             create_diagnostic_message(
                 DiagnosticStatus.ERROR
