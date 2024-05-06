@@ -102,9 +102,10 @@ class OrionAutonomousState(CarState):
         # DB_Commands
         if frame.id == 768:
             self.ts_pressed = bool(frame.data[0] & 0b01000000)
-            self.state["R2D"] = (  # not sure for driverless
-                CarStateEnum.ON
+            self.state["R2D"] = (
+                CarStateEnum.ON  # not yet activated, still need RES
                 if bool(frame.data[0] & 0b10000000)
+                and self.state["TS"] == CarStateEnum.ACTIVATED
                 else CarStateEnum.OFF
             )
 
@@ -443,7 +444,7 @@ class OrionAutonomousState(CarState):
             self.activate_EBS("EBS brake pressures not released as expected")
 
         # set PPR setpoint, actuate brake with DBS
-        self.dbs.publish(Float64(data=30))  # 30 bar, placeholder
+        self.dbs.publish(Float64(data=25))  # 25 bar, placeholder
 
         # check whether pressure is being built up as expected
         if not (self.front_ebs_bp > 20 and self.rear_ebs_bp > 20):

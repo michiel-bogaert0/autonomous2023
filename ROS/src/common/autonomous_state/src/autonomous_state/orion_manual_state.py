@@ -210,11 +210,12 @@ class OrionManualState(CarState):
         if self.state["TS"] == CarStateEnum.ACTIVATED:
             self.state["TS"] = CarStateEnum.ON
         self.initial_checkup_done = False
+        self.sdc_out.publish(Bool(data=False))
         self.elvis_status = 0  # reset TODO
         self.ts_pressed = False
         self.monitored_once = False
         self.initial_checkup_busy = False
-        self.autonomous_controller.set_health(
+        self.manual_controller.set_health(
             DiagnosticStatus.ERROR, "Error detected, reason: " + error_message
         )
 
@@ -240,6 +241,7 @@ class OrionManualState(CarState):
         ):  # TODO change elvis status
             self.state["TS"] = CarStateEnum.ACTIVATED
         self.send_status_over_can()  # not sure whether this needs to be sent all the time
+
         return self.state
 
     def initial_checkup(self):

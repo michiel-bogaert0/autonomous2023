@@ -7,7 +7,7 @@ from std_msgs.msg import Bool
 class OrionStateSelector(NodeManager):
     def __init__(self):
         super().__init__("orion_state", NodeManagingStatesEnum.ACTIVE)
-        rospy.Subscriber("/dio_driver_1/DI3", Bool, self.handle_asms)
+        rospy.Subscriber("/dio_driver_1/DI5", Bool, self.handle_bypass)
         self.state = OrionStatesEnum.IDLE
         self.bypass_status = None
         self.spin()
