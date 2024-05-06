@@ -67,5 +67,4 @@ class SimulationState(CarState):
 
         # EBS
         self.state["EBS"] = self.ebs_state
-        print(self.state)
         return self.state
