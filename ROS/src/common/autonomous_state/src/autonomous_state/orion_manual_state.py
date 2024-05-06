@@ -257,14 +257,10 @@ class OrionManualState(CarState):
         if not self.watchdog_status:
             self.send_error_to_db("Watchdog not OK")
 
-        # is SDC closed?
-        if not self.sdc_status:
-            self.initial_checkup_busy = False
-            return  # hopefully in the next iteration this will be True, no error yet
-
         self.state["TS"] = CarStateEnum.ON
         self.initial_checkup_busy = False
         self.initial_checkup_done = True
+        self.sdc_out.publish(Bool(data=True))
 
     def monitor(self):
         # is SDC closed?
