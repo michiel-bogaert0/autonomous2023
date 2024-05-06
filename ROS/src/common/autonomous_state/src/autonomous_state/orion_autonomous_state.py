@@ -116,7 +116,7 @@ class OrionAutonomousState(CarState):
             self.res_go_signal = (frame.data[0] & 0b0000100) >> 2
             self.res_estop_signal = not (frame.data[0] & 0b0000001)
             if self.res_estop_signal:
-                self.activate_EBS("RES E-Stop signal active")
+                self.activate_EBS(1)
 
         # LV ECU HBS
         # PDU
@@ -348,11 +348,11 @@ class OrionAutonomousState(CarState):
         self.initial_checkup_busy = True
         # mission needs to be selected
         if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
-            self.activate_EBS("No mission selected")
+            self.activate_EBS(2)
 
         # ASMS needs to be on
         if self.state["ASMS"] != CarStateEnum.ON:
-            self.activate_EBS("ASMS not on")
+            self.activate_EBS(4)
 
         # check air pressures
         if not (
@@ -361,11 +361,11 @@ class OrionAutonomousState(CarState):
             and self.air_pressure1 < 9.5
             and self.air_pressure2 < 9.5
         ):
-            self.activate_EBS("Air pressure out of bounds")
+            self.activate_EBS(5)
 
         # watchdog OK?
         if not self.watchdog_status:
-            self.activate_EBS("Watchdog not OK")
+            self.activate_EBS(6)
 
         # is SDC closed?
         if not self.sdc_status:
@@ -380,11 +380,11 @@ class OrionAutonomousState(CarState):
 
         # check whether the watchdog is indicating error
         if self.watchdog_status:
-            self.activate_EBS("Watchdog still OK, even though we stopped toggling it")
+            self.activate_EBS(7)
 
         # check if sdc went open
         if not self.sdc_status:
-            self.activate_EBS("SDC should be open, but it is closed")
+            self.activate_EBS(9)
 
         # check ebs brake pressures
         if not (
@@ -393,7 +393,7 @@ class OrionAutonomousState(CarState):
             and self.front_ebs_bp < 150
             and self.rear_ebs_bp < 150
         ):
-            self.activate_EBS("EBS brake pressures out of bounds")
+            self.activate_EBS(10)
 
         # start toggling watchdog
         self.toggling_watchdog = True
@@ -405,7 +405,7 @@ class OrionAutonomousState(CarState):
 
         # check whether pressure is being released as expected
         if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
-            self.activate_EBS("EBS brake pressures not released as expected")
+            self.activate_EBS(11)
 
         # trigger ebs
         self.ebs_arm.publish(Bool(data=False))
@@ -420,7 +420,7 @@ class OrionAutonomousState(CarState):
             and self.front_ebs_bp < 80
             and self.rear_ebs_bp < 80
         ):
-            self.activate_EBS("EBS brake pressures not built up as expected")
+            self.activate_EBS(12)
 
         # release ebs
         self.ebs_arm.publish(Bool(data=True))
@@ -430,7 +430,7 @@ class OrionAutonomousState(CarState):
 
         # check whether pressure is being released as expected
         if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
-            self.activate_EBS("EBS brake pressures not released as expected")
+            self.activate_EBS(11)
 
         # trigger dbs
         self.ebs_arm.publish(Bool(data=True))
@@ -445,7 +445,7 @@ class OrionAutonomousState(CarState):
             and self.front_ebs_bp < 80
             and self.rear_ebs_bp < 80
         ):
-            self.activate_EBS("EBS brake pressures not built up as expected")
+            self.activate_EBS(12)
 
         # release dbs
         self.ebs_arm.publish(Bool(data=True))
@@ -455,14 +455,14 @@ class OrionAutonomousState(CarState):
 
         # check whether pressure is being released as expected
         if not (self.front_ebs_bp < 10 and self.rear_ebs_bp < 10):
-            self.activate_EBS("EBS brake pressures not released as expected")
+            self.activate_EBS(11)
 
         # set PPR setpoint, actuate brake with DBS
         self.dbs.publish(Float64(data=25))  # 25 bar, placeholder
 
         # check whether pressure is being built up as expected
         if not (self.front_ebs_bp > 20 and self.rear_ebs_bp > 20):
-            self.activate_EBS("EBS brake pressures not built up as expected")
+            self.activate_EBS(12)
 
         self.state["ASB"] = CarStateEnum.ACTIVATED
         self.state["EBS"] = CarStateEnum.ON
@@ -482,23 +482,23 @@ class OrionAutonomousState(CarState):
             ):
                 self.monitoring = False
             else:
-                self.activate_EBS("SDC open and brake pressures out of bounds")
+                self.activate_EBS(8)
 
         # check heartbeats of low voltage systems, motorcontrollers, RES and sensors
-        for hb in self.hbs:
+        for i, hb in enumerate(self.hbs):
             if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
-                self.activate_EBS("Heartbeat missing, system: " + hb)
+                self.activate_EBS(13 + i)
 
         # check ipc, sensors and actuators
         if (
             self.autonomous_controller.get_health_level() == DiagnosticStatus.ERROR
             or self.as_state == AutonomousStatesEnum.ASEMERGENCY
         ):
-            self.activate_EBS("IPC, sensors or actuators not OK")
+            self.activate_EBS(23)
 
         # check output signal of watchdog
         if not self.watchdog_status:
-            self.activate_EBS("Watchdog not OK")
+            self.activate_EBS(6)
 
         # check brake pressures
         if not (
@@ -507,7 +507,7 @@ class OrionAutonomousState(CarState):
             and self.front_ebs_bp < 100
             and self.rear_ebs_bp < 100
         ):
-            self.activate_EBS("Brake pressures out of bounds")
+            self.activate_EBS(10)
 
         # check air pressures
         if not (
@@ -516,11 +516,11 @@ class OrionAutonomousState(CarState):
             and self.air_pressure1 < 9.5
             and self.air_pressure2 < 9.5
         ):
-            self.activate_EBS("Air pressures out of bounds")
+            self.activate_EBS(5)
 
         # check if bypass relay is still functioning
         if not self.bypass_status:
-            self.activate_EBS("Bypass open")
+            self.activate_EBS(25)
 
         # toggle watchdog
         self.watchdog_trigger.publish(Bool(data=True))

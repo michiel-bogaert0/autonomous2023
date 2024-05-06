@@ -272,15 +272,15 @@ class OrionManualState(CarState):
 
         # ASMS needs to be off
         if self.state("ASMS") != CarStateEnum.OFF:
-            self.send_error_to_db("ASMS not off")
+            self.send_error_to_db(3)
 
         # check air pressures
         if not (self.air_pressure1 < 1 and self.air_pressure2 < 1):
-            self.send_error_to_db("Air pressures not in range")
+            self.send_error_to_db(5)
 
         # watchdog OK?
         if not self.watchdog_status:
-            self.send_error_to_db("Watchdog not OK")
+            self.send_error_to_db(6)
 
         self.state["TS"] = CarStateEnum.ON
         self.initial_checkup_busy = False
@@ -290,28 +290,28 @@ class OrionManualState(CarState):
     def monitor(self):
         # is SDC closed?
         if not self.sdc_status:
-            self.send_error_to_db("SDC open")
+            self.send_error_to_db(8)
 
         # check heartbeats of low voltage systems, motorcontrollers and sensors
-        for hb in self.hbs:
+        for i, hb in enumerate(self.hbs):
             if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
-                self.send_error_to_db("Heartbeat missing, system: " + hb)
+                self.send_error_to_db(13 + i)
 
         # check ipc, sensors and actuators
         if self.manual_controller.get_health_level() == DiagnosticStatus.ERROR:
-            self.send_error_to_db("IPC, sensors or actuators not OK")
+            self.send_error_to_db(23)
 
         # check output signal of watchdog
         if not self.watchdog_status:
-            self.send_error_to_db("Watchdog not OK")
+            self.send_error_to_db(6)
 
         # check air pressures
         if not (self.air_pressure1 < 1 and self.air_pressure2 < 1):
-            self.send_error_to_db("Air pressures not in range")
+            self.send_error_to_db(5)
 
         # check if bypass is closed
         if self.bypass_status:
-            self.send_error_to_db("Bypass closed")
+            self.send_error_to_db(24)
 
         # toggle watchdog
         self.watchdog_trigger.publish(Bool(data=True))
