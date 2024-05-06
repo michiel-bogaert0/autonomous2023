@@ -259,13 +259,17 @@ class OrionManualState(CarState):
 
     def boot(self):
         # check heartbeats of low voltage systems, motorcontrollers and sensors
-        for hb in self.hbs:
+        for i, hb in enumerate(self.hbs):
             if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
-                return
+                self.send_error_to_db(13 + i)
 
         # watchdog OK?
         if not self.watchdog_status:
-            return
+            self.activate_EBS(6)
+
+        # check ipc, sensors and actuators
+        if self.manual_controller.get_health_level() == DiagnosticStatus.ERROR:
+            self.activate_EBS(23)
 
         self.boot_done = True
         self.sdc_out.publish(Bool(data=True))

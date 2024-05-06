@@ -335,15 +335,22 @@ class OrionAutonomousState(CarState):
         self.dbs_arm.publish(Bool(data=True))
         self.state["EBS"] = CarStateEnum.OFF
 
-    def boot(self):
+    def boot(self):  # not sure whether ebs should be activated here
         # check heartbeats of low voltage systems, motorcontrollers, RES and sensors
-        for hb in self.hbs:
+        for i, hb in enumerate(self.hbs):
             if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
-                return
+                self.activate_EBS(13 + i)
 
         # watchdog OK?
         if not self.watchdog_status:
-            return
+            self.activate_EBS(6)
+
+        # check ipc, sensors and actuators
+        if (
+            self.autonomous_controller.get_health_level() == DiagnosticStatus.ERROR
+            or self.as_state == AutonomousStatesEnum.ASEMERGENCY
+        ):
+            self.activate_EBS(23)
 
         self.boot_done = True
         self.sdc_out.publish(Bool(data=True))
