@@ -42,10 +42,6 @@ class AutonomousController(NodeManager):
     def doActivate(self):
         self.as_state = ""
         self.ccs = {}
-
-        rospy.Subscriber("/state", State, self.handle_external_state_change)
-        rospy.Subscriber("/input/odom", Odometry, self.handle_odom)
-
         self.state_publisher = rospy.Publisher(
             "/state", State, queue_size=10, latch=True
         )
@@ -75,6 +71,9 @@ class AutonomousController(NodeManager):
             sleep(0.1)
             if rospy.is_shutdown():
                 return
+
+        rospy.Subscriber("/state", State, self.handle_external_state_change)
+        rospy.Subscriber("/input/odom", Odometry, self.handle_odom)
         self.change_state(AutonomousStatesEnum.ASOFF)
         self.car.update(self.as_state)
 
