@@ -139,7 +139,7 @@ class OrionAutonomousState(CarState):
         if frame.id == 2147492865:
             self.hbs["MC"] = rospy.Time.now().to_sec()
 
-    def activate_EBS(self, error_message="unknown"):
+    def activate_EBS(self, error_code=0):
         self.state["EBS"] = CarStateEnum.ACTIVATED
         self.state["TS"] = CarStateEnum.OFF
         self.state["R2D"] = CarStateEnum.OFF
@@ -148,9 +148,14 @@ class OrionAutonomousState(CarState):
         self.sdc_out.publish(Bool(data=False))
         self.initial_checkup_busy = False
         self.autonomous_controller.set_health(
-            DiagnosticStatus.ERROR, "EBS activated, reason: " + error_message
+            DiagnosticStatus.ERROR, "EBS activated, code: " + error_code
         )
         self.monitoring = False
+
+        can_msg = can.Message(
+            arbitration_id=0x999, data=[error_code], is_extended_id=False
+        )  # placeholder
+        self.bus.publish(serialcan_to_roscan(can_msg))
 
     def update(self, state: AutonomousStatesEnum):
         # On a state transition, start 5 second timeout

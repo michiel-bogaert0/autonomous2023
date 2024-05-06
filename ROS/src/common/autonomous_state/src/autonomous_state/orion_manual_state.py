@@ -207,7 +207,7 @@ class OrionManualState(CarState):
         ):
             self.state["R2D"] = CarStateEnum.ON
 
-    def send_error_to_db(self, error_message="unknown"):
+    def send_error_to_db(self, error_code=0):
         if self.state["TS"] == CarStateEnum.ACTIVATED:
             self.state["TS"] = CarStateEnum.ON
         self.initial_checkup_done = False
@@ -217,8 +217,12 @@ class OrionManualState(CarState):
         self.monitored_once = False
         self.initial_checkup_busy = False
         self.manual_controller.set_health(
-            DiagnosticStatus.ERROR, "Error detected, reason: " + error_message
+            DiagnosticStatus.ERROR, "Error detected, code: " + error_code
         )
+        can_msg = can.Message(
+            arbitration_id=0x999, data=[error_code], is_extended_id=False
+        )  # placeholder
+        self.bus.publish(serialcan_to_roscan(can_msg))
 
     def get_state(self):
         if not self.boot_done:
