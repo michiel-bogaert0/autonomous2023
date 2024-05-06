@@ -34,12 +34,16 @@ class OrionManualState(CarState):
         self.air_pressure2 = None
         self.front_ebs_bp = None
         self.rear_ebs_bp = None
-        self.mc_can_hb = rospy.Time.now().to_sec()
-        self.lv_can_hbs = {
+        self.hbs = {
             "PDU": rospy.Time.now().to_sec(),
             "ELVIS": rospy.Time.now().to_sec(),
             "DB": rospy.Time.now().to_sec(),
             "ASSI": rospy.Time.now().to_sec(),
+            "MC": rospy.Time.now().to_sec(),
+            "air_pressure1": rospy.Time.now().to_sec(),
+            "air_pressure2": rospy.Time.now().to_sec(),
+            "front_ebs_bp": rospy.Time.now().to_sec(),
+            "rear_ebs_bp": rospy.Time.now().to_sec(),
         }
         rospy.Subscriber("/dio_driver_1/DI1", Bool, self.handle_sdc)  # sdc status
         rospy.Subscriber(
@@ -91,22 +95,22 @@ class OrionManualState(CarState):
         # LV ECU HBS
         # PDU
         if frame.id == 16:
-            self.lv_can_hbs["PDU"] = rospy.Time.now().to_sec()
+            self.hbs["PDU"] = rospy.Time.now().to_sec()
         # ELVIS TODO maybe add critical fault and elvis status
         if frame.id == 2:
-            self.lv_can_hbs["ELVIS"] = rospy.Time.now().to_sec()
+            self.hbs["ELVIS"] = rospy.Time.now().to_sec()
             self.elvis_critical_fault = (frame.data[0] >> 3) & 0b00000111
             self.elvis_status = (frame.data[0] >> 6) & 0b00000111
         # DB
         if frame.id == 3:
-            self.lv_can_hbs["DB"] = rospy.Time.now().to_sec()
+            self.hbs["DB"] = rospy.Time.now().to_sec()
         # ASSI
         if frame.id == 4:
-            self.lv_can_hbs["ASSI"] = rospy.Time.now().to_sec()
+            self.hbs["ASSI"] = rospy.Time.now().to_sec()
 
         # MC CAN HB
         if frame.id == 2147492865:
-            self.mc_can_hb = rospy.Time.now().to_sec()
+            self.hbs["MC"] = rospy.Time.now().to_sec()
 
     def send_heartbeat(self):
         canmsg = can.Message(
@@ -176,12 +180,15 @@ class OrionManualState(CarState):
 
     def handle_air_pressure1(self, air_pressure1: Float64):
         self.air_pressure1 = air_pressure1.data
+        self.hbs["air_pressure1"] = rospy.Time.now().to_sec()
 
     def handle_air_pressure2(self, air_pressure2: Float64):
         self.air_pressure2 = air_pressure2.data
+        self.hbs["air_pressure2"] = rospy.Time.now().to_sec()
 
     def handle_front_ebs_bp(self, front_ebs_bp: Float64):
         self.front_ebs_bp = front_ebs_bp.data
+        self.hbs["front_ebs_bp"] = rospy.Time.now().to_sec()
         if (
             self.state["TS"] == CarStateEnum.ACTIVATED
             and self.front_ebs_bp > 8
@@ -191,6 +198,7 @@ class OrionManualState(CarState):
 
     def handle_rear_ebs_bp(self, rear_ebs_bp: Float64):
         self.rear_ebs_bp = rear_ebs_bp.data
+        self.hbs["rear_ebs_bp"] = rospy.Time.now().to_sec()
         if (
             self.state["TS"] == CarStateEnum.ACTIVATED
             and self.front_ebs_bp > 8
@@ -263,16 +271,10 @@ class OrionManualState(CarState):
         if not self.sdc_status:
             self.send_error_to_db("SDC open")
 
-        # check heartbeats of low voltage systems
-        for hb in self.lv_can_hbs:
-            if rospy.Time.now().to_sec() - self.lv_can_hbs[hb] > 0.5:
-                self.send_error_to_db(
-                    "Low voltage system heartbeat missing, system: " + hb
-                )
-
-        # check heartbeats of motorcontrollers
-        if self.mc_can_hb is None or rospy.Time.now().to_sec() - self.mc_can_hb > 0.5:
-            self.send_error_to_db("Motorcontroller heartbeat missing")
+        # check heartbeats of low voltage systems, motorcontrollers and sensors
+        for hb in self.hbs:
+            if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
+                self.send_error_to_db("Heartbeat missing, system: " + hb)
 
         # check ipc, sensors and actuators
         if self.manual_controller.get_health_level() == DiagnosticStatus.ERROR:
