@@ -71,15 +71,20 @@ class OrionManualState(CarState):
         )  # watchdog reset
         self.sdc_out = rospy.Publisher(
             "/dio_driver_1/DO4", Bool, queue_size=10
-        )  # sdc out start low, high when everything is ok and low in case of errorµµ
+        )  # sdc out start low, high when everything is ok and low in case of error
+
+        time.sleep(
+            1
+        )  # wait for everything to start up (also give sensors time to send data)
 
     def handle_can(self, frame: Frame):
         # DB_Commands
         if frame.id == 768:
             self.ts_pressed = bool(frame.data[0] & 0b01000000)
             self.state["R2D"] = (
-                CarStateEnum.ON
+                CarStateEnum.ACTIVATED
                 if bool(frame.data[0] & 0b10000000)
+                and self.state["R2D"] == CarStateEnum.ON
                 else CarStateEnum.OFF
             )
 
@@ -112,6 +117,26 @@ class OrionManualState(CarState):
         self.bus.publish(serialcan_to_roscan(canmsg))
 
     def send_status_over_can(self):
+        data = [0, 0, 0, 0, 0]
+
+        # Bit 0 - 2
+        bits = 1  # ASOFF
+        data[0] |= bits
+
+        # Bit 3 - 4
+        bits = 1  # EBS OFF
+        data[0] |= bits << 3
+
+        # Bits 5 - 7
+        bits = 7  # MANUAL
+        data[0] |= bits << 5
+
+        canmsg = can.Message(
+            arbitration_id=0x502,
+            data=data,
+            is_extended_id=False,
+        )
+        self.bus.publish(serialcan_to_roscan(canmsg))
         state_to_bits = {
             CarStateEnum.UNKNOWN: 0,
             CarStateEnum.OFF: 1,
@@ -139,13 +164,15 @@ class OrionManualState(CarState):
         self.sdc_status = dio1.data
 
     def handle_asms(self, dio3: Bool):
-        self.state["ASMS"] = CarStateEnum.ON if dio3.data else CarStateEnum.OFF
+        return
+        # self.state["ASMS"] = CarStateEnum.ON if dio3.data else CarStateEnum.OFF
 
     def handle_watchdog(self, dio4: Bool):
         self.watchdog_status = dio4.data
 
     def handle_bypass(self, dio5: Bool):
         self.bypass_status = dio5.data
+        self.state["ASMS"] = CarStateEnum.ON if dio5.data else CarStateEnum.OFF
 
     def handle_air_pressure1(self, air_pressure1: Float64):
         self.air_pressure1 = air_pressure1.data
@@ -155,12 +182,29 @@ class OrionManualState(CarState):
 
     def handle_front_ebs_bp(self, front_ebs_bp: Float64):
         self.front_ebs_bp = front_ebs_bp.data
+        if (
+            self.state["TS"] == CarStateEnum.ACTIVATED
+            and self.front_ebs_bp > 8
+            and self.rear_ebs_bp > 8
+        ):
+            self.state["R2D"] = CarStateEnum.ON
 
     def handle_rear_ebs_bp(self, rear_ebs_bp: Float64):
         self.rear_ebs_bp = rear_ebs_bp.data
+        if (
+            self.state["TS"] == CarStateEnum.ACTIVATED
+            and self.front_ebs_bp > 8
+            and self.rear_ebs_bp > 8
+        ):
+            self.state["R2D"] = CarStateEnum.ON
 
     def send_error_to_db(self, error_message="unknown"):
-        # TODO
+        if self.state["TS"] == CarStateEnum.ACTIVATED:
+            self.state["TS"] = CarStateEnum.ON
+        self.initial_checkup_done = False
+        self.elvis_status = 0  # reset TODO
+        self.ts_pressed = False
+        self.monitored_once = False
         self.initial_checkup_busy = False
         self.autonomous_controller.set_health(
             DiagnosticStatus.ERROR, "Error detected, reason: " + error_message
@@ -198,12 +242,7 @@ class OrionManualState(CarState):
             self.send_error_to_db("ASMS not off")
 
         # check air pressures
-        if not (
-            self.air_pressure1 > 8
-            and self.air_pressure2 > 8
-            and self.air_pressure1 < 9.5
-            and self.air_pressure2 < 9.5
-        ):
+        if not (self.air_pressure1 < 1 and self.air_pressure2 < 1):
             self.send_error_to_db("Air pressures not in range")
 
         # watchdog OK?
@@ -214,25 +253,6 @@ class OrionManualState(CarState):
         if not self.sdc_status:
             self.initial_checkup_busy = False
             return  # hopefully in the next iteration this will be True, no error yet
-
-        # stop toggling watchdog
-        self.toggling_watchdog = False
-
-        # wait 200ms
-        time.sleep(0.200)
-
-        # check whether the watchdog is indicating error
-        if self.watchdog_status:
-            self.send_error_to_db(
-                "Watchdog still OK, even though we stopped toggling it"
-            )
-
-        # check if sdc went open
-        if self.sdc_status:
-            self.send_error_to_db("SDC should be open, but it is closed")
-
-        # close sdc, not sure if it should be done here
-        self.sdc_out.publish(Bool(data=True))
 
         self.state["TS"] = CarStateEnum.ON
         self.initial_checkup_busy = False
@@ -254,7 +274,7 @@ class OrionManualState(CarState):
         if self.mc_can_hb is None or rospy.Time.now().to_sec() - self.mc_can_hb > 0.5:
             self.send_error_to_db("Motorcontroller heartbeat missing")
 
-        # check ipc, sensors and actuators TODO add everything
+        # check ipc, sensors and actuators
         if self.manual_controller.get_health_level() == DiagnosticStatus.ERROR:
             self.send_error_to_db("IPC, sensors or actuators not OK")
 
@@ -263,12 +283,7 @@ class OrionManualState(CarState):
             self.send_error_to_db("Watchdog not OK")
 
         # check air pressures
-        if not (
-            self.air_pressure1 > 8
-            and self.air_pressure2 > 8
-            and self.air_pressure1 < 9.5
-            and self.air_pressure2 < 9.5
-        ):
+        if not (self.air_pressure1 < 1 and self.air_pressure2 < 1):
             self.send_error_to_db("Air pressures not in range")
 
         # check if bypass is closed

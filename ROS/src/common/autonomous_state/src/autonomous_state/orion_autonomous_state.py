@@ -74,6 +74,7 @@ class OrionAutonomousState(CarState):
             "ASSI": rospy.Time.now().to_sec(),
         }
         self.mc_can_hb = rospy.Time.now().to_sec()
+        self.res_hb = rospy.Time.now().to_sec()
         self.as_ready_time = rospy.Time.now().to_sec()
         self.state = {
             "TS": CarStateEnum.UNKNOWN,
@@ -105,6 +106,7 @@ class OrionAutonomousState(CarState):
 
         # RES
         if frame.id == 0x191:
+            self.res_hb = rospy.Time.now().to_sec()
             self.res_go_signal = (frame.data[0] & 0b0000100) >> 2
             self.res_estop_signal = not (frame.data[0] & 0b0000001)
             if self.res_estop_signal:
@@ -291,13 +293,16 @@ class OrionAutonomousState(CarState):
         self.sdc_status = dio1.data
 
     def handle_asms(self, dio3: Bool):
-        self.state["ASMS"] = CarStateEnum.ON if dio3.data else CarStateEnum.OFF
+        return
+
+    #     self.state["ASMS"] = CarStateEnum.ON if dio3.data else CarStateEnum.OFF
 
     def handle_watchdog(self, dio4: Bool):
         self.watchdog_status = dio4.data
 
     def handle_bypass(self, dio5: Bool):
         self.bypass_status = dio5.data
+        self.state["ASMS"] = CarStateEnum.ON if dio5.data else CarStateEnum.OFF
 
     def handle_air_pressure1(self, air_pressure1: Float64):
         self.air_pressure1 = air_pressure1.data
@@ -357,9 +362,6 @@ class OrionAutonomousState(CarState):
         # check if sdc went open
         if not self.sdc_status:
             self.activate_EBS("SDC should be open, but it is closed")
-
-        # close sdc, not sure if it should be done here
-        self.sdc_out.publish(Bool(data=True))
 
         # check ebs brake pressures
         if not (
@@ -441,9 +443,6 @@ class OrionAutonomousState(CarState):
 
         self.state["ASB"] = CarStateEnum.ACTIVATED
         self.state["EBS"] = CarStateEnum.ON
-
-        self.dbs.publish(Float64(data=0))  # 0 bar, placeholder
-
         self.state["TS"] = CarStateEnum.ON
 
         self.initial_checkup_done = True
@@ -462,16 +461,20 @@ class OrionAutonomousState(CarState):
             else:
                 self.activate_EBS("SDC open and brake pressures out of bounds")
 
-        # check heartbeats of low voltage systems, includes RES
+        # check heartbeats of low voltage systems
         for hb in self.lv_can_hbs:
             if rospy.Time.now().to_sec() - self.lv_can_hbs[hb] > 0.5:
                 self.activate_EBS("Low voltage system heartbeat missing, system: " + hb)
 
+        # check heartbeat of RES
+        if rospy.Time.now().to_sec() - self.res_hb > 0.5:
+            self.activate_EBS("RES heartbeat missing")
+
         # check heartbeats of motorcontrollers
-        if self.mc_can_hb is None or rospy.Time.now().to_sec() - self.mc_can_hb > 0.5:
+        if rospy.Time.now().to_sec() - self.mc_can_hb > 0.5:
             self.activate_EBS("Motorcontroller heartbeat missing")
 
-        # check ipc, sensors and actuators TODO add everything
+        # check ipc, sensors and actuators
         if (
             self.autonomous_controller.get_health_level() == DiagnosticStatus.ERROR
             or self.as_state == AutonomousStatesEnum.ASEMERGENCY
