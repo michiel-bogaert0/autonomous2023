@@ -37,7 +37,6 @@ class AutonomousController(NodeManager):
             super().__init__(
                 "autonomous_state", NodeManagingStatesEnum.ACTIVE
             )  # perhaps it would be easier to automatically call doActivate and doConfigure in managed_node.py if the default state is ACTIVE
-            self.doActivate()
         else:
             super().__init__("autonomous_state")
         self.spin()
