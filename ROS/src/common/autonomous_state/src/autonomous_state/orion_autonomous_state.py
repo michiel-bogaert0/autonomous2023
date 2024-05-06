@@ -53,6 +53,7 @@ class OrionAutonomousState(CarState):
         )  # sdc out start low, high when everything is ok and low in case of error
         self.initial_checkup_busy = False  # indicates whether we are waiting 200ms for watchdog in initial checkup
         self.initial_checkup_done = False
+        self.boot_done = False
         self.monitored_once = False
         self.toggling_watchdog = True
         self.res_go_signal = False
@@ -255,11 +256,9 @@ class OrionAutonomousState(CarState):
 
     # runs at 15 hz
     def get_state(self):
-        """
-        Returns:
-            object with the (physical) state of the car systems,
-            like EBS and ASSI. See general docs for info about this state
-        """
+        if not self.boot_done:
+            self.boot()
+
         if (
             not self.initial_checkup_done and self.toggling_watchdog
         ):  # toggling watchdog in continuous monitoring is done in monitor()
@@ -269,11 +268,12 @@ class OrionAutonomousState(CarState):
 
         if (
             not self.initial_checkup_done
+            and self.boot_done
             and not self.initial_checkup_busy
             and self.monitoring
         ):
             self.initial_checkup()
-        elif self.initial_checkup_done and self.monitoring:
+        elif self.boot_done and self.initial_checkup_done and self.monitoring:
             self.monitor()
 
         if (
@@ -329,6 +329,20 @@ class OrionAutonomousState(CarState):
         self.ebs_arm.publish(Bool(data=True))
         self.dbs_arm.publish(Bool(data=True))
         self.state["EBS"] = CarStateEnum.OFF
+
+    def boot(self):
+        # check heartbeats of low voltage systems, motorcontrollers, RES and sensors
+        for hb in self.hbs:
+            if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
+                return
+
+        # watchdog OK?
+        if not self.watchdog_status:
+            return
+
+        self.boot_done = True
+        self.sdc_out.publish(Bool(data=True))
+        time.sleep(0.200)
 
     def initial_checkup(self):
         self.initial_checkup_busy = True

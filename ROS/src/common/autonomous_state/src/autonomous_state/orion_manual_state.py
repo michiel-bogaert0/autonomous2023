@@ -20,6 +20,7 @@ class OrionManualState(CarState):
         }
         self.initial_checkup_busy = False
         self.initial_checkup_done = False
+        self.boot_done = False
         self.monitored_once = False
         self.toggling_watchdog = True
         self.res_go_signal = False
@@ -220,6 +221,9 @@ class OrionManualState(CarState):
         )
 
     def get_state(self):
+        if not self.boot_done:
+            self.boot()
+
         if (
             not self.initial_checkup_done and self.toggling_watchdog
         ):  # toggling watchdog in continuous monitoring is done in monitor()
@@ -227,7 +231,12 @@ class OrionManualState(CarState):
             time.sleep(0.005)
             self.watchdog_trigger.publish(Bool(data=False))
 
-        if not self.initial_checkup_done and not self.initial_checkup_busy:
+        if (
+            not self.initial_checkup_done
+            and self.boot_done
+            and not self.initial_checkup_busy
+            and self.monitoring
+        ):
             self.initial_checkup()
         elif self.initial_checkup_done and self.monitoring:
             self.monitor()
@@ -243,6 +252,20 @@ class OrionManualState(CarState):
         self.send_status_over_can()  # not sure whether this needs to be sent all the time
 
         return self.state
+
+    def boot(self):
+        # check heartbeats of low voltage systems, motorcontrollers and sensors
+        for hb in self.hbs:
+            if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
+                return
+
+        # watchdog OK?
+        if not self.watchdog_status:
+            return
+
+        self.boot_done = True
+        self.sdc_out.publish(Bool(data=True))
+        time.sleep(0.200)
 
     def initial_checkup(self):
         self.initial_checkup_busy = True
