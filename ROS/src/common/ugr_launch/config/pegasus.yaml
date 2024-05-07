@@ -4,12 +4,6 @@ ugr:
     steering:
       transmission: 0.25
 
-front_wheel_feedback:
-  cog_to_front_axle: 0.72
-
-pure_pursuit:
-  cog_to_front_axle: 0.72
-
 autonomous_state:
   node_management:
     always:
