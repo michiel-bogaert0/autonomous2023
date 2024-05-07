@@ -115,7 +115,7 @@ private:
 
   void motion_update(Particle &particle, double dDist, double dYaw);
 
-  void publishOutput(ros::Time lookupTime);
+  void publishOutput();
 
   void resample_particles();
 

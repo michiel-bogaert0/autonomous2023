@@ -63,16 +63,6 @@ void LapCounter::active() {
     return;
   }
 
-  if (firstLap) {
-    firstLap = false;
-
-    startPosition.x = car_pose.transform.translation.x;
-    startPosition.y = car_pose.transform.translation.y;
-    startPosition.z = car_pose.transform.translation.z;
-
-    return;
-  }
-
   // ros::ServiceClient client =
   // n.serviceClient<slam_lap_counter::FinishPoint>("/adjust_targetpoint");
 
@@ -186,20 +176,30 @@ void LapCounter::ResetLoop() {
 
 void LapCounter::ResetClosure() {
   ros::Rate loop_rate(50);
+  // Fetch startposition from /tf
+  ROS_INFO("Resetting counter. Waiting for initial pose...");
+  while (!tfBuffer.canTransform(this->world_frame, this->base_link_frame,
+                                ros::Time(0))) {
+    // Do nothing, except for when process needs to quit
+    if (!ros::ok()) {
+      return;
+    }
+    loop_rate.sleep();
+  }
+  ROS_INFO("Got initial pose!");
 
-  ROS_INFO("Resetting counter");
-
+  geometry_msgs::TransformStamped initial_car_pose =
+      tfBuffer.lookupTransform(this->world_frame, this->base_link_frame,
+                               ros::Time(0), ros::Duration(0.1));
   startPosition = geometry_msgs::Point();
-  startPosition.x = 0.0;
-  startPosition.y = 0.0;
-  startPosition.z = 0.0;
+  startPosition.x = initial_car_pose.transform.translation.x;
+  startPosition.y = initial_car_pose.transform.translation.y;
+  startPosition.z = initial_car_pose.transform.translation.z;
 
   doNotCheckDistance = false;
   checkDistanceGoingUpWhenInRange = false;
   directionWhenGoingInRange = geometry_msgs::Point();
   amountOfLaps = 0;
-
-  firstLap = true;
 
   this->latestTime = ros::Time::now().toSec();
 
