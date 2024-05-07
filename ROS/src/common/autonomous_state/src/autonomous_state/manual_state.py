@@ -26,9 +26,8 @@ class ManualController(NodeManager):
         else:
             raise f"Unknown model! (model given to manual controller was: '{self.car_name}')"
 
-        while not self.activate_nodes():  # not very sure
+        while not self.activate_nodes():
             sleep(0.1)
-
             if rospy.is_shutdown():
                 return
 
