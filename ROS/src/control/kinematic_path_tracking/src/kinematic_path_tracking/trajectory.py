@@ -31,9 +31,6 @@ class Trajectory:
         self.tf_buffer = tf_buffer
         self.tf_listener = tf.TransformListener(self.tf_buffer)
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
-        self.cog_to_front_axle = rospy.get_param("~cog_to_front_axle")
-
-        self.reference_pose = [self.cog_to_front_axle, 0]
 
         # For skidpad/acceleration use ugr/map, for trackdrive/autocross use ugr/car_odom
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
@@ -96,18 +93,16 @@ class Trajectory:
             return 0, 0
 
         # Catch up to current position (if needed) by checking if distance to next point on path is increasing
-        prev_distance = (
-            self.reference_pose[0] - self.path_blf[self.closest_index][0]
-        ) ** 2 + (self.reference_pose[1] - self.path_blf[self.closest_index][1]) ** 2
+        prev_distance = (0 - self.path_blf[self.closest_index][0]) ** 2 + (
+            0 - self.path_blf[self.closest_index][1]
+        ) ** 2
         for _ in range(len(self.path_blf) + 1):
             tmp_index = (self.closest_index + 1) % len(self.path_blf)
             target_x = self.path_blf[tmp_index][0]
             target_y = self.path_blf[tmp_index][1]
 
-            # Current position is [0.72,0] in base_link_frame
-            distance = (self.reference_pose[0] - target_x) ** 2 + (
-                self.reference_pose[1] - target_y
-            ) ** 2
+            # Current position is [0,0] in base_link_frame
+            distance = (0 - target_x) ** 2 + (0 - target_y) ** 2
 
             if distance > prev_distance:
                 break
@@ -155,11 +150,11 @@ class Trajectory:
 
         if self.change_index:
             self.current_position_index = np.argmin(
-                np.sum((self.path_blf - self.reference_pose) ** 2, axis=1)
+                np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
             )
 
         else:
-            distances = np.sum((self.path_blf - self.reference_pose) ** 2, axis=1)
+            distances = np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
             distances = np.where(
                 abs(np.arange(len(distances)) - self.closest_index) < 20,
                 distances,
