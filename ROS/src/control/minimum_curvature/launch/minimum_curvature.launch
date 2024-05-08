@@ -34,6 +34,10 @@
         <!-- Postprocessing check -->
         <param name="postprocessing" value="False" />
 
+        <!-- Boundary check -->
+        <param name="boundary_check" value="False" />
+        <param name="stepsize_boundary_check" value="0.00001" />
+
         <!-- All velocity calculations, plots and print statements -->
         <param name="vel_calc_all" value="False" />
         <param name="plot_all" value="False" />
