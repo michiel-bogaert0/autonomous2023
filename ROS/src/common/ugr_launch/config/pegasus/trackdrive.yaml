@@ -2,8 +2,8 @@ slam_controller:
   node_management:
     exploration:
       # SLAM
-      - fastslam
-      # - graphslam
+      # - fastslam
+      - graphslam
 
     racing:
       # SLAM
