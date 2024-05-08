@@ -17,8 +17,10 @@ class PoseVertex : public BaseVertex<3, SE2> {
 public:
   PoseVertex();
 
+  // cppcheck-suppress unusedFunction
   virtual void setToOriginImpl() { _estimate = SE2(); }
 
+  // cppcheck-suppress unusedFunction
   virtual void oplusImpl(const double *update) {
     SE2 up(update[0], update[1], update[2]);
     _estimate *= up;
@@ -45,8 +47,8 @@ public:
   void setLatestPose(int index);
   void setColor(int c, float b);
   void addBeliefs(float b0, float b1, float b2);
-  void addMergeId(int id);
   int getColor();
+  void addMergeId(int id);
 
   virtual void setToOriginImpl() { _estimate.setZero(); }
 
