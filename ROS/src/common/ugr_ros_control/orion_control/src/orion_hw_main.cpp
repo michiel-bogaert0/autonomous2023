@@ -37,12 +37,12 @@
 */
 
 #include <ugr_ros_control/generic_hw_control_loop.hpp>
-#include <gen4_control/gen4_hw_interface.hpp>
+#include <orion_control/orion_hw_interface.hpp>
 #include <ros/ros.h>
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "gen4_hw_interface");
+  ros::init(argc, argv, "orion_hw_interface");
   ros::NodeHandle nh;
 
   // NOTE : We run the ROS loop in a separate thread as external calls such
@@ -51,11 +51,11 @@ int main(int argc, char** argv)
   spinner.start();
 
   // Create the hardware interface specific to your robot
-  std::shared_ptr<gen4_control::Gen4HWInterface> gen4_hw_interface(new gen4_control::Gen4HWInterface(nh));
-  gen4_hw_interface->init();
+  std::shared_ptr<orion_control::OrionHWInterface> orion_hw_interface(new orion_control::OrionHWInterface(nh));
+  orion_hw_interface->init();
 
   // Start the control loop
-  ugr_ros_control::GenericHWControlLoop control_loop(nh, gen4_hw_interface);
+  ugr_ros_control::GenericHWControlLoop control_loop(nh, orion_hw_interface);
   control_loop.run();  // Blocks until shutdown signal recieved
 
   return 0;

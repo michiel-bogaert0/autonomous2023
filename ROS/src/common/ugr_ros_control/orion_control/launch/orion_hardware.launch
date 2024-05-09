@@ -10,7 +10,7 @@
 
 
     <!-- Load the hardware interface -->
-    <node name="gen4_hardware_interface" pkg="ugr_ros_control" type="gen4_hw_main"
+    <node name="orion_hardware_interface" pkg="ugr_ros_control" type="orion_hw_main"
       output="screen" launch-prefix="$(arg launch_prefix)">
 
       <remap from="/input/can" to="/ugr/car/can/rx" />
@@ -42,7 +42,7 @@
     </node>
 
     <!-- Load controller settings -->
-    <rosparam file="$(find ugr_ros_control)/gen4_control/config/gen4_controllers.yaml" command="load" />
+    <rosparam file="$(find ugr_ros_control)/orion_control/config/orion_controllers.yaml" command="load" />
 
     <!-- Load controller manager -->
     <node name="ros_control_controller_manager" pkg="controller_manager" type="spawner"
