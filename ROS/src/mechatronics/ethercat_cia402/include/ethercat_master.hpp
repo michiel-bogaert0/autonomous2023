@@ -1,6 +1,7 @@
 #ifndef ETHERCAT_MASTER_HPP
 #define ETHERCAT_MASTER_HPP
 
+#include "ros/ros.h"
 #include <atomic>
 #define EC_TIMEOUTMON 500
 #define STATUS_WORD_MASK(x)                                                    \
@@ -52,7 +53,7 @@ typedef struct {
   statusword_state_t statusword_state;
 } control_state_t;
 
-extern control_state_t state;
+extern control_state_t servo_state;
 
 extern char IOMap[8096];
 extern OSAL_THREAD_HANDLE check_thread;
@@ -63,10 +64,10 @@ extern cpu_set_t cpuset;
 extern struct sched_param param;
 extern volatile int wkc;
 
-extern std::atomic_uint32_t *target;
-extern std::atomic_bool *enable_servo;
-extern std::atomic_bool *loop_flag;
-extern std::atomic_bool *check_flag;
+extern std::atomic_uint32_t target;
+extern std::atomic_bool enable_servo;
+extern std::atomic_bool loop_flag;
+extern std::atomic_bool check_flag;
 
 /**
  * @brief Structure to hold the inputs from the EtherCAT Slave

@@ -2,7 +2,7 @@
 
 int main(int argc, char **argv) {
 
-  ros::init(argc, argv, "ethercat_driver");
+  ros::init(argc, argv, "ethercat_cia402");
   ros::NodeHandle n("~");
 
   auto driver = ECatDriver(n);

@@ -3,7 +3,22 @@
 ECatDriver::ECatDriver(ros::NodeHandle &n)
     : node_fixture::ManagedNode(n, "ecat_driver"), n(n),
       mode(static_cast<operational_mode_t>(n.param<int>("mode", CSP))),
-      ifname(n.param<std::string>("ifname", "enp0s1")) {}
+      ifname(n.param<std::string>("ifname", "enp3s0")) {
+  // Manual run
+  ROS_INFO("Configuring");
+  doConfigure();
+  ROS_INFO("Configured");
+  ros::Duration(2).sleep();
+  ROS_INFO("Activating...");
+  doActivate();
+  for (int i = 0; i < 20; i++) {
+    ROS_INFO("State: %#x", servo_state.statusword_state);
+    target += 2048;
+    ros::Duration(1).sleep();
+  }
+  ROS_INFO("Shutting down...");
+  doShutdown();
+}
 
 void ECatDriver::doConfigure() {
   // Configure servo and bring in Operational state
@@ -14,7 +29,7 @@ void ECatDriver::doConfigure() {
 
 void ECatDriver::doCleanup() {
   // Take down both threads if active
-  if (*check_flag || *loop_flag) {
+  if (check_flag.load() || loop_flag.load()) {
     stop_loop();
   }
   // Reset servo to Initial state
@@ -23,12 +38,12 @@ void ECatDriver::doCleanup() {
 
 void ECatDriver::doActivate() {
   // Enable servo to follow target position
-  *enable_servo = true;
+  enable_servo = true;
 }
 
 void ECatDriver::doDeactivate() {
   // Deactivate servo, but keep in Operational state
-  *enable_servo = false;
+  enable_servo = false;
 }
 
 void ECatDriver::doShutdown() {

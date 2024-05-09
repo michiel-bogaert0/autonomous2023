@@ -1,8 +1,8 @@
 #include "ethercat_master.hpp"
 
-control_state_t state{.mode = CSP,
-                      .ethercat_state = INIT,
-                      .statusword_state = Not_ready_to_switch_on};
+control_state_t servo_state{.mode = CSP,
+                            .ethercat_state = INIT,
+                            .statusword_state = Not_ready_to_switch_on};
 
 char IOMap[8096];
 OSAL_THREAD_HANDLE check_thread;
@@ -15,13 +15,13 @@ volatile int wkc;
 
 // BEGIN variables with possible race conditions
 // bool needlf = false;
-// Also includes `state.expectedWKC` from the header file
+// Also includes `servo_state.expectedWKC` from the header file
 // END variables with possible race conditions
 
-std::atomic_uint32_t *target = new std::atomic_uint32_t(0);
-std::atomic_bool *enable_servo = new std::atomic_bool(false);
-std::atomic_bool *loop_flag = new std::atomic_bool(false);
-std::atomic_bool *check_flag = new std::atomic_bool(false);
+std::atomic_uint32_t target = {0};
+std::atomic_bool enable_servo = {false};
+std::atomic_bool loop_flag = {false};
+std::atomic_bool check_flag = {false};
 
 void *loop(void *mode_ptr) {
   operational_mode_t mode = *static_cast<operational_mode_t *>(mode_ptr);
@@ -42,10 +42,10 @@ void *loop(void *mode_ptr) {
   // Get inputs and set initial target depending on mode
   if (mode == operational_mode_t::CSP) {
     csp_inputs = get_CSP_input(1);
-    *target = csp_inputs.position;
+    target = csp_inputs.position;
   } else if (mode == operational_mode_t::CSV) {
     csv_inputs = get_CSV_input(1);
-    *target = csv_inputs.position;
+    target = csv_inputs.position;
   } else {
     // TODO CST not supported yet
     assert(0 && "Mode not supported");
@@ -84,8 +84,10 @@ void *loop(void *mode_ptr) {
   int operation_enabled = 0;
   int error = 0;
 
+  ROS_INFO("Loop started");
+
   // Start control loop
-  while (*loop_flag) {
+  while (loop_flag.load()) {
     // Start precise timer for 2000us
     do {
       clock_gettime(CLOCK_MONOTONIC, &tcur);
@@ -113,7 +115,7 @@ void *loop(void *mode_ptr) {
       break;
     }
 
-    if (wkc >= state.expectedWKC) {
+    if (wkc >= servo_state.expectedWKC) {
 
       // Get statusword depending on mode
       if (mode == operational_mode_t::CSP) {
@@ -126,13 +128,19 @@ void *loop(void *mode_ptr) {
       }
 
       // Mask/Ignore reserved bits (4,5,8,9,14,15) of status word
+      printf("\rState: %#x, Mode: %d, Target: %#x, Position: %#x, Velocity: "
+             "%#x, Error: %#x",
+             statusword, mode, target.load(), csp_inputs.position,
+             csp_inputs.velocity, csp_inputs.erroract);
+
       STATUS_WORD_MASK(statusword);
 
-      // Set statusword in state
+      // Set statusword in servo_state
       // ! Warning: may have race condition
-      state.statusword_state = static_cast<statusword_state_t>(statusword);
+      servo_state.statusword_state =
+          static_cast<statusword_state_t>(statusword);
 
-      if (*enable_servo) {
+      if (enable_servo.load()) {
         // Do logic
         switch (statusword) {
         case (Not_ready_to_switch_on): {
@@ -207,7 +215,7 @@ void *loop(void *mode_ptr) {
         }
 
         controlword = (1 << control_fault_reset);
-        if (*enable_servo) {
+        if (enable_servo.load()) {
           controlword |=
               (1 << control_enable_voltage) | (1 << control_quick_stop);
         }
@@ -224,7 +232,8 @@ void *loop(void *mode_ptr) {
       // printf("Error: %d\r", inputs.erroract);
 
       if (operation_enabled) {
-        set_output(1, controlword, *target);
+        set_output(1, controlword, target.load());
+        // set_output(1, controlword, 0xdeadbeef);
       } else {
         // Send input value as output
         if (mode == operational_mode_t::CSP) {
@@ -238,6 +247,10 @@ void *loop(void *mode_ptr) {
       }
     }
   }
+  if (error)
+    ROS_ERROR("Loop finished with error");
+
+  ROS_INFO("Loop finished");
 
   // Gracefully shutdown
   pthread_exit(NULL);
@@ -249,14 +262,15 @@ void *loop(void *mode_ptr) {
 int start_loop(operational_mode_t mode) {
 
   // Set check flag to enable check thread
-  *check_flag = true;
+  check_flag = true;
 
   // Start the check thread
   osal_thread_create(&check_thread, 128000,
                      reinterpret_cast<void *>(&ecatcheck), NULL);
 
   // Set the state to operational
-  state.expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
+  servo_state.expectedWKC =
+      (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
   ec_slave[0].state = EC_STATE_OPERATIONAL;
 
   ec_send_processdata();
@@ -275,7 +289,7 @@ int start_loop(operational_mode_t mode) {
     return 0;
   }
 
-  state.ethercat_state = OP;
+  servo_state.ethercat_state = OP;
 
   int ret;
   // Now that the slave is in operation, start the main loop thread
@@ -298,10 +312,13 @@ int start_loop(operational_mode_t mode) {
     return 0;
 
   // Set loop flag to enable loop
-  *loop_flag = true;
+  loop_flag = true;
+
+  operational_mode_t *passed_mode = new operational_mode_t(mode);
 
   // Create thread
-  ret = pthread_create(&main_thread, &attr, loop, static_cast<void *>(&mode));
+  ret = pthread_create(&main_thread, &attr, loop,
+                       static_cast<void *>(passed_mode));
   if (ret != 0)
     return 0;
   return 1;
@@ -310,10 +327,10 @@ int start_loop(operational_mode_t mode) {
 // cppcheck-suppress unusedFunction
 void stop_loop() {
   // Graceful shutdown main thread
-  *loop_flag = false;
+  loop_flag = false;
   pthread_join(main_thread, NULL);
   // Graceful shutdown check thread
-  *check_flag = false;
+  check_flag = false;
   pthread_join(*check_thread, NULL);
 }
 
@@ -323,13 +340,13 @@ void reset_state() {
   ec_slave[0].state = EC_STATE_INIT;
   ec_writestate(0);
   // Reset state to INIT
-  state.ethercat_state = INIT;
-  state.statusword_state = Not_ready_to_switch_on;
+  servo_state.ethercat_state = INIT;
+  servo_state.statusword_state = Not_ready_to_switch_on;
 }
 
 // cppcheck-suppress unusedFunction
 int initialize_ethercat(const char *ifname, operational_mode_t mode) {
-  state.mode = mode;
+  servo_state.mode = mode;
 
   if (ec_init(ifname)) {
     printf("ec_init on %s succeeded.\n", ifname);
@@ -367,9 +384,10 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
   (void)ptr;            /* Not used */
   int currentgroup = 0; /* Originally global variable */
 
-  while (*check_flag) {
-    if (state.ethercat_state == OP &&
-        ((wkc < state.expectedWKC) || ec_group[currentgroup].docheckstate)) {
+  while (check_flag.load()) {
+    if (servo_state.ethercat_state == OP &&
+        ((wkc < servo_state.expectedWKC) ||
+         ec_group[currentgroup].docheckstate)) {
       // if (needlf) {
       //   needlf = FALSE;
       //   printf("\n");
@@ -446,7 +464,7 @@ int configure_servo(uint16 slave) {
   9 Cyclic Synchronous velocity
   10 Cyclic Synchronous Torque
   ...127 Reserved*/
-  if (state.mode == operational_mode_t::CSP) {
+  if (servo_state.mode == operational_mode_t::CSP) {
     // CSP
     u8val = 8;
     retval = ec_SDOwrite(slave, 0x7010, 0x0003, FALSE, sizeof(u8val), &u8val,
@@ -464,7 +482,7 @@ int configure_servo(uint16 slave) {
                           map_position_1c13, EC_TIMEOUTSAFE);
     if (retval != 2)
       return 0;
-  } else if (state.mode == operational_mode_t::CSV) {
+  } else if (servo_state.mode == operational_mode_t::CSV) {
 
     // CSV
     u8val = 9;
@@ -491,7 +509,7 @@ int configure_servo(uint16 slave) {
   // Motor Settings
 
   // Set max current
-  u32val = 5000;
+  u32val = 4000;
   retval = ec_SDOwrite(slave, 0x8011, 0x11, FALSE, sizeof(u32val), &u32val,
                        EC_TIMEOUTSAFE);
   if (retval == 0)
@@ -584,7 +602,7 @@ int configure_servo(uint16 slave) {
   // Outputs
 
   // Set torque limitation
-  u16val = 2250;
+  u16val = 1375;
   retval = ec_SDOwrite(slave, 0x7010, 0x0b, FALSE, sizeof(u16val), &u16val,
                        EC_TIMEOUTSAFE);
   if (retval == 0)
