@@ -4,5 +4,8 @@
     # Parameters
     <param name="ifname" value="enp3s0"/>
     <param name="mode" value="0"/> <!-- 0: CSP, 1: CSV -->
+
+    <remap from="/input/target" to="/ugr/car/servo/target"/>
+
   </node>
 </launch>

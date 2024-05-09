@@ -39,6 +39,10 @@ void ECatDriver::doCleanup() {
 void ECatDriver::doActivate() {
   // Enable servo to follow target position
   enable_servo = true;
+
+  // Start subscribers
+  this->target_sub =
+      this->n.subscribe("/input/target", 1, &ECatDriver::set_target, this);
 }
 
 void ECatDriver::doDeactivate() {
@@ -51,4 +55,9 @@ void ECatDriver::doShutdown() {
   stop_loop();
   // Reset servo to Initial state
   reset_state();
+}
+
+void ECatDriver::set_target(std_msgs::UInt32 new_target) {
+  // Set new target
+  target = new_target.data;
 }
