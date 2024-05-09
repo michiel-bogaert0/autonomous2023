@@ -153,7 +153,7 @@ class OrionAutonomousState(CarState):
         self.monitoring = False
 
         can_msg = can.Message(
-            arbitration_id=0x999, data=[error_code], is_extended_id=False
+            arbitration_id=0x505, data=[error_code], is_extended_id=False
         )  # placeholder
         self.bus.publish(serialcan_to_roscan(can_msg))
 
@@ -167,17 +167,9 @@ class OrionAutonomousState(CarState):
 
         self.as_state = state
 
-        self.send_status_over_can()
+        # self.send_status_over_can() not sure if we can remove this
 
-    def send_heartbeat(self):
-        canmsg = can.Message(
-            arbitration_id=0,
-            data=[0b00000001],
-            is_extended_id=False,
-        )
-        self.bus.publish(serialcan_to_roscan(canmsg))
-
-    def send_status_over_can(self):
+    def send_status_over_can(self, include_hb=False):
         # https://www.formulastudent.de/fileadmin/user_upload/all/2022/rules/FSG22_Competition_Handbook_v1.1.pdf
 
         data = [0, 0, 0, 0, 0]
@@ -247,13 +239,13 @@ class OrionAutonomousState(CarState):
         ts_bits = state_to_bits.get(self.state["TS"], 0b00)
         r2d_bits = state_to_bits.get(self.state["R2D"], 0b00)
 
-        # Create the data
-        # Bits 0-1: TS state
-        # Bits 2-3: R2D state
-        data = [(ts_bits & 0b11) | ((r2d_bits & 0b11) << 2)]
+        # Bit 0: Heartbeat
+        # Bits 1-2: TS state
+        # Bits 3-4: R2D state
+        data = [(include_hb & 0b1) | ((ts_bits & 0b11) << 1) | ((r2d_bits & 0b11) << 3)]
 
         canmsg = can.Message(
-            arbitration_id=0x999,  # placeholder
+            arbitration_id=0x0,  # CAN ID set to 0
             data=data,
             is_extended_id=False,
         )
@@ -261,6 +253,7 @@ class OrionAutonomousState(CarState):
 
     # runs at 15 hz
     def get_state(self):
+        include_hb = False
         if not self.boot_done:
             self.boot()
 
@@ -279,7 +272,7 @@ class OrionAutonomousState(CarState):
         ):
             self.initial_checkup()
         elif self.boot_done and self.initial_checkup_done and self.monitoring:
-            self.monitor()
+            include_hb = self.monitor()
 
         if (
             self.state["TS"] == CarStateEnum.ON
@@ -293,10 +286,12 @@ class OrionAutonomousState(CarState):
         if (
             self.state["R2D"] == CarStateEnum.ON
             and self.res_go_signal
+            and self.as_ready_time > 5.0
             and self.state["TS"] == CarStateEnum.ACTIVATED
         ):
             self.state["R2D"] = CarStateEnum.ACTIVATED
 
+        self.send_status_over_can(include_hb)
         return self.state
 
     def handle_sdc(self, dio1: Bool):
@@ -493,13 +488,16 @@ class OrionAutonomousState(CarState):
                 and self.rear_ebs_bp < 100
             ):
                 self.monitoring = False
+                return False
             else:
                 self.activate_EBS(8)
+                return False
 
         # check heartbeats of low voltage systems, motorcontrollers, RES and sensors
         for i, hb in enumerate(self.hbs):
             if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
                 self.activate_EBS(13 + i)
+                return False
 
         # check ipc, sensors and actuators
         if (
@@ -507,10 +505,12 @@ class OrionAutonomousState(CarState):
             or self.as_state == AutonomousStatesEnum.ASEMERGENCY
         ):
             self.activate_EBS(23)
+            return False
 
         # check output signal of watchdog
         if not self.watchdog_status:
             self.activate_EBS(6)
+            return False
 
         # check brake pressures
         if not (
@@ -520,6 +520,7 @@ class OrionAutonomousState(CarState):
             and self.rear_ebs_bp < 100
         ):
             self.activate_EBS(10)
+            return False
 
         # check air pressures
         if not (
@@ -529,15 +530,17 @@ class OrionAutonomousState(CarState):
             and self.air_pressure2 < 9.5
         ):
             self.activate_EBS(5)
+            return False
 
         # check if bypass relay is still functioning
         if not self.bypass_status:
             self.activate_EBS(25)
+            return False
 
         # toggle watchdog
         self.watchdog_trigger.publish(Bool(data=True))
         time.sleep(0.005)
         self.watchdog_trigger.publish(Bool(data=False))
 
-        self.send_heartbeat()
         self.monitored_once = True
+        return True

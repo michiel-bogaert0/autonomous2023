@@ -112,10 +112,10 @@ class AutonomousController(NodeManager):
                 self.as_state == AutonomousStatesEnum.ASOFF
                 or self.as_state == AutonomousStatesEnum.ASFINISHED
             ):
-                self.car.activate_EBS()
+                self.car.activate_EBS(0)
         else:
             if self.get_health_level() == DiagnosticStatus.ERROR:
-                self.car.activate_EBS()
+                self.car.activate_EBS(0)
 
         if self.ccs["EBS"] == CarStateEnum.ACTIVATED:
             if self.mission_finished and self.vehicle_stopped:
@@ -129,7 +129,7 @@ class AutonomousController(NodeManager):
 
         elif self.ccs["EBS"] == CarStateEnum.ON:
             if self.mission_finished and self.vehicle_stopped:
-                self.car.activate_EBS()
+                self.car.activate_EBS(0)
 
             if (
                 rospy.has_param("/mission")

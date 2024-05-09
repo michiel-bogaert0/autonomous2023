@@ -113,15 +113,7 @@ class OrionManualState(CarState):
         if frame.id == 2147492865:
             self.hbs["MC"] = rospy.Time.now().to_sec()
 
-    def send_heartbeat(self):
-        canmsg = can.Message(
-            arbitration_id=0,
-            data=[0b00000001],
-            is_extended_id=False,
-        )
-        self.bus.publish(serialcan_to_roscan(canmsg))
-
-    def send_status_over_can(self):
+    def send_status_over_can(self, include_hb=False):
         data = [0, 0, 0, 0, 0]
 
         # Bit 0 - 2
@@ -153,13 +145,13 @@ class OrionManualState(CarState):
         ts_bits = state_to_bits.get(self.state["TS"], 0b00)
         r2d_bits = state_to_bits.get(self.state["R2D"], 0b00)
 
-        # Create the data
-        # Bits 0-1: TS state
-        # Bits 2-3: R2D state
-        data = [(ts_bits & 0b11) | ((r2d_bits & 0b11) << 2)]
+        # Bit 0: Heartbeat
+        # Bits 1-2: TS state
+        # Bits 3-4: R2D state
+        data = [(include_hb & 0b1) | ((ts_bits & 0b11) << 1) | ((r2d_bits & 0b11) << 3)]
 
         canmsg = can.Message(
-            arbitration_id=0x999,  # placeholder
+            arbitration_id=0x0,  # CAN ID set to 0
             data=data,
             is_extended_id=False,
         )
@@ -220,11 +212,12 @@ class OrionManualState(CarState):
             DiagnosticStatus.ERROR, "Error detected, code: " + error_code
         )
         can_msg = can.Message(
-            arbitration_id=0x999, data=[error_code], is_extended_id=False
+            arbitration_id=0x505, data=[error_code], is_extended_id=False
         )  # placeholder
         self.bus.publish(serialcan_to_roscan(can_msg))
 
     def get_state(self):
+        include_hb = False
         if not self.boot_done:
             self.boot()
 
@@ -243,7 +236,7 @@ class OrionManualState(CarState):
         ):
             self.initial_checkup()
         elif self.initial_checkup_done and self.monitoring:
-            self.monitor()
+            include_hb = self.monitor()
 
         if (
             self.state["TS"] == CarStateEnum.ON
@@ -253,7 +246,7 @@ class OrionManualState(CarState):
             and self.elvis_status == 1
         ):  # TODO change elvis status
             self.state["TS"] = CarStateEnum.ACTIVATED
-        self.send_status_over_can()  # not sure whether this needs to be sent all the time
+        self.send_status_over_can(include_hb)
 
         return self.state
 
@@ -299,32 +292,38 @@ class OrionManualState(CarState):
         # is SDC closed?
         if not self.sdc_status:
             self.send_error_to_db(8)
+            return False
 
         # check heartbeats of low voltage systems, motorcontrollers and sensors
         for i, hb in enumerate(self.hbs):
             if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
                 self.send_error_to_db(13 + i)
+                return False
 
         # check ipc, sensors and actuators
         if self.manual_controller.get_health_level() == DiagnosticStatus.ERROR:
             self.send_error_to_db(23)
+            return False
 
         # check output signal of watchdog
         if not self.watchdog_status:
             self.send_error_to_db(6)
+            return False
 
         # check air pressures
         if not (self.air_pressure1 < 1 and self.air_pressure2 < 1):
             self.send_error_to_db(5)
+            return False
 
         # check if bypass is closed
         if self.bypass_status:
             self.send_error_to_db(24)
+            return False
 
         # toggle watchdog
         self.watchdog_trigger.publish(Bool(data=True))
         time.sleep(0.005)
         self.watchdog_trigger.publish(Bool(data=False))
-
-        self.send_heartbeat()
         self.monitored_once = True
+
+        return True
