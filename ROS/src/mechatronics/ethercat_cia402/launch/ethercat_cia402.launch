@@ -1,5 +1,8 @@
 <launch>
-  <node name="iologik" pkg="iologik" type="iologik" output="screen" launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib'>
-    
+  <node name="ethercat_cia402" pkg="ethercat_cia402" type="ethercat_cia402" output="screen"
+    launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
+    # Parameters
+    <param name="ifname" value="enp3s0"/>
+    <param name="mode" value="0"/> <!-- 0: CSP, 1: CSV -->
   </node>
 </launch>
