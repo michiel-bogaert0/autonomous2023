@@ -3,7 +3,8 @@
 ECatDriver::ECatDriver(ros::NodeHandle &n)
     : node_fixture::ManagedNode(n, "ecat_driver"), n(n),
       mode(static_cast<operational_mode_t>(n.param<int>("mode", CSP))),
-      ifname(n.param<std::string>("ifname", "enp3s0")) {
+      ifname(n.param<std::string>("ifname", "enp3s0")),
+      update_period(n.param<double>("update_period", 0.5)) {
   // Manual run
   ROS_INFO("Configuring");
   doConfigure();
@@ -12,9 +13,9 @@ ECatDriver::ECatDriver(ros::NodeHandle &n)
   ROS_INFO("Activating...");
   doActivate();
   for (int i = 0; i < 20; i++) {
-    ROS_INFO("State: %#x", servo_state.statusword_state);
     target += 2048;
-    ros::Duration(1).sleep();
+    ros::spinOnce();
+    ros::Duration(0.5).sleep();
   }
   ROS_INFO("Shutting down...");
   doShutdown();
@@ -43,11 +44,26 @@ void ECatDriver::doActivate() {
   // Start subscribers
   this->target_sub =
       this->n.subscribe("/input/target", 1, &ECatDriver::set_target, this);
+
+  // Initialize publishers
+  this->ecat_state_pub = n.advertise<std_msgs::UInt32>("/output/ecat_state", 1);
+  this->position_pub = n.advertise<std_msgs::UInt32>("/output/position", 1);
+  this->statusword_pub = n.advertise<std_msgs::UInt16>("/output/statusword", 1);
+  this->velocity_pub = n.advertise<std_msgs::UInt32>("/output/velocity", 1);
+  this->torque_pub = n.advertise<std_msgs::UInt16>("/output/torque", 1);
+  this->erroract_pub = n.advertise<std_msgs::UInt32>("/output/erroract", 1);
+  // Schedule callback
+  this->update_timer =
+      n.createTimer(ros::Duration(this->update_period),
+                    boost::bind(&ECatDriver::update_pubs, this, _1));
 }
 
 void ECatDriver::doDeactivate() {
   // Deactivate servo, but keep in Operational state
   enable_servo = false;
+
+  // Stop timer
+  this->update_timer.stop();
 }
 
 void ECatDriver::doShutdown() {
@@ -55,9 +71,72 @@ void ECatDriver::doShutdown() {
   stop_loop();
   // Reset servo to Initial state
   reset_state();
+
+  // Stop timer
+  this->update_timer.stop();
 }
 
 void ECatDriver::set_target(std_msgs::UInt32 new_target) {
   // Set new target
   target = new_target.data;
+}
+
+void ECatDriver::update_pubs(const ros::TimerEvent &event) {
+  // Publish current state
+  std_msgs::Int32 ecat_state_msg;
+  ecat_state_msg.data = servo_state.statusword_state;
+  this->ecat_state_pub.publish(ecat_state_msg);
+
+  if (mode == CSP) {
+    // Read current inputs
+    inputs_mutex.lock();
+    CSP_inputs inputs = csp_inputs_ext;
+    inputs_mutex.unlock();
+    std_msgs::UInt32 position_msg;
+    position_msg.data = inputs.position;
+    this->position_pub.publish(position_msg);
+
+    std_msgs::UInt16 statusword_msg;
+    statusword_msg.data = inputs.statusword;
+    this->statusword_pub.publish(statusword_msg);
+
+    std_msgs::UInt32 velocity_msg;
+    velocity_msg.data = inputs.velocity;
+    this->velocity_pub.publish(velocity_msg);
+
+    std_msgs::UInt16 torque_msg;
+    torque_msg.data = inputs.torque;
+    this->torque_pub.publish(torque_msg);
+
+    std_msgs::UInt32 erroract_msg;
+    erroract_msg.data = inputs.erroract;
+    this->erroract_pub.publish(erroract_msg);
+  } else if (mode == CSV) {
+    // Read current inputs
+    inputs_mutex.lock();
+    CSV_inputs inputs = csv_inputs_ext;
+    inputs_mutex.unlock();
+    std_msgs::UInt32 position_msg;
+    position_msg.data = inputs.position;
+    this->position_pub.publish(position_msg);
+
+    std_msgs::UInt16 statusword_msg;
+    statusword_msg.data = inputs.statusword;
+    this->statusword_pub.publish(statusword_msg);
+
+    std_msgs::UInt32 velocity_msg;
+    velocity_msg.data = inputs.velocity;
+    this->velocity_pub.publish(velocity_msg);
+
+    std_msgs::UInt16 torque_msg;
+    torque_msg.data = inputs.torque;
+    this->torque_pub.publish(torque_msg);
+
+    std_msgs::UInt32 erroract_msg;
+    erroract_msg.data = inputs.erroract;
+    this->erroract_pub.publish(erroract_msg);
+  } else {
+    // TODO CST not supported yet
+    assert(0 && "Mode not supported");
+  }
 }

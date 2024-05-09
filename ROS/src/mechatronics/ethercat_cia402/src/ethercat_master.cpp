@@ -23,6 +23,11 @@ std::atomic_bool enable_servo = {false};
 std::atomic_bool loop_flag = {false};
 std::atomic_bool check_flag = {false};
 
+std::atomic_int ethercat_state_ext = {0};
+std::mutex inputs_mutex;
+CSP_inputs csp_inputs_ext;
+CSV_inputs csv_inputs_ext;
+
 void *loop(void *mode_ptr) {
   operational_mode_t mode = *static_cast<operational_mode_t *>(mode_ptr);
 
@@ -103,8 +108,14 @@ void *loop(void *mode_ptr) {
     // Get input depending on mode
     if (mode == operational_mode_t::CSP) {
       csp_inputs = get_CSP_input(1);
+      inputs_mutex.lock();
+      csp_inputs_ext = csp_inputs;
+      inputs_mutex.unlock();
     } else if (mode == operational_mode_t::CSV) {
       csv_inputs = get_CSV_input(1);
+      inputs_mutex.lock();
+      csv_inputs_ext = csv_inputs;
+      inputs_mutex.unlock();
     } else {
       // TODO CST not supported yet
       assert(0 && "Mode not supported");
@@ -128,10 +139,10 @@ void *loop(void *mode_ptr) {
       }
 
       // Mask/Ignore reserved bits (4,5,8,9,14,15) of status word
-      printf("\rState: %#x, Mode: %d, Target: %#x, Position: %#x, Velocity: "
-             "%#x, Error: %#x",
-             statusword, mode, target.load(), csp_inputs.position,
-             csp_inputs.velocity, csp_inputs.erroract);
+      // printf("\rState: %#x, Mode: %d, Target: %#x, Position: %#x, Velocity: "
+      //        "%#x, Error: %#x",
+      //        statusword, mode, target.load(), csp_inputs.position,
+      //        csp_inputs.velocity, csp_inputs.erroract);
 
       STATUS_WORD_MASK(statusword);
 
@@ -384,6 +395,8 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
   (void)ptr;            /* Not used */
   int currentgroup = 0; /* Originally global variable */
 
+  ROS_INFO("Check loop started");
+
   while (check_flag.load()) {
     if (servo_state.ethercat_state == OP &&
         ((wkc < servo_state.expectedWKC) ||
@@ -396,6 +409,10 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
       ec_group[currentgroup].docheckstate = FALSE;
       ec_readstate();
       for (slave = 1; slave <= ec_slavecount; slave++) {
+        if (slave == 1) {
+          // Set ethercat state to external variable to be published
+          ethercat_state_ext = ec_slave[slave].state;
+        }
         if ((ec_slave[slave].group == currentgroup) &&
             (ec_slave[slave].state != EC_STATE_OPERATIONAL)) {
           ec_group[currentgroup].docheckstate = TRUE;
@@ -440,6 +457,7 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
     }
     osal_usleep(10000);
   }
+  ROS_INFO("Check loop finished");
 }
 
 int configure_servo(uint16 slave) {

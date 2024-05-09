@@ -3,6 +3,7 @@
 
 #include "ros/ros.h"
 #include <atomic>
+#include <mutex>
 #define EC_TIMEOUTMON 500
 #define STATUS_WORD_MASK(x)                                                    \
   (x &= ~((1 << 4) | (1 << 5) | (1 << 8) | (1 << 9) | (1 << 14) | (1 << 15)))
@@ -89,6 +90,11 @@ typedef struct {
   uint32 erroract;
 } __attribute__((packed)) CSP_inputs;
 typedef CSP_inputs CSV_inputs;
+
+extern std::atomic_int ethercat_state_ext;
+extern std::mutex inputs_mutex;
+extern CSP_inputs csp_inputs_ext;
+extern CSV_inputs csv_inputs_ext;
 
 inline void set_output(uint16_t slave_nb, uint16_t controlword,
                        uint32_t value) {
