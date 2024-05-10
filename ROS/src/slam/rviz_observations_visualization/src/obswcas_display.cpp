@@ -71,7 +71,7 @@ ObservationWithCovarianceArrayStampedDisplay::
 
   color_property_[4] =
       new rviz::ColorProperty("Class 4 color", QColor(0, 0, 0),
-                              "The color of observation class 4: 'unknown'",
+                              "The color of observation class 4: 'unkown'",
                               this, SLOT(updateColorAndAlpha()));
 
   use_realistic_model_ = new rviz::BoolProperty(
@@ -116,6 +116,7 @@ void ObservationWithCovarianceArrayStampedDisplay::updateColorAndAlpha() {
   }
 }
 
+// cppcheck-suppress unusedFunction
 void ObservationWithCovarianceArrayStampedDisplay::processMessage(
     const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr &msg) {
 
