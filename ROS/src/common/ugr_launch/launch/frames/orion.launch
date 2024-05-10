@@ -1,8 +1,6 @@
 <launch>
-  <arg name="enable_sensors" default="true" />
-  <arg name="enable_can" default="true" />
-  <arg name="enable_drive" default="true" />
 
+  <!-- Frames -->
   <param name="robot_description"
     command="$(find xacro)/xacro '$(find orion_description)/urdf/orion.urdf'" />
 
@@ -12,52 +10,29 @@
     </node>
   </group>
 
-  <group if="$(arg enable_can)">
-    <node pkg="can_node" type="can_driver.py" name="can_driver" output="screen">
+  <!-- CAN -->
+  <include file="$(find can)/launch/can.launch" />
 
-      <param name="can_interface" value="can3_ext" />
+  <!-- IO drivers -->
+  <include file="$(find iologik)/launch/iologik" />
+  <!-- <include file="$(find dio_driver)/launch/dio_driver"/> -->
 
-      <remap from="/input/can" to="/ugr/car/can/tx" />
-      <remap from="/output/can" to="/ugr/car/can/rx" />
-    </node>
-  </group>
+  <!-- Vectornav -->
+  <!-- <include file="$(find vectornav)/launch/vectornav.launch"/> -->
 
-  <group if="$(arg enable_sensors)">
-
-    <!-- Vectornav -->
-    <include file="$(find vectornav)/launch/vectornav.launch"/>
-
-    <!-- Lidar -->
-    <include file="$(find ouster_ros)/launch/sensor.launch">
+  <!-- Lidar -->
+  <!-- <include file="$(find ouster_ros)/launch/sensor.launch">
       <arg name="timestamp_mode" default="TIME_FROM_PTP_1588" />
-    </include>
+    </include> -->
 
-    <!-- Camera -->
-    <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">
+  <!-- Camera -->
+  <!-- <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">
       <arg name="type" default="camera" />
-    </include>
+    </include> -->
 
-    <!-- GPS -->
-    <include file="$(find ublox_gps)/launch/gps.launch" pass_all_args="true" />
+  <!-- GPS -->
+  <!-- <include file="$(find ublox_gps)/launch/gps.launch" pass_all_args="true" /> -->
 
-    <!-- CAN-enabled sensors -->
 
-    <node pkg="can_node" type="can_converter.py" name="can_converter" output="screen">
-      <param name="res_send_interval" value="0.1" />
-
-      <remap from="/input/can" to="/ugr/car/can/rx" />
-      <remap from="/output/can" to="/ugr/car/can/tx" />
-
-      <!-- Encoder 0: right -->
-      <!-- Encoder 1: left -->
-      <remap from="/output/vel0" to="/ugr/car/sensors/encoder0" />
-      <remap from="/output/vel1" to="/ugr/car/sensors/encoder1" />
-
-    </node>
-  </group>
-
-  <group if="$(arg enable_drive)">
-    <include file="$(find ugr_ros_control)/orion_control/launch/orion_hardware.launch" />
-  </group>
-
+  <!-- <include file="$(find ugr_ros_control)/orion_control/launch/orion_hardware.launch" /> -->
 </launch>

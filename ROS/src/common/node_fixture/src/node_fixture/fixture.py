@@ -313,10 +313,14 @@ class NodeManagingStatesEnum(str, enum.Enum):
 
 
 # States of orion
-class OrionStatesEnum(str, enum.Enum):
-    MANUAL = "manual"
-    DRIVERLESS = "driverless"
-    IDLE = "idle"
+class OrionStateEnum(str, enum.Enum):
+    INIT = "INIT"
+    TS_READY = "TS_READY"
+    TS_ACTIVATING = "TS_ACTIVATING"
+    TS_ACTIVE = "TS_ACTIVE"
+    R2D_READY = "R2D_READY"
+    R2D = "R2D"
+    ERROR = "ERROR"
 
 
 """

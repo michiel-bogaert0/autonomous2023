@@ -107,12 +107,12 @@ class AutonomousController(NodeManager):
         # ?? Not sure if the second part (after the 'and') is required, but it's there in the original code
         # ?? Basically disables the monitoring causing an emergency when the car is in ASOFF, so no where near ready to actually drive
         # ?? Must check when integrating on real car.
-        if self.car_name == "pegasus":
+        if self.car_name == "pegasus" or self.car_name == "simulation":
             if self.get_health_level() == DiagnosticStatus.ERROR and not (
                 self.as_state == AutonomousStatesEnum.ASOFF
                 or self.as_state == AutonomousStatesEnum.ASFINISHED
             ):
-                self.car.activate_EBS(0)
+                self.car.activate_EBS()
         else:
             if self.get_health_level() == DiagnosticStatus.ERROR:
                 self.car.activate_EBS(0)
@@ -129,7 +129,10 @@ class AutonomousController(NodeManager):
 
         elif self.ccs["EBS"] == CarStateEnum.ON:
             if self.mission_finished and self.vehicle_stopped:
-                self.car.activate_EBS(0)
+                if self.car_name == "pegasus" or self.car_name == "simulation":
+                    self.car.activate_EBS()
+                else:
+                    self.car.activate_EBS(0)
 
             if (
                 rospy.has_param("/mission")

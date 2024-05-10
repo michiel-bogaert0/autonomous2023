@@ -17,6 +17,8 @@ class OrionManualState(CarState):
         self.state = {
             "TS": CarStateEnum.UNKNOWN,
             "R2D": CarStateEnum.UNKNOWN,
+            "TS_START": CarStateEnum.UNKNOWN,
+            "ELVIS_STATUS": CarStateEnum.UNKNOWN,
         }
         self.initial_checkup_busy = False
         self.initial_checkup_done = False
@@ -85,7 +87,11 @@ class OrionManualState(CarState):
     def handle_can(self, frame: Frame):
         # DB_Commands
         if frame.id == 768:
-            self.ts_pressed = bool(frame.data[0] & 0b01000000)
+            if bool(frame.data[0] & 0b01000000):
+                self.state["TS_START"] = CarStateEnum.ON
+            else:
+                self.state["TS_START"] = CarStateEnum.OFF
+
             self.state["R2D"] = (
                 CarStateEnum.ACTIVATED
                 if bool(frame.data[0] & 0b10000000)
@@ -102,6 +108,10 @@ class OrionManualState(CarState):
             self.hbs["ELVIS"] = rospy.Time.now().to_sec()
             self.elvis_critical_fault = (frame.data[0] >> 3) & 0b00000111
             self.elvis_status = (frame.data[0] >> 6) & 0b00000111
+            if self.elvis_status:
+                self.state["ELVIS_STATUS"] = CarStateEnum.ON
+            else:
+                self.state["ELVIS_STATUS"] = CarStateEnum.OFF
         # DB
         if frame.id == 3:
             self.hbs["DB"] = rospy.Time.now().to_sec()
@@ -255,18 +265,22 @@ class OrionManualState(CarState):
         for i, hb in enumerate(self.hbs):
             if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
                 self.send_error_to_db(13 + i)
+                return False
 
         # watchdog OK?
         if not self.watchdog_status:
-            self.activate_EBS(6)
+            self.send_error_to_db(6)
+            return False
 
         # check ipc, sensors and actuators
         if self.manual_controller.get_health_level() == DiagnosticStatus.ERROR:
-            self.activate_EBS(23)
+            self.send_error_to_db(23)
+            return False
 
         self.boot_done = True
         self.sdc_out.publish(Bool(data=True))
-        time.sleep(0.200)
+
+        return True
 
     def initial_checkup(self):
         self.initial_checkup_busy = True
@@ -274,19 +288,24 @@ class OrionManualState(CarState):
         # ASMS needs to be off
         if self.state("ASMS") != CarStateEnum.OFF:
             self.send_error_to_db(3)
+            return False
 
         # check air pressures
         if not (self.air_pressure1 < 1 and self.air_pressure2 < 1):
             self.send_error_to_db(5)
+            return False
 
         # watchdog OK?
         if not self.watchdog_status:
             self.send_error_to_db(6)
+            return False
 
         self.state["TS"] = CarStateEnum.ON
         self.initial_checkup_busy = False
         self.initial_checkup_done = True
         self.sdc_out.publish(Bool(data=True))
+
+        return True
 
     def monitor(self):
         # is SDC closed?
