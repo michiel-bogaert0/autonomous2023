@@ -41,13 +41,14 @@ class OrionState(NodeManager):
         self.air_pressure2 = None
         self.front_bp = None
         self.rear_bp = None
+        self.driverless_mode = None
         self.hbs = {
             "PDU": rospy.Time.now().to_sec(),
             "ELVIS": rospy.Time.now().to_sec(),
             "DB": rospy.Time.now().to_sec(),
             "ASSI": rospy.Time.now().to_sec(),
             "MC": rospy.Time.now().to_sec(),
-            "air_pressure1": rospy.Time.now().to_sec(),
+            "air_pressure1": rospy.Time.now().to_sec(),  # probably useless
             "air_pressure2": rospy.Time.now().to_sec(),
             "front_bp": rospy.Time.now().to_sec(),
             "rear_bp": rospy.Time.now().to_sec(),
@@ -97,7 +98,7 @@ class OrionState(NodeManager):
         self.spin()
 
     def doActivate(self):
-        self.state = OrionStateEnum.INIT
+        self.change_state(OrionStateEnum.INIT)
         self.ccs = {}
         self.state_publisher = rospy.Publisher(
             "/state", State, queue_size=10, latch=True
@@ -243,33 +244,36 @@ class OrionState(NodeManager):
                 DiagnosticStatus.OK, "[GNRL] STATE: Orion state", str(self.state)
             )
         )
+        if self.driverless_mode is None:
+            return
+
         if self.state == OrionStateEnum.INIT:
             if self.boot():
-                self.state = OrionStateEnum.TS_READY
+                self.change_state(OrionStateEnum.TS_READY)
         elif self.state == OrionStateEnum.TS_READY:
             if not self.initial_checkup_done:
                 if not self.initial_checkup_busy:
                     self.initial_checkup()
             elif self.monitor() and self.ts_pressed:
                 self.ts_pressed = False
-                self.state = OrionStateEnum.TS_ACTIVATING
+                self.change_state(OrionStateEnum.TS_ACTIVATING)
 
         elif self.state == OrionStateEnum.TS_ACTIVATING:
             if self.air1 and self.air2:
-                self.state = OrionStateEnum.TS_ACTIVE
+                self.change_state(OrionStateEnum.TS_ACTIVE)
             self.monitor()
 
         elif self.state == OrionStateEnum.TS_ACTIVE:
             if self.front_bp > 11 and self.rear_bp > 11:
-                self.state = OrionStateEnum.R2D_READY
+                self.change_state(OrionStateEnum.R2D_READY)
             self.monitor()
 
         elif self.state == OrionStateEnum.R2D_READY:
             if self.front_bp < 10 or self.rear_bp < 10:
-                self.state = OrionStateEnum.TS_ACTIVE
+                self.change_state(OrionStateEnum.TS_ACTIVE)
             elif self.r2d_pressed:
                 self.r2d_pressed = False
-                self.state = OrionStateEnum.R2D
+                self.change_state(OrionStateEnum.R2D)
             self.monitor()
 
         self.send_status_over_can()
@@ -297,7 +301,7 @@ class OrionState(NodeManager):
         self.hbs["rear_bp"] = rospy.Time.now().to_sec()
 
     def send_error_to_db(self, error_code=0):
-        self.state = OrionStateEnum.ERROR
+        self.change_state(OrionStateEnum.ERROR)
         self.initial_checkup_done = False
         self.sdc_out.publish(Bool(data=False))
         self.elvis_status = 0  # reset TODO
