@@ -276,6 +276,9 @@ class OrionState(NodeManager):
                 self.change_state(OrionStateEnum.R2D)
             self.monitor()
 
+        elif self.state == OrionStateEnum.R2D:
+            self.monitor()
+
         self.send_status_over_can()
 
     def handle_sdc(self, dio1: Bool):
