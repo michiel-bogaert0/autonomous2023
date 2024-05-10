@@ -11,7 +11,6 @@ from node_fixture import (
 )
 from node_fixture.fixture import NodeManagingStatesEnum, OrionStateEnum
 from node_fixture.node_manager import NodeManager
-from orion_manual_state import OrionManualState
 from std_msgs.msg import Bool, Float64, Header
 from ugr_msgs.msg import Frame, State
 
@@ -35,7 +34,6 @@ class OrionState(NodeManager):
         self.sdc_status = True
         self.ts_pressed = False
         self.monitoring = True
-        self.elvis_critical_fault = None
         self.elvis_status = None
         self.air_pressure1 = None
         self.air_pressure2 = None
@@ -99,7 +97,6 @@ class OrionState(NodeManager):
 
     def doActivate(self):
         self.change_state(OrionStateEnum.INIT)
-        self.ccs = {}
         self.state_publisher = rospy.Publisher(
             "/state", State, queue_size=10, latch=True
         )
@@ -116,11 +113,6 @@ class OrionState(NodeManager):
         self.car_name = rospy.get_param("car", "orion")
 
         self.driverless_mode = None
-
-        if self.car_name == "orion":
-            self.car = OrionManualState(self)
-        else:
-            raise f"Unknown model! (model given to manual controller was: '{self.car_name}')"
 
         while not self.configure_nodes():
             sleep(0.1)
