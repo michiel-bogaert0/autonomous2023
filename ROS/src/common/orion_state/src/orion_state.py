@@ -324,7 +324,7 @@ class OrionState(NodeManager):
             return False
 
         # check ipc, sensors and actuators
-        if self.manual_controller.get_health_level() == DiagnosticStatus.ERROR:
+        if self.get_health_level() == DiagnosticStatus.ERROR:
             self.send_error_to_db(23)
             return False
 
@@ -370,7 +370,7 @@ class OrionState(NodeManager):
                 return False
 
         # check ipc, sensors and actuators
-        if self.manual_controller.get_health_level() == DiagnosticStatus.ERROR:
+        if self.get_health_level() == DiagnosticStatus.ERROR:
             self.send_error_to_db(23)
             return False
 
