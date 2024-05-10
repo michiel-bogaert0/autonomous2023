@@ -29,7 +29,6 @@ class OrionState(NodeManager):
         self.initial_checkup_busy = False
         self.initial_checkup_done = False
         self.boot_done = False
-        self.toggling_watchdog = True
         self.res_go_signal = False
         self.res_estop_signal = False
         self.watchdog_status = True
@@ -51,7 +50,7 @@ class OrionState(NodeManager):
             "air_pressure1": rospy.Time.now().to_sec(),
             "air_pressure2": rospy.Time.now().to_sec(),
             "front_bp": rospy.Time.now().to_sec(),
-            "rear_bp": rospy.Time.now().to_sec(),  # maybe add sdc and watchdog
+            "rear_bp": rospy.Time.now().to_sec(),
         }
         self.state_to_bits = {
             OrionStateEnum.INIT: 0,
