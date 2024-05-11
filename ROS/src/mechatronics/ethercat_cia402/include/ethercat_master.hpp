@@ -45,7 +45,7 @@ typedef enum {
   control_8 = 8
 } control_bit_t;
 
-typedef enum { CSP = 0, CSV = 1, CST = 2 } operational_mode_t;
+typedef enum { CSP = 0, CSV = 1, CST = 2, PP = 3 } operational_mode_t;
 
 typedef struct {
   int expectedWKC;
@@ -90,6 +90,7 @@ typedef struct {
   uint32 erroract;
 } __attribute__((packed)) CSP_inputs;
 typedef CSP_inputs CSV_inputs;
+typedef CSP_inputs PP_inputs;
 
 extern std::atomic_int ethercat_state_ext;
 extern std::mutex inputs_mutex;
@@ -115,6 +116,12 @@ inline CSP_inputs get_CSP_input(uint16_t slave_nb) {
 inline CSV_inputs get_CSV_input(uint16_t slave_nb) {
   CSV_inputs inputs =
       *reinterpret_cast<CSV_inputs *>(ec_slave[slave_nb].inputs);
+
+  return inputs;
+}
+
+inline PP_inputs get_PP_input(uint16_t slave_nb) {
+  PP_inputs inputs = *reinterpret_cast<PP_inputs *>(ec_slave[slave_nb].inputs);
 
   return inputs;
 }

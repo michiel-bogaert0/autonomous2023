@@ -1,6 +1,6 @@
 #include "ethercat_master.hpp"
 
-control_state_t servo_state{.mode = CSP,
+control_state_t servo_state{.mode = PP,
                             .ethercat_state = INIT,
                             .statusword_state = Not_ready_to_switch_on};
 
@@ -27,12 +27,14 @@ std::atomic_int ethercat_state_ext = {0};
 std::mutex inputs_mutex;
 CSP_inputs csp_inputs_ext;
 CSV_inputs csv_inputs_ext;
+PP_inputs pp_inputs_ext;
 
 void *loop(void *mode_ptr) {
   operational_mode_t mode = *static_cast<operational_mode_t *>(mode_ptr);
 
   CSP_inputs csp_inputs;
   CSV_inputs csv_inputs;
+  PP_inputs pp_inputs;
 
   // Start precise timer for 2000us
   // use clock_gettime(CLOCK_MONOTONIC, &ts) for better precision
@@ -45,12 +47,15 @@ void *loop(void *mode_ptr) {
   wkc = ec_receive_processdata(EC_TIMEOUTRET);
 
   // Get inputs and set initial target depending on mode
-  if (mode == operational_mode_t::CSP) {
+  if (mode == CSP) {
     csp_inputs = get_CSP_input(1);
     target = csp_inputs.position;
-  } else if (mode == operational_mode_t::CSV) {
+  } else if (mode == PP) {
+    pp_inputs = get_PP_input(1);
+    target = pp_inputs.position;
+  } else if (mode == CSV) {
     csv_inputs = get_CSV_input(1);
-    target = csv_inputs.position;
+    target = 0;
   } else {
     // TODO CST not supported yet
     assert(0 && "Mode not supported");
@@ -106,12 +111,17 @@ void *loop(void *mode_ptr) {
     wkc = ec_receive_processdata(EC_TIMEOUTRET);
 
     // Get input depending on mode
-    if (mode == operational_mode_t::CSP) {
+    if (mode == CSP) {
       csp_inputs = get_CSP_input(1);
       inputs_mutex.lock();
       csp_inputs_ext = csp_inputs;
       inputs_mutex.unlock();
-    } else if (mode == operational_mode_t::CSV) {
+    } else if (mode == PP) {
+      pp_inputs = get_PP_input(1);
+      inputs_mutex.lock();
+      pp_inputs_ext = pp_inputs;
+      inputs_mutex.unlock();
+    } else if (mode == CSV) {
       csv_inputs = get_CSV_input(1);
       inputs_mutex.lock();
       csv_inputs_ext = csv_inputs;
@@ -129,9 +139,11 @@ void *loop(void *mode_ptr) {
     if (wkc >= servo_state.expectedWKC) {
 
       // Get statusword depending on mode
-      if (mode == operational_mode_t::CSP) {
+      if (mode == CSP) {
         statusword = csp_inputs.statusword;
-      } else if (mode == operational_mode_t::CSV) {
+      } else if (mode == PP) {
+        statusword = pp_inputs.statusword;
+      } else if (mode == CSV) {
         statusword = csv_inputs.statusword;
       } else {
         // TODO CST not supported yet
@@ -139,10 +151,17 @@ void *loop(void *mode_ptr) {
       }
 
       // Mask/Ignore reserved bits (4,5,8,9,14,15) of status word
-      // printf("\rState: %#x, Mode: %d, Target: %#x, Position: %#x, Velocity: "
-      //        "%#x, Error: %#x",
-      //        statusword, mode, target.load(), csp_inputs.position,
-      //        csp_inputs.velocity, csp_inputs.erroract);
+      if (mode == CSV) {
+        printf("\rState: %#x, Mode: %d, Target: %#x, Position: %#x, Velocity: "
+               "%#x, Error: %#x",
+               statusword, mode, target.load(), csv_inputs.position,
+               csv_inputs.velocity, csv_inputs.erroract);
+      } else if (mode == CSP) {
+        printf("\rState: %#x, Mode: %d, Target: %#x, Position: %#x, Velocity: "
+               "%#x, Error: %#x",
+               statusword, mode, target.load(), csp_inputs.position,
+               csp_inputs.velocity, csp_inputs.erroract);
+      }
 
       STATUS_WORD_MASK(statusword);
 
@@ -247,10 +266,12 @@ void *loop(void *mode_ptr) {
         // set_output(1, controlword, 0xdeadbeef);
       } else {
         // Send input value as output
-        if (mode == operational_mode_t::CSP) {
+        if (mode == CSP) {
           set_output(1, controlword, csp_inputs.position);
-        } else if (mode == operational_mode_t::CSV) {
-          set_output(1, controlword, csv_inputs.position);
+        } else if (mode == PP) {
+          set_output(1, controlword, pp_inputs.position);
+        } else if (mode == CSV) {
+          set_output(1, controlword, 0);
         } else {
           // TODO CST not supported yet
           assert(0 && "Mode not supported");
@@ -482,7 +503,7 @@ int configure_servo(uint16 slave) {
   9 Cyclic Synchronous velocity
   10 Cyclic Synchronous Torque
   ...127 Reserved*/
-  if (servo_state.mode == operational_mode_t::CSP) {
+  if (servo_state.mode == CSP) {
     // CSP
     u8val = 8;
     retval = ec_SDOwrite(slave, 0x7010, 0x0003, FALSE, sizeof(u8val), &u8val,
@@ -500,7 +521,29 @@ int configure_servo(uint16 slave) {
                           map_position_1c13, EC_TIMEOUTSAFE);
     if (retval != 2)
       return 0;
-  } else if (servo_state.mode == operational_mode_t::CSV) {
+  } else if (servo_state.mode == PP) {
+    // PP (Profile position)
+    u8val = 1;
+    retval = ec_SDOwrite(slave, 0x7010, 0x0003, FALSE, sizeof(u8val), &u8val,
+                         EC_TIMEOUTSAFE);
+    if (retval == 0)
+      return 0;
+
+    uint16_t map_position_1c12[] = {0x0002, 0x1600, 0x1606};
+    uint16_t map_position_1c13[] = {0x0005, 0x1A00, 0x1A01,
+                                    0x1A02, 0x1A03, 0x1A06};
+
+    retval = ec_SDOwrite(slave, 0x1c12, 0x00, TRUE, sizeof(map_position_1c12),
+                         map_position_1c12, EC_TIMEOUTSAFE);
+    retval += ec_SDOwrite(slave, 0x1c13, 0x00, TRUE, sizeof(map_position_1c13),
+                          map_position_1c13, EC_TIMEOUTSAFE);
+    if (retval != 2)
+      return 0;
+
+    // Set profiles
+    // Set velocity profile
+    // Set current profile
+  } else if (servo_state.mode == CSV) {
 
     // CSV
     u8val = 9;
@@ -509,7 +552,7 @@ int configure_servo(uint16 slave) {
     if (retval == 0)
       return 0;
 
-    uint16_t map_velocity_1c12[] = {0x0002, 0x1600, 0x1606};
+    uint16_t map_velocity_1c12[] = {0x0002, 0x1600, 0x1601};
     uint16_t map_velocity_1c13[] = {0x0005, 0x1A00, 0x1A01,
                                     0x1A02, 0x1A03, 0x1A06};
 

@@ -6,16 +6,33 @@ ECatDriver::ECatDriver(ros::NodeHandle &n)
       ifname(n.param<std::string>("ifname", "enp3s0")),
       update_period(n.param<double>("update_period", 0.5)) {
   // Manual run
+  printf("Starting in mode %d\n", mode);
   ROS_INFO("Configuring");
   doConfigure();
   ROS_INFO("Configured");
   ros::Duration(2).sleep();
   ROS_INFO("Activating...");
   doActivate();
-  for (int i = 0; i < 20; i++) {
-    target += 2048;
-    ros::spinOnce();
-    ros::Duration(0.5).sleep();
+  if (mode == CSP || mode == PP) {
+    for (int i = 0; i < 20; i++) {
+      target += 2048;
+      // target += 4096;
+      ros::spinOnce();
+      ros::Duration(0.5).sleep();
+    }
+  } else {
+    int speed = 10000;
+    target = speed;
+    for (int i = 0; i < 20; i++) {
+      ros::spinOnce();
+      ros::Duration(0.5).sleep();
+    }
+    target = -speed;
+    for (int i = 0; i < 10; i++) {
+      ros::spinOnce();
+      ros::Duration(0.5).sleep();
+    }
+    target = 0;
   }
   ROS_INFO("Shutting down...");
   doShutdown();
