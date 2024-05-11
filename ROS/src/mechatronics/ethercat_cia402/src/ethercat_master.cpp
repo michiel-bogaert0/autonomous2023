@@ -34,8 +34,6 @@ void *loop(void *mode_ptr) {
 
   CSP_inputs csp_inputs;
   CSV_inputs csv_inputs;
-  uint32_t prev_speed = 0;
-  int prev_acc = 0;
   PP_inputs pp_inputs;
 
   // Start precise timer for 2000us
@@ -269,26 +267,16 @@ void *loop(void *mode_ptr) {
           uint32_t cur_target = target.load();
           uint32_t target_diff = cur_target - csv_inputs.velocity;
           uint32_t new_target;
-          int min_acc = 4096;
-          int jitter = 100000;
           int max_acc = 50000;
-          // current acceleration
-          int cur_acc = csv_inputs.velocity - prev_speed;
-          // int cur_acc = csv_inputs.torque * 20;
-          printf(", cur_acc: % 07d", cur_acc);
-          int inc = std::max(
-              min_acc, std::max(std::min(cur_acc + jitter, max_acc), prev_acc));
           if (((int32_t)target_diff) > 8192) {
-            new_target = csv_inputs.velocity + inc;
+            new_target = csv_inputs.velocity + max_acc;
           } else if (((int32_t)target_diff) < -8192) {
-            new_target = csv_inputs.velocity - inc;
+            new_target = csv_inputs.velocity - max_acc;
           } else {
             new_target = cur_target;
           }
           set_output(1, controlword, new_target);
           printf(", set speed: %09u\n", new_target);
-          prev_speed = csv_inputs.velocity;
-          prev_acc = inc;
         } else {
           set_output(1, controlword, target.load());
         }
