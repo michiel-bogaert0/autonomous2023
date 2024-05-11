@@ -21,18 +21,21 @@ ECatDriver::ECatDriver(ros::NodeHandle &n)
       ros::Duration(0.5).sleep();
     }
   } else {
-    int speed = 10000;
-    target = speed;
-    for (int i = 0; i < 20; i++) {
+    target = 10000000;
+    for (int i = 0; i < 30; i++) {
       ros::spinOnce();
-      ros::Duration(0.5).sleep();
+      ros::Duration(0.1).sleep();
     }
-    target = -speed;
-    for (int i = 0; i < 10; i++) {
+    target = -10000000;
+    for (int i = 0; i < 60; i++) {
       ros::spinOnce();
-      ros::Duration(0.5).sleep();
+      ros::Duration(0.1).sleep();
     }
     target = 0;
+    for (int i = 0; i < 30; i++) {
+      ros::spinOnce();
+      ros::Duration(0.1).sleep();
+    }
   }
   ROS_INFO("Shutting down...");
   doShutdown();
