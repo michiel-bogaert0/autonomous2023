@@ -14,11 +14,12 @@ autonomous_state:
     always:
       - slam_controller
 
-car_state:
+orion_state:
   node_management:
     always:
       - iologik
       # - dio_driver (werkt nog niet)
       - can_cvrt_mc
       - can_cvrt_lv
-    
+    driverless:
+      - autonomous_state

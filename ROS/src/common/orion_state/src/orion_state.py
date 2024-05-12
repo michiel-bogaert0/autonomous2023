@@ -9,7 +9,11 @@ from node_fixture import (
     create_diagnostic_message,
     serialcan_to_roscan,
 )
-from node_fixture.fixture import NodeManagingStatesEnum, OrionStateEnum
+from node_fixture.fixture import (
+    AutonomousStatesEnum,
+    NodeManagingStatesEnum,
+    OrionStateEnum,
+)
 from node_fixture.node_manager import NodeManager
 from std_msgs.msg import Bool, Float64, Header
 from ugr_msgs.msg import Frame, State
@@ -27,6 +31,7 @@ class OrionState(NodeManager):
         self.bus = rospy.Publisher("/ugr/car/can/tx", Frame, queue_size=10)
         self.initial_checkup_busy = False
         self.initial_checkup_done = False
+        self.driverless_mode = "idle"
         self.boot_done = False
         self.res_go_signal = False
         self.res_estop_signal = False
@@ -97,19 +102,20 @@ class OrionState(NodeManager):
 
     def doActivate(self):
         self.change_state(OrionStateEnum.INIT)
+        self.change_as_state(AutonomousStatesEnum.ASOFF)
         self.state_publisher = rospy.Publisher(
             "/state", State, queue_size=10, latch=True
         )
-        self.car_state_publisher = rospy.Publisher(
+        self.orion_state_publisher = rospy.Publisher(
             "/state/car", State, queue_size=10, latch=True
         )
         self.diagnostics_publisher = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
-
-        self.diagnostics_publisher = rospy.Publisher(
-            "/diagnostics", DiagnosticArray, queue_size=10
+        self.as_state_publisher = rospy.Publisher(
+            "/state/as", State, queue_size=10, latch=True
         )
+
         self.car_name = rospy.get_param("car", "orion")
 
         self.driverless_mode = None
@@ -125,10 +131,11 @@ class OrionState(NodeManager):
         if msg.data != self.bypass_status:
             self.bypass_status = msg.data
             if self.bypass_status:
-                self.driverless_mode = True
-
+                self.driverless_mode = "driverless"
+                self.activate_nodes("driverless", self.driverless_mode)
             else:
-                self.driverless_mode = False
+                self.driverless_mode = "manual"
+                self.activate_nodes("manual", self.driverless_mode)
 
     def handle_can(self, frame: Frame):
         # DB_Commands
@@ -210,17 +217,15 @@ class OrionState(NodeManager):
         if new_state == self.state:
             return
 
-        self.activate_nodes(new_state, self.state)
-
         self.state_publisher.publish(
             State(
                 header=Header(stamp=rospy.Time.now()),
-                scope=StateMachineScopeEnum.AUTONOMOUS,
+                scope=StateMachineScopeEnum.AUTONOMOUS,  # maybe change this to manual
                 prev_state=self.state,
                 cur_state=new_state,
             )
         )
-        self.car_state_publisher.publish(
+        self.orion_state_publisher.publish(
             State(
                 header=Header(stamp=rospy.Time.now()),
                 scope=StateMachineScopeEnum.AUTONOMOUS,
@@ -229,6 +234,35 @@ class OrionState(NodeManager):
             )
         )
         self.state = new_state
+
+    def change_as_state(self, new_state: AutonomousStatesEnum):
+        """
+        Actually changes state of this machine and publishes change
+
+        Args:
+            new_state: state to switch to.
+        """
+
+        if new_state == self.as_state:
+            return
+
+        self.as_state_publisher.publish(
+            State(
+                header=Header(stamp=rospy.Time.now()),
+                scope=StateMachineScopeEnum.AUTONOMOUS,
+                prev_state=self.as_state,
+                cur_state=new_state,
+            )
+        )
+        self.orion_state_publisher.publish(
+            State(
+                header=Header(stamp=rospy.Time.now()),
+                scope=StateMachineScopeEnum.AUTONOMOUS,
+                prev_state=self.as_state,
+                cur_state=new_state,
+            )
+        )
+        self.as_state = new_state
 
     def active(self):
         self.diagnostics_publisher.publish(
@@ -272,6 +306,71 @@ class OrionState(NodeManager):
             self.monitor()
 
         self.send_status_over_can()
+
+        if self.driverless_mode:
+            self.update_as()
+
+    def update_as(self):
+        # self.diagnostics_publisher.publish(
+        #     create_diagnostic_message(
+        #         DiagnosticStatus.ERROR
+        #         if self.as_state == AutonomousStatesEnum.ASEMERGENCY
+        #         else DiagnosticStatus.OK,
+        #         "[GNRL] STATE: AS state",
+        #         str(self.as_state),
+        #     )
+        # )
+        # self.diagnostics_publisher.publish(
+        #     create_diagnostic_message(
+        #         DiagnosticStatus.OK, "[GNRL] STATE: Car state", str(self.ccs)
+        #     )
+        # )
+
+        # if self.get_health_level() == DiagnosticStatus.ERROR:
+        #     self.car.activate_EBS(0)
+
+        # if self.ccs["EBS"] == CarStateEnum.ACTIVATED:
+        #     if self.mission_finished and self.vehicle_stopped:
+        #         self.change_state(AutonomousStatesEnum.ASFINISHED)
+
+        #     # ! This line is here to prevent rapid toggles between ASFINISHED and ASEMERGENCY as a result of self.vehicle_stopped rapidly switching
+        #     # ! In a normal FS car this isn't a problem because you have to apply both EBS and the brakes in order to get the vehicle to a "standstill" state
+        #     # ! But for pegasus (and currently simulation also) we can't really "apply the brakes"
+        #     elif self.as_state != AutonomousStatesEnum.ASFINISHED:
+        #         self.change_state(AutonomousStatesEnum.ASEMERGENCY)
+
+        # elif self.ccs["EBS"] == CarStateEnum.ON:
+        #     if self.mission_finished and self.vehicle_stopped:
+        #         if self.car_name == "pegasus" or self.car_name == "simulation":
+        #             self.car.activate_EBS()
+        #         else:
+        #             self.car.activate_EBS(0)
+
+        #     if (
+        #         rospy.has_param("/mission")
+        #         and rospy.get_param("/mission") != ""
+        #         and self.ccs["ASMS"] == CarStateEnum.ON
+        #         and (
+        #             self.ccs["ASB"] == CarStateEnum.ON
+        #             or self.ccs["ASB"] == CarStateEnum.ACTIVATED
+        #         )
+        #         and self.ccs["TS"] == CarStateEnum.ON
+        #     ):
+        #         if self.ccs["R2D"] == CarStateEnum.ACTIVATED:
+        #             self.change_state(AutonomousStatesEnum.ASDRIVE)
+
+        #         else:
+        #             if (
+        #                 self.ccs["ASB"] == CarStateEnum.ACTIVATED
+        #                 and self.get_health_level() == DiagnosticStatus.OK
+        #             ):
+        #                 self.change_state(AutonomousStatesEnum.ASREADY)
+        #             else:
+        #                 self.change_state(AutonomousStatesEnum.ASOFF)
+        #     else:
+        #         self.change_state(AutonomousStatesEnum.ASOFF)
+
+        self.car.update(self.as_state)
 
     def handle_sdc(self, dio1: Bool):
         self.sdc_status = dio1.data

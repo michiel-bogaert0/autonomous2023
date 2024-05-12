@@ -184,7 +184,7 @@ class AutonomousController(NodeManager):
         if new_state == self.as_state:
             return
 
-        self.activate_nodes(new_state, self.state)
+        self.activate_nodes(new_state, self.as_state)
 
         self.state_publisher.publish(
             State(
