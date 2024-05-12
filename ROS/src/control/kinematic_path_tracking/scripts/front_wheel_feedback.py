@@ -40,7 +40,9 @@ class FrontWheelFeedback(KinematicTrackingNode):
         # Calculate the transversal error
         trans_error, heading_error = self.trajectory.calculate_transversal_error()
 
-        pid_e = trans_error / self.actual_speed
+        pid_e = (
+            trans_error / self.actual_speed if self.actual_speed >= 1 else trans_error
+        )
 
         self.integral += pid_e * dt
 

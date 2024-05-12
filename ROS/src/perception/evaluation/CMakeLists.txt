@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5.1)
 project(evaluation)
 
 find_package(catkin REQUIRED ugr_msgs sensor_msgs)

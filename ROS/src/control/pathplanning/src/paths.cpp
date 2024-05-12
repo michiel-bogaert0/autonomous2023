@@ -236,6 +236,11 @@ std::pair<double, double> TriangulationPaths::get_cost_branch(
         diff_angles.push_back(
             std::atan2(cones[i][1] - point->y, cones[i][0] - point->x) -
             point->angle);
+        if (diff_angles.back() > M_PI) {
+          diff_angles.back() -= 2 * M_PI;
+        } else if (diff_angles.back() < -M_PI) {
+          diff_angles.back() += 2 * M_PI;
+        }
         close_classes.push_back(cones[i][2]);
       }
     }

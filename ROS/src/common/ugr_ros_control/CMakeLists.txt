@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5.1)
 project(ugr_ros_control)
 
 # C++ 11
@@ -90,7 +90,7 @@ target_link_libraries(${PROJECT_NAME}_keyboard_teleop
 
 add_subdirectory(sim_control)
 add_subdirectory(pegasus_control)
-add_subdirectory(gen4_control)
+add_subdirectory(orion_control)
 
 ## Install ------------------------------------------------------------
 
