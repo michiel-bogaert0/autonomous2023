@@ -703,6 +703,7 @@ void MCL::publishOutput(ros::Time lookupTime) {
 
   geometry_msgs::TransformStamped transformMsg;
   transformMsg.header.stamp = lookupTime;
+  transformMsg.header.stamp = this->map_frame;
   transformMsg.header.stamp = ros::Time::now();
   transformMsg.child_frame_id = this->slam_base_link_frame;
 

@@ -18,9 +18,6 @@ class PurePursuit(KinematicTrackingNode):
         self.distance_start = rospy.get_param("~distance_start", 1.2)
         self.distance_stop = rospy.get_param("~distance_stop", 2.4)
 
-        self.cog_to_front_axle = rospy.get_param("~cog_to_front_axle", 0.72)
-        self.reference_pose = [self.cog_to_front_axle, 0]
-
     def __process__(self):
         """
         Processes the current path and calculates the target point for the car to follow
