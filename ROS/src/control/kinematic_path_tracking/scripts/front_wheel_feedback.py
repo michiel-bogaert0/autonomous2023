@@ -64,5 +64,5 @@ class FrontWheelFeedback(KinematicTrackingNode):
         # Publish to velocity and position steering controller
         self.steering_pub.publish(self.steering_cmd)
 
-    
+
 node = FrontWheelFeedback()
