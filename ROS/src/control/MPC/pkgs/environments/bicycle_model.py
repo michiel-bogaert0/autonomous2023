@@ -20,7 +20,7 @@ class BicycleModel(Env):
         high_obs_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf])
         self.observation_space = Space(low=-high_obs_space, high=high_obs_space)
 
-        self.F = self.discretize(self.dynamics, self.dt)
+        self.F = self.discretize(self.dynamics, self.dt, M=4)
 
     def dynamics(self, s, u):
         # Inputs

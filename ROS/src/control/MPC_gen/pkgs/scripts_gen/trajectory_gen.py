@@ -213,7 +213,7 @@ class Trajectory:
         path_blf = np.roll(self.path_blf, -self.closest_index, axis=0)
 
         # print(path_blf[:40])
-        spline_centerline, curve_centerline = create_spline(path_blf[:60], color="r")
+        spline_centerline, curve_centerline = create_spline(path_blf[:80], color="r")
         sample_points = curve_centerline(np.linspace(0, 1, 100))
 
         # Publish path

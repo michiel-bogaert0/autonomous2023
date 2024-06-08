@@ -134,12 +134,19 @@ class Trajectory:
 
         # Find target points based on required velocity and maximum acceleration
         speed_target = rospy.get_param("/speed/target", 3.0)
+        speed_target = 10
         max_acceleration = 2.0  # TODO: create param
         # calculate distances based on maximum acceleration and current speed
         distances = [
             (min(speed_target, actual_speed + dt * max_acceleration * i)) * i * dt
-            for i in range(N)
+            for i in range(N + 1)
         ]
+        print(
+            [
+                (min(speed_target, actual_speed + dt * max_acceleration * i))
+                for i in range(N + 1)
+            ][1]
+        )
 
         if self.change_index:
             self.closest_index = np.argmin(
@@ -170,6 +177,36 @@ class Trajectory:
         # Append 0 and calculate cummulative sum
         distances_relative = np.append([0], np.cumsum(distances_cumsum))
 
+        i = 0
+        j = 0
+        reference_path = []
+        while j < len(distances_relative) and i < len(distances):
+            if distances_relative[j] < distances[i]:
+                j += 1
+                continue
+            elif distances_relative[j] == distances[i]:
+                # i += 1
+                # j += 1
+                scaling = 1
+            elif distances_relative[j] > distances[i]:
+                # Required distances between two points so scale between them
+                # i += 1
+
+                scaling = 1 - np.abs(
+                    (distances[i] - distances_relative[j])
+                    / (distances_relative[j] - distances_relative[j - 1])
+                )
+
+            reference_path.append(
+                shifted_path[j - 1] + scaling * (shifted_path[j] - shifted_path[j - 1])
+            )
+            if debug:
+                print(
+                    f"Point {j - 1} and {j} with scaling {scaling} and distance {distances[i]} and relative distance {distances_relative[j]} results in point {reference_path[-1]}"
+                )
+            i += 1
+        # print(f"ref path 1: {reference_path}")
+
         # Find points at specified distances
         reference_path = []
         for i in range(len(distances)):
@@ -196,6 +233,7 @@ class Trajectory:
                         f"Point {j - 1} and {j} with scaling {scaling} and distance {distances[i]} and relative distance {distances_relative[j]} results in point {reference_path[-1]}"
                     )
                 break
+        # print(f"ref path 2: {reference_path}")
 
         return reference_path
 

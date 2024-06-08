@@ -6,6 +6,7 @@ from optimal_control_gen.Bspline import Bspline
 
 def create_spline(arr, color, derivative=False, derivative2=False, plot=False):
     degree = 2
+    # arr = np.array(arr)[5:27]
     kk = np.linspace(0, 1, len(arr) - degree + 1)
 
     bspline = Bspline(kk, degree)
@@ -17,7 +18,7 @@ def create_spline(arr, color, derivative=False, derivative2=False, plot=False):
 
     if plot:
         # plt.plot(control_points[:, 0], control_points[:, 1], "o", c=color)
-        plt.plot([x[0] for x in arr], [x[1] for x in arr], "--", c=color)
+        # plt.plot([x[0] for x in arr], [x[1] for x in arr], "--", c=color)
         plt.plot(spline_arr[:, 0], spline_arr[:, 1], c=color)
 
     if derivative:
@@ -29,18 +30,18 @@ def create_spline(arr, color, derivative=False, derivative2=False, plot=False):
 
         # Plot the derivative vectors originating from spline points
         for i in range(0, len(spline_arr), 1):
-            plt.scatter(
-                spline_arr[i, 0], spline_arr[i, 1], c=color, label="Spline Points"
-            )
+            # plt.scatter(
+            #     spline_arr[i, 0], spline_arr[i, 1], c="g", label="Spline Points"
+            # )
             plt.arrow(
                 spline_arr[i, 0],
                 spline_arr[i, 1],
-                der_arr[i, 0],
-                der_arr[i, 1],
+                2 * der_arr[i, 0],
+                2 * der_arr[i, 1],
                 head_width=0.05,
                 head_length=0.1,
-                fc=color,
-                ec=color,
+                fc="g",
+                ec="g",
                 alpha=0.7,
             )
 
@@ -56,17 +57,19 @@ def create_spline(arr, color, derivative=False, derivative2=False, plot=False):
             # Plot the derivative vectors originating from spline points
             for i in range(0, len(spline_arr), 1):
                 plt.arrow(
-                    spline_arr[i, 0] + der_arr[i, 0],
-                    spline_arr[i, 1] + der_arr[i, 1],
+                    spline_arr[i, 0] + 2 * der_arr[i, 0],
+                    spline_arr[i, 1] + 2 * der_arr[i, 1],
                     dder_arr[i, 0],
                     dder_arr[i, 1],
                     head_width=0.05,
                     head_length=0.1,
-                    fc="g",
-                    ec="g",
+                    fc="b",
+                    ec="b",
                     alpha=0.7,
                 )
 
+        plt.xticks([])
+        plt.yticks([])
         plt.show()
 
     return bspline, curve
@@ -235,10 +238,11 @@ def get_boundary_constraints_casadi(spline, dspline, taus, width, plot=False):
         plt.plot(pos_outer[:, 0], pos_outer[:, 1], "o", c="y")
 
         for i in range(len(points)):
-            # generate x around point
+            # plot x and y such that the length of the vector is 1
             x = np.linspace(points[i, 0] - 2, points[i, 0] + 2, 100)
             y_inner = slopes_inner[i] * x + intercepts_inner[i]
             y_outer = slopes_outer[i] * x + intercepts_outer[i]
+
             plt.plot(x, y_inner, c="b")
             plt.plot(x, y_outer, c="y")
 

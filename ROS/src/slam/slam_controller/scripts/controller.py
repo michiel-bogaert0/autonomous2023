@@ -70,7 +70,7 @@ class Controller(NodeManager):
         rospy.ServiceProxy("/reset_closure", Empty)
 
         if self.mission == AutonomousMission.ACCELERATION:
-            self.target_lap_count = 1
+            self.target_lap_count = 5
             new_state = SLAMStatesEnum.RACING
         elif self.mission == AutonomousMission.SKIDPAD:
             self.target_lap_count = 1

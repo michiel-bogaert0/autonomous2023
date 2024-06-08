@@ -1,4 +1,6 @@
 import copy
+
+# from time import perf_counter
 from typing import Callable
 
 import casadi
@@ -81,9 +83,6 @@ class Ocp:
         self.intercepts_inner = self.opti.parameter(1, N + 1)
         self.slopes_outer = self.opti.parameter(1, N + 1)
         self.intercepts_outer = self.opti.parameter(1, N + 1)
-        # self.b = self.opti.variable(1)
-        # self.c = self.opti.variable(1)
-        # self.d = self.opti.variable(1)
 
         self._set_continuity(threads)
 
@@ -129,15 +128,18 @@ class Ocp:
         return F
 
     def _set_continuity(self, threads: int):
+        # self.opti.subject_to(self.X[:, 0] == self.x0)
         # self.opti.subject_to(self.X[2:, 0] == self.x0[2:]) # doing this somehow causes crash issue
-        self.opti.subject_to(self.X[0, 0] == self.x0[0])
-        self.opti.subject_to(self.X[1, 0] == self.x0[1])
-        self.opti.subject_to(self.X[2, 0] == self.x0[2])
-        # self.opti.subject_to(self.X[3, 0] == 0)
-        self.opti.subject_to(self.X[3, 0] == self.x0[3])
-        self.opti.subject_to(self.X[4, 0] == self.x0[4])
+        # self.opti.subject_to(self.X[0, 0] == self.x0[0])
+        # self.opti.subject_to(self.X[1, 0] == self.x0[1])
+        # self.opti.subject_to(self.X[2, 0] == self.x0[2])
+        # # self.opti.subject_to(self.X[3, 0] == 0)
+        # self.opti.subject_to(self.X[3, 0] == self.x0[3])
+        # self.opti.subject_to(self.X[4, 0] == self.x0[4])
         self.opti.subject_to(self.X[5, 0] == self.x0[5])
-        # self.opti.subject_to(self.X[5, self.N] == 1)
+        self.opti.subject_to(self.X[5, self.N] == 1)
+        self.opti.subject_to(self.X[:2, 0] == self.X[:2, self.N])
+        # self.opti.subject_to(casadi.fabs(casadi.fmod((casadi.pi), self.X[2, self.N]) - casadi.fmod((casadi.pi), self.X[2, 0])) < casadi.pi)
         # self.opti.subject_to(self.X[0, 0] == self.X[0, self.N])
         # self.opti.subject_to(self.X[1, 0] == self.X[1, self.N])
 
@@ -204,14 +206,25 @@ class Ocp:
         if cost_fun is not None:
             self.cost_fun = cost_fun
             L_run = 0  # cost over the horizon
+
+            center_points = self.centerline(self.X[5, :].T).T
+            der_points = self.der_centerline(self.X[5, :].T).T
+
             for i in range(self.N + 1):
+                # start_time = perf_counter()
+                # self.centerline(self.X[5, i]).T
+                # temp_time = perf_counter()
+                # print(f"Centerline evaluation time: {temp_time - start_time}")
+                # self.der_centerline(self.X[5, i]).T
+                # temp_time = perf_counter()
+                # print(f"Derivative centerline evaluation time: {temp_time - start_time}")
                 if i == 0:
                     L_run += cost_fun(
                         self.X[:, i],
                         self.U[:, i],
                         (self.U[:, i] - self.u_prev),
-                        self.centerline(self.X[5, i]).T,
-                        self.der_centerline(self.X[5, i]).T,
+                        center_points[i],
+                        der_points[i],
                         self.Sc[i],
                     )
                 elif i == self.N:
@@ -219,8 +232,8 @@ class Ocp:
                         self.X[:, i],
                         0,
                         0,
-                        self.centerline(self.X[5, i]).T,
-                        self.der_centerline(self.X[5, i]).T,
+                        center_points[i],
+                        der_points[i],
                         self.Sc[i],
                     )
                 else:
@@ -228,10 +241,12 @@ class Ocp:
                         self.X[:, i],
                         self.U[:, i],
                         (self.U[:, i] - self.U[:, i - 1]),
-                        self.centerline(self.X[5, i]).T,
-                        self.der_centerline(self.X[5, i]).T,
+                        center_points[i],
+                        der_points[i],
                         self.Sc[i],
                     )
+                # stop_time = perf_counter()
+                # print(f"Cost function evaluation time: {stop_time - start_time}")
 
             self.cost["run"] = L_run
 

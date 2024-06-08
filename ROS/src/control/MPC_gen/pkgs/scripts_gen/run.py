@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from time import perf_counter
+
 import casadi as cd
 import numpy as np
 import rospkg
@@ -15,7 +17,8 @@ from spline_utils import (  # get_boundary_constraints,
     get_boundary_constraints_casadi,
     project_on_spline,
 )
-from utils_gen.plotting_mpc import plot_velocity
+
+# from utils_gen.plotting_mpc import plot_velocity
 
 
 class MPC_gen:
@@ -23,11 +26,17 @@ class MPC_gen:
         rospy.init_node("MPC_generation_control")
 
         self.path_GT_centerline = rospy.get_param(
-            "~input_path", "/data_gen/centerline_chicane.yaml"
+            "~input_path", "/data_gen/centerline_fsi.yaml"
         )
-        self.path_GT_map = rospy.get_param("~input_path", "/data_gen/map_chicane.yaml")
+        self.path_GT_map = rospy.get_param("~input_path", "/data_gen/map_fsi.yaml")
 
-        reverse = True
+        reverse = False
+
+        plt.rcParams["text.usetex"] = True
+
+        ax = plt.gca()
+        ax.axis("off")
+        ax.set_aspect("equal", "datalim")
 
         # Get centerline from yaml
         self.GT_centerline = []
@@ -37,11 +46,14 @@ class MPC_gen:
             self.GT_centerline.append(
                 [pose["pose"]["position"]["x"], pose["pose"]["position"]["y"]]
             )
-        # Close centerline
-        self.GT_centerline = np.roll(self.GT_centerline, -5, axis=0)
-        self.GT_centerline = np.vstack((self.GT_centerline, self.GT_centerline[0]))
 
-        self.GT_centerline = self.interpolate_arr(self.GT_centerline)
+        # Close centerline
+        # self.GT_centerline = np.roll(self.GT_centerline, -5 , axis=0)
+
+        # self.GT_centerline = np.vstack((self.GT_centerline, self.GT_centerline[0]))
+
+        # self.GT_centerline = self.interpolate_arr(self.GT_centerline)
+        # plt.plot(self.GT_centerline.T[0], self.GT_centerline.T[1], 'o',c="r")
 
         # Reverse centerline because otherwise spline goes wrong way
         if reverse:
@@ -81,16 +93,55 @@ class MPC_gen:
             self.GT_right_boundary = self.GT_right_boundary[::-1]
 
         spline_centerline, curve_centerline = create_spline(
-            self.GT_centerline, "r", derivative=False, derivative2=False, plot=True
+            self.GT_centerline, "black", derivative=False, derivative2=False, plot=False
         )
+        centerline = np.array(self.GT_centerline)
+        plt.plot(centerline.T[0], centerline.T[1], c="black", label="Centerline")
+
+        plt.plot(curve_centerline(0).T[0], curve_centerline(0).T[1], "o", c="black")
+        # plt.show()
 
         self.curve_centerline = curve_centerline
         self.der_centerline = curve_centerline.derivative(o=1)
 
+        # start_time = perf_counter()
+        # curve_centerline(np.linspace(0, 1, 436))
+        # stop_time = perf_counter()
+        # print(f"Time to calculate 436 points on spline: {stop_time - start_time}")
+
+        # print(f"length centerline: {len(self.GT_centerline)}")
+
+        # eval_times = []
+        # for i in range(2, 500):
+        #     start_time = perf_counter()
+        #     curve_centerline(np.linspace(0, 1, i))
+        #     stop_time = perf_counter()
+        #     eval_times.append(stop_time - start_time)
+
+        # plt.plot(np.arange(2, 500), eval_times)
+        # plt.xlabel("N", fontsize=40)
+        # plt.ylabel("Evaluation Time (s)", fontsize=40)
+        # plt.xticks(fontsize=40)
+        # plt.yticks(fontsize=40)
+        # plt.ylim(0, 0.1)
+        # plt.show()
+
+        # get_boundary_constraints_casadi(
+        #     self.curve_centerline,
+        #     self.der_centerline,
+        #     np.linspace(0, 1, 50),
+        #     1.5,
+        #     plot=True,
+        # )
+
         car_pos = np.squeeze(curve_centerline(0))
         self.start_pos = car_pos
         taus = np.linspace(0, 1, 10000)
+        print("points on spline")
+        start_time = perf_counter()
         points_on_spline = curve_centerline(taus)
+        print(f"Time to calculate points on spline: {perf_counter() - start_time}")
+        print("after points on spline")
         der_points = self.der_centerline(taus)
         project_on_spline(points_on_spline, der_points, car_pos, plot=False)
 
@@ -110,9 +161,23 @@ class MPC_gen:
 
         # plt.xlim(-20, 50)
         # plt.ylim(-60, 10)
-        ax = plt.gca()
-        ax.set_aspect("equal", "datalim")
+
         # plt.show()
+
+        path = (
+            rospkg.RosPack().get_path("mpc_gen")
+            + "/data_gen/solution_gen_circles_fsi.npz"
+        )
+        data = np.load(path)
+        X_sol_intermediate = data["X_sol_intermediate"]
+        last_sol = X_sol_intermediate[-1]
+        plt.plot(
+            last_sol[0],
+            last_sol[1],
+            "--",
+            c="orange",
+            label="Solution MPCC with circles with N=436",
+        )
 
         self.initialize_MPC()
 
@@ -142,12 +207,37 @@ class MPC_gen:
         return arr
 
     def initialize_MPC(self):
-        self.car = BicycleModelSpline(dt=0.02)
+        self.car = BicycleModelSpline(dt=0.05)
 
         self.steering_joint_angle = 0
         self.u = [0, 0, 0]
 
-        self.N = 110
+        # for n in range(3, 700):
+        #     # velocities = []
+        #     points = self.curve_centerline(np.linspace(0, 1, n))
+        #     # print(points)
+
+        #     # Get distance between points
+        #     distances = np.sqrt(
+        #         np.sum(np.diff(points, axis=0) ** 2, axis=1)
+        #     )
+        #     velocities = distances / self.car.dt
+        #     print(np.mean(velocities))
+        #     if np.mean(velocities) > 10:
+        #         continue
+        #     else:
+        #         self.N = n
+        #         break
+
+        # print(self.N)
+        # self.N = 558 #fsc23
+        # self.N = 543 #fsc23 tuned
+        # self.N = 409 #fsi tuned
+        self.N = 436  # fsi
+        # self.N= 178 # for chicane
+        # self.N = 1075
+        # self.N = 620 #fsg
+        # self.N = 585 #fsg tuned
         self.ocp = Ocp(
             self.car.nx,
             self.car.nu,
@@ -248,8 +338,8 @@ class MPC_gen:
         """
         Set constraints for the MPC
         """
-        velocity_limit = 50
-        steering_limit = 0.5
+        velocity_limit = 5
+        steering_limit = 5
         self.wheelradius = 0.1
         self.ocp.subject_to()
         self.ocp.subject_to(
@@ -265,17 +355,15 @@ class MPC_gen:
         # Limit angle of steering joint
         self.ocp.subject_to(self.ocp.bounded(-np.pi / 4, self.ocp.X[3, :], np.pi / 4))
         # Limit velocity
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 40))
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 10))
 
         # Progress parameter between 0 and 1
-        self.ocp.subject_to(self.ocp.bounded(0.00000001, self.ocp.X[5, :], 1))
+        self.ocp.subject_to(self.ocp.bounded(0.0000000, self.ocp.X[5, :], 1))
 
         # Limit update to progress parameter
         # Starts from 0.01 because otherwise casadi optimizes to very small negative values
         self.ocp.subject_to(
-            self.ocp.bounded(
-                1 / (self.N * 10), self.ocp.U[2, :], 1 / (self.N - 0.4 * self.N)
-            )
+            self.ocp.bounded(1 / (self.N * 1.3), self.ocp.U[2, :], 1 / (0.7 * self.N))
         )
 
         # Limit relaxing constraint
@@ -303,7 +391,7 @@ class MPC_gen:
                     )
                     ** 2
                 )
-                < (1.5**2)  # + self.ocp.Sc[i] ** 2
+                < (1.2**2)  # + self.ocp.Sc[i] ** 2
             )
 
         # (
@@ -312,7 +400,7 @@ class MPC_gen:
         #     slopes_outer,
         #     intercepts_outer,
         # ) = get_boundary_constraints_casadi(
-        #     self.curve_centerline, self.der_centerline, self.ocp.X[5, :].T, 1.5
+        #     self.curve_centerline, self.der_centerline, self.ocp.X[5, :].T, 1.2
         # )
 
         # self.ocp.subject_to(
@@ -354,16 +442,16 @@ class MPC_gen:
         """
         # qs = 0
         # qss = 0
-        qc = 1e-3
-        ql = 5e-1
+        qc = 1e-7
+        ql = 1e-2
 
         # State: x, y, heading, steering angle, velocity
         # Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
 
         # Input: acceleration, velocity on steering angle, update to progress parameter
         # Maximize progress parameter
-        R = np.diag([1e-7, 1e-2, 1e-2])
-        R_delta = np.diag([1e-7, 1e-2, 1e-1])
+        R = np.diag([1e-4, 8e0, 4e-3])
+        R_delta = np.diag([1e-4, 5e1, 4e-3])
 
         q_obj = 1e1
 
@@ -381,7 +469,7 @@ class MPC_gen:
         e_l = -cd.cos(phi) * (self.ocp.x[0] - self.ocp.point_curve[0]) - cd.sin(phi) * (
             self.ocp.x[1] - self.ocp.point_curve[1]
         )
-        obj = 1 - self.ocp.x[5]
+        # obj = 1 - self.ocp.u[2]
 
         self.ocp.running_cost = (
             qc * e_c**2
@@ -390,7 +478,7 @@ class MPC_gen:
             + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
             # + qs @ self.ocp.sc
             # + qss @ self.ocp.sc**2
-            + q_obj * obj
+            + q_obj * -self.ocp.u[2]
         )
 
     def run_mpc(self):
@@ -449,27 +537,32 @@ class MPC_gen:
             x0_state = [x0[0], x0[1], heading, steering_angle, velocity, tau]
             X0.append(x0_state)
 
+        # Shift steering angle by one to get correct steering angle for next state
+        for i in range(len(X0) - 1):
+            X0[i][3] = X0[i + 1][3]
+            X0[i][4] = X0[i + 1][4]
+
         # Set first velocity equal to second
-        X0[0][4] = X0[1][4]
+        # X0[0][4] = X0[1][4]
 
         # Plot x-y and heading
-        plt.plot([x[0] for x in X0], [x[1] for x in X0], c="b")
+        # plt.plot([x[0] for x in X0], [x[1] for x in X0], c="b")
 
-        # Plot heading at x-y points
-        for i in range(len(X0)):
-            plt.plot(
-                [X0[i][0], X0[i][0] + np.cos(X0[i][2])],
-                [X0[i][1], X0[i][1] + np.sin(X0[i][2])],
-                c="r",
-            )
+        # # Plot heading at x-y points
+        # for i in range(len(X0)):
+        #     plt.plot(
+        #         [X0[i][0], X0[i][0] + np.cos(X0[i][2])],
+        #         [X0[i][1], X0[i][1] + np.sin(X0[i][2])],
+        #         c="r",
+        #     )
 
-        # Plot steering angle at x-y points
-        for i in range(len(X0)):
-            plt.plot(
-                [X0[i][0], X0[i][0] + np.cos(X0[i][3] + X0[i][2])],
-                [X0[i][1], X0[i][1] + np.sin(X0[i][3] + X0[i][2])],
-                c="g",
-            )
+        # # Plot steering angle at x-y points
+        # for i in range(len(X0)):
+        #     plt.plot(
+        #         [X0[i][0], X0[i][0] + np.cos(X0[i][3] + X0[i][2])],
+        #         [X0[i][1], X0[i][1] + np.sin(X0[i][3] + X0[i][2])],
+        #         c="g",
+        #     )
 
         for i in range(self.N):
             acceleration = (X0[i + 1][4] - X0[i][4]) / self.car.dt / self.wheelradius
@@ -497,10 +590,13 @@ class MPC_gen:
             slope_outer,
             intercept_outer,
         ) = get_boundary_constraints_casadi(
-            self.curve_centerline, self.der_centerline, Tau0, 1.5, plot=False
+            self.curve_centerline, self.der_centerline, Tau0, 1.2, plot=False
         )
 
         # plt.show()
+
+        initial_state = [self.start_pos[0], self.start_pos[1], 0, 0, 0, 0.00001]
+        # initial_state = [0, 0, 0, 0, 0, 0]
 
         u, info = self.mpc(
             initial_state,
@@ -526,14 +622,23 @@ class MPC_gen:
         # np.save(path + "/data_gen/X_closed_loop.npy", info["X_sol"])
         # np.save(path + "/data_gen/U_closed_loop.npy", info["U_sol"])
 
-        plot_velocity(
-            info["X_sol"].T[:, :2],
-            self.GT_left_boundary[:-1],
-            self.GT_right_boundary[:-1],
-            info["X_sol"].T[:, 4],
-            info["U_sol"].T[:, 0],
-            show_plots=True,
-        )
+        # plot_velocity(
+        #     info["X_sol"].T[:, :2],
+        #     self.GT_left_boundary[:-1],
+        #     self.GT_right_boundary[:-1],
+        #     info["X_sol"].T[:, 4],
+        #     info["U_sol"].T[:, 0],
+        #     show_plots=True,
+        # )
+
+        # determine colour based on acceleratoin value
+        # for i in range(self.N):
+        #     if info["U_sol"][0][i] > 0.5:
+        #         plt.plot(info["X_sol"][0][i], info["X_sol"][1][i], "o", c="g", markersize=5)
+        #     elif info["U_sol"][0][i] < -0.5:
+        #         plt.plot(info["X_sol"][0][i], info["X_sol"][1][i], "o", c="r", markersize=5)
+        #     else:
+        #         plt.plot(info["X_sol"][0][i], info["X_sol"][1][i], "o", c="gray", markersize=5)
 
         x_sol = info["X_sol"][0][:]
         y_sol = info["X_sol"][1][:]
@@ -541,22 +646,28 @@ class MPC_gen:
         x_sol = np.append(x_sol, x_sol[0])
         y_sol = np.append(y_sol, y_sol[0])
 
-        x_traj = self.interpolate_arr(np.vstack((x_sol, y_sol)).T, n=3)
+        # x_traj = self.interpolate_arr(np.vstack((x_sol, y_sol)).T, n=3)
+        x_traj = np.vstack((x_sol, y_sol)).T
 
         x_traj = np.vstack((x_traj, x_traj[0]))
         # plt.plot(x_traj.T[0], x_traj.T[1], c="m")
-        plt.plot(info["X_sol"][0][:], info["X_sol"][1][:], c="m")
-        plt.plot(info["X_sol"][0][:], info["X_sol"][1][:], "o", c="m")
+        plt.plot(
+            info["X_sol"][0][:],
+            info["X_sol"][1][:],
+            c="m",
+            label="Solution MPCC with circles with N=409",
+        )
+        # plt.plot(info["X_sol"][0][:], info["X_sol"][1][:], "o", c="m")
         print(info["X_sol"][5].shape)
         print(info["X_sol"][1].shape)
 
-        for i in range(self.N + 1):
-            plt.plot(
-                self.curve_centerline(info["X_sol"][5][i]).T[0],
-                self.curve_centerline(info["X_sol"][5][i]).T[1],
-                "o",
-                c="g",
-            )
+        # for i in range(self.N + 1):
+        #     plt.plot(
+        #         self.curve_centerline(info["X_sol"][5][i]).T[0],
+        #         self.curve_centerline(info["X_sol"][5][i]).T[1],
+        #         "o",
+        #         c="g",
+        #     )
         get_boundary_constraints_casadi(
             self.curve_centerline,
             self.der_centerline,
@@ -567,6 +678,10 @@ class MPC_gen:
 
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
+        ax.axis("off")
+        ax.legend(bbox_to_anchor=(1.05, 0.8), loc="upper right", fontsize=16)
+        # plt.legend()
+        plt.tight_layout()
         plt.show()
 
     def save_solution(self):
@@ -574,7 +689,7 @@ class MPC_gen:
         inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
         inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
         inf_obj = self.ocp.debug.stats()["iterations"]["obj"]
-        print(self.ocp.debug.show_infeasibilities())
+        # print(self.ocp.debug.show_infeasibilities())
 
         np.savez(
             "/home/ugr/autonomous2023/ROS/src/control/MPC_gen/data_gen/solution.npz",

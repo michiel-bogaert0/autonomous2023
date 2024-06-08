@@ -7,17 +7,18 @@ slam_controller:
       - map_publisher
 
       # Control
-      - front_wheel_feedback_control
+      # - MPC_tracking_control
+      - MPC_tracking_control
       - path_smoother
       - path_publisher
 
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
 lap_counter:
-  finishpoint: [75, 0, 0]
+  finishpoint: [0, 0, 0]
 map_publisher:
   map_pkg: "slam_simulator"
-  map: "/maps/acceleration_75m.yaml"
+  map: "/maps/fssim_fsg.yaml"
 speed:
   target: 10.0
   LC_adaptive_velocity: False
@@ -29,9 +30,11 @@ front_wheel_feedback:
   change_index: False
   world_frame: "ugr/map"
 mpc:
-  change_index: False
+  change_index: True
   minimal_distance: 3
   world_frame: "ugr/map"
 path_publisher:
   package_path: "path_publisher"
-  path: "/paths/straight_L75.yaml"
+  # path: "/paths/fsi_raceline_ref_halfspaces.yaml"
+  path: "/paths/raceline_fsg.yaml"
+  # path: "/paths/chicane_sim.yaml"

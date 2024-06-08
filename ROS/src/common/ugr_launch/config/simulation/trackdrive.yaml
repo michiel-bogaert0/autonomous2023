@@ -16,7 +16,7 @@ slam_controller:
       - lap_counter
 
       # Control
-      - front_wheel_feedback_control
+      - MPC_splines_tracking_control
       - pathplanning
       - path_smoother
 

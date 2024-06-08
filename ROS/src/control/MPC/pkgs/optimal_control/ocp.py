@@ -47,10 +47,10 @@ class Ocp:
         self.u_prev = self.opti.parameter(self.nu)
 
         # Soften constraints
-        self.Sc = self.opti.variable(1, N)
+        self.Sc = self.opti.variable(1, N + 1)
         self.sc = casadi.SX.sym("sc", 1)
 
-        self._x_reference = self.opti.parameter(self.nx, self.N)
+        self._x_reference = self.opti.parameter(self.nx, self.N + 1)
         self.params = []  # additional parameters
 
         # symbolic params to define cost functions
@@ -59,10 +59,10 @@ class Ocp:
         self.u_delta = casadi.SX.sym("symbolic_u_prev", self.nu)
         self.x_reference = casadi.SX.sym("symbolic_x_control_", self.nx)
 
-        self.a = self.opti.variable(1)
-        self.b = self.opti.variable(1)
-        self.c = self.opti.variable(1)
-        self.d = self.opti.variable(1)
+        self.slopes_inner = self.opti.parameter(1, N + 1)
+        self.intercepts_inner = self.opti.parameter(1, N + 1)
+        self.slopes_outer = self.opti.parameter(1, N + 1)
+        self.intercepts_outer = self.opti.parameter(1, N + 1)
 
         self._set_continuity(threads)
 
@@ -107,7 +107,13 @@ class Ocp:
         return F
 
     def _set_continuity(self, threads: int):
-        self.opti.subject_to(self.X[:, 0] == self.x0)
+        # self.opti.subject_to(self.X[:, 0] == self.x0)
+        # self.opti.subject_to(self.X[2, 0] == self.x0[2])
+        # self.opti.subject_to(self.X[3, 0] == self.x0[3])
+        self.opti.subject_to(self.X[:2, 0] == self.X[:2, self.N])
+        # self.opti.subject_to(self.X[4, 0] == self.X[4, self.N])
+        # self.opti.subject_to(self.X[:, 0] == self.X[:, self.N])
+        # self.opti.subject_to(casadi.fabs(casadi.fmod((2 * casadi.pi), self.X[2, self.N]) - casadi.fmod((2 * casadi.pi), self.X[2, 0])) < casadi.pi)
 
         if threads == 1:
             for i in range(self.N):
@@ -122,6 +128,9 @@ class Ocp:
             self.opti.subject_to(self.X[:, 1:] == X_next)
 
     def eval_cost(self, X, U, goal_state):
+        """
+        Not used
+        """
         assert X.shape[0] == self.nx
         N = X.shape[1] - 1
 
@@ -136,18 +145,26 @@ class Ocp:
         if cost_fun is not None:
             self.cost_fun = cost_fun
             L_run = 0  # cost over the horizon
-            for i in range(self.N):
+            for i in range(self.N + 1):
                 if i == 0:
                     L_run += cost_fun(
-                        self.X[:, i + 1],
+                        self.X[:, i],
                         self.U[:, i],
-                        (self.U[:, i] - self.u_prev),
+                        1 * (self.U[:, i] - self.u_prev),
+                        self._x_reference[:, i],
+                        self.Sc[i],
+                    )
+                elif i == self.N:
+                    L_run += cost_fun(
+                        self.X[:, i],
+                        0,
+                        0,
                         self._x_reference[:, i],
                         self.Sc[i],
                     )
                 else:
                     L_run += cost_fun(
-                        self.X[:, i + 1],
+                        self.X[:, i],
                         self.U[:, i],
                         (self.U[:, i] - self.U[:, i - 1]),
                         self._x_reference[:, i],
@@ -157,7 +174,7 @@ class Ocp:
                 # self.opti.subject_to((self.a * self.X[0, i] + self.b - self.X[1, i]) * (self.c * self.X[0, i] + self.d - self.X[1, i]) < 0)
 
                 # This one works with circles, but causes convergence issues
-                # self.opti.subject_to(((self.X[0, i+1] - self._x_reference[0, i]) ** 2 + (self.X[1, i+1] - self._x_reference[1, i]) ** 2) < (2 ** 2) + self.Sc[i])
+
             self.cost["run"] = L_run
 
         self.cost["total"] = self.cost["run"]
@@ -241,13 +258,13 @@ class Ocp:
             [tuple]: U_sol [nu, N], X_sol [nx, N], info
         """
         self.opti.set_value(self.x0, state)
-        for i in range(self.N):
+        for i in range(self.N + 1):
             self.opti.set_value(self._x_reference[:, i], reference_track[i])
 
-        self.opti.set_initial(self.a, a)
-        self.opti.set_initial(self.b, b)
-        self.opti.set_initial(self.c, c)
-        self.opti.set_initial(self.d, d)
+        self.opti.set_value(self.slopes_inner, a)
+        self.opti.set_value(self.intercepts_inner, b)
+        self.opti.set_value(self.slopes_outer, c)
+        self.opti.set_value(self.intercepts_outer, d)
         self.opti.set_value(self.u_prev, u_prev)
 
         if X0 is not None:
@@ -260,7 +277,7 @@ class Ocp:
         else:
             self.opti.set_initial(self.U, np.zeros((self.nu, self.N)))
 
-        self.opti.set_initial(self.Sc, np.ones((1, self.N)) * 1e-1)
+        self.opti.set_initial(self.Sc, np.ones((1, self.N + 1)) * 1e-2)
 
         try:
             with self.timer:

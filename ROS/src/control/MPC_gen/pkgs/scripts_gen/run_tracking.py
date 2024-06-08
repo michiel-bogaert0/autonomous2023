@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from time import perf_counter
+# from time import perf_counter
 
 import casadi as cd
 import numpy as np
@@ -21,7 +21,7 @@ from node_fixture.managed_node import ManagedNode
 from optimal_control_gen.MPC_generation import MPC_generation
 from optimal_control_gen.ocp import Ocp
 from sensor_msgs.msg import JointState
-from spline_utils import create_spline  # get_boundary_constraints,
+from spline_utils import create_spline  # , get_boundary_constraints_casadi
 from std_msgs.msg import Float64
 from trajectory_gen import Trajectory
 from ugr_msgs.msg import State
@@ -80,6 +80,8 @@ class MPCSplinesTracking(ManagedNode):
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
         self.actual_speed = 0.0
+
+        self.exec_times = []
 
         # Publishers for the controllers
         self.drive_effort_pub = super().AddPublisher(
@@ -185,13 +187,13 @@ class MPCSplinesTracking(ManagedNode):
             rospy.logerr(f"Service call failed: {e}")
 
     def initialize_MPC(self):
-        self.car = BicycleModelSpline(dt=0.2)
+        self.car = BicycleModelSpline(dt=0.1)
 
         self.steering_joint_angle = 0
         self.u = [0, 0, 0]
 
         # create random path for initialisatin
-        arr = np.array([[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]])
+        arr = np.array([[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]])
         centerline, curve_centerline = create_spline(arr, color="r", plot=False)
 
         self.N = 10
@@ -229,7 +231,7 @@ class MPCSplinesTracking(ManagedNode):
         Set constraints for the MPC
         """
         velocity_limit = 10
-        steering_limit = 2
+        steering_limit = 0.5
         self.wheelradius = 0.1
         self.ocp.subject_to()
         self.ocp.subject_to(
@@ -252,19 +254,15 @@ class MPCSplinesTracking(ManagedNode):
 
         # Limit update to progress parameter
         # Starts from 0.01 because otherwise casadi optimizes to very small negative values
-        self.ocp.subject_to(
-            self.ocp.bounded(
-                1 / (self.N * 10), self.ocp.U[2, :], 1 / (self.N - 0.2 * self.N)
-            )
-        )
         # self.ocp.subject_to(
         #     self.ocp.bounded(
-        #         0.00000000001, self.ocp.U[2, :], 0.02
+        #         1 / (self.N * 2), self.ocp.U[2, :], 1 / (0.8 * self.N)
         #     )
         # )
 
+        self.ocp.subject_to(self.ocp.bounded(0.001, self.ocp.U[2, :], 0.12))
         # Limit relaxing constraint
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.5))
+        # self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 0.1))
 
         # Make sure neither x and y are zero at the same time by limiting square to be larger than 0
         # der_points = self.ocp.der_centerline(self.ocp.X[5, :].T)
@@ -289,7 +287,7 @@ class MPCSplinesTracking(ManagedNode):
         #             )
         #             ** 2
         #         )
-        #         < (1.5**2)  # + self.ocp.Sc[i] ** 2
+        #         < (1.2**2)  # + self.ocp.Sc[i] ** 2
         #     )
         # else:
         for i in range(self.N + 1):
@@ -308,7 +306,7 @@ class MPCSplinesTracking(ManagedNode):
                     )
                     ** 2
                 )
-                < (1.5**2)  # + self.ocp.Sc[i] ** 2
+                < (1.2**2)  # + self.ocp.Sc[i] ** 2
             )
 
         # (
@@ -357,20 +355,20 @@ class MPCSplinesTracking(ManagedNode):
         """
         Set costs for the MPC
         """
-        qs = 1e-2
-        qss = 1e-2
-        qc = 1e-3
-        ql = 1e-2
+        # qs = 1e-2
+        # qss = 1e-2
+        qc = 1e-7
+        ql = 1e1
 
         # State: x, y, heading, steering angle, velocity
         # Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
 
         # Input: acceleration, velocity on steering angle, update to progress parameter
         # Maximize progress parameter
-        R = np.diag([1e-4, 1e-0, 1e-2])
-        R_delta = np.diag([1e-3, 1e-0, 1e-1])
+        R = np.diag([1e-5, 1e-1, 1e-2])
+        R_delta = np.diag([1e-1, 1e-1, 1e-2])
 
-        q_obj = 5e-1
+        q_obj = 2e2
 
         # Avoid division by zero
         # phi = cd.if_else(
@@ -386,15 +384,15 @@ class MPCSplinesTracking(ManagedNode):
         e_l = -cd.cos(phi) * (self.ocp.x[0] - self.ocp.point_curve[0]) - cd.sin(phi) * (
             self.ocp.x[1] - self.ocp.point_curve[1]
         )
-        obj = 1 - self.ocp.x[5]
+        obj = -self.ocp.u[2]
 
         self.ocp.running_cost = (
             qc * e_c**2
             + ql * e_l**2
             + self.ocp.u.T @ R @ self.ocp.u
             + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
-            + qs @ self.ocp.sc
-            + qss @ self.ocp.sc**2
+            # + qs @ self.ocp.sc
+            # + qss @ self.ocp.sc**2
             + q_obj * obj
         )
 
@@ -463,7 +461,7 @@ class MPCSplinesTracking(ManagedNode):
         while not rospy.is_shutdown():
             if self.state == NodeManagingStatesEnum.ACTIVE:
                 try:
-                    start_time = perf_counter()
+                    # start_time = perf_counter()
                     self.doUpdate()
 
                     self.speed_target = rospy.get_param("/speed/target", 3.0)
@@ -536,7 +534,7 @@ class MPCSplinesTracking(ManagedNode):
                         curve_centerline,
                     ) = self.trajectory.create_spline()
 
-                    spline_time = perf_counter()
+                    # spline_time = perf_counter()
 
                     if curve_centerline is None:
                         self.velocity_cmd.data = 0.0
@@ -550,7 +548,8 @@ class MPCSplinesTracking(ManagedNode):
 
                     self.curve_centerline = curve_centerline
 
-                    # start_point = np.squeeze(curve_centerline(0))
+                    start_point = np.squeeze(curve_centerline(0))
+                    print(f"start point: {start_point}")
                     # heading = np.arctan2(
                     #     np.squeeze(curve_centerline.derivative(o=1)(0.000000))[1],
                     #     np.squeeze(curve_centerline.derivative(o=1)(0.000000))[0],
@@ -562,10 +561,12 @@ class MPCSplinesTracking(ManagedNode):
                         0,
                         self.steering_joint_angle,
                         self.actual_speed,
-                        0,
+                        0.000001,
                     ]
                     if self.u[0] == 0 and self.u[1] == 0:
                         X0, U0 = self.initial_guess()
+
+                        # current_state = [start_point[0], start_point[1], heading, self.steering_joint_angle, self.actual_speed, 0]
 
                         # print(X0)
 
@@ -578,8 +579,8 @@ class MPCSplinesTracking(ManagedNode):
                             None,
                             None,
                             self.u,
-                            # X0=X0,
-                            # U0=U0,
+                            X0=X0,
+                            U0=U0,
                         )
                     else:
                         u, info = self.mpc(
@@ -593,13 +594,15 @@ class MPCSplinesTracking(ManagedNode):
                         )
 
                     self.u = u
+
+                    self.exec_times.append(info["time"])
                     # print(u)
 
                     # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
                     # rospy.loginfo(f"x closed loop: {X_closed_loop}")
                     # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
                     # rospy.loginfo(f"u closed loop: {U_closed_loop}")
-                    # rospy.loginfo(f"u return: {u}")
+                    rospy.loginfo(f"u return: {u}")
                     rospy.loginfo(f"actual speed: {self.actual_speed}")
 
                     # Visualise MPC prediction
@@ -621,6 +624,8 @@ class MPCSplinesTracking(ManagedNode):
                     else:
                         self.save_solution()
                         # print(self.ocp.debug.show_infeasibilities())
+                        # rospy.signal_shutdown("MPC failed")
+                        # print(self.ocp.debug.show_infeasibilities())
                         self.velocity_cmd.data = u[0]
                         self.steering_cmd.data = u[1]
 
@@ -628,9 +633,15 @@ class MPCSplinesTracking(ManagedNode):
                         self.steering_velocity_pub.publish(self.steering_cmd)
                         self.drive_effort_pub.publish(self.velocity_cmd)
 
-                    stop_time = perf_counter()
-                    print(f"spline time: {spline_time - start_time}")
-                    print(f"mpc time: {stop_time - spline_time}")
+                    # mpc_time = perf_counter()
+
+                    self.save_solution()
+
+                    # stop_time = perf_counter()
+
+                    # print(f"spline time: {spline_time - start_time}")
+                    # print(f"mpc time: {mpc_time - spline_time}")
+                    # print(f"stop time: {stop_time - mpc_time}")
 
                 except Exception as e:
                     rospy.logwarn(f"MPC has caught an exception: {e}")
@@ -641,11 +652,15 @@ class MPCSplinesTracking(ManagedNode):
             rate.sleep()
 
     def initial_guess(self):
-        Tau0 = np.linspace(0.00001, 0.99999, self.N + 1)
+        Tau0 = np.linspace(0.00001, 0.5, self.N + 1)
         X0 = []
         U0 = []
         der_centerline = self.curve_centerline.derivative(o=1)
-        for tau in Tau0:
+        for idx, tau in enumerate(Tau0):
+            if idx == 0:
+                x0_state = [0, 0, 0, 0, 0, 0]
+                X0.append(x0_state)
+                continue
             x0 = self.curve_centerline(tau)[0]
             # heading = self.curve_centerline(tau)[1]
             steering_angle = 0
@@ -756,6 +771,8 @@ class MPCSplinesTracking(ManagedNode):
             info_pr=inf_pr,
             info_du=inf_du,
             info_obj=inf_obj,
+            exec_times=self.exec_times,
+            path_blf=self.trajectory.path_blf,
         )
 
 

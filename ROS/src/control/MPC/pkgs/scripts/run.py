@@ -30,7 +30,7 @@ class MPC(ManagedNode):
         super().__init__("MPC_tracking_control")
         self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.slam_state = SLAMStatesEnum.IDLE
-        self.save_solution = False
+        self.save_solution = True
         rospy.Subscriber("/state", State, self.handle_state_change)
         self.start_sender()
         rospy.spin()
@@ -45,6 +45,8 @@ class MPC(ManagedNode):
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
         self.actual_speed = 0.0
+
+        self.exec_times = []
 
         # Publishers for the controllers
         self.drive_effort_pub = super().AddPublisher(
@@ -131,7 +133,7 @@ class MPC(ManagedNode):
             N=self.N,
             F=self.car.F,
             T=self.car.dt * self.N,
-            show_execution_time=False,
+            show_execution_time=True,
             silent=True,
             store_intermediate=True,
         )
@@ -243,7 +245,7 @@ class MPC(ManagedNode):
         """
         Set constraints for the MPC
         """
-        steering_limit = 5
+        steering_limit = 0.5
         self.ocp.subject_to()
         self.ocp.subject_to(
             self.ocp.bounded(
@@ -259,6 +261,32 @@ class MPC(ManagedNode):
         self.ocp.subject_to(self.ocp.bounded(-np.pi / 4, self.ocp.X[3, :], np.pi / 4))
         # Limit velocity
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 20))
+
+        # Limit relaxing constraint
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 1e-1))
+
+        for i in range(self.N + 1):
+            self.ocp.subject_to(
+                (
+                    (self.ocp.X[0, i] - self.ocp._x_reference[0, i]) ** 2
+                    + (self.ocp.X[1, i] - self.ocp._x_reference[1, i]) ** 2
+                )
+                < (1.2**2) + self.ocp.Sc[i]
+            )
+
+        # self.ocp.subject_to(
+        #     (
+        #         self.ocp.slopes_inner * self.ocp.X[0, :]
+        #         + self.ocp.intercepts_inner
+        #         - self.ocp.X[1, :]
+        #     )
+        #     * (
+        #         self.ocp.slopes_outer * self.ocp.X[0, :]
+        #         + self.ocp.intercepts_outer
+        #         - self.ocp.X[1, :]
+        #     )
+        #     < 0
+        # )
         self.ocp._set_continuity(1)
 
     def set_costs(self, Qn, R, R_delta):
@@ -275,6 +303,36 @@ class MPC(ManagedNode):
             + self.ocp.u_delta.T @ R_delta @ self.ocp.u_delta
             + qs @ self.ocp.sc
             + qss @ self.ocp.sc**2
+        )
+
+    def get_boundary_constraints(self, ref_track, width, plot=False):
+        path = np.array(ref_track)
+
+        tangent_points = []
+        for i in range(len(path)):
+            if i == 0:
+                tangent_points.append([0, 0])
+            else:
+                diff = path[i] - path[i - 1]
+                tangent = np.array([-diff[1], diff[0]]) / np.linalg.norm(diff)
+                tangent_points.append(tangent)
+        tangent_points[0] = tangent_points[-1]
+
+        tangent_points = np.array(tangent_points)
+        pos_inner = path + width * tangent_points
+        pos_outer = path - width * tangent_points
+
+        self.slopes_inner = -tangent_points[:, 0] / tangent_points[:, 1]
+        self.intercepts_inner = pos_inner[:, 1] - self.slopes_inner * pos_inner[:, 0]
+
+        self.slopes_outer = -tangent_points[:, 0] / tangent_points[:, 1]
+        self.intercepts_outer = pos_outer[:, 1] - self.slopes_outer * pos_outer[:, 0]
+
+        return (
+            self.slopes_inner,
+            self.intercepts_inner,
+            self.slopes_outer,
+            self.intercepts_outer,
         )
 
     def start_sender(self):
@@ -356,6 +414,9 @@ class MPC(ManagedNode):
                         self.car.dt, self.N, self.actual_speed
                     )
 
+                    a, b, c, d = self.get_boundary_constraints(ref_track, 1.2)
+                    self.ref_track = ref_track
+
                     # Stop the car if no path
                     if len(ref_track) == 0:
                         self.diagnostics_pub.publish(
@@ -394,18 +455,20 @@ class MPC(ManagedNode):
 
                     # Get left and right boundary halfspaces
                     # NOTE: works terrible without BE
-                    a, b, c, d = self.trajectory.get_tangent_line(ref_track)
-
-                    left_point = ref_track[len(ref_track) // 2]
-                    x_points_left = np.linspace(left_point[0] - 5, left_point[0] + 5)
-                    y_points_left = a * x_points_left + b
+                    # a, b, c, d = self.trajectory.get_tangent_line(ref_track)
+                    idx = len(ref_track) // 2
+                    left_point = ref_track[idx]
+                    x_points_left = np.linspace(
+                        left_point[0] - 5, left_point[0] + 5, 100
+                    )
+                    y_points_left = a[idx] * x_points_left + b[idx]
                     self.vis_path(
                         list(zip(x_points_left, y_points_left)), self.left_line_pub
                     )
 
-                    right_point = ref_track[len(ref_track) // 2]
+                    right_point = ref_track[idx]
                     x_points_right = np.linspace(right_point[0] - 5, right_point[0] + 5)
-                    y_points_right = c * x_points_right + d
+                    y_points_right = c[idx] * x_points_right + d[idx]
                     self.vis_path(
                         list(zip(x_points_right, y_points_right)), self.right_line_pub
                     )
@@ -421,10 +484,12 @@ class MPC(ManagedNode):
                         # )
 
                         # Costs below are quite stable for skidpad and trackdrive
-                        Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
-                        R = np.diag([1e-5, 5e-4])
+                        Qn = np.diag([5e-3, 5e-3, 0, 0, 0])
+                        Qn = np.diag([1e-1, 1e-1, 0, 0, 0])
+                        # Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
+                        R = np.diag([1e-5, 4e-2])
                         R_delta = np.diag(
-                            [1e-2, 6e-1]  # * self.actual_speed / self.speed_target]
+                            [1e-2, 2e0]  # * self.actual_speed / self.speed_target]
                         )
 
                         self.set_costs(Qn, R, R_delta)
@@ -443,12 +508,14 @@ class MPC(ManagedNode):
                     )
                     self.u = u
 
+                    self.exec_times.append(info["time"])
+
                     # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
                     # rospy.loginfo(f"x closed loop: {X_closed_loop}")
                     # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
                     # rospy.loginfo(f"u closed loop: {U_closed_loop}")
                     # rospy.loginfo(f"u return: {u}")
-                    # rospy.loginfo(f"actual speed: {self.actual_speed}")
+                    rospy.loginfo(f"actual speed: {self.actual_speed}")
 
                     # Visualise MPC prediction
                     self.vis_path(
@@ -463,6 +530,21 @@ class MPC(ManagedNode):
                     self.steering_velocity_pub.publish(self.steering_cmd)
                     self.drive_effort_pub.publish(self.velocity_cmd)
 
+                    # Store solution in npz file for later analysis
+                    if self.save_solution:
+                        # Get convergence information
+                        inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
+                        inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
+
+                        np.savez(
+                            "/home/ugr/autonomous2023/ROS/src/control/MPC/data/solution.npz",
+                            U_sol_intermediate=self.mpc.U_sol_intermediate,
+                            X_sol_intermediate=self.mpc.X_sol_intermediate,
+                            info_pr=inf_pr,
+                            info_du=inf_du,
+                            exec_times=self.exec_times,
+                        )
+
                 except Exception as e:
                     rospy.logwarn(f"MPC has caught an exception: {e}")
                     import traceback
@@ -470,20 +552,6 @@ class MPC(ManagedNode):
                     print(traceback.format_exc())
 
             rate.sleep()
-
-        # Store solution in npz file for later analysis
-        if self.save_solution:
-            # Get convergence information
-            inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
-            inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
-
-            np.savez(
-                "/home/ugr/autonomous2023/ROS/src/control/MPC/data/solution.npz",
-                U_sol_intermediate=self.mpc.U_sol_intermediate,
-                X_sol_intermediate=self.mpc.X_sol_intermediate,
-                info_pr=inf_pr,
-                info_du=inf_du,
-            )
 
     def vis_path(self, path, publisher, stamp=None, frame_id=None):
         """

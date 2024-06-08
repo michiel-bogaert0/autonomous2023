@@ -85,7 +85,6 @@ class MPC_generation:
                     # X0 = np.concatenate(
                     #     (self.X_sol[:, 1:], self.X_sol[:, [-1]]), axis=1
                     # )
-                    print(f"prev X sol: {self.X_sol}")
                     X0 = self.X_sol
 
             if (U0 is None) and (self.U_sol is not None):

@@ -82,17 +82,19 @@ class MPC_tracking:
             else:
                 if (X0 is None) and (self.X_sol is not None):
                     # shift previous solution to warm start current optim, use array in slice, i.e. [-1], to preserve dim
-                    X0 = np.concatenate(
-                        (self.X_sol[:, 1:], self.X_sol[:, [-1]]), axis=1
-                    )
+                    # X0 = np.concatenate(
+                    #     (self.X_sol[:, 1:], self.X_sol[:, [-1]]), axis=1
+                    # )
+                    X0 = self.X_sol
 
             if (U0 is None) and (self.U_sol is not None):
                 if len(self.U_sol.shape) > 1:
-                    U0 = np.concatenate(
-                        (self.U_sol[:, 1:], self.U_sol[:, [-1]]), axis=1
-                    )
-                else:
-                    U0 = np.append(self.U_sol[1:], self.U_sol[-1])
+                    # U0 = np.concatenate(
+                    #     (self.U_sol[:, 1:], self.U_sol[:, [-1]]), axis=1
+                    # )
+                    U0 = self.U_sol
+                # else:
+                #     U0 = np.append(self.U_sol[1:], self.U_sol[-1])
 
         with self.timer:
             self.U_sol, self.X_sol, info = self.ocp.solve(
