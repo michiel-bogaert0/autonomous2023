@@ -199,9 +199,30 @@ class Trajectory:
                 (target_x_pp - target_x) ** 2 + (target_y_pp - target_y) ** 2
             )
 
-            if distance > minimal_distance:
+            dist_from_origin = np.sqrt(target_x_pp**2 + target_y_pp**2)
+            if dist_from_origin > minimal_distance:
+                prev_point = self.path_blf[self.closest_index]
+                target_point = self.path_blf[
+                    (self.closest_index + 1) % len(self.path_blf)
+                ]
+                prev_dist_from_origin = np.sqrt(prev_point[0] ** 2 + prev_point[1] ** 2)
+                scaling = 1 - (dist_from_origin - minimal_distance) / (
+                    dist_from_origin - prev_dist_from_origin
+                )
+                target_x = prev_point[0] + scaling * (target_point[0] - prev_point[0])
+                target_y = prev_point[1] + scaling * (target_point[1] - prev_point[1])
                 self.target = np.array([target_x, target_y])
                 return (self.target[0], self.target[1], self.time_source)
+
+            # if distance > minimal_distance:
+            #     prev_point = self.path_blf[self.closest_index]
+            #     target_point = self.path_blf[(self.closest_index + 1) % len(self.path_blf)]
+            #     scaling = 1 - (distance - minimal_distance) / (distance - prev_dist)
+            #     print("scaling: ", scaling)
+            #     target_x = prev_point[0] + scaling * (target_point[0] - prev_point[0])
+            #     target_y = prev_point[1] + scaling * (target_point[1] - prev_point[1])
+            #     self.target = np.array([target_x, target_y])
+            #     return (self.target[0], self.target[1], self.time_source)
 
             self.closest_index = (self.closest_index + 1) % len(self.path_blf)
 
