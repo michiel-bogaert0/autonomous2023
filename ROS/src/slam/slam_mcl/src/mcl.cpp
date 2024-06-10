@@ -47,7 +47,7 @@ MCL::MCL(ros::NodeHandle &n)
       base_link_frame(n.param<string>("base_link_frame", "ugr/car_base_link")),
       tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0) {}
 
-void MCL::doConfigure() {
+void MCL::doActivate() {
   this->slam_base_link_frame =
       this->n.param<string>("slam_base_link_frame", "ugr/slam_base_link");
   this->world_frame = this->n.param<string>("world_frame", "ugr/car_odom");
@@ -81,7 +81,7 @@ void MCL::doConfigure() {
   vector<double> QAsVector;
   vector<double> RAsVector;
 
-  n.param<vector<double>>("input_noise", QAsVector, {0.1, 0.0, 0.0, 0.02});
+  n.param<vector<double>>("input_noise", QAsVector, {0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.05});
   n.param<vector<double>>("measurement_covariance", RAsVector,
                           {0.3, 0.0, 0.0, 0.05});
 
@@ -94,8 +94,13 @@ void MCL::doConfigure() {
 
   this->Q(0, 0) = pow(QAsVector[0], 2);
   this->Q(0, 1) = pow(QAsVector[1], 2);
-  this->Q(1, 0) = pow(QAsVector[2], 2);
-  this->Q(1, 1) = pow(QAsVector[3], 2);
+  this->Q(0, 2) = pow(QAsVector[2], 2);
+  this->Q(1, 0) = pow(QAsVector[3], 2);
+  this->Q(1, 1) = pow(QAsVector[4], 2);
+  this->Q(1, 2) = pow(QAsVector[5], 2);
+  this->Q(2, 0) = pow(QAsVector[6], 2);
+  this->Q(2, 1) = pow(QAsVector[7], 2);
+  this->Q(2, 2) = pow(QAsVector[8], 2);
 
   this->R(0, 0) = pow(RAsVector[0], 2);
   this->R(0, 1) = pow(RAsVector[1], 2);
@@ -233,7 +238,8 @@ void MCL::motion_update(Particle &particle, double dDist, double dYaw) {
   VectorXf A(2);
   A(0) = dDist;
   A(1) = dYaw;
-  VectorXf VG(2);
+  A(2) = 0.0;
+  VectorXf VG(3);
   VG = multivariate_gauss(A, this->Q, 1);
   dDist = VG(0);
   dYaw = VG(1);
@@ -242,7 +248,7 @@ void MCL::motion_update(Particle &particle, double dDist, double dYaw) {
   VectorXf xv = particle.pose();
   VectorXf xv_temp(3);
   xv_temp << xv(0) + dDist * cos(dYaw + xv(2)),
-      xv(1) + dDist * sin(dYaw + xv(2)), pi_to_pi2(xv(2) + dYaw);
+      xv(1) + dDist * sin(dYaw + xv(2)), pi_to_pi2(xv(2) + dYaw + VG(2));
   particle.setPose(xv_temp);
 }
 
