@@ -48,7 +48,7 @@ public:
   static tf2_ros::TransformBroadcaster br;
 
   void step();
-  void doConfigure() override;
+  void doActivate() override;
   void active() override;
 
 private:
