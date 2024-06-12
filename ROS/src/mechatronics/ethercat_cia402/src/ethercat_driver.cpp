@@ -21,18 +21,8 @@ ECatDriver::ECatDriver(ros::NodeHandle &n)
       ros::Duration(0.5).sleep();
     }
   } else {
-    target = 7000000;
-    for (int i = 0; i < 25; i++) {
-      ros::spinOnce();
-      ros::Duration(0.1).sleep();
-    }
-    target = -7000000;
-    for (int i = 0; i < 50; i++) {
-      ros::spinOnce();
-      ros::Duration(0.1).sleep();
-    }
-    target = 0;
-    for (int i = 0; i < 25; i++) {
+    target = 3000000000;
+    for (int i = 0; i < 600; i++) {
       ros::spinOnce();
       ros::Duration(0.1).sleep();
     }

@@ -31,9 +31,9 @@ PP_inputs pp_inputs_ext;
 
 #define MAX_ACC 50000
 #define MAX_VEL 7000000
-#define MARGIN  8192
+#define MARGIN  100000
 
-uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
+uint32_t calc_csv_target1(CSV_inputs csv_inputs, uint32_t cur_target) {
   uint32_t target_diff = cur_target - csv_inputs.velocity;
   if (((int32_t)target_diff) > MARGIN) {
     return csv_inputs.velocity + MAX_ACC;
@@ -44,24 +44,24 @@ uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
 }
 
 uint32_t clip_vel(uint32_t vel) {
-  if (vel > MAX_VEL) {
+  if (((int32_t)vel) > MAX_VEL) {
     return MAX_VEL;
-  } else if (vel < -MAX_VEL) {
+  } else if (((int32_t)vel) < -MAX_VEL) {
     return -MAX_VEL;
   }
   return vel;
 }
 
-uint32_t calc_csv_target1(CSV_inputs csv_inputs, uint32_t cur_target) {
+uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
   int32_t target_diff = (int32_t)(cur_target - csv_inputs.position);
   int32_t vel = (int32_t)csv_inputs.velocity;
-  uint32_t max_dec_dest = vel * vel / (2 * MAX_ACC);
 
   //! Note: does not yet take into account overflow
   if (target_diff > MARGIN) {
     if(vel > 0) {
       // Already moving in right direction
-      if(target_diff < max_dec_dest) {
+      uint64_t max_dec_dest = ((uint64_t)csv_inputs.velocity) * ((uint64_t)csv_inputs.velocity) / (2 * MAX_ACC);
+      if(target_diff <= max_dec_dest) {
         // Need to decelerate
         return clip_vel(csv_inputs.velocity - MAX_ACC);
       }
@@ -71,7 +71,8 @@ uint32_t calc_csv_target1(CSV_inputs csv_inputs, uint32_t cur_target) {
   } else if (target_diff < -MARGIN) {
     if(vel < 0) {
       // Already moving in right direction
-      if(-target_diff < max_dec_dest) {
+      uint64_t max_dec_dest = ((uint64_t)(-csv_inputs.velocity)) * ((uint64_t)(-csv_inputs.velocity)) / (2 * MAX_ACC);
+      if(-target_diff <= max_dec_dest) {
         // Need to decelerate
         return clip_vel(csv_inputs.velocity + MAX_ACC);
       }
