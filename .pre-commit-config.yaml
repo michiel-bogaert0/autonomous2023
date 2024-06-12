@@ -23,4 +23,4 @@ repos:
     rev: v1.3.5
     hooks:
       - id: cppcheck
-        args: ["-f", "--inline-suppr", "--suppress=missingInclude", "--suppress=unmatchedSuppression", "--suppress=missingIncludeSystem"]
+        args: ["-f","--check-level=exhaustive", "--inline-suppr", "--suppress=missingInclude", "--suppress=unmatchedSuppression", "--suppress=missingIncludeSystem"]

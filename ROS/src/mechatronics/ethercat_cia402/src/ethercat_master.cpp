@@ -1,6 +1,6 @@
 #include "ethercat_master.hpp"
 
-control_state_t servo_state{.mode = PP,
+control_state_t servo_state{.mode = CSV,
                             .ethercat_state = INIT,
                             .statusword_state = Not_ready_to_switch_on};
 
@@ -28,6 +28,19 @@ std::mutex inputs_mutex;
 CSP_inputs csp_inputs_ext;
 CSV_inputs csv_inputs_ext;
 PP_inputs pp_inputs_ext;
+
+#define MAX_ACC 250000
+#define MAX_VEL 7000000
+
+uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
+  uint32_t target_diff = cur_target - csv_inputs.velocity;
+  if (((int32_t)target_diff) > 8192) {
+    return csv_inputs.velocity + MAX_ACC;
+  } else if (((int32_t)target_diff) < -8192) {
+    return csv_inputs.velocity - MAX_ACC;
+  }
+  return cur_target;
+}
 
 void *loop(void *mode_ptr) {
   operational_mode_t mode = *static_cast<operational_mode_t *>(mode_ptr);
@@ -150,7 +163,6 @@ void *loop(void *mode_ptr) {
         assert(0 && "Mode not supported");
       }
 
-      // Mask/Ignore reserved bits (4,5,8,9,14,15) of status word
       if (mode == CSV) {
         printf(
             "\rState: %#x, Mode: %u, Target: %09u, Position: %09u, Velocity: "
@@ -164,6 +176,7 @@ void *loop(void *mode_ptr) {
                csp_inputs.velocity, csp_inputs.erroract);
       }
 
+      // Mask/Ignore reserved bits (4,5,8,9,14,15) of status word
       STATUS_WORD_MASK(statusword);
 
       // Set statusword in servo_state
@@ -264,17 +277,10 @@ void *loop(void *mode_ptr) {
 
       if (operation_enabled) {
         if (mode == CSV) {
+          // Calculate target velocity
+
           uint32_t cur_target = target.load();
-          uint32_t target_diff = cur_target - csv_inputs.velocity;
-          uint32_t new_target;
-          int max_acc = 50000;
-          if (((int32_t)target_diff) > 8192) {
-            new_target = csv_inputs.velocity + max_acc;
-          } else if (((int32_t)target_diff) < -8192) {
-            new_target = csv_inputs.velocity - max_acc;
-          } else {
-            new_target = cur_target;
-          }
+          uint32_t new_target = calc_csv_target(csv_inputs, cur_target);
           set_output(1, controlword, new_target);
           printf(", set speed: %09u\n", new_target);
         } else {

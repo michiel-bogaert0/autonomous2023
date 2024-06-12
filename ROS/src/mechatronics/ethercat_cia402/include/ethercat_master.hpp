@@ -157,6 +157,8 @@ void stop_loop(void);
  */
 void reset_state(void);
 
+uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target);
+
 #ifdef __cplusplus
 }
 #endif
