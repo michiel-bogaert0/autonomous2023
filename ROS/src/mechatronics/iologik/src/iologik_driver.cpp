@@ -1,8 +1,7 @@
 #include "iologik_driver.hpp"
 #include <mxio.h>
 
-iologik::iologik(ros::NodeHandle &n)
-    : ManagedNode(n, "iologik_driver"), n_(n) {}
+iologik::iologik(ros::NodeHandle &n) : ManagedNode(n, "iologik_aio"), n_(n) {}
 
 void iologik::doConfigure() {
   input0_pub_ = n_.advertise<std_msgs::Float64>("/input0", 10);
@@ -31,10 +30,10 @@ void iologik::doConfigure() {
       if (start_channel == -1) {
         start_channel = i;
       }
-      enabled_channels++; // count the number of enabled channels so that we
-                          // know how many should be read
+      end_channel = i;
     }
   }
+  enabled_channels = end_channel - start_channel + 1;
   n_.param<bool>("enable_o0", enable_o0, false);
   n_.param<bool>("enable_o1", enable_o1, false);
   n_.param<double>("minimum_output_current", minimum_output_current, 4);
@@ -96,62 +95,73 @@ void iologik::active() {
   // Read the input registers
   double dwValues[8] = {0};
   if (start_channel != -1) {
-    iRet = AI_Reads(
-        iHandle,                   // the handle for a connection
-        0,                         // unused
-        start_channel,             // starting channel
-        enabled_channels,          // read channel count
-        &dwValues[start_channel]); // DI reading value, make sure the inputs get
-                                   // written at the correct index
+    iRet = AI_Reads(iHandle,          // the handle for a connection
+                    0,                // unused
+                    start_channel,    // starting channel
+                    enabled_channels, // read channel count
+                    dwValues); // DI reading value, make sure the inputs get
+                               // written at the correct index
     CheckErr(iHandle, iRet, (char *)"DI_Reads");
     std_msgs::Float64 msg;
+    uint8_t pointer = 0;
+
+    // ROS_INFO("%d", enabled_channels);
+
     for (int i = 0; i < 8; ++i) {
-      msg.data = dwValues[i];
+      msg.data = dwValues[i - start_channel];
       switch (i) {
       case 0:
         if (enable_i0) {
+          pointer++;
           CheckInput(0, msg.data);
           input0_pub_.publish(msg);
         }
         break;
       case 1:
         if (enable_i1) {
+          pointer++;
           CheckInput(1, msg.data);
           input1_pub_.publish(msg);
         }
         break;
       case 2:
         if (enable_i2) {
+          pointer++;
           CheckInput(2, msg.data);
           input2_pub_.publish(msg);
         }
         break;
       case 3:
         if (enable_i3) {
+          pointer++;
           CheckInput(3, msg.data);
           input3_pub_.publish(msg);
         }
         break;
       case 4:
         if (enable_i4) {
+          pointer++;
           CheckInput(4, msg.data);
           input4_pub_.publish(msg);
         }
         break;
       case 5:
         if (enable_i5) {
+          pointer++;
           CheckInput(5, msg.data);
           input5_pub_.publish(msg);
         }
         break;
       case 6:
         if (enable_i6) {
+          pointer++;
           CheckInput(6, msg.data);
           input6_pub_.publish(msg);
         }
         break;
       case 7:
         if (enable_i7) {
+          pointer++;
           CheckInput(7, msg.data);
           input7_pub_.publish(msg);
         }

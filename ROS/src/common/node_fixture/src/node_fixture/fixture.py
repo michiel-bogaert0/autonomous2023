@@ -272,6 +272,7 @@ class ROSNode:
 class StateMachineScopeEnum(str, enum.Enum):
     AUTONOMOUS = "autonomous"
     SLAM = "slam"
+    CAR = "car"
 
 
 # States of SLAM state machine
@@ -314,13 +315,14 @@ class NodeManagingStatesEnum(str, enum.Enum):
 
 # States of orion
 class OrionStateEnum(str, enum.Enum):
-    INIT = "INIT"
-    TS_READY = "TS_READY"
-    TS_ACTIVATING = "TS_ACTIVATING"
-    TS_ACTIVE = "TS_ACTIVE"
-    R2D_READY = "R2D_READY"
-    R2D = "R2D"
-    ERROR = "ERROR"
+    INIT = "init"
+    TS_READY = "ts_ready"
+    TS_ACTIVATING = "ts_activating"
+    TS_ACTIVE = "ts_active"
+    R2D_READY = "r2d_ready"
+    R2D = "r2d"
+    ERROR = "error"
+    SDC_OPEN = "sdc_open"
 
 
 """

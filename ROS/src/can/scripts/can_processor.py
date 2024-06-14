@@ -17,10 +17,13 @@ class CanProcessor:
         # decode the message
         try:
             decoded_msg = self.db.decode_message(msg.id, msg.data)
-        except KeyError as e:
+        except KeyError:
             # This means that the message is not in the database...
             # Just log a warning and return...
-            rospy.logwarn(f"Message not in database {e}")
+            rospy.logwarn(f"Message not in database, ID {hex(msg.id)}")
+            return
+        except ValueError:
+            # rospy.logwarn(f"Value error on msg ID {hex(msg.id)}, please check: {e}")
             return
 
         # send the message

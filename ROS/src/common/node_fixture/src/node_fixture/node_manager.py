@@ -18,6 +18,7 @@ def set_state(name: str, state: str) -> None:
         name (str): The name of the node.
         state (str): The state to set the node to.
     """
+    print(f"[NM]> '{name}' --> {state}")
     rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.1)
     return rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(state)
 
@@ -162,8 +163,10 @@ class NodeManager(ManagedNode):
         if default_state == NodeManagingStatesEnum.ACTIVE:
             self.doConfigure()
             self.doActivate()
+            self.state = NodeManagingStatesEnum.ACTIVE
         elif default_state == NodeManagingStatesEnum.INACTIVE:
             self.doConfigure()
+            self.state = NodeManagingStatesEnum.INACTIVE
 
     def handle_health(self, msg: DiagnosticStatus):
         """
@@ -323,8 +326,10 @@ class NodeManager(ManagedNode):
             new_state (str): The new state of the state machine (not nodes)
             old_state (str): The old state of the state machine
         """
-
         node_management_param = rospy.get_param("~node_management")
+
+        print(f"Old state: {old_state} -> New State: {new_state}")
+
         if "always" not in node_management_param.keys():
             node_management_param["always"] = []
 
@@ -334,6 +339,7 @@ class NodeManager(ManagedNode):
         if old_state is not None and old_state not in node_management_param.keys():
             node_management_param[old_state] = []
 
+        print(f"Params: {node_management_param}")
         return node_management_param
 
     def configure_nodes(self):
@@ -414,16 +420,17 @@ class NodeManager(ManagedNode):
                     self.nodes_to_monitor.add(node)
 
             # Then deactivate nodes (that are not in the new state)
-            for node in node_management_param[old_state]:
-                if (
-                    node
-                    not in node_management_param[new_state]
-                    + node_management_param["always"]
-                ):
-                    self.nodes_to_monitor.remove(node)
-                    self.timers.pop(node, None)
-                    self.health_msgs.pop(node, None)
-                    set_state_inactive(node)
+            if old_state is not None:
+                for node in node_management_param[old_state]:
+                    if (
+                        node
+                        not in node_management_param[new_state]
+                        + node_management_param["always"]
+                    ):
+                        self.nodes_to_monitor.remove(node)
+                        self.timers.pop(node, None)
+                        self.health_msgs.pop(node, None)
+                        set_state_inactive(node)
 
             self.set_health(
                 level=DiagnosticStatus.OK, message=f"Activated nodes for {new_state}"

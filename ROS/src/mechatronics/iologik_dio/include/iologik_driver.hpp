@@ -4,7 +4,7 @@
 #include <mxio.h>
 #include <node_fixture/node_fixture.hpp>
 #include <ros/ros.h>
-#include <std_msgs/Float64.h>
+#include <std_msgs/Bool.h>
 #include <std_msgs/Header.h>
 #include <vector>
 
@@ -30,39 +30,43 @@ private:
   ros::Publisher input5_pub_;
   ros::Publisher input6_pub_;
   ros::Publisher input7_pub_;
+  ros::Publisher input8_pub_;
+
   ros::Subscriber output0_sub_;
   ros::Subscriber output1_sub_;
-  const char *ip = "192.168.50.3";
+  ros::Subscriber output2_sub_;
+  ros::Subscriber output3_sub_;
+  ros::Subscriber output4_sub_;
+  ros::Subscriber output5_sub_;
+
+  const char *ip = "192.168.50.4";
   int port = 502;
   const int timeout = 2000;
-  void output0Callback(std_msgs::Float64 msg);
-  void output1Callback(std_msgs::Float64 msg);
+  void output0Callback(std_msgs::Bool msg);
+  void output1Callback(std_msgs::Bool msg);
+  void output2Callback(std_msgs::Bool msg);
+  void output3Callback(std_msgs::Bool msg);
+  void output4Callback(std_msgs::Bool msg);
+  void output5Callback(std_msgs::Bool msg);
+
   void CheckErr(int iHandle, int iRet,
                 char *szFunctionName); // check function execution result
-  void CheckInput(int channel, double input);
-  double output0;
-  double output1;
-  double minimum_output_current;
-  double maximum_output_current;
-  double minimum_input_current;
-  double maximum_input_current;
-  int start_channel = -1; // lowest input that is enabled
-  int end_channel = -1;
-  int enabled_channels = 0; // number of enabled channels, the enabled channels
-                            // ALWAYS have to be grouped
-  bool enable_i0;
-  bool enable_i1;
-  bool enable_i2;
-  bool enable_i3;
-  bool enable_i4;
-  bool enable_i5;
-  bool enable_i6;
-  bool enable_i7;
-  bool enable_o0;
-  bool enable_o1;
-  bool o0_changed = false; // so that we don't keep writing the same value but
-                           // only when the value is changed
-  bool o1_changed = false;
+
+  bool output0 = 0;
+  bool output1 = 0;
+  bool output2 = 0;
+  bool output3 = 0;
+  bool output4 = 0;
+  bool output5 = 0;
+
+  bool o0_changed = true; // so that we don't keep writing the same value but
+                          // only when the value is changed
+  bool o1_changed = true;
+  bool o2_changed = true;
+  bool o3_changed = true;
+  bool o4_changed = true;
+  bool o5_changed = true;
+
   int iRet;    // return value from the CheckErr function
   int iHandle; // handle
 };

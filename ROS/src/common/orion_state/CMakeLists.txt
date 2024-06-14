@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5.1)
-project(car_state)
+project(orion_state)
 
 find_package(catkin REQUIRED)
 

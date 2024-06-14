@@ -1,0 +1,61 @@
+<launch>
+
+  <arg name="frames" default="orion_frames" />
+
+  <include file="$(find ugr_launch)/launch/frames/$(arg frames).launch" pass_all_args="true" />
+
+  <!-- State machine -->
+  <node name="orion_state" pkg="orion_state" type="orion_state.py" output="screen">
+    <param name="rate" value="15"/>
+  </node>
+
+  <!-- Load extra car specific parameters or override parameters -->
+  <rosparam command="load" file="$(find ugr_launch)/config/orion.yaml" />
+
+  
+  <!-- CAN -->
+  <!-- <node pkg="can" type="can_converter.py" name="can_cvrt_mc" respawn="false" output="screen">
+    <param name="can_interface" type="string" value="can3_ext" />
+    <param name="can_baudrate" type="int" value="500000" />
+    <param name="dbc_filename" type="string" value="hv500_can2_map_v24_EID_both.dbc" />
+    
+    <remap from="/ugr/can" to="/ugr/car/can/mc/rx" />
+    <remap from="/ugr/send_can_raw" to="/ugr/car/can/mc/tx" />
+
+  </node> -->
+
+  <node pkg="can" type="can_converter.py" name="can_cvrt_lv" respawn="false" output="screen">
+    <param name="can_interface" type="string" value="can4_ext" />
+    <param name="can_baudrate" type="int" value="1000000" />
+    <param name="dbc_filename" type="string" value="lv.dbc" />
+    
+    <remap from="/ugr/can" to="/ugr/car/can/lv/rx" />
+    <remap from="/ugr/send_can_raw" to="/ugr/car/can/lv/tx" />
+
+  </node>
+
+
+    <!-- IO drivers -->
+    <include file="$(find iologik_dio)/launch/iologik.launch" />
+    <include file="$(find iologik)/launch/iologik.launch" />
+  
+    <!-- Vectornav -->
+    <!-- <include file="$(find vectornav)/launch/vectornav.launch"/> -->
+  
+    <!-- Lidar -->
+    <!-- <include file="$(find ouster_ros)/launch/sensor.launch">
+        <arg name="timestamp_mode" default="TIME_FROM_PTP_1588" />
+      </include> -->
+  
+    <!-- Camera -->
+    <!-- <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">
+        <arg name="type" default="camera" />
+      </include> -->
+  
+    <!-- GPS -->
+    <!-- <include file="$(find ublox_gps)/launch/gps.launch" pass_all_args="true" /> -->
+  
+  
+    <!-- <include file="$(find ugr_ros_control)/orion_control/launch/orion_hardware.launch" /> -->
+
+</launch>

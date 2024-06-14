@@ -1,28 +1,24 @@
 <launch>
-  <node name="iologik" pkg="iologik" type="iologik" output="screen">
-    <param name="rate" value="10" />
+  <node name="iologik_aio" pkg="iologik" type="iologik" output="screen">
+    <param name="rate" value="20" />
     <param name="enable_i0" value="false" />
     <param name="enable_i1" value="false" />
-    <param name="enable_i2" value="false" />
-    <param name="enable_i3" value="false" />
+    <param name="enable_i2" value="true" />
+    <param name="enable_i3" value="true" />
     <param name="enable_i4" value="false" />
     <param name="enable_i5" value="false" />
-    <param name="enable_i6" value="false" />
+    <param name="enable_i6" value="true" />
     <param name="enable_i7" value="false" />
+
     <param name="enable_o0" value="true" />
     <param name="enable_o1" value="true" />
-    <param name="minimum_output_current" value="4" />
+    <param name="minimum_output_current" value="0" />
     <param name="maximum_output_current" value="20" />
-    <param name="minimum_input_current" value="4" />
+    <param name="minimum_input_current" value="0" />
     <param name="maximum_input_current" value="20" />
-    <remap from="/input0" to="/iologik/input0" />
-    <remap from="/input1" to="/iologik/input1" />
-    <remap from="/input2" to="/iologik/input2" />
-    <remap from="/input3" to="/iologik/input3" />
-    <remap from="/input4" to="/iologik/input4" />
-    <remap from="/input5" to="/iologik/input5" />
-    <remap from="/input6" to="/iologik/input6" />
-    <remap from="/input7" to="/iologik/input7" />
+    <remap from="/input2" to="/aio/in/bp1" />
+    <remap from="/input3" to="/aio/in/bp3" />
+    <remap from="/input6" to="/aio/in/bp5" />
     <remap from="/output0" to="/iologik/output0" />
     <remap from="/output1" to="/iologik/output1" />
   </node>
