@@ -81,16 +81,17 @@ void MCL::doActivate() {
   vector<double> QAsVector;
   vector<double> RAsVector;
 
-  n.param<vector<double>>("input_noise", QAsVector, {0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.05});
+  n.param<vector<double>>("input_noise", QAsVector,
+                          {0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.05});
   n.param<vector<double>>("measurement_covariance", RAsVector,
                           {0.3, 0.0, 0.0, 0.05});
 
-  if (QAsVector.size() != 4)
-    throw invalid_argument(
-        "Q (measurement_covariance) Must be a vector of size 4");
+  if (QAsVector.size() != 9)
+    throw invalid_argument("Q (input_noise) Must be a vector of size 4");
 
-  if (RAsVector.size() != 9)
-    throw invalid_argument("R (input_noise) Must be a vector of size 9");
+  if (RAsVector.size() != 4)
+    throw invalid_argument(
+        "R (measurement_covariance) Must be a vector of size 4");
 
   this->Q(0, 0) = pow(QAsVector[0], 2);
   this->Q(0, 1) = pow(QAsVector[1], 2);
