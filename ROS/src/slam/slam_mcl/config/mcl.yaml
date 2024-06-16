@@ -8,4 +8,4 @@ observe_dt: 0.0
 
 yaw_unwrap_threshold: 4.0
 measurement_covariance: [0.3, 0.0, 0.0, 0.05]
-input_noise: [0.2, 0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.05]
+input_noise: [0.2, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0]

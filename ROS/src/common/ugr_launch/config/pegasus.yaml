@@ -2,7 +2,7 @@
 ugr:
   car:
     steering:
-      transmission: 0.25
+      transmission: 0.20
 
 autonomous_state:
   node_management:

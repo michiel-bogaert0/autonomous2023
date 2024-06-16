@@ -68,7 +68,7 @@ class PurePursuit(KinematicTrackingNode):
             np.arctan2(1.0, R), np.pi / 2
         )
 
-        # self.steering_cmd.data /= 0.25
+        self.steering_cmd.data /= 0.2
         # print("Steering angle: ", self.steering_cmd.data)
 
         self.diagnostics_pub.publish(

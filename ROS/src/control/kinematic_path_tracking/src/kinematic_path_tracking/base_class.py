@@ -88,9 +88,9 @@ class KinematicTrackingNode(ManagedNode):
         self.path_pub = rospy.Publisher("/pp/path", Path, queue_size=10)
 
     def doActivate(self):
-        self.trajectory = Trajectory(self.tf_buffer)
+        # self.trajectory = Trajectory(self.tf_buffer)
 
-        self.longitudinal_control = LongitudinalControl(self.publish_rate)
+        # self.longitudinal_control = LongitudinalControl(self.publish_rate)
         rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
         try:
             switch_controller = rospy.ServiceProxy(
