@@ -32,7 +32,7 @@ PP_inputs pp_inputs_ext;
 #define MAX_ACC 50000
 #define MAX_VEL 7000000
 #define MARGIN 100000
-#define VEL_MARGIN 50000
+#define VEL_MARGIN 0.05 * MAX_VEL
 
 // uint32_t calc_csv_target1(CSV_inputs csv_inputs, uint32_t cur_target) {
 //   uint32_t target_diff = cur_target - csv_inputs.velocity;
@@ -43,6 +43,9 @@ PP_inputs pp_inputs_ext;
 //   }
 //   return cur_target;
 // }
+
+uint64_t max_dec_distance = 0;
+uint64_t target_difference = 0;
 
 uint32_t clip_vel(uint32_t vel) {
   if (((int32_t)vel) > MAX_VEL) {
@@ -62,7 +65,9 @@ uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
     if (vel > 0) {
       // Already moving in right direction
       uint64_t max_dec_dest = ((uint64_t)csv_inputs.velocity) *
-                              ((uint64_t)csv_inputs.velocity) / (2 * MAX_ACC);
+                              ((uint64_t)csv_inputs.velocity) / (2 * MAX_ACC * 250000);
+      printf(", target_diff: %09d", target_diff);
+      printf(", max_dec_dest: %09d", max_dec_dest);
       if (target_diff <= max_dec_dest) {
         // Need to decelerate
         return clip_vel(csv_inputs.velocity - MAX_ACC);
@@ -75,7 +80,7 @@ uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
       // Already moving in right direction
       uint64_t max_dec_dest = ((uint64_t)(-csv_inputs.velocity)) *
                               ((uint64_t)(-csv_inputs.velocity)) /
-                              (2 * MAX_ACC);
+                              (2 * MAX_ACC * 250000);
       if (-target_diff <= max_dec_dest) {
         // Need to decelerate
         return clip_vel(csv_inputs.velocity + MAX_ACC);
@@ -221,8 +226,8 @@ void *loop(void *mode_ptr) {
 
       if (mode == CSV) {
         printf(
-            "\rState: %#x, Mode: %u, Target: %09u, Position: %09u, Velocity: "
-            "%09u, Error: %09u",
+            "\rState: %#x, Mode: %u, Target: %09d, Position: %09d, Velocity: "
+            "%09d, Error: %09u",
             statusword, mode, target.load(), csv_inputs.position,
             csv_inputs.velocity, csv_inputs.erroract);
       } else if (mode == CSP) {
