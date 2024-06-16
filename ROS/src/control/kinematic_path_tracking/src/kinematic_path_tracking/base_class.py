@@ -59,12 +59,22 @@ class KinematicTrackingNode(ManagedNode):
 
     def doConfigure(self):
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
+        self.world_frame = rospy.get_param("~world_frame", "ugr/map")
 
         self.wheelradius = rospy.get_param("~wheelradius", 0.1)
 
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
         self.actual_speed = 0.0
+
+        self.integral = 0.0
+        self.last_error = 0.0
+
+        self.t = rospy.Time.now().to_sec()
+
+        self.Kp = rospy.get_param("~Kp", 0.5)
+        self.Ki = rospy.get_param("~Ki", 0.0)
+        self.Kd = rospy.get_param("~Kd", 0.0)
 
         self.received_path = None
 
@@ -75,7 +85,12 @@ class KinematicTrackingNode(ManagedNode):
 
         self.slam_state = None
 
+        self.path_pub = rospy.Publisher("/pp/path", Path, queue_size=10)
+
     def doActivate(self):
+        self.trajectory = Trajectory(self.tf_buffer)
+
+        self.longitudinal_control = LongitudinalControl(self.publish_rate)
         rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
         try:
             switch_controller = rospy.ServiceProxy(
@@ -136,9 +151,12 @@ class KinematicTrackingNode(ManagedNode):
 
         # Transform received message to self.base_link_frame
         trans = self.tf_buffer.lookup_transform(
-            self.base_link_frame, msg.header.frame_id, msg.header.stamp
+            self.world_frame, msg.header.frame_id, msg.header.stamp
         )
         transformed_path = ROSNode.do_transform_path(msg, trans)
+
+        self.path_pub.publish(transformed_path)
+        # print(transformed_path)
 
         # Save current path and time of transformation to self.trajectory
         self.trajectory.set_path(transformed_path)
@@ -163,6 +181,27 @@ class KinematicTrackingNode(ManagedNode):
             self.doUpdate()
 
             self.__process__()
+
+            # PID on steering cmd
+            # dt = rospy.Time.now().to_sec() - self.t
+            # self.t = rospy.Time.now().to_sec()
+
+            # steering_error = self.steering_cmd.data
+
+            # self.integral += steering_error * dt
+
+            # pid_u = (
+            #     self.Kp * steering_error
+            #     + self.Ki * self.integral
+            #     + self.Kd * (steering_error - self.last_error) / dt
+            # )
+
+            # self.last_error = steering_error
+
+            # self.steering_cmd.data = self.symmetrically_bound_angle(pid_u, np.pi / 2)
+            # # self.steering_cmd.data /= 0.25
+
+            # self.steering_pub.publish(self.steering_cmd)
 
             self.velocity_cmd.data = (
                 self.longitudinal_control.handle_longitudinal_control(

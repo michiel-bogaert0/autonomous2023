@@ -36,6 +36,8 @@ class Trajectory:
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.time_source = rospy.Time(0)
 
+        self.path_pub = rospy.Publisher("/fwf/path", Path, queue_size=10)
+
         self.path = Path()
 
     def set_path(self, path):
@@ -58,23 +60,30 @@ class Trajectory:
             None, all variables are class variables
 
         """
-        self.trans = self.tf_buffer.lookup_transform_full(
-            self.base_link_frame,
-            rospy.Time(0),
-            self.base_link_frame,
-            self.time_source,
-            self.world_frame,
-            timeout=rospy.Duration(0.2),
+        # self.trans = self.tf_buffer.lookup_transform_full(
+        #     self.base_link_frame,
+        #     rospy.Time(0),
+        #     self.base_link_frame,
+        #     self.time_source,
+        #     self.world_frame,
+        #     timeout=rospy.Duration(0.2),
+        # )
+        # print(self.path.header.frame_id)
+        self.trans = self.tf_buffer.lookup_transform(
+            self.base_link_frame, self.world_frame, rospy.Time(0)
         )
+        # transformed_path = ROSNode.do_transform_path(msg, trans)
 
         self.time_source = self.trans.header.stamp
 
         # Transform path
-        self.path = ROSNode.do_transform_path(self.path, self.trans)
+        path = ROSNode.do_transform_path(self.path, self.trans)
+
+        self.path_pub.publish(path)
 
         # save points for next transform
         self.points = np.array(
-            [[pose.pose.position.x, pose.pose.position.y] for pose in self.path.poses]
+            [[pose.pose.position.x, pose.pose.position.y] for pose in path.poses]
         )
         return self.points
 
