@@ -52,8 +52,10 @@ private:
 
   int max_iterations;
   double association_threshold;
+  double min_range;
   double max_range;
   double max_half_angle;
+  int penalty_threshold;
   Eigen::Matrix3d information_pose;
   Eigen::Matrix2d information_landmark;
 
