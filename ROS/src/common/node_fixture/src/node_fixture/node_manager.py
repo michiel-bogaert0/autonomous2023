@@ -75,12 +75,12 @@ def configure_node(name: str):
     rospy.wait_for_service(f"/node_managing/{name}/get", timeout=0.1)
     data = rospy.ServiceProxy(f"/node_managing/{name}/get", GetNodeState)()
     if data.state == NodeManagingStatesEnum.ACTIVE:
-        set_state_result &= set_state_inactive(name)
-        set_state_result &= set_state_unconfigured(name)
+        set_state_result = set_state_result and set_state_inactive(name)
+        set_state_result = set_state_result and set_state_unconfigured(name)
     elif data.state == NodeManagingStatesEnum.INACTIVE:
-        set_state_result &= set_state_unconfigured(name)
+        set_state_result = set_state_result and set_state_unconfigured(name)
 
-    set_state_result &= set_state_inactive(name)
+    set_state_result = set_state_result and set_state_inactive(name)
 
     return set_state_result
 
@@ -454,8 +454,8 @@ class NodeManager(ManagedNode):
 
         set_state_result = True
         for node in self.nodes_to_monitor:
-            set_state_result &= set_state_inactive(node)
-            set_state_result &= set_state_unconfigured(node)
+            set_state_result = set_state_result and set_state_inactive(node)
+            set_state_result = set_state_result and set_state_unconfigured(node)
 
         self.nodes_to_monitor = set([])
         self.timers = {}
@@ -471,7 +471,7 @@ class NodeManager(ManagedNode):
         set_state_result = True
 
         for node in self.nodes_to_monitor:
-            set_state_result &= set_state_finalized(node)
+            set_state_result = set_state_result and set_state_finalized(node)
 
         self.nodes_to_monitor = set([])
         self.timers = {}
