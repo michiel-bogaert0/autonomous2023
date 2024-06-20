@@ -236,7 +236,7 @@ void MCL::handleMap(
 void MCL::motion_update(Particle &particle, double dDist, double dYaw) {
 
   // Add noise
-  VectorXf A(2);
+  VectorXf A(3);
   A(0) = dDist;
   A(1) = dYaw;
   A(2) = 0.0;
