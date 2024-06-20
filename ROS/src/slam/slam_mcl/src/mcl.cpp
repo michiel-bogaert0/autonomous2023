@@ -28,6 +28,8 @@
 #include "kdtree.hpp"
 #include "kdtreepoint.hpp"
 
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseArray.h>
 #include <nav_msgs/Odometry.h>
 
 #include <string>
@@ -68,6 +70,8 @@ void MCL::doActivate() {
   this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
   this->diagPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(
       new node_fixture::DiagnosticPublisher(n, "SLAM MCL"));
+  this->particlePosePublisher =
+      n.advertise<geometry_msgs::PoseArray>("/output/particles", 5);
 
   obs_sub.subscribe(n, "/input/observations", 1);
   tf2_filter.registerCallback(boost::bind(&MCL::handleObservations, this, _1));
@@ -613,6 +617,10 @@ void MCL::publishOutput(ros::Time lookupTime) {
   float y = 0.0;
   float yaw = 0.0;
   float maxW = -10000.0;
+
+  geometry_msgs::PoseArray particlePoses;
+  particlePoses.header.frame_id = this->map_frame;
+
   // float totalW = 0.0; linting
   for (int i = 0; i < this->particles.size(); i++) {
 
@@ -627,6 +635,21 @@ void MCL::publishOutput(ros::Time lookupTime) {
     poseX.push_back(particle.pose()(0));
     poseY.push_back(particle.pose()(1));
     poseYaw.push_back(particle.pose()(2));
+
+    geometry_msgs::Pose particlePose;
+    particlePose.position.x = particle.pose()(0);
+    particlePose.position.y = particle.pose()(1);
+    particlePose.position.z = 0.0;
+
+    tf2::Quaternion quat;
+    quat.setRPY(0, 0, particle.pose()(2));
+
+    particlePose.orientation.x = quat.x();
+    particlePose.orientation.y = quat.y();
+    particlePose.orientation.z = quat.z();
+    particlePose.orientation.w = quat.w();
+
+    particlePoses.poses.push_back(particlePose);
 
     float curYaw = particle.pose()(2);
 
@@ -670,6 +693,8 @@ void MCL::publishOutput(ros::Time lookupTime) {
       maxW = w;
     }
   }
+
+  this->particlePosePublisher.publish(particlePoses);
 
   Vector3f pose(x, y, yaw);
 

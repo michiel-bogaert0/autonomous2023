@@ -95,6 +95,7 @@ private:
 
   // Publishers
   ros::Publisher odomPublisher;
+  ros::Publisher particlePosePublisher;
 
   // Diagnostic Publisher
   std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
