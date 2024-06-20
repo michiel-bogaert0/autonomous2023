@@ -60,7 +60,7 @@ void MCL::doActivate() {
   this->max_half_fov = this->n.param<double>("max_half_angle", 60 * 0.0174533);
   this->observe_dt = this->n.param<double>("observe_dt", 0.2);
   this->prev_state = {0, 0, 0};
-  this->Q = Eigen::MatrixXf(2, 2);
+  this->Q = Eigen::MatrixXf(3, 3);
   this->R = Eigen::MatrixXf(2, 2);
   this->yaw_unwrap_threshold =
       this->n.param<float>("yaw_unwrap_threshold", M_PI * 1.3);
@@ -87,7 +87,7 @@ void MCL::doActivate() {
                           {0.3, 0.0, 0.0, 0.05});
 
   if (QAsVector.size() != 9)
-    throw invalid_argument("Q (input_noise) Must be a vector of size 4");
+    throw invalid_argument("Q (input_noise) Must be a vector of size 9");
 
   if (RAsVector.size() != 4)
     throw invalid_argument(
