@@ -467,17 +467,17 @@ int initialize_ethercat(const char *ifname, operational_mode_t mode) {
   servo_state.mode = mode;
 
   if (ec_init(ifname)) {
-    printf("ec_init on %s succeeded.\n", ifname);
+    ROS_DEBUG("ec_init on %s succeeded.\n", ifname);
 
     if (ec_config_init(FALSE) > 0) {
 
-      printf("%d slaves found and configured.\n", ec_slavecount);
+      ROS_DEBUG("%d slaves found and configured.\n", ec_slavecount);
 
       ec_slave[1].PO2SOconfig = configure_servo;
       ec_config_map(&IOMap);
       ec_configdc();
 
-      printf("Slaves mapped, state to SAFE_OP.\n");
+      ROS_DEBUG("Slaves mapped, state to SAFE_OP.\n");
 
       /* wait for all slaves to reach SAFE_OP state */
       ec_statecheck(0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE * 4);
@@ -487,11 +487,11 @@ int initialize_ethercat(const char *ifname, operational_mode_t mode) {
       osal_usleep(100000);
       return 0;
     } else {
-      printf("No slaves found!\n");
+      ROS_ERROR("No slaves found!\n");
       return 1;
     }
   } else {
-    printf("ec_init failed :(\n");
+    ROS_ERROR("ec_init failed :(\n");
     return 1;
   }
 }
@@ -508,10 +508,6 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
     if (servo_state.ethercat_state == OP &&
         ((wkc < servo_state.expectedWKC) ||
          ec_group[currentgroup].docheckstate)) {
-      // if (needlf) {
-      //   needlf = FALSE;
-      //   printf("\n");
-      // }
       /* one ore more slaves are not responding */
       ec_group[currentgroup].docheckstate = FALSE;
       ec_readstate();
@@ -524,26 +520,26 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
             (ec_slave[slave].state != EC_STATE_OPERATIONAL)) {
           ec_group[currentgroup].docheckstate = TRUE;
           if (ec_slave[slave].state == (EC_STATE_SAFE_OP + EC_STATE_ERROR)) {
-            printf("ERROR : slave %d is in SAFE_OP + ERROR, attempting ack.\n",
+            ROS_ERROR("Slave %d is in SAFE_OP + ERROR, attempting ack.\n",
                    slave);
             ec_slave[slave].state = (EC_STATE_SAFE_OP + EC_STATE_ACK);
             ec_writestate(slave);
           } else if (ec_slave[slave].state == EC_STATE_SAFE_OP) {
-            printf("WARNING : slave %d is in SAFE_OP, change to OPERATIONAL.\n",
+            ROS_WARN("Slave %d is in SAFE_OP, change to OPERATIONAL.\n",
                    slave);
             ec_slave[slave].state = EC_STATE_OPERATIONAL;
             ec_writestate(slave);
           } else if (ec_slave[slave].state > EC_STATE_NONE) {
             if (ec_reconfig_slave(slave, EC_TIMEOUTMON)) {
               ec_slave[slave].islost = FALSE;
-              printf("MESSAGE : slave %d reconfigured\n", slave);
+              ROS_INFO("MESSAGE : slave %d reconfigured\n", slave);
             }
           } else if (!ec_slave[slave].islost) {
             /* re-check state */
             ec_statecheck(slave, EC_STATE_OPERATIONAL, EC_TIMEOUTRET);
             if (ec_slave[slave].state == EC_STATE_NONE) {
               ec_slave[slave].islost = TRUE;
-              printf("ERROR : slave %d lost\n", slave);
+              ROS_ERROR("Slave %d lost\n", slave);
             }
           }
         }
@@ -551,16 +547,16 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
           if (ec_slave[slave].state == EC_STATE_NONE) {
             if (ec_recover_slave(slave, EC_TIMEOUTMON)) {
               ec_slave[slave].islost = FALSE;
-              printf("MESSAGE : slave %d recovered\n", slave);
+              ROS_INFO("MESSAGE : slave %d recovered\n", slave);
             }
           } else {
             ec_slave[slave].islost = FALSE;
-            printf("MESSAGE : slave %d found\n", slave);
+            ROS_INFO("MESSAGE : slave %d found\n", slave);
           }
         }
       }
       if (!ec_group[currentgroup].docheckstate)
-        printf("OK : all slaves resumed OPERATIONAL.\n");
+        ROS_INFO("OK : all slaves resumed OPERATIONAL.\n");
     }
     osal_usleep(10000);
   }
