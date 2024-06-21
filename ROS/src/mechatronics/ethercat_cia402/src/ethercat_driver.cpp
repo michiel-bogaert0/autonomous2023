@@ -1,7 +1,7 @@
 #include "ethercat_driver.hpp"
-#define FULL_ROT     42000000UL
-#define mDEG_TO_POS  (FULL_ROT/360000UL)
-#define VEL_CONV     4UL
+#define FULL_ROT        42000000UL
+#define mDEG_TO_POS     (FULL_ROT/360000UL)
+#define TIME_CONV_VEL   4UL
 
 ECatDriver::ECatDriver(ros::NodeHandle &n)
     : node_fixture::ManagedNode(n, "ecat_driver"), n(n),
@@ -86,7 +86,7 @@ int ECatDriver::update_pubs() {
     this->statusword_pub.publish(statusword_msg);
 
     std_msgs::UInt32 velocity_msg;
-    velocity_msg.data = inputs.velocity * VEL_CONV / mDEG_TO_POS;
+    velocity_msg.data = inputs.velocity * TIME_CONV_VEL / mDEG_TO_POS;
     this->velocity_pub.publish(velocity_msg);
 
     std_msgs::UInt16 torque_msg;
@@ -110,7 +110,7 @@ int ECatDriver::update_pubs() {
     this->statusword_pub.publish(statusword_msg);
 
     std_msgs::UInt32 velocity_msg;
-    velocity_msg.data = inputs.velocity * VEL_CONV / mDEG_TO_POS;
+    velocity_msg.data = inputs.velocity * TIME_CONV_VEL / mDEG_TO_POS;
     this->velocity_pub.publish(velocity_msg);
 
     std_msgs::UInt16 torque_msg;

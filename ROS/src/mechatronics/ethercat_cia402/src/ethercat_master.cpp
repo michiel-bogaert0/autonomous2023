@@ -30,10 +30,11 @@ CSP_inputs csp_inputs_ext;
 CSV_inputs csv_inputs_ext;
 PP_inputs pp_inputs_ext;
 
-#define MAX_ACC     50000UL
-#define MAX_VEL     7000000
-#define MARGIN      100000
-#define VEL_MARGIN  0.05 * MAX_VEL
+#define MAX_ACC         50000UL
+#define MAX_VEL         7000000
+#define MARGIN          100000
+#define VEL_MARGIN      0.05 * MAX_VEL
+#define TIME_CONV_ACC   25UL
 
 uint64_t target_difference = 0;
 
@@ -56,8 +57,7 @@ uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
       // Already moving in right direction
       uint64_t max_dec_dest = ((uint64_t)csv_inputs.velocity) *
                               ((uint64_t)csv_inputs.velocity);
-      printf(", max_inter: %ld", max_dec_dest);
-      max_dec_dest /= 2 * MAX_ACC * 25UL;
+      max_dec_dest /= 2 * MAX_ACC * TIME_CONV_ACC;
       printf(", target_diff: %09d", target_diff);
       printf(", max_dec_dest: %ld", max_dec_dest);
       if (target_diff <= max_dec_dest) {
@@ -72,8 +72,7 @@ uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
       // Already moving in right direction
       uint64_t max_dec_dest = ((uint64_t)(-csv_inputs.velocity)) *
                               ((uint64_t)(-csv_inputs.velocity));
-      printf(", max_inter: %ld", max_dec_dest);
-      max_dec_dest /= 2 * MAX_ACC * 25UL;
+      max_dec_dest /= 2 * MAX_ACC * TIME_CONV_ACC;
       printf(", target_diff: %09d", target_diff);
       printf(", max_dec_dest: %ld", max_dec_dest);
       if (-target_diff <= max_dec_dest) {
