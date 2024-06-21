@@ -18,6 +18,7 @@ volatile int wkc;
 // Also includes `servo_state.expectedWKC` from the header file
 // END variables with possible race conditions
 
+uint32_t base_pos = 0;
 std::atomic_uint32_t target = {0};
 std::atomic_bool enable_servo = {false};
 std::atomic_bool loop_flag = {false};
@@ -29,10 +30,10 @@ CSP_inputs csp_inputs_ext;
 CSV_inputs csv_inputs_ext;
 PP_inputs pp_inputs_ext;
 
-#define MAX_ACC 50000UL
-#define MAX_VEL 7000000
-#define MARGIN 100000
-#define VEL_MARGIN 0.05 * MAX_VEL
+#define MAX_ACC     50000UL
+#define MAX_VEL     7000000
+#define MARGIN      100000
+#define VEL_MARGIN  0.05 * MAX_VEL
 
 uint64_t target_difference = 0;
 
@@ -120,10 +121,14 @@ void *loop(void *mode_ptr) {
     target = csp_inputs.position;
   } else if (mode == PP) {
     pp_inputs = get_PP_input(1);
-    target = pp_inputs.position;
+    target = 0;
+    // Set base position to offset angle from
+    base_pos = pp_inputs.position;
   } else if (mode == CSV) {
     csv_inputs = get_CSV_input(1);
     target = 0;
+    // Set base position to offset angle from
+    base_pos = csv_inputs.position;
   } else {
     // TODO CST not supported yet
     assert(0 && "Mode not supported");
@@ -222,12 +227,12 @@ void *loop(void *mode_ptr) {
         printf(
             "\rState: %#x, Mode: %u, Target: %09d, Position: %09d, Velocity: "
             "%09d, Error: %09u",
-            statusword, mode, target.load(), csv_inputs.position,
+            statusword, mode, base_pos + target.load(), csv_inputs.position,
             csv_inputs.velocity, csv_inputs.erroract);
       } else if (mode == CSP) {
         printf("\rState: %#x, Mode: %d, Target: %#x, Position: %#x, Velocity: "
                "%#x, Error: %#x",
-               statusword, mode, target.load(), csp_inputs.position,
+               statusword, mode, base_pos + target.load(), csp_inputs.position,
                csp_inputs.velocity, csp_inputs.erroract);
       }
 
@@ -342,15 +347,13 @@ void *loop(void *mode_ptr) {
       if (operation_enabled) {
         if (mode == CSV) {
           // Calculate target velocity
-
-          uint32_t cur_target = target.load();
-          uint32_t new_target = calc_csv_target(csv_inputs, cur_target);
-          set_output(1, controlword, new_target);
-          printf(", set speed: %09d\n", new_target);
+          uint32_t cur_target = base_pos + target.load();
+          uint32_t vel_target = calc_csv_target(csv_inputs, cur_target);
+          set_output(1, controlword, vel_target);
+          printf(", set speed: %09d\n", vel_target);
         } else {
           set_output(1, controlword, target.load());
         }
-        // set_output(1, controlword, 0xdeadbeef);
       } else {
         // Send input value as output
         if (mode == CSP) {

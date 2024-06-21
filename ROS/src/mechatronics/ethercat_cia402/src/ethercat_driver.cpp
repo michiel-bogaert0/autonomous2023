@@ -1,4 +1,7 @@
 #include "ethercat_driver.hpp"
+#define FULL_ROT     42000000UL
+#define mDEG_TO_POS  (FULL_ROT/360000UL)
+#define VEL_CONV     4UL
 
 ECatDriver::ECatDriver(ros::NodeHandle &n)
     : node_fixture::ManagedNode(n, "ecat_driver"), n(n),
@@ -53,7 +56,7 @@ void ECatDriver::doShutdown() {
 
 void ECatDriver::set_target(std_msgs::UInt32 new_target) {
   // Set new target
-  target = new_target.data;
+  target = new_target.data * mDEG_TO_POS;
 }
 
 
@@ -75,7 +78,7 @@ int ECatDriver::update_pubs() {
     CSP_inputs inputs = csp_inputs_ext;
     inputs_mutex.unlock();
     std_msgs::UInt32 position_msg;
-    position_msg.data = inputs.position;
+    position_msg.data = (inputs.position - base_pos) / mDEG_TO_POS;
     this->position_pub.publish(position_msg);
 
     std_msgs::UInt16 statusword_msg;
@@ -83,7 +86,7 @@ int ECatDriver::update_pubs() {
     this->statusword_pub.publish(statusword_msg);
 
     std_msgs::UInt32 velocity_msg;
-    velocity_msg.data = inputs.velocity;
+    velocity_msg.data = inputs.velocity * VEL_CONV / mDEG_TO_POS;
     this->velocity_pub.publish(velocity_msg);
 
     std_msgs::UInt16 torque_msg;
@@ -91,7 +94,7 @@ int ECatDriver::update_pubs() {
     this->torque_pub.publish(torque_msg);
 
     std_msgs::UInt32 erroract_msg;
-    erroract_msg.data = inputs.erroract;
+    erroract_msg.data = inputs.erroract / mDEG_TO_POS;
     this->erroract_pub.publish(erroract_msg);
   } else if (mode == CSV) {
     // Read current inputs
@@ -99,7 +102,7 @@ int ECatDriver::update_pubs() {
     CSV_inputs inputs = csv_inputs_ext;
     inputs_mutex.unlock();
     std_msgs::UInt32 position_msg;
-    position_msg.data = inputs.position;
+    position_msg.data = (inputs.position - base_pos) / mDEG_TO_POS;
     this->position_pub.publish(position_msg);
 
     std_msgs::UInt16 statusword_msg;
@@ -107,7 +110,7 @@ int ECatDriver::update_pubs() {
     this->statusword_pub.publish(statusword_msg);
 
     std_msgs::UInt32 velocity_msg;
-    velocity_msg.data = inputs.velocity;
+    velocity_msg.data = inputs.velocity * VEL_CONV / mDEG_TO_POS;
     this->velocity_pub.publish(velocity_msg);
 
     std_msgs::UInt16 torque_msg;
@@ -115,7 +118,7 @@ int ECatDriver::update_pubs() {
     this->torque_pub.publish(torque_msg);
 
     std_msgs::UInt32 erroract_msg;
-    erroract_msg.data = inputs.erroract;
+    erroract_msg.data = inputs.erroract / mDEG_TO_POS;
     this->erroract_pub.publish(erroract_msg);
   } else {
     // TODO CST not supported yet

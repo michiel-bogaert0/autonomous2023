@@ -65,6 +65,8 @@ extern cpu_set_t cpuset;
 extern struct sched_param param;
 extern volatile int wkc;
 
+// base_pos not atomic as normally only set once (then read)
+extern uint32_t base_pos;
 extern std::atomic_uint32_t target;
 extern std::atomic_bool enable_servo;
 extern std::atomic_bool loop_flag;
