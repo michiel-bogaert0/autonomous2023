@@ -263,12 +263,21 @@ void *loop(void *mode_ptr) {
         }
         case (Ready_to_switch_on): {
           /* Switch on command for transition (3) */
-          controlword |= 1 << control_switch_on;
+          controlword = 0;
+          controlword |=
+              (1 << control_enable_voltage) |
+              (1 << control_quick_stop) |
+              (1 << control_switch_on);
           break;
         }
         case (Switch_on): {
           /* Enable operation command for transition (4) */
-          controlword |= 1 << control_enable_operation;
+          controlword = 0;
+          controlword |=
+              (1 << control_enable_voltage) |
+              (1 << control_quick_stop) |
+              (1 << control_switch_on) |
+              (1 << control_enable_operation);
           break;
         }
         case (Operation_enabled): {
