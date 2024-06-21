@@ -4,30 +4,6 @@ ECatDriver::ECatDriver(ros::NodeHandle &n)
     : node_fixture::ManagedNode(n, "ecat_driver"), n(n),
       mode(static_cast<operational_mode_t>(n.param<int>("mode", CSP))),
       ifname(n.param<std::string>("ifname", "enp3s0")) {
-  // Manual run
-  printf("Starting in mode %d\n", mode);
-  ROS_INFO("Configuring");
-  doConfigure();
-  ROS_INFO("Configured");
-  ros::Duration(2).sleep();
-  ROS_INFO("Activating...");
-  doActivate();
-  if (mode == CSP || mode == PP) {
-    for (int i = 0; i < 20; i++) {
-      target += 2048;
-      // target += 4096;
-      this->spinOnce();
-      ros::Duration(0.5).sleep();
-    }
-  } else {
-    target = 0;
-    for (int i = 0; i < 600; i++) {
-      this->spinOnce();
-      ros::Duration(0.1).sleep();
-    }
-  }
-  ROS_INFO("Shutting down...");
-  doShutdown();
 }
 
 void ECatDriver::doConfigure() {

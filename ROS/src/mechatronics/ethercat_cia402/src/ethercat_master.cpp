@@ -411,6 +411,7 @@ int start_loop(operational_mode_t mode) {
   }
 
   servo_state.ethercat_state = OP;
+  ethercat_state_ext = EC_STATE_OPERATIONAL;
 
   int ret;
   // Now that the slave is in operation, start the main loop thread
