@@ -3,8 +3,7 @@
 ECatDriver::ECatDriver(ros::NodeHandle &n)
     : node_fixture::ManagedNode(n, "ecat_driver"), n(n),
       mode(static_cast<operational_mode_t>(n.param<int>("mode", CSP))),
-      ifname(n.param<std::string>("ifname", "enp3s0")),
-      update_period(n.param<double>("update_period", 0.5)) {
+      ifname(n.param<std::string>("ifname", "enp3s0")) {
   // Manual run
   printf("Starting in mode %d\n", mode);
   ROS_INFO("Configuring");
@@ -62,18 +61,11 @@ void ECatDriver::doActivate() {
   this->velocity_pub = n.advertise<std_msgs::UInt32>("/output/velocity", 1);
   this->torque_pub = n.advertise<std_msgs::UInt16>("/output/torque", 1);
   this->erroract_pub = n.advertise<std_msgs::UInt32>("/output/erroract", 1);
-  // Schedule callback
-  this->update_timer =
-      n.createTimer(ros::Duration(this->update_period),
-                    boost::bind(&ECatDriver::update_pubs, this, _1));
 }
 
 void ECatDriver::doDeactivate() {
   // Deactivate servo, but keep in Operational state
   enable_servo = false;
-
-  // Stop timer
-  this->update_timer.stop();
 }
 
 void ECatDriver::doShutdown() {
@@ -81,9 +73,6 @@ void ECatDriver::doShutdown() {
   stop_loop();
   // Reset servo to Initial state
   reset_state();
-
-  // Stop timer
-  this->update_timer.stop();
 }
 
 void ECatDriver::set_target(std_msgs::UInt32 new_target) {
@@ -91,11 +80,18 @@ void ECatDriver::set_target(std_msgs::UInt32 new_target) {
   target = new_target.data;
 }
 
-void ECatDriver::update_pubs(const ros::TimerEvent &event) {
+
+int ECatDriver::update_pubs() {
+  int ret = 0;
+
   // Publish current state
   std_msgs::Int32 ecat_state_msg;
-  ecat_state_msg.data = servo_state.statusword_state;
+  ecat_state_msg.data = ethercat_state_ext.load();
   this->ecat_state_pub.publish(ecat_state_msg);
+
+  if(ecat_state_msg.data != OP) {
+    ret = -1;
+  }
 
   if (mode == CSP) {
     // Read current inputs
@@ -148,5 +144,20 @@ void ECatDriver::update_pubs(const ros::TimerEvent &event) {
   } else {
     // TODO CST not supported yet
     assert(0 && "Mode not supported");
+  }
+
+  return ret;
+}
+
+void ECatDriver::active() {
+  // Update stats
+  int ret = update_pubs();
+  if(ret == 0) {
+    // Healthy
+    setHealthStatus(0, "Active", {});
+  } else {
+    // Error occurred
+    std::string err_msg = "Error occurred (" + std::to_string(ret) + ")";
+    setHealthStatus(2, err_msg, {});
   }
 }

@@ -19,7 +19,8 @@ public:
   void doDeactivate() override;
   void doShutdown() override;
   void set_target(std_msgs::UInt32 new_target);
-  void update_pubs(const ros::TimerEvent &event);
+  int update_pubs();
+  void active() override;
 
 private:
   ros::NodeHandle n;
@@ -30,8 +31,6 @@ private:
   ros::Subscriber target_sub;
 
   // Publishers
-  ros::Timer update_timer;
-  double update_period; // cppcheck-suppress unusedStructMember
   ros::Publisher ecat_state_pub;
   ros::Publisher position_pub;
   ros::Publisher statusword_pub;
