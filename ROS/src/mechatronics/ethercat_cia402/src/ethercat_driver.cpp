@@ -16,13 +16,13 @@ ECatDriver::ECatDriver(ros::NodeHandle &n)
     for (int i = 0; i < 20; i++) {
       target += 2048;
       // target += 4096;
-      ros::spinOnce();
+      this->spinOnce();
       ros::Duration(0.5).sleep();
     }
   } else {
-    target = 3500000000;
+    target = 0;
     for (int i = 0; i < 600; i++) {
-      ros::spinOnce();
+      this->spinOnce();
       ros::Duration(0.1).sleep();
     }
   }
