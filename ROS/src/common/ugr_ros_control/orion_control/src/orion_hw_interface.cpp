@@ -38,6 +38,7 @@
 */
 
 #include <orion_control/orion_hw_interface.hpp>
+#include <can_msgs/Frame.h>
 #include <random>
 #include <tuple>
 #include <math.h>
@@ -61,7 +62,7 @@ void OrionHWInterface::init()
 
   nh.param("steer_max_step", steer_max_step, 1600.0f);
 
-  this->can_pub = nh.advertise<ugr_msgs::CanFrame>("/ugr/send_can", 10);
+  this->can_pub = nh.advertise<ugr_msgs::CanFrame>("/output/can", 10);
   this->vel_pub = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/vel", 10);
 
   this->can_axis0_sub =
@@ -241,16 +242,13 @@ void OrionHWInterface::publish_torque_msg(float axis)
 void OrionHWInterface::send_torque_on_can(float axis, int id)
 {
   // create publish message
-  ugr_msgs::CanFrame msg;
-  std::vector<ugr_msgs::KeyValueFloat> keyvalues;
+  can_msgs::Frame msg;
   msg.header.stamp = ros::Time::now();
-  msg.message = "HV500_SetAcCurrent" + std::to_string(id);
-  // make signal
-  ugr_msgs::KeyValueFloat kv;
-  kv.key = "CMD_TargetAcCurrent";
-  kv.value = axis;
-  keyvalues.push_back(kv);
-  msg.signals = keyvalues;
+  msg.message = "HV500_SetAcCurrent";
+  msg.id = 69 + id;
+
+  msg.dlc = 8;
+  msg.data = { (axis << 8) & 0xFF, axis & 0xFF, 0, 0, 0, 0, 0, 0 };
 
   // publish
   can_pub.publish(msg);
