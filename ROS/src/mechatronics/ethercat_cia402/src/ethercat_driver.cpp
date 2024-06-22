@@ -1,7 +1,4 @@
 #include "ethercat_driver.hpp"
-#define FULL_ROT        42000000UL
-#define mDEG_TO_POS     (FULL_ROT/360000UL)
-#define TIME_CONV_VEL   4UL
 
 ECatDriver::ECatDriver(ros::NodeHandle &n)
     : node_fixture::ManagedNode(n, "ecat_driver"), n(n),
@@ -54,9 +51,9 @@ void ECatDriver::doShutdown() {
   reset_state();
 }
 
-void ECatDriver::set_target(std_msgs::UInt32 new_target) {
+void ECatDriver::set_target(std_msgs::Int32 new_target) {
   // Set new target
-  target = new_target.data * mDEG_TO_POS;
+  target = new_target.data;
 }
 
 

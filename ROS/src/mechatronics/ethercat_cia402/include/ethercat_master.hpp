@@ -8,6 +8,21 @@
 #define STATUS_WORD_MASK(x)                                                    \
   (x &= ~((1 << 4) | (1 << 5) | (1 << 8) | (1 << 9) | (1 << 14) | (1 << 15)))
 
+// Control parameters
+#define MAX_ACC         50000UL
+#define MAX_VEL         7000000
+#define MARGIN          100000
+#define VEL_MARGIN      0.05 * MAX_VEL
+
+// Conversion parameters
+#define FULL_ROT        42000000UL
+#define mDEG_TO_POS     (FULL_ROT/360000UL)
+#define TIME_CONV_VEL   4UL
+#define TIME_CONV_ACC   25UL
+
+// Max span in milli degrees (MAX 140000)
+#define MAX_SPAN        130000
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -67,7 +82,7 @@ extern volatile int wkc;
 
 // base_pos not atomic as normally only set once (then read)
 extern uint32_t base_pos;
-extern std::atomic_uint32_t target;
+extern std::atomic_int32_t target;
 extern std::atomic_bool enable_servo;
 extern std::atomic_bool loop_flag;
 extern std::atomic_bool check_flag;
@@ -160,6 +175,7 @@ void stop_loop(void);
 void reset_state(void);
 
 uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target);
+uint32_t get_target_limited();
 
 #ifdef __cplusplus
 }

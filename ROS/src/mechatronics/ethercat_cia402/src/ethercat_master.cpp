@@ -19,7 +19,7 @@ volatile int wkc;
 // END variables with possible race conditions
 
 uint32_t base_pos = 0;
-std::atomic_uint32_t target = {0};
+std::atomic_int32_t target = {0};
 std::atomic_bool enable_servo = {false};
 std::atomic_bool loop_flag = {false};
 std::atomic_bool check_flag = {false};
@@ -30,14 +30,6 @@ CSP_inputs csp_inputs_ext;
 CSV_inputs csv_inputs_ext;
 PP_inputs pp_inputs_ext;
 
-#define MAX_ACC         50000UL
-#define MAX_VEL         7000000
-#define MARGIN          100000
-#define VEL_MARGIN      0.05 * MAX_VEL
-#define TIME_CONV_ACC   25UL
-
-uint64_t target_difference = 0;
-
 uint32_t clip_vel(uint32_t vel) {
   if (((int32_t)vel) > MAX_VEL) {
     return MAX_VEL;
@@ -45,6 +37,21 @@ uint32_t clip_vel(uint32_t vel) {
     return -MAX_VEL;
   }
   return vel;
+}
+
+uint32_t get_target_limited() {
+  // Get target (in mDEG)
+  int32_t cur_target = target.load();
+  // Limit target
+  if (cur_target > MAX_SPAN/2) {
+    cur_target = MAX_SPAN/2;
+  } else if (cur_target < -MAX_SPAN/2) {
+    cur_target = -MAX_SPAN/2;
+  }
+
+  // Return converted target in steps
+  // Converted to uint32_t
+  return (cur_target * mDEG_TO_POS);
 }
 
 uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
@@ -225,14 +232,14 @@ void *loop(void *mode_ptr) {
       if (mode == CSV) {
         printf(
             "\rState: %#x, Mode: %u, Target: %09d, Position: %09d, Velocity: "
-            "%09d, Error: %09u",
-            statusword, mode, base_pos + target.load(), csv_inputs.position,
-            csv_inputs.velocity, csv_inputs.erroract);
+            "%09d, Torque: %06d, Error: %09u",
+            statusword, mode, base_pos + get_target_limited(), csv_inputs.position,
+            csv_inputs.velocity, csv_inputs.torque, csv_inputs.erroract);
       } else if (mode == CSP) {
         printf("\rState: %#x, Mode: %d, Target: %#x, Position: %#x, Velocity: "
-               "%#x, Error: %#x",
-               statusword, mode, base_pos + target.load(), csp_inputs.position,
-               csp_inputs.velocity, csp_inputs.erroract);
+               "%#x, Torque: %06d, Error: %#x",
+               statusword, mode, base_pos + get_target_limited(), csp_inputs.position,
+               csp_inputs.velocity, csp_inputs.torque, csp_inputs.erroract);
       }
 
       // Mask/Ignore reserved bits (4,5,8,9,14,15) of status word
@@ -346,7 +353,7 @@ void *loop(void *mode_ptr) {
       if (operation_enabled) {
         if (mode == CSV) {
           // Calculate target velocity
-          uint32_t cur_target = base_pos + target.load();
+          uint32_t cur_target = base_pos + get_target_limited();
           uint32_t vel_target = calc_csv_target(csv_inputs, cur_target);
           set_output(1, controlword, vel_target);
           printf(", set speed: %09d\n", vel_target);
@@ -658,14 +665,14 @@ int configure_servo(uint16 slave) {
   // Motor Settings
 
   // Set max current
-  u32val = 4000;
+  u32val = 8900;
   retval = ec_SDOwrite(slave, 0x8011, 0x11, FALSE, sizeof(u32val), &u32val,
                        EC_TIMEOUTSAFE);
   if (retval == 0)
     return 0;
 
   // Set rated current
-  u32val = 1000;
+  u32val = 8900;
   retval = ec_SDOwrite(slave, 0x8011, 0x12, FALSE, sizeof(u32val), &u32val,
                        EC_TIMEOUTSAFE);
   if (retval == 0)

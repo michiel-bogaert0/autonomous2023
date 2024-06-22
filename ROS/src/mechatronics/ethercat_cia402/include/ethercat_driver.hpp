@@ -7,6 +7,7 @@
 #include "managed_node.hpp"
 #include "ros/ros.h"
 #include "std_msgs/Int32.h"
+#include "std_msgs/Int64.h"
 #include "std_msgs/UInt16.h"
 #include "std_msgs/UInt32.h"
 
@@ -18,7 +19,7 @@ public:
   void doActivate() override;
   void doDeactivate() override;
   void doShutdown() override;
-  void set_target(std_msgs::UInt32 new_target);
+  void set_target(std_msgs::Int32 new_target);
   int update_pubs();
   void active() override;
 
