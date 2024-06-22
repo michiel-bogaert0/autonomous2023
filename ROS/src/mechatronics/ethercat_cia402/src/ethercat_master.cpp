@@ -43,11 +43,11 @@ uint32_t get_target_limited() {
   // Get target (in mDEG)
   int32_t cur_target = target.load();
   // Limit target
-  if (cur_target > MAX_SPAN/2) {
-    cur_target = MAX_SPAN/2;
-  } else if (cur_target < -MAX_SPAN/2) {
-    cur_target = -MAX_SPAN/2;
-  }
+  // if (cur_target > MAX_SPAN/2) {
+  //   cur_target = MAX_SPAN/2;
+  // } else if (cur_target < -MAX_SPAN/2) {
+  //   cur_target = -MAX_SPAN/2;
+  // }
 
   // Return converted target in steps
   // Converted to uint32_t
@@ -55,7 +55,7 @@ uint32_t get_target_limited() {
 }
 
 uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
-  int32_t target_diff = (int32_t)(cur_target - csv_inputs.position);
+  int32_t target_diff = (int32_t)(cur_target - (csv_inputs.position - base_pos));
   int32_t vel = (int32_t)csv_inputs.velocity;
 
   //! Note: does not yet take into account overflow
@@ -234,12 +234,12 @@ void *loop(void *mode_ptr) {
             "\rState: %#x, Mode: %u, Target: %09d, Position: %09d, Velocity: "
             "%09d, Torque: %06d, Error: %09u",
             statusword, mode, base_pos + get_target_limited(), csv_inputs.position,
-            csv_inputs.velocity, csv_inputs.torque, csv_inputs.erroract);
+            csv_inputs.velocity, ((int16_t)csv_inputs.torque), csv_inputs.erroract);
       } else if (mode == CSP) {
         printf("\rState: %#x, Mode: %d, Target: %#x, Position: %#x, Velocity: "
                "%#x, Torque: %06d, Error: %#x",
                statusword, mode, base_pos + get_target_limited(), csp_inputs.position,
-               csp_inputs.velocity, csp_inputs.torque, csp_inputs.erroract);
+               csp_inputs.velocity, ((int16_t)csp_inputs.torque), csp_inputs.erroract);
       }
 
       // Mask/Ignore reserved bits (4,5,8,9,14,15) of status word
@@ -353,7 +353,7 @@ void *loop(void *mode_ptr) {
       if (operation_enabled) {
         if (mode == CSV) {
           // Calculate target velocity
-          uint32_t cur_target = base_pos + get_target_limited();
+          uint32_t cur_target = get_target_limited();
           uint32_t vel_target = calc_csv_target(csv_inputs, cur_target);
           set_output(1, controlword, vel_target);
           printf(", set speed: %09d\n", vel_target);
