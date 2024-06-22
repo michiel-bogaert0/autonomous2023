@@ -13,7 +13,7 @@
     <node name="orion_hardware_interface" pkg="ugr_ros_control" type="orion_hw_main"
       output="screen" launch-prefix="$(arg launch_prefix)">
 
-      <remap from="/output/can" to="/ugr/car/can/mc/tx" />
+      <remap from="/output/can" to="/ugr/can/mc/tx" />
 
       <!-- Encoder 0: right -->
       <!-- Encoder 1: left -->

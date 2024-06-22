@@ -32,8 +32,8 @@ class OrionState(NodeManager):
         self.spin()
 
     def doConfigure(self):
-        rospy.Subscriber("/ugr/car/can/lv/rx", Frame, self.handle_can)
-        self.bus = rospy.Publisher("/ugr/car/can/lv/tx", Frame, queue_size=10)
+        rospy.Subscriber("/ugr/can/lv/rx", Frame, self.handle_can)
+        self.bus = rospy.Publisher("/ugr/can/lv/tx", Frame, queue_size=10)
         self.initial_checkup_busy = False
         self.initial_checkup_done = False
 

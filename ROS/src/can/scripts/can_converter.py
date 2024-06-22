@@ -14,6 +14,7 @@ class CanConverter(ManagedNode):
     def __init__(self, name):
         super().__init__(name)
 
+        # Exception
         self.doConfigure()
 
         self.listen_on_can()
@@ -35,9 +36,11 @@ class CanConverter(ManagedNode):
 
         self.can_processor = CanProcessor(db=self.db)
 
-        self.can_pub = self.AddPublisher("ugr/can", Frame, queue_size=10)
+        self.can_pub = rospy.Publisher("ugr/can", Frame, queue_size=10)
         self.can_ids = []
         self.specific_pubs = {}
+
+        self.can_name = rospy.get_param("~can_name", "lv")
 
         # create a bus instance
         self.bus = can.interface.Bus(
@@ -64,7 +67,9 @@ class CanConverter(ManagedNode):
                 # publish message on specific topic (without making duplicates of the same topic)
                 if can_msg.id not in self.can_ids:
                     self.specific_pubs[str(can_msg.id)] = rospy.Publisher(
-                        f"ugr/can/{format(can_msg.id, 'x')}", Frame, queue_size=10
+                        f"ugr/can/{self.can_name}/{format(can_msg.id, 'x')}",
+                        Frame,
+                        queue_size=10,
                     )
                     self.can_ids.append(can_msg.id)
 
@@ -82,6 +87,10 @@ class CanConverter(ManagedNode):
     def send_on_can_raw(self, msg: Frame):
         if self.state != NodeManagingStatesEnum.ACTIVE:
             return
+
+        print(msg)
+
+        return
 
         self.bus.send(
             can.Message(

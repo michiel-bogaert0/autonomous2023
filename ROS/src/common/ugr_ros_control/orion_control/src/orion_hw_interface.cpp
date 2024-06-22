@@ -137,16 +137,19 @@ void OrionHWInterface::write(ros::Duration& elapsed_time)
   // Safety
   enforceLimits(elapsed_time);
 
-  if (this->is_running == true)
-  {
-    publish_torque_msg(joint_effort_command_[drive_joint_id]);
-    publish_steering_msg(joint_position_command_[steering_joint_id]);
-  }
-  else
-  {
-    publish_torque_msg(0.0);
-    publish_torque_msg(0.0);
-  }
+  // if (this->is_running == true)
+  // {
+
+  ROS_INFO("Writing to OrionHWInterface");
+  ROS_INFO_STREAM("Drive joint id: " << joint_effort_command_[drive_joint_id]);
+  publish_torque_msg(joint_effort_command_[drive_joint_id]);
+  publish_steering_msg(joint_position_command_[steering_joint_id]);
+  // }
+  // else
+  // {
+  //   publish_torque_msg(0.0);
+  //   publish_torque_msg(0.0);
+  // }
 }
 
 void OrionHWInterface::enforceLimits(ros::Duration& period)
@@ -159,14 +162,7 @@ void OrionHWInterface::enforceLimits(ros::Duration& period)
 
 void OrionHWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
 {
-  if (msg->scope == "autonomous")
-  {
-    this->is_running = msg->cur_state == "asdrive";
-  }
-  else if (msg->scope == "slam" && msg->cur_state == "finished")
-  {
-    this->is_running = false;
-  }
+  // TODO
 }
 
 // Callback for the CAN messages: axis0, axis1 and steering
@@ -241,14 +237,17 @@ void OrionHWInterface::publish_torque_msg(float axis)
 
 void OrionHWInterface::send_torque_on_can(float axis, int id)
 {
+  int16_t axis_int = axis * 10;
+
   // create publish message
   can_msgs::Frame msg;
   msg.header.stamp = ros::Time::now();
-  msg.message = "HV500_SetAcCurrent";
-  msg.id = 69 + id;
+  msg.id = 0x1A45 + id;
+  msg.is_extended = true;
+  msg.dlc = 2;
+  msg.data = { (axis_int << 8) & 0xFF, axis_int & 0xFF, 0, 0, 0, 0, 0, 0 };
 
-  msg.dlc = 8;
-  msg.data = { (axis << 8) & 0xFF, axis & 0xFF, 0, 0, 0, 0, 0, 0 };
+  ROS_INFO_STREAM("Sending torque: " << axis_int << " to axis " << id);
 
   // publish
   can_pub.publish(msg);

@@ -64,7 +64,7 @@
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/axis_rear" />
 <!-- !!!!!!!!!!!!!!!!!!!!! set reasonable limits !!!!!!!!!!!!!!!!!!!!! -->
-    <limit effort="30.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
+    <limit effort="120.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
 <!-- !!!!!!!!!!!!!!!!!!!!! set reasonable limits !!!!!!!!!!!!!!!!!!!!! -->
 
   </joint>

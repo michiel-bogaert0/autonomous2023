@@ -11,6 +11,10 @@ class CanProcessor:
 
         self.db = db
 
+    # ID: 1A45
+    # DLC: 2
+    # Data: 00 00
+
     def receive_can_frame(self, msg: Frame) -> None:
         """Receives CAN frames, converts them to readable format and publishes them to a topic"""
 
@@ -20,7 +24,7 @@ class CanProcessor:
         except KeyError:
             # This means that the message is not in the database...
             # Just log a warning and return...
-            rospy.logwarn(f"Message not in database, ID {hex(msg.id)}")
+            rospy.logwarn_once(f"Message not in database, ID {hex(msg.id)}")
             return
         except ValueError:
             # rospy.logwarn(f"Value error on msg ID {hex(msg.id)}, please check: {e}")

@@ -24,23 +24,25 @@
 
   </node> -->
 
-  <node pkg="can" type="can_converter.py" name="can_cvrt_lv" respawn="false" output="screen">
+  <node pkg="can" type="can_converter.py" name="can_cvrt_lv" respawn="false" output="log">
     <param name="can_interface" type="string" value="can4_ext" />
     <param name="can_baudrate" type="int" value="1000000" />
     <param name="dbc_filename" type="string" value="lv.dbc" />
     
-    <remap from="/ugr/can" to="/ugr/car/can/lv/rx" />
-    <remap from="/ugr/send_can_raw" to="/ugr/car/can/lv/tx" />
+    <remap from="/ugr/can" to="/ugr/can/lv/rx" />
+    <remap from="/ugr/send_can_raw" to="/ugr/can/lv/tx" />
 
   </node>
 
-  <node pkg="can" type="can_converter.py" name="can_cvrt_mc" respawn="false" output="screen">
-    <param name="can_interface" type="string" value="can3_ext" />
+  <node pkg="can" type="can_converter.py" name="can_cvrt_mc" respawn="false" output="log">
+    <param name="can_interface" type="string" value="can0" />
     <param name="can_baudrate" type="int" value="500000" />
     <!-- <param name="dbc_filename" type="string" value="lv.dbc" /> -->
+    <param name="can_name" type="string" value="mc" />
+
     
-    <remap from="/ugr/can" to="/ugr/car/can/mc/rx" />
-    <remap from="/ugr/send_can_raw" to="/ugr/car/can/mc/tx" />
+    <remap from="/ugr/can" to="/ugr/can/mc/rx" />
+    <remap from="/ugr/send_can_raw" to="/ugr/can/mc/tx" />
 
   </node>
 
@@ -66,6 +68,6 @@
     <!-- <include file="$(find ublox_gps)/launch/gps.launch" pass_all_args="true" /> -->
   
   
-    <!-- <include file="$(find ugr_ros_control)/orion_control/launch/orion_hardware.launch" /> -->
+    <include file="$(find ugr_ros_control)/orion_control/launch/orion_hardware.launch" />
 
 </launch>

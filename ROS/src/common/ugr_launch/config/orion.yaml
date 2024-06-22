@@ -20,8 +20,9 @@ orion_state:
       # - iologik
       # - dio_driver (werkt nog niet)
       # - can_cvrt_mc
-      - can_cvrt_lv
-      - iologik_dio
-      - iologik_aio
+      # - can_cvrt_lv
+      - can_cvrt_mc
+      # - iologik_dio
+      # - iologik_aio
     # driverless:
     #   - autonomous_state
