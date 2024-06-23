@@ -94,7 +94,7 @@ class OrionState(NodeManager):
         )  # rear ebs brake pressure
 
         self.watchdog_trigger = rospy.Publisher(
-            "/dio/out/wd_trigger", Bool, queue_size=10
+            "/do/2", Bool, queue_size=10
         )  # watchdog trigger
         self.watchdog_reset = rospy.Publisher(
             "/dio/out/wd_reset", Bool, queue_size=10
@@ -104,7 +104,7 @@ class OrionState(NodeManager):
         )  # sdc out start low, high when everything is ok and low in case of error
         self.ts_on = rospy.Publisher("/dio/out/ts_btn", Bool, queue_size=10)
 
-        dbc_filename = rospy.get_param("~db_adress", "hv500_can2_map_v24_EID_both.dbc")
+        dbc_filename = rospy.get_param("~db_adress", "lv.dbc")
         db_address = __file__.split("/")[:-1]
         db_address += ["..", "dbc", dbc_filename]
         self.db_adress = "/".join(db_address)
@@ -190,6 +190,18 @@ class OrionState(NodeManager):
             self.hbs["MC"] = rospy.Time.now().to_sec()
 
     def send_status_over_can(self):
+        #
+        # Brake light
+        #
+
+        # Toggle brake light as test
+        brake_pressures_msg = self.db.get_message_by_name("Brake_pressures")
+        data = brake_pressures_msg.encode(
+            {"Brake_rear": max(0, self.rear_bp), "Brake_front": max(0, self.front_bp)}
+        )
+        message = can.Message(arbitration_id=brake_pressures_msg.frame_id, data=data)
+        self.bus.publish(serialcan_to_roscan(message))
+
         #
         # 0x502 acc. to rules
         #
@@ -299,54 +311,52 @@ class OrionState(NodeManager):
             )
         )
 
-        if rospy.Time().now().to_sec() > self.timeout_until:
-            if self.car_state == OrionStateEnum.INIT:
-                if self.boot():
-                    self.sdc_out.publish(Bool(data=True))
-                    self.change_state(OrionStateEnum.SDC_OPEN)
-                else:
-                    # Wait a second (async)
-                    self.timeout_until = rospy.Time().now().to_sec() + 1
+        # if rospy.Time().now().to_sec() > self.timeout_until:
+        #     if self.car_state == OrionStateEnum.INIT:
+        #         if self.boot():
+        #             self.sdc_out.publish(Bool(data=True))
+        #             self.change_state(OrionStateEnum.SDC_OPEN)
+        #         else:
+        #             # Wait a second (async)
+        #             self.timeout_until = rospy.Time().now().to_sec() + 1
 
-            elif self.sdc_status is False:
-                self.change_state(OrionStateEnum.SDC_OPEN)
-            else:
-                if self.car_state == OrionStateEnum.SDC_OPEN:
-                    if self.sdc_status is True:
-                        self.change_state(OrionStateEnum.TS_READY)
+        #     elif self.sdc_status is False:
+        #         self.change_state(OrionStateEnum.SDC_OPEN)
+        #     else:
+        #         if self.car_state == OrionStateEnum.SDC_OPEN:
+        #             if self.sdc_status is True:
+        #                 self.change_state(OrionStateEnum.TS_READY)
 
-                elif self.car_state == OrionStateEnum.TS_READY:
-                    if self.ts_pressed:
-                        self.ts_pressed = False
-                        self.change_state(OrionStateEnum.TS_ACTIVATING)
+        #         elif self.car_state == OrionStateEnum.TS_READY:
+        #             if self.ts_pressed:
+        #                 self.ts_pressed = False
+        #                 self.change_state(OrionStateEnum.TS_ACTIVATING)
 
-                        # Just go to TS ACTIVE after 0.1s
-                        # ! TODO
-                        self.ts_on.publish(Bool(data=True))
-                        sleep(0.1)
-                        self.ts_on.publish(Bool(data=False))
+        #                 # Just go to TS ACTIVE after 0.1s
+        #                 # ! TODO
+        #                 self.ts_on.publish(Bool(data=True))
+        #                 sleep(0.1)
+        #                 self.ts_on.publish(Bool(data=False))
 
-                        self.change_state(OrionStateEnum.TS_ACTIVE)
+        #                 self.change_state(OrionStateEnum.TS_ACTIVE)
 
-                elif self.car_state == OrionStateEnum.TS_ACTIVE:
-                    print(self.front_bp)
-                    print(self.rear_bp)
-                    if self.front_bp > 5 and self.rear_bp > 5:
-                        self.change_state(OrionStateEnum.R2D_READY)
+        #         elif self.car_state == OrionStateEnum.TS_ACTIVE:
+        #             if self.front_bp > 5 and self.rear_bp > 5:
+        #                 self.change_state(OrionStateEnum.R2D_READY)
 
-                elif self.car_state == OrionStateEnum.R2D_READY:
-                    # ! DISABLED FOR TESTING
-                    # if self.front_bp < 10 or self.rear_bp < 10:
-                    #    self.change_state(OrionStateEnum.TS_ACTIVE)
-                    if self.r2d_pressed:
-                        self.r2d_pressed = False
-                        self.change_state(OrionStateEnum.R2D)
+        #         elif self.car_state == OrionStateEnum.R2D_READY:
+        #             # ! DISABLED FOR TESTING
+        #             # if self.front_bp < 10 or self.rear_bp < 10:
+        #             #    self.change_state(OrionStateEnum.TS_ACTIVE)
+        #             if self.r2d_pressed:
+        #                 self.r2d_pressed = False
+        #                 self.change_state(OrionStateEnum.R2D)
 
-            # Monitor internal stuff when not in INIT
-            if self.car_state != OrionStateEnum.INIT and not self.monitor():
-                self.change_state(OrionStateEnum.ERROR)
+        #     # Monitor internal stuff when not in INIT
+        #     if self.car_state != OrionStateEnum.INIT and not self.monitor():
+        #         self.change_state(OrionStateEnum.ERROR)
 
-        print(f"CAR state: {self.car_state}")
+        # print(f"CAR state: {self.car_state}")
 
         self.send_status_over_can()
 

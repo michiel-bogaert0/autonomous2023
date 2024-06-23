@@ -88,10 +88,6 @@ class CanConverter(ManagedNode):
         if self.state != NodeManagingStatesEnum.ACTIVE:
             return
 
-        print(msg)
-
-        return
-
         self.bus.send(
             can.Message(
                 timestamp=msg.header.stamp.to_sec(),
