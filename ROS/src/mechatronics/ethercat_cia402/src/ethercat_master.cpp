@@ -43,11 +43,11 @@ uint32_t get_target_limited() {
   // Get target (in mDEG)
   int32_t cur_target = target.load();
   // Limit target
-  // if (cur_target > MAX_SPAN/2) {
-  //   cur_target = MAX_SPAN/2;
-  // } else if (cur_target < -MAX_SPAN/2) {
-  //   cur_target = -MAX_SPAN/2;
-  // }
+  if (cur_target > MAX_SPAN/2) {
+    cur_target = MAX_SPAN/2;
+  } else if (cur_target < -MAX_SPAN/2) {
+    cur_target = -MAX_SPAN/2;
+  }
 
   // Return converted target in steps
   // Converted to uint32_t
