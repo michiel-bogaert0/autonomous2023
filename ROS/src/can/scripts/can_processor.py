@@ -5,10 +5,10 @@ from dictionaries import messages, publishers
 
 
 class CanProcessor:
-    def __init__(self, db):
+    def __init__(self, db, name):
+        self.name = name
         self.messages = messages
         self.publishers = publishers
-
         self.db = db
 
     # ID: 1A45
@@ -27,7 +27,6 @@ class CanProcessor:
             rospy.logwarn_once(f"Message not in database, ID {hex(msg.id)}")
             return
         except ValueError:
-            # rospy.logwarn(f"Value error on msg ID {hex(msg.id)}, please check: {e}")
             return
 
         # send the message
@@ -44,7 +43,9 @@ class CanProcessor:
             # publish message
             if topic_name not in self.publishers.keys():
                 self.publishers[topic_name] = rospy.Publisher(
-                    f"/processed/{topic_name}", type(publish_msg), queue_size=10
+                    f"/ugr/can/{self.name}/processed/{topic_name}",
+                    type(publish_msg),
+                    queue_size=10,
                 )
             publisher = self.publishers[topic_name]
             publisher.publish(publish_msg)

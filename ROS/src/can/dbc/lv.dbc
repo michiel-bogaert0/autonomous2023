@@ -33,39 +33,105 @@ NS_ :
 
 BS_:
 
-BU_: PDU ELVIS ASSI ECU_LV Dashboard
+BU_: BPR DIO PDU ELVIS ASSI ECU_LV Dashboard
 
+
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ Brake_light : 0|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ Cooling_fan : 0|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ TSAC_fan : 0|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ Fanspeed : 0|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ State : 0|16@0+ (1,0) [0|65535] "" Vector__XXX
+ SG_ Heartbeat : 0|1@0+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 1539 state_BPRI6_8_O0_1: 7 BPR
+ SG_ state_BPRI6 : 31|12@0+ (1,0) [0|4095] "mV" Vector__XXX
+ SG_ state_BPRO1 : 47|8@0+ (0.125,0) [0|31.875] "mA" Vector__XXX
+ SG_ state_BPRI8 : 7|12@0+ (1,0) [0|4095] "mV" Vector__XXX
+ SG_ state_BPRO0 : 55|8@0+ (0.125,0) [0|31.875] "mA" Vector__XXX
+ SG_ state_BPRI7 : 11|12@0+ (1,0) [0|4095] "mV" Vector__XXX
+
+BO_ 1537 set_BPR: 2 BPR
+ SG_ set_BPRO1 : 15|8@0+ (0.125,0) [0|31.875] "mA" Vector__XXX
+ SG_ set_BPRO0 : 7|8@0+ (0.125,0) [0|31.875] "mA" Vector__XXX
+
+BO_ 1538 state_BPRO1_5: 8 BPR
+ SG_ state_BPRI5 : 55|12@0+ (1,0) [0|4095] "mV" Vector__XXX
+ SG_ state_BPRI4 : 35|12@0+ (1,0) [0|4095] "mV" Vector__XXX
+ SG_ state_BPRI3 : 31|12@0+ (1,0) [0|4095] "mV" Vector__XXX
+ SG_ state_BPRI2 : 11|12@0+ (1,0) [0|4095] "mV" Vector__XXX
+ SG_ state_BPRI1 : 7|12@0+ (1,0) [0|4095] "mV" Vector__XXX
+
+BO_ 257 state_DIO: 3 DIO
+ SG_ state_DO7 : 22|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DO6 : 23|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DO5 : 8|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DO4 : 9|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DO3 : 10|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DO2 : 11|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DO1 : 12|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DO0 : 13|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DI9 : 14|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DI8 : 15|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DI7 : 0|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DI6 : 1|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DI5 : 2|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DI4 : 3|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DI3 : 4|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DI2 : 5|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DI1 : 6|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DI0 : 7|1@0+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 258 set_DO: 1 DIO
+ SG_ set_DO7 : 0|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_DO6 : 1|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_DO5 : 2|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_DO4 : 3|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_DO3 : 4|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_DO2 : 5|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_DO1 : 6|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_DO0 : 7|1@0+ (1,0) [0|1] "" Vector__XXX
 
 BO_ 1285 ECU_error: 1 ECU_LV
  SG_ Error_code : 7|8@0+ (1,0) [0|255] "" Vector__XXX
 
 BO_ 1 ECU_State: 1 ECU_LV
- SG_ Orion_state : 3|3@0+ (1,0) [0|7] "" Vector__XXX
+ SG_ Orion_state : 3|3@0+ (1,0) [0|6] "" Vector__XXX
  SG_ Heartbeat : 0|1@0+ (1,0) [0|1] "" Vector__XXX
 
 BO_ 277 Brake_pressures: 4 ECU_LV
  SG_ Brake_rear : 23|16@0+ (0.004,0) [0|262.14] "" Vector__XXX
  SG_ Brake_front : 7|16@0+ (0.004,0) [0|262.14] "" Vector__XXX
 
-BO_ 256 Set_outputs: 5 PDU
- SG_ Output9 : 32|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ Output8 : 31|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ Output7 : 30|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ Output4 : 27|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ Output3 : 26|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ Output15 : 38|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ Output14 : 37|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ Output13 : 36|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ Output12 : 35|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ Output11 : 34|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ Output10 : 33|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ Brake_light : 23|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ Cooling_fan : 15|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ TSAC_fan : 7|8@0+ (1,0) [0|255] "" Vector__XXX
+BO_ 256 set_outputs: 3 PDU
+ SG_ set_TSAC_fan_PWM : 23|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ set_mctrl_2_pwr : 7|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_mctrl_1_pwr : 6|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_TSAL_pwr : 10|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_TSAC_pwr : 9|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_TSAC_fans_pwr : 0|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_LV_box : 3|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_lidar_bakje_pwr : 14|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_discharge_pwr : 11|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_DB_pwr : 8|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_cooling_pump_1_pwr : 2|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ set_cooling_fan_1_pwr : 1|1@0+ (1,0) [0|1] "" Vector__XXX
 
 BO_ 273 Output_states: 3 PDU
- SG_ Fanspeed : 23|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ State : 7|16@0+ (1,0) [0|65535] "" Vector__XXX
+ SG_ state_TSAL_pwr : 9|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_TSAC_pwr : 8|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_TSAC_fans_pwr : 0|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_TSAC_fan_PWM : 23|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ state_router_pwr : 13|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_mctrl_2_pwr : 7|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_mctrl_1_pwr : 6|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_LV_box : 3|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_lidar_bakje_pwr : 14|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_IPC_pwr : 12|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_discharge_pwr : 10|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DB_pwr : 11|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_cooling_pump_1_pwr : 2|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_cooling_fan_1_pwr : 1|1@0+ (1,0) [0|1] "" Vector__XXX
 
 BO_ 272 Inputs: 2 PDU
  SG_ Watercool_temp2 : 15|8@0+ (1,0) [0|255] "" Vector__XXX
@@ -90,16 +156,15 @@ BO_ 275 Currents_9_16: 8 PDU
 
 BO_ 274 Currents_1_8: 8 PDU
  SG_ Current_TSAC_fans_pwr : 7|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ Current_mctrl_1_pwr : 47|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ current_mctr_2_pwr : 55|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ Current_mctrl_1_pwr : 55|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ current_mctr_2_pwr : 63|8@0+ (1,0) [0|255] "" Vector__XXX
  SG_ Current_cooling_pump_1_pwr : 23|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ Current_cooling_fan_1_pwr_4 : 63|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ Current_cooling_fan_1_pwr_2 : 15|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ Current_brake_light_pwr : 31|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ Current : 39|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ Current_pwm_fan_back : 47|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ Current_cooling_fan_1_pwr : 15|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ Current_brake_light_pwr : 39|8@0+ (1,0) [0|255] "" Vector__XXX
+ SG_ Current_LV_box : 31|8@0+ (1,0) [0|255] "" Vector__XXX
 
-BO_ 16 PDU_Heartbeat: 1 PDU
- SG_ Heartbeat : 0|1@0+ (1,0) [0|1] "" Vector__XXX
+BO_ 16 PDU_Heartbeat: 0 PDU
 
 BO_ 768 DB_Commands: 1 Dashboard
  SG_ TS_start : 6|1@0+ (1,0) [0|1] "" Vector__XXX
@@ -118,11 +183,11 @@ BO_ 1282 DV_status: 5 ECU_LV
  SG_ Cones_count_all : 16|17@0+ (1,0) [0|131071] "" Vector__XXX
  SG_ Cones_count_actual : 8|8@0+ (1,0) [0|255] "" Vector__XXX
  SG_ Lap_counter : 12|4@0+ (1,0) [0|15] "" Vector__XXX
- SG_ Service_brake_state : 14|2@0+ (1,0) [0|2] "" Vector__XXX
+ SG_ Service_brake_state : 14|2@0+ (1,0) [0|3] "" Vector__XXX
  SG_ Steering_state : 15|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ AMI_state : 2|3@0+ (1,0) [0|5] "" Vector__XXX
- SG_ EBS_state : 4|2@0+ (1,0) [0|2] "" Vector__XXX
- SG_ AS_state : 7|3@0+ (1,0) [0|4] "" Vector__XXX
+ SG_ AMI_state : 2|3@0+ (1,0) [0|6] "" Vector__XXX
+ SG_ EBS_state : 4|2@0+ (1,0) [0|3] "" Vector__XXX
+ SG_ AS_state : 7|3@0+ (1,0) [0|5] "" Vector__XXX
 
 BO_ 1281 DV_2: 6 ECU_LV
  SG_ Yaw_rate : 39|16@0- (0.0078125,0) [-256|255.9921875] "deg/s" Vector__XXX
@@ -165,22 +230,38 @@ BO_ 4 ASSI_Heartbeat: 1 ASSI
 
 
 
-CM_ SG_ 256 Output9 "Turn specific output on or off";
-CM_ SG_ 256 Output8 "Turn specific output on or off";
-CM_ SG_ 256 Output7 "Turn specific output on or off";
-CM_ SG_ 256 Output4 "Turn specific output on or off";
-CM_ SG_ 256 Output3 "Turn specific output on or off";
-CM_ SG_ 256 Output15 "Turn specific output on or off";
-CM_ SG_ 256 Output14 "Turn specific output on or off";
-CM_ SG_ 256 Output13 "Turn specific output on or off";
-CM_ SG_ 256 Output12 "Turn specific output on or off";
-CM_ SG_ 256 Output11 "Turn specific output on or off";
-CM_ SG_ 256 Output10 "Turn specific output on or off";
-CM_ SG_ 273 State "State of PDU outputs";
-VAL_ 1 Orion_state 6 "ERROR" 5 "R2D" 4 "R2D_READY" 3 "TS_ACTIVE" 2 "TS_ACTIVATING" 1 "TS_READY" 0 "INIT" ;
+CM_ BO_ 3221225472 "This is a message for not used signals, created by Vector CANdb++ DBC OLE DB Provider.";
+CM_ SG_ 3221225472 State "State of PDU outputs";
+CM_ SG_ 256 set_TSAC_fan_PWM "Turn specific output on or off";
+CM_ SG_ 256 set_mctrl_2_pwr "Turn specific output on or off";
+CM_ SG_ 256 set_mctrl_1_pwr "Turn specific output on or off";
+CM_ SG_ 256 set_TSAL_pwr "Turn specific output on or off";
+CM_ SG_ 256 set_TSAC_pwr "Turn specific output on or off";
+CM_ SG_ 256 set_TSAC_fans_pwr "Turn specific output on or off";
+CM_ SG_ 256 set_LV_box "Turn specific output on or off";
+CM_ SG_ 256 set_lidar_bakje_pwr "Turn specific output on or off";
+CM_ SG_ 256 set_discharge_pwr "Turn specific output on or off";
+CM_ SG_ 256 set_DB_pwr "Turn specific output on or off";
+CM_ SG_ 256 set_cooling_pump_1_pwr "Turn specific output on or off";
+CM_ SG_ 256 set_cooling_fan_1_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_TSAL_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_TSAC_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_TSAC_fans_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_TSAC_fan_PWM "Turn specific output on or off";
+CM_ SG_ 273 state_router_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_mctrl_2_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_mctrl_1_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_LV_box "Turn specific output on or off";
+CM_ SG_ 273 state_lidar_bakje_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_IPC_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_discharge_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_DB_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_cooling_pump_1_pwr "Turn specific output on or off";
+CM_ SG_ 273 state_cooling_fan_1_pwr "Turn specific output on or off";
+VAL_ 1 Orion_state 7 "ERROR_EXT" 6 "ERROR_INT" 5 "R2D" 4 "R2D_READY" 3 "TS_ACTIVE" 2 "TS_ACTIVATING" 1 "TS_READY" 0 "INIT" ;
 VAL_ 1282 Service_brake_state 3 "available" 2 "engaged" 1 "disengaged" 0 "UNKNOWN" ;
 VAL_ 1282 AMI_state 5 "inspection" 6 "autocross" 4 "braketest" 3 "trackdrive" 2 "skidpad" 1 "acceleration" 0 "UNKNOWN" ;
 VAL_ 1282 EBS_state 2 "armed" 3 "activated" 1 "unavailable" 0 "UNKNOWN" ;
 VAL_ 1282 AS_state 5 "finish" 4 "emergency_brake" 3 "driving" 2 "ready" 1 "off" 0 "unknown" ;
-VAL_ 2 ELVIS_critical_fault 5 "OVERTEMPERATURE" 4 "UNDERTEMPERATURE" 3 "OVERVOLTAGE" 2 "UNDERVOLTAGE" 1 "UNKNOWN_FAULT" 0 "OKAY" ;
+VAL_ 2 ELVIS_critical_fault 5 "OVERTEMPERATURE" 4 "UNDERTEMPERATURE" 3 "OVERVOLTAGE" 2 "UNDERVOLTAGE" 1 "OKAY" 0 "UNKNOWN_FAULT" ;
 
