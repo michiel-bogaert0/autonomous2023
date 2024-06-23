@@ -1,5 +1,0 @@
-<launch>
-  <node name="orion_state" pkg="orion_state" type="orion_state.py" output="screen">
-    <param name="rate" value="15"/>
-  </node>
-</launch>
