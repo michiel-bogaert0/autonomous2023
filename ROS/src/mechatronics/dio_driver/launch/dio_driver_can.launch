@@ -18,11 +18,11 @@
       <remap from="/di/1" to="/dio/in/asms_status"/>
       <remap from="/di/2" to="/dio/in/dv_btn"/>
       <remap from="/di/3" to="/dio/in/wd_assert"/>
-      <remap from="/di/4" to="/dio/in/"/>
+      <remap from="/di/4" to="/dio/in/4"/>
       <remap from="/di/5" to="/dio/in/bypass_status"/>
       <remap from="/di/6" to="/dio/in/imd_ok"/>
       <remap from="/di/7" to="/dio/in/wd_ok"/>
-      <remap from="/di/8" to="/dio/in/"/>
+      <remap from="/di/8" to="/dio/in/8"/>
       
   </node>
 
