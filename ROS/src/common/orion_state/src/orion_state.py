@@ -179,8 +179,14 @@ class OrionState(NodeManager):
         self.change_state(OrionStateEnum.INIT)
         self.change_as_state(AutonomousStatesEnum.ASOFF)
 
-        # Do safety checks
-        self.initial_checkup()
+        # Initial checkup
+        checks_ok, msg = self.initial_checkup()
+        if not checks_ok:
+            self.change_state(OrionStateEnum.ERROR)
+            self.set_health(
+                DiagnosticStatus.ERROR,
+                f"Initial checkup failed in mode '{self.driving_mode}'. Got error '{msg}'",
+            )
 
         # Activate nodes for driving mode
         self.activate_nodes(self.driving_mode, None)
@@ -269,35 +275,37 @@ class OrionState(NodeManager):
     def handle_can(self, frame: Frame):
         # DB_Commands
         if frame.id == 768:
-            self.ts_pressed = bool(frame.data[0] & 0b01000000)
-            self.r2d_pressed = bool(frame.data[0] & 0b10000000)
+            self.can_actions["ts_pressed"] = bool(frame.data[0] & 0b01000000)
+            self.can_actions["r2d_pressed"] = bool(frame.data[0] & 0b10000000)
 
-        # LV ECU HBS
-        # PDU
-        if frame.id == 16:
-            self.hbs["PDU"] = rospy.Time.now().to_sec()
+        # RES TODO
 
-        # ELVIS
-        if frame.id == 2:
-            self.air1 = bool(frame.data[0] & 0b00100000)
-            self.air2 = bool(frame.data[0] & 0b00010000)
+        # # LV ECU HBS
+        # # PDU
+        # if frame.id == 16:
+        #     self.hbs["PDU"] = rospy.Time.now().to_sec()
 
-            if bool(frame.data[0] & 0b00000001):
-                self.hbs["ELVIS"] = rospy.Time.now().to_sec()
-            critical_fault = (frame.data[0] & 0b00001100) >> 2
-            if critical_fault != 0:
-                self.send_error_to_db(25 + critical_fault)
+        # # ELVIS
+        # if frame.id == 2:
+        #     self.air1 = bool(frame.data[0] & 0b00100000)
+        #     self.air2 = bool(frame.data[0] & 0b00010000)
 
-        # DB
-        if frame.id == 3:
-            self.hbs["DB"] = rospy.Time.now().to_sec()
-        # ASSI
-        if frame.id == 4:
-            self.hbs["ASSI"] = rospy.Time.now().to_sec()
+        #     if bool(frame.data[0] & 0b00000001):
+        #         self.hbs["ELVIS"] = rospy.Time.now().to_sec()
+        #     critical_fault = (frame.data[0] & 0b00001100) >> 2
+        #     if critical_fault != 0:
+        #         self.send_error_to_db(25 + critical_fault)
 
-        # MC CAN HB
-        if frame.id == 2147492865:
-            self.hbs["MC"] = rospy.Time.now().to_sec()
+        # # DB
+        # if frame.id == 3:
+        #     self.hbs["DB"] = rospy.Time.now().to_sec()
+        # # ASSI
+        # if frame.id == 4:
+        #     self.hbs["ASSI"] = rospy.Time.now().to_sec()
+
+        # # MC CAN HB
+        # if frame.id == 2147492865:
+        #     self.hbs["MC"] = rospy.Time.now().to_sec()
 
     def send_status_over_can(self):
         #
