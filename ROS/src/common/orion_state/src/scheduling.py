@@ -55,15 +55,27 @@ class JobScheduler:
 
     def remove_job_by_tag(self, tag: str):
         self.jobs = [job for job in self.jobs if job.tag != tag]
-        self.tags.remove(tag)
+
+        try:
+            self.tags.remove(tag)
+        except KeyError:
+            pass
 
     def step(self):
         current_time = rospy.Time.now().to_sec()
         while self.jobs and self.jobs[0].exec_time <= current_time:
             job = heapq.heappop(self.jobs)
-            job.func(*job.args)
+
+            args = job.args
+            if not isinstance(job, tuple):
+                args = (job.args,)
+
+            job.func(*args)
             if job.tag:
-                self.tags.remove(job.tag)
+                try:
+                    self.tags.remove(job.tag)
+                except KeyError:
+                    pass
 
 
 # Example usage

@@ -116,6 +116,11 @@ class ManagedNode:
         self.health.values = [KeyValue(key="state", value=self.state)]
         self.health.values += values
 
+        if level == 1:
+            rospy.logwarn(f"[WARN]> {message}")
+        elif level == 2:
+            rospy.logerr(f"[ERROR]> {message}")
+
         # Immediately publish health
         if publish:
             self.healthPublisher.publish(self.health)
@@ -314,7 +319,7 @@ class ManagedNode:
         if self.state == NodeManagingStatesEnum.ACTIVE:
             return handler(msg)
 
-    def AddPublisher(self, topic: str, msg_type, queue_size: int):
+    def AddPublisher(self, topic: str, msg_type, queue_size: int, latch=False):
         """
         Adds a publisher to the node.
 
@@ -326,15 +331,17 @@ class ManagedNode:
         Returns:
         - CustomPublisher: the publisher instance
         """
-        custompublisher = CustomPublisher(topic, msg_type, queue_size, self.state)
+        custompublisher = CustomPublisher(
+            topic, msg_type, queue_size, self.state, latch
+        )
         self.publishers.append(custompublisher)
         return custompublisher
 
 
 # override the publish method of rospy.Publisher
 class CustomPublisher(rospy.Publisher):
-    def __init__(self, topic: str, msg_type, queue_size: int, state: str):
-        super().__init__(topic, msg_type, queue_size=queue_size)
+    def __init__(self, topic: str, msg_type, queue_size: int, state: str, latch):
+        super().__init__(topic, msg_type, queue_size=queue_size, latch=latch)
         self.state = state
 
     def set_state(self, state: str) -> None:

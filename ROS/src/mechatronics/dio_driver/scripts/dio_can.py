@@ -65,22 +65,23 @@ class DioCAN(ManagedNode):
         # First 10 bits: DI (10 bits, 0-9)
         # Following 8 bits: DO feedback (8 bits, 10-17)
         # Publish on publishers
-
         if msg.id != 0x101:
             rospy.logerr(f"Received message with ID {msg.id}, expected 0x101")
             return
 
         # Inputs
-        value = msg.data[0] << 8 + (msg.data[1] & 0xC0)
+        inputs_state = [msg.data[0] & (0x80 >> i) for i in range(8)]
+        inputs_state += [msg.data[1] & (0x80 >> i) for i in range(2)]
+
         for i, publisher in enumerate(self.DI_publishers):
-            state = 1 if value & (0x8000 >> i) > 0 else 0
-            publisher.publish(Bool(data=state))
+            publisher.publish(Bool(data=inputs_state[i]))
 
         # Output feedback
-        value = ((msg.data[1] & 0x3F) << 2) + (msg.data[2] & 0xC0)
+        feedback_state = [msg.data[1] & (0x20 >> i) for i in range(6)]
+        feedback_state += [msg.data[2] & (0x80 >> i) for i in range(2)]
+
         for i, publisher in enumerate(self.DO_feedback_publishers):
-            state = 1 if value & (0x8000 >> i) > 0 else 0
-            publisher.publish(Bool(data=state))
+            publisher.publish(Bool(data=feedback_state[i]))
 
 
 driver = DioCAN()

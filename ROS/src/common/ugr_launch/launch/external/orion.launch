@@ -25,7 +25,7 @@
 
   </node>
 
-  <!-- <node pkg="can" type="can_converter.py" name="can_cvrt_mc" respawn="false" output="log">
+  <node pkg="can" type="can_converter.py" name="can_cvrt_mc" respawn="false" output="log">
     <param name="can_interface" type="string" value="can3_ext" />
     <param name="can_baudrate" type="int" value="500000" />
     <param name="dbc_filename" type="string" value="lv.dbc" />
@@ -35,11 +35,11 @@
     <remap from="/ugr/can" to="/ugr/can/mc/rx" />
     <remap from="/ugr/send_can_raw" to="/ugr/can/mc/tx" />
 
-  </node> -->
+  </node>
 
 
     <!-- IO drivers -->
-    <include file="$(find iologik_dio)/launch/iologik.launch" />
+    <include file="$(find dio_driver)/launch/dio_driver_can.launch" />
     <include file="$(find iologik)/launch/iologik.launch" />
   
     <!-- Vectornav -->

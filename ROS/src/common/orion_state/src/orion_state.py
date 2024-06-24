@@ -33,31 +33,27 @@ class OrionState(NodeManager):
     def __init__(self) -> None:
         super().__init__("orion_state", NodeManagingStatesEnum.ACTIVE)
 
+        # Activate nodes for driving mode
+        self.activate_nodes(self.driving_mode, None)
+
+        # Wait a few seconds
+        # rospy.sleep(3)
+
+        # Initial checkup
+        checks_ok, msg = self.initial_checkup()
+        if not checks_ok:
+            self.change_state(OrionStateEnum.ERROR)
+            self.set_health(
+                DiagnosticStatus.ERROR,
+                f"Initial checkup failed in mode '{self.driving_mode}'. Got error '{msg}'",
+            )
+
+        self.spin()
+
+    def doConfigure(self):
         # Job scheduler (synchronous!)
         self.job_scheduler = JobScheduler()
 
-        # Subscribers
-        # DI signals
-        for di_signal in self.di_signals:
-            self.AddSubscriber(
-                f"/dio/in/{di_signal}", Bool, partial(self.handle_IO, di_signal)
-            )
-
-        # DO feedback
-        for do_feedback in self.do_feedback:
-            self.AddSubscriber(
-                f"/dio/feedback/{do_feedback}",
-                Bool,
-                partial(self.handle_IO, do_feedback),
-            )
-
-        # AI signals
-        for ai_signal in self.ai_signals:
-            self.AddSubscriber(
-                f"/aio/in/{ai_signal}", Float64, partial(self.handle_IO, ai_signal)
-            )
-
-        # Publishers
         # DO Signals
         self.do_publishers = {
             "ts_btn": None,
@@ -67,10 +63,6 @@ class OrionState(NodeManager):
             "wd_trigger": None,
             "sdc_close": None,
         }
-        for do_signal in self.do_publishers:
-            self.do_publishers[do_signal] = self.AddPublisher(
-                f"/dio/out/{do_signal}", Bool, queue_size=10
-            )
 
         # CAN TX
         self.bus = self.AddPublisher("/ugr/can/lv/tx", Frame, queue_size=10)
@@ -93,12 +85,9 @@ class OrionState(NodeManager):
         self.wd_trigger_enable = True
         self.as_ready_transitioned = False
 
-        self.spin()
-
-    def doConfigure(self):
         # State machine states
-        self.car_state = OrionStateEnum.INIT
-        self.as_state = AutonomousStatesEnum.ASOFF
+        self.car_state = None
+        self.as_state = None
         self.driving_mode = DrivingModeStatesEnum.MANUAL
 
         # IO signals
@@ -125,10 +114,7 @@ class OrionState(NodeManager):
         }
 
         # CAN inputs
-        self.can_inputs = {
-            "air1": False,
-            "air2": False,
-        }
+        self.can_inputs = {"air1": False, "air2": False, "res_go": False}
 
         # Latched actions from CAN
         self.can_actions = {
@@ -161,6 +147,37 @@ class OrionState(NodeManager):
             OrionStateEnum.SDC_OPEN: 6,
         }
 
+        # Publishers
+        # DO Signals
+        for do_signal in self.do_publishers:
+            self.do_publishers[do_signal] = self.AddPublisher(
+                f"/dio/out/{do_signal}", Bool, queue_size=10
+            )
+
+        # Subscribers
+        # DI signals
+        for di_signal in self.di_signals:
+            self.AddSubscriber(
+                f"/dio/in/{di_signal}", Bool, partial(self.handle_DI, di_signal)
+            )
+
+        # DO feedback
+        for do_feedback in self.do_feedback:
+            self.AddSubscriber(
+                f"/dio/feedback/{do_feedback}",
+                Bool,
+                partial(self.handle_DO_feedback, do_feedback),
+            )
+
+        # AI signals
+        for ai_signal in self.ai_signals:
+            self.AddSubscriber(
+                f"/aio/in/{ai_signal}", Float64, partial(self.handle_AI, ai_signal)
+            )
+
+        # CAN
+        self.AddSubscriber("/ugr/can/lv/rx", Frame, self.handle_can)
+
         # load dbc
         dbc_filename = rospy.get_param("~db_adress", "lv.dbc")
         db_address = __file__.split("/")[:-1]
@@ -178,18 +195,6 @@ class OrionState(NodeManager):
         # Start default in INIT and ASOFF
         self.change_state(OrionStateEnum.INIT)
         self.change_as_state(AutonomousStatesEnum.ASOFF)
-
-        # Initial checkup
-        checks_ok, msg = self.initial_checkup()
-        if not checks_ok:
-            self.change_state(OrionStateEnum.ERROR)
-            self.set_health(
-                DiagnosticStatus.ERROR,
-                f"Initial checkup failed in mode '{self.driving_mode}'. Got error '{msg}'",
-            )
-
-        # Activate nodes for driving mode
-        self.activate_nodes(self.driving_mode, None)
 
     def change_state(self, new_state: OrionStateEnum):
         """
@@ -258,19 +263,37 @@ class OrionState(NodeManager):
     # SUBSCRIPTION HANDLERS
     #
 
-    def handle_IO(self, io_name, msg: Bool):
+    def handle_DI(self, io_name, msg: Bool):
         """
-        Handles the incoming IO signals
+        Handles the incoming DI signals
         """
 
         if io_name in self.di_signals:
             self.di_signals[io_name] = msg.data
-        elif io_name in self.ai_signals:
+        else:
+            rospy.logwarn(f"DI signal '{io_name}' not found in list of IO signals")
+
+    def handle_AI(self, io_name, msg: Bool):
+        """
+        Handles the incoming AI signals
+        """
+
+        if io_name in self.ai_signals:
             self.ai_signals[io_name] = msg.data
-        elif io_name in self.do_feedback:
+        else:
+            rospy.logwarn(f"AI signal '{io_name}' not found in list of IO signals")
+
+    def handle_DO_feedback(self, io_name, msg: Bool):
+        """
+        Handles the incoming DO feedback signals
+        """
+
+        if io_name in self.do_feedback:
             self.do_feedback[io_name] = msg.data
         else:
-            rospy.logwarn(f"IO signal '{io_name}' not found in list of IO signals")
+            rospy.logwarn(
+                f"DO feedback signal '{io_name}' not found in list of IO signals"
+            )
 
     def handle_can(self, frame: Frame):
         # DB_Commands
@@ -314,7 +337,10 @@ class OrionState(NodeManager):
 
         brake_pressures_msg = self.db.get_message_by_name("Brake_pressures")
         data = brake_pressures_msg.encode(
-            {"Brake_rear": max(0, self.rear_bp), "Brake_front": max(0, self.front_bp)}
+            {
+                "Brake_rear": max(0, self.ai_signals["rear_bp"]),
+                "Brake_front": max(0, self.ai_signals["rear_bp"]),
+            }
         )
         message = can.Message(arbitration_id=brake_pressures_msg.frame_id, data=data)
         self.bus.publish(serialcan_to_roscan(message))
@@ -428,51 +454,65 @@ class OrionState(NodeManager):
             if self.di_signals["sdc_out"] is True:
                 self.change_state(OrionStateEnum.TS_READY)
 
-        # If TS is pressed, go to TS_ACTIVATING and then TS_ACTIVE
-        elif self.car_state == OrionStateEnum.TS_READY:
-            # Transition differs from manual to autonomous
-            if (
-                self.can_actions["ts_pressed"]
-                and self.driving_mode == DrivingModeStatesEnum.MANUAL
-                or self.di_signals["dv_btn"]
-                and self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
-            ):
-                self.can_actions["ts_pressed"] = False
-                self.change_state(OrionStateEnum.TS_ACTIVATING)
+        else:
+            if self.di_signals["sdc_out"] is False:
+                self.change_state(OrionStateEnum.SDC_OPEN)
 
-                # Activate TS
-                self.press_btn_procedure("ts_btn", 0.1, 1.0)
+            # If TS is pressed, go to TS_ACTIVATING and then TS_ACTIVE
+            elif self.car_state == OrionStateEnum.TS_READY:
+                # Transition differs from manual to autonomous
+                if (
+                    self.can_actions["ts_pressed"]
+                    and self.driving_mode == DrivingModeStatesEnum.MANUAL
+                ) or (
+                    self.di_signals["dv_btn"]
+                    and self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
+                ):
+                    self.can_actions["ts_pressed"] = False
+                    self.change_state(OrionStateEnum.TS_ACTIVATING)
 
-                # Enable state timeout for this state
-                self.timeout_state_procedure(5.0)
+                    # Activate TS
+                    self.press_btn_procedure("ts_btn", 0.1, 1.0)
 
-        # Wait for AIRS to close
-        elif self.car_state == OrionStateEnum.TS_ACTIVATING:
-            if self.can_inputs["air1"] and self.can_inputs["air2"]:
-                self.change_state(OrionStateEnum.TS_ACTIVE)
+                    # Enable state timeout for this state
+                    self.timeout_state_procedure(5.0)
 
-        # If both brake pressures are above 5, go to R2D_READY
-        elif self.car_state == OrionStateEnum.TS_ACTIVE:
-            if self.ai_signals["front_bp"] > 5 and self.ai_signals["rear_bp"] > 5:
-                self.change_state(OrionStateEnum.R2D_READY)
+                    # #! Temporary
+                    def enable_airs(_):
+                        self.can_inputs["air1"] = True
+                        self.can_inputs["air2"] = True
 
-        # If R2D is pressed, go to R2D (when ok)
-        elif self.car_state == OrionStateEnum.R2D_READY:
-            if self.ai_signals["front_bp"] < 5 or self.ai_signals["rear_bp"] > 5:
-                self.change_state(OrionStateEnum.TS_ACTIVE)
+                    self.job_scheduler.add_job_relative(
+                        1.0, enable_airs, tag="temp_enable_airs"
+                    )
 
-            elif (
-                self.can_actions["r2d_pressed"]
-                and self.driving_mode == DrivingModeStatesEnum.MANUAL
-                or self.can_inputs["res_go"]
-                and self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
-                and not self.job_scheduler.tag_exists("r2d_dv_wait")
-            ):
-                self.can_actions["r2d_pressed"] = False
-                self.change_state(OrionStateEnum.R2D)
+            # Wait for AIRS to close
+            elif self.car_state == OrionStateEnum.TS_ACTIVATING:
+                if self.can_inputs["air1"] and self.can_inputs["air2"]:
+                    self.change_state(OrionStateEnum.TS_ACTIVE)
 
-        elif self.car_state == OrionStateEnum.ERROR:
-            self.do_publishers["sdc_close"].publish(Bool(data=False))
+            # If both brake pressures are above 5, go to R2D_READY
+            elif self.car_state == OrionStateEnum.TS_ACTIVE:
+                if self.ai_signals["front_bp"] > 5 and self.ai_signals["rear_bp"] > 5:
+                    self.change_state(OrionStateEnum.R2D_READY)
+
+            # If R2D is pressed, go to R2D (when ok)
+            elif self.car_state == OrionStateEnum.R2D_READY:
+                if self.ai_signals["front_bp"] < 5 or self.ai_signals["rear_bp"] < 5:
+                    self.change_state(OrionStateEnum.TS_ACTIVE)
+
+                elif (
+                    self.can_actions["r2d_pressed"]
+                    and self.driving_mode == DrivingModeStatesEnum.MANUAL
+                    or self.can_inputs["res_go"]
+                    and self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
+                    and not self.job_scheduler.tag_exists("r2d_dv_wait")
+                ):
+                    self.can_actions["r2d_pressed"] = False
+                    self.change_state(OrionStateEnum.R2D)
+
+            elif self.car_state == OrionStateEnum.ERROR:
+                self.do_publishers["sdc_close"].publish(Bool(data=False))
 
     def update_as_state(self):
         # Flowchart to determine AS state
@@ -509,7 +549,7 @@ class OrionState(NodeManager):
         else:
             if not self.as_ready_transitioned:
                 self.job_scheduler.add_job_relative(
-                    lambda: None, 5.0, tag="r2d_dv_wait"
+                    5.0, lambda x: None, tag="r2d_dv_wait"
                 )
                 self.as_ready_transitioned = True
 
@@ -531,23 +571,30 @@ class OrionState(NodeManager):
             return
 
         self.job_scheduler.add_job_relative(
-            partial(self.do_publishers[btn].publish, Bool(data=True)),
             delay,
+            self.do_publishers[btn].publish,
+            Bool(data=True),
             tag=f"press_btn_{btn}",
         )
         self.job_scheduler.add_job_relative(
-            partial(self.do_publishers[btn].publish, Bool(data=False)),
             delay + duration,
+            self.do_publishers[btn].publish,
+            Bool(data=False),
             tag=f"release_btn_{btn}",
         )
         self.job_scheduler.add_job_relative(
-            lambda: None, delay + duration + cooldown, tag=f"cooldown_btn_{btn}"
+            delay + duration + cooldown, lambda x: None, tag=f"cooldown_btn_{btn}"
         )
 
     def timeout_state_procedure(self, duration):
+        def interfere(state):
+            print("Interfering...")
+            self.change_state(state)
+
         self.job_scheduler.add_job_relative(
-            partial(self.change_state, OrionStateEnum.INIT),
             duration,
+            interfere,
+            OrionStateEnum.INIT,
             tag="timeout_state",
         )
 
@@ -580,24 +627,27 @@ class OrionState(NodeManager):
     def initial_checkup(self):
         if self.driving_mode == DrivingModeStatesEnum.MANUAL:
             # ASMS needs to be off
-            if not self.di_signals["asms_status"]:
+            if self.di_signals["asms_status"]:
                 return False, "ASMS is ON"
 
             # bypass needs to be off
-            if not self.di_signals["bypass_status"]:
+            if self.di_signals["bypass_status"]:
                 return False, "BYPASS is ON"
 
             # check air pressures
-            if not (
-                self.ai_signals["air_pressure1"] < 1
-                and self.ai_signals["air_pressure1"] < 1
+            if (
+                self.ai_signals["air_pressure1"] > 1
+                or self.ai_signals["air_pressure2"] > 1
             ):
-                return False, "ASB is still ENABLED"
+                return (
+                    False,
+                    f"ASB is still ENABLED: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
+                )
 
         else:
             return False, "Not yet implemented"
 
-        return True
+        return True, "OK"
 
     def monitor(self):
         # # check heartbeats of low voltage systems, motorcontrollers and sensors

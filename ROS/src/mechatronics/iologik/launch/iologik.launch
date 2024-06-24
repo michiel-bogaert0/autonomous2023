@@ -2,23 +2,39 @@
   <node name="iologik_aio" pkg="iologik" type="iologik" output="screen">
     <param name="rate" value="20" />
     <param name="enable_i0" value="false" />
-    <param name="enable_i1" value="false" />
+    <param name="enable_i1" value="true" />
     <param name="enable_i2" value="true" />
     <param name="enable_i3" value="true" />
-    <param name="enable_i4" value="false" />
-    <param name="enable_i5" value="false" />
+    <param name="enable_i4" value="true" />
+    <param name="enable_i5" value="true" />
     <param name="enable_i6" value="true" />
     <param name="enable_i7" value="false" />
 
     <param name="enable_o0" value="true" />
     <param name="enable_o1" value="true" />
-    <param name="minimum_output_current" value="0" />
-    <param name="maximum_output_current" value="20" />
-    <param name="minimum_input_current" value="0" />
-    <param name="maximum_input_current" value="20" />
-    <remap from="/input2" to="/aio/in/bp1" />
-    <remap from="/input3" to="/aio/in/bp3" />
-    <remap from="/input6" to="/aio/in/bp5" />
+    
+    <param name="scaling_i3" value="250"/>
+    <param name="scaling_i6" value="250"/>
+
+    <param name="scaling_i2" value="10"/>
+    <param name="scaling_i5" value="10"/>
+
+
+    <param name="minimum_output_current" value="3" />
+    <param name="maximum_output_current" value="19" />
+    <param name="minimum_input_current" value="3" />
+    <param name="maximum_input_current" value="19" />
+
+    <remap from="/input1" to="/aio/in/temp1" />
+    
+    <remap from="/input3" to="/aio/in/front_bp" />
+    <remap from="/input6" to="/aio/in/rear_bp" />
+
+    <remap from="/input4" to="/aio/in/temp2" />
+
+    <remap from="/input2" to="/aio/in/air_pressure1" />
+    <remap from="/input5" to="/aio/in/air_pressure2" />
+
     <remap from="/output0" to="/iologik/output0" />
     <remap from="/output1" to="/iologik/output1" />
   </node>

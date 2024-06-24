@@ -14,16 +14,27 @@ void iologik::doConfigure() {
   input7_pub_ = n_.advertise<std_msgs::Float64>("/input7", 10);
   output0_sub_ = n_.subscribe("/output0", 10, &iologik::output0Callback, this);
   output1_sub_ = n_.subscribe("/output1", 10, &iologik::output1Callback, this);
-  n_.param<bool>("enable_i0", enable_i0, false);
-  n_.param<bool>("enable_i1", enable_i1, false);
-  n_.param<bool>("enable_i2", enable_i2, false);
-  n_.param<bool>("enable_i3", enable_i3, false);
-  n_.param<bool>("enable_i4", enable_i4, false);
-  n_.param<bool>("enable_i5", enable_i5, false);
-  n_.param<bool>("enable_i6", enable_i6, false);
-  n_.param<bool>("enable_i7", enable_i7, false);
-  std::vector<bool> enables = {enable_i0, enable_i1, enable_i2, enable_i3,
-                               enable_i4, enable_i5, enable_i6, enable_i7};
+  n_.param<bool>("enable_i0", enable_inputs[0], false);
+  n_.param<bool>("enable_i1", enable_inputs[1], false);
+  n_.param<bool>("enable_i2", enable_inputs[2], false);
+  n_.param<bool>("enable_i3", enable_inputs[3], false);
+  n_.param<bool>("enable_i4", enable_inputs[4], false);
+  n_.param<bool>("enable_i5", enable_inputs[5], false);
+  n_.param<bool>("enable_i6", enable_inputs[6], false);
+  n_.param<bool>("enable_i7", enable_inputs[7], false);
+
+  n_.param<float>("scaling_i0", scaling_inputs[0], 1.0);
+  n_.param<float>("scaling_i1", scaling_inputs[1], 1.0);
+  n_.param<float>("scaling_i2", scaling_inputs[2], 1.0);
+  n_.param<float>("scaling_i3", scaling_inputs[3], 1.0);
+  n_.param<float>("scaling_i4", scaling_inputs[4], 1.0);
+  n_.param<float>("scaling_i5", scaling_inputs[5], 1.0);
+  n_.param<float>("scaling_i6", scaling_inputs[6], 1.0);
+  n_.param<float>("scaling_i7", scaling_inputs[7], 1.0);
+
+  std::vector<bool> enables = {
+      enable_inputs[0], enable_inputs[1], enable_inputs[2], enable_inputs[3],
+      enable_inputs[4], enable_inputs[5], enable_inputs[6], enable_inputs[7]};
   for (int i = 0; i < enables.size(); i++) { // find the index of the lowest
                                              // enabled input
     if (enables[i]) {
@@ -109,63 +120,50 @@ void iologik::active() {
 
     for (int i = 0; i < 8; ++i) {
       msg.data = dwValues[i - start_channel];
-      switch (i) {
-      case 0:
-        if (enable_i0) {
+
+      if (enable_inputs[i]) {
+
+        if (i != 1 && i != 4) {
+          CheckInput(i, msg.data);
+
+          msg.data -= 4;
+          msg.data /= 16;
+          msg.data *= scaling_inputs[i];
+        }
+        switch (i) {
+        case 0:
           pointer++;
-          CheckInput(0, msg.data);
           input0_pub_.publish(msg);
-        }
-        break;
-      case 1:
-        if (enable_i1) {
+          break;
+        case 1:
           pointer++;
-          CheckInput(1, msg.data);
           input1_pub_.publish(msg);
-        }
-        break;
-      case 2:
-        if (enable_i2) {
+          break;
+        case 2:
           pointer++;
-          CheckInput(2, msg.data);
           input2_pub_.publish(msg);
-        }
-        break;
-      case 3:
-        if (enable_i3) {
+          break;
+        case 3:
           pointer++;
-          CheckInput(3, msg.data);
           input3_pub_.publish(msg);
-        }
-        break;
-      case 4:
-        if (enable_i4) {
+          break;
+        case 4:
           pointer++;
-          CheckInput(4, msg.data);
           input4_pub_.publish(msg);
-        }
-        break;
-      case 5:
-        if (enable_i5) {
+          break;
+        case 5:
           pointer++;
-          CheckInput(5, msg.data);
           input5_pub_.publish(msg);
-        }
-        break;
-      case 6:
-        if (enable_i6) {
+          break;
+        case 6:
           pointer++;
-          CheckInput(6, msg.data);
           input6_pub_.publish(msg);
-        }
-        break;
-      case 7:
-        if (enable_i7) {
+          break;
+        case 7:
           pointer++;
-          CheckInput(7, msg.data);
           input7_pub_.publish(msg);
+          break;
         }
-        break;
       }
     }
   }

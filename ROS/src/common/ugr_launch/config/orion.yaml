@@ -6,7 +6,7 @@ autonomous_state:
 orion_state:
   node_management:
     always:
-      - can_cvrt_mc
+      # - can_cvrt_mc
       - can_cvrt_lv
       - iologik_aio
       - diobank_driver_can
