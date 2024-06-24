@@ -454,6 +454,9 @@ class OrionState(NodeManager):
             if self.di_signals["sdc_out"] is True:
                 self.change_state(OrionStateEnum.TS_READY)
 
+            if self.di_signals["wd_ok"] is False:
+                self.press_btn_procedure("wd_reset", 0.1, 1.0)
+
         else:
             if self.di_signals["sdc_out"] is False:
                 self.change_state(OrionStateEnum.SDC_OPEN)

@@ -6,20 +6,20 @@
 
   <!-- State machine -->
   <node name="orion_state" pkg="orion_state" type="orion_state.py" output="screen">
-    <param name="rate" value="15"/>
+    <param name="rate" value="15" />
   </node>
 
   <!-- Load extra car specific parameters or override parameters -->
   <rosparam command="load" file="$(find ugr_launch)/config/orion.yaml" />
 
-  
+
   <!-- CAN -->
 
   <node pkg="can" type="can_converter.py" name="can_cvrt_lv" respawn="false" output="screen">
     <param name="can_interface" type="string" value="can4_ext" />
     <param name="can_baudrate" type="int" value="1000000" />
     <param name="dbc_filename" type="string" value="lv.dbc" />
-    
+
     <remap from="/ugr/can" to="/ugr/can/lv/rx" />
     <remap from="/ugr/send_can_raw" to="/ugr/can/lv/tx" />
 
@@ -31,34 +31,36 @@
     <param name="dbc_filename" type="string" value="lv.dbc" />
     <param name="can_name" type="string" value="mc" />
 
-    
+
     <remap from="/ugr/can" to="/ugr/can/mc/rx" />
     <remap from="/ugr/send_can_raw" to="/ugr/can/mc/tx" />
 
   </node>
 
+  <!-- Pedalmapper -->
+  <include file="$(find pedal_mapper)/launch/pedal_mapper.launch"/>
 
-    <!-- IO drivers -->
-    <include file="$(find dio_driver)/launch/dio_driver_can.launch" />
-    <include file="$(find iologik)/launch/iologik.launch" />
-  
-    <!-- Vectornav -->
-    <!-- <include file="$(find vectornav)/launch/vectornav.launch"/> -->
-  
-    <!-- Lidar -->
-    <!-- <include file="$(find ouster_ros)/launch/sensor.launch">
+  <!-- IO drivers -->
+  <include file="$(find dio_driver)/launch/dio_driver_can.launch" />
+  <include file="$(find iologik)/launch/iologik.launch" />
+
+  <!-- Vectornav -->
+  <!-- <include file="$(find vectornav)/launch/vectornav.launch"/> -->
+
+  <!-- Lidar -->
+  <!-- <include file="$(find ouster_ros)/launch/sensor.launch">
         <arg name="timestamp_mode" default="TIME_FROM_PTP_1588" />
       </include> -->
-  
-    <!-- Camera -->
-    <!-- <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">
+
+  <!-- Camera -->
+  <!-- <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">
         <arg name="type" default="camera" />
       </include> -->
-  
-    <!-- GPS -->
-    <!-- <include file="$(find ublox_gps)/launch/gps.launch" pass_all_args="true" /> -->
-  
-  
-    <!-- <include file="$(find ugr_ros_control)/orion_control/launch/orion_hardware.launch" /> -->
+
+  <!-- GPS -->
+  <!-- <include file="$(find ublox_gps)/launch/gps.launch" pass_all_args="true" /> -->
+
+
+  <include file="$(find ugr_ros_control)/orion_control/launch/orion_hardware.launch" />
 
 </launch>

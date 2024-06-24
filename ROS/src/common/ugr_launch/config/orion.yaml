@@ -10,5 +10,8 @@ orion_state:
       - can_cvrt_lv
       - iologik_aio
       - diobank_driver_can
+      
+    manual:
+      - pedal_mapper
     # driverless:
     #   - autonomous_state

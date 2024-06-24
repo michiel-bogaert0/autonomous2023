@@ -1,0 +1,5 @@
+<launch>
+  <node name="pedal_mapper" pkg="pedal_mapper" type="pedal_mapper.py" output="screen">
+    <param name="rate" value="15"/>
+  </node>
+</launch>
