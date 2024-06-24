@@ -45,8 +45,8 @@ class CanConverter(ManagedNode):
         )
 
         # Pubs and subs
-        rospy.Subscriber("ugr/send_can_raw", Frame, self.send_on_can_raw)
-        self.can_pub = rospy.Publisher("ugr/can", Frame, queue_size=10)
+        self.AddSubscriber("ugr/send_can_raw", Frame, self.send_on_can_raw)
+        self.can_pub = self.AddPublisher("ugr/can", Frame, queue_size=10)
 
     def listen_on_can(self) -> None:
         """Listens to CAN and publishes all incoming messages to a topic (still non-readable format)"""

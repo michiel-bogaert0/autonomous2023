@@ -1,28 +1,14 @@
-# ugr:
-#   car:
-#     steering:
-#       transmission: 0.25 # should be changed
-
-# front_wheel_feedback:
-#   cog_to_front_axle: 0.72 # should be changed
-
-# pure_pursuit:
-#   cog_to_front_axle: 0.72 # should be changed
-
-# autonomous_state:
-#   node_management:
-#     always:
-#       - slam_controller
+autonomous_state:
+  node_management:
+    always:
+      - slam_controller
 
 orion_state:
   node_management:
     always:
-      # - iologik
-      # - dio_driver (werkt nog niet)
-      # - can_cvrt_mc
+      - can_cvrt_mc
       - can_cvrt_lv
-      #- can_cvrt_mc
-      # - iologik_dio
       - iologik_aio
+      - diobank_driver_can
     # driverless:
     #   - autonomous_state

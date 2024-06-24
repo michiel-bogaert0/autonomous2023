@@ -313,6 +313,12 @@ class NodeManagingStatesEnum(str, enum.Enum):
     FINALIZED = "finalized"
 
 
+# Driving state
+class DrivingModeStatesEnum(str, enum.Enum):
+    MANUAL = "manual"
+    DRIVERLESS = "driverless"
+
+
 # States of orion
 class OrionStateEnum(str, enum.Enum):
     INIT = "init"

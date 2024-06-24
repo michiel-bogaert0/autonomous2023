@@ -160,14 +160,6 @@ class NodeManager(ManagedNode):
         # Set health to warning
         self.set_health(level=DiagnosticStatus.WARN, message="Initializing")
 
-        if default_state == NodeManagingStatesEnum.ACTIVE:
-            self.doConfigure()
-            self.doActivate()
-            self.state = NodeManagingStatesEnum.ACTIVE
-        elif default_state == NodeManagingStatesEnum.INACTIVE:
-            self.doConfigure()
-            self.state = NodeManagingStatesEnum.INACTIVE
-
     def handle_health(self, msg: DiagnosticStatus):
         """
         Handle the incoming health messages from the nodes. This is a callback function for the /health/nodes topic.
