@@ -79,6 +79,9 @@ public:
   /** \brief Enforce limits for all values before writing */
   virtual void enforceLimits(ros::Duration& period);
 
+  virtual bool canSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
+                         const std::list<hardware_interface::ControllerInfo>& stop_list);
+
   void state_change(const ugr_msgs::State::ConstPtr& msg);
 
   void handle_vel_msg();
@@ -104,7 +107,9 @@ private:
 
   int IMU_ids[2] = { 0xE2, 0xE3 };
 
-  ros::Publisher can_pub;
+  ros::Publisher can_axis0_pub;
+  ros::Publisher can_axis1_pub;
+
   ros::Publisher vel_pub;
   ros::Subscriber can_sub;
   ros::Subscriber state_sub;

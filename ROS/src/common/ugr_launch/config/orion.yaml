@@ -6,12 +6,10 @@ autonomous_state:
 orion_state:
   node_management:
     always:
-      # - can_cvrt_mc
+      - can_cvrt_mc_right
+      - can_cvrt_mc_left
       - can_cvrt_lv
       - iologik_aio
       - diobank_driver_can
-      
-    manual:
+    manual: 
       - pedal_mapper
-    # driverless:
-    #   - autonomous_state

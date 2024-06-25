@@ -25,6 +25,7 @@ class PedalMapper(ManagedNode):
         # ROS parameters
         self.max_deviation = rospy.get_param("~max_deviation", 25)
         self.deadzone = rospy.get_param("~deadzone", 5)
+        self.max_effort = rospy.get_param("~max_effort", 2)
 
         self.as_state = None
         self.car_state = None
@@ -68,17 +69,23 @@ class PedalMapper(ManagedNode):
                 apps_deadzoned = (
                     0 if average_apps <= self.deadzone else average_apps - self.deadzone
                 )
-                self.apps = apps_deadzoned / ((100 - self.deadzone) / 100)
+                self.apps = (
+                    apps_deadzoned
+                    / ((100 - self.deadzone) / 100)
+                    * self.max_effort
+                    / 100
+                )
 
             else:
                 self.apps = 0
 
     def active(self):
+        self.max_effort = rospy.get_param("~max_effort", 2)
+
         # Check states
-        # !Change to R2D
         if (
             self.as_state == AutonomousStatesEnum.ASOFF
-            and self.car_state == OrionStateEnum.TS_ACTIVE
+            and self.car_state == OrionStateEnum.R2D
         ):
             if self.last_received_hb != 0:
                 if rospy.Time.now().to_sec() - self.last_received_hb > 0.5:

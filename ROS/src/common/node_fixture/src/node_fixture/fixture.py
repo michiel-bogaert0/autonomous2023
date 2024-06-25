@@ -341,10 +341,10 @@ def roscan_to_serialcan(data: Frame) -> can.Message:
         timestamp=data.header.stamp.to_sec(),
         is_error_frame=data.is_error,
         is_remote_frame=data.is_rtr,
-        dlc=len(data.data),
+        dlc=data.dlc,
         arbitration_id=data.id,
         data=list(data.data),
-        is_extended_id=False,
+        is_extended_id=data.is_extended,
     )
     return can_message
 

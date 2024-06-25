@@ -6,6 +6,7 @@ import can
 import cantools
 import rospy
 from can_msgs.msg import Frame
+from controller_manager_msgs.srv import SwitchController, SwitchControllerRequest
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from node_fixture import (
     StateMachineScopeEnum,
@@ -35,9 +36,14 @@ class OrionState(NodeManager):
 
         # Activate nodes for driving mode
         self.activate_nodes(self.driving_mode, None)
+        self.switch_controllers()
 
         # Wait a few seconds
-        # rospy.sleep(3)
+        rospy.sleep(1)
+
+        # Start default in INIT and ASOFF
+        self.change_state(OrionStateEnum.INIT)
+        self.change_as_state(AutonomousStatesEnum.ASOFF)
 
         # Initial checkup
         checks_ok, msg = self.initial_checkup()
@@ -49,6 +55,43 @@ class OrionState(NodeManager):
             )
 
         self.spin()
+
+    def switch_controllers(self):
+        rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
+        try:
+            switch_controller = rospy.ServiceProxy(
+                "/ugr/car/controller_manager/switch_controller", SwitchController
+            )
+
+            req = SwitchControllerRequest()
+
+            if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+                req.start_controllers = [
+                    "joint_state_controller",
+                    "steering_position_controller",
+                    "drive_effort_controller",
+                ]
+            else:
+                req.start_controllers = [
+                    "joint_state_controller",
+                    "steering_position_controller",
+                    "drive_velocity_controller",
+                ]
+
+            req.stop_controllers = []
+            req.strictness = SwitchControllerRequest.BEST_EFFORT
+
+            response = switch_controller(req)
+
+            if not response.ok:
+                rospy.logerr("Could not start controllers")
+                self.set_health(2, "Could not start controllers")
+                self.change_state(OrionStateEnum.ERROR)
+
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Service call failed: {e}")
+            self.set_health(2, "Service call failed: {e}")
+            self.change_state(OrionStateEnum.ERROR)
 
     def doConfigure(self):
         # Job scheduler (synchronous!)
@@ -71,13 +114,13 @@ class OrionState(NodeManager):
         self.state_publisher = self.AddPublisher(
             "/state", State, queue_size=10, latch=True
         )
-        self.orion_state_publisher = self.AddPublisher(
+        self.orion_state_publisher = rospy.Publisher(
             "/state/car", State, queue_size=10, latch=True
         )
         self.diagnostics_publisher = self.AddPublisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
-        self.as_state_publisher = self.AddPublisher(
+        self.as_state_publisher = rospy.Publisher(
             "/state/as", State, queue_size=10, latch=True
         )
 
@@ -190,11 +233,6 @@ class OrionState(NodeManager):
             sleep(0.1)
             if rospy.is_shutdown():
                 return
-
-    def doActivate(self):
-        # Start default in INIT and ASOFF
-        self.change_state(OrionStateEnum.INIT)
-        self.change_as_state(AutonomousStatesEnum.ASOFF)
 
     def change_state(self, new_state: OrionStateEnum):
         """
@@ -352,7 +390,7 @@ class OrionState(NodeManager):
         data = [0, 0, 0, 0, 0]
 
         # Bit 0 - 2
-        bits = 1  # ASOFF
+        bits = 1  # ASOFF TODO
         data[0] |= bits
 
         # Bit 3 - 4
@@ -416,6 +454,7 @@ class OrionState(NodeManager):
                 )
 
             self.activate_nodes(self.driving_mode, None)
+            self.switch_controllers()
 
         # Update car and diagnostics
         self.send_status_over_can()
@@ -496,12 +535,12 @@ class OrionState(NodeManager):
 
             # If both brake pressures are above 5, go to R2D_READY
             elif self.car_state == OrionStateEnum.TS_ACTIVE:
-                if self.ai_signals["front_bp"] > 5 and self.ai_signals["rear_bp"] > 5:
+                if self.ai_signals["front_bp"] > 2 and self.ai_signals["rear_bp"] > 2:
                     self.change_state(OrionStateEnum.R2D_READY)
 
             # If R2D is pressed, go to R2D (when ok)
             elif self.car_state == OrionStateEnum.R2D_READY:
-                if self.ai_signals["front_bp"] < 5 or self.ai_signals["rear_bp"] < 5:
+                if self.ai_signals["front_bp"] < 2 or self.ai_signals["rear_bp"] < 2:
                     self.change_state(OrionStateEnum.TS_ACTIVE)
 
                 elif (

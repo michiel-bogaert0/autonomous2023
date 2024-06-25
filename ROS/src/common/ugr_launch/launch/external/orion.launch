@@ -25,18 +25,32 @@
 
   </node>
 
-  <node pkg="can" type="can_converter.py" name="can_cvrt_mc" respawn="false" output="log">
+  <node pkg="can" type="can_converter.py" name="can_cvrt_mc_left" respawn="false" output="log">
     <param name="can_interface" type="string" value="can3_ext" />
     <param name="can_baudrate" type="int" value="500000" />
-    <param name="dbc_filename" type="string" value="lv.dbc" />
-    <param name="can_name" type="string" value="mc" />
+    <param name="dbc_filename" type="string" value="invertor_left.dbc" />
+    <param name="can_name" type="string" value="mc_left" />
 
 
-    <remap from="/ugr/can" to="/ugr/can/mc/rx" />
-    <remap from="/ugr/send_can_raw" to="/ugr/can/mc/tx" />
+    <remap from="/ugr/can" to="/ugr/can/mc_left/rx" />
+    <remap from="/ugr/send_can_raw" to="/ugr/can/mc_left/tx" />
 
   </node>
 
+
+  <node pkg="can" type="can_converter.py" name="can_cvrt_mc_right" respawn="false" output="log">
+    <param name="can_interface" type="string" value="can3_ext" />
+    <param name="can_baudrate" type="int" value="500000" />
+    <param name="dbc_filename" type="string" value="invertor_right.dbc" />
+    <param name="can_name" type="string" value="mc_right" />
+
+
+    <remap from="/ugr/can" to="/ugr/can/mc_right/rx" />
+    <remap from="/ugr/send_can_raw" to="/ugr/can/mc_right/tx" />
+
+  </node>
+
+  
   <!-- Pedalmapper -->
   <include file="$(find pedal_mapper)/launch/pedal_mapper.launch"/>
 
