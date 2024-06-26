@@ -36,13 +36,11 @@ BS_:
 BU_: BPR DIO PDU ELVIS ASSI ECU_LV Dashboard
 
 
-BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
- SG_ Brake_light : 0|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ Cooling_fan : 0|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ TSAC_fan : 0|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ Fanspeed : 0|8@0+ (1,0) [0|255] "" Vector__XXX
- SG_ State : 0|16@0+ (1,0) [0|65535] "" Vector__XXX
- SG_ Heartbeat : 0|1@0+ (1,0) [0|1] "" Vector__XXX
+BO_ 7 MCU_temp: 8 ECU_LV
+ SG_ Temp_motor_R : 55|16@0- (0.1,0) [-3276.8|3276.7] "oC" Vector__XXX
+ SG_ Temp_motor_L : 39|16@0- (0.1,0) [-3276.8|3276.7] "oC" Vector__XXX
+ SG_ Temp_invertor_R : 23|16@0- (0.1,0) [-3276.8|3276.7] "oC" Vector__XXX
+ SG_ Temp_invertor_L : 7|16@0- (0.1,0) [-3276.8|3276.7] "oC" Vector__XXX
 
 BO_ 1539 state_BPRI6_8_O0_1: 7 BPR
  SG_ state_BPRI6 : 31|12@0+ (1,0) [0|4095] "mV" Vector__XXX
@@ -230,8 +228,6 @@ BO_ 4 ASSI_Heartbeat: 1 ASSI
 
 
 
-CM_ BO_ 3221225472 "This is a message for not used signals, created by Vector CANdb++ DBC OLE DB Provider.";
-CM_ SG_ 3221225472 State "State of PDU outputs";
 CM_ SG_ 256 set_TSAC_fan_PWM "Turn specific output on or off";
 CM_ SG_ 256 set_mctrl_2_pwr "Turn specific output on or off";
 CM_ SG_ 256 set_mctrl_1_pwr "Turn specific output on or off";
@@ -264,4 +260,3 @@ VAL_ 1282 AMI_state 5 "inspection" 6 "autocross" 4 "braketest" 3 "trackdrive" 2 
 VAL_ 1282 EBS_state 2 "armed" 3 "activated" 1 "unavailable" 0 "UNKNOWN" ;
 VAL_ 1282 AS_state 5 "finish" 4 "emergency_brake" 3 "driving" 2 "ready" 1 "off" 0 "unknown" ;
 VAL_ 2 ELVIS_critical_fault 5 "OVERTEMPERATURE" 4 "UNDERTEMPERATURE" 3 "OVERVOLTAGE" 2 "UNDERVOLTAGE" 1 "OKAY" 0 "UNKNOWN_FAULT" ;
-

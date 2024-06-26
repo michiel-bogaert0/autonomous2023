@@ -170,6 +170,15 @@ class OrionState(NodeManager):
             "air_pressure2": 0,
             "front_bp": 0,
             "rear_bp": 0,
+            "gearbox_temp_left": 0,
+            "gearbox_temp_right": 0,
+        }
+
+        self.mc_temps = {
+            "mc_left_motor_temp": 0,
+            "mc_right_motor_temp": 0,
+            "mc_left_controller_temp": 0,
+            "mc_right_controller_temp": 0,
         }
 
         self.hbs = {
@@ -220,6 +229,16 @@ class OrionState(NodeManager):
 
         # CAN
         self.AddSubscriber("/ugr/can/lv/rx", Frame, self.handle_can)
+
+        # MC temps
+        for side in ["left", "right"]:
+            for typ in ["motor", "controller"]:
+                topic = f"/ugr/can/mc_{side}/processed/actual_temp{typ}"
+                self.AddSubscriber(
+                    topic,
+                    Float64,
+                    partial(self.handle_mc_temps, f"mc_{side}_{typ}_temp"),
+                )
 
         # load dbc
         dbc_filename = rospy.get_param("~db_adress", "lv.dbc")
@@ -333,6 +352,9 @@ class OrionState(NodeManager):
                 f"DO feedback signal '{io_name}' not found in list of IO signals"
             )
 
+    def handle_mc_temps(self, mc_name, msg: Float64):
+        self.mc_temps[mc_name] = msg.data
+
     def handle_can(self, frame: Frame):
         # DB_Commands
         if frame.id == 768:
@@ -425,6 +447,46 @@ class OrionState(NodeManager):
             is_extended_id=False,
         )
         self.bus.publish(serialcan_to_roscan(canmsg))
+
+        # MC
+        mc_temp_message = self.db.get_message_by_name("MCU_temp")
+        data = mc_temp_message.encode(
+            {
+                "Temp_motor_R": self.mc_temps["mc_right_motor_temp"],
+                "Temp_motor_L": self.mc_temps["mc_left_motor_temp"],
+                "Temp_invertor_R": self.mc_temps["mc_right_controller_temp"],
+                "Temp_invertor_L": self.mc_temps["mc_left_controller_temp"],
+            }
+        )
+        message = can.Message(arbitration_id=mc_temp_message.frame_id, data=data)
+        self.bus.publish(serialcan_to_roscan(message))
+
+        # iologik
+        iologik_message_1 = self.db.get_message_by_name("state_BPRO1_5")
+        data = iologik_message_1.encode(
+            {
+                "state_BPRI1": self.ai_signals["gearbox_temp_left"],
+                "state_BPRI2": self.ai_signals["air_pressure1"],
+                "state_BPRI3": max(0, self.ai_signals["front_bp"]),
+                "state_BPRI4": self.ai_signals["gearbox_temp_right"],
+                "state_BPRI5": self.ai_signals["air_pressure2"],
+            }
+        )
+        message = can.Message(arbitration_id=iologik_message_1.frame_id, data=data)
+        self.bus.publish(serialcan_to_roscan(message))
+
+        iologik_message_2 = self.db.get_message_by_name("state_BPRI6_8_O0_1")
+        data = iologik_message_2.encode(
+            {
+                "state_BPRI6": max(0, self.ai_signals["rear_bp"]),
+                "state_BPRO1": 0,
+                "state_BPRI8": 0,
+                "state_BPRO0": 0,
+                "state_BPRI7": 0,
+            }
+        )
+        message = can.Message(arbitration_id=iologik_message_2.frame_id, data=data)
+        self.bus.publish(serialcan_to_roscan(message))
 
     def active(self):
         # Update state machines

@@ -25,12 +25,12 @@
     <param name="minimum_input_current" value="3" />
     <param name="maximum_input_current" value="19" />
 
-    <remap from="/input1" to="/aio/in/temp1" />
+    <remap from="/input1" to="/aio/in/gearbox_temp_left" />
     
     <remap from="/input3" to="/aio/in/front_bp" />
     <remap from="/input6" to="/aio/in/rear_bp" />
 
-    <remap from="/input4" to="/aio/in/temp2" />
+    <remap from="/input4" to="/aio/in/gearbox_temp_right" />
 
     <remap from="/input2" to="/aio/in/air_pressure1" />
     <remap from="/input5" to="/aio/in/air_pressure2" />
