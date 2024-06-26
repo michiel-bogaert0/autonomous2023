@@ -1,4 +1,6 @@
 #! /usr/bin/python3
+import threading
+import time
 from functools import partial
 from time import sleep
 
@@ -34,6 +36,8 @@ class OrionState(NodeManager):
     def __init__(self) -> None:
         super().__init__("orion_state", NodeManagingStatesEnum.ACTIVE)
 
+        self.rate = rospy.Rate(rospy.get_param("~rate", 15))
+
         # Activate nodes for driving mode
         self.activate_nodes(self.driving_mode, None)
         self.switch_controllers()
@@ -47,6 +51,7 @@ class OrionState(NodeManager):
 
         # Initial checkup
         checks_ok, msg = self.initial_checkup()
+        print(msg)
         if not checks_ok:
             self.change_state(OrionStateEnum.ERROR)
             self.set_health(
@@ -126,7 +131,10 @@ class OrionState(NodeManager):
 
         self.wd_trigger_status = False
         self.wd_trigger_enable = True
+        self.toggling_wd = False
         self.as_ready_transitioned = False
+        self.sending_status = False
+        self.send_status = True
 
         # State machine states
         self.car_state = None
@@ -196,7 +204,7 @@ class OrionState(NodeManager):
             OrionStateEnum.R2D_READY: 4,
             OrionStateEnum.R2D: 5,
             OrionStateEnum.ERROR: 6,
-            OrionStateEnum.SDC_OPEN: 6,
+            OrionStateEnum.SDC_OPEN: 7,
         }
 
         # Publishers
@@ -226,6 +234,9 @@ class OrionState(NodeManager):
             self.AddSubscriber(
                 f"/aio/in/{ai_signal}", Float64, partial(self.handle_AI, ai_signal)
             )
+
+        # AO dbs
+        self.dbs_pub = self.AddPublisher("/iologik/output0", Float64, queue_size=10)
 
         # CAN
         self.AddSubscriber("/ugr/can/lv/rx", Frame, self.handle_can)
@@ -452,10 +463,10 @@ class OrionState(NodeManager):
         mc_temp_message = self.db.get_message_by_name("MCU_temp")
         data = mc_temp_message.encode(
             {
-                "Temp_motor_R": self.mc_temps["mc_right_motor_temp"],
-                "Temp_motor_L": self.mc_temps["mc_left_motor_temp"],
-                "Temp_invertor_R": self.mc_temps["mc_right_controller_temp"],
-                "Temp_invertor_L": self.mc_temps["mc_left_controller_temp"],
+                "Temp_motor_R": max(0, self.mc_temps["mc_right_motor_temp"]),
+                "Temp_motor_L": max(0, self.mc_temps["mc_left_motor_temp"]),
+                "Temp_invertor_R": max(0, self.mc_temps["mc_right_controller_temp"]),
+                "Temp_invertor_L": max(0, self.mc_temps["mc_left_controller_temp"]),
             }
         )
         message = can.Message(arbitration_id=mc_temp_message.frame_id, data=data)
@@ -465,11 +476,11 @@ class OrionState(NodeManager):
         iologik_message_1 = self.db.get_message_by_name("state_BPRO1_5")
         data = iologik_message_1.encode(
             {
-                "state_BPRI1": self.ai_signals["gearbox_temp_left"],
-                "state_BPRI2": self.ai_signals["air_pressure1"],
+                "state_BPRI1": max(0, self.ai_signals["gearbox_temp_left"]),
+                "state_BPRI2": max(0, self.ai_signals["air_pressure1"]),
                 "state_BPRI3": max(0, self.ai_signals["front_bp"]),
-                "state_BPRI4": self.ai_signals["gearbox_temp_right"],
-                "state_BPRI5": self.ai_signals["air_pressure2"],
+                "state_BPRI4": max(0, self.ai_signals["gearbox_temp_right"]),
+                "state_BPRI5": max(0, self.ai_signals["air_pressure2"]),
             }
         )
         message = can.Message(arbitration_id=iologik_message_1.frame_id, data=data)
@@ -488,7 +499,45 @@ class OrionState(NodeManager):
         message = can.Message(arbitration_id=iologik_message_2.frame_id, data=data)
         self.bus.publish(serialcan_to_roscan(message))
 
+    def publish_wd_trigger(self):
+        while self.toggling_wd:
+            self.do_publishers["wd_trigger"].publish(Bool(data=self.wd_trigger_status))
+            self.wd_trigger_status = not self.wd_trigger_status
+            self.rate.sleep()
+
+    def start_toggling_watchdog(self):
+        self.toggling_wd = True
+        self.wd_thread = threading.Thread(target=self.publish_wd_trigger)
+        self.wd_thread.start()
+
+    def stop_toggling_watchdog(self):
+        self.toggling_wd = False
+        self.wd_thread.join()
+
+    def start_sending_status(self):
+        self.send_status = True
+        self.status_thread = threading.Thread(target=self.send_can_status)
+        self.sending_status = True
+        self.status_thread.start()
+
+    def send_can_status(self):
+        while self.send_status:
+            self.send_status_over_can()
+
+    def stop_sending_status(self):
+        self.send_status = False
+        self.sending_status = False
+        self.status_thread.join()
+
     def active(self):
+        if self.send_status and not self.sending_status:
+            self.start_sending_status()
+
+        if self.wd_trigger_enable and not self.toggling_wd:
+            self.start_toggling_watchdog()
+        elif not self.wd_trigger_enable and self.toggling_wd:
+            self.stop_toggling_watchdog()
+
         # Update state machines
         self.update_car_state()
         self.update_as_state()
@@ -508,6 +557,7 @@ class OrionState(NodeManager):
 
             # Do safety checks
             checks_ok, msg = self.initial_checkup()
+            print(msg)
             if not checks_ok:
                 self.change_state(OrionStateEnum.ERROR)
                 self.set_health(
@@ -519,7 +569,7 @@ class OrionState(NodeManager):
             self.switch_controllers()
 
         # Update car and diagnostics
-        self.send_status_over_can()
+        # self.send_status_over_can()
         self.diagnostics_publisher.publish(
             create_diagnostic_message(
                 DiagnosticStatus.OK, "[GNRL] STATE: Orion state", str(self.car_state)
@@ -533,11 +583,6 @@ class OrionState(NodeManager):
 
         # Step job scheduler
         self.job_scheduler.step()
-
-        # Toggle watchdog as final step
-        if self.wd_trigger_enable:
-            self.do_publishers["wd_trigger"].publish(Bool(data=self.wd_trigger_status))
-            self.wd_trigger_status = not self.wd_trigger_status
 
     def update_car_state(self):
         """
@@ -620,48 +665,49 @@ class OrionState(NodeManager):
 
     def update_as_state(self):
         # Flowchart to determine AS state
-        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-            self.change_as_state(AutonomousStatesEnum.ASOFF)
-        elif self.ebs_activated:
-            if self.mission_finished and self.vehicle_stopped:
-                if self.can_inputs["res_activated"]:
-                    self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
-                else:
-                    self.change_as_state(AutonomousStatesEnum.ASFINISHED)
-            else:
-                self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
-        else:
-            if (
-                self.mission_selected
-                and self.di_signals["bypass_status"]
-                and self.di_signals["asms_status"]
-                and self.car_state == OrionStateEnum.TS_ACTIVE
-                or self.car_state == OrionStateEnum.R2D
-                or self.car_state == OrionStateEnum.R2D_READY
-            ):
-                if self.car_state == OrionStateEnum.R2D:
-                    self.change_as_state(AutonomousStatesEnum.ASDRIVE)
-                elif self.car_state == OrionStateEnum.R2D_READY:
-                    self.change_as_state(AutonomousStatesEnum.ASREADY)
-                else:
-                    self.change_as_state(AutonomousStatesEnum.ASOFF)
+        # if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+        #     self.change_as_state(AutonomousStatesEnum.ASOFF)
+        # elif self.ebs_activated:
+        #     if self.mission_finished and self.vehicle_stopped:
+        #         if self.can_inputs["res_activated"]:
+        #             self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
+        #         else:
+        #             self.change_as_state(AutonomousStatesEnum.ASFINISHED)
+        #     else:
+        #         self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
+        # else:
+        #     if (
+        #         self.mission_selected
+        #         and self.di_signals["bypass_status"]
+        #         and self.di_signals["asms_status"]
+        #         and self.car_state == OrionStateEnum.TS_ACTIVE
+        #         or self.car_state == OrionStateEnum.R2D
+        #         or self.car_state == OrionStateEnum.R2D_READY
+        #     ):
+        #         if self.car_state == OrionStateEnum.R2D:
+        #             self.change_as_state(AutonomousStatesEnum.ASDRIVE)
+        #         elif self.car_state == OrionStateEnum.R2D_READY:
+        #             self.change_as_state(AutonomousStatesEnum.ASREADY)
+        #         else:
+        #             self.change_as_state(AutonomousStatesEnum.ASOFF)
 
-        # Update jobs
-        if self.as_state != AutonomousStatesEnum.ASREADY:
-            self.job_scheduler.remove_job_by_tag("r2d_dv_wait")
-            self.as_ready_transitioned = False
-        else:
-            if not self.as_ready_transitioned:
-                self.job_scheduler.add_job_relative(
-                    5.0, lambda x: None, tag="r2d_dv_wait"
-                )
-                self.as_ready_transitioned = True
+        # # Update jobs
+        # if self.as_state != AutonomousStatesEnum.ASREADY:
+        #     self.job_scheduler.remove_job_by_tag("r2d_dv_wait")
+        #     self.as_ready_transitioned = False
+        # else:
+        #     if not self.as_ready_transitioned:
+        #         self.job_scheduler.add_job_relative(
+        #             5.0, lambda x: None, tag="r2d_dv_wait"
+        #         )
+        #         self.as_ready_transitioned = True
 
-        # Emergency stop
-        if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
-            self.do_publishers["arm_ebs"].publish(Bool(data=True))
-            self.do_publishers["arm_dbs"].publish(Bool(data=True))
-            self.wd_trigger_enable = False
+        # # Emergency stop
+        # if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
+        #     self.do_publishers["arm_ebs"].publish(Bool(data=True))
+        #     self.do_publishers["arm_dbs"].publish(Bool(data=True))
+        #     self.wd_trigger_enable = False
+        pass
 
     """
 
@@ -739,17 +785,141 @@ class OrionState(NodeManager):
                 return False, "BYPASS is ON"
 
             # check air pressures
-            if (
-                self.ai_signals["air_pressure1"] > 1
-                or self.ai_signals["air_pressure2"] > 1
+            # if (
+            #     self.ai_signals["air_pressure1"] > 1
+            #     or self.ai_signals["air_pressure2"] > 1
+            # ):
+            #     return (
+            #         False,
+            #         f"ASB is still ENABLED: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
+            #     )
+
+        else:
+            # wait (asms still registering)
+            time.sleep(2)
+
+            # mission needs to be selected
+            if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
+                return False, "No mission selected"
+
+            # # ASMS needs to be on
+            # if not self.di_signals["asms_status"]:
+            #     return False, "ASMS is OFF"
+
+            # bypass needs to be on
+            if not self.di_signals["bypass_status"]:
+                return False, "bypass is OFF"
+
+            # check air pressures
+            if not (
+                self.ai_signals["air_pressure1"] > 6
+                and self.ai_signals["air_pressure2"] > 6
+                and self.ai_signals["air_pressure1"] < 7.5
+                and self.ai_signals["air_pressure2"] < 7.5
             ):
                 return (
                     False,
-                    f"ASB is still ENABLED: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
+                    f"Air pressures out of range: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
                 )
 
-        else:
-            return False, "Not yet implemented"
+            # wait 200ms
+            time.sleep(0.2)
+
+            # watchdog OK?
+            if self.di_signals["wd_ok"] is False:
+                return False, "Watchdog indicating error"
+
+            # stop toggling watchdog
+            self.wd_trigger_enable = False
+            self.stop_toggling_watchdog()
+
+            time.sleep(0.500)
+
+            # check whether watchdog indicating error
+            if self.di["wd_ok"] is True:
+                return False, "Watchdog not indicating error after we stopped toggling"
+
+            print("hererrerzre")
+
+            # # start toggling watchdog
+            # self.wd_trigger_enable = True
+            # self.start_toggling_watchdog()
+
+            # # reset watchdog
+            # self.press_btn_procedure("wd_reset", 0.1, 1.0)
+            # self.do_publishers["wd_reset"].publish(Bool(data=True))
+            # time.sleep(0.1)
+            # self.do_publishers["wd_reset"].publish(Bool(data=False))
+            # time.sleep(0.200)
+
+            # # watchdog OK?
+            # if self.di["wd_ok"]  is False:
+            #     return False, "Watchdog indicating error"
+
+            # # Alert ASR TODO
+            # print("alert asr")
+
+            # # Wait until we are in TS_ACTIVE
+            # ts_active = False
+            # t = rospy.time.now().to_sec
+            # while(rospy.time.now().to_sec - t < 10):
+            #     self.update_car_state()
+            #     if self.car_state == OrionStateEnum.TS_ACTIVE:
+            #         ts_active = True
+            #     time.sleep(0.200)
+
+            # if ts_active is False:
+            #     return False, "Timed out waiting for TS_ACTIVE"
+
+            # # check whether pressure is being released as expected
+            # if (self.ai_signals["front_bp"] < 10 and self.ai_signals["rear_bp"] < 10) is False:
+            #     return False, "Brake pressure not released as expected"
+
+            # # trigger ebs
+            # self.do_publishers["arm_ebs"].publish(Bool(data=True))
+            # time.sleep(0.200)
+
+            # # check whether pressure is being built up as expected
+            # if (
+            # self.ai_signals["front_bp"] > 10
+            # and self.ai_signals["rear_bp"] > 10
+            # ) is False:
+            #     return False, "EBS brake pressures not built up as expected"
+
+            # # release ebs
+            # self.do_publishers["arm_ebs"].publish(Bool(data=False))
+            # time.sleep(0.200)
+
+            # # check whether pressure is being released as expected
+            # if (self.ai_signals["front_bp"] <10 and self.ai_signals["rear_bp"] < 10) is False:
+            #     return False, "EBS brake pressures not released as expected"
+
+            # # trigger dbs
+            # self.do_publishers["arm_dbs"].publish(Bool(data=True))
+            # time.sleep(0.200)
+
+            # # check whether pressure is being built up as expected
+            # if (
+            # self.ai_signals["front_bp"] > 10
+            # and self.ai_signals["rear_bp"] > 10
+            # ) is False:
+            #     return False, "DBS brake pressures not built up as expected"
+
+            # # release dbs
+            # self.do_publishers["arm_dbs"].publish(Bool(data=False))
+            # time.sleep(0.200)
+
+            # # check whether pressure is being released as expected
+            # if (self.ai_signals["front_bp"] <10 and self.ai_signals["rear_bp"] < 10) is False:
+            #     return False, "DBS brake pressures not released as expected"
+
+            # # set PPR setpoint, actuate brake with DBS
+            # self.dbs_pub.publish(Float64(12))
+            # time.sleep(0.200)
+
+            # # check whether pressure is being built up as expected
+            # if (self.ai_signals["front_bp"] > 5 and self.ai_signals["rear_bp"]> 5 and self.ai_signals["front_bp"] < 10 and self.ai_signals["front_bp"] < 10) is False:
+            #     return False, "Missed PPR setpoint"
 
         return True, "OK"
 
@@ -771,7 +941,7 @@ class OrionState(NodeManager):
             return False
 
         # # check air pressures
-        # if not (self.air_pressure1 < 1 and self.air_pressure2 < 1):
+        # if not (self.ai_signals["air_pressure1"] < 1 and self.ai_signals["air_pressure2"] < 1):
         #     self.send_error_to_db(5)
         #     return False
 
