@@ -523,6 +523,7 @@ class OrionState(NodeManager):
     def send_can_status(self):
         while self.send_status:
             self.send_status_over_can()
+            self.rate.sleep()
 
     def stop_sending_status(self):
         self.send_status = False
