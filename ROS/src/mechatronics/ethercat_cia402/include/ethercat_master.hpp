@@ -9,19 +9,19 @@
   (x &= ~((1 << 4) | (1 << 5) | (1 << 8) | (1 << 9) | (1 << 14) | (1 << 15)))
 
 // Control parameters
-#define MAX_ACC         50000UL
-#define MAX_VEL         7000000
-#define MARGIN          100000
-#define VEL_MARGIN      0.05 * MAX_VEL
+#define MAX_ACC 50000UL
+#define MAX_VEL 7000000
+#define MARGIN 100000
+#define VEL_MARGIN 0.05 * MAX_VEL
 
 // Conversion parameters
-#define FULL_ROT        42000000UL
-#define mDEG_TO_POS     (FULL_ROT/360000UL)
-#define TIME_CONV_VEL   4UL
-#define TIME_CONV_ACC   25UL
+#define FULL_ROT 42000000UL
+#define mDEG_TO_POS (FULL_ROT / 360000UL)
+#define TIME_CONV_VEL 4UL
+#define TIME_CONV_ACC 25UL
 
 // Max span in milli degrees (MAX 140000)
-#define MAX_SPAN        130000
+#define MAX_SPAN 130000
 
 #ifdef __cplusplus
 extern "C" {

@@ -3,8 +3,7 @@
 ECatDriver::ECatDriver(ros::NodeHandle &n)
     : node_fixture::ManagedNode(n, "ecat_driver"), n(n),
       mode(static_cast<operational_mode_t>(n.param<int>("mode", CSP))),
-      ifname(n.param<std::string>("ifname", "enp3s0")) {
-}
+      ifname(n.param<std::string>("ifname", "enp3s0")) {}
 
 void ECatDriver::doConfigure() {
   // Configure servo and bring in Operational state
@@ -56,7 +55,6 @@ void ECatDriver::set_target(std_msgs::Int32 new_target) {
   target = new_target.data;
 }
 
-
 int ECatDriver::update_pubs() {
   int ret = 0;
 
@@ -65,7 +63,7 @@ int ECatDriver::update_pubs() {
   ecat_state_msg.data = ethercat_state_ext.load();
   this->ecat_state_pub.publish(ecat_state_msg);
 
-  if(ecat_state_msg.data != OP) {
+  if (ecat_state_msg.data != OP) {
     ret = -1;
   }
 
@@ -128,7 +126,7 @@ int ECatDriver::update_pubs() {
 void ECatDriver::active() {
   // Update stats
   int ret = update_pubs();
-  if(ret == 0) {
+  if (ret == 0) {
     // Healthy
     setHealthStatus(0, "Active", {});
   } else {

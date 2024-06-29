@@ -43,10 +43,10 @@ uint32_t get_target_limited() {
   // Get target (in mDEG)
   int32_t cur_target = target.load();
   // Limit target
-  if (cur_target > MAX_SPAN/2) {
-    cur_target = MAX_SPAN/2;
-  } else if (cur_target < -MAX_SPAN/2) {
-    cur_target = -MAX_SPAN/2;
+  if (cur_target > MAX_SPAN / 2) {
+    cur_target = MAX_SPAN / 2;
+  } else if (cur_target < -MAX_SPAN / 2) {
+    cur_target = -MAX_SPAN / 2;
   }
 
   // Return converted target in steps
@@ -55,15 +55,16 @@ uint32_t get_target_limited() {
 }
 
 uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
-  int32_t target_diff = (int32_t)(cur_target - (csv_inputs.position - base_pos));
+  int32_t target_diff =
+      (int32_t)(cur_target - (csv_inputs.position - base_pos));
   int32_t vel = (int32_t)csv_inputs.velocity;
 
   //! Note: does not yet take into account overflow
   if (target_diff > MARGIN) {
     if (vel > 0) {
       // Already moving in right direction
-      uint64_t max_dec_dest = ((uint64_t)csv_inputs.velocity) *
-                              ((uint64_t)csv_inputs.velocity);
+      uint64_t max_dec_dest =
+          ((uint64_t)csv_inputs.velocity) * ((uint64_t)csv_inputs.velocity);
       max_dec_dest /= 2 * MAX_ACC * TIME_CONV_ACC;
       printf(", target_diff: %09d", target_diff);
       printf(", max_dec_dest: %ld", max_dec_dest);
@@ -233,13 +234,15 @@ void *loop(void *mode_ptr) {
         printf(
             "\rState: %#x, Mode: %u, Target: %09d, Position: %09d, Velocity: "
             "%09d, Torque: %06d, Error: %09u",
-            statusword, mode, base_pos + get_target_limited(), csv_inputs.position,
-            csv_inputs.velocity, ((int16_t)csv_inputs.torque), csv_inputs.erroract);
+            statusword, mode, base_pos + get_target_limited(),
+            csv_inputs.position, csv_inputs.velocity,
+            ((int16_t)csv_inputs.torque), csv_inputs.erroract);
       } else if (mode == CSP) {
         printf("\rState: %#x, Mode: %d, Target: %#x, Position: %#x, Velocity: "
                "%#x, Torque: %06d, Error: %#x",
-               statusword, mode, base_pos + get_target_limited(), csp_inputs.position,
-               csp_inputs.velocity, ((int16_t)csp_inputs.torque), csp_inputs.erroract);
+               statusword, mode, base_pos + get_target_limited(),
+               csp_inputs.position, csp_inputs.velocity,
+               ((int16_t)csp_inputs.torque), csp_inputs.erroract);
       }
 
       // Mask/Ignore reserved bits (4,5,8,9,14,15) of status word
@@ -275,20 +278,16 @@ void *loop(void *mode_ptr) {
         case (Ready_to_switch_on): {
           /* Switch on command for transition (3) */
           controlword = 0;
-          controlword |=
-              (1 << control_enable_voltage) |
-              (1 << control_quick_stop) |
-              (1 << control_switch_on);
+          controlword |= (1 << control_enable_voltage) |
+                         (1 << control_quick_stop) | (1 << control_switch_on);
           break;
         }
         case (Switch_on): {
           /* Enable operation command for transition (4) */
           controlword = 0;
-          controlword |=
-              (1 << control_enable_voltage) |
-              (1 << control_quick_stop) |
-              (1 << control_switch_on) |
-              (1 << control_enable_operation);
+          controlword |= (1 << control_enable_voltage) |
+                         (1 << control_quick_stop) | (1 << control_switch_on) |
+                         (1 << control_enable_operation);
           break;
         }
         case (Operation_enabled): {
@@ -534,12 +533,11 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
           ec_group[currentgroup].docheckstate = TRUE;
           if (ec_slave[slave].state == (EC_STATE_SAFE_OP + EC_STATE_ERROR)) {
             ROS_ERROR("Slave %d is in SAFE_OP + ERROR, attempting ack.\n",
-                   slave);
+                      slave);
             ec_slave[slave].state = (EC_STATE_SAFE_OP + EC_STATE_ACK);
             ec_writestate(slave);
           } else if (ec_slave[slave].state == EC_STATE_SAFE_OP) {
-            ROS_WARN("Slave %d is in SAFE_OP, change to OPERATIONAL.\n",
-                   slave);
+            ROS_WARN("Slave %d is in SAFE_OP, change to OPERATIONAL.\n", slave);
             ec_slave[slave].state = EC_STATE_OPERATIONAL;
             ec_writestate(slave);
           } else if (ec_slave[slave].state > EC_STATE_NONE) {
