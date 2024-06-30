@@ -17,7 +17,7 @@ lap_counter:
   finishpoint: [75, 0, 0]
 map_publisher:
   map_pkg: "slam_simulator"
-  map: "/maps/map_dvsv.yaml"
+  map: "/maps/acceleration_75m.yaml"
 speed:
   target: 10.0
   LC_adaptive_velocity: False
@@ -34,4 +34,4 @@ mpc:
   world_frame: "ugr/map"
 path_publisher:
   package_path: "path_publisher"
-  path: "/paths/centerline_dvsv.yaml"
+  path: "/paths/straight_L75.yaml"
