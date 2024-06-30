@@ -81,6 +81,9 @@ class Controller(NodeManager):
         elif self.mission == AutonomousMission.TRACKDRIVE:
             self.target_lap_count = 10
             new_state = SLAMStatesEnum.EXPLORATION
+        elif self.mission == AutonomousMission.DVSV:
+            self.target_lap_count = 1
+            new_state = SLAMStatesEnum.RACING
         else:
             self.target_lap_count = -1
             new_state = SLAMStatesEnum.EXPLORATION
