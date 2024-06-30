@@ -188,17 +188,7 @@ void GraphSLAM::handleObservations(
 
 void GraphSLAM::active() {
   if (!this->doSynchronous) {
-    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     this->step();
-    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-
-    double totalTime =
-        std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
-            .count();
-
-    if (totalTime > 0.1) {
-      // ROS_ERROR("GraphSLAM took to long: %f", totalTime);
-    }
   }
 }
 
@@ -554,24 +544,29 @@ void GraphSLAM::step() {
   // publish the odometry and the landmarks
   this->publishOutput(transformed_obs.header.stamp);
 
+  // --------------------------------------------------------------------
+  // ------------------------ Times -------------------------------------
+  // --------------------------------------------------------------------
+  // Calculate the total time taken for each step and print the individual step
+  // times
   t2 = std::chrono::steady_clock::now();
   times.push_back(
       std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
           .count());
 
-  // double totalTime = std::accumulate(times.begin(), times.end(), 0.0);
-
-  // ROS_INFO("Time taken for each step: ");
-  // ROS_INFO("Transform observations: %f", times[0]);
-  // ROS_INFO("Fetch odometry: %f", times[1]);
-  // ROS_INFO("Add odometry to graph: %f", times[2]);
-  // ROS_INFO("Add observations to graph: %f", times[3]);
-  // ROS_INFO("Optimization: %f", times[4]);
-  // ROS_INFO("Kdtree: %f", times[5]);
-  // ROS_INFO("Penalty: %f", times[6]);
-  // ROS_INFO("Publish: %f", times[7]);
-  // ROS_INFO("Total time: %f", totalTime);
-
+  if (this->debug) {
+    double totalTime = std::accumulate(times.begin(), times.end(), 0.0);
+    ROS_INFO("Time taken for each step: ");
+    ROS_INFO("Transform observations: %f", times[0]);
+    ROS_INFO("Fetch odometry: %f", times[1]);
+    ROS_INFO("Add odometry to graph: %f", times[2]);
+    ROS_INFO("Add observations to graph: %f", times[3]);
+    ROS_INFO("Optimization: %f", times[4]);
+    ROS_INFO("Kdtree: %f", times[5]);
+    ROS_INFO("Penalty: %f", times[6]);
+    ROS_INFO("Publish: %f", times[7]);
+    ROS_INFO("Total time: %f", totalTime);
+  }
 } // step method
 
 void GraphSLAM::publishOutput(ros::Time lookupTime) {
