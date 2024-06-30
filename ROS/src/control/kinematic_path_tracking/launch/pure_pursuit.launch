@@ -6,18 +6,6 @@
 
         <param name="base_link_frame" value="ugr/car_base_link" />
 
-        <!-- <param name="speed_start" value="1" />
-        <param name="speed_stop" value="2" />
-        <param name="distance_start" value="1.5" />
-        <param name="distance_stop" value="3.3" />  -->
-
-        <param name="speed_start" value="2" />
-        <param name="speed_stop" value="12" />
-        <param name="distance_start" value="3" />
-        <param name="distance_stop" value="6" />
-
-        <param name="wheelradius" value="0.1" />
-
         <remap from="/input/path" to="/pathplanning/path" />
         <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>
         <remap from="/output/drive_velocity_controller/command" to="/ugr/car/drive_velocity_controller/command" />
