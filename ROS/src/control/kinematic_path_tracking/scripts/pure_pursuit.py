@@ -42,10 +42,6 @@ class PurePursuit(KinematicTrackingNode):
             position_target_time,
         ) = self.trajectory.calculate_target_point(self.minimal_distance)
 
-        # print("Target point: ", target_x, target_y)
-        # print("minimal distance", self.minimal_distance)
-        # print("distance from origin: ", np.sqrt(target_x ** 2 + target_y ** 2))
-
         if target_x == 0 and target_y == 0:
             self.diagnostics_pub.publish(
                 create_diagnostic_message(
@@ -62,14 +58,11 @@ class PurePursuit(KinematicTrackingNode):
         # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
         R = ((target_x) ** 2 + (target_y) ** 2) / (2 * (target_y))
 
-        # print("R: ", R)
-
         self.steering_cmd.data = self.symmetrically_bound_angle(
             np.arctan2(1.0, R), np.pi / 2
         )
 
-        self.steering_cmd.data /= 0.2
-        # print("Steering angle: ", self.steering_cmd.data)
+        self.steering_cmd.data /= self.steering_transmission
 
         self.diagnostics_pub.publish(
             create_diagnostic_message(
@@ -79,7 +72,7 @@ class PurePursuit(KinematicTrackingNode):
             )
         )
 
-        # Publish to velocity and position steering controller
+        # Publish to position steering controller
         self.steering_pub.publish(self.steering_cmd)
 
         # Publish target point for visualization

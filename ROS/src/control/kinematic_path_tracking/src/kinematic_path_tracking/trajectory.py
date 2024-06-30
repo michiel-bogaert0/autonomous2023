@@ -24,6 +24,8 @@ class Trajectory:
         self.points = np.array([])
         self.target = np.array([0, 0])
 
+        self.last_time_source = rospy.Time(0)
+
         # True for trackdrive/autocross, False for skidpad/acceleration
         self.change_index = rospy.get_param("~change_index", True)
 
@@ -36,7 +38,9 @@ class Trajectory:
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.time_source = rospy.Time(0)
 
-        self.path_pub = rospy.Publisher("/fwf/path", Path, queue_size=10)
+        self.path_pub = rospy.Publisher(
+            "/kinematic_path_tracking/debug/transformed_path", Path, queue_size=10
+        )
 
         self.path = Path()
 
@@ -60,19 +64,9 @@ class Trajectory:
             None, all variables are class variables
 
         """
-        # self.trans = self.tf_buffer.lookup_transform_full(
-        #     self.base_link_frame,
-        #     rospy.Time(0),
-        #     self.base_link_frame,
-        #     self.time_source,
-        #     self.world_frame,
-        #     timeout=rospy.Duration(0.2),
-        # )
-        # print(self.path.header.frame_id)
         self.trans = self.tf_buffer.lookup_transform(
             self.base_link_frame, self.world_frame, rospy.Time(0)
         )
-        # transformed_path = ROSNode.do_transform_path(msg, trans)
 
         self.time_source = self.trans.header.stamp
 
@@ -81,11 +75,39 @@ class Trajectory:
 
         self.path_pub.publish(path)
 
-        # save points for next transform
         self.points = np.array(
             [[pose.pose.position.x, pose.pose.position.y] for pose in path.poses]
         )
         return self.points
+
+    def __preprocess_path__(self):
+        """
+        preprocesses a path, given in points (N,2) from base_link_frame to base_link_frame at current time
+        Also calculates the closest index to the current position
+        """
+
+        # Transfom path to most recent blf
+        self.path_blf = self.transform_blf()
+
+        # No path received
+        if len(self.path_blf) == 0:
+            return 0, 0
+
+        if self.change_index:
+            self.current_position_index = np.argmin(
+                np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
+            )
+
+        else:
+            distances = np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
+            distances = np.where(
+                abs(np.arange(len(distances)) - self.closest_index) < 20,
+                distances,
+                distances + 2000,
+            )  # Add large weight to distances outside of the 20 closest points
+            self.current_position_index = np.argmin(distances)
+
+        self.closest_index = self.current_position_index
 
     def calculate_transversal_error(self):
         """
@@ -144,35 +166,6 @@ class Trajectory:
 
         return transverse_error, heading_error
 
-    def __preprocess_path__(self):
-        """
-        preprocesses a path, given in points (N,2) from base_link_frame to base_link_frame at current time
-        Also calculates the closest index to the current position
-        """
-
-        # Transfom path to most recent blf
-        self.path_blf = self.transform_blf()
-
-        # No path received
-        if len(self.path_blf) == 0:
-            return 0, 0
-
-        if self.change_index:
-            self.current_position_index = np.argmin(
-                np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
-            )
-
-        else:
-            distances = np.sum((self.path_blf - [0, 0]) ** 2, axis=1)
-            distances = np.where(
-                abs(np.arange(len(distances)) - self.closest_index) < 20,
-                distances,
-                distances + 2000,
-            )  # Add large weight to distances outside of the 20 closest points
-            self.current_position_index = np.argmin(distances)
-
-        self.closest_index = self.current_position_index
-
     def calculate_target_point(self, minimal_distance):
         """
         Calculates a target point by traversing the path
@@ -210,28 +203,18 @@ class Trajectory:
 
             dist_from_origin = np.sqrt(target_x_pp**2 + target_y_pp**2)
             if dist_from_origin > minimal_distance:
-                prev_point = self.path_blf[self.closest_index]
-                target_point = self.path_blf[
-                    (self.closest_index + 1) % len(self.path_blf)
-                ]
-                prev_dist_from_origin = np.sqrt(prev_point[0] ** 2 + prev_point[1] ** 2)
+                prev_dist_from_origin = np.sqrt(target_x**2 + target_y**2)
+
+                # Interpolate between previous and current target point for better accuracy
                 scaling = 1 - (dist_from_origin - minimal_distance) / (
                     dist_from_origin - prev_dist_from_origin
                 )
-                target_x = prev_point[0] + scaling * (target_point[0] - prev_point[0])
-                target_y = prev_point[1] + scaling * (target_point[1] - prev_point[1])
-                self.target = np.array([target_x, target_y])
-                return (self.target[0], self.target[1], self.time_source)
+                target_x += scaling * (target_x_pp - target_x)
+                target_y += scaling * (target_y_pp - target_y)
 
-            # if distance > minimal_distance:
-            #     prev_point = self.path_blf[self.closest_index]
-            #     target_point = self.path_blf[(self.closest_index + 1) % len(self.path_blf)]
-            #     scaling = 1 - (distance - minimal_distance) / (distance - prev_dist)
-            #     print("scaling: ", scaling)
-            #     target_x = prev_point[0] + scaling * (target_point[0] - prev_point[0])
-            #     target_y = prev_point[1] + scaling * (target_point[1] - prev_point[1])
-            #     self.target = np.array([target_x, target_y])
-            #     return (self.target[0], self.target[1], self.time_source)
+                self.target = np.array([target_x, target_y])
+                self.last_time_source = self.time_source
+                return (self.target[0], self.target[1], self.time_source)
 
             self.closest_index = (self.closest_index + 1) % len(self.path_blf)
 
@@ -239,14 +222,24 @@ class Trajectory:
             if self.closest_index == self.current_position_index:
                 pose = PoseStamped(
                     header=Header(
-                        frame_id=self.base_link_frame, stamp=self.trans.header.stamp
+                        frame_id=self.base_link_frame, stamp=self.last_time_source
                     )
                 )
 
                 pose.pose.position.x = self.target[0]
                 pose.pose.position.y = self.target[1]
 
-                pose_t = do_transform_pose(pose, self.trans)
+                # Transform point through time
+                trans = self.tf_buffer.lookup_transform_full(
+                    self.base_link_frame,
+                    self.time_source,
+                    self.base_link_frame,
+                    self.last_time_source,
+                    self.world_frame,
+                    timeout=rospy.Duration(0.2),
+                )
+
+                pose_t = do_transform_pose(pose, trans)
 
                 self.target = np.array([pose_t.pose.position.x, pose_t.pose.position.y])
                 return (self.target[0], self.target[1], self.time_source)

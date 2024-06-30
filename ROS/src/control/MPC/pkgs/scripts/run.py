@@ -42,9 +42,6 @@ class MPC(ManagedNode):
 
         self.wheelradius = rospy.get_param("~wheelradius", 0.1)
 
-        self.cog_to_front_axle = rospy.get_param("~cog_to_front_axle", 0.72)
-        self.reference_pose = [self.cog_to_front_axle, 0]
-
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
         self.actual_speed = 0.0
@@ -347,10 +344,9 @@ class MPC(ManagedNode):
                             # Put target at 2m
                             target = self.trajectory.calculate_target_points([2])[0]
                             # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-                            R = (
-                                (target[0] - self.reference_pose[0]) ** 2
-                                + (target[1] - self.reference_pose[1]) ** 2
-                            ) / (2 * (target[1] - self.reference_pose[1]))
+                            R = ((target[0]) ** 2 + (target[1]) ** 2) / (
+                                2 * (target[1])
+                            )
 
                             self.steering_cmd.data = self.symmetrically_bound_angle(
                                 np.arctan2(1.0, R), np.pi / 2
@@ -449,10 +445,9 @@ class MPC(ManagedNode):
 
                         self.set_costs(Qn, R, R_delta)
 
-                    # TODO: unverified starting point
                     current_state = [
-                        self.reference_pose[0],
-                        self.reference_pose[1],
+                        0,
+                        0,
                         0,
                         self.steering_joint_angle,
                         self.actual_speed,
