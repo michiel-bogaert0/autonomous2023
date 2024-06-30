@@ -7,6 +7,12 @@ from node_fixture.fixture import ROSNode
 from std_msgs.msg import Header
 from tf2_geometry_msgs import do_transform_pose
 
+################################################
+#                                              #
+#   File outdated, will be fixed in other PR   #
+#                                              #
+################################################
+
 
 class Trajectory:
     """
