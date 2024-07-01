@@ -37,6 +37,7 @@ class OrionState(NodeManager):
         super().__init__("orion_state", NodeManagingStatesEnum.ACTIVE)
 
         self.rate = rospy.Rate(rospy.get_param("~rate", 15))
+        self.checkup_result = None
 
         # Activate nodes for driving mode
         self.activate_nodes(self.driving_mode, None)
@@ -48,6 +49,7 @@ class OrionState(NodeManager):
         # Start default in INIT and ASOFF
         self.change_state(OrionStateEnum.INIT)
         self.change_as_state(AutonomousStatesEnum.ASOFF)
+        self.switched_driving_mode = False
 
         # Initial checkup
         checks_ok, msg = self.initial_checkup()
@@ -131,10 +133,7 @@ class OrionState(NodeManager):
 
         self.wd_trigger_status = False
         self.wd_trigger_enable = True
-        self.toggling_wd = False
         self.as_ready_transitioned = False
-        self.sending_status = False
-        self.send_status = True
 
         # State machine states
         self.car_state = None
@@ -499,45 +498,27 @@ class OrionState(NodeManager):
         message = can.Message(arbitration_id=iologik_message_2.frame_id, data=data)
         self.bus.publish(serialcan_to_roscan(message))
 
-    def publish_wd_trigger(self):
-        while self.toggling_wd:
-            self.do_publishers["wd_trigger"].publish(Bool(data=self.wd_trigger_status))
-            self.wd_trigger_status = not self.wd_trigger_status
-            self.rate.sleep()
-
-    def start_toggling_watchdog(self):
-        self.toggling_wd = True
-        self.wd_thread = threading.Thread(target=self.publish_wd_trigger)
-        self.wd_thread.start()
-
-    def stop_toggling_watchdog(self):
-        self.toggling_wd = False
-        self.wd_thread.join()
-
-    def start_sending_status(self):
-        self.send_status = True
-        self.status_thread = threading.Thread(target=self.send_can_status)
-        self.sending_status = True
-        self.status_thread.start()
-
-    def send_can_status(self):
-        while self.send_status:
-            self.send_status_over_can()
-            self.rate.sleep()
-
-    def stop_sending_status(self):
-        self.send_status = False
-        self.sending_status = False
-        self.status_thread.join()
+    def start_initial_checkup(self):
+        thread = threading.Thread(
+            target=self.initial_checkup, args=(self.checkup_result,)
+        )
+        thread.start()
 
     def active(self):
-        if self.send_status and not self.sending_status:
-            self.start_sending_status()
-
-        if self.wd_trigger_enable and not self.toggling_wd:
-            self.start_toggling_watchdog()
-        elif not self.wd_trigger_enable and self.toggling_wd:
-            self.stop_toggling_watchdog()
+        self.send_status_over_can()
+        if self.switched_driving_mode and self.checkup_result is not None:
+            checks_ok, msg = self.checkup_result
+            self.checkup_result = None
+            self.switched_driving_mode = False
+            print(msg)
+            if not checks_ok:
+                self.change_state(OrionStateEnum.ERROR)
+                self.set_health(
+                    DiagnosticStatus.ERROR,
+                    f"Initial checkup failed in mode '{self.driving_mode}'. Got error '{msg}'",
+                )
+            self.activate_nodes(self.driving_mode, None)
+            self.switch_controllers()
 
         # Update state machines
         self.update_car_state()
@@ -545,7 +526,8 @@ class OrionState(NodeManager):
 
         # Check if driving mode should be updated
         if (
-            self.driving_mode == DrivingModeStatesEnum.MANUAL
+            not self.switched_driving_mode
+            and self.driving_mode == DrivingModeStatesEnum.MANUAL
             and self.di_signals["bypass_status"]
             or self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
             and not self.di_signals["bypass_status"]
@@ -557,17 +539,8 @@ class OrionState(NodeManager):
             )
 
             # Do safety checks
-            checks_ok, msg = self.initial_checkup()
-            print(msg)
-            if not checks_ok:
-                self.change_state(OrionStateEnum.ERROR)
-                self.set_health(
-                    DiagnosticStatus.ERROR,
-                    f"Initial checkup failed in mode '{self.driving_mode}'. Got error '{msg}'",
-                )
-
-            self.activate_nodes(self.driving_mode, None)
-            self.switch_controllers()
+            self.start_initial_checkup()
+            self.switched_driving_mode = True
 
         # Update car and diagnostics
         # self.send_status_over_can()
@@ -584,6 +557,11 @@ class OrionState(NodeManager):
 
         # Step job scheduler
         self.job_scheduler.step()
+
+        # Toggle watchdog
+        if self.wd_trigger_enable:
+            self.do_publishers["wd_trigger"].publish(Bool(data=self.wd_trigger_status))
+            self.wd_trigger_status = not self.wd_trigger_status
 
     def update_car_state(self):
         """
