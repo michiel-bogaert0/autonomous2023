@@ -1,0 +1,37 @@
+slam_controller:
+  node_management:
+    always:
+      # SLAM
+      - slam_mcl
+      - lap_counter
+      - map_publisher
+
+      # Control
+      - front_wheel_feedback_control
+      - path_smoother
+      - path_publisher
+
+slam_mcl:
+  path_to_map: "/ugr/car/map/global"
+lap_counter:
+  finishpoint: [0, 16, 0] # should be 2 * turn radius
+map_publisher:
+  map_pkg: "slam_simulator"
+  map: "/maps/map_dvsv.yaml"
+speed:
+  target: 10.0
+  LC_adaptive_velocity: False
+pure_pursuit:
+  change_index: False
+  minimal_distance: 3
+  world_frame: "ugr/map"
+front_wheel_feedback:
+  change_index: False
+  world_frame: "ugr/map"
+mpc:
+  change_index: False
+  minimal_distance: 3
+  world_frame: "ugr/map"
+path_publisher:
+  package_path: "path_publisher"
+  path: "/paths/centerline_dvsv.yaml"
