@@ -53,7 +53,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   pcl::fromROSMsg(msg, raw_pc_);
   publishDiagnostic(OK, "[perception] raw points",
                     "#points: " + std::to_string(raw_pc_.size()));
-
+  raw_pc_ = flipPointcloud(raw_pc_);
   // Preprocessing
   preprocessing(raw_pc_, preprocessed_pc);
   publishDiagnostic(OK, "[perception] preprocessed points",
@@ -150,11 +150,10 @@ void Lidar::preprocessing(
   for (auto &iter : raw.points) {
     // Remove points closer than 1m, higher than 0.5m or further than 20m
     // and points outside the frame of Pegasus
-    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
+    if (std::hypot(iter.x, iter.y) < 1 || iter.z > -1 ||
         std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||
         std::atan2(iter.x, iter.y) > 2.8)
       continue;
-
     preprocessed_pc->points.push_back(iter);
   }
 }
@@ -166,7 +165,7 @@ void Lidar::preprocessing(
  */
 void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
   ugr_msgs::ObservationWithCovarianceArrayStamped observations;
-  observations.header.frame_id = cones.header.frame_id;
+  observations.header.frame_id = "ugr/car_base_link/os_sensor_normal";
   observations.header.stamp = cones.header.stamp;
 
   int i = 0;
@@ -205,5 +204,18 @@ void Lidar::publishDiagnostic(DiagnosticStatusEnum status, std::string name,
   diag_array.status.push_back(diag_status);
 
   diagnosticPublisher_.publish(diag_array);
+}
+
+template <class PointT>
+pcl::PointCloud<PointT> Lidar::flipPointcloud(pcl::PointCloud<PointT> pc) {
+  pcl::PointCloud<PointT> *new_pc = new pcl::PointCloud<PointT>;
+  for (auto &iter : pc.points) {
+    PointT new_point = *new PointT;
+    new_point.x = iter.x;
+    new_point.y = -iter.y;
+    new_point.z = -iter.z;
+    new_pc->points.push_back(new_point);
+  }
+  return *new_pc;
 }
 } // namespace ns_lidar
