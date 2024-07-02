@@ -59,8 +59,9 @@ class KinematicTrackingNode(ManagedNode):
 
     def doConfigure(self):
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
+        self.world_frame = rospy.get_param("~world_frame", "ugr/map")
 
-        self.wheelradius = rospy.get_param("~wheelradius", 0.1)
+        self.wheelradius = rospy.get_param("/ugr/car/wheel/radius", 0.1)
 
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
@@ -70,7 +71,7 @@ class KinematicTrackingNode(ManagedNode):
 
         self.speed_target = rospy.get_param("/speed/target", 3.0)
         self.steering_transmission = rospy.get_param(
-            "ugr/car/steering/transmission", 0.25
+            "/ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
         self.slam_state = None
@@ -126,7 +127,7 @@ class KinematicTrackingNode(ManagedNode):
     def doUpdate(self):
         """
         Actually processes a new path
-        The path should be relative to self.base_link_frame. Otherwise it will transform to it
+        The path should be relative to world frame. Otherwise it will transform to it
         """
 
         if self.received_path is None:
@@ -134,9 +135,9 @@ class KinematicTrackingNode(ManagedNode):
 
         msg = self.received_path
 
-        # Transform received message to self.base_link_frame
+        # Transform received message to world frame
         trans = self.tf_buffer.lookup_transform(
-            self.base_link_frame, msg.header.frame_id, msg.header.stamp
+            self.world_frame, msg.header.frame_id, msg.header.stamp
         )
         transformed_path = ROSNode.do_transform_path(msg, trans)
 

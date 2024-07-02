@@ -18,9 +18,6 @@ class PurePursuit(KinematicTrackingNode):
         self.distance_start = rospy.get_param("~distance_start", 1.2)
         self.distance_stop = rospy.get_param("~distance_stop", 2.4)
 
-        self.cog_to_front_axle = rospy.get_param("~cog_to_front_axle", 0.72)
-        self.reference_pose = [self.cog_to_front_axle, 0]
-
     def __process__(self):
         """
         Processes the current path and calculates the target point for the car to follow
@@ -59,14 +56,12 @@ class PurePursuit(KinematicTrackingNode):
             return
 
         # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-        R = (
-            (target_x - self.reference_pose[0]) ** 2
-            + (target_y - self.reference_pose[1]) ** 2
-        ) / (2 * (target_y - self.reference_pose[1]))
+        R = ((target_x) ** 2 + (target_y) ** 2) / (2 * (target_y))
 
         self.steering_cmd.data = self.symmetrically_bound_angle(
             np.arctan2(1.0, R), np.pi / 2
         )
+
         self.steering_cmd.data /= self.steering_transmission
 
         self.diagnostics_pub.publish(
@@ -77,7 +72,7 @@ class PurePursuit(KinematicTrackingNode):
             )
         )
 
-        # Publish to velocity and position steering controller
+        # Publish to position steering controller
         self.steering_pub.publish(self.steering_cmd)
 
         # Publish target point for visualization

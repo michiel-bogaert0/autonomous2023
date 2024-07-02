@@ -207,12 +207,13 @@ class Controller(NodeManager):
         ):
             rospy.loginfo("Exploration finished, switching to racing")
             new_state = SLAMStatesEnum.RACING
-            speed_target = rospy.get_param("/speed/target_racing")
-            rospy.set_param("/speed/target", speed_target)
 
-            self.activate_nodes(new_state, self.slam_state)
+            # Only change if the nodes are activated succesfully
+            if self.activate_nodes(new_state, self.slam_state):
+                speed_target = rospy.get_param("/speed/target_racing")
+                rospy.set_param("/speed/target", speed_target)
 
-            self.change_state(new_state)
+                self.change_state(new_state)
 
 
 node = Controller()

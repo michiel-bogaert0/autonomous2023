@@ -133,11 +133,11 @@ void FastSLAM1::doConfigure() {
                           {0.3, 0.0, 0.0, 0.05});
 
   if (QAsVector.size() != 9)
-    throw invalid_argument(
-        "Q (measurement_covariance) Must be a vector of size 9");
+    throw invalid_argument("Q (input_noise) Must be a vector of size 9");
 
   if (RAsVector.size() != 4)
-    throw invalid_argument("R (input_noise) Must be a vector of size 4");
+    throw invalid_argument(
+        "R (measurement_covariance) Must be a vector of size 4");
 
   if (this->lidarOptions.penalty_score > 0.0)
     throw invalid_argument("lidar penalty_score should be less than zero");
