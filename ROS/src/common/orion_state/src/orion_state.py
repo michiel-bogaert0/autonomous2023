@@ -35,14 +35,12 @@ class OrionState(NodeManager):
 
     def __init__(self) -> None:
         super().__init__("orion_state", NodeManagingStatesEnum.ACTIVE)
-
-        self.rate = rospy.Rate(rospy.get_param("~rate", 15))
+        self.rate = rospy.Rate(15)
         self.checkup_result = None
 
         # Activate nodes for driving mode
         self.activate_nodes(self.driving_mode, None)
         self.switch_controllers()
-
         # Wait a few seconds
         rospy.sleep(1)
 
@@ -52,7 +50,10 @@ class OrionState(NodeManager):
         self.switched_driving_mode = False
 
         # Initial checkup
-        checks_ok, msg = self.initial_checkup()
+        self.initial_checkup()
+        checks_ok, msg = self.checkup_result
+        self.checkup_result = None
+        print("printing msg")
         print(msg)
         if not checks_ok:
             self.change_state(OrionStateEnum.ERROR)
@@ -64,6 +65,7 @@ class OrionState(NodeManager):
         self.spin()
 
     def switch_controllers(self):
+        return
         rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
         try:
             switch_controller = rospy.ServiceProxy(
@@ -403,8 +405,6 @@ class OrionState(NodeManager):
     def send_status_over_can(self):
         #
         # Brake light (temporary)
-        #
-
         brake_pressures_msg = self.db.get_message_by_name("Brake_pressures")
         data = brake_pressures_msg.encode(
             {
@@ -499,9 +499,7 @@ class OrionState(NodeManager):
         self.bus.publish(serialcan_to_roscan(message))
 
     def start_initial_checkup(self):
-        thread = threading.Thread(
-            target=self.initial_checkup, args=(self.checkup_result,)
-        )
+        thread = threading.Thread(target=self.initial_checkup, args=())
         thread.start()
 
     def active(self):
@@ -510,6 +508,7 @@ class OrionState(NodeManager):
             checks_ok, msg = self.checkup_result
             self.checkup_result = None
             self.switched_driving_mode = False
+            print("printing msg")
             print(msg)
             if not checks_ok:
                 self.change_state(OrionStateEnum.ERROR)
@@ -543,7 +542,6 @@ class OrionState(NodeManager):
             self.switched_driving_mode = True
 
         # Update car and diagnostics
-        # self.send_status_over_can()
         self.diagnostics_publisher.publish(
             create_diagnostic_message(
                 DiagnosticStatus.OK, "[GNRL] STATE: Orion state", str(self.car_state)
@@ -578,9 +576,6 @@ class OrionState(NodeManager):
         elif self.car_state == OrionStateEnum.SDC_OPEN:
             if self.di_signals["sdc_out"] is True:
                 self.change_state(OrionStateEnum.TS_READY)
-
-            if self.di_signals["wd_ok"] is False:
-                self.press_btn_procedure("wd_reset", 0.1, 1.0)
 
         else:
             if self.di_signals["sdc_out"] is False:
@@ -644,49 +639,48 @@ class OrionState(NodeManager):
 
     def update_as_state(self):
         # Flowchart to determine AS state
-        # if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-        #     self.change_as_state(AutonomousStatesEnum.ASOFF)
-        # elif self.ebs_activated:
-        #     if self.mission_finished and self.vehicle_stopped:
-        #         if self.can_inputs["res_activated"]:
-        #             self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
-        #         else:
-        #             self.change_as_state(AutonomousStatesEnum.ASFINISHED)
-        #     else:
-        #         self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
-        # else:
-        #     if (
-        #         self.mission_selected
-        #         and self.di_signals["bypass_status"]
-        #         and self.di_signals["asms_status"]
-        #         and self.car_state == OrionStateEnum.TS_ACTIVE
-        #         or self.car_state == OrionStateEnum.R2D
-        #         or self.car_state == OrionStateEnum.R2D_READY
-        #     ):
-        #         if self.car_state == OrionStateEnum.R2D:
-        #             self.change_as_state(AutonomousStatesEnum.ASDRIVE)
-        #         elif self.car_state == OrionStateEnum.R2D_READY:
-        #             self.change_as_state(AutonomousStatesEnum.ASREADY)
-        #         else:
-        #             self.change_as_state(AutonomousStatesEnum.ASOFF)
+        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+            self.change_as_state(AutonomousStatesEnum.ASOFF)
+        elif self.ebs_activated:
+            if self.mission_finished and self.vehicle_stopped:
+                if self.can_inputs["res_activated"]:
+                    self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
+                else:
+                    self.change_as_state(AutonomousStatesEnum.ASFINISHED)
+            else:
+                self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
+        else:
+            if (
+                self.mission_selected
+                and self.di_signals["bypass_status"]
+                and self.di_signals["asms_status"]
+                and self.car_state == OrionStateEnum.TS_ACTIVE
+                or self.car_state == OrionStateEnum.R2D
+                or self.car_state == OrionStateEnum.R2D_READY
+            ):
+                if self.car_state == OrionStateEnum.R2D:
+                    self.change_as_state(AutonomousStatesEnum.ASDRIVE)
+                elif self.car_state == OrionStateEnum.R2D_READY:
+                    self.change_as_state(AutonomousStatesEnum.ASREADY)
+                else:
+                    self.change_as_state(AutonomousStatesEnum.ASOFF)
 
-        # # Update jobs
-        # if self.as_state != AutonomousStatesEnum.ASREADY:
-        #     self.job_scheduler.remove_job_by_tag("r2d_dv_wait")
-        #     self.as_ready_transitioned = False
-        # else:
-        #     if not self.as_ready_transitioned:
-        #         self.job_scheduler.add_job_relative(
-        #             5.0, lambda x: None, tag="r2d_dv_wait"
-        #         )
-        #         self.as_ready_transitioned = True
+        # Update jobs
+        if self.as_state != AutonomousStatesEnum.ASREADY:
+            self.job_scheduler.remove_job_by_tag("r2d_dv_wait")
+            self.as_ready_transitioned = False
+        else:
+            if not self.as_ready_transitioned:
+                self.job_scheduler.add_job_relative(
+                    5.0, lambda x: None, tag="r2d_dv_wait"
+                )
+                self.as_ready_transitioned = True
 
-        # # Emergency stop
-        # if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
-        #     self.do_publishers["arm_ebs"].publish(Bool(data=True))
-        #     self.do_publishers["arm_dbs"].publish(Bool(data=True))
-        #     self.wd_trigger_enable = False
-        pass
+        # Emergency stop
+        if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
+            self.do_publishers["arm_ebs"].publish(Bool(data=True))
+            self.do_publishers["arm_dbs"].publish(Bool(data=True))
+            self.wd_trigger_enable = False
 
     """
 
@@ -741,7 +735,7 @@ class OrionState(NodeManager):
         #     if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
         #         self.send_error_to_db(13 + i)
         #         return False
-
+        print("booting")
         # watchdog OK?
         if self.di_signals["wd_ok"] is False:
             self.press_btn_procedure("wd_reset", 0.1, 1.0)
@@ -756,12 +750,15 @@ class OrionState(NodeManager):
     def initial_checkup(self):
         if self.driving_mode == DrivingModeStatesEnum.MANUAL:
             # ASMS needs to be off
+            print("asms check")
             if self.di_signals["asms_status"]:
-                return False, "ASMS is ON"
-
+                self.checkup_result = (False, "ASMS is ON")
+                return
+            print("bypass check")
             # bypass needs to be off
             if self.di_signals["bypass_status"]:
-                return False, "BYPASS is ON"
+                self.checkup_result = (False, "BYPASS is ON")
+                return
 
             # check air pressures
             # if (
@@ -777,71 +774,87 @@ class OrionState(NodeManager):
             # wait (asms still registering)
             time.sleep(2)
 
+            print("mission check")
             # mission needs to be selected
             if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
-                return False, "No mission selected"
+                self.checkup_result = (False, "No mission selected")
+                return
 
             # # ASMS needs to be on
             # if not self.di_signals["asms_status"]:
             #     return False, "ASMS is OFF"
 
+            print("bypass check")
             # bypass needs to be on
             if not self.di_signals["bypass_status"]:
-                return False, "bypass is OFF"
+                self.checkup_result = (False, "BYPASS is OFF")
+                return
 
+            print("air pressures check")
             # check air pressures
             if not (
-                self.ai_signals["air_pressure1"] > 6
-                and self.ai_signals["air_pressure2"] > 6
-                and self.ai_signals["air_pressure1"] < 7.5
-                and self.ai_signals["air_pressure2"] < 7.5
+                self.ai_signals["air_pressure1"] > 5
+                and self.ai_signals["air_pressure2"] > 5
+                and self.ai_signals["air_pressure1"] < 8
+                and self.ai_signals["air_pressure2"] < 8
             ):
-                return (
+                self.checkup_result = (
                     False,
                     f"Air pressures out of range: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
                 )
+                return
 
             # wait 200ms
             time.sleep(0.2)
 
+            print("wd check")
             # watchdog OK?
             if self.di_signals["wd_ok"] is False:
-                return False, "Watchdog indicating error"
+                self.checkup_result = (False, "Watchdog indicating error")
+                return
 
+            print("stopped toggling wd")
             # stop toggling watchdog
             self.wd_trigger_enable = False
-            self.stop_toggling_watchdog()
 
-            time.sleep(0.500)
+            # time.sleep(0.500)
+            time.sleep(1)
 
+            print("checking whether wd indicates error")
             # check whether watchdog indicating error
-            if self.di["wd_ok"] is True:
-                return False, "Watchdog not indicating error after we stopped toggling"
+            if self.di_signals["wd_ok"] is True:
+                self.checkup_result = (
+                    False,
+                    "Watchdog not indicating error after we stopped toggling",
+                )
+                return
 
-            print("hererrerzre")
+            print("here")
 
-            # # start toggling watchdog
-            # self.wd_trigger_enable = True
-            # self.start_toggling_watchdog()
+            print("start toggling wd")
+            # start toggling watchdog
+            self.wd_trigger_enable = True
 
-            # # reset watchdog
-            # self.press_btn_procedure("wd_reset", 0.1, 1.0)
-            # self.do_publishers["wd_reset"].publish(Bool(data=True))
-            # time.sleep(0.1)
-            # self.do_publishers["wd_reset"].publish(Bool(data=False))
-            # time.sleep(0.200)
+            print("resetting wd")
+            # reset watchdog
+            self.do_publishers["wd_reset"].publish(Bool(data=True))
+            time.sleep(0.5)
+            self.do_publishers["wd_reset"].publish(Bool(data=False))
+            time.sleep(3)
 
-            # # watchdog OK?
-            # if self.di["wd_ok"]  is False:
-            #     return False, "Watchdog indicating error"
+            print("wd ok?")
+            # watchdog OK?
+            if self.di_signals["wd_ok"] is False:
+                self.checkup_result = (False, "Watchdog indicating error")
+                return
 
-            # # Alert ASR TODO
-            # print("alert asr")
+            # Alert ASR TODO
+            print("alert asr")
 
             # # Wait until we are in TS_ACTIVE
             # ts_active = False
-            # t = rospy.time.now().to_sec
-            # while(rospy.time.now().to_sec - t < 10):
+            # t = rospy.Time.now().to_sec()
+            # while(rospy.Time.now().to_sec() - t < 100):
             #     self.update_car_state()
             #     if self.car_state == OrionStateEnum.TS_ACTIVE:
             #         ts_active = True
@@ -899,8 +912,8 @@ class OrionState(NodeManager):
             # # check whether pressure is being built up as expected
             # if (self.ai_signals["front_bp"] > 5 and self.ai_signals["rear_bp"]> 5 and self.ai_signals["front_bp"] < 10 and self.ai_signals["front_bp"] < 10) is False:
             #     return False, "Missed PPR setpoint"
-
-        return True, "OK"
+        self.checkup_result = True, "OK"
+        return
 
     def monitor(self):
         # # check heartbeats of low voltage systems, motorcontrollers and sensors
