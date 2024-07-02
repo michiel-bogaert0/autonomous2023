@@ -639,48 +639,49 @@ class OrionState(NodeManager):
 
     def update_as_state(self):
         # Flowchart to determine AS state
-        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-            self.change_as_state(AutonomousStatesEnum.ASOFF)
-        elif self.ebs_activated:
-            if self.mission_finished and self.vehicle_stopped:
-                if self.can_inputs["res_activated"]:
-                    self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
-                else:
-                    self.change_as_state(AutonomousStatesEnum.ASFINISHED)
-            else:
-                self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
-        else:
-            if (
-                self.mission_selected
-                and self.di_signals["bypass_status"]
-                and self.di_signals["asms_status"]
-                and self.car_state == OrionStateEnum.TS_ACTIVE
-                or self.car_state == OrionStateEnum.R2D
-                or self.car_state == OrionStateEnum.R2D_READY
-            ):
-                if self.car_state == OrionStateEnum.R2D:
-                    self.change_as_state(AutonomousStatesEnum.ASDRIVE)
-                elif self.car_state == OrionStateEnum.R2D_READY:
-                    self.change_as_state(AutonomousStatesEnum.ASREADY)
-                else:
-                    self.change_as_state(AutonomousStatesEnum.ASOFF)
+        # if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+        #     self.change_as_state(AutonomousStatesEnum.ASOFF)
+        # elif self.ebs_activated:
+        #     if self.mission_finished and self.vehicle_stopped:
+        #         if self.can_inputs["res_activated"]:
+        #             self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
+        #         else:
+        #             self.change_as_state(AutonomousStatesEnum.ASFINISHED)
+        #     else:
+        #         self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
+        # else:
+        #     if (
+        #         self.mission_selected
+        #         and self.di_signals["bypass_status"]
+        #         and self.di_signals["asms_status"]
+        #         and self.car_state == OrionStateEnum.TS_ACTIVE
+        #         or self.car_state == OrionStateEnum.R2D
+        #         or self.car_state == OrionStateEnum.R2D_READY
+        #     ):
+        #         if self.car_state == OrionStateEnum.R2D:
+        #             self.change_as_state(AutonomousStatesEnum.ASDRIVE)
+        #         elif self.car_state == OrionStateEnum.R2D_READY:
+        #             self.change_as_state(AutonomousStatesEnum.ASREADY)
+        #         else:
+        #             self.change_as_state(AutonomousStatesEnum.ASOFF)
 
-        # Update jobs
-        if self.as_state != AutonomousStatesEnum.ASREADY:
-            self.job_scheduler.remove_job_by_tag("r2d_dv_wait")
-            self.as_ready_transitioned = False
-        else:
-            if not self.as_ready_transitioned:
-                self.job_scheduler.add_job_relative(
-                    5.0, lambda x: None, tag="r2d_dv_wait"
-                )
-                self.as_ready_transitioned = True
+        # # Update jobs
+        # if self.as_state != AutonomousStatesEnum.ASREADY:
+        #     self.job_scheduler.remove_job_by_tag("r2d_dv_wait")
+        #     self.as_ready_transitioned = False
+        # else:
+        #     if not self.as_ready_transitioned:
+        #         self.job_scheduler.add_job_relative(
+        #             5.0, lambda x: None, tag="r2d_dv_wait"
+        #         )
+        #         self.as_ready_transitioned = True
 
-        # Emergency stop
-        if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
-            self.do_publishers["arm_ebs"].publish(Bool(data=True))
-            self.do_publishers["arm_dbs"].publish(Bool(data=True))
-            self.wd_trigger_enable = False
+        # # Emergency stop
+        # if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
+        #     self.do_publishers["arm_ebs"].publish(Bool(data=True))
+        #     self.do_publishers["arm_dbs"].publish(Bool(data=True))
+        #     self.wd_trigger_enable = False
+        pass
 
     """
 
