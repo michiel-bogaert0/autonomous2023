@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 import threading
 import time
+from collections import deque
 from functools import partial
 from time import sleep
 
@@ -10,6 +11,7 @@ import rospy
 from can_msgs.msg import Frame
 from controller_manager_msgs.srv import SwitchController, SwitchControllerRequest
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+from nav_msgs.msg import Odometry
 from node_fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
@@ -20,6 +22,7 @@ from node_fixture.fixture import (
     DrivingModeStatesEnum,
     NodeManagingStatesEnum,
     OrionStateEnum,
+    SLAMStatesEnum,
 )
 from node_fixture.node_manager import NodeManager
 from scheduling import JobScheduler
@@ -65,7 +68,6 @@ class OrionState(NodeManager):
         self.spin()
 
     def switch_controllers(self):
-        return
         rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
         try:
             switch_controller = rospy.ServiceProxy(
@@ -136,6 +138,12 @@ class OrionState(NodeManager):
         self.wd_trigger_status = False
         self.wd_trigger_enable = True
         self.as_ready_transitioned = False
+
+        self.ebs_activated = False
+        self.mission_finished = False
+        self.vehicle_stopped = True
+        self.mission_selected = False
+        self.odom_avg = deque([], 100)
 
         # State machine states
         self.car_state = None
@@ -216,6 +224,9 @@ class OrionState(NodeManager):
             )
 
         # Subscribers
+        rospy.Subscriber("/state", State, self.handle_external_state_change)
+        rospy.Subscriber("/ugr/car/odometry/filtered/odom", Odometry, self.handle_odom)
+
         # DI signals
         for di_signal in self.di_signals:
             self.AddSubscriber(
@@ -331,6 +342,37 @@ class OrionState(NodeManager):
     #
     # SUBSCRIPTION HANDLERS
     #
+    def handle_odom(self, odom: Odometry):
+        """
+        Just keeps track of latest odometry estimate
+
+        Args:
+            odom: the odometry message containing speed information
+        """
+
+        # If vehicle is stopped and EBS is activated, vehicle will not be able to move, so
+        # latch self.vehicle_stopped
+        if self.vehicle_stopped and self.ebs_activated:
+            return
+
+        self.odom_avg.append(abs(odom.twist.twist.linear.x))
+        self.vehicle_stopped = sum(list(self.odom_avg)) / len(list(self.odom_avg)) < 0.1
+
+    def handle_external_state_change(self, state: State):
+        """
+        Handles state transition from other state machines
+
+        Args:
+            state: the state transition
+        """
+
+        if state.scope == StateMachineScopeEnum.SLAM:
+            """
+            When SLAM reports being in the finished mode, autonomous should perhaps
+            also do something
+            """
+
+            self.mission_finished = state.cur_state == SLAMStatesEnum.FINISHED
 
     def handle_DI(self, io_name, msg: Bool):
         """
@@ -638,49 +680,62 @@ class OrionState(NodeManager):
                 self.do_publishers["sdc_close"].publish(Bool(data=False))
 
     def update_as_state(self):
+        # Signals
+        self.ebs_activated = (
+            self.di_signals["sdc_out"] is False
+            or self.do_feedback["arm_ebs"] is False
+            or self.do_feedback["arm_dbs"] is False
+        )
+        self.mission_selected = (
+            rospy.has_param("/mission") and rospy.get_param("/mission") != ""
+        )
+
         # Flowchart to determine AS state
-        # if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-        #     self.change_as_state(AutonomousStatesEnum.ASOFF)
-        # elif self.ebs_activated:
-        #     if self.mission_finished and self.vehicle_stopped:
-        #         if self.can_inputs["res_activated"]:
-        #             self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
-        #         else:
-        #             self.change_as_state(AutonomousStatesEnum.ASFINISHED)
-        #     else:
-        #         self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
-        # else:
-        #     if (
-        #         self.mission_selected
-        #         and self.di_signals["bypass_status"]
-        #         and self.di_signals["asms_status"]
-        #         and self.car_state == OrionStateEnum.TS_ACTIVE
-        #         or self.car_state == OrionStateEnum.R2D
-        #         or self.car_state == OrionStateEnum.R2D_READY
-        #     ):
-        #         if self.car_state == OrionStateEnum.R2D:
-        #             self.change_as_state(AutonomousStatesEnum.ASDRIVE)
-        #         elif self.car_state == OrionStateEnum.R2D_READY:
-        #             self.change_as_state(AutonomousStatesEnum.ASREADY)
-        #         else:
-        #             self.change_as_state(AutonomousStatesEnum.ASOFF)
+        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+            self.change_as_state(AutonomousStatesEnum.ASOFF)
+        elif self.ebs_activated:
+            if self.mission_finished and self.vehicle_stopped:
+                if self.can_inputs["res_activated"]:
+                    self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
+                else:
+                    self.change_as_state(AutonomousStatesEnum.ASFINISHED)
+            else:
+                self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
+        else:
+            if (
+                self.mission_selected
+                and self.di_signals["bypass_status"]
+                and self.car_state
+                in [
+                    OrionStateEnum.TS_ACTIVE,
+                    self.car_state == OrionStateEnum.R2D,
+                    self.car_state == OrionStateEnum.R2D_READY,
+                ]
+            ):
+                if self.car_state == OrionStateEnum.R2D:
+                    self.change_as_state(AutonomousStatesEnum.ASDRIVE)
+                elif self.car_state == OrionStateEnum.R2D_READY:
+                    self.change_as_state(AutonomousStatesEnum.ASREADY)
+                else:
+                    self.change_as_state(AutonomousStatesEnum.ASOFF)
 
-        # # Update jobs
-        # if self.as_state != AutonomousStatesEnum.ASREADY:
-        #     self.job_scheduler.remove_job_by_tag("r2d_dv_wait")
-        #     self.as_ready_transitioned = False
-        # else:
-        #     if not self.as_ready_transitioned:
-        #         self.job_scheduler.add_job_relative(
-        #             5.0, lambda x: None, tag="r2d_dv_wait"
-        #         )
-        #         self.as_ready_transitioned = True
+        # Update jobs
+        if self.as_state != AutonomousStatesEnum.ASREADY:
+            self.job_scheduler.remove_job_by_tag("r2d_dv_wait")
+            self.as_ready_transitioned = False
+        else:
+            if not self.as_ready_transitioned:
+                self.job_scheduler.add_job_relative(
+                    5.0, lambda x: None, tag="r2d_dv_wait"
+                )
+                self.as_ready_transitioned = True
 
-        # # Emergency stop
-        # if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
-        #     self.do_publishers["arm_ebs"].publish(Bool(data=True))
-        #     self.do_publishers["arm_dbs"].publish(Bool(data=True))
-        #     self.wd_trigger_enable = False
+        # Emergency stop
+        if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
+            self.do_publishers["arm_ebs"].publish(Bool(data=False))
+            self.do_publishers["arm_dbs"].publish(Bool(data=False))
+            self.do_publishers["sdc_close"].publish(Bool(data=False))
+            self.wd_trigger_enable = False
         pass
 
     """
@@ -852,67 +907,84 @@ class OrionState(NodeManager):
             # Alert ASR TODO
             print("alert asr")
 
-            # # Wait until we are in TS_ACTIVE
-            # ts_active = False
-            # t = rospy.Time.now().to_sec()
-            # while(rospy.Time.now().to_sec() - t < 100):
-            #     self.update_car_state()
-            #     if self.car_state == OrionStateEnum.TS_ACTIVE:
-            #         ts_active = True
-            #     time.sleep(0.200)
+            self.dbs_pub.publish(Float64(4))
 
-            # if ts_active is False:
-            #     return False, "Timed out waiting for TS_ACTIVE"
+            # ARM ebs/dbs
+            self.do_publishers["arm_ebs"].publish(Bool(data=True))
+            self.do_publishers["arm_dbs"].publish(Bool(data=True))
 
-            # # check whether pressure is being released as expected
-            # if (self.ai_signals["front_bp"] < 10 and self.ai_signals["rear_bp"] < 10) is False:
-            #     return False, "Brake pressure not released as expected"
+            # Wait until we are in TS_ACTIVE
+            ts_active = False
+            t = rospy.Time.now().to_sec()
+            while rospy.Time.now().to_sec() - t < 100:
+                if self.car_state == OrionStateEnum.TS_ACTIVE:
+                    ts_active = True
+                    time.sleep(0.200)
 
-            # # trigger ebs
-            # self.do_publishers["arm_ebs"].publish(Bool(data=True))
-            # time.sleep(0.200)
+            if ts_active is False:
+                return False, "Timed out waiting for TS_ACTIVE"
 
-            # # check whether pressure is being built up as expected
-            # if (
-            # self.ai_signals["front_bp"] > 10
-            # and self.ai_signals["rear_bp"] > 10
-            # ) is False:
-            #     return False, "EBS brake pressures not built up as expected"
+            rospy.sleep(3)
 
-            # # release ebs
-            # self.do_publishers["arm_ebs"].publish(Bool(data=False))
-            # time.sleep(0.200)
+            # check whether pressure is being released as expected
+            if (
+                self.ai_signals["front_bp"] < 10 and self.ai_signals["rear_bp"] < 10
+            ) is False:
+                return False, "Brake pressure not released as expected"
 
-            # # check whether pressure is being released as expected
-            # if (self.ai_signals["front_bp"] <10 and self.ai_signals["rear_bp"] < 10) is False:
-            #     return False, "EBS brake pressures not released as expected"
+            # trigger ebs
+            self.do_publishers["arm_ebs"].publish(Bool(data=False))
+            time.sleep(3)
 
-            # # trigger dbs
-            # self.do_publishers["arm_dbs"].publish(Bool(data=True))
-            # time.sleep(0.200)
+            # check whether pressure is being built up as expected
+            if (
+                self.ai_signals["front_bp"] > 10 and self.ai_signals["rear_bp"] > 10
+            ) is False:
+                return False, "EBS brake pressures not built up as expected"
 
-            # # check whether pressure is being built up as expected
-            # if (
-            # self.ai_signals["front_bp"] > 10
-            # and self.ai_signals["rear_bp"] > 10
-            # ) is False:
-            #     return False, "DBS brake pressures not built up as expected"
+            # release ebs
+            self.do_publishers["arm_ebs"].publish(Bool(data=True))
+            time.sleep(3)
 
-            # # release dbs
-            # self.do_publishers["arm_dbs"].publish(Bool(data=False))
-            # time.sleep(0.200)
+            # check whether pressure is being released as expected
+            if (
+                self.ai_signals["front_bp"] < 10 and self.ai_signals["rear_bp"] < 10
+            ) is False:
+                return False, "EBS brake pressures not released as expected"
 
-            # # check whether pressure is being released as expected
-            # if (self.ai_signals["front_bp"] <10 and self.ai_signals["rear_bp"] < 10) is False:
-            #     return False, "DBS brake pressures not released as expected"
+            # trigger dbs
+            self.do_publishers["arm_dbs"].publish(Bool(data=False))
+            time.sleep(3)
 
-            # # set PPR setpoint, actuate brake with DBS
-            # self.dbs_pub.publish(Float64(12))
-            # time.sleep(0.200)
+            # check whether pressure is being built up as expected
+            if (
+                self.ai_signals["front_bp"] > 10 and self.ai_signals["rear_bp"] > 10
+            ) is False:
+                return False, "DBS brake pressures not built up as expected"
 
-            # # check whether pressure is being built up as expected
-            # if (self.ai_signals["front_bp"] > 5 and self.ai_signals["rear_bp"]> 5 and self.ai_signals["front_bp"] < 10 and self.ai_signals["front_bp"] < 10) is False:
-            #     return False, "Missed PPR setpoint"
+            # release dbs
+            self.do_publishers["arm_dbs"].publish(Bool(data=True))
+            time.sleep(3)
+
+            # check whether pressure is being released as expected
+            if (
+                self.ai_signals["front_bp"] < 10 and self.ai_signals["rear_bp"] < 10
+            ) is False:
+                return False, "DBS brake pressures not released as expected"
+
+            # set PPR setpoint, actuate brake with DBS
+            self.dbs_pub.publish(Float64(12))
+            time.sleep(0.200)
+
+            # check whether pressure is being built up as expected
+            if (
+                self.ai_signals["front_bp"] > 5
+                and self.ai_signals["rear_bp"] > 5
+                and self.ai_signals["front_bp"] < 10
+                and self.ai_signals["front_bp"] < 10
+            ) is False:
+                return False, "Missed PPR setpoint"
+
         self.checkup_result = True, "OK"
         return
 
