@@ -81,6 +81,9 @@ class Controller(NodeManager):
         elif self.mission == AutonomousMission.TRACKDRIVE:
             self.target_lap_count = 10
             new_state = SLAMStatesEnum.EXPLORATION
+        elif self.mission == AutonomousMission.DVSV:
+            self.target_lap_count = 1
+            new_state = SLAMStatesEnum.RACING
         else:
             self.target_lap_count = -1
             new_state = SLAMStatesEnum.EXPLORATION
@@ -204,12 +207,13 @@ class Controller(NodeManager):
         ):
             rospy.loginfo("Exploration finished, switching to racing")
             new_state = SLAMStatesEnum.RACING
-            speed_target = rospy.get_param("/speed/target_racing")
-            rospy.set_param("/speed/target", speed_target)
 
-            self.activate_nodes(new_state, self.slam_state)
+            # Only change if the nodes are activated succesfully
+            if self.activate_nodes(new_state, self.slam_state):
+                speed_target = rospy.get_param("/speed/target_racing")
+                rospy.set_param("/speed/target", speed_target)
 
-            self.change_state(new_state)
+                self.change_state(new_state)
 
 
 node = Controller()

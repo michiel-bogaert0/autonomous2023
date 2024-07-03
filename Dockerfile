@@ -73,6 +73,7 @@ RUN apt-get update && apt-get install -y ros-noetic-tf2-geometry-msgs \
     ros-noetic-ros-controllers \
     ros-noetic-rosparam-shortcuts \
     ros-noetic-image-geometry \
+    ros-noetic-soem \
     python3-catkin-tools \
     libyaml-cpp-dev \
     libcurl4-openssl-dev \

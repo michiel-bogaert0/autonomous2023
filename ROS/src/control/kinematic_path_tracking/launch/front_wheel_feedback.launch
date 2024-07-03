@@ -4,13 +4,7 @@
 
         <param name="rate" value="50" />
 
-        <param name="base_link_frame" value="ugr/slam_base_link" />
-
-        <param name="Kp" value="1.0" />
-        <param name="Ki" value="0.0" />
-        <param name="Kd" value="0.0" />
-
-        <param name="wheelradius" value="0.1" />
+        <param name="base_link_frame" value="ugr/car_base_link/front_axle" />
 
         <remap from="/input/path" to="/pathplanning/path" />
         <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>

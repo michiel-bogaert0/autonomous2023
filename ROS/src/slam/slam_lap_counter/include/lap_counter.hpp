@@ -54,7 +54,6 @@ private:
   geometry_msgs::Point finishPoint = geometry_msgs::Point();
   geometry_msgs::Point targetPoint = geometry_msgs::Point();
   bool isLoopingTarget = false;
-  bool firstLap = false;
   float maxDistanceSquare = 9.f;
   double latestTime;
   bool doNotCheckDistance = false;

@@ -3,7 +3,7 @@
 ## TeleopPanel tutorial and the ImuDisplay tutorial.
 ##
 ## First start with some standard catkin stuff.
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5.1)
 project(rviz_observations_visualization)
 find_package(catkin REQUIRED COMPONENTS rviz ugr_msgs)
 catkin_package()

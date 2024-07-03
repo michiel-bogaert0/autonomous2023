@@ -28,6 +28,8 @@
 #include "kdtree.hpp"
 #include "kdtreepoint.hpp"
 
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseArray.h>
 #include <nav_msgs/Odometry.h>
 
 #include <string>
@@ -47,7 +49,7 @@ MCL::MCL(ros::NodeHandle &n)
       base_link_frame(n.param<string>("base_link_frame", "ugr/car_base_link")),
       tf2_filter(obs_sub, tfBuffer, base_link_frame, 1, 0) {}
 
-void MCL::doConfigure() {
+void MCL::doActivate() {
   this->slam_base_link_frame =
       this->n.param<string>("slam_base_link_frame", "ugr/slam_base_link");
   this->world_frame = this->n.param<string>("world_frame", "ugr/car_odom");
@@ -60,7 +62,7 @@ void MCL::doConfigure() {
   this->max_half_fov = this->n.param<double>("max_half_angle", 60 * 0.0174533);
   this->observe_dt = this->n.param<double>("observe_dt", 0.2);
   this->prev_state = {0, 0, 0};
-  this->Q = Eigen::MatrixXf(2, 2);
+  this->Q = Eigen::MatrixXf(3, 3);
   this->R = Eigen::MatrixXf(2, 2);
   this->yaw_unwrap_threshold =
       this->n.param<float>("yaw_unwrap_threshold", M_PI * 1.3);
@@ -68,6 +70,8 @@ void MCL::doConfigure() {
   this->odomPublisher = n.advertise<nav_msgs::Odometry>("/output/odom", 5);
   this->diagPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(
       new node_fixture::DiagnosticPublisher(n, "SLAM MCL"));
+  this->particlePosePublisher =
+      n.advertise<geometry_msgs::PoseArray>("/output/particles", 5);
 
   obs_sub.subscribe(n, "/input/observations", 1);
   tf2_filter.registerCallback(boost::bind(&MCL::handleObservations, this, _1));
@@ -81,21 +85,27 @@ void MCL::doConfigure() {
   vector<double> QAsVector;
   vector<double> RAsVector;
 
-  n.param<vector<double>>("input_noise", QAsVector, {0.1, 0.0, 0.0, 0.02});
+  n.param<vector<double>>("input_noise", QAsVector,
+                          {0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.05});
   n.param<vector<double>>("measurement_covariance", RAsVector,
                           {0.3, 0.0, 0.0, 0.05});
 
-  if (QAsVector.size() != 4)
-    throw invalid_argument(
-        "Q (measurement_covariance) Must be a vector of size 4");
+  if (QAsVector.size() != 9)
+    throw invalid_argument("Q (input_noise) Must be a vector of size 9");
 
   if (RAsVector.size() != 4)
-    throw invalid_argument("R (input_noise) Must be a vector of size 4");
+    throw invalid_argument(
+        "R (measurement_covariance) Must be a vector of size 4");
 
   this->Q(0, 0) = pow(QAsVector[0], 2);
   this->Q(0, 1) = pow(QAsVector[1], 2);
-  this->Q(1, 0) = pow(QAsVector[2], 2);
-  this->Q(1, 1) = pow(QAsVector[3], 2);
+  this->Q(0, 2) = pow(QAsVector[2], 2);
+  this->Q(1, 0) = pow(QAsVector[3], 2);
+  this->Q(1, 1) = pow(QAsVector[4], 2);
+  this->Q(1, 2) = pow(QAsVector[5], 2);
+  this->Q(2, 0) = pow(QAsVector[6], 2);
+  this->Q(2, 1) = pow(QAsVector[7], 2);
+  this->Q(2, 2) = pow(QAsVector[8], 2);
 
   this->R(0, 0) = pow(RAsVector[0], 2);
   this->R(0, 1) = pow(RAsVector[1], 2);
@@ -230,10 +240,11 @@ void MCL::handleMap(
 void MCL::motion_update(Particle &particle, double dDist, double dYaw) {
 
   // Add noise
-  VectorXf A(2);
+  VectorXf A(3);
   A(0) = dDist;
   A(1) = dYaw;
-  VectorXf VG(2);
+  A(2) = 0.0;
+  VectorXf VG(3);
   VG = multivariate_gauss(A, this->Q, 1);
   dDist = VG(0);
   dYaw = VG(1);
@@ -242,7 +253,7 @@ void MCL::motion_update(Particle &particle, double dDist, double dYaw) {
   VectorXf xv = particle.pose();
   VectorXf xv_temp(3);
   xv_temp << xv(0) + dDist * cos(dYaw + xv(2)),
-      xv(1) + dDist * sin(dYaw + xv(2)), pi_to_pi2(xv(2) + dYaw);
+      xv(1) + dDist * sin(dYaw + xv(2)), pi_to_pi2(xv(2) + dYaw + VG(2));
   particle.setPose(xv_temp);
 }
 
@@ -606,6 +617,10 @@ void MCL::publishOutput(ros::Time lookupTime) {
   float y = 0.0;
   float yaw = 0.0;
   float maxW = -10000.0;
+
+  geometry_msgs::PoseArray particlePoses;
+  particlePoses.header.frame_id = this->map_frame;
+
   // float totalW = 0.0; linting
   for (int i = 0; i < this->particles.size(); i++) {
 
@@ -620,6 +635,21 @@ void MCL::publishOutput(ros::Time lookupTime) {
     poseX.push_back(particle.pose()(0));
     poseY.push_back(particle.pose()(1));
     poseYaw.push_back(particle.pose()(2));
+
+    geometry_msgs::Pose particlePose;
+    particlePose.position.x = particle.pose()(0);
+    particlePose.position.y = particle.pose()(1);
+    particlePose.position.z = 0.0;
+
+    tf2::Quaternion quat;
+    quat.setRPY(0, 0, particle.pose()(2));
+
+    particlePose.orientation.x = quat.x();
+    particlePose.orientation.y = quat.y();
+    particlePose.orientation.z = quat.z();
+    particlePose.orientation.w = quat.w();
+
+    particlePoses.poses.push_back(particlePose);
 
     float curYaw = particle.pose()(2);
 
@@ -664,6 +694,8 @@ void MCL::publishOutput(ros::Time lookupTime) {
     }
   }
 
+  this->particlePosePublisher.publish(particlePoses);
+
   Vector3f pose(x, y, yaw);
 
   boost::array<double, 36> poseCovariance;
@@ -702,8 +734,8 @@ void MCL::publishOutput(ros::Time lookupTime) {
   tf2::Transform transform(quat, tf2::Vector3(pose(0), pose(1), 0));
 
   geometry_msgs::TransformStamped transformMsg;
-  transformMsg.header.frame_id = this->map_frame;
   transformMsg.header.stamp = lookupTime;
+  transformMsg.header.frame_id = this->map_frame;
   transformMsg.child_frame_id = this->slam_base_link_frame;
 
   transformMsg.transform.translation.x = pose(0);

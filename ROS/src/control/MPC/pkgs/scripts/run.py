@@ -42,9 +42,6 @@ class MPC(ManagedNode):
 
         self.wheelradius = rospy.get_param("~wheelradius", 0.1)
 
-        self.cog_to_front_axle = rospy.get_param("/ugr/car/cog_to_front_axle", 0.72)
-        self.reference_pose = [self.cog_to_front_axle, 0]
-
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
         self.actual_speed = 0.0
@@ -265,6 +262,19 @@ class MPC(ManagedNode):
         self.ocp.subject_to(self.ocp.bounded(-np.pi / 4, self.ocp.X[3, :], np.pi / 4))
         # Limit velocity
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 20))
+
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 1e-1))
+
+        # This one works with circles, but causes convergence issues
+        for i in range(self.N + 1):
+            self.ocp.subject_to(
+                (
+                    (self.ocp.X[0, i] - self.ocp._x_reference[0, i]) ** 2
+                    + (self.ocp.X[1, i] - self.ocp._x_reference[1, i]) ** 2
+                )
+                < (1.5**2) + self.ocp.Sc[i]
+            )
+
         self.ocp._set_continuity(1)
 
     def set_costs(self, Qn, R, R_delta):
@@ -334,10 +344,9 @@ class MPC(ManagedNode):
                             # Put target at 2m
                             target = self.trajectory.calculate_target_points([2])[0]
                             # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-                            R = (
-                                (target[0] - self.reference_pose[0]) ** 2
-                                + (target[1] - self.reference_pose[1]) ** 2
-                            ) / (2 * (target[1] - self.reference_pose[1]))
+                            R = ((target[0]) ** 2 + (target[1]) ** 2) / (
+                                2 * (target[1])
+                            )
 
                             self.steering_cmd.data = self.symmetrically_bound_angle(
                                 np.arctan2(1.0, R), np.pi / 2
@@ -429,17 +438,16 @@ class MPC(ManagedNode):
 
                         # Costs below are quite stable for skidpad and trackdrive
                         Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
-                        R = np.diag([1e-5, 5e-4])
+                        R = np.diag([1e-5, 4e-2])
                         R_delta = np.diag(
-                            [1e-2, 6e-1]  # * self.actual_speed / self.speed_target]
+                            [1e-2, 2e0]  # * self.actual_speed / self.speed_target]
                         )
 
                         self.set_costs(Qn, R, R_delta)
 
-                    # TODO: unverified starting point
                     current_state = [
-                        self.reference_pose[0],
-                        self.reference_pose[1],
+                        0,
+                        0,
                         0,
                         self.steering_joint_angle,
                         self.actual_speed,

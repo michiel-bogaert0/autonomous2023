@@ -320,6 +320,10 @@ class MapWidget(QtW.QFrame):
     def keyPressEvent(self, event: QtG.QKeyEvent):
         if event.modifiers() == QtC.Qt.ControlModifier and event.key() == QtC.Qt.Key_S:
             self.save_track_layout()
+        elif (
+            event.modifiers() == QtC.Qt.ControlModifier and event.key() == QtC.Qt.Key_P
+        ):
+            self.save_path()
         else:
             self.update()
 
@@ -516,6 +520,51 @@ class MapWidget(QtW.QFrame):
                 "stamp": {"nsecs": 0, "secs": 0},
             },
             "observations": all_cones,
+        }
+        return data
+
+    def save_path(self):
+        def get_path_name() -> str:
+            time_string = datetime.datetime.now().strftime("%d%b_%H%M").lower()
+            return f"path_{time_string}.yaml"
+
+        path_dict = self.create_path_yaml()
+
+        file_path = (
+            pathlib.Path.home()
+            / f"autonomous2023/ROS/src/control/path_publisher/paths/{get_path_name()}"
+        )
+
+        with open(file_path, "w") as f:
+            yaml.dump(path_dict, f)
+
+    def create_path_yaml(self):
+        # Create a list to store all poses
+        all_poses = []
+
+        # Iterate over path poses and create YAML entries
+        for pose in self.mincurv_path:
+            pose_entry = {
+                "header": {
+                    "frame_id": "ugr/map",
+                    "seq": 0,
+                    "stamp": {"nsecs": 0, "secs": 0},
+                },
+                "pose": {
+                    "position": {"x": pose.x(), "y": pose.y(), "z": 0},
+                    "orientation": {"x": 0, "y": 0, "z": 0, "w": 1},
+                },
+            }
+            all_poses.append(pose_entry)
+
+        # Create the final YAML data structure
+        data = {
+            "header": {
+                "frame_id": "ugr/map",
+                "seq": 0,
+                "stamp": {"nsecs": 0, "secs": 0},
+            },
+            "poses": all_poses,
         }
         return data
 
