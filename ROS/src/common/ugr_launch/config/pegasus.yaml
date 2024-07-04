@@ -6,7 +6,7 @@ ugr:
     wheel:
       radius: 0.1
     cog_to_front_axle: 0.72
-    wheelbase: 0.72
+    wheelbase: 1.0
 
 autonomous_state:
   node_management:
