@@ -18,7 +18,7 @@ def set_state(name: str, state: str):
         name (str): The name of the node.
         state (str): The state to set the node to.
     """
-    rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.1)
+    rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.5)
     return rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(state)
 
 
@@ -72,7 +72,7 @@ def configure_node(name: str):
 
     set_state_result = True
 
-    rospy.wait_for_service(f"/node_managing/{name}/get", timeout=0.1)
+    rospy.wait_for_service(f"/node_managing/{name}/get", timeout=0.5)
     data = rospy.ServiceProxy(f"/node_managing/{name}/get", GetNodeState)()
     if data.state == NodeManagingStatesEnum.ACTIVE:
         set_state_result = set_state_result and set_state_inactive(name)
