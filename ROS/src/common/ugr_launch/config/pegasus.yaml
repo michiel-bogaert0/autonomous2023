@@ -12,14 +12,3 @@ autonomous_state:
   node_management:
     always:
       - slam_controller
-
-pure_pursuit:
-  speed_start: 1
-  speed_stop: 2
-  distance_start: 1.5
-  distance_stop: 3.3 
-
-front_wheel_feedback:
-  Kp: 0.8
-  Ki: 0.01
-  Kd: 0.01
