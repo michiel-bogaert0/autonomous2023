@@ -4,9 +4,9 @@ ugr:
     steering:
       transmission: 1.0
     wheel:
-      radius: 0.1
-    cog_to_front_axle: 0.72
-    wheelbase: 0.72
+      radius: 0.2
+    cog_to_front_axle: 0.90
+    wheelbase: 1.60
 
 autonomous_state:
   node_management:

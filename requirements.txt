@@ -27,6 +27,7 @@ albumentations
 matplotlib>=3.6.2
 xmltodict
 pydantic
+protobuf==3.20.2
 wandb<=0.13.4
 nvidia-tensorrt
 
