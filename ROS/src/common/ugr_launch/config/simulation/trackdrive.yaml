@@ -27,7 +27,7 @@ lap_counter:
 speed:
   target: 2.0
   target_racing: 10.0
-  LC_adaptive_velocity: True
+  LC_adaptive_velocity: False
   LC_max_acceleration: 2.0
   LC_min: 3.0
   LC_max: 15.0
