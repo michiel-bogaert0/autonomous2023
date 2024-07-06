@@ -32,7 +32,7 @@
 
 
   <joint name="lidar0_joint" type="fixed">
-    <origin xyz="0.6765 -0.0022 1.6450" rpy="3.1415 0 0" />
+    <origin xyz="0.6765 -0.0022 0.78" rpy="3.1415 0 0" />
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/lidar0" />
   </joint>
