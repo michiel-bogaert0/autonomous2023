@@ -30,4 +30,8 @@
   <!-- Load extra car specific parameters or override parameters -->
   <rosparam command="load" file="$(find ugr_launch)/config/$(env UGR_CAR).yaml" />
 
+
+  <!-- Run the inspection mission -->
+  <include file="$(find inspection)/launch/inspection.launch" pass_all_args="true"/>
+
 </launch>

@@ -1,6 +1,6 @@
 <launch>
-    <arg name="mission" value="trackdrive"/>
-    <arg name="filename" value="chicane.yaml"/>
+    <arg name="mission" default="trackdrive"/>
+    <arg name="filename" default="chicane.yaml"/>
 
     <include file="$(find ugr_launch)/launch/external/simulation.launch" pass_all_args="true" />
 

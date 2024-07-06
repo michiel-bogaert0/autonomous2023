@@ -11,7 +11,7 @@ from node_fixture.fixture import (
     create_diagnostic_message,
 )
 from node_fixture.node_manager import NodeManager, load_params
-from std_msgs.msg import Header, UInt16
+from std_msgs.msg import Float32, Header, UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 
@@ -45,6 +45,8 @@ class Controller(NodeManager):
         self.slam_state_publisher = rospy.Publisher(
             "/state/slam", State, queue_size=10, latch=True
         )
+
+        self.brake_publisher = rospy.Publisher("/iologik/input1", Float32)
 
         self.change_state(SLAMStatesEnum.IDLE)
 
@@ -82,6 +84,9 @@ class Controller(NodeManager):
             self.target_lap_count = 10
             new_state = SLAMStatesEnum.EXPLORATION
         elif self.mission == AutonomousMission.DVSV:
+            self.target_lap_count = 1
+            new_state = SLAMStatesEnum.RACING
+        elif self.mission == AutonomousMission.INPSPECTION:
             self.target_lap_count = 1
             new_state = SLAMStatesEnum.RACING
         else:
@@ -197,6 +202,7 @@ class Controller(NodeManager):
         if self.target_lap_count <= laps.data:
             new_state = SLAMStatesEnum.FINISHED
             rospy.set_param("/speed/target", 0.0)
+            self.brake_publisher.publish(Float32(data=20.0))
             self.change_state(new_state)
             return
 
