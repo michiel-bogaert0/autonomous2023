@@ -48,6 +48,7 @@
 #include <geometry_msgs/TwistWithCovariance.h>
 #include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Int64.h>
 #include <sensor_msgs/Imu.h>
 #include <can_msgs/Frame.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -89,8 +90,8 @@ public:
   void publish_vel_msg(float vel, int axis);
   void publish_torque_msg(float axis);
   void send_torque_on_can(float axis, int id);
-  void can_callback_axis0(const std_msgs::Float32::ConstPtr& msg);
-  void can_callback_axis1(const std_msgs::Float32::ConstPtr& msg);
+  void can_callback_axis0(const std_msgs::Int64::ConstPtr& msg);
+  void can_callback_axis1(const std_msgs::Int64::ConstPtr& msg);
   void can_callback_steering(const std_msgs::Float32::ConstPtr& msg);
 
   void yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg);
@@ -110,7 +111,8 @@ private:
   ros::Publisher can_axis0_pub;
   ros::Publisher can_axis1_pub;
 
-  ros::Publisher vel_pub;
+  ros::Publisher vel_pub0;
+  ros::Publisher vel_pub1;
   ros::Subscriber can_sub;
   ros::Subscriber state_sub;
   ros::Subscriber can_axis0_sub;

@@ -36,25 +36,25 @@ BS_:
 BU_: HV500_commands HV500_controller
 
 
-BO_ 2147483717 HV500_ERPM_DUTY_VOLTAGE: 8 HV500_controller
+BO_ 2147483718 HV500_ERPM_DUTY_VOLTAGE: 8 HV500_controller
  SG_ Actual_ERPM : 7|32@0- (1,0) [-214748000|214748000] "ERPM"  HV500_commands
  SG_ Actual_Duty : 39|16@0- (0.1,0) [-3276|3276] "%"  HV500_commands
  SG_ Actual_InputVoltage : 55|16@0- (1,0) [-32768|32767] "V"  HV500_commands
 
-BO_ 2147483973 HV500_AC_DC_current: 8 HV500_controller
+BO_ 2147483974 HV500_AC_DC_current: 8 HV500_controller
  SG_ Actual_ACCurrent : 7|16@0- (0.1,0) [-3276|3276] "Apk"  HV500_commands
  SG_ Actual_DCCurrent : 23|16@0- (0.1,0) [-3276|3276] "A"  HV500_commands
 
-BO_ 2147484229 HV500_Temperatures: 8 HV500_controller
+BO_ 2147484230 HV500_Temperatures: 8 HV500_controller
  SG_ Actual_TempController : 7|16@0- (0.1,0) [-3276|3276] "C"  HV500_commands
  SG_ Actual_TempMotor : 23|16@0- (0.1,0) [-3276|3276] "C"  HV500_commands
  SG_ Actual_FaultCode : 39|8@0+ (1,0) [0|255] ""  HV500_commands
 
-BO_ 2147484485 HV500_FOC: 8 HV500_controller
+BO_ 2147484486 HV500_FOC: 8 HV500_controller
  SG_ Actual_FOC_id : 7|32@0- (0.01,0) [-2147480000|2147480000] "Apk"  HV500_commands
  SG_ Actual_FOC_iq : 39|32@0- (0.01,0) [-2147480000|2147480000] "Apk"  HV500_commands
 
-BO_ 2147484741 HV500_MISC: 8 HV500_controller
+BO_ 2147484742 HV500_MISC: 8 HV500_controller
  SG_ Actual_Throttle : 7|8@0- (1,0) [-128|127] "%"  HV500_commands
  SG_ Actual_Brake : 15|8@0- (1,0) [-128|127] "%"  HV500_commands
  SG_ Digital_input_1 : 16|1@0+ (1,0) [0|1] ""  HV500_commands
@@ -79,37 +79,37 @@ BO_ 2147484741 HV500_MISC: 8 HV500_controller
  SG_ Power_limit : 42|1@0+ (1,0) [0|1] ""  HV500_commands
  SG_ CAN_map_version : 63|8@0+ (0.1,0) [0|255] "Version"  HV500_commands
 
-BO_ 2147492933 HV500_SetDriveEnable: 2 HV500_commands
+BO_ 2147492934 HV500_SetDriveEnable: 2 HV500_commands
  SG_ CMD_DriveEnable : 7|8@0+ (1,0) [0|1] ""  HV500_controller
 
-BO_ 2147490373 HV500_SetAcCurrent: 8 HV500_commands
+BO_ 2147490374 HV500_SetAcCurrent: 8 HV500_commands
  SG_ CMD_TargetAcCurrent : 7|16@0- (0.1,0) [-1000|1000] "A"  HV500_controller
 
-BO_ 2147490629 HV500_SetBrakeCurrent: 8 HV500_commands
+BO_ 2147490630 HV500_SetBrakeCurrent: 8 HV500_commands
  SG_ CMD_TargetBrakeCurrent : 7|16@0- (0.1,0) [0|1000] "A"  HV500_controller
 
-BO_ 2147490885 HV500_SetERPM: 4 HV500_commands
+BO_ 2147490886 HV500_SetERPM: 4 HV500_commands
  SG_ CMD_TargetSpeed : 7|32@0- (1,0) [-2147480000|2147480000] "ERPM"  HV500_controller
 
-BO_ 2147491141 HV500_SetPosition: 2 HV500_commands
+BO_ 2147491142 HV500_SetPosition: 2 HV500_commands
  SG_ CMD_TargetPosition : 7|16@0- (0.1,0) [0|360] "degree"  HV500_controller
 
-BO_ 2147491397 HV500_SetRelCurrent: 2 HV500_commands
+BO_ 2147491398 HV500_SetRelCurrent: 2 HV500_commands
  SG_ CMD_TargetRelativeCurrent : 7|16@0- (0.1,0) [-100|100] "%"  HV500_controller
 
-BO_ 2147491653 HV500_SetRelBrakeCurrent: 2 HV500_commands
+BO_ 2147491654 HV500_SetRelBrakeCurrent: 2 HV500_commands
  SG_ CMD_TargeRelativeBrakeCurrent : 7|16@0- (0.1,0) [0|100] "%"  HV500_controller
 
-BO_ 2147491909 HV500_SetMaxAcCurrent: 2 HV500_commands
+BO_ 2147491910 HV500_SetMaxAcCurrent: 2 HV500_commands
  SG_ CMD_MaxAcCurrent : 7|16@0- (0.1,0) [0|500] "A"  HV500_controller
 
-BO_ 2147492165 HV500_SetMaxAcBrakeCurrent: 2 HV500_commands
+BO_ 2147492166 HV500_SetMaxAcBrakeCurrent: 2 HV500_commands
  SG_ CMD_MaxAcBrakeCurrent : 7|16@0- (0.1,0) [0|500] "A"  HV500_controller
 
-BO_ 2147492421 HV500_SetMaxDcCurrent: 2 HV500_commands
+BO_ 2147492422 HV500_SetMaxDcCurrent: 2 HV500_commands
  SG_ CMD_MaxDcCurrent : 7|16@0- (0.1,0) [0|350] "A"  HV500_controller
 
-BO_ 2147492677 HV500_SetMaxDcBrakeCurrent: 2 HV500_commands
+BO_ 2147492678 HV500_SetMaxDcBrakeCurrent: 2 HV500_commands
  SG_ CMD_MaxDcBrakeCurrent : 7|16@0- (0.1,0) [0|350] "A"  HV500_controller
 
 

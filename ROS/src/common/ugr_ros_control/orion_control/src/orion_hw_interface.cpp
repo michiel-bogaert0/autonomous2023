@@ -28,14 +28,17 @@ void OrionHWInterface::init()
   // TODO servo
 
   // Velocity estimate by rear wheels
-  this->vel_pub = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/vel", 10);
+  this->vel_pub0 = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/vel0", 10);
+  this->vel_pub1 = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/vel1", 10);
 
   // Subscribers
   // TODO update
-  this->can_axis0_sub =
-      nh.subscribe<std_msgs::Float32>("/input/axis0/erpm", 1, &OrionHWInterface::can_callback_axis0, this);
-  this->can_axis1_sub =
-      nh.subscribe<std_msgs::Float32>("/input/axis1/erpm", 1, &OrionHWInterface::can_callback_axis1, this);
+
+  // axis0 is rechts
+  this->can_axis0_sub = nh.subscribe<std_msgs::Int64>("/ugr/can/mc_right/processed/actual_erpm", 1,
+                                                      &OrionHWInterface::can_callback_axis0, this);
+  this->can_axis1_sub = nh.subscribe<std_msgs::Int64>("/ugr/can/mc_left/processed/actual_erpm", 1,
+                                                      &OrionHWInterface::can_callback_axis1, this);
 
   // TODO change
   this->can_steering_sub =
@@ -106,13 +109,15 @@ bool OrionHWInterface::canSwitch(const std::list<hardware_interface::ControllerI
 // The READ function
 void OrionHWInterface::read(ros::Duration& elapsed_time)
 {
-  joint_velocity_[drive_joint_id] = (this->cur_velocity_axis0 + this->cur_velocity_axis1) / 2;
+  joint_velocity_[drive_joint_id] = (this->cur_velocity_axis0);
   joint_position_[steering_joint_id] = this->cur_steering;
 }
 
 // The WRITE function
 void OrionHWInterface::write(ros::Duration& elapsed_time)
 {
+  ROS_INFO_STREAM(this->printCommandHelper());
+  ROS_INFO_STREAM(this->printStateHelper());
   // Safety
   enforceLimits(elapsed_time);
 
@@ -152,18 +157,43 @@ void OrionHWInterface::state_change(const ugr_msgs::State::ConstPtr& msg)
 }
 
 // Callback for the CAN messages: axis0, axis1 and steering
-void OrionHWInterface::can_callback_axis0(const std_msgs::Float32::ConstPtr& msg)
+void OrionHWInterface::can_callback_axis0(const std_msgs::Int64::ConstPtr& msg)
 {
   float motor_rpm = msg->data / this->n_polepairs;
-  this->cur_velocity_axis0 = 2 * M_PI * motor_rpm / 60;  // rpm to rad/s
+  this->cur_velocity_axis0 = 2 * M_PI * motor_rpm / 60 / this->gear_ratio * (this->wheel_diameter / 2);  // rpm to rad/s
   this->handle_vel_msg();
+
+  geometry_msgs::TwistWithCovarianceStamped twist_msg = geometry_msgs::TwistWithCovarianceStamped();
+  twist_msg.header.frame_id = this->axis_rear_frame;
+  twist_msg.header.stamp = ros::Time::now();
+  twist_msg.twist.covariance = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+  twist_msg.twist.twist = geometry_msgs::Twist();
+
+  twist_msg.twist.twist.linear.x = this->cur_velocity_axis0;  // rad/s to m/s
+
+  vel_pub0.publish(twist_msg);
 }
 
-void OrionHWInterface::can_callback_axis1(const std_msgs::Float32::ConstPtr& msg)
+void OrionHWInterface::can_callback_axis1(const std_msgs::Int64::ConstPtr& msg)
 {
   float motor_rpm = msg->data / this->n_polepairs;
-  this->cur_velocity_axis1 = 2 * M_PI * motor_rpm / 60;  // rpm to rad/s
+  this->cur_velocity_axis1 =
+      ((2.0 * M_PI * motor_rpm / 60.0) / this->gear_ratio) * (this->wheel_diameter / 2.0);  // rpm to rad/s
   this->handle_vel_msg();
+
+  geometry_msgs::TwistWithCovarianceStamped twist_msg = geometry_msgs::TwistWithCovarianceStamped();
+  twist_msg.header.frame_id = this->axis_rear_frame;
+  twist_msg.header.stamp = ros::Time::now();
+  twist_msg.twist.covariance = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+  twist_msg.twist.twist = geometry_msgs::Twist();
+
+  twist_msg.twist.twist.linear.x = this->cur_velocity_axis1;
+
+  vel_pub1.publish(twist_msg);
 }
 
 void OrionHWInterface::can_callback_steering(const std_msgs::Float32::ConstPtr& msg)
@@ -174,21 +204,6 @@ void OrionHWInterface::can_callback_steering(const std_msgs::Float32::ConstPtr& 
 void OrionHWInterface::handle_vel_msg()
 {
   // Publish the car velocity (based on mean motor velocity) as a twist msg (used by SLAM)
-  geometry_msgs::TwistWithCovarianceStamped twist_msg = geometry_msgs::TwistWithCovarianceStamped();
-  twist_msg.header.frame_id = this->axis_rear_frame;
-  twist_msg.header.stamp = ros::Time::now();
-  twist_msg.twist = geometry_msgs::TwistWithCovariance();
-
-  // TODO Use actual covariance measurements (first we need data to estimate these)
-  twist_msg.twist.covariance = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
-                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-  twist_msg.twist.twist = geometry_msgs::Twist();
-
-  twist_msg.twist.twist.linear.x =
-      joint_velocity_[drive_joint_id] / this->gear_ratio * (this->wheel_diameter / 2);  // rad/s to m/s
-
-  vel_pub.publish(twist_msg);
 }
 
 void OrionHWInterface::publish_steering_msg(float steering)
