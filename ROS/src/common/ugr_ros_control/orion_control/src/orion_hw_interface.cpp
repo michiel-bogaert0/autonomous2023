@@ -120,6 +120,16 @@ void OrionHWInterface::write(ros::Duration& elapsed_time)
   {
     publish_torque_msg(joint_effort_command_[drive_joint_id]);
     // publish_steering_msg(joint_position_command_[steering_joint_id]);
+
+    can_msgs::Frame msg;
+    msg.header.stamp = ros::Time::now();
+    msg.id = 0x24FF;
+    msg.is_extended = true;
+    msg.dlc = 8;
+    msg.data = { 1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+
+    this->can_axis0_pub.publish(msg);
+    this->can_axis1_pub.publish(msg);
   }
   else
   {
@@ -221,7 +231,7 @@ void OrionHWInterface::send_torque_on_can(float axis, int id)
   msg.id = 0x1A45 + id;
   msg.is_extended = true;
   msg.dlc = 2;
-  msg.data = { (axis_int << 8) & 0xFF, axis_int & 0xFF, 0, 0, 0, 0, 0, 0 };
+  msg.data = { (axis_int >> 8) & 0xFF, axis_int & 0xFF, 0, 0, 0, 0, 0, 0 };
 
   // publish
   if (id == 0)

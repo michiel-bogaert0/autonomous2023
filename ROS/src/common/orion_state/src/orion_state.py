@@ -65,7 +65,6 @@ class OrionState(NodeManager):
         self.spin()
 
     def switch_controllers(self):
-        return
         rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
         try:
             switch_controller = rospy.ServiceProxy(
@@ -166,7 +165,12 @@ class OrionState(NodeManager):
         }
 
         # CAN inputs
-        self.can_inputs = {"air1": False, "air2": False, "res_go": False}
+        self.can_inputs = {
+            "air1": False,
+            "air2": False,
+            "res_go": False,
+            "res_activated": False,
+        }
 
         # Latched actions from CAN
         self.can_actions = {
@@ -380,16 +384,16 @@ class OrionState(NodeManager):
         # if frame.id == 16:
         #     self.hbs["PDU"] = rospy.Time.now().to_sec()
 
-        # # ELVIS
-        # if frame.id == 2:
-        #     self.air1 = bool(frame.data[0] & 0b00100000)
-        #     self.air2 = bool(frame.data[0] & 0b00010000)
+        # ELVIS
+        if frame.id == 2:
+            self.can_inputs["air1"] = bool(frame.data[0] & 0b00100000)
+            self.can_inputs["air2"] = bool(frame.data[0] & 0b00010000)
 
-        #     if bool(frame.data[0] & 0b00000001):
-        #         self.hbs["ELVIS"] = rospy.Time.now().to_sec()
-        #     critical_fault = (frame.data[0] & 0b00001100) >> 2
-        #     if critical_fault != 0:
-        #         self.send_error_to_db(25 + critical_fault)
+            if bool(frame.data[0] & 0b00000001):
+                self.hbs["ELVIS"] = rospy.Time.now().to_sec()
+            critical_fault = (frame.data[0] & 0b00001100) >> 2
+            if critical_fault != 0:
+                self.send_error_to_db(25 + critical_fault)
 
         # # DB
         # if frame.id == 3:
@@ -503,6 +507,7 @@ class OrionState(NodeManager):
         thread.start()
 
     def active(self):
+        print(self.as_state)
         self.send_status_over_can()
         if self.switched_driving_mode and self.checkup_result is not None:
             checks_ok, msg = self.checkup_result
@@ -566,6 +571,9 @@ class OrionState(NodeManager):
         Sets the car state based on current state and incoming signals
         """
 
+        if self.di_signals["sdc_out"]:
+            self.job_scheduler.remove_job_by_tag("timeout_state_sdc")
+
         # Run boot checklist, then go to SDC_OPEN
         if self.car_state == OrionStateEnum.INIT:
             if self.boot_procedure():
@@ -579,7 +587,7 @@ class OrionState(NodeManager):
 
         else:
             if self.di_signals["sdc_out"] is False:
-                self.change_state(OrionStateEnum.SDC_OPEN)
+                self.timeout_sdc_open(0.5)
 
             # If TS is pressed, go to TS_ACTIVATING and then TS_ACTIVE
             elif self.car_state == OrionStateEnum.TS_READY:
@@ -595,19 +603,10 @@ class OrionState(NodeManager):
                     self.change_state(OrionStateEnum.TS_ACTIVATING)
 
                     # Activate TS
-                    self.press_btn_procedure("ts_btn", 0.1, 1.0)
+                    self.press_btn_procedure("ts_btn", 1.0, 1.0)
 
                     # Enable state timeout for this state
-                    self.timeout_state_procedure(5.0)
-
-                    # #! Temporary
-                    def enable_airs(_):
-                        self.can_inputs["air1"] = True
-                        self.can_inputs["air2"] = True
-
-                    self.job_scheduler.add_job_relative(
-                        1.0, enable_airs, tag="temp_enable_airs"
-                    )
+                    self.timeout_state_procedure(7.0)
 
             # Wait for AIRS to close
             elif self.car_state == OrionStateEnum.TS_ACTIVATING:
@@ -634,54 +633,64 @@ class OrionState(NodeManager):
                     self.can_actions["r2d_pressed"] = False
                     self.change_state(OrionStateEnum.R2D)
 
+                    # Enable drive
+                    arbitration_id = 0x24FF
+                    data = [1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+                    message = can.Message(
+                        arbitration_id=arbitration_id,
+                        data=data,
+                        is_extended_id=True,
+                        dlc=8,
+                    )
+                    self.bus.publish(serialcan_to_roscan(message))
+
             elif self.car_state == OrionStateEnum.ERROR:
                 self.do_publishers["sdc_close"].publish(Bool(data=False))
 
     def update_as_state(self):
         # Flowchart to determine AS state
-        # if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-        #     self.change_as_state(AutonomousStatesEnum.ASOFF)
-        # elif self.ebs_activated:
-        #     if self.mission_finished and self.vehicle_stopped:
-        #         if self.can_inputs["res_activated"]:
-        #             self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
-        #         else:
-        #             self.change_as_state(AutonomousStatesEnum.ASFINISHED)
-        #     else:
-        #         self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
-        # else:
-        #     if (
-        #         self.mission_selected
-        #         and self.di_signals["bypass_status"]
-        #         and self.di_signals["asms_status"]
-        #         and self.car_state == OrionStateEnum.TS_ACTIVE
-        #         or self.car_state == OrionStateEnum.R2D
-        #         or self.car_state == OrionStateEnum.R2D_READY
-        #     ):
-        #         if self.car_state == OrionStateEnum.R2D:
-        #             self.change_as_state(AutonomousStatesEnum.ASDRIVE)
-        #         elif self.car_state == OrionStateEnum.R2D_READY:
-        #             self.change_as_state(AutonomousStatesEnum.ASREADY)
-        #         else:
-        #             self.change_as_state(AutonomousStatesEnum.ASOFF)
+        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+            self.change_as_state(AutonomousStatesEnum.ASOFF)
+        elif self.ebs_activated:
+            if self.mission_finished and self.vehicle_stopped:
+                if self.can_inputs["res_activated"]:
+                    self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
+                else:
+                    self.change_as_state(AutonomousStatesEnum.ASFINISHED)
+            else:
+                self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
+        else:
+            if (
+                self.mission_selected
+                and self.di_signals["bypass_status"]
+                and self.di_signals["asms_status"]
+                and self.car_state == OrionStateEnum.TS_ACTIVE
+                or self.car_state == OrionStateEnum.R2D
+                or self.car_state == OrionStateEnum.R2D_READY
+            ):
+                if self.car_state == OrionStateEnum.R2D:
+                    self.change_as_state(AutonomousStatesEnum.ASDRIVE)
+                elif self.car_state == OrionStateEnum.R2D_READY:
+                    self.change_as_state(AutonomousStatesEnum.ASREADY)
+                else:
+                    self.change_as_state(AutonomousStatesEnum.ASOFF)
 
-        # # Update jobs
-        # if self.as_state != AutonomousStatesEnum.ASREADY:
-        #     self.job_scheduler.remove_job_by_tag("r2d_dv_wait")
-        #     self.as_ready_transitioned = False
-        # else:
-        #     if not self.as_ready_transitioned:
-        #         self.job_scheduler.add_job_relative(
-        #             5.0, lambda x: None, tag="r2d_dv_wait"
-        #         )
-        #         self.as_ready_transitioned = True
+        # Update jobs
+        if self.as_state != AutonomousStatesEnum.ASREADY:
+            self.job_scheduler.remove_job_by_tag("r2d_dv_wait")
+            self.as_ready_transitioned = False
+        else:
+            if not self.as_ready_transitioned:
+                self.job_scheduler.add_job_relative(
+                    5.0, lambda x: None, tag="r2d_dv_wait"
+                )
+                self.as_ready_transitioned = True
 
-        # # Emergency stop
-        # if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
-        #     self.do_publishers["arm_ebs"].publish(Bool(data=True))
-        #     self.do_publishers["arm_dbs"].publish(Bool(data=True))
-        #     self.wd_trigger_enable = False
-        pass
+        # Emergency stop
+        if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
+            self.do_publishers["arm_ebs"].publish(Bool(data=True))
+            self.do_publishers["arm_dbs"].publish(Bool(data=True))
+            self.wd_trigger_enable = False
 
     """
 
@@ -708,6 +717,18 @@ class OrionState(NodeManager):
         )
         self.job_scheduler.add_job_relative(
             delay + duration + cooldown, lambda x: None, tag=f"cooldown_btn_{btn}"
+        )
+
+    def timeout_sdc_open(self, duration):
+        def interfere(state):
+            print("Interfering...")
+            self.change_state(state)
+
+        self.job_scheduler.add_job_relative(
+            duration,
+            interfere,
+            OrionStateEnum.SDC_OPEN,
+            tag="timeout_state_sdc",
         )
 
     def timeout_state_procedure(self, duration):
@@ -739,6 +760,7 @@ class OrionState(NodeManager):
         print("booting")
         # watchdog OK?
         if self.di_signals["wd_ok"] is False:
+            print("lol")
             self.press_btn_procedure("wd_reset", 0.1, 1.0)
             return False
 
@@ -818,8 +840,7 @@ class OrionState(NodeManager):
             # stop toggling watchdog
             self.wd_trigger_enable = False
 
-            # time.sleep(0.500)
-            time.sleep(1)
+            time.sleep(3)
 
             print("checking whether wd indicates error")
             # check whether watchdog indicating error
