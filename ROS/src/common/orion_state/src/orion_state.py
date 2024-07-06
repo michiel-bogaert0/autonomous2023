@@ -651,6 +651,16 @@ class OrionState(NodeManager):
         # Step job scheduler
         self.job_scheduler.step()
 
+        if self.initial_checkup_done:
+            checks_ok, msg = self.monitor()
+            print(msg)
+            if not checks_ok:
+                self.change_state(OrionStateEnum.ERROR)
+                self.set_health(
+                    DiagnosticStatus.ERROR,
+                    f"Monitoring failed in mode '{self.driving_mode}'. Got error '{msg}'",
+                )
+
         # Toggle watchdog
         if self.wd_trigger_enable:
             self.do_publishers["wd_trigger"].publish(Bool(data=self.wd_trigger_status))
@@ -869,7 +879,6 @@ class OrionState(NodeManager):
         print("booting")
         # watchdog OK?
         if self.di_signals["wd_ok"] is False:
-            print("lol")
             self.press_btn_procedure("wd_reset", 0.1, 1.0)
             return False
 
@@ -1063,33 +1072,41 @@ class OrionState(NodeManager):
         return
 
     def monitor(self):
-        # # check heartbeats of low voltage systems, motorcontrollers and sensors
-        # for i, hb in enumerate(self.hbs):
-        #     if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
-        #         self.send_error_to_db(13 + i)
-        #         return False
+        # check heartbeats of low voltage systems, motorcontrollers and sensors TODO
 
-        # # check ipc, sensors and actuators
-        # if self.get_health_level() == DiagnosticStatus.ERROR:
-        #     self.send_error_to_db(23)
-        #     return False
+        # check ipc, sensors and actuators
+        if self.get_health_level() == DiagnosticStatus.ERROR:
+            return False, "ECU health check failed"
 
         # check output signal of watchdog
-        if not self.watchdog_status:
-            self.send_error_to_db(6)
-            return False
+        if self.di_signals["wd_ok"] is False:
+            return False, "Watchdog indicating error"
 
-        # # check air pressures
-        # if not (self.ai_signals["air_pressure1"] < 1 and self.ai_signals["air_pressure2"] < 1):
-        #     self.send_error_to_db(5)
-        #     return False
+        # check air pressures
+        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+            if not (
+                self.ai_signals["air_pressure1"] < 1
+                and self.ai_signals["air_pressure2"] < 1
+            ):
+                return False, "Air pressures not released"
+        else:
+            if not (
+                self.ai_signals["air_pressure1"] > 5
+                and self.ai_signals["air_pressure2"] > 5
+                and self.ai_signals["air_pressure1"] < 9.5
+                and self.ai_signals["air_pressure2"] < 9.5
+            ):
+                return False, "Air pressures out of range"
 
-        # # check if bypass is closed
-        # if self.bypass_status:
-        #     self.send_error_to_db(24)
-        #     return False
+        # check if bypass is closed
+        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+            if self.di_signals["bypass_status"]:
+                return False, "BYPASS is ON"
+        else:
+            if not self.di_signals["bypass_status"]:
+                return False, "BYPASS is OFF"
 
-        return True
+        return True, "OK"
 
 
 node = OrionState()  #
