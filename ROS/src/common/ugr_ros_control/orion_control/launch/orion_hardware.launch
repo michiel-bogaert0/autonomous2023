@@ -16,6 +16,10 @@
       <remap from="/output/axis0" to="/ugr/can/mc_left/tx" />
       <remap from="/output/axis1" to="/ugr/can/mc_right/tx" />
 
+      <remap from="/output/servo" to="/ugr/car/servo/target" />
+
+      <remap from="/input/servo" to "/ugr/car/servo/position" />
+
       <!-- Encoder 0: right -->
       <!-- Encoder 1: left -->
       <remap from="/output/vel0" to="/ugr/car/sensors/hwinterface/encoder0" />
