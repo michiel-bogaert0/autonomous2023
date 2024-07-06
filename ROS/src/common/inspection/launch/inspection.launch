@@ -7,7 +7,8 @@
     <param name="duration" value="26"/> <!-- s -->
 
     <remap from="/output/steering" to="/ugr/car/steering_position_controller/command" />
-    <remap from="/output/velocity" to="/ugr/car/drive_velocity_controller/command" />
+    <remap from="/output/velocity0" to="/ugr/car/axis0_velocity_controller/command" />
+    <remap from="/output/velocity1" to="/ugr/car/axis1_velocity_controller/command" />
     <remap from="/output/lapComplete" to="/ugr/car/lapComplete"/>
   </node>
 </launch>

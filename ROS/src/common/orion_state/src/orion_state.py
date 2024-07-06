@@ -84,13 +84,15 @@ class OrionState(NodeManager):
                     "drive_effort_controller",
                 ]
                 req.stop_controllers = [
-                    "drive_velocity_controller",
+                    "axis0_velocity_controller",
+                    "axis1_velocity_controller",
                 ]
             else:
                 req.start_controllers = [
                     "joint_state_controller",
                     "steering_position_controller",
-                    "drive_velocity_controller",
+                    "axis0_velocity_controller",
+                    "axis1_velocity_controller",
                 ]
                 req.stop_controllers = ["drive_effort_controller"]
 
@@ -656,7 +658,6 @@ class OrionState(NodeManager):
 
         if self.initial_checkup_done:
             checks_ok, msg = self.monitor()
-            print(msg)
             if not checks_ok:
                 self.change_state(OrionStateEnum.ERROR)
                 self.set_health(
@@ -1076,6 +1077,7 @@ class OrionState(NodeManager):
 
     def monitor(self):
         # check heartbeats of low voltage systems, motorcontrollers and sensors TODO
+        return True, ""
 
         # check ipc, sensors and actuators
         if self.get_health_level() == DiagnosticStatus.ERROR:

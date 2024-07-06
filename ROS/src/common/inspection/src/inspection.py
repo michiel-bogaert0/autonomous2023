@@ -13,7 +13,7 @@ class Inspection(ManagedNode):
         """
         Inspection node
         """
-        super().__init__("inspection")
+        super().__init__("inspection", "active")
         rospy.loginfo("Inspection node started")
 
         self.spin()
@@ -29,7 +29,8 @@ class Inspection(ManagedNode):
         self.counter = 0
 
         self.steering_pub = rospy.Publisher("/output/steering", Float64)
-        self.velocity_pub = rospy.Publisher("/output/velocity", Float64)
+        self.velocity0_pub = rospy.Publisher("/output/velocity0", Float64)
+        self.velocity1_pub = rospy.Publisher("/output/velocity1", Float64)
         self.lap_complete_pub = rospy.Publisher(
             "/output/lapComplete", UInt16, queue_size=5, latch=True
         )
@@ -65,7 +66,8 @@ class Inspection(ManagedNode):
             )
 
             self.steering_pub.publish(steering_angle)
-            self.velocity_pub.publish(self.VELOCITY)
+            self.velocity_pub0.publish(self.VELOCITY)
+            self.velocity_pub1.publish(self.VELOCITY)
 
             self.counter += 1
             rospy.loginfo(
