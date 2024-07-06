@@ -1,0 +1,11 @@
+<launch>
+
+  <node pkg="inspection" name="inspection" type="inspection.py" output="screen">
+    <param name="rate" value="20"/> <!-- Hz -->
+    <param name="velocity" value="3.5"/> <!-- m/s -->
+    <param name="steering_speed" value="0.05"/> <!-- rad/s -->
+
+    <remap from="/output/steering" to="/ugr/car/steering_position_controller/command" />
+    <remap from="/output/velocity" to="/ugr/car/drive_velocity_controller/command" />
+  </node>
+</launch>
