@@ -227,9 +227,8 @@ void OrionHWInterface::publish_steering_msg(float steering)
   // Convert [-3.14, 3.14] to a steering range [-steer_max_step, steer_max_step]
 
   // TODO: correct conversion !!!!!!
-  steering = steering
 
-      std_msgs::Int32 msg;
+  std_msgs::Int32 msg;
   msg.data = steering;
 
   this->can_servo_pub.publish(msg);
@@ -287,37 +286,38 @@ void OrionHWInterface::yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg)
 
 float OrionHWInterface::torque_vectoring()
 {
+  return 0;
   // returns the torque distribution for the left and right wheel
-  float cur_velocity_rear = joint_velocity_[drive_joint_id];
-  float car_vel = cur_velocity_rear / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s
-  float yaw_rate_desired = 0.0;
+  // float cur_velocity_rear = joint_velocity_[drive_joint_id];
+  // float car_vel = cur_velocity_rear / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s
+  // float yaw_rate_desired = 0.0;
 
-  // calculate the understeer gradient
-  float Ku = this->lr * this->m / (this->Cyf * (this->lf + this->lr)) -
-             this->lf * this->m / (this->Cyr * (this->lf + this->lr));
+  // // calculate the understeer gradient
+  // float Ku = this->lr * this->m / (this->Cyf * (this->lf + this->lr)) -
+  //            this->lf * this->m / (this->Cyr * (this->lf + this->lr));
 
-  // calculate the desired yaw rate, add safety for division by zero
-  if (abs(this->lr + this->lf + Ku * pow(car_vel, 2)) > 0.0001)
-    ;
-  {
-    yaw_rate_desired = car_vel / (this->lr + this->lf + Ku * pow(car_vel, 2)) * this->cur_steering;
-  }
+  // // calculate the desired yaw rate, add safety for division by zero
+  // if (abs(this->lr + this->lf + Ku * pow(car_vel, 2)) > 0.0001)
+  //   ;
+  // {
+  //   yaw_rate_desired = car_vel / (this->lr + this->lf + Ku * pow(car_vel, 2)) * this->cur_steering;
+  // }
 
-  float yaw_rate_error = yaw_rate_desired - this->yaw_rate;
+  // float yaw_rate_error = yaw_rate_desired - this->yaw_rate;
 
-  // PI(D) controller calculates the difference in torque dT, based on the yaw rate error
-  double now_time = ros::Time::now().toSec();
-  this->integral += yaw_rate_error * (now_time - this->prev_time);
-  float difference = (yaw_rate_error - this->prev_error) / (now_time - this->prev_time);
+  // // PI(D) controller calculates the difference in torque dT, based on the yaw rate error
+  // double now_time = ros::Time::now().toSec();
+  // this->integral += yaw_rate_error * (now_time - this->prev_time);
+  // float difference = (yaw_rate_error - this->prev_error) / (now_time - this->prev_time);
 
-  float dT =
-      std::min(std::max(this->Kp * yaw_rate_error + this->Ki * this->integral + this->Kd * difference, -this->max_dT),
-               this->max_dT);
+  // float dT =
+  //     std::min(std::max(this->Kp * yaw_rate_error + this->Ki * this->integral + this->Kd * difference, -this->max_dT),
+  //              this->max_dT);
 
-  this->prev_error = yaw_rate_error;
-  this->prev_time = now_time;
+  // this->prev_error = yaw_rate_error;
+  // this->prev_time = now_time;
 
-  return dT;
+  // return dT;
 }
 
 }  // namespace orion_control

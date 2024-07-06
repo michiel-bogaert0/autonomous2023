@@ -83,14 +83,17 @@ class OrionState(NodeManager):
                     "steering_position_controller",
                     "drive_effort_controller",
                 ]
+                req.stop_controllers = [
+                    "drive_velocity_controller",
+                ]
             else:
                 req.start_controllers = [
                     "joint_state_controller",
                     "steering_position_controller",
                     "drive_velocity_controller",
                 ]
+                req.stop_controllers = ["drive_effort_controller"]
 
-            req.stop_controllers = []
             req.strictness = SwitchControllerRequest.BEST_EFFORT
 
             response = switch_controller(req)
@@ -327,7 +330,7 @@ class OrionState(NodeManager):
             return
 
         if new_state == AutonomousStatesEnum.ASDRIVE:
-            self.dbs_pub.publish(Float64(0))
+            self.dbs_pub.publish(Float64(4))
 
         if new_state == AutonomousStatesEnum.ASREADY:
             self.job_scheduler.add_job_relative(5.0, lambda x: None, tag="r2d_dv_wait")

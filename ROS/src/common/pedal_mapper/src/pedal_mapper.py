@@ -3,7 +3,7 @@ import rospy
 from can_msgs.msg import Frame
 from node_fixture.fixture import AutonomousStatesEnum, OrionStateEnum
 from node_fixture.node_manager import ManagedNode
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64MultiArray
 from ugr_msgs.msg import State
 
 
@@ -40,7 +40,7 @@ class PedalMapper(ManagedNode):
 
         # Publishers
         self.effort_publisher = self.AddPublisher(
-            "/ugr/car/drive_effort_controller/command", Float64, queue_size=0
+            "/ugr/car/drive_effort_controller/command", Float64MultiArray, queue_size=0
         )
 
     def handle_as_state(self, msg):
@@ -82,6 +82,9 @@ class PedalMapper(ManagedNode):
     def active(self):
         self.max_effort = rospy.get_param("~max_effort", 2)
 
+        zero_torque = Float64MultiArray()
+        zero_torque.data = [0, 0]
+
         # Check states
         if (
             self.as_state == AutonomousStatesEnum.ASOFF
@@ -90,14 +93,17 @@ class PedalMapper(ManagedNode):
             if self.last_received_hb != 0:
                 if rospy.Time.now().to_sec() - self.last_received_hb > 0.5:
                     self.set_health(2, "Lost APPS signal")
-                    self.effort_publisher.publish(Float64(0))
+                    self.effort_publisher.publish(zero_torque)
                 else:
-                    self.effort_publisher.publish(Float64(self.apps))
+                    torque = Float64MultiArray()
+                    torque.data = [self.apps, self.apps]
+
+                    self.effort_publisher.publish(torque)
             else:
-                self.effort_publisher.publish(Float64(0))
+                self.effort_publisher.publish(zero_torque)
 
         else:
-            self.effort_publisher.publish(Float64(0))
+            self.effort_publisher.publish(zero_torque)
 
 
 node = PedalMapper()

@@ -54,3 +54,16 @@ axis0_effort_controller:
 axis1_effort_controller:
    type: effort_controllers/JointEffortController
    joint: axis1
+
+# Group controllers for ease of use
+drive_effort_controller:
+   type: effort_controllers/JointGroupEffortController
+   joints:
+      - axis1
+      - axis0
+
+drive_velocity_controller:
+   type: velocity_controllers/JointGroupVelocityController
+   joints:
+      - axis1
+      - axis0
