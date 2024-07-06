@@ -254,7 +254,7 @@ class OrionState(NodeManager):
             )
 
         # AO dbs
-        self.dbs_pub = self.AddPublisher("/iologik/output0", Float64, queue_size=10)
+        self.dbs_pub = self.AddPublisher("/iologik/output1", Float64, queue_size=10)
 
         # CAN
         self.AddSubscriber("/ugr/can/lv/rx", Frame, self.handle_can)
@@ -325,6 +325,12 @@ class OrionState(NodeManager):
 
         if new_state == self.as_state:
             return
+
+        if new_state == AutonomousStatesEnum.ASDRIVE:
+            self.dbs_pub.publish(Float64(0))
+
+        if new_state == AutonomousStatesEnum.ASREADY:
+            self.job_scheduler.add_job_relative(5.0, lambda x: None, tag="r2d_dv_wait")
 
         self.as_state_publisher.publish(
             State(
@@ -422,6 +428,18 @@ class OrionState(NodeManager):
             self.can_actions["r2d_pressed"] = bool(frame.data[0] & 0b10000000)
 
         # RES
+        if frame.id == 0x711:
+            self.bus.publish(
+                (
+                    Frame(
+                        id=0x000,
+                        data=[0x01, 0x11, 0x0, 0, 0, 0, 0, 0],
+                        dlc=8,
+                        is_extended=False,
+                    )
+                )
+            )
+
         if frame.id == 0x191:
             self.can_inputs["res_go"] = bool((frame.data[0] & 0b0000100) >> 2)
             self.can_inputs["res_activated"] = not bool(frame.data[0] & 0b0000001)
@@ -469,28 +487,53 @@ class OrionState(NodeManager):
         #
         # 0x502 acc. to rules
         #
+        as_state_bits = 0
+        if self.as_state == AutonomousStatesEnum.ASOFF:
+            as_state_bits = 1
+        elif self.as_state == AutonomousStatesEnum.ASREADY:
+            as_state_bits = 2
+        elif self.as_state == AutonomousStatesEnum.ASDRIVE:
+            as_state_bits = 3
+        elif self.as_state == AutonomousStatesEnum.ASEMERGENCY:
+            as_state_bits = 4
+        elif self.as_state == AutonomousStatesEnum.ASFINISHED:
+            as_state_bits = 5
+        dv_message = self.db.get_message_by_name("DV_status")
 
-        data = [0, 0, 0, 0, 0]
-
-        # Bit 0 - 2
-        bits = 1  # ASOFF TODO
-        data[0] |= bits
-
-        # Bit 3 - 4
-        bits = 1  # EBS OFF
-        data[0] |= bits << 3
-
-        # Bits 5 - 7
-        bits = 7  # MANUAL
-        data[0] |= bits << 5
-
-        canmsg = can.Message(
-            arbitration_id=0x502,
-            data=data,
-            is_extended_id=False,
+        ami_state_bits = 0
+        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+            ami_state_bits = 0
+        else:
+            mission = rospy.get_param("/mission")
+            if mission == "acceleration":
+                ami_state_bits = 1
+            elif mission == "skidpad":
+                ami_state_bits = 2
+            elif mission == "trackdrive":
+                ami_state_bits = 3
+            elif mission == "braketest":
+                ami_state_bits = 4
+            elif mission == "inspection":
+                ami_state_bits = 5
+            elif mission == "autocross":
+                ami_state_bits = 6
+        data = dv_message.encode(
+            {
+                "Cones_count_all": 0,
+                "Cones_count_actual": 0,
+                "Lap_counter": 0,
+                "Service_brake_state": 0,
+                "Steering_state": 0,
+                "AMI_state": ami_state_bits,
+                "EBS_state": self.ebs_activated + 1,
+                "AS_state": as_state_bits,
+            }
         )
 
-        self.bus.publish(serialcan_to_roscan(canmsg))
+        message = can.Message(
+            arbitration_id=dv_message.frame_id, data=data, is_extended_id=False
+        )
+        self.bus.publish(serialcan_to_roscan(message))
 
         #
         # Heartbeat & CAR state
@@ -554,7 +597,7 @@ class OrionState(NodeManager):
         thread.start()
 
     def active(self):
-        print(self.as_state)
+        rospy.loginfo_throttle(5, self.as_state)
         self.send_status_over_can()
         if self.switched_driving_mode and self.checkup_result is not None:
             checks_ok, msg = self.checkup_result
@@ -680,6 +723,11 @@ class OrionState(NodeManager):
                     self.can_actions["r2d_pressed"] = False
                     self.change_state(OrionStateEnum.R2D)
 
+                    if self.driving_mode == DrivingModeStatesEnum.DRIVERLESS:
+                        self.job_scheduler.add_job_relative(
+                            3, lambda x: None, tag="r2d_sound_delay"
+                        )
+
                     # Enable drive
                     arbitration_id = 0x24FF
                     data = [1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
@@ -725,12 +773,16 @@ class OrionState(NodeManager):
                     and self.car_state
                     in [
                         OrionStateEnum.TS_ACTIVE,
-                        self.car_state == OrionStateEnum.R2D,
-                        self.car_state == OrionStateEnum.R2D_READY,
+                        OrionStateEnum.R2D,
+                        OrionStateEnum.R2D_READY,
                     ]
                 ):
                     if self.car_state == OrionStateEnum.R2D:
-                        self.change_as_state(AutonomousStatesEnum.ASDRIVE)
+                        if not self.job_scheduler.tag_exists("r2d_sound_delay"):
+                            self.change_as_state(AutonomousStatesEnum.ASDRIVE)
+                        else:
+                            self.change_as_state(AutonomousStatesEnum.ASREADY)
+
                     elif self.car_state == OrionStateEnum.R2D_READY:
                         self.change_as_state(AutonomousStatesEnum.ASREADY)
                     else:
@@ -739,13 +791,6 @@ class OrionState(NodeManager):
             # Update jobs
             if self.as_state != AutonomousStatesEnum.ASREADY:
                 self.job_scheduler.remove_job_by_tag("r2d_dv_wait")
-                self.as_ready_transitioned = False
-            else:
-                if not self.as_ready_transitioned:
-                    self.job_scheduler.add_job_relative(
-                        5.0, lambda x: None, tag="r2d_dv_wait"
-                    )
-                    self.as_ready_transitioned = True
 
             # Emergency stop
             if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
@@ -839,13 +884,11 @@ class OrionState(NodeManager):
             # ASMS needs to be off
             print("asms check")
             if self.di_signals["asms_status"]:
-                self.checkup_result = (False, "ASMS is ON")
-                return
+                return (False, "ASMS is ON")
             print("bypass check")
             # bypass needs to be off
             if self.di_signals["bypass_status"]:
-                self.checkup_result = (False, "BYPASS is ON")
-                return
+                return (False, "BYPASS is ON")
 
             # check air pressures
             # if (
@@ -859,6 +902,7 @@ class OrionState(NodeManager):
 
         else:
             # wait (asms still registering)
+            self.dbs_pub.publish(Float64(4))
             time.sleep(2)
 
             print("mission check")
@@ -882,8 +926,8 @@ class OrionState(NodeManager):
             if not (
                 self.ai_signals["air_pressure1"] > 5
                 and self.ai_signals["air_pressure2"] > 5
-                and self.ai_signals["air_pressure1"] < 8
-                and self.ai_signals["air_pressure2"] < 8
+                and self.ai_signals["air_pressure1"] < 9.5
+                and self.ai_signals["air_pressure2"] < 9.5
             ):
                 self.checkup_result = (
                     False,
@@ -939,10 +983,6 @@ class OrionState(NodeManager):
 
             self.dbs_pub.publish(Float64(4))
 
-            # ARM ebs/dbs
-            self.do_publishers["arm_ebs"].publish(Bool(data=True))
-            self.do_publishers["arm_dbs"].publish(Bool(data=True))
-
             # Wait until we are in TS_ACTIVE
             ts_active = False
             t = rospy.Time.now().to_sec()
@@ -950,11 +990,17 @@ class OrionState(NodeManager):
                 if self.car_state == OrionStateEnum.TS_ACTIVE:
                     ts_active = True
                     time.sleep(0.200)
+                    break
 
             if ts_active is False:
                 return False, "Timed out waiting for TS_ACTIVE"
 
+            # ARM ebs/dbs
+            self.do_publishers["arm_ebs"].publish(Bool(data=True))
+            self.do_publishers["arm_dbs"].publish(Bool(data=True))
             rospy.sleep(3)
+
+            print("here")
 
             # check whether pressure is being released as expected
             if (
@@ -1004,14 +1050,11 @@ class OrionState(NodeManager):
 
             # set PPR setpoint, actuate brake with DBS
             self.dbs_pub.publish(Float64(12))
-            time.sleep(0.200)
+            time.sleep(3)
 
             # check whether pressure is being built up as expected
             if (
-                self.ai_signals["front_bp"] > 5
-                and self.ai_signals["rear_bp"] > 5
-                and self.ai_signals["front_bp"] < 10
-                and self.ai_signals["front_bp"] < 10
+                self.ai_signals["front_bp"] > 10 and self.ai_signals["rear_bp"] > 10
             ) is False:
                 return False, "Missed PPR setpoint"
 
