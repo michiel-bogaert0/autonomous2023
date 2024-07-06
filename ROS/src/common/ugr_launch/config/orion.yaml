@@ -1,3 +1,9 @@
+# Use this file to override parameters for Orion
+ugr:
+  car:
+    steering:
+      transmission: 0.2857142857142857
+
 autonomous_state:
   node_management:
     always:
