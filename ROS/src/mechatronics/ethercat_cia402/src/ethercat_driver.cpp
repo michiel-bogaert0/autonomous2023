@@ -31,7 +31,7 @@ void ECatDriver::doActivate() {
 
   // Initialize publishers
   this->ecat_state_pub = n.advertise<std_msgs::UInt32>("/output/ecat_state", 1);
-  this->position_pub = n.advertise<std_msgs::UInt32>("/output/position", 1);
+  this->position_pub = n.advertise<std_msgs::Int32>("/output/position", 1);
   this->statusword_pub = n.advertise<std_msgs::UInt16>("/output/statusword", 1);
   this->velocity_pub = n.advertise<std_msgs::UInt32>("/output/velocity", 1);
   this->torque_pub = n.advertise<std_msgs::UInt16>("/output/torque", 1);
@@ -72,7 +72,7 @@ int ECatDriver::update_pubs() {
     inputs_mutex.lock();
     CSP_inputs inputs = csp_inputs_ext;
     inputs_mutex.unlock();
-    std_msgs::UInt32 position_msg;
+    std_msgs::Int32 position_msg;
     position_msg.data = (inputs.position - base_pos) / mDEG_TO_POS;
     this->position_pub.publish(position_msg);
 
@@ -96,7 +96,7 @@ int ECatDriver::update_pubs() {
     inputs_mutex.lock();
     CSV_inputs inputs = csv_inputs_ext;
     inputs_mutex.unlock();
-    std_msgs::UInt32 position_msg;
+    std_msgs::Int32 position_msg;
     position_msg.data = (inputs.position - base_pos) / mDEG_TO_POS;
     this->position_pub.publish(position_msg);
 
