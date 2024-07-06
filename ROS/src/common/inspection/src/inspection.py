@@ -25,7 +25,7 @@ class Inspection(NodeManager):
         rospy.loginfo("Configuring inspection node")
         self.STEERING_SPEED = rospy.get_param("~steering_speed", 0.05)
         self.VELOCITY = rospy.get_param("~velocity", 3.5)
-        self.DURATION = rospy.get_param("~duration", 25)
+        self.DURATION = rospy.get_param("~duration", 26)
         self.counter = 0
 
         self.steering_pub = rospy.Publisher("/output/steering", Float64)
@@ -42,6 +42,7 @@ class Inspection(NodeManager):
 
     def handle_state_change(self, msg: State):
         if msg.cur_state == AutonomousStatesEnum.ASDRIVE:
+            # Start inspection
             rospy.loginfo("Starting inspection")
             self.stop_time = rospy.Time.now() + rospy.Duration(self.DURATION)
             self.start = True
@@ -54,9 +55,11 @@ class Inspection(NodeManager):
             return
 
         if rospy.Time.now() > self.stop_time:
+            # Stop inspection
             self.velocity_pub.publish(0)
             self.lap_complete_pub.publish(1)
         else:
+            # Perform inspection
             steering_angle = math.pi / 2 * math.sin(self.counter * self.STEERING_SPEED)
 
             self.steering_pub.publish(steering_angle)
