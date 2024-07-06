@@ -40,7 +40,7 @@ uint32_t clip_vel(uint32_t vel) {
 }
 
 uint32_t get_target_limited() {
-  // Get target (in mDEG)
+  // Get target (in units)
   int32_t cur_target = target.load();
   // Limit target
   if (cur_target > MAX_SPAN / 2) {
@@ -51,7 +51,7 @@ uint32_t get_target_limited() {
 
   // Return converted target in steps
   // Converted to uint32_t
-  return (cur_target * mDEG_TO_POS);
+  return cur_target;
 }
 
 uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {

@@ -2,6 +2,7 @@
 #define ETHERCAT_MASTER_HPP
 
 #include "ros/ros.h"
+#include <math.h>
 #include <atomic>
 #include <mutex>
 #define EC_TIMEOUTMON 500
@@ -15,13 +16,13 @@
 #define VEL_MARGIN 0.05 * MAX_VEL
 
 // Conversion parameters
-#define FULL_ROT 42000000UL
-#define mDEG_TO_POS (FULL_ROT / 360000UL)
+#define FULL_ROT 42000000.0
+#define RAD_TO_POS (FULL_ROT / M_PI / 2.0)
 #define TIME_CONV_VEL 4UL
 #define TIME_CONV_ACC 25UL
 
-// Max span in milli degrees (MAX 140000)
-#define MAX_SPAN 130000
+// Max span in units (MAX approx 140deg = 2.443460952792061rad = 16333333.33... units)
+#define MAX_SPAN 16333333
 
 #ifdef __cplusplus
 extern "C" {

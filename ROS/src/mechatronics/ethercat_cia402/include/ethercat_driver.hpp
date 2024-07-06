@@ -10,6 +10,7 @@
 #include "std_msgs/Int64.h"
 #include "std_msgs/UInt16.h"
 #include "std_msgs/UInt32.h"
+#include "std_msgs/Float32.h"
 
 class ECatDriver : public node_fixture::ManagedNode {
 public:
@@ -19,7 +20,7 @@ public:
   void doActivate() override;
   void doDeactivate() override;
   void doShutdown() override;
-  void set_target(std_msgs::Int32 new_target);
+  void set_target(std_msgs::Float32 new_target);
   int update_pubs();
   void active() override;
 
