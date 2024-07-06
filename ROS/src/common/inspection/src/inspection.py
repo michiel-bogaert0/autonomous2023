@@ -3,12 +3,12 @@ import math
 
 import rospy
 from node_fixture import AutonomousStatesEnum
-from node_fixture.node_manager import NodeManager
+from node_fixture.managed_node import ManagedNode
 from std_msgs.msg import Float64, UInt16
 from ugr_msgs.msg import State
 
 
-class Inspection(NodeManager):
+class Inspection(ManagedNode):
     def __init__(self) -> None:
         """
         Inspection node
@@ -60,7 +60,9 @@ class Inspection(NodeManager):
             self.lap_complete_pub.publish(1)
         else:
             # Perform inspection
-            steering_angle = math.pi / 2 * math.sin(self.counter * self.STEERING_SPEED)
+            steering_angle = ((7 * math.pi) / 9) * math.sin(
+                self.counter * self.STEERING_SPEED
+            )
 
             self.steering_pub.publish(steering_angle)
             self.velocity_pub.publish(self.VELOCITY)
