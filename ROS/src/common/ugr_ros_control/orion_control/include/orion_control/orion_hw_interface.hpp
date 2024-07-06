@@ -99,10 +99,12 @@ public:
   float torque_vectoring();
 
 private:
-  int drive_joint_id;
+  int axis0_joint_id;
+  int axis1_joint_id;
   int steering_joint_id;
 
-  std::string axis_rear_frame;
+  std::string axis0_frame;
+  std::string axis1_frame;
 
   bool is_running = false;
 

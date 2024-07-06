@@ -51,26 +51,35 @@ void OrionHWInterface::init()
   this->state_sub = nh.subscribe<ugr_msgs::State>("/state/car", 1, &OrionHWInterface::state_change, this);
 
   // Now check if configured joints are actually there. Also remember joint id
-  std::string drive_joint_name = nh_.param<std::string>("hardware_interface/drive_joint", "axis_rear");
+  std::string axis0_joint_id_name = nh_.param<std::string>("hardware_interface/axis0_joint", "axis0");
+  std::string axis1_joint_id_name = nh_.param<std::string>("hardware_interface/axis1_joint", "axis1");
   std::string steering_joint_name = nh_.param<std::string>("hardware_interface/steering_joint", "axis_steering");
 
-  this->axis_rear_frame = nh.param("axis_rear/frame", std::string("ugr/car_base_link/axis_rear"));
+  this->axis0_frame = nh.param("axis0/frame", std::string("ugr/car_base_link/axis0"));
+  this->axis1_frame = nh.param("axis1/frame", std::string("ugr/car_base_link/axis1"));
   this->wheel_diameter = nh.param("wheel_diameter", 16.0 * 2.54 / 100.0);  // in m
   this->gear_ratio = nh.param("gear_ratio", 3.405);
   this->n_polepairs = nh.param("n_polepairs", 8);
 
-  drive_joint_id = std::find(joint_names_.begin(), joint_names_.end(), drive_joint_name) - joint_names_.begin();
+  axis0_joint_id = std::find(joint_names_.begin(), joint_names_.end(), axis0_joint_id_name) - joint_names_.begin();
+  axis1_joint_id = std::find(joint_names_.begin(), joint_names_.end(), axis1_joint_id_name) - joint_names_.begin();
   steering_joint_id = std::find(joint_names_.begin(), joint_names_.end(), steering_joint_name) - joint_names_.begin();
 
-  ROS_INFO_STREAM("Drive joint id: " << drive_joint_id << " (" << drive_joint_name
-                                     << ") "
-                                        "< Steering joint id: "
-                                     << steering_joint_id << " (" << steering_joint_name << ")");
+  ROS_INFO_STREAM("Drive joint id: " << axis0_joint_id << " (" << axis0_joint_id_name << "), " << axis1_joint_id << " ("
+                                     << axis1_joint_id_name << "), "
+                                     << "< Steering joint id: " << steering_joint_id << " (" << steering_joint_name
+                                     << ")");
 
-  if (drive_joint_id >= joint_names_.size())
+  if (axis0_joint_id >= joint_names_.size())
   {
-    ROS_ERROR("Error: the parameter 'hardware_interface/joints_config/drive_joint' must be given");
-    throw std::invalid_argument("hardware_interface/joints_config/drive_joint must be given");
+    ROS_ERROR("Error: the parameter 'hardware_interface/joints_config/axis0_joint_id' must be given");
+    throw std::invalid_argument("hardware_interface/joints_config/axis0_joint_id must be given");
+  }
+
+  if (axis1_joint_id >= joint_names_.size())
+  {
+    ROS_ERROR("Error: the parameter 'hardware_interface/joints_config/axis1_joint_id' must be given");
+    throw std::invalid_argument("hardware_interface/joints_config/axis1_joint_id must be given");
   }
 
   if (steering_joint_id >= joint_names_.size())
@@ -111,7 +120,8 @@ bool OrionHWInterface::canSwitch(const std::list<hardware_interface::ControllerI
 // The READ function
 void OrionHWInterface::read(ros::Duration& elapsed_time)
 {
-  joint_velocity_[drive_joint_id] = (this->cur_velocity_axis0);
+  joint_velocity_[axis0_joint_id] = (this->cur_velocity_axis0);
+  joint_velocity_[axis1_joint_id] = (this->cur_velocity_axis1);
   joint_position_[steering_joint_id] = this->cur_steering;
 }
 
@@ -125,7 +135,8 @@ void OrionHWInterface::write(ros::Duration& elapsed_time)
 
   if (this->is_running == true)
   {
-    publish_torque_msg(joint_effort_command_[drive_joint_id]);
+    send_torque_on_can(joint_effort_command_[axis0_joint_id], 0);
+    send_torque_on_can(joint_effort_command_[axis1_joint_id], 1);
 
     can_msgs::Frame msg;
     msg.header.stamp = ros::Time::now();
@@ -140,8 +151,8 @@ void OrionHWInterface::write(ros::Duration& elapsed_time)
   }
   else
   {
-    publish_torque_msg(0.0);
-    publish_torque_msg(0.0);
+    send_torque_on_can(0, 0);
+    send_torque_on_can(0, 1);
   }
 }
 
@@ -166,7 +177,7 @@ void OrionHWInterface::can_callback_axis0(const std_msgs::Int64::ConstPtr& msg)
   this->handle_vel_msg();
 
   geometry_msgs::TwistWithCovarianceStamped twist_msg = geometry_msgs::TwistWithCovarianceStamped();
-  twist_msg.header.frame_id = this->axis_rear_frame;
+  twist_msg.header.frame_id = this->axis0_frame;
   twist_msg.header.stamp = ros::Time::now();
   twist_msg.twist.covariance = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -186,7 +197,7 @@ void OrionHWInterface::can_callback_axis1(const std_msgs::Int64::ConstPtr& msg)
   this->handle_vel_msg();
 
   geometry_msgs::TwistWithCovarianceStamped twist_msg = geometry_msgs::TwistWithCovarianceStamped();
-  twist_msg.header.frame_id = this->axis_rear_frame;
+  twist_msg.header.frame_id = this->axis1_frame;
   twist_msg.header.stamp = ros::Time::now();
   twist_msg.twist.covariance = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -226,20 +237,20 @@ void OrionHWInterface::publish_steering_msg(float steering)
 
 void OrionHWInterface::publish_torque_msg(float axis)
 {
-  float cur_vel_rear = joint_velocity_[drive_joint_id];
-  float car_vel_estimate =
-      cur_vel_rear / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s, mean vel if no slip
+  // float cur_vel_rear = joint_velocity_[drive_joint_id];
+  // float car_vel_estimate =
+  //     cur_vel_rear / this->gear_ratio * M_PI * this->wheel_diameter / 60;  // m/s, mean vel if no slip
 
   float axis0 = axis;
   float axis1 = axis;
 
-  // no TV at low vel
-  if (car_vel_estimate > 5 && this->use_torque_vectoring == true)
-  {
-    float dT = this->torque_vectoring();
-    axis0 = axis - dT / 2;
-    axis1 = axis + dT / 2;
-  }
+  // // no TV at low vel
+  // if (car_vel_estimate > 5 && this->use_torque_vectoring == true)
+  // {
+  //   float dT = this->torque_vectoring();
+  //   axis0 = axis - dT / 2;
+  //   axis1 = axis + dT / 2;
+  // }
 
   // send on CAN
   send_torque_on_can(axis0, 0);
