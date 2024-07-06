@@ -1,5 +1,6 @@
 #include <orion_control/orion_hw_interface.hpp>
 #include <can_msgs/Frame.h>
+#include <std_msgs/Int32.h>
 #include <random>
 #include <tuple>
 #include <math.h>
@@ -25,7 +26,7 @@ void OrionHWInterface::init()
   this->can_axis0_pub = nh.advertise<can_msgs::Frame>("/output/axis0", 10);
   this->can_axis1_pub = nh.advertise<can_msgs::Frame>("/output/axis1", 10);
 
-  // TODO servo
+  this->can_servo_pub = nh.advertise<std_msgs::Int32>("/output/servo", 10);
 
   // Velocity estimate by rear wheels
   this->vel_pub0 = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/vel0", 10);
@@ -40,9 +41,10 @@ void OrionHWInterface::init()
   this->can_axis1_sub = nh.subscribe<std_msgs::Int64>("/ugr/can/mc_left/processed/actual_erpm", 1,
                                                       &OrionHWInterface::can_callback_axis1, this);
 
-  // TODO change
+  // Servo position sub
   this->can_steering_sub =
-      nh.subscribe<std_msgs::Float32>("/processed/steering", 1, &OrionHWInterface::can_callback_steering, this);
+      nh.subscribe<std_msgs::Int32>("/input/servo", 1, &OrionHWInterface::can_callback_steering, this);
+
   this->jaw_rate_sub = nh.subscribe<sensor_msgs::Imu>("/imu", 1, &OrionHWInterface::yaw_rate_callback, this);
 
   // Safety
@@ -124,7 +126,6 @@ void OrionHWInterface::write(ros::Duration& elapsed_time)
   if (this->is_running == true)
   {
     publish_torque_msg(joint_effort_command_[drive_joint_id]);
-    // publish_steering_msg(joint_position_command_[steering_joint_id]);
 
     can_msgs::Frame msg;
     msg.header.stamp = ros::Time::now();
@@ -135,6 +136,7 @@ void OrionHWInterface::write(ros::Duration& elapsed_time)
 
     this->can_axis0_pub.publish(msg);
     this->can_axis1_pub.publish(msg);
+    publish_steering_msg(joint_position_command_[steering_joint_id]);
   }
   else
   {
@@ -196,9 +198,12 @@ void OrionHWInterface::can_callback_axis1(const std_msgs::Int64::ConstPtr& msg)
   vel_pub1.publish(twist_msg);
 }
 
-void OrionHWInterface::can_callback_steering(const std_msgs::Float32::ConstPtr& msg)
+void OrionHWInterface::can_callback_steering(const std_msgs::Int32::ConstPtr& msg)
 {
+  // TODO: correct conversion !!!!!!
   this->cur_steering = msg->data;
+
+  // Not sure if handle_steering_msg is necessary (not used by any other node atm)
 }
 
 void OrionHWInterface::handle_vel_msg()
@@ -210,8 +215,13 @@ void OrionHWInterface::publish_steering_msg(float steering)
 {
   // Convert [-3.14, 3.14] to a steering range [-steer_max_step, steer_max_step]
 
-  steering = steering / 3.14 * steer_max_step;
-  // TODO place steering commmand on ros topic
+  // TODO: correct conversion !!!!!!
+  steering = steering
+
+      std_msgs::Int32 msg;
+  msg.data = steering;
+
+  this->can_servo_pub.publish(msg);
 }
 
 void OrionHWInterface::publish_torque_msg(float axis)
