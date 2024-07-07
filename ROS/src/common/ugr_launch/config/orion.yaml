@@ -3,6 +3,10 @@ ugr:
   car:
     steering:
       transmission: 0.2857142857142857
+    wheel:
+      radius: 1 # just linear velocity
+    cog_to_front_axle: 0.90
+    wheelbase: 1.60
 
 autonomous_state:
   node_management:
