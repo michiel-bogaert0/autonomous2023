@@ -13,7 +13,7 @@ class Inspection(ManagedNode):
         """
         Inspection node
         """
-        super().__init__("inspection", "active")
+        super().__init__("inspection")
         rospy.loginfo("Inspection node started")
 
         self.spin()
