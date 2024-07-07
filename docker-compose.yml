@@ -2,6 +2,7 @@ services:
   roscore:
     container_name: roscore
     image: ugr-base
+    platform: linux/amd64
     network_mode: "host"
     restart: always
     tty: true
@@ -12,6 +13,7 @@ services:
   rviz:
     container_name: rviz
     image: ugr-base
+    platform: linux/amd64
     network_mode: "host"
     privileged: true
     depends_on:
@@ -28,6 +30,7 @@ services:
   dev:
     container_name: dev
     image: ugr-base
+    platform: linux/amd64
     network_mode: "host"
     depends_on:
       - roscore
