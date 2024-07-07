@@ -24,9 +24,16 @@ speed:
 pure_pursuit:
   change_index: False
   world_frame: "ugr/map"
+  speed_start: 1
+  speed_stop: 2
+  distance_start: 1.5
+  distance_stop: 3.3
 front_wheel_feedback:
   change_index: False
   world_frame: "ugr/map"
+  Kp: 0.8
+  Ki: 0.01
+  Kd: 0.01
 mpc:
   change_index: False
   world_frame: "ugr/map"

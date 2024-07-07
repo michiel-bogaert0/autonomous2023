@@ -20,12 +20,19 @@ loopclosure:
 speed:
   target: 2.0
   LC_adaptive_velocity: False
-pure_pursuit:
-  change_index: True
-  world_frame: "ugr/map"
 front_wheel_feedback:
   change_index: True
   world_frame: "ugr/map"
+  Kp: 1.5
+  Ki: 0.01
+  Kd: 0.01
+pure_pursuit:
+  change_index: True
+  world_frame: "ugr/map"
+  speed_start: 3
+  speed_stop: 12
+  distance_start: 3
+  distance_stop: 5
 mpc:
   change_index: True
   world_frame: "ugr/map"

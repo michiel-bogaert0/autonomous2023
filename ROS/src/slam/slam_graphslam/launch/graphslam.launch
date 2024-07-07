@@ -1,7 +1,7 @@
 <launch>
-  <arg name="world_frame" default="ugr/map"/>
+  <arg name="world_frame" default="ugr/car_odom"/>
   <arg name="base_link_frame" default="ugr/car_base_link"/>
-  <arg name="slam_base_link_frame" default="ugr/slam_base_link/graphslam"/>
+  <arg name="slam_base_link_frame" default="ugr/slam_base_link"/>
   <arg name="lidar_frame" default="os_sensor"/>
 
   <node pkg="slam_graphslam" output="screen" type="graphslam" name="graphslam" respawn="False">
@@ -19,8 +19,10 @@
 
     <param name="max_iterations" value="5"/>
     <param name="association_threshold" value="1"/>
+    <param name="min_range" value="1.5"/>
     <param name="max_range" value="15"/>
     <param name="max_half_angle" value="1.57"/> <!-- ingesteld voor lidar -->
+    <param name="penalty_threshold" value="10"/>
 
     <rosparam param="covariance_pose">[0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2]</rosparam>
 

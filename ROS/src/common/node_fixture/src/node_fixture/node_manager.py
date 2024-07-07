@@ -10,7 +10,7 @@ from node_fixture.managed_node import ManagedNode
 from node_fixture.srv import GetNodeState, SetNodeState
 
 
-def set_state(name: str, state: str) -> None:
+def set_state(name: str, state: str):
     """
     Set the state of a node.
 
@@ -19,11 +19,11 @@ def set_state(name: str, state: str) -> None:
         state (str): The state to set the node to.
     """
     print(f"[NM]> '{name}' --> {state}")
-    rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.1)
+    rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.5)
     return rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(state)
 
 
-def set_state_active(name: str) -> None:
+def set_state_active(name: str):
     """
     Set the state of a node to active.
 
@@ -33,7 +33,7 @@ def set_state_active(name: str) -> None:
     return set_state(name, NodeManagingStatesEnum.ACTIVE)
 
 
-def set_state_inactive(name: str) -> None:
+def set_state_inactive(name: str):
     """
     Set the state of a node to inactive.
 
@@ -43,7 +43,7 @@ def set_state_inactive(name: str) -> None:
     return set_state(name, NodeManagingStatesEnum.INACTIVE)
 
 
-def set_state_unconfigured(name: str) -> None:
+def set_state_unconfigured(name: str):
     """
     Set the state of a node to unconfigured.
 
@@ -53,7 +53,7 @@ def set_state_unconfigured(name: str) -> None:
     return set_state(name, NodeManagingStatesEnum.UNCONFIGURED)
 
 
-def set_state_finalized(name: str) -> None:
+def set_state_finalized(name: str):
     """
     Set the state of a node to finalized.
 
@@ -63,7 +63,7 @@ def set_state_finalized(name: str) -> None:
     return set_state(name, NodeManagingStatesEnum.FINALIZED)
 
 
-def configure_node(name: str) -> None:
+def configure_node(name: str):
     """
     Set the state of a node to unconfigured and then to inactive.
 
@@ -71,16 +71,19 @@ def configure_node(name: str) -> None:
         name (str): The name of the node.
     """
 
-    rospy.wait_for_service(f"/node_managing/{name}/get", timeout=0.1)
+    set_state_result = True
+
+    rospy.wait_for_service(f"/node_managing/{name}/get", timeout=0.5)
     data = rospy.ServiceProxy(f"/node_managing/{name}/get", GetNodeState)()
     if data.state == NodeManagingStatesEnum.ACTIVE:
-        set_state_inactive(name)
-        set_state_unconfigured(name)
+        set_state_result = set_state_result and set_state_inactive(name)
+        set_state_result = set_state_result and set_state_unconfigured(name)
     elif data.state == NodeManagingStatesEnum.INACTIVE:
-        set_state_unconfigured(name)
-    set_state_inactive(name)
+        set_state_result = set_state_result and set_state_unconfigured(name)
 
-    return True
+    set_state_result = set_state_result and set_state_inactive(name)
+
+    return set_state_result
 
 
 def load_params(mission: str) -> None:
@@ -357,7 +360,10 @@ class NodeManager(ManagedNode):
             nodes_to_configure = list(set(nodes_to_configure))
 
             for node in nodes_to_configure:
-                configure_node(node)
+                if not configure_node(node):
+                    raise BaseException(
+                        f"Configure procedure failed for node {node}, raising error..."
+                    )
 
             self.set_health(
                 level=DiagnosticStatus.OK,
@@ -408,7 +414,11 @@ class NodeManager(ManagedNode):
                         and node not in self.nodes_to_monitor
                     )
                 ):
-                    set_state_active(node)
+                    if not set_state_active(node):
+                        raise BaseException(
+                            f"Configure procedure failed for node {node}, raising error..."
+                        )
+
                     self.nodes_to_monitor.add(node)
 
             # Then deactivate nodes (that are not in the new state)
@@ -422,7 +432,10 @@ class NodeManager(ManagedNode):
                         self.nodes_to_monitor.remove(node)
                         self.timers.pop(node, None)
                         self.health_msgs.pop(node, None)
-                        set_state_inactive(node)
+                        if not set_state_inactive(node):
+                            raise BaseException(
+                                f"Configure procedure failed for node {node}, raising error..."
+                            )
 
             self.set_health(
                 level=DiagnosticStatus.OK, message=f"Activated nodes for {new_state}"
@@ -444,22 +457,29 @@ class NodeManager(ManagedNode):
         Unconfigures the nodes that should be unconfigured. This is done by setting the state of the nodes to inactive and then to unconfigured.
         """
 
+        set_state_result = True
         for node in self.nodes_to_monitor:
-            set_state_inactive(node)
-            set_state_unconfigured(node)
+            set_state_result = set_state_result and set_state_inactive(node)
+            set_state_result = set_state_result and set_state_unconfigured(node)
 
         self.nodes_to_monitor = set([])
         self.timers = {}
         self.health_msgs = {}
+
+        return set_state_result
 
     def finalize_nodes(self):
         """
         Finalizes the nodes that should be finalized. This is done by setting the state of the nodes to finalized.
         """
 
+        set_state_result = True
+
         for node in self.nodes_to_monitor:
-            set_state_finalized(node)
+            set_state_result = set_state_result and set_state_finalized(node)
 
         self.nodes_to_monitor = set([])
         self.timers = {}
         self.health_msgs = {}
+
+        return set_state_result
