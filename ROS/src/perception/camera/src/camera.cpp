@@ -4,6 +4,7 @@
 CameraNode::CameraNode(ros::NodeHandle &n) {
   /* Getting ROS parameters */
   n.param<bool>("use_raw", use_raw_, false);
+  n.param<bool>("cam_rotated", cam_rotated_, false);
   n.param<std::string>("camsettings", camsettings_location_,
                        "camera_settings.yaml");
   n.param<double>("estimated_latency", estimated_latency_, 0.27);
@@ -118,6 +119,9 @@ sensor_msgs::Image CameraNode::process_data() {
     cv::Mat img(cv::Size(camera_width_, camera_height_), CV_8UC3, buf,
                 cv::Mat::AUTO_STEP);
     cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
+    if (cam_rotated_) {
+      cv::rotate(img, img, cv::ROTATE_180); // Rotate the image by 180 degrees
+    }
     if (!use_raw_)
       cv::remap(img, img, *map1_, *map2_, cv::INTER_LINEAR);
     sensor_msgs::Image msg = cv_to_ros_image(img);

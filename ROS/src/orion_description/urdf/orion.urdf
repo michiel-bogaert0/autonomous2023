@@ -56,7 +56,7 @@
   </joint>
 
   <joint name="cam0_joint" type="fixed">
-    <origin xyz="0.6814 -0.0824 0.8230" rpy="0 0 3.1415" />
+    <origin xyz="0.6814 -0.0824 0.8230" rpy="0 0 0" />
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/cam0" />
   </joint>
