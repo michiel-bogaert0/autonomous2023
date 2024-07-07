@@ -782,6 +782,11 @@ class OrionState(NodeManager):
                 else:
                     self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
             else:
+                if self.mission_finished and self.vehicle_stopped:
+                    self.do_publishers["arm_ebs"].publish(Bool(data=False))
+                    self.do_publishers["arm_dbs"].publish(Bool(data=False))
+                    self.do_publishers["sdc_close"].publish(Bool(data=False))
+
                 if (
                     self.mission_selected
                     and self.di_signals["bypass_status"]
