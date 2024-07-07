@@ -15,6 +15,9 @@
         <remap from="/input/path" to="/pathplanning/path" />
         <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>
         <remap from="/output/drive_velocity_controller/command" to="/ugr/car/drive_velocity_controller/command" />
+        <remap from="/output/axis0_velocity_controller/command" to="/ugr/car/axis0_velocity_controller/command" />
+        <remap from="/output/axis1_velocity_controller/command" to="/ugr/car/axis1_velocity_controller/command" />
+
         <remap from="/output/steering_position_controller/command" to="/ugr/car/steering_position_controller/command" />
     </node>
 </launch>

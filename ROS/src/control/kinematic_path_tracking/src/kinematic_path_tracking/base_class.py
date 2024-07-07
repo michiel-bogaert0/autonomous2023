@@ -30,6 +30,13 @@ class KinematicTrackingNode(ManagedNode):
         self.velocity_pub = super().AddPublisher(
             "/output/drive_velocity_controller/command", Float64, queue_size=10
         )
+
+        self.axis0_velocity_pub = super().AddPublisher(
+            "/output/axis0_velocity_controller/command", Float64, queue_size=10
+        )
+        self.axis1_velocity_pub = super().AddPublisher(
+            "/output/axis1_velocity_controller/command", Float64, queue_size=10
+        )
         self.steering_pub = super().AddPublisher(
             "/output/steering_position_controller/command", Float64, queue_size=10
         )
@@ -176,6 +183,8 @@ class KinematicTrackingNode(ManagedNode):
 
             self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
             self.velocity_pub.publish(self.velocity_cmd)
+            self.axis0_velocity_pub.publish(self.velocity_cmd)
+            self.axis1_velocity_pub.publish(self.velocity_cmd)
 
         except Exception as e:
             rospy.logwarn(f"{rospy.get_name()} has caught an exception: {e}")
