@@ -58,8 +58,8 @@ class Inspection(ManagedNode):
         if rospy.Time.now() > self.stop_time:
             # Stop inspection
             self.velocity0_pub.publish(0)
-            self.steering_pub.publish(0)
             self.velocity1_pub.publish(0)
+            self.steering_pub.publish(0)
             self.lap_complete_pub.publish(1)
         else:
             # Perform inspection
