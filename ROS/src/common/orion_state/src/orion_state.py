@@ -345,7 +345,7 @@ class OrionState(NodeManager):
                 cur_state=new_state,
             )
         )
-        self.orion_state_publisher.publish(
+        self.state_publisher.publish(
             State(
                 header=Header(stamp=rospy.Time.now()),
                 scope=StateMachineScopeEnum.AUTONOMOUS,
@@ -710,7 +710,7 @@ class OrionState(NodeManager):
                     self.press_btn_procedure("ts_btn", 1.0, 1.0)
 
                     # Enable state timeout for this state
-                    self.timeout_state_procedure(7.0)
+                    self.timeout_state_procedure(10.0)
 
             # Wait for AIRS to close
             elif self.car_state == OrionStateEnum.TS_ACTIVATING:
@@ -760,6 +760,7 @@ class OrionState(NodeManager):
         if self.initial_checkup_done:
             # Signals
             self.ebs_activated = (
+                # TODO change sdc_out to check state instead
                 self.di_signals["sdc_out"] is False
                 or self.do_feedback["arm_ebs"] is False
                 or self.do_feedback["arm_dbs"] is False
@@ -897,12 +898,14 @@ class OrionState(NodeManager):
             # ASMS needs to be off
             print("asms check")
             if self.di_signals["asms_status"]:
-                return (False, "ASMS is ON")
+                self.checkup_result = (False, "ASMS is ON")
+                return
+
             print("bypass check")
             # bypass needs to be off
             if self.di_signals["bypass_status"]:
-                return (False, "BYPASS is ON")
-
+                self.checkup_result = (False, "BYPASS is ON")
+                return
             # check air pressures
             # if (
             #     self.ai_signals["air_pressure1"] > 1
@@ -922,7 +925,7 @@ class OrionState(NodeManager):
             # mission needs to be selected
             if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
                 self.checkup_result = (False, "No mission selected")
-                return
+                return (False, "NO MISSION SELECTED")
 
             # # ASMS needs to be on
             # if not self.di_signals["asms_status"]:
@@ -932,7 +935,7 @@ class OrionState(NodeManager):
             # bypass needs to be on
             if not self.di_signals["bypass_status"]:
                 self.checkup_result = (False, "BYPASS is OFF")
-                return
+                return (False, "BYPASS IS OFF")
 
             print("air pressures check")
             # check air pressures
@@ -989,7 +992,7 @@ class OrionState(NodeManager):
             # watchdog OK?
             if self.di_signals["wd_ok"] is False:
                 self.checkup_result = (False, "Watchdog indicating error")
-                return
+                return (False, "WD indicates error")
 
             # Alert ASR TODO
             print("alert asr")

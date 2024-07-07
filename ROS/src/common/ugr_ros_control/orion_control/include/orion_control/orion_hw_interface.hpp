@@ -93,7 +93,7 @@ public:
   void send_torque_on_can(float axis, int id);
   void can_callback_axis0(const std_msgs::Int64::ConstPtr& msg);
   void can_callback_axis1(const std_msgs::Int64::ConstPtr& msg);
-  void can_callback_steering(const std_msgs::Int32::ConstPtr& msg);
+  void can_callback_steering(const std_msgs::Float32::ConstPtr& msg);
 
   void yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg);
 

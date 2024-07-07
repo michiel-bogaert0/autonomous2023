@@ -2,8 +2,8 @@
 #define ETHERCAT_MASTER_HPP
 
 #include "ros/ros.h"
-#include <math.h>
 #include <atomic>
+#include <math.h>
 #include <mutex>
 #define EC_TIMEOUTMON 500
 #define STATUS_WORD_MASK(x)                                                    \
@@ -12,8 +12,8 @@
 // Control parameters
 #define MAX_ACC 200000UL
 #define MAX_VEL 10000000
-#define MARGIN 100000
-#define VEL_MARGIN 0.05 * MAX_VEL
+#define MARGIN 75000
+#define VEL_MARGIN 0.02 * MAX_VEL
 
 // Conversion parameters
 #define FULL_ROT 42000000.0
@@ -21,7 +21,8 @@
 #define TIME_CONV_VEL 4UL
 #define TIME_CONV_ACC 25UL
 
-// Max span in units (MAX approx 140deg = 2.443460952792061rad = 16333333.33... units)
+// Max span in units (MAX approx 140deg = 2.443460952792061rad = 16333333.33...
+// units)
 #define MAX_SPAN 16333333
 
 #ifdef __cplusplus
@@ -115,6 +116,7 @@ extern std::mutex inputs_mutex;
 extern CSP_inputs csp_inputs_ext;
 extern CSV_inputs csv_inputs_ext;
 
+// cppcheck-suppress unusedFunction
 inline void set_output(uint16_t slave_nb, uint16_t controlword,
                        uint32_t value) {
   master_outputs *data_ptr;
@@ -124,6 +126,7 @@ inline void set_output(uint16_t slave_nb, uint16_t controlword,
   data_ptr->target = value;
 }
 
+// cppcheck-suppress unusedFunction
 inline CSP_inputs get_CSP_input(uint16_t slave_nb) {
   CSP_inputs inputs =
       *reinterpret_cast<CSP_inputs *>(ec_slave[slave_nb].inputs);
@@ -131,6 +134,7 @@ inline CSP_inputs get_CSP_input(uint16_t slave_nb) {
   return inputs;
 }
 
+// cppcheck-suppress unusedFunction
 inline CSV_inputs get_CSV_input(uint16_t slave_nb) {
   CSV_inputs inputs =
       *reinterpret_cast<CSV_inputs *>(ec_slave[slave_nb].inputs);
@@ -138,6 +142,7 @@ inline CSV_inputs get_CSV_input(uint16_t slave_nb) {
   return inputs;
 }
 
+// cppcheck-suppress unusedFunction
 inline PP_inputs get_PP_input(uint16_t slave_nb) {
   PP_inputs inputs = *reinterpret_cast<PP_inputs *>(ec_slave[slave_nb].inputs);
 

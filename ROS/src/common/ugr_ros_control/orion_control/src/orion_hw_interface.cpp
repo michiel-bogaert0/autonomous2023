@@ -44,7 +44,7 @@ void OrionHWInterface::init()
 
   // Servo position sub
   this->can_steering_sub =
-      nh.subscribe<std_msgs::Int32>("/input/servo", 1, &OrionHWInterface::can_callback_steering, this);
+      nh.subscribe<std_msgs::Float32>("/input/servo", 1, &OrionHWInterface::can_callback_steering, this);
 
   this->jaw_rate_sub = nh.subscribe<sensor_msgs::Imu>("/imu", 1, &OrionHWInterface::yaw_rate_callback, this);
 
@@ -210,7 +210,7 @@ void OrionHWInterface::can_callback_axis1(const std_msgs::Int64::ConstPtr& msg)
   vel_pub1.publish(twist_msg);
 }
 
-void OrionHWInterface::can_callback_steering(const std_msgs::Int32::ConstPtr& msg)
+void OrionHWInterface::can_callback_steering(const std_msgs::Float32::ConstPtr& msg)
 {
   // TODO: correct conversion !!!!!!
   this->cur_steering = msg->data;
