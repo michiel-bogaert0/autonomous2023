@@ -663,14 +663,14 @@ int configure_servo(uint16 slave) {
   // Motor Settings
 
   // Set max current
-  u32val = 8900;
+  u32val = 48000;
   retval = ec_SDOwrite(slave, 0x8011, 0x11, FALSE, sizeof(u32val), &u32val,
                        EC_TIMEOUTSAFE);
   if (retval == 0)
     return 0;
 
   // Set rated current
-  u32val = 8900;
+  u32val = 8000;
   retval = ec_SDOwrite(slave, 0x8011, 0x12, FALSE, sizeof(u32val), &u32val,
                        EC_TIMEOUTSAFE);
   if (retval == 0)
@@ -756,7 +756,7 @@ int configure_servo(uint16 slave) {
   // Outputs
 
   // Set torque limitation
-  u16val = 1375;
+  u16val = 2250;
   retval = ec_SDOwrite(slave, 0x7010, 0x0b, FALSE, sizeof(u16val), &u16val,
                        EC_TIMEOUTSAFE);
   if (retval == 0)
@@ -785,10 +785,10 @@ int configure_servo(uint16 slave) {
   if (retval == 0)
     return 0;
 
-  // 0x8010:17
-  u32val = 1;
-  retval = ec_SDOwrite(slave, 0x8010, 0x17, FALSE, sizeof(u32val), &u32val,
-                       EC_TIMEOUTSAFE);
+  // // 0x8010:17
+  // u32val = 1;
+  // retval = ec_SDOwrite(slave, 0x8010, 0x17, FALSE, sizeof(u32val), &u32val,
+  //                      EC_TIMEOUTSAFE);
   if (retval == 0)
     return 0;
 

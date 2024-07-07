@@ -10,8 +10,8 @@
   (x &= ~((1 << 4) | (1 << 5) | (1 << 8) | (1 << 9) | (1 << 14) | (1 << 15)))
 
 // Control parameters
-#define MAX_ACC 50000UL
-#define MAX_VEL 7000000
+#define MAX_ACC 200000UL
+#define MAX_VEL 10000000
 #define MARGIN 100000
 #define VEL_MARGIN 0.05 * MAX_VEL
 
