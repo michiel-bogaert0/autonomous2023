@@ -19,3 +19,5 @@ orion_state:
       - diobank_driver_can
     manual: 
       - pedal_mapper
+    driverless:
+      - slam_controller

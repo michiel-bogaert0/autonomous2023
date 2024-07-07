@@ -23,7 +23,7 @@ class Inspection(ManagedNode):
         Configure the inspection node
         """
         rospy.loginfo("Configuring inspection node")
-        self.STEERING_SPEED = rospy.get_param("~steering_speed", 0.05)
+        self.STEERING_SPEED = rospy.get_param("~steering_speed", 0.1)
         self.VELOCITY = rospy.get_param("~velocity", 3.5)
         self.DURATION = rospy.get_param("~duration", 26)
         self.counter = 0
@@ -57,17 +57,19 @@ class Inspection(ManagedNode):
 
         if rospy.Time.now() > self.stop_time:
             # Stop inspection
-            self.velocity_pub.publish(0)
+            self.velocity0_pub.publish(0)
+            self.steering_pub.publish(0)
+            self.velocity1_pub.publish(0)
             self.lap_complete_pub.publish(1)
         else:
             # Perform inspection
-            steering_angle = ((7 * math.pi) / 9) * math.sin(
+            steering_angle = math.radians(140 / 2) * math.sin(
                 self.counter * self.STEERING_SPEED
             )
 
             self.steering_pub.publish(steering_angle)
-            self.velocity_pub0.publish(self.VELOCITY)
-            self.velocity_pub1.publish(self.VELOCITY)
+            self.velocity0_pub.publish(self.VELOCITY)
+            self.velocity1_pub.publish(self.VELOCITY)
 
             self.counter += 1
             rospy.loginfo(

@@ -4,6 +4,8 @@
 
   <include file="$(find ugr_launch)/launch/frames/$(arg frames).launch" pass_all_args="true" />
 
+  <include file="$(find ugr_launch)/launch/internal/run.launch" pass_all_args="true" />
+
   <!-- State machine -->
   <node name="orion_state" pkg="orion_state" type="orion_state.py" output="screen">
     <param name="rate" value="15" />

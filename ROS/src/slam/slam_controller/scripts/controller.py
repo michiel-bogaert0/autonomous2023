@@ -46,7 +46,9 @@ class Controller(NodeManager):
             "/state/slam", State, queue_size=10, latch=True
         )
 
-        self.brake_publisher = rospy.Publisher("/iologik/input1", Float32)
+        self.brake_publisher = rospy.Publisher(
+            "/iologik/input1", Float32, queue_size=10
+        )
 
         self.change_state(SLAMStatesEnum.IDLE)
 

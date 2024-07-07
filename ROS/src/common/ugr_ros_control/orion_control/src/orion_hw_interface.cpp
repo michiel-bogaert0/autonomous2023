@@ -1,6 +1,7 @@
 #include <orion_control/orion_hw_interface.hpp>
 #include <can_msgs/Frame.h>
 #include <std_msgs/Int32.h>
+#include <std_msgs/Float32.h>
 #include <random>
 #include <tuple>
 #include <math.h>
@@ -26,7 +27,7 @@ void OrionHWInterface::init()
   this->can_axis0_pub = nh.advertise<can_msgs::Frame>("/output/axis0", 10);
   this->can_axis1_pub = nh.advertise<can_msgs::Frame>("/output/axis1", 10);
 
-  this->can_servo_pub = nh.advertise<std_msgs::Int32>("/output/servo", 10);
+  this->can_servo_pub = nh.advertise<std_msgs::Float32>("/output/servo", 10);
 
   // Velocity estimate by rear wheels
   this->vel_pub0 = nh.advertise<geometry_msgs::TwistWithCovarianceStamped>("/output/vel0", 10);
@@ -228,7 +229,7 @@ void OrionHWInterface::publish_steering_msg(float steering)
 
   // TODO: correct conversion !!!!!!
 
-  std_msgs::Int32 msg;
+  std_msgs::Float32 msg;
   msg.data = steering;
 
   this->can_servo_pub.publish(msg);
@@ -259,6 +260,11 @@ void OrionHWInterface::publish_torque_msg(float axis)
 void OrionHWInterface::send_torque_on_can(float axis, int id)
 {
   int16_t axis_int = axis * 10;
+
+  if (abs(axis) < 1.0)
+  {
+    axis_int = 0.0;
+  }
 
   // create publish message
   can_msgs::Frame msg;
