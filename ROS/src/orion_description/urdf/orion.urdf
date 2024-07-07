@@ -7,6 +7,8 @@
 
   <link name="ugr/car_base_link/os_sensor" />
 
+  <link name="ugr/car_base_link/os_sensor_normal" />
+
   <link name="ugr/car_base_link/os_imu" />
 
   <link name="ugr/car_base_link/os_lidar" />
@@ -32,7 +34,7 @@
 
 
   <joint name="lidar0_joint" type="fixed">
-    <origin xyz="0.6765 -0.0022 0.7870" rpy="3.1415 0 0" />
+    <origin xyz="0.6765 -0.0022 0.78" rpy="3.1415 0 0" />
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/lidar0" />
   </joint>
@@ -41,6 +43,12 @@
     <origin xyz="0 0 0" rpy="0 0 0" />
     <parent link="ugr/car_base_link/lidar0" />
     <child link="ugr/car_base_link/os_sensor" />
+  </joint>
+
+  <joint name="os_sensor_turn" type="fixed">
+    <origin xyz="0 0 0" rpy="3.1415 0 0" />
+    <parent link="ugr/car_base_link/os_sensor" />
+    <child link="ugr/car_base_link/os_sensor_normal" />
   </joint>
 
   <joint name="os_imu_joint" type="fixed">
