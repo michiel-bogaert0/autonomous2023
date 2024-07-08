@@ -4,7 +4,7 @@
 
   <include file="$(find ugr_launch)/launch/frames/$(arg frames).launch" pass_all_args="true" />
 
-  <include file="$(find ugr_launch)/launch/internal/run.launch" pass_all_args="true" />
+  <!-- <include file="$(find ugr_launch)/launch/internal/run.launch" pass_all_args="true" /> -->
 
   <!-- State machine -->
   <node name="orion_state" pkg="orion_state" type="orion_state.py" output="screen">
@@ -69,13 +69,18 @@
       </include>
 
   <!-- Camera -->
-  <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">
+  <!-- <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">
         <arg name="type" default="camera" />
-      </include>
+      </include> -->
+
+      <include file="$(find ethercat_cia402)/launch/ethercat_cia402.launch" pass_all_args="true"/>
 
   <!-- GPS -->
   <!-- <include file="$(find ublox_gps)/launch/gps.launch" pass_all_args="true" /> -->
 
+
+  <!-- SLAM controller -->
+  <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true" />
 
   <include file="$(find ugr_ros_control)/orion_control/launch/orion_hardware.launch" />
 

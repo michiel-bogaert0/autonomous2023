@@ -3,7 +3,6 @@ import traceback
 
 import rospy
 import tf2_ros as tf
-from controller_manager_msgs.srv import SwitchController, SwitchControllerRequest
 from geometry_msgs.msg import PointStamped
 from nav_msgs.msg import Odometry, Path
 from node_fixture.fixture import DiagnosticArray, ROSNode, StateMachineScopeEnum
@@ -32,10 +31,10 @@ class KinematicTrackingNode(ManagedNode):
         )
 
         self.axis0_velocity_pub = super().AddPublisher(
-            "/output/axis0_velocity_controller/command", Float64, queue_size=10
+            "/ugr/car/axis0_velocity_controller/command", Float64, queue_size=10
         )
         self.axis1_velocity_pub = super().AddPublisher(
-            "/output/axis1_velocity_controller/command", Float64, queue_size=10
+            "/ugr/car/axis1_velocity_controller/command", Float64, queue_size=10
         )
         self.steering_pub = super().AddPublisher(
             "/output/steering_position_controller/command", Float64, queue_size=10
@@ -84,32 +83,8 @@ class KinematicTrackingNode(ManagedNode):
         self.slam_state = None
 
     def doActivate(self):
-        rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
-        try:
-            switch_controller = rospy.ServiceProxy(
-                "/ugr/car/controller_manager/switch_controller", SwitchController
-            )
-
-            req = SwitchControllerRequest()
-            req.start_controllers = [
-                "joint_state_controller",
-                "steering_position_controller",
-                "drive_velocity_controller",
-            ]
-            req.stop_controllers = []
-            req.strictness = SwitchControllerRequest.BEST_EFFORT
-
-            response = switch_controller(req)
-
-            if response.ok:
-                # Do this here because some parameters are set in the mission yaml files
-                self.trajectory = Trajectory(self.tf_buffer)
-
-                self.longitudinal_control = LongitudinalControl(self.publish_rate)
-            else:
-                rospy.logerr("Could not start controllers")
-        except rospy.ServiceException as e:
-            rospy.logerr(f"Service call failed: {e}")
+        self.trajectory = Trajectory(self.tf_buffer)
+        self.longitudinal_control = LongitudinalControl(self.publish_rate)
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x

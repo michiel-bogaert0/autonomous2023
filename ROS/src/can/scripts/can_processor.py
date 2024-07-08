@@ -36,7 +36,7 @@ class CanProcessor:
             # create ros msg
             type_name = str(type(msg))
             if type_name not in self.messages.keys():
-                rospy.logwarn(f"Unknown message type: {type_name}")
+                rospy.logwarn_once(f"Unknown message type: {type_name}")
                 return
             publish_msg = self.messages[type_name](msg)
 

@@ -628,8 +628,8 @@ class OrionState(NodeManager):
             not self.switched_driving_mode
             and self.driving_mode == DrivingModeStatesEnum.MANUAL
             and self.di_signals["bypass_status"]
-            or self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
-            and not self.di_signals["bypass_status"]
+            # or self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
+            # and not self.di_signals["bypass_status"]
         ):
             self.driving_mode = (
                 DrivingModeStatesEnum.DRIVERLESS
@@ -761,7 +761,7 @@ class OrionState(NodeManager):
             # Signals
             self.ebs_activated = (
                 # TODO change sdc_out to check state instead
-                self.di_signals["sdc_out"] is False
+                self.car_state == OrionStateEnum.SDC_OPEN
                 or self.do_feedback["arm_ebs"] is False
                 or self.do_feedback["arm_dbs"] is False
                 or self.can_inputs["res_activated"] is True
@@ -798,11 +798,7 @@ class OrionState(NodeManager):
                     ]
                 ):
                     if self.car_state == OrionStateEnum.R2D:
-                        if not self.job_scheduler.tag_exists("r2d_sound_delay"):
-                            self.change_as_state(AutonomousStatesEnum.ASDRIVE)
-                        else:
-                            self.change_as_state(AutonomousStatesEnum.ASREADY)
-
+                        self.change_as_state(AutonomousStatesEnum.ASDRIVE)
                     elif self.car_state == OrionStateEnum.R2D_READY:
                         self.change_as_state(AutonomousStatesEnum.ASREADY)
                     else:
@@ -1084,40 +1080,40 @@ class OrionState(NodeManager):
         return
 
     def monitor(self):
-        # check heartbeats of low voltage systems, motorcontrollers and sensors TODO
-        return True, ""
+        if self.car_state == OrionStateEnum.R2D:
+            # check heartbeats of low voltage systems, motorcontrollers and sensors TODO
 
-        # check ipc, sensors and actuators
-        if self.get_health_level() == DiagnosticStatus.ERROR:
-            return False, "ECU health check failed"
+            # check ipc, sensors and actuators
+            if self.get_health_level() == DiagnosticStatus.ERROR:
+                return False, "ECU health check failed"
 
-        # check output signal of watchdog
-        if self.di_signals["wd_ok"] is False:
-            return False, "Watchdog indicating error"
+            # check output signal of watchdog
+            # if self.di_signals["wd_ok"] is False:
+            #     return False, "Watchdog indicating error"
 
-        # check air pressures
-        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-            if not (
-                self.ai_signals["air_pressure1"] < 1
-                and self.ai_signals["air_pressure2"] < 1
-            ):
-                return False, "Air pressures not released"
-        else:
-            if not (
-                self.ai_signals["air_pressure1"] > 5
-                and self.ai_signals["air_pressure2"] > 5
-                and self.ai_signals["air_pressure1"] < 9.5
-                and self.ai_signals["air_pressure2"] < 9.5
-            ):
-                return False, "Air pressures out of range"
+            # check air pressures
+            if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+                if not (
+                    self.ai_signals["air_pressure1"] < 1
+                    and self.ai_signals["air_pressure2"] < 1
+                ):
+                    return False, "Air pressures not released"
+            else:
+                if not (
+                    self.ai_signals["air_pressure1"] > 5
+                    and self.ai_signals["air_pressure2"] > 5
+                    and self.ai_signals["air_pressure1"] < 9.5
+                    and self.ai_signals["air_pressure2"] < 9.5
+                ):
+                    return False, "Air pressures out of range"
 
-        # check if bypass is closed
-        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-            if self.di_signals["bypass_status"]:
-                return False, "BYPASS is ON"
-        else:
-            if not self.di_signals["bypass_status"]:
-                return False, "BYPASS is OFF"
+            # check if bypass is closed
+            # if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+            #     if self.di_signals["bypass_status"]:
+            #         return False, "BYPASS is ON"
+            # else:
+            #     if not self.di_signals["bypass_status"]:
+            #         return False, "BYPASS is OFF"
 
         return True, "OK"
 

@@ -154,7 +154,7 @@ void Lidar::preprocessing(
   for (auto &iter : raw.points) {
     // Remove points closer than 1m, higher than 0.5m or further than 20m
     // and points outside the frame of Pegasus
-    if (std::hypot(iter.x, iter.y) < 1 || iter.z > -1 ||
+    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
         std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||
         std::atan2(iter.x, iter.y) > 2.8)
       continue;
@@ -218,6 +218,7 @@ pcl::PointCloud<PointT> Lidar::flipPointcloud(pcl::PointCloud<PointT> pc) {
     new_point.x = iter.x;
     new_point.y = -iter.y;
     new_point.z = -iter.z;
+    new_point.intensity = iter.intensity;
     new_pc->points.push_back(new_point);
   }
   return *new_pc;

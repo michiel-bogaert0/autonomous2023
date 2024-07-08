@@ -8,11 +8,6 @@ ugr:
     cog_to_front_axle: 0.90
     wheelbase: 1.60
 
-autonomous_state:
-  node_management:
-    always:
-      - slam_controller
-
 orion_state:
   node_management:
     always:
@@ -23,5 +18,7 @@ orion_state:
       - diobank_driver_can
     manual: 
       - pedal_mapper
+    # driverless:
+      # -
     driverless:
       - slam_controller

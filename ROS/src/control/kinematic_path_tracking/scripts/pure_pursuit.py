@@ -60,7 +60,7 @@ class PurePursuit(KinematicTrackingNode):
         # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
         R = ((target_x) ** 2 + (target_y) ** 2) / (2 * (target_y))
 
-        self.steering_cmd.data = self.symmetrically_bound_angle(
+        self.steering_cmd.data = -1 * self.symmetrically_bound_angle(
             np.arctan2(self.L, R), np.pi / 2
         )
 

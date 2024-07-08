@@ -3,7 +3,7 @@
   <arg name="frames" default="orion"/>
 
   <arg name="car" default="orion"/>
-  <arg name="mission" default=""/>
+  <arg name="mission" default="dvsv"/>
   <arg name="use_sim_time" default="false"/>
   <arg name="use_rosbag" default="false"/>
 
@@ -22,18 +22,16 @@
   </group>
 
   <!-- Launch files of subteams -->
-  <!-- <include file="$(find ugr_launch)/launch/internal/perception.launch" pass_all_args="true"/> -->
+  <include file="$(find ugr_launch)/launch/internal/perception.launch" pass_all_args="true"/>
   <include file="$(find ugr_launch)/launch/internal/general.launch" pass_all_args="true"/>
   <include file="$(find ugr_launch)/launch/internal/slam.launch" pass_all_args="true"/>
-  <!-- <include file="$(find ugr_launch)/launch/internal/control.launch" pass_all_args="true"/> -->
+  <include file="$(find ugr_launch)/launch/internal/control.launch" pass_all_args="true"/>
 
   <!-- Load extra car specific parameters or override parameters -->
   <rosparam command="load" file="$(find ugr_launch)/config/$(env UGR_CAR).yaml" />
 
-  <include file="$(find ethercat_cia402)/launch/ethercat_cia402.launch" pass_all_args="true"/>
-
 
   <!-- Run the inspection mission -->
-  <include file="$(find inspection)/launch/inspection.launch" pass_all_args="true"/>
+  <!-- <include file="$(find inspection)/launch/inspection.launch" pass_all_args="true"/> -->
 
 </launch>

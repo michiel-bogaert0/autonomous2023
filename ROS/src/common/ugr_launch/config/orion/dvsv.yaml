@@ -6,28 +6,31 @@ slam_controller:
       - lap_counter
       - map_publisher
 
+      - ecat_driver
+
       # Control
-      - front_wheel_feedback_control
+      #- front_wheel_feedback_control
+      - pure_pursuit_control
       - path_publisher
-      - path_smoother
+      # - path_smoother
 
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
 lap_counter:
-  finishpoint: [0, 16, 0] # Should be 2 * turn radius
+  finishpoint: [-10, 0, 0] # Should be 2 * turn radius
 map_publisher:
   map_pkg: "slam_simulator"
   map: "/maps/map_dvsv.yaml"
 speed:
-  target: 2.0
+  target: 3
   LC_adaptive_velocity: False
 pure_pursuit:
   change_index: False
   world_frame: "ugr/map"
   speed_start: 1
   speed_stop: 2
-  distance_start: 1.5
-  distance_stop: 3.3
+  distance_start: 4.8
+  distance_stop: 4.8
 front_wheel_feedback:
   change_index: False
   world_frame: "ugr/map"
