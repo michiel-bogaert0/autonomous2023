@@ -148,7 +148,7 @@ void OrionHWInterface::write(ros::Duration& elapsed_time)
 
     this->can_axis0_pub.publish(msg);
     this->can_axis1_pub.publish(msg);
-    publish_steering_msg(joint_position_command_[steering_joint_id]);
+    publish_steering_msg(-1 * joint_position_command_[steering_joint_id]);
   }
   else
   {
