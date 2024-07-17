@@ -73,13 +73,13 @@
     <origin xyz="0.0 -0.64 0.0" rpy="0 0 0" /> <!-- <inner side of the tire, outer: 0.74275 -->
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/axis0" />
-    <limit effort="60.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
+    <limit effort="240.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
   </joint>
   <joint name="axis1" type="continuous"> 
     <origin xyz="0.0 0.64 0.0" rpy="0 0 0" /> <!-- <inner side of the tire, outer: 0.74275 -->
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/axis1" />
-    <limit effort="60.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
+    <limit effort="240.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
   </joint>
 
   <joint name="front_axle" type="fixed">

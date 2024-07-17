@@ -58,15 +58,15 @@
 
   <!-- IO drivers -->
   <include file="$(find dio_driver)/launch/dio_driver_can.launch" />
-  <include file="$(find iologik)/launch/iologik.launch" />
+  <!-- <include file="$(find iologik)/launch/iologik.launch" /> -->
 
   <!-- Vectornav -->
   <include file="$(find vectornav)/launch/vectornav.launch"/>
 
   <!-- Lidar -->
-  <include file="$(find ouster_ros)/launch/sensor.launch">
+  <!-- <include file="$(find ouster_ros)/launch/sensor.launch">
         <arg name="timestamp_mode" default="TIME_FROM_PTP_1588" />
-      </include>
+      </include> -->
 
   <!-- Camera -->
   <!-- <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">

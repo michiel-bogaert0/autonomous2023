@@ -14,7 +14,7 @@ orion_state:
       - can_cvrt_mc_right
       - can_cvrt_mc_left
       - can_cvrt_lv
-      - iologik_aio
+      # - iologik_aio
       - diobank_driver_can
     manual: 
       - pedal_mapper

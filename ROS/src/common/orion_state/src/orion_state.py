@@ -407,7 +407,13 @@ class OrionState(NodeManager):
         """
 
         if io_name in self.ai_signals:
-            self.ai_signals[io_name] = msg.data
+            if io_name == "air_pressure1" or io_name == "air_pressure2":
+                self.ai_signals[io_name] = (msg.data - 4) / 16 * 10
+            elif io_name == "front_bp" or io_name == "rear_bp":
+                self.ai_signals[io_name] = (msg.data - 4) / 16 * 250
+            else:
+                pass
+
         else:
             rospy.logwarn(f"AI signal '{io_name}' not found in list of IO signals")
 
@@ -477,18 +483,6 @@ class OrionState(NodeManager):
         #     self.hbs["MC"] = rospy.Time.now().to_sec()
 
     def send_status_over_can(self):
-        #
-        # Brake light (temporary)
-        brake_pressures_msg = self.db.get_message_by_name("Brake_pressures")
-        data = brake_pressures_msg.encode(
-            {
-                "Brake_rear": max(0, self.ai_signals["rear_bp"]),
-                "Brake_front": max(0, self.ai_signals["rear_bp"]),
-            }
-        )
-        message = can.Message(arbitration_id=brake_pressures_msg.frame_id, data=data)
-        self.bus.publish(serialcan_to_roscan(message))
-
         #
         # 0x502 acc. to rules
         #
@@ -568,33 +562,6 @@ class OrionState(NodeManager):
             }
         )
         message = can.Message(arbitration_id=mc_temp_message.frame_id, data=data)
-        self.bus.publish(serialcan_to_roscan(message))
-
-        # iologik
-        iologik_message_1 = self.db.get_message_by_name("state_BPRO1_5")
-        data = iologik_message_1.encode(
-            {
-                "state_BPRI1": max(0, self.ai_signals["gearbox_temp_left"]),
-                "state_BPRI2": max(0, self.ai_signals["air_pressure1"]),
-                "state_BPRI3": max(0, self.ai_signals["front_bp"]),
-                "state_BPRI4": max(0, self.ai_signals["gearbox_temp_right"]),
-                "state_BPRI5": max(0, self.ai_signals["air_pressure2"]),
-            }
-        )
-        message = can.Message(arbitration_id=iologik_message_1.frame_id, data=data)
-        self.bus.publish(serialcan_to_roscan(message))
-
-        iologik_message_2 = self.db.get_message_by_name("state_BPRI6_8_O0_1")
-        data = iologik_message_2.encode(
-            {
-                "state_BPRI6": max(0, self.ai_signals["rear_bp"]),
-                "state_BPRO1": 0,
-                "state_BPRI8": 0,
-                "state_BPRO0": 0,
-                "state_BPRI7": 0,
-            }
-        )
-        message = can.Message(arbitration_id=iologik_message_2.frame_id, data=data)
         self.bus.publish(serialcan_to_roscan(message))
 
     def start_initial_checkup(self):
@@ -1098,6 +1065,10 @@ class OrionState(NodeManager):
                     and self.ai_signals["air_pressure2"] < 1
                 ):
                     return False, "Air pressures not released"
+
+                if self.ai_signals["front_bp"] < 0 or self.ai_signals["rear_bp"] < 0:
+                    return False, "Lost brake pressure sensors"
+
             else:
                 if not (
                     self.ai_signals["air_pressure1"] > 5

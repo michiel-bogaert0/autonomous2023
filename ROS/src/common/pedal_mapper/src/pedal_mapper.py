@@ -23,7 +23,7 @@ class PedalMapper(ManagedNode):
 
     def doConfigure(self):
         # ROS parameters
-        self.max_deviation = rospy.get_param("~max_deviation", 25)
+        self.max_deviation = rospy.get_param("~max_deviation", 10)
         self.deadzone = rospy.get_param("~deadzone", 5)
         self.max_effort = rospy.get_param("~max_effort", 2)
 
@@ -58,13 +58,17 @@ class PedalMapper(ManagedNode):
             self.set_health(0, "Received APPS signal")
             self.last_received_hb = rospy.Time.now().to_sec()
 
-            apps1 = max(min(frame.data[0], 100), 0)
-            apps2 = max(min(frame.data[1], 100), 0)
+            apps1 = max(min(frame.data[0] * 1.5, 100), 0)
+            apps2 = max(min(frame.data[1] * 1.5, 100), 0)
 
             average_apps = max(min((apps1 + apps2) / 2, 100), 0)
 
             # Check if in range
-            if abs(apps1 - apps2) <= self.max_deviation:
+            if (
+                abs(apps1 - apps2) <= self.max_deviation
+                and apps1 > self.deadzone
+                and apps2 > self.deadzone
+            ):
                 # Apply deadzone and rescale
                 apps_deadzoned = (
                     0 if average_apps <= self.deadzone else average_apps - self.deadzone

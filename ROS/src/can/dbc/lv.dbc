@@ -33,8 +33,16 @@ NS_ :
 
 BS_:
 
-BU_: BPR DIO PDU ELVIS ASSI ECU_LV Dashboard
+BU_: Sensors BPR DIO PDU ELVIS ASSI ECU_LV Dashboard
 
+
+BO_ 1824 Pushrods_back: 4 Sensors
+ SG_ Pushrod_RB : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ Pushrod_LB : 16|16@1+ (1,0) [0|65535] "" Vector__XXX
+
+BO_ 1825 Rockers: 4 Sensors
+ SG_ Rocker_HAL_R : 16|16@1+ (0.094,-15) [0|360] "deg" Vector__XXX
+ SG_ Rocker_HAL_L : 0|16@1+ (0.094,-15) [0|360] "deg" Vector__XXX
 
 BO_ 7 MCU_temp: 8 ECU_LV
  SG_ Temp_motor_R : 55|16@0- (0.1,0) [-3276.8|3276.7] "oC" Vector__XXX
@@ -42,23 +50,23 @@ BO_ 7 MCU_temp: 8 ECU_LV
  SG_ Temp_invertor_R : 23|16@0- (0.1,0) [-3276.8|3276.7] "oC" Vector__XXX
  SG_ Temp_invertor_L : 7|16@0- (0.1,0) [-3276.8|3276.7] "oC" Vector__XXX
 
-BO_ 1539 state_BPRI6_8_O0_1: 7 BPR
- SG_ state_BPRI6 : 31|12@0+ (1,0) [0|4095] "mV" Vector__XXX
- SG_ state_BPRO1 : 47|8@0+ (0.125,0) [0|31.875] "mA" Vector__XXX
- SG_ state_BPRI8 : 7|12@0+ (1,0) [0|4095] "mV" Vector__XXX
- SG_ state_BPRO0 : 55|8@0+ (0.125,0) [0|31.875] "mA" Vector__XXX
- SG_ state_BPRI7 : 11|12@0+ (1,0) [0|4095] "mV" Vector__XXX
+BO_ 1539 state_BPRI6_8_O0_1: 8 BPR
+ SG_ state_BPRI6 : 31|12@0+ (0.008,0) [0|32.76] "mA" Vector__XXX
+ SG_ state_BPRO1 : 35|12@0+ (0.008,0) [0|32.76] "mA" Vector__XXX
+ SG_ state_BPRI8 : 7|12@0+ (0.008,0) [0|32.76] "mA" Vector__XXX
+ SG_ state_BPRO0 : 55|12@0+ (0.008,0) [0|32.76] "mA" Vector__XXX
+ SG_ state_BPRI7 : 11|12@0+ (0.008,0) [0|32.76] "mA" Vector__XXX
 
-BO_ 1537 set_BPR: 2 BPR
- SG_ set_BPRO1 : 15|8@0+ (0.125,0) [0|31.875] "mA" Vector__XXX
- SG_ set_BPRO0 : 7|8@0+ (0.125,0) [0|31.875] "mA" Vector__XXX
+BO_ 1537 set_BPR: 4 BPR
+ SG_ set_BPRO1 : 23|12@0+ (0.008,0) [0|32.76] "mA" Vector__XXX
+ SG_ set_BPRO0 : 7|12@0+ (0.008,0) [0|32.76] "mA" Vector__XXX
 
-BO_ 1538 state_BPRO1_5: 8 BPR
- SG_ state_BPRI5 : 55|12@0+ (1,0) [0|4095] "mV" Vector__XXX
- SG_ state_BPRI4 : 35|12@0+ (1,0) [0|4095] "mV" Vector__XXX
- SG_ state_BPRI3 : 31|12@0+ (1,0) [0|4095] "mV" Vector__XXX
- SG_ state_BPRI2 : 11|12@0+ (1,0) [0|4095] "mV" Vector__XXX
- SG_ state_BPRI1 : 7|12@0+ (1,0) [0|4095] "mV" Vector__XXX
+BO_ 1538 state_BPRI1_5: 8 BPR
+ SG_ state_BPRI5 : 55|12@0+ (0.008,0) [0|32.76] "mA" Vector__XXX
+ SG_ state_BPRI4 : 35|12@0+ (0.008,0) [0|32.76] "mA" Vector__XXX
+ SG_ state_BPRI3 : 31|12@0+ (0.008,0) [0|32.76] "mA" Vector__XXX
+ SG_ state_BPRI2 : 11|12@0+ (1,0) [0|4095] "V" Vector__XXX
+ SG_ state_BPRI1 : 7|12@0+ (1,0) [0|4095] "V" Vector__XXX
 
 BO_ 257 state_DIO: 3 DIO
  SG_ state_DO7 : 22|1@0+ (1,0) [0|1] "" Vector__XXX
@@ -116,8 +124,8 @@ BO_ 256 set_outputs: 3 PDU
  SG_ set_cooling_fan_1_pwr : 1|1@0+ (1,0) [0|1] "" Vector__XXX
 
 BO_ 273 Output_states: 3 PDU
- SG_ state_TSAL_pwr : 9|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ state_TSAC_pwr : 8|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_TSAL_pwr : 10|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_TSAC_pwr : 9|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ state_TSAC_fans_pwr : 0|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ state_TSAC_fan_PWM : 23|8@0+ (1,0) [0|255] "" Vector__XXX
  SG_ state_router_pwr : 13|1@0+ (1,0) [0|1] "" Vector__XXX
@@ -126,8 +134,8 @@ BO_ 273 Output_states: 3 PDU
  SG_ state_LV_box : 3|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ state_lidar_bakje_pwr : 14|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ state_IPC_pwr : 12|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ state_discharge_pwr : 10|1@0+ (1,0) [0|1] "" Vector__XXX
- SG_ state_DB_pwr : 11|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_discharge_pwr : 11|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ state_DB_pwr : 8|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ state_cooling_pump_1_pwr : 2|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ state_cooling_fan_1_pwr : 1|1@0+ (1,0) [0|1] "" Vector__XXX
 
@@ -260,3 +268,4 @@ VAL_ 1282 AMI_state 5 "inspection" 6 "autocross" 4 "braketest" 3 "trackdrive" 2 
 VAL_ 1282 EBS_state 2 "armed" 3 "activated" 1 "unavailable" 0 "UNKNOWN" ;
 VAL_ 1282 AS_state 5 "finish" 4 "emergency_brake" 3 "driving" 2 "ready" 1 "off" 0 "unknown" ;
 VAL_ 2 ELVIS_critical_fault 5 "OVERTEMPERATURE" 4 "UNDERTEMPERATURE" 3 "OVERVOLTAGE" 2 "UNDERVOLTAGE" 1 "OKAY" 0 "UNKNOWN_FAULT" ;
+
