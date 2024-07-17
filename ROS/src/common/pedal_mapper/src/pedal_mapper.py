@@ -3,7 +3,7 @@ import rospy
 from can_msgs.msg import Frame
 from node_fixture.fixture import AutonomousStatesEnum, OrionStateEnum
 from node_fixture.node_manager import ManagedNode
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64, Float64MultiArray
 from ugr_msgs.msg import State
 
 
@@ -30,9 +30,19 @@ class PedalMapper(ManagedNode):
         self.as_state = None
         self.car_state = None
 
+        self.front_bp = 0
+        self.rear_bp = 0
+        self.bpsd_triggered = False
+
         # Subscribers
         # CAN
         self.AddSubscriber("/ugr/can/lv/301", Frame, self.handle_can)
+        self.AddSubscriber(
+            "/ugr/can/lv/processed/state_bpri3", Float64, self.handle_front_bp
+        )
+        self.AddSubscriber(
+            "/ugr/can/lv/processed/state_bpri4", Float64, self.handle_rear_bp
+        )
 
         # Machine States
         self.AddSubscriber("/state/as", State, self.handle_as_state)
@@ -42,6 +52,12 @@ class PedalMapper(ManagedNode):
         self.effort_publisher = self.AddPublisher(
             "/ugr/car/drive_effort_controller/command", Float64MultiArray, queue_size=0
         )
+
+    def handle_front_bp(self, msg):
+        self.front_bp = (msg.data - 4) / 16 * 250
+
+    def handle_rear_bp(self, msg):
+        self.rear_bp = (msg.data - 4) / 16 * 250
 
     def handle_as_state(self, msg):
         self.as_state = msg.cur_state
@@ -73,12 +89,27 @@ class PedalMapper(ManagedNode):
                 apps_deadzoned = (
                     0 if average_apps <= self.deadzone else average_apps - self.deadzone
                 )
-                self.apps = (
+                apps = (
                     apps_deadzoned
                     / ((100 - self.deadzone) / 100)
                     * self.max_effort
                     / 100
                 )
+
+                # Software BSPD
+                if not self.bpsd_triggered and (
+                    (self.front_bp > 5 or self.rear_bp > 5) and apps > 5
+                ):
+                    apps = 0
+                    self.bpsd_triggered = True
+
+                elif self.bpsd_triggered:
+                    apps = 0
+
+                    if average_apps < 5:
+                        self.bpsd_triggered = False
+
+                self.apps = apps
 
             else:
                 self.apps = 0
