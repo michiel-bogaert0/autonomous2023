@@ -18,7 +18,6 @@ def set_state(name: str, state: str):
         name (str): The name of the node.
         state (str): The state to set the node to.
     """
-    print(f"[NM]> '{name}' --> {state}")
     rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.5)
     return rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(state)
 
@@ -335,6 +334,7 @@ class NodeManager(ManagedNode):
             node_management_param[old_state] = []
 
         print(f"Params: {node_management_param}")
+  
         return node_management_param
 
     def configure_nodes(self):
@@ -421,7 +421,7 @@ class NodeManager(ManagedNode):
 
                     self.nodes_to_monitor.add(node)
 
-            # Then deactivate nodes (that are not in the new state)
+            # Then deactivate nodes (that are not in the new state
             if old_state is not None:
                 for node in node_management_param[old_state]:
                     if (
