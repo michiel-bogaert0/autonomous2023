@@ -27,7 +27,12 @@ catkin_package(
 )
 
 get_filename_component(NEOAPI_ROOT_DIR ${PROJECT_SOURCE_DIR}/include/neoapi ABSOLUTE)
-link_directories(${NEOAPI_ROOT_DIR}/lib)
+EXECUTE_PROCESS( COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE )
+if (${ARCHITECTURE} STREQUAL "arm64")
+  link_directories(${NEOAPI_ROOT_DIR}/lib_aarch64)
+else()
+  link_directories(${NEOAPI_ROOT_DIR}/lib_x86_64)
+endif()
 
 include_directories(
   SYSTEM
