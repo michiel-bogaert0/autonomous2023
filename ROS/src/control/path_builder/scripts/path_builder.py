@@ -67,28 +67,40 @@ class PathBuilder(ManagedNode):
         Creates global path, given pathplanning path and IDs
         """
         # Store IDs of first pose of each pathplanning path
-        closest_point_ids = (msg.poses[3].left_id, msg.poses[3].right_id)
-
-        # Find closest pose
-        # closest_point = None
-        closest_distance = float("inf")
-        for pose in msg.poses:
-            dist = (pose.pose.position.x**2 + pose.pose.position.y**2) ** 0.5
-            if dist < closest_distance:
-                closest_distance = dist
-                # closest_point = pose
-                closest_point_ids = (pose.left_id, pose.right_id)
+        closest_point_ids = (msg.poses[0].left_id, msg.poses[0].right_id)
 
         for cone in self.cones:
             if cone[3] == closest_point_ids[0]:
                 left_cone = cone
             if cone[3] == closest_point_ids[1]:
                 right_cone = cone
+
         if left_cone is not None and right_cone is not None:
             new_point = (
                 (left_cone[0] + right_cone[0]) / 2,
                 (left_cone[1] + right_cone[1]) / 2,
             )
+
+        # Find closest pose
+        # closest_point = None
+        # closest_distance = float("inf")
+        # for pose in msg.poses:
+        #     dist = (pose.pose.position.x**2 + pose.pose.position.y**2) ** 0.5
+        #     if dist < closest_distance:
+        #         closest_distance = dist
+        #         # closest_point = pose
+        #         closest_point_ids = (pose.left_id, pose.right_id)
+
+        # for cone in self.cones:
+        #     if cone[3] == closest_point_ids[0]:
+        #         left_cone = cone
+        #     if cone[3] == closest_point_ids[1]:
+        #         right_cone = cone
+        # if left_cone is not None and right_cone is not None:
+        #     new_point = (
+        #         (left_cone[0] + right_cone[0]) / 2,
+        #         (left_cone[1] + right_cone[1]) / 2,
+        #     )
 
         # Publish target point for visualization
         point = PointStamped()
