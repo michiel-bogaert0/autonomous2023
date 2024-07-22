@@ -3,7 +3,7 @@
 import numpy as np
 import rospy
 import tf2_ros as tf
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
 from std_msgs.msg import UInt16
@@ -29,6 +29,10 @@ class PathBuilder(ManagedNode):
 
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
+
+        self.vis_pub = super().AddPublisher(
+            "/output/target_point", PointStamped, queue_size=10  # warning otherwise
+        )
 
     def doActivate(self):
         self.map_sub = super().AddSubscriber(
@@ -63,9 +67,39 @@ class PathBuilder(ManagedNode):
         Creates global path, given pathplanning path and IDs
         """
         # Store IDs of first pose of each pathplanning path
-        closest_point_ids = (msg.poses[0].left_id, msg.poses[0].right_id)
+        closest_point_ids = (msg.poses[3].left_id, msg.poses[3].right_id)
 
-        print(closest_point_ids)
+        # Find closest pose
+        # closest_point = None
+        closest_distance = float("inf")
+        for pose in msg.poses:
+            dist = (pose.pose.position.x**2 + pose.pose.position.y**2) ** 0.5
+            if dist < closest_distance:
+                closest_distance = dist
+                # closest_point = pose
+                closest_point_ids = (pose.left_id, pose.right_id)
+
+        for cone in self.cones:
+            if cone[3] == closest_point_ids[0]:
+                left_cone = cone
+            if cone[3] == closest_point_ids[1]:
+                right_cone = cone
+        if left_cone is not None and right_cone is not None:
+            new_point = (
+                (left_cone[0] + right_cone[0]) / 2,
+                (left_cone[1] + right_cone[1]) / 2,
+            )
+
+        # Publish target point for visualization
+        point = PointStamped()
+        point.header.stamp = rospy.Time.now()
+        point.header.frame_id = self.base_link_frame
+        point.point.x = new_point[0]
+        point.point.y = new_point[1]
+
+        self.vis_pub.publish(point)
+
+        # print(closest_point_ids)
 
         if closest_point_ids not in self.global_path_ids:
             self.global_path_ids.append(closest_point_ids)

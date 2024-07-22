@@ -5,6 +5,7 @@ project(path_builder)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
+  ugr_msgs
 )
 catkin_package(
 
