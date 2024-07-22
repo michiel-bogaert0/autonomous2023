@@ -7,7 +7,7 @@ from geometry_msgs.msg import PointStamped, PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
 from std_msgs.msg import UInt16
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, PathIds
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, PathWithIds
 
 
 class PathBuilder(ManagedNode):
@@ -41,7 +41,7 @@ class PathBuilder(ManagedNode):
             self.receive_new_map,
         )
         self.subscriber = super().AddSubscriber(
-            "/input/path", PathIds, self.path_callback
+            "/input/path", PathWithIds, self.path_callback
         )
 
     def lap_complete_callback(self, msg: UInt16):
@@ -62,7 +62,7 @@ class PathBuilder(ManagedNode):
             ]
             merges[obs.observation.id] = obs.observation.merged_ids
 
-    def path_callback(self, msg: PathIds):
+    def path_callback(self, msg: PathWithIds):
         """
         Creates global path, given pathplanning path and IDs
         """
