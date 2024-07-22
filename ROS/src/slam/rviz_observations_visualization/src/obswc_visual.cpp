@@ -35,6 +35,7 @@
 #include <rviz/ogre_helpers/arrow.h>
 #include <rviz/ogre_helpers/shape.h>
 #include <rviz/mesh_loader.h>
+#include <rviz/ogre_helpers/movable_text.h>
 
 #include <Eigen/Dense>
 #include <ros/ros.h>
@@ -143,6 +144,11 @@ namespace rviz_observations_visualization
 
     position_node_ = frame_node_->createChildSceneNode();
     position_shape_ = new rviz::Shape(rviz::Shape::Sphere, scene_manager_, position_node_);
+
+    text_ = new rviz::MovableText("TEST", "Liberation Sans", 0.1, Ogre::ColourValue::White);
+    text_->setTextAlignment(rviz::MovableText::H_CENTER, rviz::MovableText::V_CENTER);
+    cone_node_->attachObject(text_);
+
   }
 
   ObservationWithCovarianceVisual::~ObservationWithCovarianceVisual()
@@ -155,6 +161,7 @@ namespace rviz_observations_visualization
     scene_manager_->destroySceneNode(cone_node_);
 
     delete position_shape_;
+    delete text_;
 
     scene_manager_->destroySceneNode(position_node_);
     scene_manager_->destroySceneNode(frame_node_);

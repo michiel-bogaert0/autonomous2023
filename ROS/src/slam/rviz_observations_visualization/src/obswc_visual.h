@@ -42,6 +42,7 @@ namespace rviz
 {
   class Shape;
   class Arrow;
+  class MovableText;
 }
 
 namespace rviz_observations_visualization
@@ -90,6 +91,9 @@ namespace rviz_observations_visualization
     Ogre::SceneNode *cone_node_;
     Ogre::SceneNode *position_node_;
     Ogre::SceneManager *scene_manager_;
+    rviz::MovableText* text_;
+
+
   };
 }
 
