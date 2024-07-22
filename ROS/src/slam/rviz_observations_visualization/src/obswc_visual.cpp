@@ -145,10 +145,10 @@ namespace rviz_observations_visualization
     position_node_ = frame_node_->createChildSceneNode();
     position_shape_ = new rviz::Shape(rviz::Shape::Sphere, scene_manager_, position_node_);
 
-    text_ = new rviz::MovableText("TEST", "Liberation Sans", 0.1, Ogre::ColourValue::White);
+    text_ = new rviz::MovableText("IDS");
     text_->setTextAlignment(rviz::MovableText::H_CENTER, rviz::MovableText::V_CENTER);
     cone_node_->attachObject(text_);
-
+    text_->setVisible(false);
   }
 
   ObservationWithCovarianceVisual::~ObservationWithCovarianceVisual()
@@ -209,5 +209,11 @@ namespace rviz_observations_visualization
       cone_shape_->setColor(r, g, b, a);
     }
     position_shape_->setColor(r, g, b, a);
+  }
+
+  void ObservationWithCovarianceVisual::setId(std::string id, bool visible)
+  {
+    text_->setVisible(visible);
+    text_->setCaption(id);
   }
 }

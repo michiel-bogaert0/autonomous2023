@@ -70,6 +70,7 @@ protected:
 private Q_SLOTS:
   void updateColorAndAlpha();
   void updateUseRealisticModel();
+  void updateUseIds();
 
 private:
   void processMessage( const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr& msg );
@@ -79,6 +80,7 @@ private:
   rviz::ColorProperty* color_property_[5];
   rviz::FloatProperty* alpha_property_;
   rviz::BoolProperty* use_realistic_model_;
+  rviz::BoolProperty* use_ids_;
   rviz::IntProperty* history_length_property_;
 };
 

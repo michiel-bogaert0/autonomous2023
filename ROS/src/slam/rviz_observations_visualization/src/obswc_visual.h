@@ -75,6 +75,7 @@ namespace rviz_observations_visualization
     void setPosition(float x, float y); 
     void setLocalPosition(float x, float y); 
     void setCovariance(boost::array<double, 9> &covariance);
+    void setId(std::string id, bool visible);
 
     // Set the color and alpha of the visual, which are user-editable
     // parameters and therefore don't come from the Imu message.
@@ -86,14 +87,12 @@ namespace rviz_observations_visualization
 
     rviz::Arrow* cone_shape_;
     rviz::Shape* position_shape_;
+    rviz::MovableText* text_;
 
     Ogre::SceneNode *frame_node_;
     Ogre::SceneNode *cone_node_;
     Ogre::SceneNode *position_node_;
     Ogre::SceneManager *scene_manager_;
-    rviz::MovableText* text_;
-
-
   };
 }
 
