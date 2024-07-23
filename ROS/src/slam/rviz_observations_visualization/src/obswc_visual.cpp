@@ -129,7 +129,6 @@ namespace rviz_observations_visualization
     }
     else
     {
-
       std::string resource = "package://rviz_observations_visualization/media/class_" + std::to_string(cls) + ".dae";
 
       if (rviz::loadMeshFromResource("package://rviz_observations_visualization/media/class_" + std::to_string(cls) + ".dae").isNull())
@@ -141,13 +140,16 @@ namespace rviz_observations_visualization
       Ogre::Entity *entity = scene_manager_->createEntity(resource);
       cone_node_->attachObject(entity);
     }
-
+    
     position_node_ = frame_node_->createChildSceneNode();
     position_shape_ = new rviz::Shape(rviz::Shape::Sphere, scene_manager_, position_node_);
 
+    text_node_ = cone_node_->createChildSceneNode();
+    text_node_->setOrientation(Ogre::Quaternion(Ogre::Degree(180), Ogre::Vector3::UNIT_X));
+
     text_ = new rviz::MovableText("IDS");
     text_->setTextAlignment(rviz::MovableText::H_CENTER, rviz::MovableText::V_CENTER);
-    cone_node_->attachObject(text_);
+    text_node_->attachObject(text_);
     text_->setVisible(false);
   }
 
@@ -165,6 +167,7 @@ namespace rviz_observations_visualization
 
     scene_manager_->destroySceneNode(position_node_);
     scene_manager_->destroySceneNode(frame_node_);
+    scene_manager_->destroySceneNode(text_node_);
   }
 
   void ObservationWithCovarianceVisual::setPosition(float x, float y)

@@ -15,7 +15,7 @@
     <param name="rate" value="40"/> <!-- Hz -->
     <param name="publish_rate" value="10"/> <!-- Hz -->
     <param name="synchronous" value="false"/> 
-    <param name="debug" value="false"/> <!-- Publish edges -->
+    <param name="debug" value="true"/> <!-- Publish edges -->
 
     <param name="max_iterations" value="5"/>
     <param name="association_threshold" value="1"/>

@@ -495,43 +495,43 @@ void GraphSLAM::step() {
   // ------------------------ Penalty -----------------------------------
   // --------------------------------------------------------------------
 
-  PoseVertex *pose_vertex =
-      dynamic_cast<PoseVertex *>(this->optimizer.vertex(this->prevPoseIndex));
-  vector<int> to_remove_indices;
-  for (const auto &pair : this->optimizer.vertices()) {
-    LandmarkVertex *landmarkVertex =
-        dynamic_cast<LandmarkVertex *>(pair.second);
+  // PoseVertex *pose_vertex =
+  //     dynamic_cast<PoseVertex *>(this->optimizer.vertex(this->prevPoseIndex));
+  // vector<int> to_remove_indices;
+  // for (const auto &pair : this->optimizer.vertices()) {
+  //   LandmarkVertex *landmarkVertex =
+  //       dynamic_cast<LandmarkVertex *>(pair.second);
 
-    if (landmarkVertex) {
-      VectorXf obs(2);
-      float dx = landmarkVertex->estimate().x() -
-                 pose_vertex->estimate().translation().x();
-      float dy = landmarkVertex->estimate().y() -
-                 pose_vertex->estimate().translation().y();
+  //   if (landmarkVertex) {
+  //     VectorXf obs(2);
+  //     float dx = landmarkVertex->estimate().x() -
+  //                pose_vertex->estimate().translation().x();
+  //     float dy = landmarkVertex->estimate().y() -
+  //                pose_vertex->estimate().translation().y();
 
-      obs(0) = pow(pow(dx, 2) + pow(dy, 2), 0.5);
-      obs(1) = atan2(dy, dx) - pose_vertex->estimate().rotation().angle();
+  //     obs(0) = pow(pow(dx, 2) + pow(dy, 2), 0.5);
+  //     obs(1) = atan2(dy, dx) - pose_vertex->estimate().rotation().angle();
 
-      if (obs(0) <= this->max_range && obs(0) >= this->min_range &&
-          abs(obs(1)) <= 1) {
-        if (landmarkVertex->latestPoseIndex < this->prevPoseIndex) {
-          if (landmarkVertex->increasePenalty() > this->penalty_threshold) {
-            to_remove_indices.push_back(pair.first);
-          }
-        } else {
-          landmarkVertex->decreasePenalty();
-        }
-      }
-    }
-  }
+  //     if (obs(0) <= this->max_range && obs(0) >= this->min_range &&
+  //         abs(obs(1)) <= 1) {
+  //       if (landmarkVertex->latestPoseIndex < this->prevPoseIndex) {
+  //         if (landmarkVertex->increasePenalty() > this->penalty_threshold) {
+  //           to_remove_indices.push_back(pair.first);
+  //         }
+  //       } else {
+  //         landmarkVertex->decreasePenalty();
+  //       }
+  //     }
+  //   }
+  // }
 
-  for (const int &index : to_remove_indices) {
-    LandmarkVertex *landmark =
-        dynamic_cast<LandmarkVertex *>(this->optimizer.vertex(index));
-    if (landmark) {
-      this->optimizer.removeVertex(landmark);
-    }
-  }
+  // for (const int &index : to_remove_indices) {
+  //   LandmarkVertex *landmark =
+  //       dynamic_cast<LandmarkVertex *>(this->optimizer.vertex(index));
+  //   if (landmark) {
+  //     this->optimizer.removeVertex(landmark);
+  //   }
+  // }
 
   t2 = std::chrono::steady_clock::now();
   times.push_back(
@@ -556,16 +556,16 @@ void GraphSLAM::step() {
 
   if (this->debug) {
     double totalTime = std::accumulate(times.begin(), times.end(), 0.0);
-    ROS_INFO("Time taken for each step: ");
-    ROS_INFO("Transform observations: %f", times[0]);
-    ROS_INFO("Fetch odometry: %f", times[1]);
-    ROS_INFO("Add odometry to graph: %f", times[2]);
-    ROS_INFO("Add observations to graph: %f", times[3]);
-    ROS_INFO("Optimization: %f", times[4]);
-    ROS_INFO("Kdtree: %f", times[5]);
-    ROS_INFO("Penalty: %f", times[6]);
-    ROS_INFO("Publish: %f", times[7]);
-    ROS_INFO("Total time: %f", totalTime);
+    // ROS_INFO("Time taken for each step: ");
+    // ROS_INFO("Transform observations: %f", times[0]);
+    // ROS_INFO("Fetch odometry: %f", times[1]);
+    // ROS_INFO("Add odometry to graph: %f", times[2]);
+    // ROS_INFO("Add observations to graph: %f", times[3]);
+    // ROS_INFO("Optimization: %f", times[4]);
+    // ROS_INFO("Kdtree: %f", times[5]);
+    // ROS_INFO("Penalty: %f", times[6]);
+    // ROS_INFO("Publish: %f", times[7]);
+    // ROS_INFO("Total time: %f", totalTime);
   }
 } // step method
 
