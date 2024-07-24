@@ -96,4 +96,5 @@ namespace rviz_observations_visualization
   };
 }
 
+
 #endif

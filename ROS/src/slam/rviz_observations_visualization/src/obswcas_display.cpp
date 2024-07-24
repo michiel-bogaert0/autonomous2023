@@ -158,5 +158,6 @@ namespace rviz_observations_visualization
     }
   }
 }
+
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(rviz_observations_visualization::ObservationWithCovarianceArrayStampedDisplay, rviz::Display)
