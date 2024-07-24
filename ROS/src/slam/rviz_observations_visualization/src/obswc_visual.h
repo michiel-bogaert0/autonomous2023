@@ -92,7 +92,6 @@ namespace rviz_observations_visualization
     Ogre::SceneNode *frame_node_;
     Ogre::SceneNode *cone_node_;
     Ogre::SceneNode *position_node_;
-    Ogre::SceneNode *text_node_;
     Ogre::SceneManager *scene_manager_;
   };
 }
