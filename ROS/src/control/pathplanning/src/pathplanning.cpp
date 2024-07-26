@@ -64,8 +64,9 @@ void Pathplanning::compute(const std::vector<std::vector<double>> &cones,
     for (size_t i = 0; i < cones.size(); i++) {
       for (size_t j = 0; j < cones.size(); j++) {
         // Centerpoint
-        if (((cones[i][0] + cones[j][0]) / 2 - node->x) < 0.00001 &&
-            ((cones[i][1] + cones[j][1]) / 2 - node->y) < 0.00001) {
+        if (i != j &&
+            (fabs(((cones[i][0] + cones[j][0]) / 2 - node->x)) < 0.00001 &&
+             fabs(((cones[i][1] + cones[j][1]) / 2 - node->y)) < 0.00001)) {
           cone_ids.push_back({cones[i][3], cones[j][3]});
         }
       }
