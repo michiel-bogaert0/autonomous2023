@@ -8,6 +8,10 @@ function build-nogpu {
     docker build -t ugr-base -f Dockerfile.nogpu .
 }
 
+function build-silicon {
+    docker build -t ugr-base -f Dockerfile.silicon .
+}
+
 function post-install {
 
     # Load submodules
@@ -165,6 +169,18 @@ function start-headless {
     fi
     
     docker compose up -d dev roscore
+}
+
+function start-silicon {
+    
+    file="env-vars.sh"
+    
+    if [ ! -e "$file" ]; then
+        echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'";
+        exit 1;
+    fi
+    
+    docker compose up -d dev roscore foxglove
 }
 
 function clean {

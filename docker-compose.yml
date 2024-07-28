@@ -2,7 +2,6 @@ services:
   roscore:
     container_name: roscore
     image: ugr-base
-    platform: linux/amd64
     network_mode: "host"
     restart: always
     tty: true
@@ -13,7 +12,6 @@ services:
   rviz:
     container_name: rviz
     image: ugr-base
-    platform: linux/amd64
     network_mode: "host"
     privileged: true
     depends_on:
@@ -27,10 +25,21 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - "./:/home/ugr/autonomous2023/:rw"
+  foxglove:
+    container_name: foxglove
+    image: ugr-base
+    network_mode: "host"
+    depends_on:
+      - roscore
+    restart: always
+    tty: true
+    privileged: true
+    entrypoint: /bin/zsh -c 'source ~/.zshrc && roslaunch foxglove_bridge foxglove_bridge.launch'
+    volumes:
+      - "./:/home/ugr/autonomous2023/:rw"
   dev:
     container_name: dev
     image: ugr-base
-    platform: linux/amd64
     network_mode: "host"
     depends_on:
       - roscore
