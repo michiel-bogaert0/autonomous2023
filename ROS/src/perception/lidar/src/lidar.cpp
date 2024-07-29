@@ -93,15 +93,22 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
                     "time needed: " + std::to_string(time_round));
 
   if (publish_ground_) {
+    // Create a copy of notground_points for publishing
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points_copy(
+        new pcl::PointCloud<pcl::PointXYZINormal>(*notground_points));
+    if (lidar_rotated_) {
+      *notground_points_copy = flipPointcloud(*notground_points_copy);
+    }
+
     sensor_msgs::PointCloud2 groundremoval_msg;
-    pcl::toROSMsg(*notground_points, groundremoval_msg);
+    pcl::toROSMsg(*notground_points_copy, groundremoval_msg);
     groundremoval_msg.header.frame_id = msg.header.frame_id;
     groundremoval_msg.header.stamp = msg.header.stamp;
     groundRemovalLidarPublisher_.publish(groundremoval_msg);
 
-    // publish colored pointcloud to check order points
+    // Publish colored pointcloud to check order points
     sensor_msgs::PointCloud2 ground_msg =
-        ground_removal_.publishColoredGround(*notground_points, msg);
+        ground_removal_.publishColoredGround(*notground_points_copy, msg);
     groundColoredPublisher_.publish(ground_msg);
   }
 
@@ -154,7 +161,7 @@ void Lidar::preprocessing(
   for (auto &iter : raw.points) {
     // Remove points closer than 1m, higher than 0.5m or further than 20m
     // and points outside the frame of Pegasus
-    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
+    if (std::hypot(iter.x, iter.y) < 1 || iter.z > -0.1 ||
         std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||
         std::atan2(iter.x, iter.y) > 2.8)
       continue;
