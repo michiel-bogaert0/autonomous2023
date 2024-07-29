@@ -2,7 +2,6 @@
 
 import numpy as np
 import rospy
-import tf2_ros as tf
 from geometry_msgs.msg import PointStamped, PoseStamped
 from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
@@ -26,9 +25,6 @@ class PathBuilder(ManagedNode):
 
         self.cones = None
         self.merges = {}
-
-        self.tf_buffer = tf.Buffer()
-        self.tf_listener = tf.TransformListener(self.tf_buffer)
 
         self.vis_pub = super().AddPublisher(
             "/output/closest_point", PointStamped, queue_size=10  # warning otherwise
