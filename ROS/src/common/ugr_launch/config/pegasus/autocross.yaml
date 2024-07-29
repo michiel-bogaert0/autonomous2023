@@ -12,6 +12,7 @@ slam_controller:
       # Control
       - front_wheel_feedback_control
       - pathplanning
+      - path_builder
       - path_smoother
 
 slam_mcl:
@@ -37,3 +38,5 @@ front_wheel_feedback:
 mpc:
   change_index: True
   world_frame: "ugr/map"
+path_builder:
+  enable_global_path: False
