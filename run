@@ -82,6 +82,12 @@ function install-nogpu {
     post-install
 }
 
+function install-silicon {
+    build-silicon
+    _set-docker-runtime runc
+    post-install
+}
+
 function _set-docker-runtime {
     # Check if jq (a JSON processor) is installed
     if ! command -v jq &>/dev/null; then
