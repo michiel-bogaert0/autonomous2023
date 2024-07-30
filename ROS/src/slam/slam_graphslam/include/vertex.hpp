@@ -42,8 +42,8 @@ public:
   int penalty;
   std::vector<uint32_t> merged_ids;
 
-  int increasePenalty();
-  void decreasePenalty();
+  int increasePenalty(int pen);
+  void decreasePenalty(int pen);
   void setLatestPose(int index);
   void setColor(int c, float b);
   void addBeliefs(float b0, float b1, float b2);

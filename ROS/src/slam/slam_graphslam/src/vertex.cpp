@@ -36,12 +36,17 @@ LandmarkVertex::LandmarkVertex() : BaseVertex<2, Vector2d>() {
   this->penalty = 0;
 }
 
-int LandmarkVertex::increasePenalty() {
-  this->penalty++;
+int LandmarkVertex::increasePenalty(int pen) {
+  this->penalty += pen;
   return this->penalty;
 }
 
-void LandmarkVertex::decreasePenalty() { this->penalty--; }
+void LandmarkVertex::decreasePenalty(int pen) {
+  this->penalty -= pen; 
+  if (this->penalty < 0) {
+    this->penalty = 0;
+  }
+}
 
 void LandmarkVertex::setLatestPose(int index) {
   if (index > this->latestPoseIndex) {
