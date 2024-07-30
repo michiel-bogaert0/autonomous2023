@@ -10,6 +10,8 @@
 #include <std_msgs/Header.h>
 #include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
 #include <ugr_msgs/PathArray.h>
+#include <ugr_msgs/PathWithIds.h>
+#include <ugr_msgs/PoseStampedWithIds.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>

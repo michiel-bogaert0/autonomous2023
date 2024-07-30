@@ -1,0 +1,12 @@
+<launch>
+    <node pkg="path_builder" type="path_builder.py" name="path_builder" respawn="true" output="screen">
+        <param name="base_link_frame" value="ugr/car_base_link" />  
+
+        <remap from="/input/local_map" to="/ugr/car/map/slam/local"/>
+
+        <remap from="/input/path" to="/pathplanning/poses"/>
+        <remap from="/output/path" to="/pathplanning/global_path"/>
+
+        <remap from="/output/closest_point" to="/path_builder/closest_point"/>
+    </node>
+</launch>
