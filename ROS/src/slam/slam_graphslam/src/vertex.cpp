@@ -42,7 +42,7 @@ int LandmarkVertex::increasePenalty(int pen) {
 }
 
 void LandmarkVertex::decreasePenalty(int pen) {
-  this->penalty -= pen; 
+  this->penalty -= pen;
   if (this->penalty < 0) {
     this->penalty = 0;
   }

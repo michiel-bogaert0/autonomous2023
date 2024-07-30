@@ -504,7 +504,7 @@ void GraphSLAM::step() {
       transformed_obs.header.stamp - this->last_penalty_time;
   this->last_penalty_time = transformed_obs.header.stamp;
 
-  int penalty = time_since_last_penalty.toSec() * 1000; //ms
+  int penalty = time_since_last_penalty.toSec() * 1000; // ms
 
   PoseVertex *pose_vertex =
       dynamic_cast<PoseVertex *>(this->optimizer.vertex(this->prevPoseIndex));
@@ -526,11 +526,12 @@ void GraphSLAM::step() {
       if (obs(0) <= this->max_range && obs(0) >= this->min_range &&
           abs(obs(1)) <= 1) {
         if (landmarkVertex->latestPoseIndex < this->prevPoseIndex) {
-          if (landmarkVertex->increasePenalty(penalty) > this->penalty_threshold) {
+          if (landmarkVertex->increasePenalty(penalty) >
+              this->penalty_threshold) {
             to_remove_indices.push_back(pair.first);
           }
         } else {
-          landmarkVertex->decreasePenalty(penalty*2);
+          landmarkVertex->decreasePenalty(penalty * 2);
         }
       }
     }
@@ -661,7 +662,8 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
 
     LandmarkVertex *landmarkVertex =
         dynamic_cast<LandmarkVertex *>(pair.second);
-    if (landmarkVertex && landmarkVertex->edges().size() > this->landmark_publish_threshold) {
+    if (landmarkVertex &&
+        landmarkVertex->edges().size() > this->landmark_publish_threshold) {
 
       ugr_msgs::ObservationWithCovariance global_ob;
       ugr_msgs::ObservationWithCovariance local_ob;
