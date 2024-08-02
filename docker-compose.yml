@@ -34,7 +34,7 @@ services:
     restart: always
     tty: true
     privileged: true
-    entrypoint: /bin/zsh -c 'source ~/.zshrc && roslaunch foxglove_bridge foxglove_bridge.launch'
+    entrypoint: /bin/zsh -c '~/autonomous2023/foxglove.sh'
     volumes:
       - "./:/home/ugr/autonomous2023/:rw"
   dev:
