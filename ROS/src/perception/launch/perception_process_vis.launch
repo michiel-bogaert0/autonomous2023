@@ -22,8 +22,7 @@
             <remap from="/output/vis" to="/vis/lidar" />
     </node>
 
-    <!-- 
-    visualisation for late fusion observations
+    <!-- visualisation for late fusion observations -->
     <node pkg="observation_vis" output="screen" type="vis_obs.py" name="late_fusion_visualiser">
             <param name="namespace" value="perception/car/late_fusion" />
             <param name="use_covariance" value="true" />
@@ -33,8 +32,8 @@
             <remap from="/input/vis" to="/ugr/car/observations/fused" />
             <remap from="/output/vis" to="/vis/late_fusion" />
     </node>
-    
-    visualisation for early fusion observations 
+
+    <!-- visualisation for early fusion observations -->
     <node pkg="observation_vis" output="screen" type="vis_obs.py" name="early_fusion_visualiser">
             <param name="namespace" value="perception/car/early_fusion" />
             <param name="use_covariance" value="true" />
@@ -43,5 +42,5 @@
 
             <remap from="/input/vis" to="/ugr/car/observations/early_fused" />
             <remap from="/output/vis" to="/vis/early_fusion" />
-    </node> -->
+    </node>
 </launch>
