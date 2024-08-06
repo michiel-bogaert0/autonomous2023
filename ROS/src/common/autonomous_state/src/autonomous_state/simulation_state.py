@@ -15,11 +15,11 @@ class SimulationState(CarState):
 
     def __init__(self) -> None:
         self.state = {
-            "TS": CarStateEnum.UNKNOWN,
-            "ASMS": CarStateEnum.UNKNOWN,
-            "R2D": CarStateEnum.UNKNOWN,
-            "ASB": CarStateEnum.UNKNOWN,
-            "EBS": CarStateEnum.UNKNOWN,
+            "TS": CarStateEnum.UNKOWN,
+            "ASMS": CarStateEnum.UNKOWN,
+            "R2D": CarStateEnum.UNKOWN,
+            "ASB": CarStateEnum.UNKOWN,
+            "EBS": CarStateEnum.UNKOWN,
         }
 
         self.start_t = rospy.Time.now().to_sec()
@@ -45,6 +45,7 @@ class SimulationState(CarState):
             object with the (physical) state of the car systems,
             like EBS and ASSI. See general docs for info about this state
         """
+
         # R2D
         if (
             self.as_state == AutonomousStatesEnum.ASREADY
@@ -67,4 +68,5 @@ class SimulationState(CarState):
 
         # EBS
         self.state["EBS"] = self.ebs_state
+
         return self.state
