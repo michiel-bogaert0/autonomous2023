@@ -82,4 +82,10 @@
     <include file="$(find ugr_ros_control)/pegasus_control/launch/pegasus_hardware.launch" />
   </group>
 
+
+  <!-- temp fix -->
+  <!-- SLAM controller -->
+  <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true" />
+
+
 </launch>
