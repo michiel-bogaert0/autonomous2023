@@ -26,7 +26,7 @@ from node_fixture.fixture import (
 )
 from node_fixture.node_manager import NodeManager
 from scheduling import JobScheduler
-from std_msgs.msg import Bool, Float64, Header
+from std_msgs.msg import Bool, Float64, Header, Int64
 from ugr_msgs.msg import State
 
 
@@ -41,6 +41,10 @@ class OrionState(NodeManager):
         self.rate = rospy.Rate(15)
         self.checkup_result = None
         self.initial_checkup_done = False
+        
+        self.debug_state = 0
+
+        rospy.set_param("/mission", "manual")
 
         # Activate nodes for driving mode
         self.activate_nodes(self.driving_mode, None)
@@ -168,6 +172,13 @@ class OrionState(NodeManager):
             "sdc_out": False,
             "wd_ok": False,
         }
+        self.debounced_signals = {
+            "wd_ok": [False, rospy.Time.now().to_sec()], 
+            "imd_ok": [False, rospy.Time.now().to_sec()], 
+            "sdc_out": [False, rospy.Time.now().to_sec()], 
+            "ts_btn_ok": [False, rospy.Time.now().to_sec()], 
+            "bypass_status": [False, rospy.Time.now().to_sec()], 
+        }
 
         # DO feedback
         self.do_feedback = {
@@ -254,15 +265,29 @@ class OrionState(NodeManager):
 
         # AI signals
         for ai_signal in self.ai_signals:
-            self.AddSubscriber(
-                f"/aio/in/{ai_signal}", Float64, partial(self.handle_AI, ai_signal)
-            )
-
+            
+            if ai_signal == "gearbox_temp_left" or ai_signal == "gearbox_temp_right":
+                pass
+            else:
+            
+                self.AddSubscriber(
+                    f"/aio/in/{ai_signal}", Float64, partial(self.handle_AI, ai_signal)
+                )
+            
+        for ai_signal in self.ai_signals:
+            
+            if ai_signal == "gearbox_temp_left" or ai_signal == "gearbox_temp_right":
+                self.AddSubscriber(
+                    f"/aio/in/{ai_signal}", Int64, partial(self.handle_AI, ai_signal)
+                )
+            
         # AO dbs
         self.dbs_pub = self.AddPublisher("/iologik/output1", Float64, queue_size=10)
 
         # CAN
         self.AddSubscriber("/ugr/can/lv/rx", Frame, self.handle_can)
+        self.AddSubscriber("/ugr/can/mc_left/rx", Frame, self.handle_can_mc)
+        self.AddSubscriber("/ugr/can/mc_right/rx", Frame, self.handle_can_mc)
 
         # MC temps
         for side in ["left", "right"]:
@@ -397,7 +422,15 @@ class OrionState(NodeManager):
         """
 
         if io_name in self.di_signals:
-            self.di_signals[io_name] = msg.data
+            
+            if io_name in self.debounced_signals:
+                
+                if self.debounced_signals[io_name][0] != msg.data:
+                    self.debounced_signals[io_name][0] = msg.data
+                    self.debounced_signals[io_name][1] = rospy.Time.now().to_sec()
+    
+            else:
+                self.di_signals[io_name] = msg.data
         else:
             rospy.logwarn(f"DI signal '{io_name}' not found in list of IO signals")
 
@@ -410,10 +443,12 @@ class OrionState(NodeManager):
             if io_name == "air_pressure1" or io_name == "air_pressure2":
                 self.ai_signals[io_name] = (msg.data - 4) / 16 * 10
             elif io_name == "front_bp" or io_name == "rear_bp":
-                self.ai_signals[io_name] = (msg.data - 4) / 16 * 250
+                self.ai_signals[io_name] = (msg.data - 4.3) / 16 * 250
+            elif io_name == "gearbox_temp_left" or io_name == "gearbox_temp_right":
+                self.ai_signals[io_name] = (msg.data * 2 / 1000) / 0.005 - 259
             else:
                 pass
-
+            
         else:
             rospy.logwarn(f"AI signal '{io_name}' not found in list of IO signals")
 
@@ -432,12 +467,35 @@ class OrionState(NodeManager):
     def handle_mc_temps(self, mc_name, msg: Float64):
         self.mc_temps[mc_name] = msg.data
 
+    def handle_can_mc(self, frame: Frame):
+        # MC CAN HB
+        if frame.id == 2147484230 or frame.id == 2147484229:
+            self.hbs["MC"] = rospy.Time.now().to_sec()
+
     def handle_can(self, frame: Frame):
         # DB_Commands
         if frame.id == 768:
             self.can_actions["ts_pressed"] = bool(frame.data[0] & 0b01000000)
             self.can_actions["r2d_pressed"] = bool(frame.data[0] & 0b10000000)
-
+            AMI_state = int(frame.data[0] & 0b00000111)
+            
+            if AMI_state == 0:
+                rospy.set_param("/mission", "manual")
+            elif AMI_state == 1:
+                rospy.set_param("/mission", "acceleration")
+            elif AMI_state == 2:
+                rospy.set_param("/mission", "skidpad")
+            elif AMI_state == 3:
+                rospy.set_param("/mission", "trackdrive")
+            elif AMI_state == 4:
+                rospy.set_param("/mission", "braketest")
+            elif AMI_state == 5:
+                rospy.set_param("/mission", "inspection")
+            elif AMI_state == 6:
+                rospy.set_param("/mission", "autocross")
+            else:
+                rospy.set_param("/mission", "manual")
+                
         # RES
         if frame.id == 0x711:
             self.bus.publish(
@@ -455,10 +513,10 @@ class OrionState(NodeManager):
             self.can_inputs["res_go"] = bool((frame.data[0] & 0b0000100) >> 2)
             self.can_inputs["res_activated"] = not bool(frame.data[0] & 0b0000001)
 
-        # # LV ECU HBS
-        # # PDU
-        # if frame.id == 16:
-        #     self.hbs["PDU"] = rospy.Time.now().to_sec()
+        # LV ECU HBS
+        # PDU
+        if frame.id == 16:
+            self.hbs["PDU"] = rospy.Time.now().to_sec()
 
         # ELVIS
         if frame.id == 2:
@@ -471,16 +529,12 @@ class OrionState(NodeManager):
             if critical_fault != 0:
                 self.send_error_to_db(25 + critical_fault)
 
-        # # DB
-        # if frame.id == 3:
-        #     self.hbs["DB"] = rospy.Time.now().to_sec()
-        # # ASSI
-        # if frame.id == 4:
-        #     self.hbs["ASSI"] = rospy.Time.now().to_sec()
-
-        # # MC CAN HB
-        # if frame.id == 2147492865:
-        #     self.hbs["MC"] = rospy.Time.now().to_sec()
+        # DB
+        if frame.id == 3:
+            self.hbs["DB"] = rospy.Time.now().to_sec()
+        # ASSI
+        if frame.id == 4:
+            self.hbs["ASSI"] = rospy.Time.now().to_sec()
 
     def send_status_over_can(self):
         #
@@ -500,22 +554,19 @@ class OrionState(NodeManager):
         dv_message = self.db.get_message_by_name("DV_status")
 
         ami_state_bits = 0
-        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-            ami_state_bits = 0
-        else:
-            mission = rospy.get_param("/mission")
-            if mission == "acceleration":
-                ami_state_bits = 1
-            elif mission == "skidpad":
-                ami_state_bits = 2
-            elif mission == "trackdrive":
-                ami_state_bits = 3
-            elif mission == "braketest":
-                ami_state_bits = 4
-            elif mission == "inspection":
-                ami_state_bits = 5
-            elif mission == "autocross":
-                ami_state_bits = 6
+        mission = rospy.get_param("/mission")
+        if mission == "acceleration":
+            ami_state_bits = 1
+        elif mission == "skidpad":
+            ami_state_bits = 2
+        elif mission == "trackdrive":
+            ami_state_bits = 3
+        elif mission == "braketest":
+            ami_state_bits = 4
+        elif mission == "inspection":
+            ami_state_bits = 5
+        elif mission == "autocross":
+            ami_state_bits = 6
         data = dv_message.encode(
             {
                 "Cones_count_all": 0,
@@ -528,7 +579,7 @@ class OrionState(NodeManager):
                 "AS_state": as_state_bits,
             }
         )
-
+        
         message = can.Message(
             arbitration_id=dv_message.frame_id, data=data, is_extended_id=False
         )
@@ -542,7 +593,7 @@ class OrionState(NodeManager):
 
         # Bit 0: Heartbeat
         # Bits 1-4: State
-        data = [(0b1) | ((state_bits & 0b1111) << 1)]
+        data = [(0b1) | ((state_bits & 0b111) << 1) | ((self.debug_state & 0x1111) << 4)]
 
         canmsg = can.Message(
             arbitration_id=1,
@@ -589,14 +640,20 @@ class OrionState(NodeManager):
         # Update state machines
         self.update_car_state()
         self.update_as_state()
+        
+        # Update deboucners
+        for io_name in self.debounced_signals:
+            
+            if self.debounced_signals[io_name][0] != self.di_signals[io_name] and rospy.Time.now().to_sec() - self.debounced_signals[io_name][1] < 0.5:
+                self.di_signals[io_name] = self.debounced_signals[io_name][0]
 
         # Check if driving mode should be updated
         if (
             not self.switched_driving_mode
             and self.driving_mode == DrivingModeStatesEnum.MANUAL
             and self.di_signals["bypass_status"]
-            # or self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
-            # and not self.di_signals["bypass_status"]
+            or self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
+            and not self.di_signals["bypass_status"]
         ):
             self.driving_mode = (
                 DrivingModeStatesEnum.DRIVERLESS
@@ -626,6 +683,7 @@ class OrionState(NodeManager):
         if self.initial_checkup_done:
             checks_ok, msg = self.monitor()
             if not checks_ok:
+                self.debug_state = 5
                 self.change_state(OrionStateEnum.ERROR)
                 self.set_health(
                     DiagnosticStatus.ERROR,
@@ -842,14 +900,6 @@ class OrionState(NodeManager):
         - WD status high (resets watchdog if not)
         - All healtchecks OK (hardware AND software)
         """
-
-        # check heartbeats of low voltage systems, motorcontrollers and sensors
-        # ! Skipped for now
-        # for i, hb in enumerate(self.hbs):
-        #     if rospy.Time.now().to_sec() - self.hbs[hb] > 0.5:
-        #         self.send_error_to_db(13 + i)
-        #         return False
-        print("booting")
         # watchdog OK?
         if self.di_signals["wd_ok"] is False:
             self.press_btn_procedure("wd_reset", 0.1, 1.0)
@@ -862,50 +912,44 @@ class OrionState(NodeManager):
         return True
 
     def initial_checkup(self):
+        
+        self.debug_state = 0
+        
         if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-            # ASMS needs to be off
-            print("asms check")
-            if self.di_signals["asms_status"]:
-                self.checkup_result = (False, "ASMS is ON")
-                return
-
-            print("bypass check")
+    
             # bypass needs to be off
             if self.di_signals["bypass_status"]:
                 self.checkup_result = (False, "BYPASS is ON")
                 return
+
             # check air pressures
-            # if (
-            #     self.ai_signals["air_pressure1"] > 1
-            #     or self.ai_signals["air_pressure2"] > 1
-            # ):
-            #     return (
-            #         False,
-            #         f"ASB is still ENABLED: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
-            #     )
+            if (
+                self.ai_signals["air_pressure1"] > 1
+                or self.ai_signals["air_pressure2"] > 1
+            ):
+                return (
+                    False,
+                    f"ASB is still ENABLED: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
+                )
 
         else:
+            
+            self.debug_state = 1
+            
             # wait (asms still registering)
             self.dbs_pub.publish(Float64(4))
             time.sleep(2)
 
-            print("mission check")
             # mission needs to be selected
             if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
                 self.checkup_result = (False, "No mission selected")
                 return (False, "NO MISSION SELECTED")
 
-            # # ASMS needs to be on
-            # if not self.di_signals["asms_status"]:
-            #     return False, "ASMS is OFF"
-
-            print("bypass check")
             # bypass needs to be on
             if not self.di_signals["bypass_status"]:
                 self.checkup_result = (False, "BYPASS is OFF")
                 return (False, "BYPASS IS OFF")
 
-            print("air pressures check")
             # check air pressures
             if not (
                 self.ai_signals["air_pressure1"] > 5
@@ -919,22 +963,18 @@ class OrionState(NodeManager):
                 )
                 return
 
-            # wait 200ms
-            time.sleep(0.2)
+            self.debug_state = 2
 
-            print("wd check")
             # watchdog OK?
             if self.di_signals["wd_ok"] is False:
                 self.checkup_result = (False, "Watchdog indicating error")
                 return
 
-            print("stopped toggling wd")
             # stop toggling watchdog
             self.wd_trigger_enable = False
 
             time.sleep(3)
 
-            print("checking whether wd indicates error")
             # check whether watchdog indicating error
             if self.di_signals["wd_ok"] is True:
                 self.checkup_result = (
@@ -943,27 +983,21 @@ class OrionState(NodeManager):
                 )
                 return
 
-            print("here")
-
-            print("start toggling wd")
             # start toggling watchdog
             self.wd_trigger_enable = True
 
-            print("resetting wd")
             # reset watchdog
             self.do_publishers["wd_reset"].publish(Bool(data=True))
             time.sleep(0.5)
             self.do_publishers["wd_reset"].publish(Bool(data=False))
-            time.sleep(3)
+            time.sleep(2)
 
-            print("wd ok?")
             # watchdog OK?
             if self.di_signals["wd_ok"] is False:
                 self.checkup_result = (False, "Watchdog indicating error")
                 return (False, "WD indicates error")
 
-            # Alert ASR TODO
-            print("alert asr")
+            self.debug_state = 3
 
             self.dbs_pub.publish(Float64(4))
 
@@ -982,9 +1016,7 @@ class OrionState(NodeManager):
             # ARM ebs/dbs
             self.do_publishers["arm_ebs"].publish(Bool(data=True))
             self.do_publishers["arm_dbs"].publish(Bool(data=True))
-            rospy.sleep(3)
-
-            print("here")
+            rospy.sleep(2)
 
             # check whether pressure is being released as expected
             if (
@@ -994,7 +1026,7 @@ class OrionState(NodeManager):
 
             # trigger ebs
             self.do_publishers["arm_ebs"].publish(Bool(data=False))
-            time.sleep(3)
+            time.sleep(1)
 
             # check whether pressure is being built up as expected
             if (
@@ -1004,7 +1036,7 @@ class OrionState(NodeManager):
 
             # release ebs
             self.do_publishers["arm_ebs"].publish(Bool(data=True))
-            time.sleep(3)
+            time.sleep(1)
 
             # check whether pressure is being released as expected
             if (
@@ -1014,7 +1046,7 @@ class OrionState(NodeManager):
 
             # trigger dbs
             self.do_publishers["arm_dbs"].publish(Bool(data=False))
-            time.sleep(3)
+            time.sleep(1)
 
             # check whether pressure is being built up as expected
             if (
@@ -1024,7 +1056,7 @@ class OrionState(NodeManager):
 
             # release dbs
             self.do_publishers["arm_dbs"].publish(Bool(data=True))
-            time.sleep(3)
+            time.sleep(1)
 
             # check whether pressure is being released as expected
             if (
@@ -1034,13 +1066,15 @@ class OrionState(NodeManager):
 
             # set PPR setpoint, actuate brake with DBS
             self.dbs_pub.publish(Float64(12))
-            time.sleep(3)
+            time.sleep(1)
 
             # check whether pressure is being built up as expected
             if (
                 self.ai_signals["front_bp"] > 10 and self.ai_signals["rear_bp"] > 10
             ) is False:
                 return False, "Missed PPR setpoint"
+            
+            self.debug_state = 4
 
         self.initial_checkup_done = True
         self.checkup_result = True, "OK"
@@ -1054,10 +1088,28 @@ class OrionState(NodeManager):
             if self.get_health_level() == DiagnosticStatus.ERROR:
                 return False, "ECU health check failed"
 
-            # check output signal of watchdog
-            # if self.di_signals["wd_ok"] is False:
-            #     return False, "Watchdog indicating error"
+            # Check heartbeats
+            for hb_name in self.hbs:
+                if rospy.Time.now().to_sec() - self.hbs[hb_name] > 0.5:
+                    return False, "Heartbeat of " + hb_name + " dropped!"
 
+            # Check signales
+
+            # check output signal of watchdog
+            if self.di_signals["wd_ok"] is False:
+                return False, "Watchdog indicating error"
+            # check if bypass is closed
+            if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+                if self.di_signals["bypass_status"]:
+                    return False, "BYPASS is ON"
+            else:
+                if not self.di_signals["bypass_status"]:
+                    return False, "BYPASS is OFF"
+            
+            # Check brake pressures
+            if self.ai_signals["front_bp"] < -10 or self.ai_signals["rear_bp"] < -10:
+                return False, "Lost brake pressure sensors"
+                            
             # check air pressures
             if self.driving_mode == DrivingModeStatesEnum.MANUAL:
                 if not (
@@ -1065,9 +1117,6 @@ class OrionState(NodeManager):
                     and self.ai_signals["air_pressure2"] < 1
                 ):
                     return False, "Air pressures not released"
-
-                if self.ai_signals["front_bp"] < 0 or self.ai_signals["rear_bp"] < 0:
-                    return False, "Lost brake pressure sensors"
 
             else:
                 if not (
@@ -1078,15 +1127,7 @@ class OrionState(NodeManager):
                 ):
                     return False, "Air pressures out of range"
 
-            # check if bypass is closed
-            # if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-            #     if self.di_signals["bypass_status"]:
-            #         return False, "BYPASS is ON"
-            # else:
-            #     if not self.di_signals["bypass_status"]:
-            #         return False, "BYPASS is OFF"
-
         return True, "OK"
 
 
-node = OrionState()  #
+node = OrionState() 

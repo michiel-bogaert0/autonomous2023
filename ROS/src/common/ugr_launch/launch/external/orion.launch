@@ -7,9 +7,7 @@
   <!-- <include file="$(find ugr_launch)/launch/internal/run.launch" pass_all_args="true" /> -->
 
   <!-- State machine -->
-  <node name="orion_state" pkg="orion_state" type="orion_state.py" output="screen">
-    <param name="rate" value="15" />
-  </node>
+  <include file="$(find orion_state)/launch/orion_state.launch" pass_all_args="true"/>
 
   <!-- Load extra car specific parameters or override parameters -->
   <rosparam command="load" file="$(find ugr_launch)/config/orion.yaml" />

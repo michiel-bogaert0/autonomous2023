@@ -54,10 +54,10 @@ class PedalMapper(ManagedNode):
         )
 
     def handle_front_bp(self, msg):
-        self.front_bp = (msg.data - 4) / 16 * 250
+        self.front_bp = (msg.data - 4.3) / 16 * 250
 
     def handle_rear_bp(self, msg):
-        self.rear_bp = (msg.data - 4) / 16 * 250
+        self.rear_bp = (msg.data - 4.3) / 16 * 250
 
     def handle_as_state(self, msg):
         self.as_state = msg.cur_state
@@ -82,8 +82,6 @@ class PedalMapper(ManagedNode):
             # Check if in range
             if (
                 abs(apps1 - apps2) <= self.max_deviation
-                and apps1 > self.deadzone
-                and apps2 > self.deadzone
             ):
                 # Apply deadzone and rescale
                 apps_deadzoned = (
@@ -109,7 +107,7 @@ class PedalMapper(ManagedNode):
                     if average_apps < 5:
                         self.bpsd_triggered = False
 
-                self.apps = apps
+                self.apps = average_apps
 
             else:
                 self.apps = 0
