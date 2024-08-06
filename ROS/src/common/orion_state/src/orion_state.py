@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+import math
 import threading
 import time
 from collections import deque
@@ -26,7 +27,7 @@ from node_fixture.fixture import (
 )
 from node_fixture.node_manager import NodeManager
 from scheduling import JobScheduler
-from std_msgs.msg import Bool, Float64, Header, Int64
+from std_msgs.msg import Bool, Float64, Header
 from ugr_msgs.msg import State
 
 
@@ -147,7 +148,6 @@ class OrionState(NodeManager):
 
         self.wd_trigger_status = False
         self.wd_trigger_enable = True
-        self.as_ready_transitioned = False
 
         self.ebs_activated = False
         self.mission_finished = False
@@ -159,6 +159,17 @@ class OrionState(NodeManager):
         self.car_state = None
         self.as_state = None
         self.driving_mode = DrivingModeStatesEnum.MANUAL
+
+        # DV data
+        self.dv_data = {
+            "cones_count_all": 0,
+            "cones_count_actual": 0,
+            "lap_counter": 0,
+            "speed_actual": 0,
+            "steering_angle_actual": 0,
+            "steering_angle_target": 0,
+            "brake_target": 0,
+        }
 
         # IO signals
         self.di_signals = {
@@ -298,6 +309,27 @@ class OrionState(NodeManager):
                     Float64,
                     partial(self.handle_mc_temps, f"mc_{side}_{typ}_temp"),
                 )
+
+        # Subscribers for dv data
+        self.AddSubscriber(
+            "/input/observations",
+            ObservationWithCovarianceArrayStamped,
+            self.handle_observations,
+        )
+        self.AddSubscriber(
+            "/input/map",
+            ObservationWithCovarianceArrayStamped,
+            self.handle_new_map,
+        )
+        self.AddSubscriber("/input/lapComplete", UInt16, self.handle_lap_complete)
+        self.AddSubscriber(
+            "/input/steering_target", Float64, self.handle_steering_target
+        )
+        self.AddSubscriber(
+            "/input/steering_actual", Float32, self.handle_steering_actual
+        )
+        self.AddSubscriber("/input/odom", Odometry, self.get_odom_update)
+        self.AddSubscriber("/iologik/output1", Float64, self.handle_brake_target)
 
         # load dbc
         dbc_filename = rospy.get_param("~db_adress", "lv.dbc")
@@ -536,7 +568,60 @@ class OrionState(NodeManager):
         if frame.id == 4:
             self.hbs["ASSI"] = rospy.Time.now().to_sec()
 
+    def handle_observations(self, msg: ObservationWithCovarianceArrayStamped):
+        self.dv_data["cones_count_actual"] = len(msg.observations)
+
+    def handle_new_map(self, msg: ObservationWithCovarianceArrayStamped):
+        self.dv_data["cones_count_all"] = len(msg.observations)
+
+    def handle_lap_complete(self, msg: UInt16):
+        self.dv_data["lap_counter"] = msg.data
+
+    def handle_steering_target(self, msg: Float64):
+        self.dv_data["steering_angle_target"] = msg.data
+
+    def handle_steering_actual(self, msg: Float32):
+        self.dv_data["steering_angle_actual"] = msg.data
+
+    def handle_brake_target(self, msg: Float64):
+        self.dv_data["brake_target"] = msg.data
+
+    def get_odom_update(self, msg: Odometry):
+        self.dv_data["speed_actual"] = msg.twist.twist.linear.x
+
     def send_status_over_can(self):
+        #
+        # 0x500 acc. to rules
+        #
+        dv1_message = self.db.get_message_by_name("DV_1")
+        data = dv1_message.encode(
+            {
+                "Motor_moment_target": 0,  # percentage
+                "Motor_moment_actual": 0,  # percentage
+                "Brake_hydr_actual": abs(0),  # percentage
+                "Brake_hydr_target": abs(
+                    (self.dv_data["brake_target"] - 4) * 100 / 16
+                ),  # percentage
+                "Steering_angle_target": self.dv_data["steering_angle_target"]
+                * 2
+                * 180
+                / math.pi,  # degrees, scale 0.5
+                "Steering_angle_actual": self.dv_data["steering_angle_actual"]
+                * 2
+                * 180
+                / math.pi,  # degrees, scale 0.5
+                "Speed_target": abs(rospy.get_param("/speed/target", 0.0))
+                * 3.6,  # km/h
+                "Speed_actual": abs(self.dv_data["speed_actual"]) * 3.6,  # km/h
+            }
+        )
+
+        message = can.Message(
+            arbitration_id=dv1_message.frame_id, data=data, is_extended_id=False
+        )
+
+        self.bus.publish(serialcan_to_roscan(message))
+
         #
         # 0x502 acc. to rules
         #
@@ -554,25 +639,28 @@ class OrionState(NodeManager):
         dv_message = self.db.get_message_by_name("DV_status")
 
         ami_state_bits = 0
-        mission = rospy.get_param("/mission")
-        if mission == "acceleration":
-            ami_state_bits = 1
-        elif mission == "skidpad":
-            ami_state_bits = 2
-        elif mission == "trackdrive":
-            ami_state_bits = 3
-        elif mission == "braketest":
-            ami_state_bits = 4
-        elif mission == "inspection":
-            ami_state_bits = 5
-        elif mission == "autocross":
-            ami_state_bits = 6
+        if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+            ami_state_bits = 0
+        else:
+            mission = rospy.get_param("/mission")
+            if mission == "acceleration":
+                ami_state_bits = 1
+            elif mission == "skidpad":
+                ami_state_bits = 2
+            elif mission == "trackdrive":
+                ami_state_bits = 3
+            elif mission == "braketest":
+                ami_state_bits = 4
+            elif mission == "inspection":
+                ami_state_bits = 5
+            elif mission == "autocross":
+                ami_state_bits = 6
         data = dv_message.encode(
             {
-                "Cones_count_all": 0,
-                "Cones_count_actual": 0,
-                "Lap_counter": 0,
-                "Service_brake_state": 0,
+                "Cones_count_all": abs(self.dv_data["cones_count_all"]),
+                "Cones_count_actual": abs(self.dv_data["cones_count_actual"]),
+                "Lap_counter": abs(self.dv_data["lap_counter"]),
+                "Service_brake_state": service_brake_state,
                 "Steering_state": 0,
                 "AMI_state": ami_state_bits,
                 "EBS_state": self.ebs_activated + 1,
