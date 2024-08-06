@@ -19,7 +19,9 @@
 #define FULL_ROT 42000000.0
 #define RAD_TO_POS (FULL_ROT / M_PI / 2.0)
 #define TIME_CONV_VEL 4UL
-#define TIME_CONV_ACC 25UL
+#define TIME_CONV_ACC                                                          \
+  1 // = 100 / (cycle_rate_in_ms ^ 2). Example: cycle rate = 2ms -->
+    // TIME_CONV_ACC = 100 / (2 * 2) = 25
 
 // Max span in units (MAX approx 140deg = 2.443460952792061rad = 16333333.33...
 // units)

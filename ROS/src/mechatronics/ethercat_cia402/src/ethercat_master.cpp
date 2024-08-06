@@ -178,12 +178,12 @@ void *loop(void *mode_ptr) {
 
   // Start control loop
   while (loop_flag.load()) {
-    // Start precise timer for 2000us
+    // Start precise timer for 20000us
     do {
       clock_gettime(CLOCK_MONOTONIC, &tcur);
     } while ((tcur.tv_sec - tprev.tv_sec) * 1000000000 +
                  (tcur.tv_nsec - tprev.tv_nsec) <
-             2000000);
+             10000000);
     tprev = tcur;
 
     // Do logic
@@ -488,6 +488,7 @@ int initialize_ethercat(const char *ifname, operational_mode_t mode) {
       ec_slave[1].PO2SOconfig = configure_servo;
       ec_config_map(&IOMap);
       ec_configdc();
+      // ec_dcsync0(1, TRUE, 2000, 0);
 
       ROS_DEBUG("Slaves mapped, state to SAFE_OP.\n");
 
