@@ -2,7 +2,6 @@
 
   <arg name="frames" default="orion"/>
 
-  <arg name="car" default="orion"/>
   <arg name="mission" default="dvsv"/>
   <arg name="use_sim_time" default="false"/>
   <arg name="use_rosbag" default="false"/>

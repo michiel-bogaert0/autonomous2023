@@ -11,7 +11,7 @@ slam_controller:
       # Control
       - front_wheel_feedback_control
       - pathplanning
-      - path_smoother
+      # - path_smoother
 
 slam_mcl:
   path_to_map: "/ugr/car/map/slam/global"
