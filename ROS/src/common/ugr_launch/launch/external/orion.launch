@@ -61,17 +61,13 @@
   <!-- Vectornav -->
   <include file="$(find vectornav)/launch/vectornav.launch"/>
 
-  <!-- Lidar -->
-  <!-- <include file="$(find ouster_ros)/launch/sensor.launch">
-        <arg name="timestamp_mode" default="TIME_FROM_PTP_1588" />
-      </include> -->
+  <!-- Lidar and camera drivers -->
 
-  <!-- Camera -->
-  <!-- <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">
-        <arg name="type" default="camera" />
-      </include> -->
+  <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">
+    <arg name="type" default="camera" />
+  </include>
 
-      <include file="$(find ethercat_cia402)/launch/ethercat_cia402.launch" pass_all_args="true"/>
+  <include file="$(find ethercat_cia402)/launch/ethercat_cia402.launch" pass_all_args="true"/>
 
   <!-- GPS -->
   <!-- <include file="$(find ublox_gps)/launch/gps.launch" pass_all_args="true" /> -->

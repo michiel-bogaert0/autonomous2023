@@ -27,7 +27,7 @@ from node_fixture.fixture import (
 )
 from node_fixture.node_manager import NodeManager
 from scheduling import JobScheduler
-from sensor_msg.msg import Image, PointCloud2
+from sensor_msgs.msg import Image, PointCloud2
 from std_msgs.msg import Bool, Float32, Float64, Header, Int64, UInt16
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, State
 
@@ -300,6 +300,7 @@ class OrionState(NodeManager):
 
         # AO dbs
         self.dbs_pub = self.AddPublisher("/iologik/output1", Float64, queue_size=10)
+        rospy.Subscriber("/iologik/output1", Float64, self.handle_dbs)
 
         # CAN
         self.AddSubscriber("/ugr/can/lv/rx", Frame, self.handle_can)
@@ -359,6 +360,14 @@ class OrionState(NodeManager):
             sleep(0.1)
             if rospy.is_shutdown():
                 return
+            
+    def handle_dbs(self, msg: Float64):
+        
+        if msg.data > 10:
+            self.do_publishers["arm_dbs"].publish(Bool(data=False))
+        else:
+            self.do_publishers["arm_dbs"].publish(Bool(data=True))
+            
 
     def change_state(self, new_state: OrionStateEnum):
         """
@@ -1259,12 +1268,14 @@ class OrionState(NodeManager):
                 ):
                     return False, "Air pressures out of range"
 
-            # Check if lidar and camera are working
-            if self.cam_time - rospy.Time.now() > rospy.Duration(
-                0.3
-            ) and self.lidar_time - rospy.Time.now() > rospy.Duration(0.3):
-                # 300ms
-                return False, "No Lidar PointClouds or Camera Image received"
+            # Check if lidar and camera are working (for autonomous)
+            if self.driving_mode == DrivingModeStatesEnum.DRIVERLESS:
+                
+                if self.cam_time - rospy.Time.now() > rospy.Duration(
+                    0.5
+                ) and self.lidar_time - rospy.Time.now() > rospy.Duration(0.5):
+                    # 300ms
+                    return False, "No Lidar PointClouds or Camera Image received"
 
         return True, "OK"
 
