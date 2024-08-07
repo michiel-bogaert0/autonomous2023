@@ -169,6 +169,8 @@ class OrionState(NodeManager):
             "steering_angle_actual": 0,
             "steering_angle_target": 0,
             "brake_target": 0,
+            "left_ac_current": 0,
+            "right_ac_current": 0,
         }
 
         # IO signals
@@ -296,6 +298,16 @@ class OrionState(NodeManager):
         self.AddSubscriber("/ugr/can/lv/rx", Frame, self.handle_can)
         self.AddSubscriber("/ugr/can/mc_left/rx", Frame, self.handle_can_mc)
         self.AddSubscriber("/ugr/can/mc_right/rx", Frame, self.handle_can_mc)
+        self.AddSubscriber(
+            "/ugr/can/mc_left/processed/actual_accurrent",
+            Float64,
+            self.handle_left_current,
+        )
+        self.AddSubscriber(
+            "/ugr/can/mc_right/processed/actual_accurrent",
+            Float64,
+            self.handle_right_current,
+        )
 
         # MC temps
         for side in ["left", "right"]:
@@ -584,17 +596,29 @@ class OrionState(NodeManager):
     def get_odom_update(self, msg: Odometry):
         self.dv_data["speed_actual"] = msg.twist.twist.linear.x
 
+    def handle_left_current(self, msg: Float64):
+        self.dv_data["left_ac_current"] = msg.data
+
+    def handle_right_current(self, msg: Float64):
+        self.dv_data["right_ac_current"] = msg.data
+
     def send_status_over_can(self):
         #
         # 0x500 acc. to rules
         #
         dv1_message = self.db.get_message_by_name("DV_1")
+        brake_hydr = 100 if self.ebs_activated else 0
+        motor_moment_actual = (
+            self.dv_data["right_ac_current"] + self.dv_data["left_ac_current"]
+        ) / (
+            240 * 2
+        )  # 240 = max ac current
         data = dv1_message.encode(
             {
-                "Motor_moment_target": 0,  # percentage // target topic ros control, dit van current naar moment
-                "Motor_moment_actual": 0,  # percentage
-                "Brake_hydr_actual": abs(0),  # percentage
-                "Brake_hydr_target": abs(0),  # percentage
+                "Motor_moment_target": motor_moment_actual,  # percentage // target topic ros control, dit van current naar moment
+                "Motor_moment_actual": motor_moment_actual,  # percentage
+                "Brake_hydr_actual": abs(brake_hydr),  # percentage
+                "Brake_hydr_target": abs(brake_hydr),  # percentage
                 "Steering_angle_target": self.dv_data["steering_angle_target"]
                 * 2
                 * 180
