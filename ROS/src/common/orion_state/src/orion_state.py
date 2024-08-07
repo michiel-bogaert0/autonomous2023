@@ -27,7 +27,7 @@ from node_fixture.fixture import (
 )
 from node_fixture.node_manager import NodeManager
 from scheduling import JobScheduler
-from sensor_msg.msg import Image, PointCloud
+from sensor_msg.msg import Image, PointCloud2
 from std_msgs.msg import Bool, Float32, Float64, Header, UInt16
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, State
 
@@ -253,7 +253,7 @@ class OrionState(NodeManager):
         rospy.Subscriber("/state", State, self.handle_external_state_change)
         rospy.Subscriber("/ugr/car/odometry/filtered/odom", Odometry, self.handle_odom)
 
-        rospy.Subscriber("/ugr/car/sensors/lidar", PointCloud, self.handle_lidar)
+        rospy.Subscriber("/ugr/car/sensors/lidar", PointCloud2, self.handle_lidar)
         rospy.Subscriber("/ugr/car/sensors/cam0/image", Image, self.handle_image)
 
         # DI signals
@@ -414,7 +414,7 @@ class OrionState(NodeManager):
         self.odom_avg.append(abs(odom.twist.twist.linear.x))
         self.vehicle_stopped = sum(list(self.odom_avg)) / len(list(self.odom_avg)) < 0.1
 
-    def handle_lidar(self, data: PointCloud):
+    def handle_lidar(self, data: PointCloud2):
         self.lidar_time = rospy.Time.now()
 
     def handle_image(self, data: Image):
