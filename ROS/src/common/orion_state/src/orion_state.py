@@ -27,8 +27,8 @@ from node_fixture.fixture import (
 )
 from node_fixture.node_manager import NodeManager
 from scheduling import JobScheduler
-from std_msgs.msg import Bool, Float64, Header
-from ugr_msgs.msg import State
+from std_msgs.msg import Bool, Float32, Float64, Header, Int64, UInt16
+from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, State
 
 
 class OrionState(NodeManager):
@@ -42,7 +42,7 @@ class OrionState(NodeManager):
         self.rate = rospy.Rate(15)
         self.checkup_result = None
         self.initial_checkup_done = False
-        
+
         self.debug_state = 0
 
         rospy.set_param("/mission", "manual")
@@ -184,11 +184,11 @@ class OrionState(NodeManager):
             "wd_ok": False,
         }
         self.debounced_signals = {
-            "wd_ok": [False, rospy.Time.now().to_sec()], 
-            "imd_ok": [False, rospy.Time.now().to_sec()], 
-            "sdc_out": [False, rospy.Time.now().to_sec()], 
-            "ts_btn_ok": [False, rospy.Time.now().to_sec()], 
-            "bypass_status": [False, rospy.Time.now().to_sec()], 
+            "wd_ok": [False, rospy.Time.now().to_sec()],
+            "imd_ok": [False, rospy.Time.now().to_sec()],
+            "sdc_out": [False, rospy.Time.now().to_sec()],
+            "ts_btn_ok": [False, rospy.Time.now().to_sec()],
+            "bypass_status": [False, rospy.Time.now().to_sec()],
         }
 
         # DO feedback
@@ -276,22 +276,19 @@ class OrionState(NodeManager):
 
         # AI signals
         for ai_signal in self.ai_signals:
-            
             if ai_signal == "gearbox_temp_left" or ai_signal == "gearbox_temp_right":
                 pass
             else:
-            
                 self.AddSubscriber(
                     f"/aio/in/{ai_signal}", Float64, partial(self.handle_AI, ai_signal)
                 )
-            
+
         for ai_signal in self.ai_signals:
-            
             if ai_signal == "gearbox_temp_left" or ai_signal == "gearbox_temp_right":
                 self.AddSubscriber(
                     f"/aio/in/{ai_signal}", Int64, partial(self.handle_AI, ai_signal)
                 )
-            
+
         # AO dbs
         self.dbs_pub = self.AddPublisher("/iologik/output1", Float64, queue_size=10)
 
@@ -454,13 +451,11 @@ class OrionState(NodeManager):
         """
 
         if io_name in self.di_signals:
-            
             if io_name in self.debounced_signals:
-                
                 if self.debounced_signals[io_name][0] != msg.data:
                     self.debounced_signals[io_name][0] = msg.data
                     self.debounced_signals[io_name][1] = rospy.Time.now().to_sec()
-    
+
             else:
                 self.di_signals[io_name] = msg.data
         else:
@@ -480,7 +475,7 @@ class OrionState(NodeManager):
                 self.ai_signals[io_name] = (msg.data * 2 / 1000) / 0.005 - 259
             else:
                 pass
-            
+
         else:
             rospy.logwarn(f"AI signal '{io_name}' not found in list of IO signals")
 
@@ -510,7 +505,7 @@ class OrionState(NodeManager):
             self.can_actions["ts_pressed"] = bool(frame.data[0] & 0b01000000)
             self.can_actions["r2d_pressed"] = bool(frame.data[0] & 0b10000000)
             AMI_state = int(frame.data[0] & 0b00000111)
-            
+
             if AMI_state == 0:
                 rospy.set_param("/mission", "manual")
             elif AMI_state == 1:
@@ -527,7 +522,7 @@ class OrionState(NodeManager):
                 rospy.set_param("/mission", "autocross")
             else:
                 rospy.set_param("/mission", "manual")
-                
+
         # RES
         if frame.id == 0x711:
             self.bus.publish(
@@ -596,12 +591,10 @@ class OrionState(NodeManager):
         dv1_message = self.db.get_message_by_name("DV_1")
         data = dv1_message.encode(
             {
-                "Motor_moment_target": 0,  # percentage
+                "Motor_moment_target": 0,  # percentage // target topic ros control, dit van current naar moment
                 "Motor_moment_actual": 0,  # percentage
                 "Brake_hydr_actual": abs(0),  # percentage
-                "Brake_hydr_target": abs(
-                    (self.dv_data["brake_target"] - 4) * 100 / 16
-                ),  # percentage
+                "Brake_hydr_target": abs(0),  # percentage
                 "Steering_angle_target": self.dv_data["steering_angle_target"]
                 * 2
                 * 180
@@ -655,6 +648,19 @@ class OrionState(NodeManager):
                 ami_state_bits = 5
             elif mission == "autocross":
                 ami_state_bits = 6
+
+        if not self.di_signals["bypass_status"]:
+            service_brake_state = 1  # disengaged
+        elif self.as_state in {
+            AutonomousStatesEnum.ASEMERGENCY,
+            AutonomousStatesEnum.ASFINISHED,
+            AutonomousStatesEnum.ASDRIVE,
+            AutonomousStatesEnum.ASREADY,
+        }:
+            service_brake_state = 3  # available
+        else:
+            service_brake_state = 2  # engaged
+
         data = dv_message.encode(
             {
                 "Cones_count_all": abs(self.dv_data["cones_count_all"]),
@@ -667,7 +673,7 @@ class OrionState(NodeManager):
                 "AS_state": as_state_bits,
             }
         )
-        
+
         message = can.Message(
             arbitration_id=dv_message.frame_id, data=data, is_extended_id=False
         )
@@ -681,7 +687,9 @@ class OrionState(NodeManager):
 
         # Bit 0: Heartbeat
         # Bits 1-4: State
-        data = [(0b1) | ((state_bits & 0b111) << 1) | ((self.debug_state & 0x1111) << 4)]
+        data = [
+            (0b1) | ((state_bits & 0b111) << 1) | ((self.debug_state & 0x1111) << 4)
+        ]
 
         canmsg = can.Message(
             arbitration_id=1,
@@ -728,11 +736,13 @@ class OrionState(NodeManager):
         # Update state machines
         self.update_car_state()
         self.update_as_state()
-        
+
         # Update deboucners
         for io_name in self.debounced_signals:
-            
-            if self.debounced_signals[io_name][0] != self.di_signals[io_name] and rospy.Time.now().to_sec() - self.debounced_signals[io_name][1] < 0.5:
+            if (
+                self.debounced_signals[io_name][0] != self.di_signals[io_name]
+                and rospy.Time.now().to_sec() - self.debounced_signals[io_name][1] < 0.5
+            ):
                 self.di_signals[io_name] = self.debounced_signals[io_name][0]
 
         # Check if driving mode should be updated
@@ -1000,11 +1010,9 @@ class OrionState(NodeManager):
         return True
 
     def initial_checkup(self):
-        
         self.debug_state = 0
-        
+
         if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-    
             # bypass needs to be off
             if self.di_signals["bypass_status"]:
                 self.checkup_result = (False, "BYPASS is ON")
@@ -1021,9 +1029,8 @@ class OrionState(NodeManager):
                 )
 
         else:
-            
             self.debug_state = 1
-            
+
             # wait (asms still registering)
             self.dbs_pub.publish(Float64(4))
             time.sleep(2)
@@ -1161,7 +1168,7 @@ class OrionState(NodeManager):
                 self.ai_signals["front_bp"] > 10 and self.ai_signals["rear_bp"] > 10
             ) is False:
                 return False, "Missed PPR setpoint"
-            
+
             self.debug_state = 4
 
         self.initial_checkup_done = True
@@ -1193,11 +1200,11 @@ class OrionState(NodeManager):
             else:
                 if not self.di_signals["bypass_status"]:
                     return False, "BYPASS is OFF"
-            
+
             # Check brake pressures
             if self.ai_signals["front_bp"] < -10 or self.ai_signals["rear_bp"] < -10:
                 return False, "Lost brake pressure sensors"
-                            
+
             # check air pressures
             if self.driving_mode == DrivingModeStatesEnum.MANUAL:
                 if not (
@@ -1218,4 +1225,4 @@ class OrionState(NodeManager):
         return True, "OK"
 
 
-node = OrionState() 
+node = OrionState()
