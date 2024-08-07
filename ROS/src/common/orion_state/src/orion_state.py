@@ -27,6 +27,7 @@ from node_fixture.fixture import (
 )
 from node_fixture.node_manager import NodeManager
 from scheduling import JobScheduler
+from sensor_msg.msg import Image, PointCloud
 from std_msgs.msg import Bool, Float32, Float64, Header, UInt16
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped, State
 
@@ -156,6 +157,9 @@ class OrionState(NodeManager):
         self.as_state = None
         self.driving_mode = DrivingModeStatesEnum.MANUAL
 
+        self.lidar_time = rospy.Time.now()
+        self.cam_time = rospy.Time.now()
+
         # DV data
         self.dv_data = {
             "cones_count_all": 0,
@@ -248,6 +252,9 @@ class OrionState(NodeManager):
         # Subscribers
         rospy.Subscriber("/state", State, self.handle_external_state_change)
         rospy.Subscriber("/ugr/car/odometry/filtered/odom", Odometry, self.handle_odom)
+
+        rospy.Subscriber("/ugr/car/sensors/lidar", PointCloud, self.handle_lidar)
+        rospy.Subscriber("/ugr/car/sensors/cam0/image", Image, self.handle_image)
 
         # DI signals
         for di_signal in self.di_signals:
@@ -406,6 +413,12 @@ class OrionState(NodeManager):
 
         self.odom_avg.append(abs(odom.twist.twist.linear.x))
         self.vehicle_stopped = sum(list(self.odom_avg)) / len(list(self.odom_avg)) < 0.1
+
+    def handle_lidar(self, data: PointCloud):
+        self.lidar_time = rospy.Time.now()
+
+    def handle_image(self, data: Image):
+        self.cam_time = rospy.Time.now()
 
     def handle_external_state_change(self, state: State):
         """
@@ -1183,6 +1196,13 @@ class OrionState(NodeManager):
             # else:
             #     if not self.di_signals["bypass_status"]:
             #         return False, "BYPASS is OFF"
+
+            # Check if lidar and camera are working
+            if self.cam_time - rospy.Time.now() > rospy.Duration(
+                0.3
+            ) and self.lidar_time - rospy.Time.now() > rospy.Duration(0.3):
+                # 300ms
+                return False, "No Lidar PointClouds or Camera Image received"
 
         return True, "OK"
 
