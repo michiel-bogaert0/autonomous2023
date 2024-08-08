@@ -24,7 +24,7 @@ class PedalMapper(ManagedNode):
     def doConfigure(self):
         # ROS parameters
         self.max_deviation = rospy.get_param("~max_deviation", 10)
-        self.deadzone = rospy.get_param("~deadzone", 5)
+        self.deadzone = rospy.get_param("~deadzone", 10)
         self.max_effort = rospy.get_param("~max_effort", 2)
 
         self.as_state = None
@@ -74,8 +74,8 @@ class PedalMapper(ManagedNode):
             self.set_health(0, "Received APPS signal")
             self.last_received_hb = rospy.Time.now().to_sec()
 
-            apps1 = max(min(frame.data[0] * 1.5, 100), 0)
-            apps2 = max(min(frame.data[1] * 1.5, 100), 0)
+            apps1 = max(frame.data[0] * 1.5, 0)
+            apps2 = max(frame.data[1] * 1.5, 0)
 
             average_apps = max(min((apps1 + apps2) / 2, 100), 0)
 
@@ -107,10 +107,12 @@ class PedalMapper(ManagedNode):
                     if average_apps < 5:
                         self.bpsd_triggered = False
 
-                self.apps = average_apps
+                self.apps = apps
 
             else:
                 self.apps = 0
+                
+            self.apps = min(self.apps, 100)
 
     def active(self):
         self.max_effort = rospy.get_param("~max_effort", 2)

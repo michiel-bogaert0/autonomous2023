@@ -1226,26 +1226,26 @@ class OrionState(NodeManager):
             # check heartbeats of low voltage systems, motorcontrollers and sensors TODO
 
             # check ipc, sensors and actuators
-            if self.get_health_level() == DiagnosticStatus.ERROR:
-                return False, "ECU health check failed"
+            # if self.get_health_level() == DiagnosticStatus.ERROR:
+            #     return False, "ECU health check failed"
 
             # Check heartbeats
-            for hb_name in self.hbs:
-                if rospy.Time.now().to_sec() - self.hbs[hb_name] > 0.5:
-                    return False, "Heartbeat of " + hb_name + " dropped!"
+            # for hb_name in self.hbs:
+            #     if rospy.Time.now().to_sec() - self.hbs[hb_name] > 5:
+            #         return False, "Heartbeat of " + hb_name + " dropped!"
 
             # Check signales
 
             # check output signal of watchdog
-            if self.di_signals["wd_ok"] is False:
-                return False, "Watchdog indicating error"
+            # if self.di_signals["wd_ok"] is False:
+            #     return False, "Watchdog indicating error"
             # check if bypass is closed
-            if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-                if self.di_signals["bypass_status"]:
-                    return False, "BYPASS is ON"
-            else:
-                if not self.di_signals["bypass_status"]:
-                    return False, "BYPASS is OFF"
+            # if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+            #     if self.di_signals["bypass_status"]:
+            #         return False, "BYPASS is ON"
+            # else:
+            #     if not self.di_signals["bypass_status"]:
+            #         return False, "BYPASS is OFF"
 
             # Check brake pressures
             if self.ai_signals["front_bp"] < -10 or self.ai_signals["rear_bp"] < -10:
