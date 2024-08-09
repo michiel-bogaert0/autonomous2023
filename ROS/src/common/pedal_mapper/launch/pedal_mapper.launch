@@ -2,6 +2,6 @@
   <node name="pedal_mapper" pkg="pedal_mapper" type="pedal_mapper.py" output="screen">
     <param name="rate" value="15"/>
 
-    <param name="max_effort" value="120"/>
+    <param name="max_effort" value="150"/>
   </node>
 </launch>

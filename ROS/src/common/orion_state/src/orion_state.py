@@ -922,8 +922,8 @@ class OrionState(NodeManager):
                     )
                     self.bus.publish(serialcan_to_roscan(message))
 
-            elif self.car_state == OrionStateEnum.ERROR:
-                self.do_publishers["sdc_close"].publish(Bool(data=False))
+            # elif self.car_state == OrionStateEnum.ERROR:
+                # self.do_publishers["sdc_close"].publish(Bool(data=False))
 
     def update_as_state(self):
         if self.initial_checkup_done:
@@ -954,7 +954,7 @@ class OrionState(NodeManager):
                 if self.mission_finished and self.vehicle_stopped:
                     self.do_publishers["arm_ebs"].publish(Bool(data=False))
                     self.do_publishers["arm_dbs"].publish(Bool(data=False))
-                    self.do_publishers["sdc_close"].publish(Bool(data=False))
+                    # self.do_publishers["sdc_close"].publish(Bool(data=False))
 
                 if (
                     self.mission_selected
@@ -981,7 +981,7 @@ class OrionState(NodeManager):
             if self.as_state == AutonomousStatesEnum.ASEMERGENCY:
                 self.do_publishers["arm_ebs"].publish(Bool(data=False))
                 self.do_publishers["arm_dbs"].publish(Bool(data=False))
-                self.do_publishers["sdc_close"].publish(Bool(data=False))
+                # self.do_publishers["sdc_close"].publish(Bool(data=False))
                 self.wd_trigger_enable = False
         else:
             self.as_state = AutonomousStatesEnum.ASOFF

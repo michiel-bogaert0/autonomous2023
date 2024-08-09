@@ -59,7 +59,7 @@
   <!-- <include file="$(find iologik)/launch/iologik.launch" /> -->
 
   <!-- Vectornav -->
-  <include file="$(find vectornav)/launch/vectornav.launch"/>
+  <!-- <include file="$(find vectornav)/launch/vectornav.launch"/> -->
 
   <!-- Lidar and camera drivers -->
 
