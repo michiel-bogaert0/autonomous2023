@@ -6,6 +6,8 @@ from collections import deque
 from functools import partial
 from time import sleep
 
+import subprocess
+
 import can
 import cantools
 import rospy
@@ -45,6 +47,8 @@ class OrionState(NodeManager):
         self.initial_checkup_done = False
 
         self.debug_state = 0
+        
+        self.record_p = None
 
         rospy.set_param("/mission", "manual")
 
@@ -886,6 +890,13 @@ class OrionState(NodeManager):
                 if self.can_inputs["air1"] and self.can_inputs["air2"]:
                     self.change_state(OrionStateEnum.TS_ACTIVE)
 
+                    # Record rosbag
+                    if self.record_p is not None:
+                        self.record_p.terminate()
+                    
+                    self.record_p = subprocess.Popen("cd /home/ugr/rosbags && rosbag record -b 0 -a", stdin=subprocess.PIPE, shell=True, cwd="/",
+                                      executable='/bin/bash')
+
             # If both brake pressures are above 5, go to R2D_READY
             elif self.car_state == OrionStateEnum.TS_ACTIVE:
                 if self.ai_signals["front_bp"] > 2 and self.ai_signals["rear_bp"] > 2:
@@ -921,6 +932,13 @@ class OrionState(NodeManager):
                         dlc=8,
                     )
                     self.bus.publish(serialcan_to_roscan(message))
+                    
+        # Stop record script
+        if self.car_state not in [OrionStateEnum.TS_ACTIVE, OrionStateEnum.TS_ACTIVATING, OrionStateEnum.R2D_READY, OrionStateEnum.R2D]:
+            
+            if self.record_p is not None:
+                self.record_p.terminate()
+                self.record_p = None
 
             # elif self.car_state == OrionStateEnum.ERROR:
                 # self.do_publishers["sdc_close"].publish(Bool(data=False))
