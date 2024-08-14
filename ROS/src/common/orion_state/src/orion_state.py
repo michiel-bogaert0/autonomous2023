@@ -135,6 +135,23 @@ class OrionState(NodeManager):
             "sdc_close": None,
         }
 
+        self.pdu_output_status = {
+            "state_TSAL_pwr",
+            "state_TSAC_pwr",
+            "state_TSAC_fans_pwr",
+            "state_TSAC_fan_PWM",
+            "state_router_pwr",
+            "state_mctrl_2_pwr",
+            "state_mctrl_1_pwr",
+            "state_LV_box",
+            "state_lidar_bakje_pwr",
+            "state_IPC_pwr",
+            "state_discharge_pwr",
+            "state_DB_pwr",
+            "state_cooling_pump_1_pwr",
+            "state_cooling_fan_1_pwr",
+        }
+
         # CAN TX
         self.bus = self.AddPublisher("/ugr/can/lv/tx", Frame, queue_size=10)
 
@@ -562,6 +579,12 @@ class OrionState(NodeManager):
             else:
                 rospy.set_param("/mission", "manual")
 
+        # PDU status
+        if frame.id == 0x111:
+            self.pdu_output_status = self.db.decode_message(
+                frame.arbitration_id, frame.data
+            )
+
         # RES
         if frame.id == 0x711:
             self.bus.publish(
@@ -903,6 +926,35 @@ class OrionState(NodeManager):
                 if self.ai_signals["front_bp"] > 2 and self.ai_signals["rear_bp"] > 2:
                     self.change_state(OrionStateEnum.R2D_READY)
 
+                # Enable TSAC Fans
+                msg = self.db.get_message_by_name("set_outputs")
+                data = msg.encode(
+                    {
+                        "set_TSAC_fan_PWM": self.pdu_output_status["set_TSAC_fan_PWM"],
+                        "set_mctrl_2_pwr": self.pdu_output_status["state_mctrl_2_pwr"],
+                        "set_mctrl_1_pwr": self.pdu_output_status["state_mctrl_1_pwr"],
+                        "set_TSAL_pwr": self.pdu_output_status["state_TSAL_pwr"],
+                        "set_TSAC_pwr": self.pdu_output_status["state_TSAC_pwr"],
+                        "set_TSAC_fans_pwr": 1,
+                        "set_LV_box": self.pdu_output_status["state_LV_box"],
+                        "set_lidar_bakje_pwr": self.pdu_output_status[
+                            "state_lidar_bakje_pwr"
+                        ],
+                        "set_discharge_pwr": self.pdu_output_status[
+                            "state_discharge_pwr"
+                        ],
+                        "set_DB_pwr": self.pdu_output_status["state_DB_pwr"],
+                        "set_cooling_pump_1_pwr": self.pdu_output_status[
+                            "state_cooling_pump_1_pwr"
+                        ],
+                        "set_cooling_fan_1_pwr": self.pdu_output_status[
+                            "state_cooling_fan_1_pwr"
+                        ],
+                    }
+                )
+                message = can.Message(arbitration_id=msg.frame_id, data=data)
+                self.bus.publish(serialcan_to_roscan(message))
+
             # If R2D is pressed, go to R2D (when ok)
             elif self.car_state == OrionStateEnum.R2D_READY:
                 if self.ai_signals["front_bp"] < 2 or self.ai_signals["rear_bp"] < 2:
@@ -917,6 +969,37 @@ class OrionState(NodeManager):
                 ):
                     self.can_actions["r2d_pressed"] = False
                     self.change_state(OrionStateEnum.R2D)
+
+                    # Enable cooling
+                    msg = self.db.get_message_by_name("set_outputs")
+                    data = msg.encode(
+                        {
+                            "set_TSAC_fan_PWM": self.pdu_output_status[
+                                "set_TSAC_fan_PWM"
+                            ],
+                            "set_mctrl_2_pwr": self.pdu_output_status[
+                                "state_mctrl_2_pwr"
+                            ],
+                            "set_mctrl_1_pwr": self.pdu_output_status[
+                                "state_mctrl_1_pwr"
+                            ],
+                            "set_TSAL_pwr": self.pdu_output_status["state_TSAL_pwr"],
+                            "set_TSAC_pwr": self.pdu_output_status["state_TSAC_pwr"],
+                            "set_TSAC_fans_pwr": 1,
+                            "set_LV_box": self.pdu_output_status["state_LV_box"],
+                            "set_lidar_bakje_pwr": self.pdu_output_status[
+                                "state_lidar_bakje_pwr"
+                            ],
+                            "set_discharge_pwr": self.pdu_output_status[
+                                "state_discharge_pwr"
+                            ],
+                            "set_DB_pwr": self.pdu_output_status["state_DB_pwr"],
+                            "set_cooling_pump_1_pwr": 1,
+                            "set_cooling_fan_1_pwr": 1,
+                        }
+                    )
+                    message = can.Message(arbitration_id=msg.frame_id, data=data)
+                    self.bus.publish(serialcan_to_roscan(message))
 
                     if self.driving_mode == DrivingModeStatesEnum.DRIVERLESS:
                         self.job_scheduler.add_job_relative(
@@ -1084,23 +1167,21 @@ class OrionState(NodeManager):
         self.debug_state = 0
 
         if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-
-            pass
             # bypass needs to be off
-            # if self.di_signals["bypass_status"]:
-            #     self.checkup_result = (False, "BYPASS is ON")
-            #     return
+            if self.di_signals["bypass_status"]:
+                self.checkup_result = (False, "BYPASS is ON")
+                return
 
             # check air pressures
-            # if (
-            #     self.ai_signals["air_pressure1"] > 1
-            #     or self.ai_signals["air_pressure2"] > 1
-            # ):
-            #     self.checkup_result = (  
-            #         False,
-            #         f"ASB is still ENABLED: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
-            #     )
-            #     return
+            if (
+                self.ai_signals["air_pressure1"] > 1
+                or self.ai_signals["air_pressure2"] > 1
+            ):
+                self.checkup_result = (  
+                    False,
+                    f"ASB is still ENABLED: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
+                )
+                return
 
         else:
             self.debug_state = 1
