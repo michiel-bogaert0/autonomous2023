@@ -1,22 +1,25 @@
 #!/bin/bash
 
+arch=$(uname -m)
+
 function build {
     docker build -t ugr-base .
 }
 
 function build-nogpu {
-    docker build -t ugr-base -f Dockerfile.nogpu .
-}
-
-function build-silicon {
-    docker build -t ugr-base -f Dockerfile.silicon .
+    # If ARM use Dockerfile.silicon else Dockerfile.nogpu
+    if  [[ $arch == arm* ]]; then
+        docker build -t ugr-base -f Dockerfile.silicon .
+    else
+        docker build -t ugr-base -f Dockerfile.nogpu .
+    fi
 }
 
 function post-install {
 
     # Load submodules
     git submodule init
-	git submodule update
+    git submodule update
 
     # Install pre-commit hook
     sudo apt-get install cppcheck llvm
@@ -78,12 +81,6 @@ function install {
 
 function install-nogpu {
     build-nogpu
-    _set-docker-runtime runc
-    post-install
-}
-
-function install-silicon {
-    build-silicon
     _set-docker-runtime runc
     post-install
 }
@@ -158,11 +155,15 @@ function start {
     
     if [ ! -e "$file" ]; then
         echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'";
-        echo "lol"
         exit 324;
     fi
-    
-    docker compose up -d dev roscore rviz
+
+    # If ARM use foxglove else rviz
+    if  [[ $arch == arm* ]]; then
+        docker compose up -d dev roscore foxglove
+    else
+        docker compose up -d dev roscore rviz
+    fi
 }
 
 function start-headless {
@@ -175,18 +176,6 @@ function start-headless {
     fi
     
     docker compose up -d dev roscore
-}
-
-function start-silicon {
-    
-    file="env-vars.sh"
-    
-    if [ ! -e "$file" ]; then
-        echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'";
-        exit 1;
-    fi
-    
-    docker compose up -d dev roscore foxglove
 }
 
 function clean {
