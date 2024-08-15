@@ -14,5 +14,6 @@
     <remap from="/input/lapComplete" to="/ugr/car/lapComplete"/>
     <remap from="/input/steering_target" to="/ugr/car/steering_position_controller/command"/>
     <remap from="/input/steering_actual" to="/ugr/car/servo/position"/>
+    <remap from="/dio/out/arm_service_brake" to="/dio/out/arm_dbs"/>
   </node>
 </launch>

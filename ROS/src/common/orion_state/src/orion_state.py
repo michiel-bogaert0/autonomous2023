@@ -130,6 +130,7 @@ class OrionState(NodeManager):
             "wd_reset": None,
             "arm_ebs": None,
             "arm_dbs": None,
+            "arm_service_brake": None,
             "wd_trigger": None,
             "sdc_close": None,
         }
@@ -368,9 +369,9 @@ class OrionState(NodeManager):
     def handle_dbs(self, msg: Float64):
         
         if msg.data > 10:
-            self.do_publishers["arm_dbs"].publish(Bool(data=False))
+            self.do_publishers["arm_service_brake"].publish(Bool(data=False))
         else:
-            self.do_publishers["arm_dbs"].publish(Bool(data=True))
+            self.do_publishers["arm_service_brake"].publish(Bool(data=True))
             
 
     def change_state(self, new_state: OrionStateEnum):
@@ -632,38 +633,38 @@ class OrionState(NodeManager):
         #
         # 0x500 acc. to rules
         #
-        dv1_message = self.db.get_message_by_name("DV_1")
-        brake_hydr = 100 if self.ebs_activated else 0
-        motor_moment_actual = (
-            self.dv_data["right_ac_current"] + self.dv_data["left_ac_current"]
-        ) / (
-            240 * 2
-        )  # 240 = max ac current
-        data = dv1_message.encode(
-            {
-                "Motor_moment_target": motor_moment_actual,  # percentage // target topic ros control, dit van current naar moment
-                "Motor_moment_actual": motor_moment_actual,  # percentage
-                "Brake_hydr_actual": abs(brake_hydr),  # percentage
-                "Brake_hydr_target": abs(brake_hydr),  # percentage
-                "Steering_angle_target": self.dv_data["steering_angle_target"]
-                * 2
-                * 180
-                / math.pi,  # degrees, scale 0.5
-                "Steering_angle_actual": self.dv_data["steering_angle_actual"]
-                * 2
-                * 180
-                / math.pi,  # degrees, scale 0.5
-                "Speed_target": abs(rospy.get_param("/speed/target", 0.0))
-                * 3.6,  # km/h
-                "Speed_actual": abs(self.dv_data["speed_actual"]) * 3.6,  # km/h
-            }
-        )
+        # dv1_message = self.db.get_message_by_name("DV_1")
+        # brake_hydr = 100 if self.ebs_activated else 0
+        # motor_moment_actual = (
+        #     self.dv_data["right_ac_current"] + self.dv_data["left_ac_current"]
+        # ) / (
+        #     240 * 2
+        # )  # 240 = max ac current
+        # data = dv1_message.encode(
+        #     {
+        #         "Motor_moment_target": motor_moment_actual,  # percentage // target topic ros control, dit van current naar moment
+        #         "Motor_moment_actual": motor_moment_actual,  # percentage
+        #         "Brake_hydr_actual": abs(brake_hydr),  # percentage
+        #         "Brake_hydr_target": abs(brake_hydr),  # percentage
+        #         "Steering_angle_target": self.dv_data["steering_angle_target"]
+        #         * 2
+        #         * 180
+        #         / math.pi,  # degrees, scale 0.5
+        #         "Steering_angle_actual": self.dv_data["steering_angle_actual"]
+        #         * 2
+        #         * 180
+        #         / math.pi,  # degrees, scale 0.5
+        #         "Speed_target": abs(rospy.get_param("/speed/target", 0.0))
+        #         * 3.6,  # km/h
+        #         "Speed_actual": abs(self.dv_data["speed_actual"]) * 3.6,  # km/h
+        #     }
+        # )
 
-        message = can.Message(
-            arbitration_id=dv1_message.frame_id, data=data, is_extended_id=False
-        )
+        # message = can.Message(
+        #     arbitration_id=dv1_message.frame_id, data=data, is_extended_id=False
+        # )
 
-        self.bus.publish(serialcan_to_roscan(message))
+        # self.bus.publish(serialcan_to_roscan(message))
 
         #
         # 0x502 acc. to rules
@@ -894,8 +895,8 @@ class OrionState(NodeManager):
                     if self.record_p is not None:
                         self.record_p.terminate()
                     
-                    self.record_p = subprocess.Popen("cd /home/ugr/rosbags && rosbag record -b 0 -a", stdin=subprocess.PIPE, shell=True, cwd="/",
-                                      executable='/bin/bash')
+                    # self.record_p = subprocess.Popen("cd /home/ugr/rosbags && rosbag record -b 0 -a", stdin=subprocess.PIPE, shell=True, cwd="/",
+                    #                   executable='/bin/bash')
 
             # If both brake pressures are above 5, go to R2D_READY
             elif self.car_state == OrionStateEnum.TS_ACTIVE:
@@ -946,11 +947,13 @@ class OrionState(NodeManager):
     def update_as_state(self):
         if self.initial_checkup_done:
             # Signals
+            # arm_dbs signal is not used to check if EBS is activated because
+            # arm_dbs is actually the service brake and in case of an
+            # emergecny, arm_ebs and arm_dbs are always triggered together
             self.ebs_activated = (
                 # TODO change sdc_out to check state instead
                 self.car_state == OrionStateEnum.SDC_OPEN
                 or self.do_feedback["arm_ebs"] is False
-                or self.do_feedback["arm_dbs"] is False
                 or self.can_inputs["res_activated"] is True
             )
             self.mission_selected = (
@@ -963,10 +966,14 @@ class OrionState(NodeManager):
             elif self.ebs_activated:
                 if self.mission_finished and self.vehicle_stopped:
                     if self.can_inputs["res_activated"]:
+                        print("EMERGECNY 1")
+                        print(self.do_feedback)
                         self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
                     else:
                         self.change_as_state(AutonomousStatesEnum.ASFINISHED)
                 else:
+                    print("EMERGECNY 2")
+                    print(self.do_feedback)
                     self.change_as_state(AutonomousStatesEnum.ASEMERGENCY)
             else:
                 if self.mission_finished and self.vehicle_stopped:
@@ -1077,20 +1084,23 @@ class OrionState(NodeManager):
         self.debug_state = 0
 
         if self.driving_mode == DrivingModeStatesEnum.MANUAL:
+
+            pass
             # bypass needs to be off
-            if self.di_signals["bypass_status"]:
-                self.checkup_result = (False, "BYPASS is ON")
-                return
+            # if self.di_signals["bypass_status"]:
+            #     self.checkup_result = (False, "BYPASS is ON")
+            #     return
 
             # check air pressures
-            if (
-                self.ai_signals["air_pressure1"] > 1
-                or self.ai_signals["air_pressure2"] > 1
-            ):
-                return (
-                    False,
-                    f"ASB is still ENABLED: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
-                )
+            # if (
+            #     self.ai_signals["air_pressure1"] > 1
+            #     or self.ai_signals["air_pressure2"] > 1
+            # ):
+            #     self.checkup_result = (  
+            #         False,
+            #         f"ASB is still ENABLED: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
+            #     )
+            #     return
 
         else:
             self.debug_state = 1
@@ -1098,16 +1108,21 @@ class OrionState(NodeManager):
             # wait (asms still registering)
             self.dbs_pub.publish(Float64(4))
             time.sleep(2)
+            print("start")
 
             # mission needs to be selected
             if not (rospy.has_param("/mission") and rospy.get_param("/mission") != ""):
                 self.checkup_result = (False, "No mission selected")
                 return (False, "NO MISSION SELECTED")
+            
+            print("mission")
 
             # bypass needs to be on
             if not self.di_signals["bypass_status"]:
                 self.checkup_result = (False, "BYPASS is OFF")
                 return (False, "BYPASS IS OFF")
+            
+            print("bypass ok")
 
             # check air pressures
             if not (
@@ -1121,6 +1136,8 @@ class OrionState(NodeManager):
                     f"Air pressures out of range: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
                 )
                 return
+            
+            print("air ok")
 
             self.debug_state = 2
 
@@ -1128,6 +1145,8 @@ class OrionState(NodeManager):
             if self.di_signals["wd_ok"] is False:
                 self.checkup_result = (False, "Watchdog indicating error")
                 return
+            
+            print("wd ok")
 
             # stop toggling watchdog
             self.wd_trigger_enable = False
@@ -1141,6 +1160,8 @@ class OrionState(NodeManager):
                     "Watchdog not indicating error after we stopped toggling",
                 )
                 return
+            
+            print("wd error ok")
 
             # start toggling watchdog
             self.wd_trigger_enable = True
@@ -1151,12 +1172,19 @@ class OrionState(NodeManager):
             self.do_publishers["wd_reset"].publish(Bool(data=False))
             time.sleep(2)
 
+            print("reset ok")
+
             # watchdog OK?
             if self.di_signals["wd_ok"] is False:
                 self.checkup_result = (False, "Watchdog indicating error")
                 return (False, "WD indicates error")
 
             self.debug_state = 3
+
+            print("okok ASRRRR")
+
+            self.do_publishers["arm_ebs"].publish(Bool(data=True))
+            self.do_publishers["arm_dbs"].publish(Bool(data=True))
 
             self.dbs_pub.publish(Float64(4))
 

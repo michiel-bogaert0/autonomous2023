@@ -1,5 +1,5 @@
 <launch>
-  <node name="ethercat_cia402" pkg="ethercat_cia402" type="ethercat_cia402" output="screen"
+  <node name="ethercat_cia402" pkg="ethercat_cia402" type="ethercat_cia402" output="log"
     launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
     <!--! Parameters -->
     <!-- Interface to which servo is connected -->
