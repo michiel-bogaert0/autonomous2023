@@ -136,6 +136,7 @@ class OrionState(NodeManager):
         }
 
         self.pdu_output_status = {
+            "set_TSAC_fan_PWM",
             "state_TSAL_pwr",
             "state_TSAC_pwr",
             "state_TSAC_fans_pwr",
@@ -582,8 +583,9 @@ class OrionState(NodeManager):
         # PDU status
         if frame.id == 0x111:
             self.pdu_output_status = self.db.decode_message(
-                frame.arbitration_id, frame.data
+                frame.id, frame.data
             )
+            # print(self.pdu_output_status)
 
         # RES
         if frame.id == 0x711:
@@ -928,30 +930,7 @@ class OrionState(NodeManager):
 
                 # Enable TSAC Fans
                 msg = self.db.get_message_by_name("set_outputs")
-                data = msg.encode(
-                    {
-                        "set_TSAC_fan_PWM": self.pdu_output_status["set_TSAC_fan_PWM"],
-                        "set_mctrl_2_pwr": self.pdu_output_status["state_mctrl_2_pwr"],
-                        "set_mctrl_1_pwr": self.pdu_output_status["state_mctrl_1_pwr"],
-                        "set_TSAL_pwr": self.pdu_output_status["state_TSAL_pwr"],
-                        "set_TSAC_pwr": self.pdu_output_status["state_TSAC_pwr"],
-                        "set_TSAC_fans_pwr": 1,
-                        "set_LV_box": self.pdu_output_status["state_LV_box"],
-                        "set_lidar_bakje_pwr": self.pdu_output_status[
-                            "state_lidar_bakje_pwr"
-                        ],
-                        "set_discharge_pwr": self.pdu_output_status[
-                            "state_discharge_pwr"
-                        ],
-                        "set_DB_pwr": self.pdu_output_status["state_DB_pwr"],
-                        "set_cooling_pump_1_pwr": self.pdu_output_status[
-                            "state_cooling_pump_1_pwr"
-                        ],
-                        "set_cooling_fan_1_pwr": self.pdu_output_status[
-                            "state_cooling_fan_1_pwr"
-                        ],
-                    }
-                )
+                data = [1, 1, 0, 0, 0, 0, 0, 0]
                 message = can.Message(arbitration_id=msg.frame_id, data=data)
                 self.bus.publish(serialcan_to_roscan(message))
 
@@ -972,32 +951,7 @@ class OrionState(NodeManager):
 
                     # Enable cooling
                     msg = self.db.get_message_by_name("set_outputs")
-                    data = msg.encode(
-                        {
-                            "set_TSAC_fan_PWM": self.pdu_output_status[
-                                "set_TSAC_fan_PWM"
-                            ],
-                            "set_mctrl_2_pwr": self.pdu_output_status[
-                                "state_mctrl_2_pwr"
-                            ],
-                            "set_mctrl_1_pwr": self.pdu_output_status[
-                                "state_mctrl_1_pwr"
-                            ],
-                            "set_TSAL_pwr": self.pdu_output_status["state_TSAL_pwr"],
-                            "set_TSAC_pwr": self.pdu_output_status["state_TSAC_pwr"],
-                            "set_TSAC_fans_pwr": 1,
-                            "set_LV_box": self.pdu_output_status["state_LV_box"],
-                            "set_lidar_bakje_pwr": self.pdu_output_status[
-                                "state_lidar_bakje_pwr"
-                            ],
-                            "set_discharge_pwr": self.pdu_output_status[
-                                "state_discharge_pwr"
-                            ],
-                            "set_DB_pwr": self.pdu_output_status["state_DB_pwr"],
-                            "set_cooling_pump_1_pwr": 1,
-                            "set_cooling_fan_1_pwr": 1,
-                        }
-                    )
+                    data = [7, 1, 0, 0, 0, 0, 0, 0]
                     message = can.Message(arbitration_id=msg.frame_id, data=data)
                     self.bus.publish(serialcan_to_roscan(message))
 
@@ -1016,16 +970,24 @@ class OrionState(NodeManager):
                         dlc=8,
                     )
                     self.bus.publish(serialcan_to_roscan(message))
-                    
+        
+            elif self.car_state == OrionStateEnum.ERROR:
+                    self.do_publishers["sdc_close"].publish(Bool(data=False))
+                
         # Stop record script
         if self.car_state not in [OrionStateEnum.TS_ACTIVE, OrionStateEnum.TS_ACTIVATING, OrionStateEnum.R2D_READY, OrionStateEnum.R2D]:
             
             if self.record_p is not None:
                 self.record_p.terminate()
                 self.record_p = None
+                
+            # Stop cooling
+            msg = self.db.get_message_by_name("set_outputs")
+            data = [0, 1, 0, 0, 0, 0, 0, 0]
+            message = can.Message(arbitration_id=msg.frame_id, data=data)
+            self.bus.publish(serialcan_to_roscan(message))
 
-            # elif self.car_state == OrionStateEnum.ERROR:
-                # self.do_publishers["sdc_close"].publish(Bool(data=False))
+            
 
     def update_as_state(self):
         if self.initial_checkup_done:
@@ -1380,12 +1342,12 @@ class OrionState(NodeManager):
 
             # check air pressures
             if self.driving_mode == DrivingModeStatesEnum.MANUAL:
-                if not (
-                    self.ai_signals["air_pressure1"] < 1
-                    and self.ai_signals["air_pressure2"] < 1
-                ):
-                    return False, "Air pressures not released"
-
+                # if not (
+                #     self.ai_signals["air_pressure1"] < 1
+                #     and self.ai_signals["air_pressure2"] < 1
+                # ):
+                #     return False, "Air pressures not released"
+                pass
             else:
                 if not (
                     self.ai_signals["air_pressure1"] > 5
