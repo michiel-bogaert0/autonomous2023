@@ -869,6 +869,24 @@ class OrionState(NodeManager):
             self.do_publishers["wd_trigger"].publish(Bool(data=self.wd_trigger_status))
             self.wd_trigger_status = not self.wd_trigger_status
 
+    def enable_tsac_fans(self):
+        msg = self.db.get_message_by_name("set_outputs")
+        data = [1, 1, 0, 0, 0, 0, 0, 0]
+        message = can.Message(arbitration_id=msg.frame_id, data=data)
+        self.bus.publish(serialcan_to_roscan(message))
+                
+    def enable_cooling(self):
+        msg = self.db.get_message_by_name("set_outputs")
+        data = [7, 1, 0, 0, 0, 0, 0, 0]
+        message = can.Message(arbitration_id=msg.frame_id, data=data)
+        self.bus.publish(serialcan_to_roscan(message))
+                    
+    def disable_cooling(self):
+        msg = self.db.get_message_by_name("set_outputs")
+        data = [0, 1, 0, 0, 0, 0, 0, 0]
+        message = can.Message(arbitration_id=msg.frame_id, data=data)
+        self.bus.publish(serialcan_to_roscan(message))
+            
     def update_car_state(self):
         """
         Sets the car state based on current state and incoming signals
@@ -920,8 +938,8 @@ class OrionState(NodeManager):
                     if self.record_p is not None:
                         self.record_p.terminate()
                     
-                    # self.record_p = subprocess.Popen("cd /home/ugr/rosbags && rosbag record -b 0 -a", stdin=subprocess.PIPE, shell=True, cwd="/",
-                    #                   executable='/bin/bash')
+                    self.record_p = subprocess.Popen("cd /home/ugr/rosbags && rosbag record -b 0 -a", stdin=subprocess.PIPE, shell=True, cwd="/",
+                                      executable='/bin/bash')
 
             # If both brake pressures are above 5, go to R2D_READY
             elif self.car_state == OrionStateEnum.TS_ACTIVE:
@@ -929,10 +947,8 @@ class OrionState(NodeManager):
                     self.change_state(OrionStateEnum.R2D_READY)
 
                 # Enable TSAC Fans
-                msg = self.db.get_message_by_name("set_outputs")
-                data = [1, 1, 0, 0, 0, 0, 0, 0]
-                message = can.Message(arbitration_id=msg.frame_id, data=data)
-                self.bus.publish(serialcan_to_roscan(message))
+                self.job_scheduler.remove_job_by_tag("disable_cooling")
+                self.job_scheduler.add_job_relative(3, self.enable_tsac_fans, tag="enable_tsac_fans")                
 
             # If R2D is pressed, go to R2D (when ok)
             elif self.car_state == OrionStateEnum.R2D_READY:
@@ -950,10 +966,8 @@ class OrionState(NodeManager):
                     self.change_state(OrionStateEnum.R2D)
 
                     # Enable cooling
-                    msg = self.db.get_message_by_name("set_outputs")
-                    data = [7, 1, 0, 0, 0, 0, 0, 0]
-                    message = can.Message(arbitration_id=msg.frame_id, data=data)
-                    self.bus.publish(serialcan_to_roscan(message))
+                    self.job_scheduler.remove_job_by_tag("disable_cooling")
+                    self.job_scheduler.add_job_relative(1, self.enable_cooling, tag="enable_cooling")
 
                     if self.driving_mode == DrivingModeStatesEnum.DRIVERLESS:
                         self.job_scheduler.add_job_relative(
@@ -982,12 +996,9 @@ class OrionState(NodeManager):
                 self.record_p = None
                 
             # Stop cooling
-            msg = self.db.get_message_by_name("set_outputs")
-            data = [0, 1, 0, 0, 0, 0, 0, 0]
-            message = can.Message(arbitration_id=msg.frame_id, data=data)
-            self.bus.publish(serialcan_to_roscan(message))
-
-            
+            self.job_scheduler.remove_job_by_tag("enable_cooling")
+            self.job_scheduler.remove_job_by_tag("enable_tsac_fans")
+            self.job_scheduler.add_job_relative(10, self.disable_cooling, tag="disable_cooling")
 
     def update_as_state(self):
         if self.initial_checkup_done:
