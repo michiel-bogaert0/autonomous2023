@@ -4,7 +4,7 @@
 
   <include file="$(find ugr_launch)/launch/frames/$(arg frames).launch" pass_all_args="true" />
 
-  <!-- <include file="$(find ugr_launch)/launch/internal/run.launch" pass_all_args="true" /> -->
+  <include file="$(find ugr_launch)/launch/internal/run.launch" pass_all_args="true" />
 
   <!-- State machine -->
   <include file="$(find orion_state)/launch/orion_state.launch" pass_all_args="true"/>
@@ -67,9 +67,9 @@
     <arg name="type" default="camera" />
   </include>
 
-  <!-- <include file="$(find ouster_ros)/launch/sensor.launch">
+  <include file="$(find ouster_ros)/launch/sensor.launch">
     <arg name="timestamp_mode" default="TIME_FROM_PTP_1588" />
-  </include> -->
+  </include>
 
   <include file="$(find ethercat_cia402)/launch/ethercat_cia402.launch" pass_all_args="true"/>
 
