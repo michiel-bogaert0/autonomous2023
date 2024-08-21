@@ -25,7 +25,7 @@
 
 // Max span in units (MAX approx 140deg = 2.443460952792061rad = 16333333.33...
 // units)
-#define MAX_SPAN 16333333
+#define MAX_SPAN 15166666
 
 #ifdef __cplusplus
 extern "C" {
