@@ -6,10 +6,11 @@ slam_controller:
       - lap_counter
       - map_publisher
 
+      - ecat_driver
+
       # Control
-      - front_wheel_feedback_control
+      - pure_pursuit_control
       - path_publisher
-      - path_smoother
 
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
@@ -17,17 +18,17 @@ lap_counter:
   finishpoint: [75, 0, 0]
 map_publisher:
   map_pkg: "slam_simulator"
-  map: "/maps/acceleration_75m.yaml"
+  map: "/maps/acceleration_map.yaml"
 speed:
-  target: 10.0
+  target: 12
   LC_adaptive_velocity: False
 pure_pursuit:
   change_index: False
   world_frame: "ugr/map"
   speed_start: 1
-  speed_stop: 2
-  distance_start: 1.5
-  distance_stop: 3.3
+  speed_stop: 12
+  distance_start: 3
+  distance_stop: 7
 front_wheel_feedback:
   change_index: False
   world_frame: "ugr/map"
@@ -40,4 +41,4 @@ mpc:
   world_frame: "ugr/map"
 path_publisher:
   package_path: "path_publisher"
-  path: "/paths/straight_L75.yaml"
+  path: "/paths/acceleration_cen.yaml"

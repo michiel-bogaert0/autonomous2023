@@ -754,7 +754,7 @@ class OrionState(NodeManager):
             {
                 "Cones_count_all": abs(self.dv_data["cones_count_all"]),
                 "Cones_count_actual": abs(self.dv_data["cones_count_actual"]),
-                "Lap_counter": abs(self.dv_data["lap_counter"]),
+                "Lap_counter": 0,
                 "Service_brake_state": service_brake_state,
                 "Steering_state": 0,
                 "AMI_state": ami_state_bits,
@@ -812,22 +812,15 @@ class OrionState(NodeManager):
             self.checkup_result = None
             self.switched_driving_mode = False
             self.do_publishers["sdc_close"].publish(Bool(data=True))
-            
-            print("printing msg")
-            print("printing msg")
-            print("printing msg")
-            print("printing msg")
-            print("printing msg")
-            print("printing msg")
-            print("printing msg")
-            print(msg)
+
             if not checks_ok:
                 self.change_state(OrionStateEnum.ERROR)
                 self.set_health(
                     DiagnosticStatus.ERROR,
                     f"Initial checkup failed in mode '{self.driving_mode}'. Got error '{msg}'",
                 )
-            self.activate_nodes(self.driving_mode, None)
+            # self.activate_nodes(self.driving_mode, None)
+            print("SWITCHNG controllers \n\n\n")
             self.switch_controllers()
 
         # Update state machines
@@ -1197,6 +1190,11 @@ class OrionState(NodeManager):
 
         else:
             self.debug_state = 1
+            
+            # time.sleep(4)
+            # print("LOLOLO\n\n\n\n\n")
+            
+            
 
             # wait (asms still registering)
 
@@ -1276,7 +1274,8 @@ class OrionState(NodeManager):
                 return (False, "WD indicates error")
 
             self.debug_state = 3
-
+            
+            self.activate_nodes(self.driving_mode, None)
             print("okok ASRRRR")
 
             # Wait until we are in TS_ACTIVE
@@ -1361,10 +1360,7 @@ class OrionState(NodeManager):
         return
 
     def monitor(self):
-        print("LOLOLOLO")
-        print(self.car_state)
-        print(self.as_state)
-        print(self.driving_mode)
+
         if self.car_state == OrionStateEnum.R2D:
             # check heartbeats of low voltage systems, motorcontrollers and sensors TODO
             if self.driving_mode == DrivingModeStatesEnum.MANUAL:

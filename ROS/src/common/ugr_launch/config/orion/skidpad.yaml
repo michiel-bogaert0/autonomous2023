@@ -7,27 +7,27 @@ slam_controller:
       - map_publisher
 
       # Control
-      - front_wheel_feedback_control
+      - pure_pursuit_control
       - path_publisher
-      - path_smoother
+      - ecat_driver
 
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
 lap_counter:
-  finishpoint: [24, 0, 0]
+  finishpoint: [26, 0, 0]
 map_publisher:
   map_pkg: "slam_simulator"
-  map: "/maps/skidpad.yaml"
+  map: "/maps/skidpad_map.yaml"
 speed:
-  target: 2.0
+  target: 5.8
   LC_adaptive_velocity: False
 pure_pursuit:
   change_index: False
   world_frame: "ugr/map"
   speed_start: 1
-  speed_stop: 2
-  distance_start: 1.5
-  distance_stop: 3.3
+  speed_stop: 5.8
+  distance_start: 4
+  distance_stop: 5.5
 front_wheel_feedback:
   change_index: False
   world_frame: "ugr/map"
@@ -39,4 +39,4 @@ mpc:
   world_frame: "ugr/map"
 path_publisher:
   package_path: "path_publisher"
-  path: "/paths/skidpad.yaml"
+  path: "/paths/skidpad_cen.yaml"
