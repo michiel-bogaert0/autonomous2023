@@ -47,7 +47,7 @@ class Controller(NodeManager):
         )
 
         self.brake_publisher = rospy.Publisher(
-            "/iologik/input1", Float32, queue_size=10
+            "/iologik/output1", Float32, queue_size=10
         )
 
         self.change_state(SLAMStatesEnum.IDLE)
@@ -62,13 +62,17 @@ class Controller(NodeManager):
         self.mission = rospy.get_param("/mission")
 
         # Configure parameters after mission is set. Also loads in the parameter for the node manager
+        print("Loading params for mission ", self.mission, "\n\n\n")
         load_params(self.mission)
 
         # Configure nodes after mission is set
         # When this doesn't work, the thread joins, so the mission change is not executed
         # But the health state will reflect that and the state machine will try again next loop iteration
+        print("SLAM: configuring nodes\n\n\n")
         if not self.configure_nodes():
             return
+        
+        print("SLAM: configured nodes\n\n\n")
 
         # Reset loop counter
         rospy.ServiceProxy("/reset_closure", Empty)
@@ -96,6 +100,7 @@ class Controller(NodeManager):
             new_state = SLAMStatesEnum.EXPLORATION
 
         # Same logic as in configure nodes
+        print("SLAM, activating nodes: ", new_state, self.slam_state, "\n\n\n")
         if not self.activate_nodes(new_state, self.slam_state):
             return
 
@@ -114,15 +119,19 @@ class Controller(NodeManager):
         ):
             if rospy.has_param("/mission") and rospy.get_param("/mission") != "":
                 if not self.change_mission_thread.is_alive():
+                    
+                    print("LOLdown\n\n")
                     # You cannot 'restart' a thread, so we make a new one after the other one is not alive anymore
                     self.change_mission_thread = Thread(target=self.change_mission)
                     self.change_mission_thread.start()
 
             else:
+                print("UNCONFIGURE\n\n\n")
                 self.unconfigure_nodes()
                 rospy.set_param("/speed/target", 0.0)
 
         elif not rospy.has_param("/mission"):
+            print("unconfigure2\n\n\n")
             self.unconfigure_nodes()
 
             rospy.set_param("/speed/target", 0.0)
@@ -157,9 +166,9 @@ class Controller(NodeManager):
 
         new_state = self.slam_state
 
-        if state.scope == StateMachineScopeEnum.AUTONOMOUS:
-            if state.cur_state == AutonomousStatesEnum.ASREADY:
-                new_state = SLAMStatesEnum.IDLE
+        # if state.scope == StateMachineScopeEnum.AUTONOMOUS:
+        #     if state.cur_state == AutonomousStatesEnum.ASREADY:
+        #         new_state = SLAMStatesEnum.IDLE
 
         self.change_state(new_state)
 
@@ -170,9 +179,13 @@ class Controller(NodeManager):
         Args:
             new_state: state to switch to.
         """
+        
 
         if new_state == self.slam_state:
             return
+        
+        print("SLAM STATE: from ", self.slam_state, " to ", new_state)
+
 
         self.state_publisher.publish(
             State(
