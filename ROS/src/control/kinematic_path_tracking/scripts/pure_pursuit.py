@@ -64,7 +64,7 @@ class PurePursuit(KinematicTrackingNode):
             np.arctan2(self.L, R), np.pi / 2
         )
 
-        self.steering_cmd.data /= self.steering_transmission
+        self.steering_cmd.data /= self.steering_transmission * (-1)
 
         self.diagnostics_pub.publish(
             create_diagnostic_message(

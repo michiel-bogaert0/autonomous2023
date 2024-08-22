@@ -56,7 +56,7 @@ class FrontWheelFeedback(KinematicTrackingNode):
 
         # Convert to steering angle
         self.steering_cmd.data = np.arctan(pid_u) + heading_error
-        self.steering_cmd.data /= self.steering_transmission
+        self.steering_cmd.data /= -self.steering_transmission
 
         # Velocity point
         self.speed_target = rospy.get_param("/speed/target", 3.0)
