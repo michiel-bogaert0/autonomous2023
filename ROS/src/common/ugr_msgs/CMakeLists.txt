@@ -43,6 +43,8 @@ add_message_files(
   TrajectoryInfo.msg
   TrajectoryMapInfo.msg
   KeyValueFloat.msg
+  PoseStampedWithIds.msg
+  PathWithIds.msg
 )
 
 generate_messages(

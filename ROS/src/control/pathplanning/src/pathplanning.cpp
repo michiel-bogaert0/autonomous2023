@@ -7,11 +7,12 @@ TransformFrames::TransformFrames(ros::NodeHandle &n)
 
 Pathplanning::Pathplanning(ros::NodeHandle &n)
     : ManagedNode(n, "pathplanning"), n_(n), frametf_(n), triangulator_(n),
-      debug_visualisation_(n.param<bool>("debug_visualisation", false)) {}
+      debug_visualisation_(n.param<bool>("debug_visualisation", false)),
+      use_orange_cones_(n.param<bool>("use_orange_cones", false)) {}
 
 void Pathplanning::doConfigure() {}
 void Pathplanning::doActivate() {
-  this->path_pub_ = n_.advertise<nav_msgs::Path>("/output/path", 10);
+  this->path_pub_ = n_.advertise<ugr_msgs::PathWithIds>("/output/path", 10);
   this->map_sub_ = n_.subscribe("/input/local_map", 10,
                                 &Pathplanning::receive_new_map, this);
   this->vis_paths_ =
@@ -27,11 +28,15 @@ void Pathplanning::receive_new_map(
   }
   std::vector<std::vector<double>> cones;
   for (const auto &obs_with_cov : track->observations) {
-    std::vector<double> cone;
-    cone.push_back(obs_with_cov.observation.location.x);
-    cone.push_back(obs_with_cov.observation.location.y);
-    cone.push_back(obs_with_cov.observation.observation_class);
-    cones.push_back(cone);
+    if (!(!this->use_orange_cones_ &&
+          obs_with_cov.observation.observation_class == 2)) {
+      std::vector<double> cone;
+      cone.push_back(obs_with_cov.observation.location.x);
+      cone.push_back(obs_with_cov.observation.location.y);
+      cone.push_back(obs_with_cov.observation.observation_class);
+      cone.push_back(obs_with_cov.observation.id);
+      cones.push_back(cone);
+    }
   }
 
   compute(cones, track->header);
@@ -56,10 +61,27 @@ void Pathplanning::compute(const std::vector<std::vector<double>> &cones,
       node_fixture::DiagnosticStatusEnum::OK, "Path Compute Status",
       "Path found.");
 
-  std::vector<geometry_msgs::PoseStamped> poses;
+  // Find ID's of the cones connected to find the center point
+  std::vector<std::vector<int>> cone_ids;
 
-  for (const auto &node : path) {
-    geometry_msgs::PoseStamped pose;
+  for (auto &node : path) {
+    for (size_t i = 0; i < cones.size(); i++) {
+      for (size_t j = 0; j < cones.size(); j++) {
+        // Centerpoint
+        if (i != j &&
+            (fabs(((cones[i][0] + cones[j][0]) / 2 - node->x)) < 0.00001 &&
+             fabs(((cones[i][1] + cones[j][1]) / 2 - node->y)) < 0.00001)) {
+          cone_ids.push_back({cones[i][3], cones[j][3]});
+        }
+      }
+    }
+  }
+
+  std::vector<ugr_msgs::PoseStampedWithIds> poses;
+
+  for (size_t i = 0; i < path.size(); i++) {
+    auto node = path[i];
+    ugr_msgs::PoseStampedWithIds pose;
 
     pose.pose.position.x = node->x;
     pose.pose.position.y = node->y;
@@ -70,18 +92,21 @@ void Pathplanning::compute(const std::vector<std::vector<double>> &cones,
     pose.pose.orientation.z = 0.0;
     pose.pose.orientation.w = 1.0;
 
+    pose.left_id = cone_ids[i][0];
+    pose.right_id = cone_ids[i][1];
+
     pose.header.frame_id = header.frame_id;
     pose.header.stamp = header.stamp;
 
     poses.push_back(pose);
   }
 
-  nav_msgs::Path output;
+  ugr_msgs::PathWithIds output;
   output.header.frame_id = header.frame_id;
   output.poses = poses;
   output.header.stamp = header.stamp;
 
-  nav_msgs::Path output_transformed = output;
+  ugr_msgs::PathWithIds output_transformed = output;
 
   this->path_pub_.publish(output_transformed);
 
