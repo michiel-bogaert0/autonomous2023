@@ -183,7 +183,7 @@ void *loop(void *mode_ptr) {
       clock_gettime(CLOCK_MONOTONIC, &tcur);
     } while ((tcur.tv_sec - tprev.tv_sec) * 1000000000 +
                  (tcur.tv_nsec - tprev.tv_nsec) <
-             10000000);
+             2000000);
     tprev = tcur;
 
     // Do logic

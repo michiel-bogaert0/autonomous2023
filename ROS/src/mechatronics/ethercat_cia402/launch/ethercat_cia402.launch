@@ -3,7 +3,7 @@
     launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
     <!--! Parameters -->
     <!-- Interface to which servo is connected -->
-    <param name="ifname" value="enp5s0"/>
+    <param name="ifname" value="enp6s0"/>
     <!-- Mode of operatiton -->
     <param name="mode" value="1"/> <!-- 0: CSP, 1: CSV, 2: CST, 3: PP -->
     <!-- Interval to update values -->
