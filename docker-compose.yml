@@ -25,8 +25,8 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - "./:/home/ugr/autonomous2023/:rw"
-  foxglove:
-    container_name: foxglove
+  foxglove-bridge:
+    container_name: foxglove-bridge
     image: ugr-base
     network_mode: "host"
     depends_on:
@@ -34,7 +34,7 @@ services:
     restart: always
     tty: true
     privileged: true
-    entrypoint: /bin/zsh -c '~/autonomous2023/foxglove.sh'
+    entrypoint: /bin/zsh -c '~/autonomous2023/foxglove-silicon.sh'
     volumes:
       - "./:/home/ugr/autonomous2023/:rw"
   dev:

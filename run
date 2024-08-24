@@ -158,9 +158,9 @@ function start {
         exit 324;
     fi
 
-    # If ARM use foxglove else rviz
+    # If ARM use foxglove-bridge else rviz
     if  [[ $arch == arm* ]]; then
-        docker compose up -d dev roscore foxglove
+        docker compose up -d dev roscore foxglove-bridge
     else
         docker compose up -d dev roscore rviz
     fi
