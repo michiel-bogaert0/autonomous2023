@@ -23,7 +23,7 @@ class GTMapServer:
 
         try:
             with open(
-                f"/home/ugr/autonomous2023/ROS/src/slam/slam_simulator/maps/{self.map}.yaml",
+                f"/home/ugr/autonomous2023/ROS/src/slam/slam_simulator/maps/{self.map}",
                 "r",
             ) as f:
                 data = yaml.safe_load(f)
