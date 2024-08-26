@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="map" default="chicane"/>
+  <arg name="map" default="chicane.yaml"/>
 
   <node pkg="slam_simulator" name="gt_map_server" type="gt_map_server.py" output="screen" > 
     <param name="map" value="$(arg map)" />
