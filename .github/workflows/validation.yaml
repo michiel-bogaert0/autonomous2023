@@ -72,7 +72,7 @@ jobs:
           ./run set-car simulation
           ./run set-random-roscore-port
           ./run start-headless
-          ./run simulation trackdrive trackdrive
+          ./run simulation trackdrive chicane
           docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _name:=trackdrive _timeout:=180 _record_rosbag:=true"
           ./run stop
       - name: Upload rosbag
