@@ -260,6 +260,7 @@ function simulation {
       exit 1;
     fi
 
+    echo "Starting simulation with mission: $1 and ground truth map: $2"
     clean ugr
     launch simulation filename:=$2.yaml
     launch run mission:=$1 use_sim_time:=$use_sim_time
@@ -309,8 +310,13 @@ function connect-pegasus {
 }
 
 function record-rosbag {
+    local output_name=""
 
-    docker run --name ugr-rosbag-record-$(date +'%Y%m%d%H%M%S') \
+    if [ -n "$1" ]; then
+        output_name="-O $1.bag"
+    fi
+
+    docker run -d --name ugr-rosbag-record-$1-$(date +'%Y%m%d%H%M%S') \
     --privileged \
     --network host \
     -e DISPLAY=$DISPLAY \
@@ -322,7 +328,7 @@ function record-rosbag {
     -v /dev:/dev \
     -v ./../rosbags:/home/ugr/rosbags/:rw \
     ugr-base \
-    /bin/zsh -c "source ~/.zshrc && cd ~/rosbags && rosbag record -a -b 0 --lz4"
+    /bin/zsh -c "source ~/.zshrc && cd ~/rosbags && rosbag record -a -b 0 --lz4 $output_name"
 }
 
 function help {

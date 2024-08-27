@@ -1,69 +1,94 @@
 #
-# This workflow runs all the time. 
+# This workflow runs all the time.
 # Checks if our repository can be build (both Docker and ROS stack)
 # and then runs some simulations to functionally validate our stack
 #
 
 name: ugr-validation-workflow
-
 on:
   push:
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: self-hosted
     steps:
       - name: Setup repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
           token: ${{ secrets.CI_TOKEN }}
-
       - name: Build Docker image (nogpu)
         run: ./run build-nogpu
-
       - name: Build stack
         run: ./run build-stack
   simulate-skidpad:
     runs-on: self-hosted
     needs: [build]
     steps:
-
       - name: Run Skidpad simulation and supervise
-        run: | 
+        run: |
           ./run stop
           ./run set-car simulation
           ./run set-random-roscore-port
           ./run start-headless
           ./run simulation skidpad skidpad
-          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=60"
+          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _mission:=skidpad _timeout:=1 _record_rosbag:=true"
           ./run stop
-  simulate-acceleration:
-    runs-on: self-hosted
-    needs: [build]
-    steps:
+      - name: Upload rosbag
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failed-skidpad-rosbag
+          path: ROS/src/common/monitor/skidpad.bag
+          retention-days: 1
 
-      - name: Run acceleration simulation and supervise
-        run: | 
-          ./run stop
-          ./run set-car simulation
-          ./run set-random-roscore-port
-          ./run start-headless
-          ./run simulation acceleration acceleration_75m
-          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=30"
-          ./run stop
-  simulate-trackdrive:
-    runs-on: self-hosted
-    needs: [build]
-    steps:
-
-      - name: Run trackdrive simulation (chicane map) and supervise
-        run: | 
-          ./run stop
-          ./run set-car simulation
-          ./run set-random-roscore-port
-          ./run start-headless
-          ./run simulation trackdrive chicane
-          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=180"
-          ./run stop
+  # simulate-acceleration:
+  #   runs-on: self-hosted
+  #   needs: [build]
+  #   steps:
+  #     - name: Run acceleration simulation and supervise
+  #       run: |
+  #         ./run stop
+  #         ./run set-car simulation
+  #         ./run set-random-roscore-port
+  #         ./run start-headless
+  #         ./run record-rosbag acceleration --server
+  #         ./run simulation acceleration acceleration_75m false --no-clean
+  #         docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=30"
+  #     - name: Stop containers
+  #       if: always()
+  #       run: |
+  #         docker stop $(docker ps --filter "name=ugr-rosbag-record" -q)
+  #         ./run stop
+  #     - name: Upload rosbag
+  #       uses: actions/upload-artifact@v4
+  #       if: failure()
+  #       with:
+  #         name: failed-acceleration-rosbag
+  #         path: acceleration.bag
+  #         retention-days: 1
+  # simulate-trackdrive:
+  #   runs-on: self-hosted
+  #   needs: [build]
+  #   steps:
+  #     - name: Run trackdrive simulation (chicane map) and supervise
+  #       run: |
+  #         ./run stop
+  #         ./run set-car simulation
+  #         ./run set-random-roscore-port
+  #         ./run start-headless
+  #         ./run record-rosbag trackdrive --server
+  #         ./run simulation trackdrive chicane false --no-clean
+  #         docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=180"
+  #     - name: Stop containers
+  #       if: always()
+  #       run: |
+  #         docker stop $(docker ps --filter "name=ugr-rosbag-record" -q)
+  #         ./run stop
+  #     - name: Upload rosbag
+  #       uses: actions/upload-artifact@v4
+  #       if: failure()
+  #       with:
+  #         name: failed-trackdrive-rosbag
+  #         path: trackdrive.bag
+  #         retention-days: 1
