@@ -15,9 +15,7 @@ class StateSupervisorNode:
     def __init__(self):
         rospy.init_node("state_supervisor", anonymous=True)
 
-        self.mission = rospy.get_param(
-            "~mission", "rosbag"
-        )  # Default timeout is 10 seconds
+        self.mission = rospy.get_param("~name", "rosbag")
         self.record_rosbag = rospy.get_param("~record_rosbag", False)
         if self.record_rosbag:
             rospy.loginfo("Recording rosbag")
