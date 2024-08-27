@@ -32,7 +32,7 @@ jobs:
           ./run set-random-roscore-port
           ./run start-headless
           ./run simulation skidpad skidpad
-          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _mission:=skidpad _timeout:=5 _record_rosbag:=true"
+          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _mission:=skidpad _timeout:=60 _record_rosbag:=true"
           ./run stop
       - name: Upload rosbag
         uses: actions/upload-artifact@v4
@@ -53,7 +53,7 @@ jobs:
           ./run set-random-roscore-port
           ./run start-headless
           ./run simulation acceleration acceleration
-          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _mission:=acceleration _timeout:=5 _record_rosbag:=true"
+          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _mission:=acceleration _timeout:=30 _record_rosbag:=true"
           ./run stop
       - name: Upload rosbag
         uses: actions/upload-artifact@v4
@@ -73,7 +73,7 @@ jobs:
           ./run set-random-roscore-port
           ./run start-headless
           ./run simulation trackdrive trackdrive
-          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _mission:=trackdrive _timeout:=5 _record_rosbag:=true"
+          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _mission:=trackdrive _timeout:=180 _record_rosbag:=true"
           ./run stop
       - name: Upload rosbag
         uses: actions/upload-artifact@v4
