@@ -32,7 +32,7 @@ jobs:
           ./run set-random-roscore-port
           ./run start-headless
           ./run simulation skidpad skidpad
-          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _mission:=skidpad _timeout:=1 _record_rosbag:=true"
+          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _mission:=skidpad _timeout:=5 _record_rosbag:=true"
           ./run stop
       - name: Upload rosbag
         uses: actions/upload-artifact@v4
@@ -42,53 +42,43 @@ jobs:
           path: ROS/src/common/monitor/skidpad.bag
           retention-days: 1
 
-  # simulate-acceleration:
-  #   runs-on: self-hosted
-  #   needs: [build]
-  #   steps:
-  #     - name: Run acceleration simulation and supervise
-  #       run: |
-  #         ./run stop
-  #         ./run set-car simulation
-  #         ./run set-random-roscore-port
-  #         ./run start-headless
-  #         ./run record-rosbag acceleration --server
-  #         ./run simulation acceleration acceleration_75m false --no-clean
-  #         docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=30"
-  #     - name: Stop containers
-  #       if: always()
-  #       run: |
-  #         docker stop $(docker ps --filter "name=ugr-rosbag-record" -q)
-  #         ./run stop
-  #     - name: Upload rosbag
-  #       uses: actions/upload-artifact@v4
-  #       if: failure()
-  #       with:
-  #         name: failed-acceleration-rosbag
-  #         path: acceleration.bag
-  #         retention-days: 1
-  # simulate-trackdrive:
-  #   runs-on: self-hosted
-  #   needs: [build]
-  #   steps:
-  #     - name: Run trackdrive simulation (chicane map) and supervise
-  #       run: |
-  #         ./run stop
-  #         ./run set-car simulation
-  #         ./run set-random-roscore-port
-  #         ./run start-headless
-  #         ./run record-rosbag trackdrive --server
-  #         ./run simulation trackdrive chicane false --no-clean
-  #         docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun autonomous_state state_supervisor.py _timeout:=180"
-  #     - name: Stop containers
-  #       if: always()
-  #       run: |
-  #         docker stop $(docker ps --filter "name=ugr-rosbag-record" -q)
-  #         ./run stop
-  #     - name: Upload rosbag
-  #       uses: actions/upload-artifact@v4
-  #       if: failure()
-  #       with:
-  #         name: failed-trackdrive-rosbag
-  #         path: trackdrive.bag
-  #         retention-days: 1
+  simulate-acceleration:
+    runs-on: self-hosted
+    needs: [build]
+    steps:
+      - name: Run Acceleration simulation and supervise
+        run: |
+          ./run stop
+          ./run set-car simulation
+          ./run set-random-roscore-port
+          ./run start-headless
+          ./run simulation acceleration acceleration
+          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _mission:=acceleration _timeout:=5 _record_rosbag:=true"
+          ./run stop
+      - name: Upload rosbag
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failed-acceleration-rosbag
+          path: ROS/src/common/monitor/acceleration.bag
+          retention-days: 1
+  simulate-trackdrive:
+    runs-on: self-hosted
+    needs: [build]
+    steps:
+      - name: Run Trackdrive simulation and supervise
+        run: |
+          ./run stop
+          ./run set-car simulation
+          ./run set-random-roscore-port
+          ./run start-headless
+          ./run simulation trackdrive trackdrive
+          docker exec dev /bin/zsh -c "source ~/.zshrc && rosrun monitor state_supervisor.py _mission:=trackdrive _timeout:=5 _record_rosbag:=true"
+          ./run stop
+      - name: Upload rosbag
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failed-trackdrive-rosbag
+          path: ROS/src/common/monitor/trackdrive.bag
+          retention-days: 1
