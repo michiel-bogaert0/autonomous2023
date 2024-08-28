@@ -1,0 +1,11 @@
+<launch>
+
+  <arg name="map" default="chicane.yaml"/>
+
+  <include file="$(find ros_tcp_endpoint)/launch/endpoint.launch" pass_all_args="true"></include>
+  
+  <include file="$(find slam_simulator)/launch/time_server.launch" pass_all_args="true"></include>
+  
+  <include file="$(find simulation)/launch/gt_map_server.launch" pass_all_args="true"></include>
+
+</launch>

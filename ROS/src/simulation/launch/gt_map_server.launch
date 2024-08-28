@@ -2,7 +2,7 @@
 
   <arg name="map" default="chicane.yaml"/>
 
-  <node pkg="slam_simulator" name="gt_map_server" type="gt_map_server.py" output="screen" > 
+  <node pkg="simulation" name="gt_map_server" type="gt_map_server.py" output="screen" > 
     <param name="map" value="$(arg map)" />
   </node>
 
