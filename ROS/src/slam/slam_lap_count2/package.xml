@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>slam_lap_count2</name>
+  <version>0.0.0</version>
+  <description>The slam_lap_counter package</description>
+  <maintainer email="hannes.dewulf@ugentracing.be">hannes</maintainer>
+  <license>TODO</license>
+  <exec_depend>tf2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>tf2_ros</build_depend>
+
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>tf2_ros</build_depend>
+
+  <build_depend>rospy</build_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>rospy</exec_depend>	
+  <export></export>
+</package>
