@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
+import signal
+import subprocess
 import sys
 
+import psutil
+import rospkg
 import rospy
 from node_fixture.fixture import AutonomousStatesEnum, StateMachineScopeEnum
 from ugr_msgs.msg import State
@@ -10,6 +14,17 @@ from ugr_msgs.msg import State
 class StateSupervisorNode:
     def __init__(self):
         rospy.init_node("state_supervisor", anonymous=True)
+
+        self.mission = rospy.get_param("~name", "rosbag")
+        self.record_rosbag = rospy.get_param("~record_rosbag", False)
+        if self.record_rosbag:
+            rospy.loginfo("Recording rosbag")
+            self.rosbag_process = subprocess.Popen(
+                "rosbag record -a -j -O {}.bag".format(self.mission),
+                stdin=subprocess.PIPE,
+                shell=True,
+                cwd=rospkg.RosPack().get_path("monitor"),
+            )
 
         # Get parameters for the timeout and topic to monitor
         self.timeout = rospy.get_param(
@@ -34,6 +49,19 @@ class StateSupervisorNode:
 
             self.state = data.cur_state
 
+    def terminate_process_and_children(self, p):
+        process = psutil.Process(p.pid)
+        for sub_process in process.children(recursive=True):
+            sub_process.send_signal(signal.SIGINT)
+        p.wait()  # we wait for children to terminate
+
+    def stop_recording(self):
+        if self.record_rosbag:
+            rospy.loginfo("Stopping rosbag recording")
+            self.terminate_process_and_children(
+                self.rosbag_process
+            )  # terminate rosbag process
+
     def run(self):
         self.start_time = rospy.Time.now().to_sec()
         rospy.loginfo(
@@ -42,6 +70,7 @@ class StateSupervisorNode:
 
         while not rospy.is_shutdown():
             if self.state == AutonomousStatesEnum.ASFINISHED:
+                self.stop_recording()
                 rospy.loginfo(
                     f"{AutonomousStatesEnum.ASFINISHED} received in time. Mission took {rospy.Time.now().to_sec() - self.start_time} ROS seconds. Exiting successfully."
                 )
@@ -49,12 +78,14 @@ class StateSupervisorNode:
                 break
 
             elif self.state == AutonomousStatesEnum.ASEMERGENCY:
+                self.stop_recording()
                 rospy.logerr(
                     f"{AutonomousStatesEnum.ASEMERGENCY} received. Exiting with an error"
                 )
                 raise rospy.ROSException(f"Received {AutonomousStatesEnum.ASEMERGENCY}")
 
             elif (rospy.Time.now().to_sec() - self.start_time) > self.timeout:
+                self.stop_recording()
                 rospy.logerr(
                     f"Timeout reached. {AutonomousStatesEnum.ASFINISHED} not received. Exiting with an error."
                 )

@@ -1,0 +1,3900 @@
+header:
+  frame_id: ugr/map
+  seq: 0
+  stamp:
+    nsecs: 0
+    secs: 0
+observations:
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 1.783909797668457
+      y: 1.5299330949783325
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -1.228308081626892
+      y: -2.0792219638824463
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 1.9957284927368164
+      y: -1.6579395532608032
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 6.037024021148682
+      y: 1.4192386865615845
+      z: 0.0
+    observation_class: 2
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 6.658533096313477
+      y: 1.3282331228256226
+      z: 0.0
+    observation_class: 2
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 4.307816028594971
+      y: 1.6495321989059448
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 4.394046783447266
+      y: -1.8738619089126587
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 7.312283992767334
+      y: 1.1555641889572144
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 5.602060794830322
+      y: -1.9806437492370605
+      z: 0.0
+    observation_class: 2
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 6.158456802368164
+      y: -2.1055967807769775
+      z: 0.0
+    observation_class: 2
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 9.762829780578613
+      y: -2.939878463745117
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 11.041625022888184
+      y: 0.0259848739951849
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 6.701423645019531
+      y: -2.111837863922119
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 11.82226848602295
+      y: -4.319820404052734
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 15.513632774353027
+      y: -3.1770057678222656
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 14.121323585510254
+      y: -1.8881067037582397
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 17.306474685668945
+      y: -5.654379367828369
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 14.71124267578125
+      y: -7.495885848999023
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 20.10667610168457
+      y: -8.257308959960938
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 21.95537567138672
+      y: -9.228842735290527
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 18.24614143371582
+      y: -10.884296417236328
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 20.63865852355957
+      y: -12.19823932647705
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 24.306989669799805
+      y: -9.261600494384766
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 24.87224769592285
+      y: -12.547770500183105
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 30.645971298217773
+      y: -6.060970306396484
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 27.920089721679688
+      y: -8.151252746582031
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 29.31119728088379
+      y: -11.051078796386719
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 34.60438919067383
+      y: -7.939051151275635
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 32.36235427856445
+      y: -8.846573829650879
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 33.65842819213867
+      y: -4.792325496673584
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 36.98866653442383
+      y: -7.922630310058594
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 39.17476272583008
+      y: -8.504694938659668
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 37.44106674194336
+      y: -4.579059600830078
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 40.49984359741211
+      y: -5.301832675933838
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 43.75367736816406
+      y: -6.4219746589660645
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 42.519161224365234
+      y: -9.494991302490234
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 44.26846694946289
+      y: -10.871063232421875
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 46.933380126953125
+      y: -8.872036933898926
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 45.37138748168945
+      y: -12.953328132629395
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 43.77294921875
+      y: -18.306148529052734
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 44.704864501953125
+      y: -15.495368957519531
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 47.796783447265625
+      y: -16.55774688720703
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 46.83464431762695
+      y: -19.63429069519043
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 48.63037109375
+      y: -12.420638084411621
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 42.35274124145508
+      y: -20.91388511657715
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 45.03677749633789
+      y: -22.91670036315918
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 41.730499267578125
+      y: -26.66669464111328
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 39.60712814331055
+      y: -24.179758071899414
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 36.92777633666992
+      y: -26.413780212402344
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 36.3603401184082
+      y: -30.198089599609375
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 38.65079879760742
+      y: -29.18505859375
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 35.05655288696289
+      y: -27.11131477355957
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 33.24879837036133
+      y: -30.938024520874023
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 32.85780715942383
+      y: -27.649606704711914
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 30.101396560668945
+      y: -31.225648880004883
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 29.857559204101562
+      y: -27.961496353149414
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 26.647560119628906
+      y: -28.473312377929688
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 26.79327392578125
+      y: -31.71791648864746
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 22.067434310913086
+      y: -31.55428123474121
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 23.16800880432129
+      y: -28.3620548248291
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 18.418336868286133
+      y: -26.785444259643555
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 17.343576431274414
+      y: -29.979860305786133
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 12.608288764953613
+      y: -28.381593704223633
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 13.63853931427002
+      y: -25.23102378845215
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 8.889542579650879
+      y: -23.75663185119629
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 7.877164363861084
+      y: -26.834320068359375
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 5.614276885986328
+      y: -26.040863037109375
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 6.644843578338623
+      y: -23.009017944335938
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 1.7751818895339966
+      y: -24.8229923248291
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 2.863309860229492
+      y: -21.74846839904785
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -1.594544529914856
+      y: -23.71392059326172
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -0.6147535443305969
+      y: -20.695383071899414
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -3.030006170272827
+      y: -20.18688201904297
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -4.477213382720947
+      y: -23.365434646606445
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -5.926096439361572
+      y: -20.336212158203125
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -7.30291223526001
+      y: -24.184341430664062
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -9.040656089782715
+      y: -21.466123580932617
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -12.020482063293457
+      y: -23.929636001586914
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -9.59703540802002
+      y: -26.004125595092773
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -11.406611442565918
+      y: -31.434791564941406
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -11.013561248779297
+      y: -28.53217124938965
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -14.054115295410156
+      y: -27.5539493560791
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -10.638777732849121
+      y: -34.20984649658203
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -14.554740905761719
+      y: -31.784360885620117
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -10.034248352050781
+      y: -37.023311614990234
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -13.53803539276123
+      y: -35.628639221191406
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -13.943406105041504
+      y: -37.945777893066406
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -11.654593467712402
+      y: -41.14341354370117
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -10.908684730529785
+      y: -39.11960983276367
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -14.661004066467285
+      y: -39.998931884765625
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -11.869086265563965
+      y: -43.97354507446289
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -10.622361183166504
+      y: -46.3116455078125
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -14.765299797058105
+      y: -46.39468002319336
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -15.059364318847656
+      y: -43.91925048828125
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -13.31013011932373
+      y: -48.2634391784668
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -8.971417427062988
+      y: -48.514888763427734
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -6.758169174194336
+      y: -49.61577224731445
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -11.379554748535156
+      y: -50.68716812133789
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -7.606970310211182
+      y: -52.85806655883789
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -4.097354888916016
+      y: -49.64155960083008
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -0.770562469959259
+      y: -48.577972412109375
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -3.378795623779297
+      y: -52.83439254760742
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 2.199150323867798
+      y: -47.737335205078125
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 0.9976050853729248
+      y: -51.955780029296875
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 4.182889461517334
+      y: -50.92194747924805
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 6.274229526519775
+      y: -50.15010070800781
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 6.0495686531066895
+      y: -46.753360748291016
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 9.847489356994629
+      y: -50.99578857421875
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 11.75826358795166
+      y: -51.764408111572266
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 9.66960620880127
+      y: -46.50667190551758
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 11.481868743896484
+      y: -47.04558181762695
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 14.713397026062012
+      y: -47.83761215209961
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 16.82880973815918
+      y: -55.1407585144043
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 14.11679458618164
+      y: -52.97590255737305
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 17.208398818969727
+      y: -49.435882568359375
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 16.10698890686035
+      y: -54.176513671875
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 17.374330520629883
+      y: -57.1051139831543
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 19.978145599365234
+      y: -54.192138671875
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 19.39964485168457
+      y: -51.58560562133789
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 15.554959297180176
+      y: -61.25058364868164
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 20.6171932220459
+      y: -59.31100082397461
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 17.333084106445312
+      y: -58.91704177856445
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 20.564247131347656
+      y: -56.306427001953125
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 18.384939193725586
+      y: -62.7909049987793
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 13.912063598632812
+      y: -63.41611862182617
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 16.931222915649414
+      y: -64.63282012939453
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 13.113903045654297
+      y: -65.95841217041016
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 16.896408081054688
+      y: -68.050048828125
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 16.45379638671875
+      y: -66.20975494384766
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 13.588772773742676
+      y: -68.60552215576172
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 18.177322387695312
+      y: -69.87872314453125
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 15.07141399383545
+      y: -71.23615264892578
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 18.945085525512695
+      y: -72.14559173583984
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 15.49675464630127
+      y: -76.04642486572266
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 15.940811157226562
+      y: -73.56157684326172
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 19.31589698791504
+      y: -75.0414047241211
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 7.245097637176514
+      y: -74.38642120361328
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 15.997074127197266
+      y: -74.9073257446289
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 5.4359002113342285
+      y: -72.9332504272461
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 4.078428745269775
+      y: -71.04065704345703
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 11.9324951171875
+      y: -75.98786926269531
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 3.1799097061157227
+      y: -67.21006774902344
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 18.151302337646484
+      y: -77.96996307373047
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 14.452929496765137
+      y: -76.43545532226562
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 16.169904708862305
+      y: -79.31522369384766
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 13.736926078796387
+      y: -79.98812866210938
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 10.825169563293457
+      y: -79.0831069946289
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 6.154825687408447
+      y: -77.47457122802734
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 3.2804625034332275
+      y: -75.4463119506836
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 0.29804059863090515
+      y: -68.89887237548828
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 1.1465784311294556
+      y: -72.58405303955078
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -1.0129917860031128
+      y: -66.79596710205078
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: 1.3721369504928589
+      y: -64.54496765136719
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -3.447355031967163
+      y: -64.83199310302734
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -2.150684118270874
+      y: -61.80177307128906
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -6.103353977203369
+      y: -60.38715744018555
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -7.222505569458008
+      y: -63.5245361328125
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -11.12637710571289
+      y: -62.290924072265625
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -10.13070011138916
+      y: -59.0855598449707
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -13.622909545898438
+      y: -57.9877815246582
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -14.861035346984863
+      y: -61.17409133911133
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -18.63889503479004
+      y: -59.90106201171875
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -17.24184226989746
+      y: -56.92231369018555
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -21.45786476135254
+      y: -58.17508316040039
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -19.598548889160156
+      y: -55.463191986083984
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -23.936185836791992
+      y: -56.369049072265625
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -22.65113639831543
+      y: -52.82041549682617
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -24.976213455200195
+      y: -55.11893081665039
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -27.3438720703125
+      y: -52.24235534667969
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -29.351144790649414
+      y: -50.068145751953125
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -24.885879516601562
+      y: -50.02827835083008
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -26.69567108154297
+      y: -48.28098678588867
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -28.278968811035156
+      y: -46.1565055847168
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -29.009963989257812
+      y: -43.87314987182617
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -31.21299934387207
+      y: -47.44968795776367
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -32.16630554199219
+      y: -44.70387268066406
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -29.052526473999023
+      y: -40.93095779418945
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -32.313961029052734
+      y: -41.451053619384766
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -33.56345748901367
+      y: -37.948482513427734
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -30.178987503051758
+      y: -37.214778900146484
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -29.793380737304688
+      y: -35.055686950683594
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -33.85121154785156
+      y: -32.433143615722656
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -34.4101676940918
+      y: -35.713218688964844
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -32.15373229980469
+      y: -29.000473022460938
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -29.14813995361328
+      y: -32.206485748291016
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -28.75897979736328
+      y: -29.196388244628906
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -28.512346267700195
+      y: -26.827537536621094
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -31.770402908325195
+      y: -26.710538864135742
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -31.72495460510254
+      y: -24.57708168029785
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -28.561853408813477
+      y: -24.043167114257812
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -32.576229095458984
+      y: -23.285615921020508
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -29.96929931640625
+      y: -21.08657455444336
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -34.19920349121094
+      y: -22.076019287109375
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -32.34152603149414
+      y: -19.19041633605957
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -35.71674728393555
+      y: -20.68329620361328
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -33.545040130615234
+      y: -18.18939781188965
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -37.04608154296875
+      y: -18.67988395690918
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -34.834354400634766
+      y: -15.18640422821045
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -34.40275955200195
+      y: -14.188036918640137
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -38.422794342041016
+      y: -15.947844505310059
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -35.74318313598633
+      y: -11.130976676940918
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -37.79526138305664
+      y: -12.034857749938965
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -34.1611442565918
+      y: -16.989198684692383
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -30.15867042541504
+      y: -12.10241985321045
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -31.58371925354004
+      y: -9.141167640686035
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -34.500099182128906
+      y: -16.1503849029541
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -26.25755500793457
+      y: -10.151420593261719
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -27.658899307250977
+      y: -7.155026912689209
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -21.524999618530273
+      y: -10.563204765319824
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -23.211868286132812
+      y: -6.916959285736084
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -21.34592628479004
+      y: -7.204065799713135
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -18.82927894592285
+      y: -7.050358295440674
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -20.013566970825195
+      y: -10.861062049865723
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -18.1054744720459
+      y: -10.23536205291748
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -17.04446792602539
+      y: -5.970360279083252
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -15.019124031066895
+      y: -4.4712347984313965
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -15.339263916015625
+      y: -8.806978225708008
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -13.601971626281738
+      y: -7.318950653076172
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -11.558934211730957
+      y: -5.644913196563721
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -13.605380058288574
+      y: -3.022148847579956
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -10.088735580444336
+      y: -4.327112197875977
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -11.89193344116211
+      y: -1.550836443901062
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -10.112330436706543
+      y: -0.49605998396873474
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -7.598697662353516
+      y: -3.189957857131958
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -8.042217254638672
+      y: 0.13443194329738617
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -4.649064540863037
+      y: -2.3537638187408447
+      z: 0.0
+    observation_class: 1
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -5.942404270172119
+      y: 0.8521150946617126
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -3.7293856143951416
+      y: 1.0011284351348877
+      z: 0.0
+    observation_class: 0
+- covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  observation:
+    belief: 1
+    location:
+      x: -1.3405636548995972
+      y: 1.1804441213607788
+      z: 0.0
+    observation_class: 0

@@ -50,6 +50,8 @@ class Visualiser:
 
         configure_node("pathplanning")
         set_state_active("pathplanning")
+        configure_node("path_builder")
+        set_state_active("path_builder")
         configure_node("path_smoother")
         set_state_active("path_smoother")
         configure_node("boundary_estimation")
