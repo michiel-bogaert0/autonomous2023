@@ -4,6 +4,7 @@ from time import sleep
 
 import rospy
 from car_state import CarStateEnum
+from controller_manager_msgs.srv import SwitchController, SwitchControllerRequest
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from nav_msgs.msg import Odometry
 from node_fixture import (
@@ -68,10 +69,37 @@ class AutonomousController(NodeManager):
             if rospy.is_shutdown():
                 return
 
+        self.switch_controllers()
+
         self.change_state(AutonomousStatesEnum.ASOFF)
         self.car.update(self.as_state)
 
         self.spin()
+
+    def switch_controllers(self):
+        rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
+        try:
+            switch_controller = rospy.ServiceProxy(
+                "/ugr/car/controller_manager/switch_controller", SwitchController
+            )
+
+            req = SwitchControllerRequest()
+            req.start_controllers = [
+                "joint_state_controller",
+                "steering_position_controller",
+                "drive_velocity_controller",
+            ]
+            req.stop_controllers = []
+            req.strictness = SwitchControllerRequest.BEST_EFFORT
+
+            response = switch_controller(req)
+
+            if not response.ok:
+                rospy.logerr("Could not start controllers")
+            else:
+                rospy.loginfo("Controllers started")
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Service call failed: {e}")
 
     def active(self):
         """
