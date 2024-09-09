@@ -32,4 +32,3 @@ repos:
             "--suppress=missingIncludeSystem",
             "--suppress=unusedFunction",
           ]
-        exclude: ^(?!src/perception/lidar/).*
