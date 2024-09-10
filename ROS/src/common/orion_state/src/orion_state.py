@@ -7,6 +7,8 @@ from functools import partial
 from time import sleep
 import numpy as np
 
+import subprocess
+
 import can
 import cantools
 import rospy
@@ -62,8 +64,8 @@ class OrionState(NodeManager):
         self.change_as_state(AutonomousStatesEnum.ASOFF)
         self.switched_driving_mode = False
         
-        self.enable_lidar(None)
-        self.enable_lidar(None)
+        # self.enable_lidar(None)
+        # self.enable_lidar(None)
 
         # Initial checkup
         self.initial_checkup()
@@ -952,6 +954,7 @@ class OrionState(NodeManager):
                     self.di_signals["dv_btn"]
                     and self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
                 ):
+                    print("here")
                     self.can_actions["ts_pressed"] = False
                     self.change_state(OrionStateEnum.TS_ACTIVATING)
 
@@ -970,8 +973,8 @@ class OrionState(NodeManager):
                     if self.record_p is not None:
                         self.record_p.terminate()
                     
-                    # self.record_p = subprocess.Popen("cd /home/ugr/rosbags && rosbag record -b 0 -a", stdin=subprocess.PIPE, shell=True, cwd="/",
-                    #                   executable='/bin/bash')
+                    self.record_p = subprocess.Popen("cd /home/ugr/rosbags && rosbag record -b 0 -a", stdin=subprocess.PIPE, shell=True, cwd="/",
+                                      executable='/bin/bash')
 
             # If both brake pressures are above 5, go to R2D_READY
             elif self.car_state == OrionStateEnum.TS_ACTIVE:
