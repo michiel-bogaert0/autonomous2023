@@ -45,6 +45,7 @@ class SimulationState(CarState):
             object with the (physical) state of the car systems,
             like EBS and ASSI. See general docs for info about this state
         """
+
         # R2D
         if (
             self.as_state == AutonomousStatesEnum.ASREADY
@@ -67,4 +68,5 @@ class SimulationState(CarState):
 
         # EBS
         self.state["EBS"] = self.ebs_state
+
         return self.state

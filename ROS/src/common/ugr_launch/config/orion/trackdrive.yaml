@@ -18,7 +18,7 @@ slam_controller:
       # Control
       - pure_pursuit_control
       - pathplanning
-      - path_smoother
+      # - path_smoother
       - path_builder
 
 slam_mcl:

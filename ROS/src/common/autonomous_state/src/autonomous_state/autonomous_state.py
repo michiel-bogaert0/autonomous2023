@@ -4,6 +4,7 @@ from time import sleep
 
 import rospy
 from car_state import CarStateEnum
+from controller_manager_msgs.srv import SwitchController, SwitchControllerRequest
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from nav_msgs.msg import Odometry
 from node_fixture import (
@@ -29,18 +30,14 @@ class AutonomousController(NodeManager):
         such as "simulation" or "pegasus". These models are the ones responsible for
         providing the data required to set the autonomous state.
         """
-        self.car_name = rospy.get_param("car", "pegasus")
-        if (
-            self.car_name == "pegasus" or self.car_name == "simulation"
-        ):  # when we use pegasus or simulation this node needs to be activated on its own
-            super().__init__("autonomous_state", NodeManagingStatesEnum.ACTIVE)
-        else:
-            super().__init__("autonomous_state")
-        self.spin()
 
-    def doActivate(self):
+        super().__init__("autonomous_state", NodeManagingStatesEnum.ACTIVE)
+
         self.as_state = ""
-        self.ccs = {}
+
+        rospy.Subscriber("/state", State, self.handle_external_state_change)
+        rospy.Subscriber("/input/odom", Odometry, self.handle_odom)
+
         self.state_publisher = rospy.Publisher(
             "/state", State, queue_size=10, latch=True
         )
@@ -51,12 +48,14 @@ class AutonomousController(NodeManager):
             "/diagnostics", DiagnosticArray, queue_size=10
         )
 
+        self.car_name = rospy.get_param("car", "pegasus")
+
         if self.car_name == "pegasus":
             self.car = PegasusState()
         elif self.car_name == "simulation":
             self.car = SimulationState()
         else:
-            raise f"Unknown model! (model given was: '{self.car_name}')"
+            raise f"unknown model! (model given was: '{self.car_name}')"
 
         self.mission_finished = False
         self.vehicle_stopped = True
@@ -66,13 +65,41 @@ class AutonomousController(NodeManager):
         # Setup
         while not self.configure_nodes():
             sleep(0.1)
+
             if rospy.is_shutdown():
                 return
 
-        rospy.Subscriber("/state", State, self.handle_external_state_change)
-        rospy.Subscriber("/input/odom", Odometry, self.handle_odom)
+        self.switch_controllers()
+
         self.change_state(AutonomousStatesEnum.ASOFF)
         self.car.update(self.as_state)
+
+        self.spin()
+
+    def switch_controllers(self):
+        rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
+        try:
+            switch_controller = rospy.ServiceProxy(
+                "/ugr/car/controller_manager/switch_controller", SwitchController
+            )
+
+            req = SwitchControllerRequest()
+            req.start_controllers = [
+                "joint_state_controller",
+                "steering_position_controller",
+                "drive_velocity_controller",
+            ]
+            req.stop_controllers = []
+            req.strictness = SwitchControllerRequest.BEST_EFFORT
+
+            response = switch_controller(req)
+
+            if not response.ok:
+                rospy.logerr("Could not start controllers")
+            else:
+                rospy.loginfo("Controllers started")
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Service call failed: {e}")
 
     def active(self):
         """
@@ -83,8 +110,10 @@ class AutonomousController(NodeManager):
         - https://www.formulastudent.de/fileadmin/user_upload/all/2023/rules/FS-Rules_2023_v1.1.pdf
         - https://www.formulastudent.de/fileadmin/user_upload/all/2023/important_docs/FSG23_AS_Beginners_Guide_v1.1.pdf
         """
+
         # Gets car state as reported by our helper class (can be simulated or a specific car such as Peggy)
-        self.ccs = self.car.get_state()
+        ccs = self.car.get_state()
+
         self.diagnostics_publisher.publish(
             create_diagnostic_message(
                 DiagnosticStatus.ERROR
@@ -96,7 +125,7 @@ class AutonomousController(NodeManager):
         )
         self.diagnostics_publisher.publish(
             create_diagnostic_message(
-                DiagnosticStatus.OK, "[GNRL] STATE: Car state", str(self.ccs)
+                DiagnosticStatus.OK, "[GNRL] STATE: Car state", str(ccs)
             )
         )
 
@@ -104,17 +133,13 @@ class AutonomousController(NodeManager):
         # ?? Not sure if the second part (after the 'and') is required, but it's there in the original code
         # ?? Basically disables the monitoring causing an emergency when the car is in ASOFF, so no where near ready to actually drive
         # ?? Must check when integrating on real car.
-        if self.car_name == "pegasus" or self.car_name == "simulation":
-            if self.get_health_level() == DiagnosticStatus.ERROR and not (
-                self.as_state == AutonomousStatesEnum.ASOFF
-                or self.as_state == AutonomousStatesEnum.ASFINISHED
-            ):
-                self.car.activate_EBS()
-        else:
-            if self.get_health_level() == DiagnosticStatus.ERROR:
-                self.car.activate_EBS(0)
+        if self.get_health_level() == DiagnosticStatus.ERROR and not (
+            self.as_state == AutonomousStatesEnum.ASOFF
+            or self.as_state == AutonomousStatesEnum.ASFINISHED
+        ):
+            self.car.activate_EBS()
 
-        if self.ccs["EBS"] == CarStateEnum.ACTIVATED:
+        if ccs["EBS"] == CarStateEnum.ACTIVATED:
             if self.mission_finished and self.vehicle_stopped:
                 self.change_state(AutonomousStatesEnum.ASFINISHED)
 
@@ -124,29 +149,26 @@ class AutonomousController(NodeManager):
             elif self.as_state != AutonomousStatesEnum.ASFINISHED:
                 self.change_state(AutonomousStatesEnum.ASEMERGENCY)
 
-        elif self.ccs["EBS"] == CarStateEnum.ON:
+        elif ccs["EBS"] == CarStateEnum.ON:
             if self.mission_finished and self.vehicle_stopped:
-                if self.car_name == "pegasus" or self.car_name == "simulation":
-                    self.car.activate_EBS()
-                else:
-                    self.car.activate_EBS(0)
+                self.car.activate_EBS()
 
             if (
                 rospy.has_param("/mission")
                 and rospy.get_param("/mission") != ""
-                and self.ccs["ASMS"] == CarStateEnum.ON
+                and ccs["ASMS"] == CarStateEnum.ON
                 and (
-                    self.ccs["ASB"] == CarStateEnum.ON
-                    or self.ccs["ASB"] == CarStateEnum.ACTIVATED
+                    ccs["ASB"] == CarStateEnum.ON
+                    or ccs["ASB"] == CarStateEnum.ACTIVATED
                 )
-                and self.ccs["TS"] == CarStateEnum.ON
+                and ccs["TS"] == CarStateEnum.ON
             ):
-                if self.ccs["R2D"] == CarStateEnum.ACTIVATED:
+                if ccs["R2D"] == CarStateEnum.ACTIVATED:
                     self.change_state(AutonomousStatesEnum.ASDRIVE)
 
                 else:
                     if (
-                        self.ccs["ASB"] == CarStateEnum.ACTIVATED
+                        ccs["ASB"] == CarStateEnum.ACTIVATED
                         and self.get_health_level() == DiagnosticStatus.OK
                     ):
                         self.change_state(AutonomousStatesEnum.ASREADY)
@@ -167,7 +189,10 @@ class AutonomousController(NodeManager):
 
         # If vehicle is stopped and EBS is activated, vehicle will not be able to move, so
         # latch self.vehicle_stopped
-        if self.vehicle_stopped and self.ccs["EBS"] == CarStateEnum.ACTIVATED:
+        if (
+            self.vehicle_stopped
+            and self.car.get_state()["EBS"] == CarStateEnum.ACTIVATED
+        ):
             return
 
         self.odom_avg.append(abs(odom.twist.twist.linear.x))
@@ -177,14 +202,14 @@ class AutonomousController(NodeManager):
         """
         Actually changes state of this machine and publishes change
 
-        Args:
+        Ags:
             new_state: state to switch to.
         """
 
         if new_state == self.as_state:
             return
 
-        self.activate_nodes(new_state, self.as_state)
+        self.activate_nodes(new_state, self.state)
 
         self.state_publisher.publish(
             State(

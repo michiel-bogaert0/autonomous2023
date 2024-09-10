@@ -291,6 +291,7 @@ class AutonomousMission(str, enum.Enum):
     TRACKDRIVE = "trackdrive"
     EBSTEST = "emergencybraketest"
     INPSPECTION = "inspection"
+    EBS_TEST = "ebs_test"
     SKIDPAD = "skidpad"
     DVSV = "dvsv"
 

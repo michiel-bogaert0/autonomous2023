@@ -91,6 +91,9 @@ class Controller(NodeManager):
         elif self.mission == AutonomousMission.INPSPECTION:
             self.target_lap_count = 1
             new_state = SLAMStatesEnum.RACING
+        elif self.mission == AutonomousMission.EBS_TEST:
+            self.target_lap_count = 1
+            new_state = SLAMStatesEnum.RACING
         else:
             self.target_lap_count = -1
             new_state = SLAMStatesEnum.EXPLORATION
