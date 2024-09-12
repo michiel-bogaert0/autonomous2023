@@ -26,8 +26,10 @@ public:
 
 private:
   ros::NodeHandle n;
-  operational_mode_t mode; // cppcheck-suppress unusedStructMember
-  std::string ifname;      // cppcheck-suppress unusedStructMember
+  // cppcheck-suppress unusedStructMember
+  operational_mode_t mode;
+  // cppcheck-suppress unusedStructMember
+  std::string ifname;
 
   // Subscriber
   ros::Subscriber target_sub;
