@@ -80,9 +80,7 @@ class PedalMapper(ManagedNode):
             average_apps = max(min((apps1 + apps2) / 2, 100), 0)
 
             # Check if in range
-            if (
-                abs(apps1 - apps2) <= self.max_deviation
-            ):
+            if abs(apps1 - apps2) <= self.max_deviation:
                 # Apply deadzone and rescale
                 apps_deadzoned = (
                     0 if average_apps <= self.deadzone else average_apps - self.deadzone
@@ -111,7 +109,7 @@ class PedalMapper(ManagedNode):
 
             else:
                 self.apps = 0
-                
+
             self.apps = min(self.apps, 100)
 
     def active(self):
@@ -131,7 +129,7 @@ class PedalMapper(ManagedNode):
                     self.effort_publisher.publish(zero_torque)
                 else:
                     torque = Float64MultiArray()
-                    
+
                     actual_torque = self.max_effort * self.apps / 100
                     torque.data = [actual_torque, actual_torque]
 

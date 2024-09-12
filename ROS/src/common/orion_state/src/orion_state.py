@@ -1,16 +1,14 @@
 #! /usr/bin/python3
-import math
+import subprocess
 import threading
 import time
 from collections import deque
 from functools import partial
 from time import sleep
-import numpy as np
-
-import subprocess
 
 import can
 import cantools
+import numpy as np
 import rospy
 from can_msgs.msg import Frame
 from controller_manager_msgs.srv import SwitchController, SwitchControllerRequest
@@ -48,7 +46,7 @@ class OrionState(NodeManager):
         self.initial_checkup_done = False
 
         self.debug_state = 0
-        
+
         self.record_p = None
 
         rospy.set_param("/mission", "manual")
@@ -63,7 +61,7 @@ class OrionState(NodeManager):
         self.change_state(OrionStateEnum.INIT)
         self.change_as_state(AutonomousStatesEnum.ASOFF)
         self.switched_driving_mode = False
-        
+
         # self.enable_lidar(None)
         # self.enable_lidar(None)
 
@@ -256,7 +254,7 @@ class OrionState(NodeManager):
             "gearbox_temp_left": 0,
             "gearbox_temp_right": 0,
         }
-        
+
         self.ai_signals_queue = {
             "air_pressure1": deque([], 10),
             "air_pressure2": deque([], 10),
@@ -396,14 +394,12 @@ class OrionState(NodeManager):
             sleep(0.1)
             if rospy.is_shutdown():
                 return
-            
+
     def handle_dbs(self, msg: Float64):
-        
         if msg.data > 10:
             self.do_publishers["arm_service_brake"].publish(Bool(data=False))
         else:
             self.do_publishers["arm_service_brake"].publish(Bool(data=True))
-            
 
     def change_state(self, new_state: OrionStateEnum):
         """
@@ -542,7 +538,9 @@ class OrionState(NodeManager):
             elif io_name == "front_bp" or io_name == "rear_bp":
                 self.ai_signals_queue[io_name].append((msg.data - 4.3) / 16 * 250)
             elif io_name == "gearbox_temp_left" or io_name == "gearbox_temp_right":
-                self.ai_signals_queue[io_name].append((msg.data * 2 / 1000) / 0.005 - 259)
+                self.ai_signals_queue[io_name].append(
+                    (msg.data * 2 / 1000) / 0.005 - 259
+                )
             else:
                 pass
 
@@ -597,9 +595,7 @@ class OrionState(NodeManager):
 
         # PDU status
         if frame.id == 0x111:
-            self.pdu_output_status = self.db.decode_message(
-                frame.id, frame.data
-            )
+            self.pdu_output_status = self.db.decode_message(frame.id, frame.data)
             # print(self.pdu_output_status)
 
         # RES
@@ -839,11 +835,13 @@ class OrionState(NodeManager):
 
         # Check if driving mode should be updated
         if (
-            (not self.switched_driving_mode
-            and self.driving_mode == DrivingModeStatesEnum.MANUAL
-            and self.di_signals["bypass_status"]
-            or self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
-            and not self.di_signals["bypass_status"])
+            (
+                not self.switched_driving_mode
+                and self.driving_mode == DrivingModeStatesEnum.MANUAL
+                and self.di_signals["bypass_status"]
+                or self.driving_mode == DrivingModeStatesEnum.DRIVERLESS
+                and not self.di_signals["bypass_status"]
+            )
             and self.car_state != OrionStateEnum.R2D
             and self.car_state != OrionStateEnum.ERROR
         ):
@@ -901,7 +899,7 @@ class OrionState(NodeManager):
             data[1] = 0x41
         message = can.Message(arbitration_id=msg.frame_id, data=data)
         self.bus.publish(serialcan_to_roscan(message))
-                
+
     def enable_cooling(self, _):
         msg = self.db.get_message_by_name("set_outputs")
         data = [7, 1, 0, 0, 0, 0, 0, 0]
@@ -909,20 +907,20 @@ class OrionState(NodeManager):
             data[1] = 0x41
         message = can.Message(arbitration_id=msg.frame_id, data=data)
         self.bus.publish(serialcan_to_roscan(message))
-                    
+
     def disable_cooling(self, _):
         msg = self.db.get_message_by_name("set_outputs")
         data = [0, 1, 0, 0, 0, 0, 0, 0]
         if self.pdu_output_status["state_lidar_bakje_pwr"]:
-            data[1] = 0x41        
+            data[1] = 0x41
         message = can.Message(arbitration_id=msg.frame_id, data=data)
         self.bus.publish(serialcan_to_roscan(message))
-            
+
     def update_car_state(self):
         """
         Sets the car state based on current state and incoming signals
         """
-    
+
         if self.di_signals["sdc_out"]:
             self.job_scheduler.remove_job_by_tag("timeout_state_sdc")
 
@@ -938,8 +936,8 @@ class OrionState(NodeManager):
                 self.change_state(OrionStateEnum.TS_READY)
 
         elif self.car_state == OrionStateEnum.ERROR:
-           self.do_publishers["sdc_close"].publish(Bool(data=False))
-                    
+            self.do_publishers["sdc_close"].publish(Bool(data=False))
+
         else:
             if self.di_signals["sdc_out"] is False:
                 self.timeout_sdc_open(0.5)
@@ -972,9 +970,14 @@ class OrionState(NodeManager):
                     # Record rosbag
                     if self.record_p is not None:
                         self.record_p.terminate()
-                    
-                    self.record_p = subprocess.Popen("cd /home/ugr/rosbags && rosbag record -b 0 -a", stdin=subprocess.PIPE, shell=True, cwd="/",
-                                      executable='/bin/bash')
+
+                    self.record_p = subprocess.Popen(
+                        "cd /home/ugr/rosbags && rosbag record -b 0 -a",
+                        stdin=subprocess.PIPE,
+                        shell=True,
+                        cwd="/",
+                        executable="/bin/bash",
+                    )
 
             # If both brake pressures are above 5, go to R2D_READY
             elif self.car_state == OrionStateEnum.TS_ACTIVE:
@@ -983,7 +986,9 @@ class OrionState(NodeManager):
 
                 # Enable TSAC Fans
                 self.job_scheduler.remove_job_by_tag("disable_cooling")
-                self.job_scheduler.add_job_relative(3, self.enable_tsac_fans, tag="enable_tsac_fans")                
+                self.job_scheduler.add_job_relative(
+                    3, self.enable_tsac_fans, tag="enable_tsac_fans"
+                )
 
             # If R2D is pressed, go to R2D (when ok)
             elif self.car_state == OrionStateEnum.R2D_READY:
@@ -1002,7 +1007,9 @@ class OrionState(NodeManager):
 
                     # Enable cooling
                     self.job_scheduler.remove_job_by_tag("disable_cooling")
-                    self.job_scheduler.add_job_relative(1, self.enable_cooling, tag="enable_cooling")
+                    self.job_scheduler.add_job_relative(
+                        1, self.enable_cooling, tag="enable_cooling"
+                    )
 
                     if self.driving_mode == DrivingModeStatesEnum.DRIVERLESS:
                         self.job_scheduler.add_job_relative(
@@ -1019,20 +1026,25 @@ class OrionState(NodeManager):
                         dlc=8,
                     )
                     self.bus.publish(serialcan_to_roscan(message))
-                
+
         # Stop record script
-        if self.car_state not in [OrionStateEnum.TS_ACTIVE, OrionStateEnum.TS_ACTIVATING, OrionStateEnum.R2D_READY, OrionStateEnum.R2D]:
-            
+        if self.car_state not in [
+            OrionStateEnum.TS_ACTIVE,
+            OrionStateEnum.TS_ACTIVATING,
+            OrionStateEnum.R2D_READY,
+            OrionStateEnum.R2D,
+        ]:
             if self.record_p is not None:
                 self.record_p.terminate()
                 self.record_p = None
-                
+
             # Stop cooling
             self.job_scheduler.remove_job_by_tag("enable_cooling")
             self.job_scheduler.remove_job_by_tag("enable_tsac_fans")
             if not self.job_scheduler.tag_exists("disable_cooling"):
-                self.job_scheduler.add_job_relative(1
-                                                    , self.disable_cooling, tag="disable_cooling")
+                self.job_scheduler.add_job_relative(
+                    1, self.disable_cooling, tag="disable_cooling"
+                )
 
     def update_as_state(self):
         if self.initial_checkup_done:
@@ -1042,7 +1054,8 @@ class OrionState(NodeManager):
             # emergecny, arm_ebs and arm_dbs are always triggered together
             self.ebs_activated = (
                 # TODO change sdc_out to check state instead
-                self.car_state == OrionStateEnum.SDC_OPEN or self.car_state == OrionStateEnum.ERROR
+                self.car_state == OrionStateEnum.SDC_OPEN
+                or self.car_state == OrionStateEnum.ERROR
                 or self.do_feedback["arm_ebs"] is False
                 or self.can_inputs["res_activated"] is True
             )
@@ -1185,7 +1198,7 @@ class OrionState(NodeManager):
             #     self.ai_signals["air_pressure1"] > 1
             #     or self.ai_signals["air_pressure2"] > 1
             # ):
-            #     self.checkup_result = (  
+            #     self.checkup_result = (
             #         False,
             #         f"ASB is still ENABLED: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
             #     )
@@ -1193,11 +1206,9 @@ class OrionState(NodeManager):
 
         else:
             self.debug_state = 1
-            
+
             # time.sleep(4)
             # print("LOLOLO\n\n\n\n\n")
-            
-            
 
             # wait (asms still registering)
 
@@ -1208,17 +1219,19 @@ class OrionState(NodeManager):
             print("start")
 
             # mission needs to be selected
-            if rospy.get_param("/mission") == "manual" or (not (rospy.has_param("/mission") and rospy.get_param("/mission") != "")):
+            if rospy.get_param("/mission") == "manual" or (
+                not (rospy.has_param("/mission") and rospy.get_param("/mission") != "")
+            ):
                 self.checkup_result = (False, "No mission selected")
                 return (False, "NO MISSION SELECTED")
-            
+
             print("mission")
 
             # bypass needs to be on
             if not self.di_signals["bypass_status"]:
                 self.checkup_result = (False, "BYPASS is OFF")
                 return (False, "BYPASS IS OFF")
-            
+
             print("bypass ok")
 
             # check air pressures
@@ -1233,7 +1246,7 @@ class OrionState(NodeManager):
                     f"Air pressures out of range: Reading AP1: {self.ai_signals['air_pressure1']}, AP2: {self.ai_signals['air_pressure2']}",
                 )
                 return
-            
+
             print("air ok")
 
             self.debug_state = 2
@@ -1242,7 +1255,7 @@ class OrionState(NodeManager):
             if self.di_signals["wd_ok"] is False:
                 self.checkup_result = (False, "Watchdog indicating error")
                 return
-            
+
             print("wd ok")
 
             # stop toggling watchdog
@@ -1257,7 +1270,7 @@ class OrionState(NodeManager):
                     "Watchdog not indicating error after we stopped toggling",
                 )
                 return
-            
+
             print("wd error ok")
 
             # start toggling watchdog
@@ -1277,7 +1290,7 @@ class OrionState(NodeManager):
                 return (False, "WD indicates error")
 
             self.debug_state = 3
-            
+
             self.activate_nodes(self.driving_mode, None)
             print("okok ASRRRR")
 
@@ -1363,7 +1376,6 @@ class OrionState(NodeManager):
         return
 
     def monitor(self):
-
         if self.car_state == OrionStateEnum.R2D:
             # check heartbeats of low voltage systems, motorcontrollers and sensors TODO
             if self.driving_mode == DrivingModeStatesEnum.MANUAL:
@@ -1398,7 +1410,6 @@ class OrionState(NodeManager):
 
             # Check if lidar and camera are working (for autonomous)
             if self.driving_mode == DrivingModeStatesEnum.DRIVERLESS:
-                
                 if self.cam_time - rospy.Time.now() > rospy.Duration(
                     0.5
                 ) and self.lidar_time - rospy.Time.now() > rospy.Duration(0.5):

@@ -5,7 +5,6 @@ import rospy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from node_fixture.fixture import (
     AutonomousMission,
-    AutonomousStatesEnum,
     SLAMStatesEnum,
     StateMachineScopeEnum,
     create_diagnostic_message,
@@ -159,7 +158,6 @@ class Controller(NodeManager):
         """
 
         new_state = self.slam_state
-
 
         self.change_state(new_state)
 
