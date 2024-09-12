@@ -190,8 +190,8 @@ private:
   std::string lidar_frame;
 
   tf2_ros::TransformBroadcaster tf_bcast;
-
-  bool use_ros_time; // cppcheck-suppress uninitMemberVarPrivate
+  // cppcheck-suppress uninitMemberVarPrivate
+  bool use_ros_time;
 };
 } // namespace nodelets_os
 
