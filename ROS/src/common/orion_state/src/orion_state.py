@@ -973,7 +973,7 @@ class OrionState(NodeManager):
                     if self.record_p is not None:
                         self.record_p.terminate()
                     
-                    self.record_p = subprocess.Popen("cd /home/ugr/rosbags && rosbag record -b 0 -a", stdin=subprocess.PIPE, shell=True, cwd="/",
+                    self.record_p = subprocess.Popen('cd /home/ugr/rosbags && rosbag record -b 0 -a --exclude "/ugr/car/sensors/lidar|/ugr/car/sensors/cam0/image|/ouster/lidar_packets"', stdin=subprocess.PIPE, shell=True, cwd="/",
                                       executable='/bin/bash')
 
             # If both brake pressures are above 5, go to R2D_READY
