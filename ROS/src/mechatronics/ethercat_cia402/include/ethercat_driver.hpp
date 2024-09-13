@@ -6,11 +6,11 @@
 #include "ethercat_master.hpp"
 #include "managed_node.hpp"
 #include "ros/ros.h"
+#include "std_msgs/Float32.h"
 #include "std_msgs/Int32.h"
 #include "std_msgs/Int64.h"
 #include "std_msgs/UInt16.h"
 #include "std_msgs/UInt32.h"
-#include "std_msgs/Float32.h"
 
 class ECatDriver : public node_fixture::ManagedNode {
 public:
@@ -26,8 +26,10 @@ public:
 
 private:
   ros::NodeHandle n;
-  operational_mode_t mode; // cppcheck-suppress unusedStructMember
-  std::string ifname;      // cppcheck-suppress unusedStructMember
+  // cppcheck-suppress unusedStructMember
+  operational_mode_t mode;
+  // cppcheck-suppress unusedStructMember
+  std::string ifname;
 
   // Subscriber
   ros::Subscriber target_sub;

@@ -27,8 +27,9 @@
     <param name="two_d_mode" value="true" />
     <param name="reset_on_time_jump" value="true" />
 
-    <param name="imu0" value="/ugr/car/sensors/imu2" />
-    <rosparam param="imu2_config">[false, false, false,
+    <!-- Lidar imu -->
+    <param name="imu0" value="/ugr/car/sensors/lidar/imu" />
+    <rosparam param="imu0_config">[false, false, false,
       false, false, false,
       false, false, false,
       false, false, true,
@@ -36,7 +37,7 @@
     <param name="imu0_differential" value="false" />
     <param name="imu0_relative" value="true" />
 
-    <!-- Angular heading -->
+    <!-- Vectornav imu (With yaw and yaw rate)-->
     <param name="imu1" value="/ugr/car/sensors/vectornav/imu" />
     <rosparam param="imu1_config">[false, false, false,
       false, false, true,
@@ -81,8 +82,9 @@
     <param name="two_d_mode" value="true" />
     <param name="reset_on_time_jump" value="true" />
 
-    <param name="imu0" value="/ugr/car/sensors/imu2" />
-    <rosparam param="imu2_config">[false, false, false,
+   <!-- Lidar imu -->
+    <param name="imu0" value="/ugr/car/sensors/lidar/imu" />
+    <rosparam param="imu0_config">[false, false, false,
       false, false, false,
       false, false, false,
       false, false, true,
@@ -90,6 +92,17 @@
     <param name="imu0_differential" value="false" />
     <param name="imu0_relative" value="true" />
 
+    <!-- Vectornav imu (Without yaw rate)-->
+    <param name="imu1" value="/ugr/car/sensors/vectornav/imu" />
+    <rosparam param="imu1_config">[false, false, false,
+      false, false, false,
+      false, false, false,
+      false, false, true,
+      false, false, false]</rosparam>
+    <param name="imu1_differential" value="false" />
+    <param name="imu1_relative" value="true" />
+
+    <!-- Wheel encoders -->
     <param name="twist0" value="ugr/car/sensors/encoder0" />
     <rosparam param="twist0_config">
       [false, false, false,
@@ -105,6 +118,7 @@
       false, false, false,
       false, false, false]</rosparam>
 
+    <!-- SLAM -->
     <param name="odom0"
       value="ugr/car/odometry/filtered/slam" />
     <param name="odom0_differential" value="false" />
@@ -125,7 +139,6 @@
 
     <!-- Remap the output -->
     <remap from="odometry/filtered" to="ugr/car/odometry/filtered/map" />
-
   </node>
 
   <!-- Transform the GPS NavSatFix into the local frame as Odometry. For both GPSs-->
@@ -249,7 +262,6 @@
 
 
     <remap from="odometry/filtered" to="ugr/car/odometry/filtered/gps" />
-
   </node>
 
 </launch>

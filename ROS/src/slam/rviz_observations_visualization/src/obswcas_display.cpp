@@ -43,7 +43,8 @@
 #include "obswcas_display.h"
 
 namespace rviz_observations_visualization {
-
+// clang format is turned off to avoid weird bugs
+// clang-format off
 // BEGIN_TUTORIAL
 // The constructor must have no arguments, so we can't give the
 // constructor the parameters it needs to fully initialize.
@@ -115,8 +116,7 @@ void ObservationWithCovarianceArrayStampedDisplay::updateColorAndAlpha() {
     visuals_[i]->setColor(color.r, color.g, color.b, alpha);
   }
 }
-
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress[unusedFunction,unmatchedSuppression]
 void ObservationWithCovarianceArrayStampedDisplay::processMessage(
     const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr &msg) {
 
@@ -160,6 +160,4 @@ void ObservationWithCovarianceArrayStampedDisplay::processMessage(
 }
 } // namespace rviz_observations_visualization
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(rviz_observations_visualization::
-                           ObservationWithCovarianceArrayStampedDisplay,
-                       rviz::Display)
+PLUGINLIB_EXPORT_CLASS(rviz_observations_visualization::ObservationWithCovarianceArrayStampedDisplay,rviz::Display)

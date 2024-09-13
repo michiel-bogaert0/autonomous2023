@@ -67,7 +67,7 @@ uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
           ((uint64_t)csv_inputs.velocity) * ((uint64_t)csv_inputs.velocity);
       max_dec_dest /= 2 * MAX_ACC * TIME_CONV_ACC;
       printf(", target_diff: %09d", target_diff);
-      printf(", max_dec_dest: %ld", max_dec_dest);
+      printf(", max_dec_dest: %lu", max_dec_dest);
       if (target_diff <= max_dec_dest) {
         // Need to decelerate
         return clip_vel(csv_inputs.velocity - MAX_ACC);
@@ -82,7 +82,7 @@ uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
                               ((uint64_t)(-csv_inputs.velocity));
       max_dec_dest /= 2 * MAX_ACC * TIME_CONV_ACC;
       printf(", target_diff: %09d", target_diff);
-      printf(", max_dec_dest: %ld", max_dec_dest);
+      printf(", max_dec_dest: %lu", max_dec_dest);
       if (-target_diff <= max_dec_dest) {
         // Need to decelerate
         return clip_vel(csv_inputs.velocity + MAX_ACC);
@@ -232,7 +232,7 @@ void *loop(void *mode_ptr) {
 
       if (mode == CSV) {
         printf(
-            "\rState: %#x, Mode: %u, Target: %09d, Position: %09d, Velocity: "
+            "\rState: %#x, Mode: %u, Target: %09u, Position: %09u, Velocity: "
             "%09d, Torque: %06d, Error: %09u",
             statusword, mode, base_pos + get_target_limited(),
             csv_inputs.position, csv_inputs.velocity,
@@ -355,7 +355,7 @@ void *loop(void *mode_ptr) {
           uint32_t cur_target = get_target_limited();
           uint32_t vel_target = calc_csv_target(csv_inputs, cur_target);
           set_output(1, controlword, vel_target);
-          printf(", set speed: %09d\n", vel_target);
+          printf(", set speed: %09u\n", vel_target);
         } else {
           set_output(1, controlword, target.load());
         }
@@ -790,8 +790,8 @@ int configure_servo(uint16 slave) {
   // u32val = 1;
   // retval = ec_SDOwrite(slave, 0x8010, 0x17, FALSE, sizeof(u32val), &u32val,
   //                      EC_TIMEOUTSAFE);
-  if (retval == 0)
-    return 0;
+  // if (retval == 0)
+  //   return 0;
 
   // Set velocity loop I gain
   u32val = 150;

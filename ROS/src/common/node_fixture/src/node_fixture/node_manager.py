@@ -334,7 +334,7 @@ class NodeManager(ManagedNode):
             node_management_param[old_state] = []
 
         print(f"Params: {node_management_param}")
-  
+
         return node_management_param
 
     def configure_nodes(self):
