@@ -1,21 +1,15 @@
 <launch>
-    <arg name="world_frame" default="ugr/car_odom" />
+    <arg name="world_frame" default="ugr/map" />
     <arg name="base_link_frame" default="ugr/car_base_link" />
 
-    <include file="$(find slam_simulator)/launch/slam_simulator.launch" pass_all_args="true" ns="foo" >
-        <arg name="filename" value="circle_R15.yaml"/>
-    </include>
-    <include file="$(find slam_mcl)/launch/mcl.launch" pass_all_args="true">
-        <arg name="path_to_map" value="/ugr/car/map/gt"/>
-    </include>
-    <node pkg="slam_lap_counter" output="screen" respawn="true" type="lap_counter" name="lap_counter">
+    
+    <node pkg="slam_lap_counter" output="screen" respawn="true" type="lap_counter.py" name="lap_counter">
         <param name="world_frame" value="$(arg world_frame)" />
         <param name="base_link_frame" value="$(arg base_link_frame)" />
-        <rosparam param="finishpoint">[0,0,0]</rosparam>
-        
-        <remap from="/output/lapComplete" to="/ugr/car/lapComplete"/>
-        <remap from="/reset_closure" to="/ugr/srv/reset_lap_counter"/>
-        <remap from="/adjust_finish" to="/ugr/srv/adjust_finish"/>
-        <remap from="/adjust_targetpoint" to="/ugr/srv/adjust_targetpoint"/>
+        <remap from="/lap_counter/laps_complete" to="/ugr/car/lapComplete"/>
+        <remap from="/lap_counter/finished" to="/ugr/car/finished"/>
+        <param name="laps" value="lap_counter/laps"/>
+        <param name="distance_after" value="lap_counter/distance_after"/>
+        <param name="finishpoint" value="lap_counter/finishpoint"/>
     </node>
 </launch>

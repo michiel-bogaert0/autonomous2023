@@ -11,7 +11,7 @@ from node_fixture.fixture import (
     create_diagnostic_message,
 )
 from node_fixture.node_manager import NodeManager, load_params
-from std_msgs.msg import Header, UInt16
+from std_msgs.msg import Header, UInt16, Bool
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 
@@ -34,8 +34,8 @@ class Controller(NodeManager):
         self.change_mission_thread = Thread(target=self.change_mission)
 
         rospy.Subscriber("/state", State, self.handle_state_change)
-        rospy.Subscriber("/input/lapComplete", UInt16, self.lapFinished)
-
+        rospy.Subscriber("/input/lapComplete", UInt16, self.lapComplete)
+        rospy.Subscriber("/input/finished",Bool,self.trackFinished)
         self.diagnostics_publisher = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
@@ -185,7 +185,15 @@ class Controller(NodeManager):
         )
         self.slam_state = new_state
 
-    def lapFinished(self, laps):
+    def trackFinished(self, state):
+        new_state = SLAMStatesEnum.FINISHED
+        rospy.set_param("/speed/target", 0.0)
+        self.change_state(new_state)
+        print('kokokoko')
+        return
+    
+
+    def lapComplete(self, laps):
         """
         Subscriber callback for the lap counter. Does an internal state transition if required
 
@@ -194,11 +202,7 @@ class Controller(NodeManager):
         """
 
         # If we did enough laps, switch to finished
-        if self.target_lap_count <= laps.data:
-            new_state = SLAMStatesEnum.FINISHED
-            rospy.set_param("/speed/target", 0.0)
-            self.change_state(new_state)
-            return
+        
 
         # If we did one lap in trackdrive and exploration, switch to racing
         if (

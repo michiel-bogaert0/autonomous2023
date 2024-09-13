@@ -15,6 +15,8 @@ slam_mcl:
   path_to_map: "/ugr/car/map/global"
 lap_counter:
   finishpoint: [0, 16, 0] # should be 2 * turn radius
+  laps: 10
+  distance_after: 0
 map_publisher:
   map_pkg: "slam_simulator"
   map: "/maps/map_dvsv.yaml"

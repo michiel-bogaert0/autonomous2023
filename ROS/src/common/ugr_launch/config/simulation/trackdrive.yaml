@@ -14,6 +14,7 @@ slam_controller:
     always:
       # SLAM
       - lap_counter
+      
 
       # Control
       - front_wheel_feedback_control
@@ -25,6 +26,8 @@ slam_mcl:
   path_to_map: "/ugr/car/map/slam/global"
 lap_counter:
   finishpoint: [0, 0, 0]
+  laps: 10
+  distance_after: 4
 speed:
   target: 2.0
   target_racing: 10.0
