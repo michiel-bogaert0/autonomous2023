@@ -104,7 +104,8 @@ class Trajectory:
                 abs(np.arange(len(distances)) - self.closest_index) < 20,
                 distances,
                 distances + 2000,
-            )  # Add large weight to distances outside of the 20 closest points
+            )  # Add large weight to distances outside of the 20 closest points 
+               # (to avoid problems with skidpad where the path overlaps)
             self.current_position_index = np.argmin(distances)
 
         self.closest_index = self.current_position_index
