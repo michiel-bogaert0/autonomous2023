@@ -18,8 +18,8 @@ cd /home/ugentracing/autonomous2023
 /home/ugentracing/autonomous2023/run set-car orion
 /home/ugentracing/autonomous2023/run set-env ROS_HOSTNAME 192.168.50.17
 /home/ugentracing/autonomous2023/run set-env ROS_MASTER_URI http://192.168.50.17:11311
-# /home/ugentracing/autonomous2023/run set-env ROS_HOSTNAME 10.241.210.64 
-# /home/ugentracing/autonomous2023/run set-env ROS_MASTER_URI http://10.241.210.64:11311
+# /home/ugentracing/autonomous2023/run set-env ROS_HOSTNAME 192.168.196.171
+# /home/ugentracing/autonomous2023/run set-env ROS_MASTER_URI http://192.168.196.171:11311
 
 # Start code
 /home/ugentracing/autonomous2023/run stop

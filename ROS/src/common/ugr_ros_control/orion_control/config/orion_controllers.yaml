@@ -41,11 +41,11 @@ steering_position_controller:
 axis0_velocity_controller:
    type: effort_controllers/JointVelocityController
    joint: axis0
-   pid: {p: 10, i: 0.92, d: 0.0, i_clamp_min: -10.0, i_clamp_max: 10.0}
+   pid: {p: 10, i: 2.0, d: 0.0, i_clamp_min: -10.0, i_clamp_max: 10.0}
 axis1_velocity_controller:
    type: effort_controllers/JointVelocityController
    joint: axis1
-   pid: {p: 18, i: 0.74, d: 0.0, i_clamp_min: -10.0, i_clamp_max: 10.0}
+   pid: {p: 18, i: 2.0, d: 0.0, i_clamp_min: -10.0, i_clamp_max: 10.0}
 
 # controllers for manual driving
 axis0_effort_controller:

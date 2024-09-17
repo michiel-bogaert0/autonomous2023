@@ -7,6 +7,7 @@
 #include "managed_node.hpp"
 #include "ros/ros.h"
 #include "std_msgs/Float32.h"
+#include "std_msgs/Int16.h"
 #include "std_msgs/Int32.h"
 #include "std_msgs/Int64.h"
 #include "std_msgs/UInt16.h"
@@ -26,9 +27,9 @@ public:
 
 private:
   ros::NodeHandle n;
-  // cppcheck-suppress unusedStructMember
+  // cppcheck-suppress [unusedStructMember, unmatchedSuppression]
   operational_mode_t mode;
-  // cppcheck-suppress unusedStructMember
+  // cppcheck-suppress [unusedStructMember, unmatchedSuppression]
   std::string ifname;
 
   // Subscriber

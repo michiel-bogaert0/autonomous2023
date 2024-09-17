@@ -27,7 +27,7 @@ loopclosure:
   finishpoint: [0, 0, 0]
 speed:
   target: 3
-  target_racing: 7
+  target_racing: 6
   LC_adaptive_velocity: False
   LC_max_acceleration: 0.5 # TO BE VERIFIED
   LC_min: 1.0
@@ -37,8 +37,8 @@ pure_pursuit:
   world_frame: "ugr/map"
   speed_start: 1
   speed_stop: 7
-  distance_start: 3
-  distance_stop: 6
+  distance_start: 5
+  distance_stop: 5
 front_wheel_feedback:
   change_index: True
   world_frame: "ugr/map"

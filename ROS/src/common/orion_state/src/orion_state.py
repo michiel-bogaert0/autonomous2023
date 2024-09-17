@@ -890,7 +890,7 @@ class OrionState(NodeManager):
         data = [0, 0x41, 0, 0, 0, 0, 0, 0]
         message = can.Message(arbitration_id=msg.frame_id, data=data)
         self.bus.publish(serialcan_to_roscan(message))
-        print("lol")
+        print("Lidar enabled")
 
     def enable_tsac_fans(self, _):
         msg = self.db.get_message_by_name("set_outputs")
@@ -970,9 +970,14 @@ class OrionState(NodeManager):
                     # Record rosbag
                     if self.record_p is not None:
                         self.record_p.terminate()
-                    
-                    self.record_p = subprocess.Popen('cd /home/ugr/rosbags && rosbag record -b 0 -a --exclude "/ugr/car/sensors/lidar|/ugr/car/sensors/cam0/image|/ouster/lidar_packets"', stdin=subprocess.PIPE, shell=True, cwd="/",
-                                      executable='/bin/bash')
+
+                    self.record_p = subprocess.Popen(
+                        'cd /home/ugr/rosbags && rosbag record -b 0 -a --exclude "/ugr/car/sensors/lidar|/ugr/car/sensors/cam0/image|/ouster/lidar_packets"',
+                        stdin=subprocess.PIPE,
+                        shell=True,
+                        cwd="/",
+                        executable="/bin/bash",
+                    )
 
             # If both brake pressures are above 5, go to R2D_READY
             elif self.car_state == OrionStateEnum.TS_ACTIVE:

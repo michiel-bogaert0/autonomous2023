@@ -34,7 +34,7 @@ void ECatDriver::doActivate() {
   this->position_pub = n.advertise<std_msgs::Float32>("/output/position", 1);
   this->statusword_pub = n.advertise<std_msgs::UInt16>("/output/statusword", 1);
   this->velocity_pub = n.advertise<std_msgs::Float32>("/output/velocity", 1);
-  this->torque_pub = n.advertise<std_msgs::UInt16>("/output/torque", 1);
+  this->torque_pub = n.advertise<std_msgs::Int16>("/output/torque", 1);
   this->erroract_pub = n.advertise<std_msgs::Float32>("/output/erroract", 1);
 }
 
@@ -82,10 +82,11 @@ int ECatDriver::update_pubs() {
     this->statusword_pub.publish(statusword_msg);
 
     std_msgs::Float32 velocity_msg;
-    velocity_msg.data = (inputs.velocity * TIME_CONV_VEL / RAD_TO_POS);
+    velocity_msg.data =
+        (static_cast<int32>(inputs.velocity * TIME_CONV_VEL) / RAD_TO_POS);
     this->velocity_pub.publish(velocity_msg);
 
-    std_msgs::UInt16 torque_msg;
+    std_msgs::Int16 torque_msg;
     torque_msg.data = inputs.torque;
     this->torque_pub.publish(torque_msg);
 
@@ -107,10 +108,11 @@ int ECatDriver::update_pubs() {
     this->statusword_pub.publish(statusword_msg);
 
     std_msgs::Float32 velocity_msg;
-    velocity_msg.data = (inputs.velocity * TIME_CONV_VEL / RAD_TO_POS);
+    velocity_msg.data =
+        (static_cast<int32>(inputs.velocity * TIME_CONV_VEL) / RAD_TO_POS);
     this->velocity_pub.publish(velocity_msg);
 
-    std_msgs::UInt16 torque_msg;
+    std_msgs::Int16 torque_msg;
     torque_msg.data = inputs.torque;
     this->torque_pub.publish(torque_msg);
 

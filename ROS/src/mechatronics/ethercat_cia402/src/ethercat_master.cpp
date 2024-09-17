@@ -387,7 +387,7 @@ void *loop(void *mode_ptr) {
   return NULL;
 }
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 int start_loop(operational_mode_t mode) {
 
   // Set check flag to enable check thread
@@ -454,7 +454,7 @@ int start_loop(operational_mode_t mode) {
   return 1;
 }
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 void stop_loop() {
   // Graceful shutdown main thread
   loop_flag = false;
@@ -464,7 +464,7 @@ void stop_loop() {
   pthread_join(*check_thread, NULL);
 }
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 void reset_state() {
   // Write state to slave
   ec_slave[0].state = EC_STATE_INIT;
@@ -474,7 +474,7 @@ void reset_state() {
   servo_state.statusword_state = Not_ready_to_switch_on;
 }
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 int initialize_ethercat(const char *ifname, operational_mode_t mode) {
   servo_state.mode = mode;
 
@@ -533,8 +533,9 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
             (ec_slave[slave].state != EC_STATE_OPERATIONAL)) {
           ec_group[currentgroup].docheckstate = TRUE;
           if (ec_slave[slave].state == (EC_STATE_SAFE_OP + EC_STATE_ERROR)) {
-            ROS_ERROR("Slave %d is in SAFE_OP + ERROR, attempting ack.\n",
-                      slave);
+            ROS_ERROR("Slave %d is in SAFE_OP + ERROR (%s), attempting ack.\n",
+                      slave,
+                      ec_ALstatuscode2string(ec_slave[slave].ALstatuscode));
             ec_slave[slave].state = (EC_STATE_SAFE_OP + EC_STATE_ACK);
             ec_writestate(slave);
           } else if (ec_slave[slave].state == EC_STATE_SAFE_OP) {
@@ -551,7 +552,8 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
             ec_statecheck(slave, EC_STATE_OPERATIONAL, EC_TIMEOUTRET);
             if (ec_slave[slave].state == EC_STATE_NONE) {
               ec_slave[slave].islost = TRUE;
-              ROS_ERROR("Slave %d lost\n", slave);
+              ROS_ERROR("Slave %d lost (%s)\n", slave,
+                        ec_ALstatuscode2string(ec_slave[slave].ALstatuscode));
             }
           }
         }
