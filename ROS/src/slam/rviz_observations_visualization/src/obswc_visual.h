@@ -32,7 +32,6 @@
 
 #include <ugr_msgs/ObservationWithCovariance.h>
 
-// cppcheck-suppress *
 namespace Ogre {
 class Vector3;
 class Quaternion;
