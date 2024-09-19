@@ -38,9 +38,9 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
     size_t index2 = 2 * triangles_indices[i+1];
     size_t index3 = 2 * triangles_indices[i+2];
 
-    TrianglePoint point1(coords[index1], coords[index1 + 1], classes[index1]);
-    TrianglePoint point2(coords[index2], coords[index2 + 1], classes[index2]);
-    TrianglePoint point3(coords[index3], coords[index3 + 1], classes[index3]);
+    TrianglePoint point1(coords[index1], coords[index1 + 1], classes[index1/2]);
+    TrianglePoint point2(coords[index2], coords[index2 + 1], classes[index2/2]);
+    TrianglePoint point3(coords[index3], coords[index3 + 1], classes[index3/2]);
     Triangle triangle(point1, point2, point3);
 
     distances.push_back(triangle.side1);
