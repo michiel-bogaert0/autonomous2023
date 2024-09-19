@@ -32,12 +32,11 @@
 
 #include <ugr_msgs/ObservationWithCovariance.h>
 
-// cppcheck-suppress syntaxError
+// cppcheck-suppress *
 namespace Ogre {
 class Vector3;
 class Quaternion;
 } // namespace Ogre
-// namespace Ogre
 // cppcheck-suppress [syntaxError, unmatchedSuppression]
 namespace rviz {
 class Shape;
