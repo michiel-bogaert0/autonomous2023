@@ -69,7 +69,7 @@ public:
   void setOrientation(Ogre::Quaternion orientation);
   void setPosition(float x, float y);
   void setLocalPosition(float x, float y);
-  void setCovariance(boost::array<double, 9> &covariance);
+  void setCovariance(const boost::array<double, 9> &covariance);
   void setId(std::string id, bool visible);
 
   // Set the color and alpha of the visual, which are user-editable
