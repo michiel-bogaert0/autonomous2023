@@ -33,6 +33,7 @@ using sensor::UDPProfileLidar;
 using namespace std::chrono_literals;
 
 namespace nodelets_os {
+// cppcheck-suppress [noConstructor, unmatchedSuppression]
 class OusterCloud : public nodelet::Nodelet {
 private:
   bool is_arg_set(const std::string &arg) {
@@ -190,7 +191,7 @@ private:
   std::string lidar_frame;
 
   tf2_ros::TransformBroadcaster tf_bcast;
-  // cppcheck-suppress uninitMemberVarPrivate
+  // cppcheck-suppress [uninitMemberVarPrivate, unmatchedSuppression]
   bool use_ros_time;
 };
 } // namespace nodelets_os
