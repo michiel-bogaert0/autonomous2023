@@ -39,4 +39,4 @@ drive_velocity_controller:
 drive_effort_controller:
    type: effort_controllers/JointEffortController
    joint: axis0
-   pid: {p: 10.0, i: 0.01, d: 0.0}
+   pid: {p: 10.0, i: 0.01, d: 0.0, publish_state: True}
