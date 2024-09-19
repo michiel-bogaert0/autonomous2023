@@ -31,11 +31,11 @@ void ECatDriver::doActivate() {
 
   // Initialize publishers
   this->ecat_state_pub = n.advertise<std_msgs::UInt32>("/output/ecat_state", 1);
-  this->position_pub = n.advertise<std_msgs::UInt32>("/output/position", 1);
+  this->position_pub = n.advertise<std_msgs::Float32>("/output/position", 1);
   this->statusword_pub = n.advertise<std_msgs::UInt16>("/output/statusword", 1);
-  this->velocity_pub = n.advertise<std_msgs::UInt32>("/output/velocity", 1);
-  this->torque_pub = n.advertise<std_msgs::UInt16>("/output/torque", 1);
-  this->erroract_pub = n.advertise<std_msgs::UInt32>("/output/erroract", 1);
+  this->velocity_pub = n.advertise<std_msgs::Float32>("/output/velocity", 1);
+  this->torque_pub = n.advertise<std_msgs::Int16>("/output/torque", 1);
+  this->erroract_pub = n.advertise<std_msgs::Float32>("/output/erroract", 1);
 }
 
 void ECatDriver::doDeactivate() {
@@ -50,9 +50,9 @@ void ECatDriver::doShutdown() {
   reset_state();
 }
 
-void ECatDriver::set_target(std_msgs::Int32 new_target) {
+void ECatDriver::set_target(std_msgs::Float32 new_target) {
   // Set new target
-  target = new_target.data;
+  target = static_cast<int32>(new_target.data * RAD_TO_POS);
 }
 
 int ECatDriver::update_pubs() {
@@ -72,48 +72,52 @@ int ECatDriver::update_pubs() {
     inputs_mutex.lock();
     CSP_inputs inputs = csp_inputs_ext;
     inputs_mutex.unlock();
-    std_msgs::UInt32 position_msg;
-    position_msg.data = (inputs.position - base_pos) / mDEG_TO_POS;
+    std_msgs::Float32 position_msg;
+    position_msg.data =
+        (static_cast<int32>(inputs.position - base_pos) / RAD_TO_POS);
     this->position_pub.publish(position_msg);
 
     std_msgs::UInt16 statusword_msg;
     statusword_msg.data = inputs.statusword;
     this->statusword_pub.publish(statusword_msg);
 
-    std_msgs::UInt32 velocity_msg;
-    velocity_msg.data = inputs.velocity * TIME_CONV_VEL / mDEG_TO_POS;
+    std_msgs::Float32 velocity_msg;
+    velocity_msg.data =
+        (static_cast<int32>(inputs.velocity * TIME_CONV_VEL) / RAD_TO_POS);
     this->velocity_pub.publish(velocity_msg);
 
-    std_msgs::UInt16 torque_msg;
+    std_msgs::Int16 torque_msg;
     torque_msg.data = inputs.torque;
     this->torque_pub.publish(torque_msg);
 
     std_msgs::UInt32 erroract_msg;
-    erroract_msg.data = inputs.erroract / mDEG_TO_POS;
+    erroract_msg.data = (inputs.erroract / RAD_TO_POS);
     this->erroract_pub.publish(erroract_msg);
   } else if (mode == CSV) {
     // Read current inputs
     inputs_mutex.lock();
     CSV_inputs inputs = csv_inputs_ext;
     inputs_mutex.unlock();
-    std_msgs::UInt32 position_msg;
-    position_msg.data = (inputs.position - base_pos) / mDEG_TO_POS;
+    std_msgs::Float32 position_msg;
+    position_msg.data =
+        static_cast<int32>(inputs.position - base_pos) / RAD_TO_POS;
     this->position_pub.publish(position_msg);
 
     std_msgs::UInt16 statusword_msg;
     statusword_msg.data = inputs.statusword;
     this->statusword_pub.publish(statusword_msg);
 
-    std_msgs::UInt32 velocity_msg;
-    velocity_msg.data = inputs.velocity * TIME_CONV_VEL / mDEG_TO_POS;
+    std_msgs::Float32 velocity_msg;
+    velocity_msg.data =
+        (static_cast<int32>(inputs.velocity * TIME_CONV_VEL) / RAD_TO_POS);
     this->velocity_pub.publish(velocity_msg);
 
-    std_msgs::UInt16 torque_msg;
+    std_msgs::Int16 torque_msg;
     torque_msg.data = inputs.torque;
     this->torque_pub.publish(torque_msg);
 
-    std_msgs::UInt32 erroract_msg;
-    erroract_msg.data = inputs.erroract / mDEG_TO_POS;
+    std_msgs::Float32 erroract_msg;
+    erroract_msg.data = (inputs.erroract / RAD_TO_POS);
     this->erroract_pub.publish(erroract_msg);
   } else {
     // TODO CST not supported yet

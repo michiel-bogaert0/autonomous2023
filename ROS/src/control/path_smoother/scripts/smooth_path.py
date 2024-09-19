@@ -67,7 +67,10 @@ class PathSmoother(ManagedNode):
             # Transform closed path to world frame
             # and shift it away from car
             # to avoid jumping of path close to car
-            if per and mission == AutonomousMission.TRACKDRIVE:
+            if per and (
+                mission == AutonomousMission.TRACKDRIVE
+                or mission == AutonomousMission.AUTOCROSS
+            ):
                 trans = self.tf_buffer.lookup_transform(
                     self.world_frame, msg.header.frame_id, msg.header.stamp
                 )
@@ -89,7 +92,10 @@ class PathSmoother(ManagedNode):
                 path = np.roll(path, -closest_point - 10, axis=0)
 
             # Add zero pose to path if no closure of path
-            if not per and mission == AutonomousMission.TRACKDRIVE:
+            if not per and (
+                mission == AutonomousMission.TRACKDRIVE
+                or mission == AutonomousMission.AUTOCROSS
+            ):
                 path = np.vstack(([0, 0], path))
 
             # Linear interpolation between center points to add more points for BSpline smoothing
@@ -114,7 +120,10 @@ class PathSmoother(ManagedNode):
             smoothed_path = np.array(splev(u, tck)).T
             vis_path = smoothed_path
 
-            if per and mission == AutonomousMission.TRACKDRIVE:
+            if per and (
+                mission == AutonomousMission.TRACKDRIVE
+                or mission == AutonomousMission.AUTOCROSS
+            ):
                 # Throw away last point to avoid weird FWF bug (see wiki)
                 smoothed_path = smoothed_path[:-1]
 

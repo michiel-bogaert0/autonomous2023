@@ -18,6 +18,7 @@ slam_controller:
       # Control
       - front_wheel_feedback_control
       - pathplanning
+      - path_builder
       - path_smoother
 
 slam_mcl:
@@ -48,3 +49,5 @@ mpc:
   change_index: True
   minimal_distance: 1.2
   world_frame: "ugr/map"
+path_builder:
+  enable_global_path: True

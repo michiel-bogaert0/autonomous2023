@@ -27,120 +27,120 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
+#include <OGRE/OgreSceneNode.h>
 
 #include <tf/transform_listener.h>
 
-#include <rviz/visualization_manager.h>
+#include <rviz/frame_manager.h>
+#include <rviz/properties/bool_property.h>
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/int_property.h>
-#include <rviz/properties/bool_property.h>
-#include <rviz/frame_manager.h>
+#include <rviz/visualization_manager.h>
 
 #include "obswc_visual.h"
 #include "obswcas_display.h"
 
-namespace rviz_observations_visualization
-{
+namespace rviz_observations_visualization {
+// clang format is turned off to avoid weird bugs
+// clang-format off
+// BEGIN_TUTORIAL
+// The constructor must have no arguments, so we can't give the
+// constructor the parameters it needs to fully initialize.
+ObservationWithCovarianceArrayStampedDisplay::
+    ObservationWithCovarianceArrayStampedDisplay() {
+  color_property_[0] =
+      new rviz::ColorProperty("Class 0 color", QColor(0, 0, 255),
+                              "The color of observation class 0: 'blue'", this,
+                              SLOT(updateColorAndAlpha()));
 
-  // BEGIN_TUTORIAL
-  // The constructor must have no arguments, so we can't give the
-  // constructor the parameters it needs to fully initialize.
-  ObservationWithCovarianceArrayStampedDisplay::ObservationWithCovarianceArrayStampedDisplay()
-  {
-    color_property_[0] = new rviz::ColorProperty("Class 0 color", QColor(0, 0, 255),
-                                                 "The color of observation class 0: 'blue'",
-                                                 this, SLOT(updateColorAndAlpha()));
+  color_property_[1] =
+      new rviz::ColorProperty("Class 1 color", QColor(255, 214, 0),
+                              "The color of observation class 1: 'yellow'",
+                              this, SLOT(updateColorAndAlpha()));
 
-    color_property_[1] = new rviz::ColorProperty("Class 1 color", QColor(255, 214, 0),
-                                                 "The color of observation class 1: 'yellow'",
-                                                 this, SLOT(updateColorAndAlpha()));
+  color_property_[2] =
+      new rviz::ColorProperty("Class 2 color", QColor(255, 140, 0),
+                              "The color of observation class 2: 'big orange'",
+                              this, SLOT(updateColorAndAlpha()));
 
-    color_property_[2] = new rviz::ColorProperty("Class 2 color", QColor(255, 140, 0),
-                                                 "The color of observation class 2: 'big orange'",
-                                                 this, SLOT(updateColorAndAlpha()));
+  color_property_[3] = new rviz::ColorProperty(
+      "Class 3 color", QColor(255, 69, 0),
+      "The color of observation class 3: 'small orange'", this,
+      SLOT(updateColorAndAlpha()));
 
-    color_property_[3] = new rviz::ColorProperty("Class 3 color", QColor(255, 69, 0),
-                                                 "The color of observation class 3: 'small orange'",
-                                                 this, SLOT(updateColorAndAlpha()));
-
-    color_property_[4] = new rviz::ColorProperty("Class 4 color", QColor(0, 0, 0),
-                                                 "The color of observation class 4: 'unkown'",
-                                                 this, SLOT(updateColorAndAlpha()));
+  color_property_[4] =
+      new rviz::ColorProperty("Class 4 color", QColor(0, 0, 0),
+                              "The color of observation class 4: 'unkown'",
+                              this, SLOT(updateColorAndAlpha()));
 
     use_realistic_model_ = new rviz::BoolProperty("Realistic", false, "Use a realistic cone model. If true, alpha and color properties do nothing. Falls back to simple models if no .dae file is available", this, SLOT(updateUseRealisticModel()));
 
     use_ids_ = new rviz::BoolProperty("ids", false, "Show ids from grapshslam", this, SLOT(updateUseIds()));
 
-    alpha_property_ = new rviz::FloatProperty("Alpha", 1.0,
-                                              "0 is fully transparent, 1.0 is fully opaque.",
-                                              this, SLOT(updateColorAndAlpha()));
-  }
+  alpha_property_ = new rviz::FloatProperty(
+      "Alpha", 1.0, "0 is fully transparent, 1.0 is fully opaque.", this,
+      SLOT(updateColorAndAlpha()));
+}
 
-  void ObservationWithCovarianceArrayStampedDisplay::onInitialize()
-  {
-    MFDClass::onInitialize();
-  }
+void ObservationWithCovarianceArrayStampedDisplay::onInitialize() {
+  MFDClass::onInitialize();
+}
 
-  // This function MUST exist. Otherwise Rviz's plugin factory will complain
-  ObservationWithCovarianceArrayStampedDisplay::~ObservationWithCovarianceArrayStampedDisplay()
-  {
-  }
+// This function MUST exist. Otherwise Rviz's plugin factory will complain
+ObservationWithCovarianceArrayStampedDisplay::
+    ~ObservationWithCovarianceArrayStampedDisplay() {}
 
   // This one must also exist. Otherwise the option will not appear in GUI
   void ObservationWithCovarianceArrayStampedDisplay::updateUseRealisticModel() {}
   void ObservationWithCovarianceArrayStampedDisplay::updateUseIds() {}
 
-  // Clear the visuals by deleting their objects.
-  void ObservationWithCovarianceArrayStampedDisplay::reset()
-  {
-    MFDClass::reset();
-    for (auto visual : visuals_)
-    {
-      delete visual;
-    }
-    visuals_.clear();
+// Clear the visuals by deleting their objects.
+void ObservationWithCovarianceArrayStampedDisplay::reset() {
+  MFDClass::reset();
+  for (auto visual : visuals_) {
+    delete visual;
+  }
+  visuals_.clear();
+}
+
+// Set the current color and alpha values for each visual.
+void ObservationWithCovarianceArrayStampedDisplay::updateColorAndAlpha() {
+  float alpha = alpha_property_->getFloat();
+
+  for (size_t i = 0; i < visuals_.size(); i++) {
+    Ogre::ColourValue color =
+        color_property_[visuals_[i]->getVisualClass()]->getOgreColor();
+    visuals_[i]->setColor(color.r, color.g, color.b, alpha);
+  }
+}
+// cppcheck-suppress[unusedFunction,unmatchedSuppression]
+void ObservationWithCovarianceArrayStampedDisplay::processMessage(
+    const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr &msg) {
+
+  // Get transformation
+  Ogre::Quaternion orientation;
+  Ogre::Vector3 position;
+  if (!context_->getFrameManager()->getTransform(
+          msg->header.frame_id, msg->header.stamp, position, orientation)) {
+    ROS_DEBUG("Error transforming from frame '%s' to frame '%s'",
+              msg->header.frame_id.c_str(), qPrintable(fixed_frame_));
+    return;
   }
 
-  // Set the current color and alpha values for each visual.
-  void ObservationWithCovarianceArrayStampedDisplay::updateColorAndAlpha()
-  {
-    float alpha = alpha_property_->getFloat();
-
-    for (size_t i = 0; i < visuals_.size(); i++)
-    {
-      Ogre::ColourValue color = color_property_[visuals_[i]->getVisualClass()]->getOgreColor();
-      visuals_[i]->setColor(color.r, color.g, color.b, alpha);
-    }
+  for (auto visual : visuals_) {
+    delete visual;
   }
+  visuals_.clear();
 
-  void ObservationWithCovarianceArrayStampedDisplay::processMessage(const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr &msg)
-  {
+  for (ugr_msgs::ObservationWithCovariance observation : msg->observations) {
 
-    // Get transformation
-    Ogre::Quaternion orientation;
-    Ogre::Vector3 position;
-    if (!context_->getFrameManager()->getTransform(msg->header.frame_id,
-                                                   msg->header.stamp,
-                                                   position, orientation))
-    {
-      ROS_DEBUG("Error transforming from frame '%s' to frame '%s'",
-                msg->header.frame_id.c_str(), qPrintable(fixed_frame_));
-      return;
-    }
-
-    for (auto visual : visuals_)
-    {
-      delete visual;
-    }
-    visuals_.clear();
-
-    for (ugr_msgs::ObservationWithCovariance observation : msg->observations)
-    {
-
-      ObservationWithCovarianceVisual *visual = new ObservationWithCovarianceVisual(scene_manager_, scene_node_, observation.observation.observation_class, use_realistic_model_->getBool());
+    ObservationWithCovarianceVisual *visual =
+        new ObservationWithCovarianceVisual(
+            scene_manager_, scene_node_,
+            observation.observation.observation_class,
+            use_realistic_model_->getBool());
 
       visual->setVisualClass(observation.observation.observation_class);
       visual->setPosition(position.x, position.y);
@@ -151,8 +151,10 @@ namespace rviz_observations_visualization
       visual->setId(std::to_string(observation.observation.id),use_ids_->getBool());
       
 
-      Ogre::ColourValue color = color_property_[observation.observation.observation_class]->getOgreColor();
-      visual->setColor(color.r, color.g, color.b, observation.observation.belief);
+    Ogre::ColourValue color =
+        color_property_[observation.observation.observation_class]
+            ->getOgreColor();
+    visual->setColor(color.r, color.g, color.b, observation.observation.belief);
 
       visuals_.push_back(visual);
     }
@@ -160,4 +162,4 @@ namespace rviz_observations_visualization
 }
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(rviz_observations_visualization::ObservationWithCovarianceArrayStampedDisplay, rviz::Display)
+PLUGINLIB_EXPORT_CLASS(rviz_observations_visualization::ObservationWithCovarianceArrayStampedDisplay,rviz::Display)

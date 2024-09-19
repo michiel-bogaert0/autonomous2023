@@ -42,7 +42,7 @@ class ObsVis:
         self, particles: Particles, namespace, lifetime, color, persist=False
     ):
         """
-            Takes in an Particles message and produces the corresponding MarkerArary message
+            Takes in an Particles message and produces the corresponding MarkerArray message
 
         Args:
             observations: the message to visualize
