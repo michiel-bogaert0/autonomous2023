@@ -10,7 +10,7 @@ from tf2_geometry_msgs import do_transform_pose
 
 class Trajectory:
     """
-    Helper class to calculate the cars target point based on a given path it has to follow
+    Helper class to calculate the cars target point based on a given path it has to follow.
 
     Args:
         - tf_buffer {tf2_ros.Buffer}: tf2 buffer to transform the path to the current base_link_frame.
@@ -104,8 +104,8 @@ class Trajectory:
                 abs(np.arange(len(distances)) - self.closest_index) < 20,
                 distances,
                 distances + 2000,
-            )  # Add large weight to distances outside of the 20 closest points 
-               # (to avoid problems with skidpad where the path overlaps)
+            )  # Add large weight to distances outside of the 20 closest points
+            # (to avoid problems with skidpad where the path overlaps)
             self.current_position_index = np.argmin(distances)
 
         self.closest_index = self.current_position_index
