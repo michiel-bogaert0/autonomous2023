@@ -7,7 +7,8 @@ TransformFrames::TransformFrames(ros::NodeHandle &n)
 
 Pathplanning::Pathplanning(ros::NodeHandle &n)
     : ManagedNode(n, "pathplanning"), n_(n), frametf_(n), triangulator_(n),
-      debug_visualisation_(n.param<bool>("debug_visualisation", false)) {}
+      debug_visualisation_(n.param<bool>("debug_visualisation", false)),
+      use_orange_cones_(n.param<bool>("use_orange_cones", false)) {}
 
 void Pathplanning::doConfigure() {}
 void Pathplanning::doActivate() {
@@ -27,12 +28,15 @@ void Pathplanning::receive_new_map(
   }
   std::vector<std::vector<double>> cones;
   for (const auto &obs_with_cov : track->observations) {
-    std::vector<double> cone;
-    cone.push_back(obs_with_cov.observation.location.x);
-    cone.push_back(obs_with_cov.observation.location.y);
-    cone.push_back(obs_with_cov.observation.observation_class);
-    cone.push_back(obs_with_cov.observation.id);
-    cones.push_back(cone);
+    if (!(!this->use_orange_cones_ &&
+          obs_with_cov.observation.observation_class == 2)) {
+      std::vector<double> cone;
+      cone.push_back(obs_with_cov.observation.location.x);
+      cone.push_back(obs_with_cov.observation.location.y);
+      cone.push_back(obs_with_cov.observation.observation_class);
+      cone.push_back(obs_with_cov.observation.id);
+      cones.push_back(cone);
+    }
   }
 
   compute(cones, track->header);

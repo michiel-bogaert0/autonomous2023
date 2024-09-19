@@ -1,0 +1,6 @@
+slam_controller:
+  node_management:
+    always:
+      - inspection
+      - ecat_driver
+

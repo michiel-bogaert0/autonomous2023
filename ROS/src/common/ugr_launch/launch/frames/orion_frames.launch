@@ -1,5 +1,6 @@
 <launch>
 
+  <!-- Frames -->
   <param name="robot_description"
     command="$(find xacro)/xacro '$(find orion_description)/urdf/orion.urdf'" />
 
@@ -8,5 +9,4 @@
       <param name="use_tf_static" value="false" />
     </node>
   </group>
-
 </launch>

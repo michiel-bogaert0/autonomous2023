@@ -37,6 +37,7 @@ private:
   ConeClustering cone_clustering_;
   GroundRemoval ground_removal_;
 
+  bool lidar_rotated_;
   bool publish_preprocessing_; // publish the preprocessed pointcloud
   bool publish_ground_;        // publish the debug ground pointclouds
   bool publish_clusters_;      // color the clusters and publish them
@@ -53,6 +54,8 @@ private:
   void publishObservations(const sensor_msgs::PointCloud cones);
   void publishDiagnostic(DiagnosticStatusEnum status, std::string name,
                          std::string message);
+  template <class PointT>
+  pcl::PointCloud<PointT> flipPointcloud(pcl::PointCloud<PointT> pc);
 };
 } // namespace ns_lidar
 

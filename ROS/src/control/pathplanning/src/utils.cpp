@@ -120,6 +120,40 @@ sort_closest_to(const std::vector<std::vector<double>> &center_points,
   return sorted_points_within_distance;
 }
 
+std::vector<PointInfo>
+sort_by_angle_change(const std::vector<std::vector<double>> &center_points,
+                     const std::vector<double> &origin, double original_angle,
+                     double max_angle_change, double max_distance) {
+
+  std::vector<PointInfo> point_infos;
+  point_infos.reserve(center_points.size());
+
+  for (const auto &center_point : center_points) {
+    double dx = center_point[0] - origin[0];
+    double dy = center_point[1] - origin[1];
+    double d_squared = dx * dx + dy * dy;
+
+    if (d_squared <= max_distance * max_distance || max_distance == -1) {
+      double angle = std::atan2(dy, dx);
+      double angle_change = std::abs(angle - original_angle);
+      // Normalize angle_change to be between 0 and π
+      angle_change = std::min(angle_change, 2 * M_PI - angle_change);
+
+      if (angle_change <= max_angle_change || max_angle_change == -1) {
+        point_infos.push_back({center_point, angle, angle_change, d_squared});
+      }
+    }
+  }
+
+  // Sort points by angle change
+  std::sort(point_infos.begin(), point_infos.end(),
+            [](const PointInfo &a, const PointInfo &b) {
+              return a.angle_change < b.angle_change;
+            });
+
+  return point_infos;
+}
+
 double calculate_variance(const std::vector<double> &data) {
   // Using Boost Accumulators to calculate variance
   namespace ba = boost::accumulators;

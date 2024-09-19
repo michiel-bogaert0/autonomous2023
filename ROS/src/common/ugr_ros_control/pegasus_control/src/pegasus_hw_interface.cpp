@@ -110,6 +110,9 @@ void PegasusHWInterface::read(ros::Duration& elapsed_time)
 
 void PegasusHWInterface::write(ros::Duration& elapsed_time)
 {
+  ROS_INFO_STREAM(this->printCommandHelper());
+  ROS_INFO_STREAM(this->printStateHelper());
+
   // Safety
   enforceLimits(elapsed_time);
 

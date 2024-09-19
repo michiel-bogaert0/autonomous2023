@@ -3,7 +3,7 @@
 
 int main(int argc, char **argv) {
   // Initialize the ROS node
-  ros::init(argc, argv, "iologik_driver");
+  ros::init(argc, argv, "iologik_aio");
   ros::NodeHandle n("~");
 
   iologik iologik(n);

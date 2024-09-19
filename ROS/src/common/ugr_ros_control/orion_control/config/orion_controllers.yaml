@@ -6,13 +6,19 @@ generic_hw_control_loop:
 
 # Settings for ros_control hardware interface
 hardware_interface:
-   drive_joint: axis_rear
+   axis0_joint: axis0
+   axis1_joint: axis1
    steering_joint: axis_steering
    joints:
-      - axis_rear
+      - axis0
+      - axis1
       - axis_steering
    joints_config:
-      axis_rear:
+      axis0:
+         interfaces:
+            - velocity
+            - effort
+      axis1:
          interfaces:
             - velocity
             - effort
@@ -32,12 +38,32 @@ steering_position_controller:
    joint: axis_steering
 
 # controllers for autonomous driving
-drive_velocity_controller:
+axis0_velocity_controller:
    type: effort_controllers/JointVelocityController
-   joint: axis_rear
-   pid: {p: 10.0, i: 0.01, d: 0.0}
+   joint: axis0
+   pid: {p: 10, i: 2.0, d: 0.0, i_clamp_min: -10.0, i_clamp_max: 10.0}
+axis1_velocity_controller:
+   type: effort_controllers/JointVelocityController
+   joint: axis1
+   pid: {p: 18, i: 2.0, d: 0.0, i_clamp_min: -10.0, i_clamp_max: 10.0}
 
 # controllers for manual driving
-drive_effort_controller:
+axis0_effort_controller:
    type: effort_controllers/JointEffortController
-   joint: axis_rear
+   joint: axis0
+axis1_effort_controller:
+   type: effort_controllers/JointEffortController
+   joint: axis1
+
+# Group controllers for ease of use
+drive_effort_controller:
+   type: effort_controllers/JointGroupEffortController
+   joints:
+      - axis1
+      - axis0
+
+drive_velocity_controller:
+   type: velocity_controllers/JointGroupVelocityController
+   joints:
+      - axis1
+      - axis0

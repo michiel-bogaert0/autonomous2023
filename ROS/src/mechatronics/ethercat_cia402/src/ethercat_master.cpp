@@ -40,7 +40,7 @@ uint32_t clip_vel(uint32_t vel) {
 }
 
 uint32_t get_target_limited() {
-  // Get target (in mDEG)
+  // Get target (in units)
   int32_t cur_target = target.load();
   // Limit target
   if (cur_target > MAX_SPAN / 2) {
@@ -51,7 +51,7 @@ uint32_t get_target_limited() {
 
   // Return converted target in steps
   // Converted to uint32_t
-  return (cur_target * mDEG_TO_POS);
+  return cur_target;
 }
 
 uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
@@ -67,7 +67,7 @@ uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
           ((uint64_t)csv_inputs.velocity) * ((uint64_t)csv_inputs.velocity);
       max_dec_dest /= 2 * MAX_ACC * TIME_CONV_ACC;
       printf(", target_diff: %09d", target_diff);
-      printf(", max_dec_dest: %ld", max_dec_dest);
+      printf(", max_dec_dest: %lu", max_dec_dest);
       if (target_diff <= max_dec_dest) {
         // Need to decelerate
         return clip_vel(csv_inputs.velocity - MAX_ACC);
@@ -82,7 +82,7 @@ uint32_t calc_csv_target(CSV_inputs csv_inputs, uint32_t cur_target) {
                               ((uint64_t)(-csv_inputs.velocity));
       max_dec_dest /= 2 * MAX_ACC * TIME_CONV_ACC;
       printf(", target_diff: %09d", target_diff);
-      printf(", max_dec_dest: %ld", max_dec_dest);
+      printf(", max_dec_dest: %lu", max_dec_dest);
       if (-target_diff <= max_dec_dest) {
         // Need to decelerate
         return clip_vel(csv_inputs.velocity + MAX_ACC);
@@ -178,7 +178,7 @@ void *loop(void *mode_ptr) {
 
   // Start control loop
   while (loop_flag.load()) {
-    // Start precise timer for 2000us
+    // Start precise timer for 20000us
     do {
       clock_gettime(CLOCK_MONOTONIC, &tcur);
     } while ((tcur.tv_sec - tprev.tv_sec) * 1000000000 +
@@ -232,7 +232,7 @@ void *loop(void *mode_ptr) {
 
       if (mode == CSV) {
         printf(
-            "\rState: %#x, Mode: %u, Target: %09d, Position: %09d, Velocity: "
+            "\rState: %#x, Mode: %u, Target: %09u, Position: %09u, Velocity: "
             "%09d, Torque: %06d, Error: %09u",
             statusword, mode, base_pos + get_target_limited(),
             csv_inputs.position, csv_inputs.velocity,
@@ -355,7 +355,7 @@ void *loop(void *mode_ptr) {
           uint32_t cur_target = get_target_limited();
           uint32_t vel_target = calc_csv_target(csv_inputs, cur_target);
           set_output(1, controlword, vel_target);
-          printf(", set speed: %09d\n", vel_target);
+          printf(", set speed: %09u\n", vel_target);
         } else {
           set_output(1, controlword, target.load());
         }
@@ -387,7 +387,7 @@ void *loop(void *mode_ptr) {
   return NULL;
 }
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 int start_loop(operational_mode_t mode) {
 
   // Set check flag to enable check thread
@@ -454,7 +454,7 @@ int start_loop(operational_mode_t mode) {
   return 1;
 }
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 void stop_loop() {
   // Graceful shutdown main thread
   loop_flag = false;
@@ -464,7 +464,7 @@ void stop_loop() {
   pthread_join(*check_thread, NULL);
 }
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 void reset_state() {
   // Write state to slave
   ec_slave[0].state = EC_STATE_INIT;
@@ -474,7 +474,7 @@ void reset_state() {
   servo_state.statusword_state = Not_ready_to_switch_on;
 }
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 int initialize_ethercat(const char *ifname, operational_mode_t mode) {
   servo_state.mode = mode;
 
@@ -488,6 +488,7 @@ int initialize_ethercat(const char *ifname, operational_mode_t mode) {
       ec_slave[1].PO2SOconfig = configure_servo;
       ec_config_map(&IOMap);
       ec_configdc();
+      // ec_dcsync0(1, TRUE, 2000, 0);
 
       ROS_DEBUG("Slaves mapped, state to SAFE_OP.\n");
 
@@ -532,8 +533,9 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
             (ec_slave[slave].state != EC_STATE_OPERATIONAL)) {
           ec_group[currentgroup].docheckstate = TRUE;
           if (ec_slave[slave].state == (EC_STATE_SAFE_OP + EC_STATE_ERROR)) {
-            ROS_ERROR("Slave %d is in SAFE_OP + ERROR, attempting ack.\n",
-                      slave);
+            ROS_ERROR("Slave %d is in SAFE_OP + ERROR (%s), attempting ack.\n",
+                      slave,
+                      ec_ALstatuscode2string(ec_slave[slave].ALstatuscode));
             ec_slave[slave].state = (EC_STATE_SAFE_OP + EC_STATE_ACK);
             ec_writestate(slave);
           } else if (ec_slave[slave].state == EC_STATE_SAFE_OP) {
@@ -550,7 +552,8 @@ OSAL_THREAD_FUNC ecatcheck(void *ptr) {
             ec_statecheck(slave, EC_STATE_OPERATIONAL, EC_TIMEOUTRET);
             if (ec_slave[slave].state == EC_STATE_NONE) {
               ec_slave[slave].islost = TRUE;
-              ROS_ERROR("Slave %d lost\n", slave);
+              ROS_ERROR("Slave %d lost (%s)\n", slave,
+                        ec_ALstatuscode2string(ec_slave[slave].ALstatuscode));
             }
           }
         }
@@ -663,14 +666,14 @@ int configure_servo(uint16 slave) {
   // Motor Settings
 
   // Set max current
-  u32val = 8900;
+  u32val = 48000;
   retval = ec_SDOwrite(slave, 0x8011, 0x11, FALSE, sizeof(u32val), &u32val,
                        EC_TIMEOUTSAFE);
   if (retval == 0)
     return 0;
 
   // Set rated current
-  u32val = 8900;
+  u32val = 8000;
   retval = ec_SDOwrite(slave, 0x8011, 0x12, FALSE, sizeof(u32val), &u32val,
                        EC_TIMEOUTSAFE);
   if (retval == 0)
@@ -756,7 +759,7 @@ int configure_servo(uint16 slave) {
   // Outputs
 
   // Set torque limitation
-  u16val = 1375;
+  u16val = 2250;
   retval = ec_SDOwrite(slave, 0x7010, 0x0b, FALSE, sizeof(u16val), &u16val,
                        EC_TIMEOUTSAFE);
   if (retval == 0)
@@ -785,12 +788,12 @@ int configure_servo(uint16 slave) {
   if (retval == 0)
     return 0;
 
-  // 0x8010:17
-  u32val = 1;
-  retval = ec_SDOwrite(slave, 0x8010, 0x17, FALSE, sizeof(u32val), &u32val,
-                       EC_TIMEOUTSAFE);
-  if (retval == 0)
-    return 0;
+  // // 0x8010:17
+  // u32val = 1;
+  // retval = ec_SDOwrite(slave, 0x8010, 0x17, FALSE, sizeof(u32val), &u32val,
+  //                      EC_TIMEOUTSAFE);
+  // if (retval == 0)
+  //   return 0;
 
   // Set velocity loop I gain
   u32val = 150;

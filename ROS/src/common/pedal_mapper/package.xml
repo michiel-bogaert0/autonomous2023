@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pedal_mapper</name>
+  <version>0.0.0</version>
+  <description>The pedal_mapper package</description>
+
+  <maintainer email="lowiek.vandenstockt@ugentracing.be">Lowiek Van den Stockt</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+
+
+  </export>
+</package>
