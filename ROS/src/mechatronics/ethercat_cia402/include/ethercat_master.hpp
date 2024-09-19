@@ -118,7 +118,7 @@ extern std::mutex inputs_mutex;
 extern CSP_inputs csp_inputs_ext;
 extern CSV_inputs csv_inputs_ext;
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 inline void set_output(uint16_t slave_nb, uint16_t controlword,
                        uint32_t value) {
   master_outputs *data_ptr;
@@ -128,7 +128,7 @@ inline void set_output(uint16_t slave_nb, uint16_t controlword,
   data_ptr->target = value;
 }
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 inline CSP_inputs get_CSP_input(uint16_t slave_nb) {
   CSP_inputs inputs =
       *reinterpret_cast<CSP_inputs *>(ec_slave[slave_nb].inputs);
@@ -136,7 +136,7 @@ inline CSP_inputs get_CSP_input(uint16_t slave_nb) {
   return inputs;
 }
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 inline CSV_inputs get_CSV_input(uint16_t slave_nb) {
   CSV_inputs inputs =
       *reinterpret_cast<CSV_inputs *>(ec_slave[slave_nb].inputs);
@@ -144,7 +144,7 @@ inline CSV_inputs get_CSV_input(uint16_t slave_nb) {
   return inputs;
 }
 
-// cppcheck-suppress unusedFunction
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 inline PP_inputs get_PP_input(uint16_t slave_nb) {
   PP_inputs inputs = *reinterpret_cast<PP_inputs *>(ec_slave[slave_nb].inputs);
 
