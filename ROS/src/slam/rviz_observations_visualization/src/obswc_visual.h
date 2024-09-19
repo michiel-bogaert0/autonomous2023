@@ -32,65 +32,62 @@
 
 #include <ugr_msgs/ObservationWithCovariance.h>
 
-namespace Ogre
-{
-  class Vector3;
-  class Quaternion;
-}
+namespace Ogre {
+class Vector3;
+class Quaternion;
+} // namespace Ogre
+// cppcheck-suppress [syntaxError, unmatchedSuppression]
+namespace rviz {
+class Shape;
+class Arrow;
+class MovableText;
+} // namespace rviz
 
-namespace rviz
-{
-  class Shape;
-  class Arrow;
-}
+namespace rviz_observations_visualization {
 
-namespace rviz_observations_visualization
-{
+// BEGIN_TUTORIAL
+// Declare the visual class for this display.
+//
+// Each instance of ImuVisual represents the visualization of a single
+// sensor_msgs::Imu message.  Currently it just shows an arrow with
+// the direction and magnitude of the acceleration vector, but could
+// easily be expanded to include more of the message data.
+class ObservationWithCovarianceVisual {
+public:
+  // Constructor.  Creates the visual stuff and puts it into the
+  // scene, but in an unconfigured state.
+  ObservationWithCovarianceVisual(Ogre::SceneManager *scene_manager,
+                                  Ogre::SceneNode *parent_node,
+                                  unsigned int cls, bool realistic);
 
-  // BEGIN_TUTORIAL
-  // Declare the visual class for this display.
-  //
-  // Each instance of ImuVisual represents the visualization of a single
-  // sensor_msgs::Imu message.  Currently it just shows an arrow with
-  // the direction and magnitude of the acceleration vector, but could
-  // easily be expanded to include more of the message data.
-  class ObservationWithCovarianceVisual
-  {
-  public:
-    // Constructor.  Creates the visual stuff and puts it into the
-    // scene, but in an unconfigured state.
-    ObservationWithCovarianceVisual(Ogre::SceneManager *scene_manager, Ogre::SceneNode *parent_node, unsigned int cls, bool realistic);
+  // Destructor.  Removes the visual stuff from the scene.
+  virtual ~ObservationWithCovarianceVisual();
 
-    // Destructor.  Removes the visual stuff from the scene.
-    virtual ~ObservationWithCovarianceVisual();
+  void setVisualClass(unsigned int cls) { visual_class_ = cls; };
+  unsigned int getVisualClass() { return visual_class_; }
+  void setOrientation(Ogre::Quaternion orientation);
+  void setPosition(float x, float y);
+  void setLocalPosition(float x, float y);
+  void setCovariance(const boost::array<double, 9> &covariance);
+  void setId(std::string id, bool visible);
 
-    void setVisualClass(unsigned int cls) {
-      visual_class_ = cls;
-    };
-    unsigned int getVisualClass() {
-      return visual_class_;
-    }
-    void setOrientation(Ogre::Quaternion orientation);
-    void setPosition(float x, float y); 
-    void setLocalPosition(float x, float y); 
-    void setCovariance(boost::array<double, 9> &covariance);
+  // Set the color and alpha of the visual, which are user-editable
+  // parameters and therefore don't come from the Imu message.
+  void setColor(float r, float g, float b, float a);
 
-    // Set the color and alpha of the visual, which are user-editable
-    // parameters and therefore don't come from the Imu message.
-    void setColor(float r, float g, float b, float a);
+private:
+  unsigned int visual_class_;
+  bool realistic_;
 
-  private:
-    unsigned int visual_class_;
-    bool realistic_;
+  rviz::Arrow *cone_shape_;
+  rviz::Shape *position_shape_;
+  rviz::MovableText *text_;
 
-    rviz::Arrow* cone_shape_;
-    rviz::Shape* position_shape_;
-
-    Ogre::SceneNode *frame_node_;
-    Ogre::SceneNode *cone_node_;
-    Ogre::SceneNode *position_node_;
-    Ogre::SceneManager *scene_manager_;
-  };
-}
+  Ogre::SceneNode *frame_node_;
+  Ogre::SceneNode *cone_node_;
+  Ogre::SceneNode *position_node_;
+  Ogre::SceneManager *scene_manager_;
+};
+} // namespace rviz_observations_visualization
 
 #endif
