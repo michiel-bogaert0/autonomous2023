@@ -37,7 +37,7 @@ namespace Ogre {
 class Vector3;
 class Quaternion;
 } // namespace Ogre
-
+// cppcheck-suppress [syntaxError, unmatchedSuppression]
 namespace rviz {
 class Shape;
 class Arrow;
