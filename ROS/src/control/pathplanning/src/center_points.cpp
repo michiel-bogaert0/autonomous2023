@@ -31,7 +31,6 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
 
   for (size_t i = 0; i < triangles_indices.size(); i += 3) {
 
-    // Variance of lengths within a triangle should be small
     distances.clear();
 
     size_t index1 = 2 * triangles_indices[i];
