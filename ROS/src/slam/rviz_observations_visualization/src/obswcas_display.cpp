@@ -75,11 +75,9 @@ ObservationWithCovarianceArrayStampedDisplay::
                               "The color of observation class 4: 'unkown'",
                               this, SLOT(updateColorAndAlpha()));
 
-  use_realistic_model_ = new rviz::BoolProperty(
-      "Realistic", false,
-      "Use a realistic cone model. If true, alpha and color properties do "
-      "nothing. Falls back to simple models if no .dae file is available",
-      this, SLOT(updateUseRealisticModel()));
+    use_realistic_model_ = new rviz::BoolProperty("Realistic", false, "Use a realistic cone model. If true, alpha and color properties do nothing. Falls back to simple models if no .dae file is available", this, SLOT(updateUseRealisticModel()));
+
+    use_ids_ = new rviz::BoolProperty("ids", false, "Show ids from grapshslam", this, SLOT(updateUseIds()));
 
   alpha_property_ = new rviz::FloatProperty(
       "Alpha", 1.0, "0 is fully transparent, 1.0 is fully opaque.", this,
@@ -94,8 +92,9 @@ void ObservationWithCovarianceArrayStampedDisplay::onInitialize() {
 ObservationWithCovarianceArrayStampedDisplay::
     ~ObservationWithCovarianceArrayStampedDisplay() {}
 
-// This one must also exist. Otherwise the option will not appear in GUI
-void ObservationWithCovarianceArrayStampedDisplay::updateUseRealisticModel() {}
+  // This one must also exist. Otherwise the option will not appear in GUI
+  void ObservationWithCovarianceArrayStampedDisplay::updateUseRealisticModel() {}
+  void ObservationWithCovarianceArrayStampedDisplay::updateUseIds() {}
 
 // Clear the visuals by deleting their objects.
 void ObservationWithCovarianceArrayStampedDisplay::reset() {
@@ -143,21 +142,24 @@ void ObservationWithCovarianceArrayStampedDisplay::processMessage(
             observation.observation.observation_class,
             use_realistic_model_->getBool());
 
-    visual->setVisualClass(observation.observation.observation_class);
-    visual->setPosition(position.x, position.y);
-    visual->setLocalPosition(observation.observation.location.x,
-                             observation.observation.location.y);
-    visual->setOrientation(orientation);
-    visual->setCovariance(observation.covariance);
+      visual->setVisualClass(observation.observation.observation_class);
+      visual->setPosition(position.x, position.y);
+      visual->setLocalPosition(observation.observation.location.x, observation.observation.location.y);
+      visual->setOrientation(orientation);
+      visual->setCovariance(observation.covariance);
+
+      visual->setId(std::to_string(observation.observation.id),use_ids_->getBool());
+      
 
     Ogre::ColourValue color =
         color_property_[observation.observation.observation_class]
             ->getOgreColor();
     visual->setColor(color.r, color.g, color.b, observation.observation.belief);
 
-    visuals_.push_back(visual);
+      visuals_.push_back(visual);
+    }
   }
 }
-} // namespace rviz_observations_visualization
+
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(rviz_observations_visualization::ObservationWithCovarianceArrayStampedDisplay,rviz::Display)
