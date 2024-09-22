@@ -26,6 +26,7 @@ class MPC_gen_ref:
         )
         self.path_GT_map = rospy.get_param("~input_path", "/data/map_fsi.yaml")
 
+        # For fsczech
         reverse = False
 
         # Get centerline from yaml
@@ -94,65 +95,21 @@ class MPC_gen_ref:
             self.GT_left_boundary = self.GT_left_boundary[::-1]
             self.GT_right_boundary = self.GT_right_boundary[::-1]
 
+        # Fixed target speed for generation
+        # Should be a maximum speed when bicycle model is improved
         self.target_speed = 10
+
+        # Not loaded from ros param because this is the only node that has to be launched
+        # so ros param might be incorrect.
+        self.wheelradius = 0.1
 
         self.trajectory = Trajectory()
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
 
-        path = (
-            rospkg.RosPack().get_path("mpc")
-            + "/data/solution_gen_ref_halfspaces_fsg.npz"
-        )
-        data = np.load(path)
-        X_sol_intermediate = data["X_sol_intermediate"]
-        last_sol = X_sol_intermediate[-1]
-        # plt.plot(last_sol[0], last_sol[1], "--", c="red", label="Solution reference-tracking with halfspaces")
-        plt.plot(
-            last_sol[0],
-            last_sol[1],
-            c="red",
-            label="Reference-tracking with halfspaces",
-        )
-
-        path = (
-            rospkg.RosPack().get_path("mpc") + "/data/solution_gen_ref_circles_fsg.npz"
-        )
-        data = np.load(path)
-        X_sol_intermediate = data["X_sol_intermediate"]
-        last_sol = X_sol_intermediate[-1]
-        # plt.plot(last_sol[0], last_sol[1], "--", c="red", label="Solution reference-tracking with halfspaces")
-        plt.plot(
-            last_sol[0], last_sol[1], c="m", label="Reference-tracking with circles"
-        )
-
-        path = (
-            rospkg.RosPack().get_path("mpc_gen")
-            + "/data_gen/solution_gen_circles_fsg.npz"
-        )
-        data = np.load(path)
-        X_sol_intermediate = data["X_sol_intermediate"]
-        last_sol = X_sol_intermediate[-1]
-        # plt.plot(last_sol[0], last_sol[1], "--", c="red", label="Solution reference-tracking with halfspaces")
-        plt.plot(last_sol[0], last_sol[1], c="green", label="MPCC with circles")
-
-        path = (
-            rospkg.RosPack().get_path("mpc_gen")
-            + "/data_gen/solution_gen_circles_lowN_fsg.npz"
-        )
-        data = np.load(path)
-        X_sol_intermediate = data["X_sol_intermediate"]
-        last_sol = X_sol_intermediate[-1]
-        # plt.plot(last_sol[0], last_sol[1], "--", c="red", label="Solution reference-tracking with halfspaces")
-        plt.plot(
-            last_sol[0], last_sol[1], c="orange", label="MPCC with circles with tuned N"
-        )
-
-        # plt.show()
+        self.save_solution = False
 
         self.initialize_MPC()
-
-        # self.analyse_cost()
 
         self.run_mpc()
 
@@ -184,7 +141,7 @@ class MPC_gen_ref:
         self.u = [0, 0]
 
         self.N = 434  # fsi
-        self.N = 553  # fsc23
+        # self.N = 553  # fsc23
         # self.N = 616 # fsg
         # self.N = 1075
         self.ocp = Ocp(
@@ -200,28 +157,25 @@ class MPC_gen_ref:
         )
         self.mpc = MPC_tracking(self.ocp)
 
-        # State: x, y, heading, steering angle, velocity
-        Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
-
-        # Input: acceleration, velocity on steering angle and update to progress parameter
-        R = np.diag([1e-5, 5e-3])
-        R_delta = np.diag([1e-7, 5e-3])
+        Qn = np.diag([5e-10, 5e-10, 0, 0, 0])
+        R = np.diag([1e-5, 4e-3])
+        R_delta = np.diag([1e-2, 2e-4])  # * self.actual_speed / self.speed_target]
 
         self.set_costs(Qn, R, R_delta)
 
         # constraints
         # TODO: get these from urdf model
-        self.max_steering_angle = 5  # same as pegasus.urdf
-        self.set_constraints(5, self.max_steering_angle)
+        self.set_constraints(20, 0.5)
 
     def set_constraints(self, velocity_limit, steering_limit):
         """
         Set constraints for the MPC
         """
-        velocity_limit = 20
-        steering_limit = 0.5
-        self.wheelradius = 0.1
+        # Reset all constraints
         self.ocp.subject_to()
+
+        # Set new constraints
+        # Input constraints
         self.ocp.subject_to(
             self.ocp.bounded(
                 -velocity_limit / self.wheelradius,
@@ -232,24 +186,27 @@ class MPC_gen_ref:
         self.ocp.subject_to(
             self.ocp.bounded(-steering_limit, self.ocp.U[1, :], steering_limit)
         )
+
+        # State constraints
         # Limit angle of steering joint
         self.ocp.subject_to(self.ocp.bounded(-np.pi / 4, self.ocp.X[3, :], np.pi / 4))
         # Limit velocity
-        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 15))
+        self.ocp.subject_to(self.ocp.bounded(0, self.ocp.X[4, :], 20))
 
         # Limit relaxing constraint
         self.ocp.subject_to(self.ocp.bounded(0, self.ocp.Sc, 1e-1))
 
-        # This one works with circles, but causes convergence issues
+        # Circular boundary constraints
         for i in range(self.N + 1):
             self.ocp.subject_to(
                 (
                     (self.ocp.X[0, i] - self.ocp._x_reference[0, i]) ** 2
                     + (self.ocp.X[1, i] - self.ocp._x_reference[1, i]) ** 2
                 )
-                < (1.2**2)  # + self.ocp.Sc[i]
+                < (1.2**2) + self.ocp.Sc[i]
             )
 
+        # Halfspaces boundary constraints
         # self.ocp.subject_to(
         #     (
         #         self.ocp.slopes_inner * self.ocp.X[0, :]
@@ -264,6 +221,7 @@ class MPC_gen_ref:
         #     < 0
         # )
 
+        # Again enforce continuity
         self.ocp._set_continuity(1)
 
         print("Constraints set")
@@ -274,9 +232,6 @@ class MPC_gen_ref:
         """
         qs = 0
         qss = 0
-        Qn = np.diag([5e-10, 5e-10, 0, 0, 0])
-        R = np.diag([1e-5, 4e-3])
-        R_delta = np.diag([1e-2, 2e-4])  # * self.actual_speed / self.speed_target]
 
         self.ocp.running_cost = (
             (self.ocp.x - self.ocp.x_reference).T
@@ -287,103 +242,6 @@ class MPC_gen_ref:
             + qs @ self.ocp.sc
             + qss @ self.ocp.sc**2
         )
-
-    def get_reference_path(self, debug=False):
-        self.path_blf = self.GT_centerline
-
-        if len(self.path_blf) == 0:
-            return []
-
-        # Find target points based on required velocity and maximum acceleration
-        speed_target = self.target_speed
-        # max_acceleration = 2.0  # TODO: create param
-        # actual_speed = 0
-        # calculate distances based on maximum acceleration and current speed
-        distances = [((speed_target)) * i * self.car.dt for i in range(self.N + 1)]
-        self.closest_index = np.argmin(np.sum((self.path_blf - [0, 0]) ** 2, axis=1))
-        self.closest_index = 0
-
-        if debug:
-            current_point = self.path_blf[self.closest_index]
-            print(current_point)
-
-        # Shift path so that closest point is at index 0
-        shifted_path = np.roll(self.path_blf, -self.closest_index, axis=0)
-        # Compute the distance between consecutive points
-        diff = np.diff(shifted_path, axis=0)
-        distances_cumsum = np.linalg.norm(diff, axis=1)
-
-        # Append 0 and calculate cummulative sum
-        distances_relative = np.append([0], np.cumsum(distances_cumsum))
-
-        # Find points at specified distances
-
-        # start_time = perf_counter()
-        i = 0
-        j = 0
-        reference_path = []
-        while j < len(distances_relative) and i < len(distances):
-            if distances_relative[j] < distances[i]:
-                j += 1
-                continue
-            elif distances_relative[j] == distances[i]:
-                # i += 1
-                # j += 1
-                scaling = 1
-            elif distances_relative[j] > distances[i]:
-                # Required distances between two points so scale between them
-                # i += 1
-
-                scaling = 1 - np.abs(
-                    (distances[i] - distances_relative[j])
-                    / (distances_relative[j] - distances_relative[j - 1])
-                )
-
-            reference_path.append(
-                shifted_path[j - 1] + scaling * (shifted_path[j] - shifted_path[j - 1])
-            )
-            if debug:
-                print(
-                    f"Point {j - 1} and {j} with scaling {scaling} and distance {distances[i]} and relative distance {distances_relative[j]} results in point {reference_path[-1]}"
-                )
-            i += 1
-        # print(f"ref path 1: {reference_path}")
-
-        # mid_time = perf_counter()
-
-        # reference_path = []
-        # for i in range(len(distances)):
-        #     # Find first value in distances_relative that is greater than distance
-        #     for j in range(len(distances_relative)):
-        #         if distances_relative[j] < distances[i]:
-        #             continue
-        #         elif distances_relative[j] == distances[i]:
-        #             # Just take point on path
-        #             scaling = 1
-        #         elif distances_relative[j] > distances[i]:
-        #             # Required distances between two points so scale between them
-        #             scaling = 1 - np.abs(
-        #                 (distances[i] - distances_relative[j])
-        #                 / (distances_relative[j] - distances_relative[j - 1])
-        #             )
-
-        #         reference_path.append(
-        #             shifted_path[j - 1]
-        #             + scaling * (shifted_path[j] - shifted_path[j - 1])
-        #         )
-        #         if debug:
-        #             print(
-        #                 f"Point {j - 1} and {j} with scaling {scaling} and distance {distances[i]} and relative distance {distances_relative[j]} results in point {reference_path[-1]}"
-        #             )
-        #         break
-        # print(f"ref path 2: {reference_path}")
-
-        # end_time = perf_counter()
-
-        # print(f"Time 1: {mid_time - start_time}")
-        # print(f"Time 2: {end_time - mid_time}")
-
-        return reference_path
 
     def get_boundary_constraints(self, ref_track, width, plot=False):
         path = np.array(ref_track)
@@ -423,36 +281,26 @@ class MPC_gen_ref:
                 plt.plot(x, y_inner, c="b")
                 plt.plot(x, y_outer, c="y")
 
-    def run_mpc(self):
-        initial_state = [0, 0, 0, 0, self.target_speed]
-
-        ref_track = self.get_reference_path(debug=False)
-        # print(ref_track)
-
-        self.get_boundary_constraints(ref_track, 1.2, plot=False)
-
+    def get_initial_guess(self, ref_track):
+        """
+        Get initial guess for the MPC
+        """
         X0 = []
         U0 = []
 
         for x0 in ref_track:
-            # heading = self.curve_centerline(tau)[1]
             steering_angle = 0
 
             # calculate heading based on position
             if len(X0) > 0:
-                # calculate tangent based on previous and next point
-                # tangent_next = ref_track[min(len(ref_track) - 1, ref_track.index(x0) + 1)] - x0
-                # tangent_previous = x0 - X0[-1][:2]
-                # tangent = tangent_next + tangent_previous
-                # phi = np.arctan2(tangent[1], tangent[0])
                 phi = np.arctan2(x0[1] - X0[-1][1], x0[0] - X0[-1][0])
             else:
                 phi = 0
-
-            # map to 0 to 2pi
-            # phi = (phi + 2 * np.pi) % (2 * np.pi)
             heading = phi
             if len(X0) > 0:
+                # Arctan2 is in range of [-Pi, Pi], however the heading of the model is continuous
+                # Calculate difference with previous heading and add it to the previous heading
+
                 diff_with_prev = heading - X0[-1][2]
                 # scale to [-pi, pi]
                 diff_with_prev = (diff_with_prev + np.pi) % (2 * np.pi) - np.pi
@@ -500,25 +348,6 @@ class MPC_gen_ref:
         # Set first heading equal to second
         X0[0][2] = X0[1][2]
 
-        # Plot x-y and heading
-        # plt.plot([x[0] for x in X0], [x[1] for x in X0], c="b")
-
-        # Plot heading at x-y points
-        # for i in range(len(X0)):
-        #     plt.plot(
-        #         [X0[i][0], X0[i][0] + np.cos(X0[i][2])],
-        #         [X0[i][1], X0[i][1] + np.sin(X0[i][2])],
-        #         c="r",
-        #     )
-
-        # # Plot steering angle at x-y points
-        # for i in range(len(X0)):
-        #     plt.plot(
-        #         [X0[i][0], X0[i][0] + np.cos(X0[i][3] + X0[i][2])],
-        #         [X0[i][1], X0[i][1] + np.sin(X0[i][3] + X0[i][2])],
-        #         c="g",
-        #     )
-
         for i in range(self.N):
             acceleration = (X0[i + 1][4] - X0[i][4]) / self.car.dt / self.wheelradius
 
@@ -526,13 +355,31 @@ class MPC_gen_ref:
             steering_angle_delta /= self.car.dt
             U0.append([acceleration, steering_angle_delta])
 
+        return X0, U0
+
+    def run_mpc(self):
+        initial_state = [0, 0, 0, 0, self.target_speed]
+
+        ref_track = self.trajectory.get_reference_path_gen(
+            self.GT_centerline, self.car.dt, self.N, self.target_speed, debug=False
+        )
+
+        self.get_boundary_constraints(ref_track, 1.2, plot=False)
+
+        X0, U0 = self.get_initial_guess(ref_track)
+
         self.u = U0[0]
         initial_state = X0[0]
         X0 = np.array(X0).T
         U0 = np.array(U0).T
 
-        np.save("/home/ugr/autonomous2023/ROS/src/control/MPC_gen/data_gen/X0.npy", X0)
-        np.save("/home/ugr/autonomous2023/ROS/src/control/MPC_gen/data_gen/U0.npy", U0)
+        if self.save_solution:
+            np.save(
+                "/home/ugr/autonomous2023/ROS/src/control/MPC_gen/data_gen/X0.npy", X0
+            )
+            np.save(
+                "/home/ugr/autonomous2023/ROS/src/control/MPC_gen/data_gen/U0.npy", U0
+            )
 
         print(X0)
         print(U0)
@@ -564,9 +411,8 @@ class MPC_gen_ref:
             U0=U0,
         )
 
-        self.save_solution()
-
-        # print(self.ocp.debug.value)
+        if self.save_solution:
+            self.save_solution_to_file()
 
         print(f"X_closed_loop: {info['X_sol']}")
         print(f"U_closed_loop: {info['U_sol']}")
@@ -576,6 +422,7 @@ class MPC_gen_ref:
         # np.save(path + "/data_gen/X_closed_loop.npy", info["X_sol"])
         # np.save(path + "/data_gen/U_closed_loop.npy", info["U_sol"])
 
+        # Uncomment to plot velocity in 3D
         # plot_velocity(
         #     info["X_sol"].T[:, :2],
         #     self.GT_left_boundary[:-1],
@@ -591,14 +438,10 @@ class MPC_gen_ref:
         x_sol = np.append(x_sol, x_sol[0])
         y_sol = np.append(y_sol, y_sol[0])
 
-        # x_traj = self.interpolate_arr(np.vstack((x_sol, y_sol)).T, n=3)
         x_traj = np.vstack((x_sol, y_sol)).T
 
         x_traj = np.vstack((x_traj, x_traj[0]))
-        # plt.plot(x_traj.T[0], x_traj.T[1], c="m")
-        # plt.plot(info["X_sol"][0][:], info["X_sol"][1][:], c="m", label="Solution reference-tracking with halfspaces")
-        # plt.plot(info["X_sol"][0][:], info["X_sol"][1][:], c="m", label="Reference-tracking with circles")
-        # plt.plot(info["X_sol"][0][:], info["X_sol"][1][:], "o", c="m")
+        plt.plot(x_traj.T[0], x_traj.T[1], c="m")
 
         ax = plt.gca()
         ax.set_aspect("equal", "datalim")
@@ -608,7 +451,7 @@ class MPC_gen_ref:
         plt.tight_layout()
         plt.show()
 
-    def save_solution(self):
+    def save_solution_to_file(self):
         # Get convergence information
         inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
         inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]

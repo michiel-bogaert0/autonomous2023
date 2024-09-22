@@ -1,6 +1,6 @@
 <launch>
 
-    <node pkg="mpc" type="run.py" name="mpc" output="screen" respawn="true">
+    <node pkg="mpc" type="run_tracking.py" name="mpc" output="screen" respawn="true">
 
         <param name="publish_rate" value="40" />
 

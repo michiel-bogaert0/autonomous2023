@@ -4,6 +4,10 @@ from environments.env_utils import Space
 
 g = 9.81
 
+############################################
+#            Not used anymore              #
+############################################
+
 
 class KinematicCar(Env):
     def __init__(
