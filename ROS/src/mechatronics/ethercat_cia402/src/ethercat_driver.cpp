@@ -38,7 +38,7 @@ void ECatDriver::doActivate() {
   this->erroract_pub = n.advertise<std_msgs::Float32>("/output/erroract", 1);
   this->driver_equiv_torque_pub =
       n.advertise<std_msgs::Float32>("/output/driver_equivalent_torque", 1);
-  this->power_pub = n.advertise<std_msgs::Float32>(/ "output/power", 1)
+  this->power_pub = n.advertise<std_msgs::Float32>("/output/power", 1);
 }
 
 void ECatDriver::doDeactivate() {
