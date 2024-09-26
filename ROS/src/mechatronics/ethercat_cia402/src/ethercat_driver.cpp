@@ -145,6 +145,7 @@ int ECatDriver::update_pubs() {
                      ((static_cast<float>(inputs.torque)) * CUR_CONV_TORQUE);
     this->power_pub.publish(power_msg);
 
+
     std_msgs::Float32 erroract_msg;
     erroract_msg.data = (inputs.erroract / RAD_TO_POS);
     this->erroract_pub.publish(erroract_msg);
