@@ -8,8 +8,8 @@
         <param name="base_link_frame" value="$(arg base_link_frame)" />
         <remap from="/lap_counter/laps_complete" to="/ugr/car/lapComplete"/>
         <remap from="/lap_counter/finished" to="/ugr/car/finished"/>
-        <param name="laps" value="lap_counter/laps"/>
-        <param name="distance_after" value="lap_counter/distance_after"/>
-        <param name="finishpoint" value="lap_counter/finishpoint"/>
+        <param name="laps" value="10"/>
+        <param name="distance_after" value="0"/>
+        <param name="finishpoint" value="[0,0,0]"/>
     </node>
 </launch>
