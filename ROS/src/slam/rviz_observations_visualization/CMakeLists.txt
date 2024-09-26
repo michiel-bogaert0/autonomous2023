@@ -36,6 +36,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 set(SRC_FILES
   src/obswc_visual.cpp
   src/obswcas_display.cpp
+  src/PathWithIdsDisplay.cpp
 )
 
 ## An rviz plugin is just a shared library, so here we declare the

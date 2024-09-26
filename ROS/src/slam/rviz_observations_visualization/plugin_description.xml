@@ -7,4 +7,13 @@
     </description>
     <message_type>ugr_msgs/ObservationWithCovarianceArrayStamped</message_type>
   </class>
+
+  <class name="rviz_path_with_ids/PathWithIds"
+         type="rviz_path_with_ids::PathWithIdsDisplay"
+         base_class_type="rviz::Display">
+    <description>
+      Displays ugr_msgs/PathWithIds messages.
+    </description>
+    <message_type>ugr_msgs/PathWithIds</message_type>
+  </class>
 </library>
