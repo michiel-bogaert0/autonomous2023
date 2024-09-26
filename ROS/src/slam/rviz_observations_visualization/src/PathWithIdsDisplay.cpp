@@ -10,7 +10,7 @@
 #include <rviz/display.h>
 #include <rviz/ogre_helpers/shape.h>
 
-#include "PathWithIdsDisplay.h"
+#include "PathWithIdsDisplay.hpp"
 
 namespace rviz_path_with_ids {
 PathWithIdsDisplay::PathWithIdsDisplay() {}
