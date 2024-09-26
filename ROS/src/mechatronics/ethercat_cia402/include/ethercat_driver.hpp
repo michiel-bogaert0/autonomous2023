@@ -43,6 +43,7 @@ private:
   ros::Publisher torque_pub;
   ros::Publisher erroract_pub;
   ros::Publisher driver_equiv_torque_pub;
+  ros::Publisher power_pub;
 };
 
 #endif

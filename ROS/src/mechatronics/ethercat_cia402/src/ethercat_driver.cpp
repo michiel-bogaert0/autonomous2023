@@ -38,6 +38,7 @@ void ECatDriver::doActivate() {
   this->erroract_pub = n.advertise<std_msgs::Float32>("/output/erroract", 1);
   this->driver_equiv_torque_pub =
       n.advertise<std_msgs::Float32>("/output/driver_equivalent_torque", 1);
+  this->power_pub = n.advertise<std_msgs::Float32>(/"output/power", 1)
 }
 
 void ECatDriver::doDeactivate() {
@@ -99,6 +100,12 @@ int ECatDriver::update_pubs() {
                                         DRIVER_TORQUE_CONSTANT;
     this->driver_equiv_torque_pub.publish(equivalent_driver_torque_msg);
 
+    std_msgs::Float32 power_msg;
+    // velocity [rad/s] * torque [Nm]
+    power_msg.data = (static_cast<int32>(inputs.velocity * TIME_CONV_VEL) / RAD_TO_POS) * 
+                     ((static_cast<float>(inputs.torque)) * CUR_CONV_TORQUE);
+    this->power_pub.publish(power_msg);
+
     std_msgs::UInt32 erroract_msg;
     erroract_msg.data = (inputs.erroract / RAD_TO_POS);
     this->erroract_pub.publish(erroract_msg);
@@ -131,6 +138,12 @@ int ECatDriver::update_pubs() {
                                         CUR_CONV_TORQUE *
                                         DRIVER_TORQUE_CONSTANT;
     this->driver_equiv_torque_pub.publish(equivalent_driver_torque_msg);
+
+    std_msgs::Float32 power_msg;
+    // velocity [rad/s] * torque [Nm]
+    power_msg.data = (static_cast<int32>(inputs.velocity * TIME_CONV_VEL) / RAD_TO_POS) * 
+                     ((static_cast<float>(inputs.torque)) * CUR_CONV_TORQUE);
+    this->power_pub.publish(power_msg);
 
     std_msgs::Float32 erroract_msg;
     erroract_msg.data = (inputs.erroract / RAD_TO_POS);
