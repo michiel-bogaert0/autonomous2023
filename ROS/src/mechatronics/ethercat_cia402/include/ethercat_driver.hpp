@@ -42,6 +42,7 @@ private:
   ros::Publisher velocity_pub;
   ros::Publisher torque_pub;
   ros::Publisher erroract_pub;
+  ros::Publisher driver_equiv_torque_pub;
 };
 
 #endif

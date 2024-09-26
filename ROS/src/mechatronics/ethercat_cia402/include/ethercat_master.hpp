@@ -9,6 +9,9 @@
 #define STATUS_WORD_MASK(x)                                                    \
   (x &= ~((1 << 4) | (1 << 5) | (1 << 8) | (1 << 9) | (1 << 14) | (1 << 15)))
 
+// Rated current
+#define RATED_CURRENT 8.9
+
 // Control parameters
 #define MAX_ACC 200000UL
 #define MAX_VEL 10000000
@@ -20,6 +23,9 @@
 #define RAD_TO_POS (FULL_ROT / M_PI / 2.0)
 #define TIME_CONV_VEL 4UL
 #define TIME_CONV_ACC 25UL
+#define CUR_CONV_TORQUE (RATED_CURRENT / 1000.0 / sqrt(2.0))
+#define RAD_PER_S_TO_RPM 9.5493
+#define DRIVER_TORQUE_CONSTANT 27.3
 // = 100 / (cycle_rate_in_ms ^ 2). Example: cycle rate = 2ms -->
 // TIME_CONV_ACC = 100 / (2 * 2) = 25
 

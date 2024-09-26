@@ -19,6 +19,7 @@
     <remap from="/output/velocity" to="/ugr/car/servo/velocity"/>
     <remap from="/output/torque" to="/ugr/car/servo/torque"/>
     <remap from="/output/erroract" to="/ugr/car/servo/erroract"/>
+    <remap from="/output/driver_equivalent_torque" to="/ugr/car/servo/driver_equivalent_torque"/>
 
   </node>
 </launch>
