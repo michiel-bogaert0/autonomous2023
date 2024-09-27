@@ -18,6 +18,7 @@ lap_counter:
   finishpoint_y: 0
   finishpoint_z: 0
   distance_after: 0
+  laps: 1
 map_publisher:
   map_pkg: "slam_simulator"
   map: "/maps/acceleration_75m.yaml"

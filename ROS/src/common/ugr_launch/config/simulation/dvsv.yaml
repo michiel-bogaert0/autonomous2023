@@ -17,7 +17,7 @@ lap_counter:
   finishpoint_x: 0
   finishpoint_y: 16
   finishpoint_z: 0 # should be 2 * turn radius
-  laps: 10
+  laps: 1
   distance_after: 0
 map_publisher:
   map_pkg: "slam_simulator"

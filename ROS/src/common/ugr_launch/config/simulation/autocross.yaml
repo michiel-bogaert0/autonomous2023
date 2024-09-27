@@ -20,7 +20,7 @@ lap_counter:
   finishpoint_x: 0
   finishpoint_y: 0
   finishpoint_z: 0
-  laps: 10
+  laps: 1
   distance_after: 0
 speed:
   target: 2.0
