@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>rviz_observations_visualization</name>
+  <name>rviz_ugr_plugin</name>
   <version>0.11.0</version>
   <description>An rviz plugin to visualise Observation msgs</description>
 

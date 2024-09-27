@@ -1,4 +1,4 @@
-<library path="lib/librviz_observations_visualization">
+<library path="lib/librviz_ugr_plugin">
   <class name="rviz_observations_visualization/ObservationWithCovarianceStamped"
          type="rviz_observations_visualization::ObservationWithCovarianceArrayStampedDisplay"
          base_class_type="rviz::Display">
@@ -6,5 +6,14 @@
       Displays ugr_msgs/ObservationWithCovarianceArrayStamped messages.
     </description>
     <message_type>ugr_msgs/ObservationWithCovarianceArrayStamped</message_type>
+  </class>
+
+  <class name="rviz_path_with_ids/PathWithIds"
+         type="rviz_path_with_ids::PathWithIdsDisplay"
+         base_class_type="rviz::Display">
+    <description>
+      Displays ugr_msgs/PathWithIds messages.
+    </description>
+    <message_type>ugr_msgs/PathWithIds</message_type>
   </class>
 </library>
