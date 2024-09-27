@@ -35,7 +35,8 @@ class PurePursuit(KinematicTrackingNode):
         Processes the current path and calculates the target point for the car to follow
         """
 
-        # Change the look-ahead distance (minimal_distance)  based on the current speed and state
+        # Change the look-ahead distance (minimal_distance)  based on the current speed
+        # Exploration
         if self.slam_state == SLAMStatesEnum.EXPLORATION:
             self.calculate_minimal_distance(
                 self.speed_start_explo,
@@ -43,7 +44,8 @@ class PurePursuit(KinematicTrackingNode):
                 self.distance_start_explo,
                 self.distance_stop_explo,
             )
-        else:
+        # Racing
+        elif self.slam_state == SLAMStatesEnum.RACING:
             self.calculate_minimal_distance(
                 self.speed_start_racing,
                 self.speed_stop_racing,
