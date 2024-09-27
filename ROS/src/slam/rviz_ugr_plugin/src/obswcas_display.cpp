@@ -39,8 +39,8 @@
 #include <rviz/properties/int_property.h>
 #include <rviz/visualization_manager.h>
 
-#include "obswc_visual.h"
-#include "obswcas_display.h"
+#include "obswc_visual.hpp"
+#include "obswcas_display.hpp"
 
 namespace rviz_observations_visualization {
 // clang format is turned off to avoid weird bugs

@@ -40,7 +40,7 @@
 #include <Eigen/Dense>
 #include <ros/ros.h>
 
-#include "obswc_visual.h"
+#include "obswc_visual.hpp"
 
 namespace rviz_observations_visualization {
 
@@ -129,12 +129,10 @@ ObservationWithCovarianceVisual::ObservationWithCovarianceVisual(
     cone_shape_->setDirection(direction);
   } else {
     std::string resource =
-        "package://rviz_observations_visualization/media/class_" +
-        std::to_string(cls) + ".dae";
+        "package://rviz_ugr_plugin/media/class_" + std::to_string(cls) + ".dae";
 
-    if (rviz::loadMeshFromResource(
-            "package://rviz_observations_visualization/media/class_" +
-            std::to_string(cls) + ".dae")
+    if (rviz::loadMeshFromResource("package://rviz_ugr_plugin/media/class_" +
+                                   std::to_string(cls) + ".dae")
             .isNull()) {
       ROS_ERROR("Failed to load model resource '%s'.", resource.c_str());
       return;

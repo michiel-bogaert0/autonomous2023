@@ -42,9 +42,6 @@ void PathWithIdsDisplay::processMessage(
     return;
   }
 
-  std::cout << "Received path with " << msg->header.frame_id << " poses"
-            << std::endl;
-
   // Loop through the poses in the path message
   for (size_t i = 0; i < msg->poses.size() - 1; ++i) {
     const ugr_msgs::PoseStampedWithIds &pose1 = msg->poses[i];

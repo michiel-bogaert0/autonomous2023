@@ -1,4 +1,4 @@
-<library path="lib/librviz_observations_visualization">
+<library path="lib/librviz_ugr_plugin">
   <class name="rviz_observations_visualization/ObservationWithCovarianceStamped"
          type="rviz_observations_visualization::ObservationWithCovarianceArrayStampedDisplay"
          base_class_type="rviz::Display">

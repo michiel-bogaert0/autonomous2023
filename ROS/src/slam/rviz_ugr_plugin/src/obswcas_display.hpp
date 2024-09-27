@@ -33,32 +33,30 @@
 #ifndef Q_MOC_RUN
 #include <boost/circular_buffer.hpp>
 
+#include <QObject>
 #include <rviz/message_filter_display.h>
 #include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
 #endif
 
-namespace Ogre
-{
+namespace Ogre {
 class SceneNode;
 }
 
-namespace rviz
-{
+namespace rviz {
 class ColorProperty;
 class FloatProperty;
 class IntProperty;
-}
+} // namespace rviz
 
-namespace rviz_observations_visualization
-{
+namespace rviz_observations_visualization {
 
 class ObservationWithCovarianceVisual;
 
-class ObservationWithCovarianceArrayStampedDisplay: public rviz::MessageFilterDisplay<ugr_msgs::ObservationWithCovarianceArrayStamped>
-{
-Q_OBJECT
+class ObservationWithCovarianceArrayStampedDisplay
+    : public rviz::MessageFilterDisplay<
+          ugr_msgs::ObservationWithCovarianceArrayStamped> {
+  Q_OBJECT
 public:
-
   ObservationWithCovarianceArrayStampedDisplay();
   virtual ~ObservationWithCovarianceArrayStampedDisplay();
 
@@ -67,24 +65,25 @@ protected:
 
   virtual void reset();
 
+  // cppcheck-suppress unknownMacro
 private Q_SLOTS:
   void updateColorAndAlpha();
   void updateUseRealisticModel();
   void updateUseIds();
 
 private:
-  void processMessage( const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr& msg );
+  void processMessage(
+      const ugr_msgs::ObservationWithCovarianceArrayStamped::ConstPtr &msg);
 
-  std::vector<ObservationWithCovarianceVisual*> visuals_;
+  std::vector<ObservationWithCovarianceVisual *> visuals_;
 
-  rviz::ColorProperty* color_property_[5];
-  rviz::FloatProperty* alpha_property_;
-  rviz::BoolProperty* use_realistic_model_;
-  rviz::BoolProperty* use_ids_;
-  rviz::IntProperty* history_length_property_;
+  rviz::ColorProperty *color_property_[5];
+  rviz::FloatProperty *alpha_property_;
+  rviz::BoolProperty *use_realistic_model_;
+  rviz::BoolProperty *use_ids_;
+  rviz::IntProperty *history_length_property_;
 };
 
-} 
-
+} // namespace rviz_observations_visualization
 
 #endif
