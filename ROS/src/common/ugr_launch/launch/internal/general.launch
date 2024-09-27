@@ -4,6 +4,8 @@
   <!-- There should be NO hardware dependencies! -->
 
   <!-- Autonomous State  -->
-  <include file="$(find autonomous_state)/launch/autonomous_state.launch" pass_all_args="true"></include>
+  <group if="$(eval env('UGR_CAR') == 'pegasus' or env('UGR_CAR') == 'simulation')">
+    <include file="$(find autonomous_state)/launch/autonomous_state.launch" pass_all_args="true"></include>
+  </group>
 
 </launch>

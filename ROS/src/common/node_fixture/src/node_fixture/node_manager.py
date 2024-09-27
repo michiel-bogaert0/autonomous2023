@@ -320,8 +320,10 @@ class NodeManager(ManagedNode):
             new_state (str): The new state of the state machine (not nodes)
             old_state (str): The old state of the state machine
         """
-
         node_management_param = rospy.get_param("~node_management")
+
+        print(f"Old state: {old_state} -> New State: {new_state}")
+
         if "always" not in node_management_param.keys():
             node_management_param["always"] = []
 
@@ -330,6 +332,8 @@ class NodeManager(ManagedNode):
 
         if old_state is not None and old_state not in node_management_param.keys():
             node_management_param[old_state] = []
+
+        print(f"Params: {node_management_param}")
 
         return node_management_param
 
@@ -417,20 +421,21 @@ class NodeManager(ManagedNode):
 
                     self.nodes_to_monitor.add(node)
 
-            # Then deactivate nodes (that are not in the new state)
-            for node in node_management_param[old_state]:
-                if (
-                    node
-                    not in node_management_param[new_state]
-                    + node_management_param["always"]
-                ):
-                    self.nodes_to_monitor.remove(node)
-                    self.timers.pop(node, None)
-                    self.health_msgs.pop(node, None)
-                    if not set_state_inactive(node):
-                        raise BaseException(
-                            f"Configure procedure failed for node {node}, raising error..."
-                        )
+            # Then deactivate nodes (that are not in the new state
+            if old_state is not None:
+                for node in node_management_param[old_state]:
+                    if (
+                        node
+                        not in node_management_param[new_state]
+                        + node_management_param["always"]
+                    ):
+                        self.nodes_to_monitor.remove(node)
+                        self.timers.pop(node, None)
+                        self.health_msgs.pop(node, None)
+                        if not set_state_inactive(node):
+                            raise BaseException(
+                                f"Configure procedure failed for node {node}, raising error..."
+                            )
 
             self.set_health(
                 level=DiagnosticStatus.OK, message=f"Activated nodes for {new_state}"

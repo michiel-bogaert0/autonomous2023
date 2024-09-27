@@ -7,8 +7,8 @@
   <include file="$(find lidar)/launch/lidar.launch" pass_all_args="true" />
 
   <!-- Camera -->
-  <include file="$(find camera)/launch/cone_detector.launch" pass_all_args="true"/>
+  <!-- <include file="$(find camera)/launch/cone_detector.launch" pass_all_args="true"/> -->
 
   <!-- Fusion -->
-  <include file="$(find fusion)/launch/merge.launch" pass_all_args="true"/>
+  <!-- <include file="$(find fusion)/launch/merge.launch" pass_all_args="true"/> -->
 </launch>

@@ -14,7 +14,7 @@
       output="screen" launch-prefix="$(arg launch_prefix)">
 
       <remap from="/output/gt_odometry" to="/ugr/car/odometry/filtered/gt"/>
-      <remap from="/output/imu0" to="/ugr/car/sensors/imu2" />
+      <remap from="/output/imu0" to="/ugr/car/sensors/lidar/imu" />
       <remap from="/output/encoder0" to="/ugr/car/sensors/encoder0" />
 
 

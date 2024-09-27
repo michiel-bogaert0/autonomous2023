@@ -34,6 +34,13 @@ public:
   Point(double x_val, double y_val) : x(x_val), y(y_val) {}
 };
 
+struct PointInfo {
+  std::vector<double> point;
+  double angle;
+  double angle_change;
+  double distance_squared;
+};
+
 // Define a utility function to calculate squared distance between 2 points
 double distance_squared(double x1, double y1, double x2, double y2);
 
@@ -55,6 +62,13 @@ std::vector<std::vector<double>>
 sort_closest_to(const std::vector<std::vector<double>> &center_points,
                 const std::vector<double> &origin = {0, 0},
                 double max_distance = -1);
+
+// Function to sort the center points based on their angle change from the
+// origin point
+std::vector<PointInfo>
+sort_by_angle_change(const std::vector<std::vector<double>> &center_points,
+                     const std::vector<double> &origin, double original_angle,
+                     double max_angle_change, double max_distance = -1);
 
 double calculate_variance(const std::vector<double> &data);
 double calculate_median(const std::vector<double> &data);
