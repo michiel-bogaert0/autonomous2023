@@ -39,17 +39,12 @@ private:
 
   bool lidar_rotated_;
   bool publish_preprocessing_; // publish the preprocessed pointcloud
-
-  bool publish_ground_; // publish the debug ground pointclouds
-
-  bool publish_clusters_; // color the clusters and publish them
+  bool publish_ground_;        // publish the debug ground pointclouds
+  bool publish_clusters_;      // color the clusters and publish them
 
   double min_distance_;
-
   double max_distance_;
-
   double min_angle_;
-
   double max_angle_;
 
   std::string blue_url_ = "https://storage.googleapis.com/"
