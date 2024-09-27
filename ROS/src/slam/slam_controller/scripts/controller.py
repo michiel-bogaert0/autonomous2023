@@ -10,10 +10,7 @@ from node_fixture.fixture import (
     create_diagnostic_message,
 )
 from node_fixture.node_manager import NodeManager, load_params
-<<<<<<< HEAD
-=======
 from std_msgs.msg import Float64, Header, UInt16, Bool
->>>>>>> origin/development
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 
