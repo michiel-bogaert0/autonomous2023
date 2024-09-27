@@ -26,7 +26,7 @@ speed:
 pure_pursuit:
   change_index: False
   world_frame: "ugr/map"
-  # Lookahead distance tuning parameters.
+  # Lookahead distance tuning parameters
   speed_start_racing: 6
   speed_stop_racing: 6
   distance_start_racing: 7
