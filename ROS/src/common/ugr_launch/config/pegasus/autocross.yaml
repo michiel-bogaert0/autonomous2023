@@ -21,8 +21,8 @@ lap_counter:
   finishpoint_x: 0
   finishpoint_y: 0
   finishpoint_z: 0
-  laps: 10
-  distance_after: 4
+  laps: 1
+  distance_after: 0
 speed:
   target: 1.0
   LC_adaptive_velocity: False
