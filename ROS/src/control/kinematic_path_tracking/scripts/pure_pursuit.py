@@ -3,7 +3,11 @@ import numpy as np
 import rospy
 from geometry_msgs.msg import PointStamped
 from kinematic_path_tracking.base_class import KinematicTrackingNode
-from node_fixture.fixture import DiagnosticStatus, create_diagnostic_message
+from node_fixture.fixture import (
+    DiagnosticStatus,
+    SLAMStatesEnum,
+    create_diagnostic_message,
+)
 
 
 class PurePursuit(KinematicTrackingNode):
@@ -13,10 +17,16 @@ class PurePursuit(KinematicTrackingNode):
     def doConfigure(self):
         super().doConfigure()
 
-        self.speed_start = rospy.get_param("~speed_start", 10)
-        self.speed_stop = rospy.get_param("~speed_stop", 50)
-        self.distance_start = rospy.get_param("~distance_start", 1.2)
-        self.distance_stop = rospy.get_param("~distance_stop", 2.4)
+        # For lookahead distance in explo
+        self.speed_start_explo = rospy.get_param("~speed_start_explo", 10)
+        self.speed_stop_explo = rospy.get_param("~speed_stop_explo", 50)
+        self.distance_start_explo = rospy.get_param("~distance_start_explo", 1.2)
+        self.distance_stop_explo = rospy.get_param("~distance_stop_explo", 2.4)
+        # For lookahead diastance in racing
+        self.speed_start_racing = rospy.get_param("~speed_start_racing", 10)
+        self.speed_stop_racing = rospy.get_param("~speed_stop_racing", 50)
+        self.distance_start_racing = rospy.get_param("~distance_start_racing", 1.2)
+        self.distance_stop_racing = rospy.get_param("~distance_stop_racing", 2.4)
 
         self.L = rospy.get_param("/ugr/car/wheelbase", 0.72)
 
@@ -25,17 +35,21 @@ class PurePursuit(KinematicTrackingNode):
         Processes the current path and calculates the target point for the car to follow
         """
 
-        # Change the look-ahead distance (minimal_distance)  based on the current speed
-        if self.actual_speed < self.speed_start:
-            self.minimal_distance = self.distance_start
-        elif self.actual_speed < self.speed_stop:
-            self.minimal_distance = self.distance_start + (
-                self.distance_stop - self.distance_start
-            ) / (self.speed_stop - self.speed_start) * (
-                self.actual_speed - self.speed_start
+        # Change the look-ahead distance (minimal_distance)  based on the current speed and state
+        if self.slam_state == SLAMStatesEnum.EXPLORATION:
+            self.calculate_minimal_distance(
+                self.speed_start_explo,
+                self.speed_stop_explo,
+                self.distance_start_explo,
+                self.distance_stop_explo,
             )
         else:
-            self.minimal_distance = self.distance_stop
+            self.calculate_minimal_distance(
+                self.speed_start_racing,
+                self.speed_stop_racing,
+                self.distance_start_racing,
+                self.distance_stop_racing,
+            )
 
         # Calculate target point
         (
@@ -85,6 +99,18 @@ class PurePursuit(KinematicTrackingNode):
         point.point.y = target_y
 
         self.vis_pub.publish(point)
+
+    def calculate_minimal_distance(
+        self, speed_start, speed_stop, distance_start, distance_stop
+    ):
+        if self.actual_speed < speed_start:
+            self.minimal_distance = distance_start
+        elif self.actual_speed < speed_stop:
+            self.minimal_distance = distance_start + (
+                distance_stop - distance_start
+            ) / (speed_stop - speed_start) * (self.actual_speed - speed_start)
+        else:
+            self.minimal_distance = distance_stop
 
 
 node = PurePursuit()
