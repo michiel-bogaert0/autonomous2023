@@ -82,10 +82,8 @@ class Controller(NodeManager):
         elif self.mission == AutonomousMission.DVSV:
             new_state = SLAMStatesEnum.RACING
         elif self.mission == AutonomousMission.INPSPECTION:
-            self.target_lap_count = 1
             new_state = SLAMStatesEnum.RACING
         elif self.mission == AutonomousMission.EBS_TEST:
-            self.target_lap_count = 1
             new_state = SLAMStatesEnum.RACING
         else:
             new_state = SLAMStatesEnum.EXPLORATION
@@ -195,16 +193,7 @@ class Controller(NodeManager):
         """
 
         # If we did enough laps, switch to finished
-<<<<<<< HEAD
         
-=======
-        if self.target_lap_count <= laps.data:
-            new_state = SLAMStatesEnum.FINISHED
-            rospy.set_param("/speed/target", 0.0)
-            self.brake_publisher.publish(Float64(data=20.0))
-            self.change_state(new_state)
-            return
->>>>>>> origin/development
 
         # If we did one lap in trackdrive and exploration, switch to racing
         if (
