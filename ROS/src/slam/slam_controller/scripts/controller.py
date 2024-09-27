@@ -29,7 +29,6 @@ class Controller(NodeManager):
         self.mission = ""
         self.car = rospy.get_param("/car")
 
-        self.target_lap_count = -1
 
         self.change_mission_thread = Thread(target=self.change_mission)
 
@@ -70,22 +69,16 @@ class Controller(NodeManager):
         rospy.ServiceProxy("/reset_closure", Empty)
 
         if self.mission == AutonomousMission.ACCELERATION:
-            self.target_lap_count = 1
             new_state = SLAMStatesEnum.RACING
         elif self.mission == AutonomousMission.SKIDPAD:
-            self.target_lap_count = 1
             new_state = SLAMStatesEnum.RACING
         elif self.mission == AutonomousMission.AUTOCROSS:
-            self.target_lap_count = 1
             new_state = SLAMStatesEnum.EXPLORATION
         elif self.mission == AutonomousMission.TRACKDRIVE:
-            self.target_lap_count = 10
             new_state = SLAMStatesEnum.EXPLORATION
         elif self.mission == AutonomousMission.DVSV:
-            self.target_lap_count = 1
             new_state = SLAMStatesEnum.RACING
         else:
-            self.target_lap_count = -1
             new_state = SLAMStatesEnum.EXPLORATION
 
         # Same logic as in configure nodes
@@ -129,11 +122,7 @@ class Controller(NodeManager):
                 DiagnosticStatus.OK, "[GNRL] STATE: SLAM state", str(self.slam_state)
             )
         )
-        self.diagnostics_publisher.publish(
-            create_diagnostic_message(
-                DiagnosticStatus.OK, "[GNRL] Lap target", str(self.target_lap_count)
-            )
-        )
+        
         self.diagnostics_publisher.publish(
             create_diagnostic_message(
                 DiagnosticStatus.OK, "[GNRL] MISSION", str(self.mission)

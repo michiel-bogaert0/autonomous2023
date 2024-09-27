@@ -18,15 +18,17 @@ class lap_counter(ManagedNode):
         self.finished=False
         self.newLap=False
         self.checkFinishRange=True
-        self.range=3
+        self.range=3 #range finish zone
         self.laps=0
 
 
         self.max_laps=rospy.get_param("~laps")
-        point=rospy.get_param("~finishpoint")
-        self.finishPoint=Point(point[0],point[1],point[2])
+        pointx=rospy.get_param("~finishpoint_x")
+        pointy=rospy.get_param("~finishpoint_y")
+        pointz=rospy.get_param("~finishpoint_z")
+        self.finishPoint=Point(pointx,pointy,pointz)
         self.distanceAfterFinish=rospy.get_param("~distance_after")
-        car_pose=TransformStamped()
+        self.car_pose=TransformStamped()
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
 
@@ -47,14 +49,14 @@ class lap_counter(ManagedNode):
     def active(self):
     
         try:
-            car_pose=self.tfBuffer.lookup_transform(self.world_frame,self.base_link_frame,rospy.Time(0))
+            self.car_pose=self.tfBuffer.lookup_transform(self.world_frame,self.base_link_frame,rospy.Time(0))
         except (tf2.LookupException,tf2.ConnectivityException,tf2.ExtrapolationException):
             rospy.logerr("error")
 
         carToFinishVector=Vector3()
-        carToFinishVector.x=self.finishPoint.x-car_pose.transform.translation.x
-        carToFinishVector.y=self.finishPoint.y-car_pose.transform.translation.y
-        carToFinishVector.z=self.finishPoint.z-car_pose.transform.translation.z
+        carToFinishVector.x=self.finishPoint.x-self.car_pose.transform.translation.x
+        carToFinishVector.y=self.finishPoint.y-self.car_pose.transform.translation.y
+        carToFinishVector.z=self.finishPoint.z-self.car_pose.transform.translation.z
         
         if self.newLap and not self.finished:
         
