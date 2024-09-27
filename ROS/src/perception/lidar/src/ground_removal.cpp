@@ -301,7 +301,7 @@ void GroundRemoval::extractInitialSeeds(
     // We define the outlier threshold -1.5 times the height of the
     // GroundRemoval sensor
     if (cloud_sorted[i].z < -1.5 * sensor_height_) {
-      it++;
+      ++it;
     } else {
       // Points are in incremental order. Therefore, break loop if here
       break;
