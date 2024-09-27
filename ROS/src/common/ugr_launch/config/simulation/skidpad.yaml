@@ -9,7 +9,7 @@ slam_controller:
       # Control
       - front_wheel_feedback_control
       - path_publisher
-      - path_smoother
+      # - path_smoother
 
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
@@ -37,7 +37,7 @@ pure_pursuit:
   speed_start: 3
   speed_stop: 12
   distance_start: 3
-  distance_stop: 5 
+  distance_stop: 5
 mpc:
   change_index: False
   world_frame: "ugr/map"

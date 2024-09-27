@@ -3,25 +3,29 @@
 
 #include "ros/ros.h"
 #include <atomic>
+#include <math.h>
 #include <mutex>
 #define EC_TIMEOUTMON 500
 #define STATUS_WORD_MASK(x)                                                    \
   (x &= ~((1 << 4) | (1 << 5) | (1 << 8) | (1 << 9) | (1 << 14) | (1 << 15)))
 
 // Control parameters
-#define MAX_ACC 50000UL
-#define MAX_VEL 7000000
-#define MARGIN 100000
-#define VEL_MARGIN 0.05 * MAX_VEL
+#define MAX_ACC 200000UL
+#define MAX_VEL 10000000
+#define MARGIN 75000
+#define VEL_MARGIN 0.02 * MAX_VEL
 
 // Conversion parameters
-#define FULL_ROT 42000000UL
-#define mDEG_TO_POS (FULL_ROT / 360000UL)
+#define FULL_ROT 42000000.0
+#define RAD_TO_POS (FULL_ROT / M_PI / 2.0)
 #define TIME_CONV_VEL 4UL
 #define TIME_CONV_ACC 25UL
+// = 100 / (cycle_rate_in_ms ^ 2). Example: cycle rate = 2ms -->
+// TIME_CONV_ACC = 100 / (2 * 2) = 25
 
-// Max span in milli degrees (MAX 140000)
-#define MAX_SPAN 130000
+// Max span in units (MAX approx 140deg = 2.443460952792061rad = 16333333.33...
+// units)
+#define MAX_SPAN 15166666
 
 #ifdef __cplusplus
 extern "C" {
@@ -114,6 +118,7 @@ extern std::mutex inputs_mutex;
 extern CSP_inputs csp_inputs_ext;
 extern CSV_inputs csv_inputs_ext;
 
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 inline void set_output(uint16_t slave_nb, uint16_t controlword,
                        uint32_t value) {
   master_outputs *data_ptr;
@@ -123,6 +128,7 @@ inline void set_output(uint16_t slave_nb, uint16_t controlword,
   data_ptr->target = value;
 }
 
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 inline CSP_inputs get_CSP_input(uint16_t slave_nb) {
   CSP_inputs inputs =
       *reinterpret_cast<CSP_inputs *>(ec_slave[slave_nb].inputs);
@@ -130,6 +136,7 @@ inline CSP_inputs get_CSP_input(uint16_t slave_nb) {
   return inputs;
 }
 
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 inline CSV_inputs get_CSV_input(uint16_t slave_nb) {
   CSV_inputs inputs =
       *reinterpret_cast<CSV_inputs *>(ec_slave[slave_nb].inputs);
@@ -137,6 +144,7 @@ inline CSV_inputs get_CSV_input(uint16_t slave_nb) {
   return inputs;
 }
 
+// cppcheck-suppress [unusedFunction, unmatchedSuppression]
 inline PP_inputs get_PP_input(uint16_t slave_nb) {
   PP_inputs inputs = *reinterpret_cast<PP_inputs *>(ec_slave[slave_nb].inputs);
 

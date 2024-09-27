@@ -1,8 +1,8 @@
-from std_msgs.msg import Bool, Float64, Int64, String
+from std_msgs.msg import Bool, Float64, Int64
 
+# Dict of messages and their respective ROS message types for conversion
 messages = {
     "<class 'float'>": lambda msg: Float64(msg),
-    "<class 'cantools.database.can.signal.NamedSignalValue'>": lambda msg: String(msg),
     "<class 'int'>": lambda msg: Int64(msg),
     "<class 'bool": lambda msg: Bool(msg),
 }

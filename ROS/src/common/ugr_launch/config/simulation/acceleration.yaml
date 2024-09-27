@@ -8,7 +8,7 @@ slam_controller:
 
       # Control
       - front_wheel_feedback_control
-      - path_smoother
+      # - path_smoother
       - path_publisher
 
 slam_mcl:

@@ -2,11 +2,14 @@
 
 namespace pathplanning {
 
+float MIN_WIDTH = 2.5;
+
 std::tuple<std::vector<std::vector<double>>, std::vector<std::vector<double>>,
            std::vector<std::vector<double>>>
 get_center_points(const std::vector<std::vector<double>> &position_cones,
                   const std::vector<int> &classes, double triangulation_max_var,
-                  double triangulation_var_threshold, double range_front) {
+                  double triangulation_var_threshold, double range_front,
+                  bool color) {
   // Need 1D array for Delaunay
   std::vector<double> positions;
   positions.reserve(position_cones.size() * 2);
@@ -69,6 +72,14 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
         double x_coord = (coords[index1] + coords[index2]) / 2;
         double y_coord = (coords[index1 + 1] + coords[index2 + 1]) / 2;
 
+        // If distance between two points is small, we have a bad point
+        if (std::pow(coords[index1] - coords[index2], 2) +
+                std::pow(coords[index1 + 1] - coords[index2 + 1], 2) <
+            MIN_WIDTH * MIN_WIDTH) {
+          bad_points.push_back({x_coord, y_coord});
+          continue;
+        }
+
         // If this is false, this means that the two points that make up the
         // centerpoint are the same color (except for orange cones). So then we
         // have a bad point!
@@ -78,7 +89,7 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
 
         int compound_class = class1 + class2;
 
-        if (compound_class == 1 || class1 == 2 || class2 == 2) {
+        if (!color || compound_class == 1 || class1 == 2 || class2 == 2) {
           filtered_coords.push_back(coords[2 * triangles[3 * i]]);
           filtered_coords.push_back(coords[2 * triangles[3 * i] + 1]);
           center_points.push_back({x_coord, y_coord});

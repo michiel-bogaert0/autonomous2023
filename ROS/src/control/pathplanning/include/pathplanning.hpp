@@ -98,6 +98,8 @@ private:
 
   bool debug_visualisation_;
 
+  bool use_orange_cones_;
+
   // Publishers
   ros::Publisher path_pub_;
   ros::Publisher path_stamped_pub_;

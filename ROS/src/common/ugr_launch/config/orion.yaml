@@ -1,0 +1,24 @@
+# Use this file to override parameters for Orion
+ugr:
+  car:
+    steering:
+      transmission: 0.2857142857142857
+    wheel:
+      radius: 1 # just linear velocity
+    cog_to_front_axle: 0.90
+    wheelbase: 1.60
+
+orion_state:
+  node_management:
+    always:
+      - can_cvrt_mc_right
+      - can_cvrt_mc_left
+      - can_cvrt_lv
+      # - iologik_aio
+      - diobank_driver_can
+    manual: 
+      - pedal_mapper
+    # driverless:
+      # -
+    driverless:
+      - slam_controller
