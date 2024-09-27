@@ -178,7 +178,6 @@ class Controller(NodeManager):
         new_state = SLAMStatesEnum.FINISHED
         rospy.set_param("/speed/target", 0.0)
         self.change_state(new_state)
-        print('kokokoko')
         return
     
 
