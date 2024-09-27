@@ -4,7 +4,7 @@
 ##
 ## First start with some standard catkin stuff.
 cmake_minimum_required(VERSION 3.5.1)
-project(rviz_observations_visualization)
+project(rviz_ugr_plugin)
 find_package(catkin REQUIRED COMPONENTS rviz ugr_msgs)
 catkin_package()
 include_directories(${catkin_INCLUDE_DIRS})
@@ -36,6 +36,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 set(SRC_FILES
   src/obswc_visual.cpp
   src/obswcas_display.cpp
+  src/PathWithIdsDisplay.cpp
 )
 
 ## An rviz plugin is just a shared library, so here we declare the
