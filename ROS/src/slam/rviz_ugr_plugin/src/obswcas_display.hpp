@@ -66,7 +66,7 @@ protected:
   virtual void reset();
 
   // cppcheck-suppress unknownMacro
-private Q_SLOTS:
+private Q_SLOTS: // cppcheck-suppress unmatchedSuppression
   void updateColorAndAlpha();
   void updateUseRealisticModel();
   void updateUseIds();
