@@ -25,6 +25,8 @@ Lidar::Lidar(ros::NodeHandle &n)
   n.param<bool>("publish_ground", publish_ground_, false);
   n.param<bool>("publish_clusters", publish_clusters_, true);
 
+  n.param<bool>("lidar_rotated", lidar_rotated_, false);
+
   // Publish to the filtered and clustered lidar topic
   if (publish_preprocessing_)
     preprocessedLidarPublisher_ =
