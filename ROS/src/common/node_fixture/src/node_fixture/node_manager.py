@@ -141,7 +141,7 @@ class NodeManager(ManagedNode):
         """
 
         super().__init__(name, default_state)
-
+        self.name = name
         self.nodes_to_monitor = set([])
         self.timers = {}
         self.health_msgs = {}
@@ -252,7 +252,7 @@ class NodeManager(ManagedNode):
             # Also list ALL monitored nodes warnings and errors to keyvalues
             if (
                 node in self.health_msgs
-                and self.health_msgs[node].level > DiagnosticStatus.OK
+                and self.health_msgs[node].level > DiagnosticStatus.WARN
             ):
                 keyvalues.append(
                     KeyValue(key=node, value=self.health_msgs[node].message)
@@ -278,7 +278,9 @@ class NodeManager(ManagedNode):
             self.unhealty_status_self_inflicted = False
         else:
             message = (
-                "There is an issue with " + str(list(set(unhealthy_nodes)))
+                str(self.name)
+                + ": There is an issue with "
+                + str(list(set(unhealthy_nodes)))
                 if self.health.level == DiagnosticStatus.OK
                 else self.health.message
             )
