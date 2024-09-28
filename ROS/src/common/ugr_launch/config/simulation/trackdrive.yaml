@@ -25,11 +25,12 @@ slam_controller:
 slam_mcl:
   path_to_map: "/ugr/car/map/slam/global"
 lap_counter:
-  finishpoint_x: 0
-  finishpoint_y: 0
-  finishpoint_z: 0
+  finishpoint:
+    x: 0
+    y: 0
   laps: 10
   distance_after: 4
+  finishrange: 3
 speed:
   target: 2.0
   target_racing: 10.0

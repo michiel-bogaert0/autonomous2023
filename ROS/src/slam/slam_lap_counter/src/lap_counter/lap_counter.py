@@ -17,14 +17,14 @@ class lap_counter(ManagedNode):
         self.finished = False
         self.newLap = False
         self.checkFinishRange = True
-        self.range = 3  # range finish zone
+        self.range = rospy.get_param("~finishRange")  # range finish zone
         self.laps = 0
 
         self.max_laps = rospy.get_param("~laps")
-        pointx = rospy.get_param("~finishpoint_x")
-        pointy = rospy.get_param("~finishpoint_y")
-        pointz = rospy.get_param("~finishpoint_z")
-        self.finishPoint = Point(pointx, pointy, pointz)
+        pointx = rospy.get_param("~finishpoint/x")
+        pointy = rospy.get_param("~finishpoint/y")
+
+        self.finishPoint = Point(pointx, pointy, 0)
         self.distanceAfterFinish = rospy.get_param("~distance_after")
         self.car_pose = TransformStamped()
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
@@ -50,7 +50,7 @@ class lap_counter(ManagedNode):
             tf2.ConnectivityException,
             tf2.ExtrapolationException,
         ):
-            rospy.logerr("error")
+            return
 
         carToFinishVector = Vector3()
         carToFinishVector.x = self.finishPoint.x - self.car_pose.transform.translation.x

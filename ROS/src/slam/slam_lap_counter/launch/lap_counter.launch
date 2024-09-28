@@ -10,9 +10,8 @@
         <remap from="/lap_counter/finished" to="/ugr/car/finished"/>
         <param name="laps" value="10"/>
         <param name="distance_after" value="0"/>
-        <param name="finish_x" value="0"/>
-        <param name="finish_y" value="0"/>
-        <param name="finish_z" value="0"/>
-                
+        <param name="finishpoint/x" value="0"/>
+        <param name="finishpoint/y" value="0"/>
+        <param name="finishRange" value="3"/>
     </node>
 </launch>

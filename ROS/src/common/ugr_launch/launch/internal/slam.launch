@@ -27,5 +27,4 @@
   <include file="$(find slam_lap_counter)/launch/lap_counter.launch" pass_all_args="true"/>
 
   
-  <!-- SLAM controller -->
 </launch>

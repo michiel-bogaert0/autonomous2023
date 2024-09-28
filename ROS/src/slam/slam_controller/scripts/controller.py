@@ -180,6 +180,7 @@ class Controller(NodeManager):
         new_state = SLAMStatesEnum.FINISHED
         rospy.set_param("/speed/target", 0.0)
         self.change_state(new_state)
+        self.brake_publisher.publish(Float64(data=20.0))
         return
 
     def lapComplete(self, laps):
@@ -189,9 +190,6 @@ class Controller(NodeManager):
         Args:
             laps: the UInt16 message containing the lap count
         """
-
-        # If we did enough laps, switch to finished
-
         # If we did one lap in trackdrive and exploration, switch to racing
         if (
             self.mission == AutonomousMission.TRACKDRIVE
