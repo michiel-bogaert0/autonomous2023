@@ -72,7 +72,8 @@ def configure_node(name: str):
 
     set_state_result = True
 
-    rospy.wait_for_service(f"/node_managing/{name}/get", timeout=0.5)
+    timeout = 0.5 if name != "path_smoother" else 3.0
+    rospy.wait_for_service(f"/node_managing/{name}/get", timeout=timeout)
     data = rospy.ServiceProxy(f"/node_managing/{name}/get", GetNodeState)()
     if data.state == NodeManagingStatesEnum.ACTIVE:
         set_state_result = set_state_result and set_state_inactive(name)
