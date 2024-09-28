@@ -48,14 +48,13 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
                          classes[index3 / 2]);
     Triangle triangle(point1, point2, point3);
 
-    distances.push_back(triangle.sides[0]);
-    distances.push_back(triangle.sides[1]);
-    distances.push_back(triangle.sides[2]);
+    distances.insert(distances.end(), std::begin(triangle.sides),
+                     std::end(triangle.sides));
 
     double variance = calculate_variance(distances);
 
-    double perimeter =
-        triangle.sides[0] + triangle.sides[1] + triangle.sides[2];
+    double perimeter = std::accumulate(std::begin(triangle.sides),
+                                       std::end(triangle.sides), 0.0);
 
     // Normalize variance by perimeter
     variances.push_back(variance / perimeter);
