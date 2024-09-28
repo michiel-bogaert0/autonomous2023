@@ -56,7 +56,7 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
     double perimeter = std::accumulate(std::begin(triangle.sides),
                                        std::end(triangle.sides), 0.0);
 
-    // Normalize variance by perimeter
+    // Normalize variance by perimeter.
     variances.push_back(variance / perimeter);
 
     triangles.push_back(triangle);
