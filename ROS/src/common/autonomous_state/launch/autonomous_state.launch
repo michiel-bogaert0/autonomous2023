@@ -3,5 +3,7 @@
 
   <node name="autonomous_state" pkg="autonomous_state" type="autonomous_state.py" output="screen">
     <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom" />
+    <param name="rate" value="15"/>
+
   </node>
 </launch>

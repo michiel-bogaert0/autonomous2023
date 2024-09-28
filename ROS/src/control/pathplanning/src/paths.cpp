@@ -5,7 +5,7 @@ namespace pathplanning {
 std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
     const std::vector<std::vector<double>> &bad_points,
     const std::vector<std::vector<double>> &center_points,
-    const std::vector<std::vector<double>> &cones, double range_front) {
+    const std::vector<std::vector<double>> &cones) {
   Node *root_node = new Node(0, 0, 0, nullptr, std::vector<Node *>(), 0, 0);
 
   // Queue contains node to search, path already searched (corresponding to that
@@ -20,7 +20,6 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
   int iteration = 0;
 
   while (!queue.empty()) {
-    bool close_path = false;
     iteration++;
 
     if (iteration >= this->max_iter)
@@ -43,121 +42,136 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
 
     // Handle first pose
     if (!first_pose_found) {
+      bool second_child_found = false;
+
       // Search all nodes in continuous distance and add node with smallest
       // angle_change from car orientation
       double min_angle_change = 1000;
       Node *node = nullptr;
+      Node *node2 = nullptr;
 
-      // Get the closest center points to this element that are within close
-      // distance
-      std::vector<std::vector<double>> next_nodes;
-      next_nodes = sort_closest_to(center_points, {parent->x, parent->y},
-                                   this->continuous_dist_);
+      // Get the center points to this element that are within close
+      // distance and sort them by angle_change
+      std::vector<PointInfo> next_nodes;
+      next_nodes = sort_by_angle_change(center_points, {parent->x, parent->y},
+                                        parent->angle, this->max_angle_change,
+                                        this->continuous_dist_);
 
-      for (auto next_pos : next_nodes) {
+      for (PointInfo next_node : next_nodes) {
         if (pathplanning::check_if_feasible_child(
-                *parent, path, next_pos, bad_points, center_points, cones,
-                this->max_angle_change, this->safety_dist_squared,
-                this->stage1_rect_width_, this->stage1_threshold_bad_points_,
+                *parent, path, next_node.point, bad_points, center_points,
+                cones, this->max_angle_change, this->safety_dist_squared, 0,
+                this->stage1_threshold_bad_points_,
                 this->stage1_threshold_center_points_)) {
 
-          double distance_node =
-              pow(parent->x - next_pos[0], 2) + pow(parent->y - next_pos[1], 2);
-          double angle_node =
-              atan2(next_pos[1] - parent->y, next_pos[0] - parent->x);
-          double angle_change = angle_node - parent->angle;
-
-          if (abs(angle_change) < min_angle_change) {
-            if (!child_found) {
-              node = new Node(next_pos[0], next_pos[1], distance_node, parent,
-                              std::vector<Node *>(), angle_node, angle_change);
-            } else {
-              node->x = next_pos[0];
-              node->y = next_pos[1];
-              node->distance = distance_node;
-              node->parent = parent;
-              node->angle = angle_node;
-              node->angle_change = angle_change;
-            }
-            min_angle_change = abs(angle_change);
-            first_pose_found = true;
+          if (!child_found) {
+            node = new Node(next_node.point[0], next_node.point[1],
+                            next_node.distance_squared, parent,
+                            std::vector<Node *>(), next_node.angle,
+                            next_node.angle_change);
             child_found = true;
+          } else {
+            if (!second_child_found) {
+              if (node->x == next_node.point[0] &&
+                  node->y == next_node.point[1]) {
+                continue;
+              }
+              node2 = new Node(next_node.point[0], next_node.point[1],
+                               next_node.distance_squared, parent,
+                               std::vector<Node *>(), next_node.angle,
+                               next_node.angle_change);
+              second_child_found = true;
+              break;
+            }
           }
         }
       }
       if (child_found) {
+        if (second_child_found) {
+          std::vector<std::array<double, 2>> new_path(path);
+          new_path.push_back({node2->x, node2->y});
+          parent->children.push_back(node2);
+
+          queue.push_back(std::make_tuple(node2, new_path, depth + 1));
+        }
+
         path.push_back({node->x, node->y});
         parent->children.push_back(node);
         parent = node;
       }
     }
 
-    child_found = true;
+    // Get the closest center points to this element that are within close
+    // distance (stage 1)
+    std::vector<std::vector<double>> next_nodes;
+    next_nodes = sort_closest_to(center_points, {parent->x, parent->y},
+                                 this->continuous_dist_);
 
-    while (child_found) {
-      // Get the closest center points to this element that are within close
-      // distance
-      std::vector<std::vector<double>> next_nodes;
-      next_nodes = sort_closest_to(center_points, {parent->x, parent->y},
-                                   this->continuous_dist_);
-
-      // if first point of path close to last point of path, stop loop
-      if (path.size() > 20 &&
-          distance_squared(path[1][0], path[1][1], next_nodes[0][0],
-                           next_nodes[0][1]) < this->close_path_dist) {
-        close_path = true;
-        break;
-      }
-
-      child_found = false;
-
-      for (auto next_pos : next_nodes) {
-        if (pathplanning::check_if_feasible_child(
-                *parent, path, next_pos, bad_points, center_points, cones,
-                this->max_angle_change, this->safety_dist_squared,
-                this->stage1_rect_width_, this->stage1_threshold_bad_points_,
-                this->stage1_threshold_center_points_)) {
-
-          double distance_node =
-              pow(parent->x - next_pos[0], 2) + pow(parent->y - next_pos[1], 2);
-          double angle_node =
-              atan2(next_pos[1] - parent->y, next_pos[0] - parent->x);
-          double angle_change = angle_node - parent->angle;
-
-          Node *node =
-              new Node(next_pos[0], next_pos[1], distance_node, parent,
-                       std::vector<Node *>(), angle_node, angle_change);
-
-          path.push_back({node->x, node->y});
-          parent->children.push_back(node);
-          parent = node;
-
-          child_found = true;
-
-          // One child is enough!
-          break;
-        }
-      }
-    }
-    if (close_path) {
+    // if first point of path close to last point of path, stop loop
+    if (path.size() > 20 &&
+        distance_squared(path[1][0], path[1][1], next_nodes[0][0],
+                         next_nodes[0][1]) < this->close_path_dist) {
       leaves.push_back(parent);
       break;
     }
+
+    child_found = false;
+
+    float max_dist = pow(this->continuous_dist_, 2);
+
+    for (auto next_pos : next_nodes) {
+      if (pathplanning::check_if_feasible_child(
+              *parent, path, next_pos, bad_points, center_points, cones,
+              this->stage1_max_angle_change_, this->safety_dist_squared,
+              this->stage1_rect_width_, this->stage1_threshold_bad_points_,
+              this->stage1_threshold_center_points_)) {
+
+        double distance_node =
+            pow(parent->x - next_pos[0], 2) + pow(parent->y - next_pos[1], 2);
+        double angle_node =
+            atan2(next_pos[1] - parent->y, next_pos[0] - parent->x);
+        double angle_change = angle_node - parent->angle;
+
+        Node *node = new Node(next_pos[0], next_pos[1], distance_node, parent,
+                              std::vector<Node *>(), angle_node, angle_change);
+
+        if (distance_node > max_dist) {
+          break;
+        }
+
+        std::vector<std::array<double, 2>> new_path(path);
+        new_path.push_back({node->x, node->y});
+        parent->children.push_back(node);
+
+        queue.push_back(std::make_tuple(node, new_path, depth + 1));
+
+        if (!child_found) {
+          max_dist = distance_node + this->stage1_dist_window_;
+          child_found = true;
+        }
+      }
+    }
+
+    if (child_found) {
+      continue;
+    }
+
     // Now we are at the second stage. We basically look for a node in the
     // distance (to bridge a gap) and add it to the stack to explore further We
-    // also limit the depth of this stage
+    // also limit the depth of this stage (stage 2)
     if (depth >= this->max_depth_) {
       leaves.push_back(parent);
       continue;
     }
 
-    // Get the closest center points to this element that are within range_front
-    std::vector<std::vector<double>> next_nodes;
-    next_nodes =
-        sort_closest_to(center_points, {parent->x, parent->y}, range_front);
+    // Get the closest center points to this element that are within
+    // stage2_max_dist
+    std::vector<std::vector<double>> next_nodes2;
+    next_nodes2 = sort_closest_to(center_points, {parent->x, parent->y},
+                                  this->stage2_max_dist_);
     child_found = false;
 
-    for (auto next_pos : next_nodes) {
+    for (auto next_pos : next_nodes2) {
       if (pathplanning::check_if_feasible_child(
               *parent, path, next_pos, bad_points, center_points, cones,
               this->max_angle_change, this->safety_dist_squared,
@@ -197,7 +211,7 @@ std::pair<Node *, std::vector<Node *>> TriangulationPaths::get_all_paths(
 
 std::pair<double, double> TriangulationPaths::get_cost_branch(
     const std::vector<Node *> &branch,
-    const std::vector<std::vector<double>> &cones, double range_front) {
+    const std::vector<std::vector<double>> &cones) {
 
   std::vector<double> angle_changes;
   std::vector<double> node_distances;
@@ -214,6 +228,8 @@ std::pair<double, double> TriangulationPaths::get_cost_branch(
   double distance =
       std::accumulate(node_distances.begin(), node_distances.end(), 0.0);
   double length_cost = 1 / distance + 10.0 / node_distances.size();
+
+  double penalty = 0;
 
   // Iterate over the path, get all cones in a certain distance to line, and
   // apply a penalty every time a cone is on the wrong side
@@ -245,7 +261,7 @@ std::pair<double, double> TriangulationPaths::get_cost_branch(
       }
     }
 
-    int penalty_amount = 0;
+    double penalty_amount = 0;
     for (size_t i = 0; i < close_cones.size(); ++i) {
       if (diff_angles[i] > 0.0 && close_classes[i] == 1) {
         penalty_amount++;
@@ -254,11 +270,10 @@ std::pair<double, double> TriangulationPaths::get_cost_branch(
       }
     }
 
-    length_cost += penalty_amount * 10;
-    angle_cost += penalty_amount * 10;
+    penalty += penalty_amount / 100;
   }
 
-  return std::make_pair(angle_cost, length_cost);
+  return std::make_pair(angle_cost + penalty, length_cost + penalty);
 }
 
 } // namespace pathplanning

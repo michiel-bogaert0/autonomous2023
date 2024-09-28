@@ -5,13 +5,12 @@ import rospy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from node_fixture.fixture import (
     AutonomousMission,
-    AutonomousStatesEnum,
     SLAMStatesEnum,
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
 from node_fixture.node_manager import NodeManager, load_params
-from std_msgs.msg import Header, UInt16
+from std_msgs.msg import Float64, Header, UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 
@@ -44,6 +43,10 @@ class Controller(NodeManager):
         )
         self.slam_state_publisher = rospy.Publisher(
             "/state/slam", State, queue_size=10, latch=True
+        )
+
+        self.brake_publisher = rospy.Publisher(
+            "/iologik/output1", Float64, queue_size=10
         )
 
         self.change_state(SLAMStatesEnum.IDLE)
@@ -82,6 +85,12 @@ class Controller(NodeManager):
             self.target_lap_count = 10
             new_state = SLAMStatesEnum.EXPLORATION
         elif self.mission == AutonomousMission.DVSV:
+            self.target_lap_count = 1
+            new_state = SLAMStatesEnum.RACING
+        elif self.mission == AutonomousMission.INPSPECTION:
+            self.target_lap_count = 1
+            new_state = SLAMStatesEnum.RACING
+        elif self.mission == AutonomousMission.EBS_TEST:
             self.target_lap_count = 1
             new_state = SLAMStatesEnum.RACING
         else:
@@ -150,10 +159,6 @@ class Controller(NodeManager):
 
         new_state = self.slam_state
 
-        if state.scope == StateMachineScopeEnum.AUTONOMOUS:
-            if state.cur_state == AutonomousStatesEnum.ASREADY:
-                new_state = SLAMStatesEnum.IDLE
-
         self.change_state(new_state)
 
     def change_state(self, new_state: SLAMStatesEnum):
@@ -197,6 +202,7 @@ class Controller(NodeManager):
         if self.target_lap_count <= laps.data:
             new_state = SLAMStatesEnum.FINISHED
             rospy.set_param("/speed/target", 0.0)
+            self.brake_publisher.publish(Float64(data=20.0))
             self.change_state(new_state)
             return
 

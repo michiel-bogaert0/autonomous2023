@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 from functools import partial
+
 import rospy
+from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 from node_fixture.fixture import NodeManagingStatesEnum
 from node_fixture.srv import (
     GetNodeState,
@@ -11,7 +13,6 @@ from node_fixture.srv import (
     SetNodeStateResponse,
 )
 from ugr_msgs.msg import State
-from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 
 
 class ManagedNode:
@@ -24,7 +25,7 @@ class ManagedNode:
     - publishers (list): a list of publishers
     """
 
-    def __init__(self, name: str, default_state = NodeManagingStatesEnum.UNCONFIGURED):
+    def __init__(self, name: str, default_state=NodeManagingStatesEnum.UNCONFIGURED):
         """
         Initializes a ManagedNode instance.
 
@@ -32,53 +33,62 @@ class ManagedNode:
         - name (str): the name of the node
         - default_state (NodeManagingStatesEnum): the default state of the node
         """
-        
-        rospy.init_node(name)        
-        
+
+        rospy.init_node(name)
+
         # First set to warning, to make sure car doesn't start (and we know why)
-        self.health = DiagnosticStatus(name=f"healthchecks", hardware_id=name)
+        self.health = DiagnosticStatus(name="healthchecks", hardware_id=name)
         self.name = name
         self.state = default_state
         self.handlerlist = []
         self.publishers = []
         self.healthrate = rospy.Rate(rospy.get_param("~healthrate", 3))
         self.statePublisher = rospy.Publisher("/state", State, queue_size=1)
-        self.healthPublisher = rospy.Publisher("/health/nodes", DiagnosticStatus, queue_size=1)
+        self.healthPublisher = rospy.Publisher(
+            "/health/nodes", DiagnosticStatus, queue_size=1
+        )
         rospy.Service(
             f"/node_managing/{name}/set", SetNodeState, self.handle_service_set
         )
         rospy.Service(
             f"/node_managing/{name}/get", GetNodeState, self.handle_service_get
         )
-        
+
         self.publish_rate = rospy.get_param("~rate", 10)
         self.rate = rospy.Rate(self.publish_rate)
-        
+
         # Before going into the loop, set health to OK
         self.set_health(DiagnosticStatus.OK, message="OK")
-    
+
+        if default_state == NodeManagingStatesEnum.ACTIVE:
+            self.doConfigure()
+            self.doActivate()
+            self.state = NodeManagingStatesEnum.ACTIVE
+        elif default_state == NodeManagingStatesEnum.INACTIVE:
+            self.doConfigure()
+            self.state = NodeManagingStatesEnum.INACTIVE
+
     def spin(self):
         """
         A custom spin function that keeps the node running until it is shutdown.
         This should be used instead of rospy.spin()
         """
-        
+
         while not rospy.is_shutdown():
             self.spinOnce()
-    
+
     def spinOnce(self):
         """
         A custom spinOnce function that keeps the node running until it is shutdown.
         This should be used instead of rospy.spinOnce()
         Basically limits the loop rate based on the publish rate of the node (~rate) and runs the update function to publish heartbeats (for example)
         """
-        
+
         self.update()
         self.rate.sleep()
-        
+
         if rospy.is_shutdown():
             exit(0)
-                    
 
     def get_health_level(self):
         """
@@ -86,7 +96,9 @@ class ManagedNode:
         """
         return self.health.level
 
-    def set_health(self, level: int, message: str = "", values: list = [], publish=True):
+    def set_health(
+        self, level: int, message: str = "", values: list = None, publish=True
+    ):
         """
         Sets the health of the node.
 
@@ -95,11 +107,20 @@ class ManagedNode:
             message: The message to be published.
             publish: Whether to publish the health immediately.
         """
+
+        if values is None:
+            values = []
+
         self.health.level = level
         self.health.message = message
         self.health.values = [KeyValue(key="state", value=self.state)]
         self.health.values += values
- 
+
+        if level == 1:
+            rospy.logwarn(f"[WARN]> {message}")
+        elif level == 2:
+            rospy.logerr(f"[ERROR]> {message}")
+
         # Immediately publish health
         if publish:
             self.healthPublisher.publish(self.health)
@@ -203,8 +224,11 @@ class ManagedNode:
         stateMsg.scope = self.name
         stateMsg.header.stamp = rospy.Time.now()
         self.statePublisher.publish(stateMsg)
-        
-        self.set_health(DiagnosticStatus.OK, message=f"State changed from {original_state} to {self.state}")
+
+        self.set_health(
+            DiagnosticStatus.OK,
+            message=f"State changed from {original_state} to {self.state}",
+        )
 
         # response that the transition is succesful
         return SetNodeStateResponse(succes=True)
@@ -243,7 +267,7 @@ class ManagedNode:
             self.unconfigured()
         elif self.state == NodeManagingStatesEnum.FINALIZED:
             self.finalized()
-            
+
         # Publish health
         if self.healthrate.remaining() < rospy.Duration(0):
             self.healthrate.sleep()
@@ -295,7 +319,7 @@ class ManagedNode:
         if self.state == NodeManagingStatesEnum.ACTIVE:
             return handler(msg)
 
-    def AddPublisher(self, topic: str, msg_type, queue_size: int):
+    def AddPublisher(self, topic: str, msg_type, queue_size: int, latch=False):
         """
         Adds a publisher to the node.
 
@@ -307,15 +331,17 @@ class ManagedNode:
         Returns:
         - CustomPublisher: the publisher instance
         """
-        custompublisher = CustomPublisher(topic, msg_type, queue_size, self.state)
+        custompublisher = CustomPublisher(
+            topic, msg_type, queue_size, self.state, latch
+        )
         self.publishers.append(custompublisher)
         return custompublisher
 
 
 # override the publish method of rospy.Publisher
 class CustomPublisher(rospy.Publisher):
-    def __init__(self, topic: str, msg_type, queue_size: int, state: str):
-        super().__init__(topic, msg_type, queue_size=queue_size)
+    def __init__(self, topic: str, msg_type, queue_size: int, state: str, latch):
+        super().__init__(topic, msg_type, queue_size=queue_size, latch=latch)
         self.state = state
 
     def set_state(self, state: str) -> None:
@@ -330,4 +356,3 @@ class CustomPublisher(rospy.Publisher):
         """
         if self.state == NodeManagingStatesEnum.ACTIVE:
             super().publish(msg)
-            

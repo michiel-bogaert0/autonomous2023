@@ -33,6 +33,7 @@ private:
   double max_path_distance_;
   double safety_dist_;
   double safety_dist_squared_;
+  double stage1_max_angle_change_;
   double stage1_rect_width_;
   int stage1_threshold_bad_points_;
   int stage1_threshold_center_points_;
@@ -41,10 +42,13 @@ private:
   int stage2_threshold_center_points_;
   int max_depth_;
   double continuous_dist_;
+  double stage2_max_dist_;
+  double stage1_dist_window_;
   double close_path_dist_;
   double range_front_;
   double range_behind_;
   double range_sides_;
+  bool color_;
   bool vis_;
   ros::Publisher vis_points_;
   ros::Publisher vis_lines_;

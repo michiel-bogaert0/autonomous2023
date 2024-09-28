@@ -1,8 +1,7 @@
 #include "iologik_driver.hpp"
 #include <mxio.h>
 
-iologik::iologik(ros::NodeHandle &n)
-    : ManagedNode(n, "iologik_driver"), n_(n) {}
+iologik::iologik(ros::NodeHandle &n) : ManagedNode(n, "iologik_aio"), n_(n) {}
 
 void iologik::doConfigure() {
   input0_pub_ = n_.advertise<std_msgs::Float64>("/input0", 10);
@@ -15,26 +14,37 @@ void iologik::doConfigure() {
   input7_pub_ = n_.advertise<std_msgs::Float64>("/input7", 10);
   output0_sub_ = n_.subscribe("/output0", 10, &iologik::output0Callback, this);
   output1_sub_ = n_.subscribe("/output1", 10, &iologik::output1Callback, this);
-  n_.param<bool>("enable_i0", enable_i0, false);
-  n_.param<bool>("enable_i1", enable_i1, false);
-  n_.param<bool>("enable_i2", enable_i2, false);
-  n_.param<bool>("enable_i3", enable_i3, false);
-  n_.param<bool>("enable_i4", enable_i4, false);
-  n_.param<bool>("enable_i5", enable_i5, false);
-  n_.param<bool>("enable_i6", enable_i6, false);
-  n_.param<bool>("enable_i7", enable_i7, false);
-  std::vector<bool> enables = {enable_i0, enable_i1, enable_i2, enable_i3,
-                               enable_i4, enable_i5, enable_i6, enable_i7};
+  n_.param<bool>("enable_i0", enable_inputs[0], false);
+  n_.param<bool>("enable_i1", enable_inputs[1], false);
+  n_.param<bool>("enable_i2", enable_inputs[2], false);
+  n_.param<bool>("enable_i3", enable_inputs[3], false);
+  n_.param<bool>("enable_i4", enable_inputs[4], false);
+  n_.param<bool>("enable_i5", enable_inputs[5], false);
+  n_.param<bool>("enable_i6", enable_inputs[6], false);
+  n_.param<bool>("enable_i7", enable_inputs[7], false);
+
+  n_.param<float>("scaling_i0", scaling_inputs[0], 1.0);
+  n_.param<float>("scaling_i1", scaling_inputs[1], 1.0);
+  n_.param<float>("scaling_i2", scaling_inputs[2], 1.0);
+  n_.param<float>("scaling_i3", scaling_inputs[3], 1.0);
+  n_.param<float>("scaling_i4", scaling_inputs[4], 1.0);
+  n_.param<float>("scaling_i5", scaling_inputs[5], 1.0);
+  n_.param<float>("scaling_i6", scaling_inputs[6], 1.0);
+  n_.param<float>("scaling_i7", scaling_inputs[7], 1.0);
+
+  std::vector<bool> enables = {
+      enable_inputs[0], enable_inputs[1], enable_inputs[2], enable_inputs[3],
+      enable_inputs[4], enable_inputs[5], enable_inputs[6], enable_inputs[7]};
   for (int i = 0; i < enables.size(); i++) { // find the index of the lowest
                                              // enabled input
     if (enables[i]) {
       if (start_channel == -1) {
         start_channel = i;
       }
-      enabled_channels++; // count the number of enabled channels so that we
-                          // know how many should be read
+      end_channel = i;
     }
   }
+  enabled_channels = end_channel - start_channel + 1;
   n_.param<bool>("enable_o0", enable_o0, false);
   n_.param<bool>("enable_o1", enable_o1, false);
   n_.param<double>("minimum_output_current", minimum_output_current, 4);
@@ -96,66 +106,64 @@ void iologik::active() {
   // Read the input registers
   double dwValues[8] = {0};
   if (start_channel != -1) {
-    iRet = AI_Reads(
-        iHandle,                   // the handle for a connection
-        0,                         // unused
-        start_channel,             // starting channel
-        enabled_channels,          // read channel count
-        &dwValues[start_channel]); // DI reading value, make sure the inputs get
-                                   // written at the correct index
+    iRet = AI_Reads(iHandle,          // the handle for a connection
+                    0,                // unused
+                    start_channel,    // starting channel
+                    enabled_channels, // read channel count
+                    dwValues); // DI reading value, make sure the inputs get
+                               // written at the correct index
     CheckErr(iHandle, iRet, (char *)"DI_Reads");
     std_msgs::Float64 msg;
+    uint8_t pointer = 0;
+
+    // ROS_INFO("%d", enabled_channels);
+
     for (int i = 0; i < 8; ++i) {
-      msg.data = dwValues[i];
-      switch (i) {
-      case 0:
-        if (enable_i0) {
-          CheckInput(0, msg.data);
+      msg.data = dwValues[i - start_channel];
+
+      if (enable_inputs[i]) {
+
+        if (i != 1 && i != 4) {
+          CheckInput(i, msg.data);
+
+          msg.data -= 4;
+          msg.data /= 16;
+          msg.data *= scaling_inputs[i];
+        }
+        switch (i) {
+        case 0:
+          pointer++;
           input0_pub_.publish(msg);
-        }
-        break;
-      case 1:
-        if (enable_i1) {
-          CheckInput(1, msg.data);
+          break;
+        case 1:
+          pointer++;
           input1_pub_.publish(msg);
-        }
-        break;
-      case 2:
-        if (enable_i2) {
-          CheckInput(2, msg.data);
+          break;
+        case 2:
+          pointer++;
           input2_pub_.publish(msg);
-        }
-        break;
-      case 3:
-        if (enable_i3) {
-          CheckInput(3, msg.data);
+          break;
+        case 3:
+          pointer++;
           input3_pub_.publish(msg);
-        }
-        break;
-      case 4:
-        if (enable_i4) {
-          CheckInput(4, msg.data);
+          break;
+        case 4:
+          pointer++;
           input4_pub_.publish(msg);
-        }
-        break;
-      case 5:
-        if (enable_i5) {
-          CheckInput(5, msg.data);
+          break;
+        case 5:
+          pointer++;
           input5_pub_.publish(msg);
-        }
-        break;
-      case 6:
-        if (enable_i6) {
-          CheckInput(6, msg.data);
+          break;
+        case 6:
+          pointer++;
           input6_pub_.publish(msg);
-        }
-        break;
-      case 7:
-        if (enable_i7) {
-          CheckInput(7, msg.data);
+          break;
+        case 7:
+          pointer++;
           input7_pub_.publish(msg);
+          break;
         }
-        break;
       }
     }
   }

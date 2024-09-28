@@ -34,33 +34,40 @@ public:
   Point(double x_val, double y_val) : x(x_val), y(y_val) {}
 };
 
+struct PointInfo {
+  std::vector<double> point;
+  double angle;
+  double angle_change;
+  double distance_squared;
+};
+
 class TrianglePoint {
 public:
   double x;
   double y;
   uint8_t colorIndex;
 
-  TrianglePoint(double x_val, double y_val, uint8_t colorindex) : x(x_val), y(y_val), colorIndex(colorindex) {}
+  TrianglePoint(double x_val, double y_val, uint8_t colorindex)
+      : x(x_val), y(y_val), colorIndex(colorindex) {}
 };
 
 class Triangle {
-  public:
-    std::array<TrianglePoint, 3> points;
-    double side1,side2,side3;
+public:
+  std::array<TrianglePoint, 3> points;
+  std::array<double, 3> sides;
 
-    Triangle(const TrianglePoint& point1, const TrianglePoint& point2, const TrianglePoint& point3) 
-        : points{point1, point2, point3}
-    {
-      side1 = distance(points[0], points[1]);
-      side2 = distance(points[1], points[2]);
-      side3 = distance(points[2], points[0]);
-    }
-    
-  private:
-    double distance(const TrianglePoint& pt1, const TrianglePoint& pt2) const {
-      return std::pow(pt2.x - pt1.x, 2) + std::pow(pt2.y - pt1.y, 2);
-    }
+  Triangle(const TrianglePoint &point1, const TrianglePoint &point2,
+           const TrianglePoint &point3)
+      : points{point1, point2, point3} {
+    sides[0] = distance(points[0], points[1]);
+    sides[1] = distance(points[1], points[2]);
+    sides[2] = distance(points[2], points[0]);
+  }
 
+private:
+  double distance(const TrianglePoint &pt1, const TrianglePoint &pt2) const {
+    return std::pow(pt2.x - pt1.x, 2) + std::pow(pt2.y - pt1.y, 2);
+  }
 };
 
 // Define a utility function to calculate squared distance between 2 points
@@ -84,6 +91,13 @@ std::vector<std::vector<double>>
 sort_closest_to(const std::vector<std::vector<double>> &center_points,
                 const std::vector<double> &origin = {0, 0},
                 double max_distance = -1);
+
+// Function to sort the center points based on their angle change from the
+// origin point
+std::vector<PointInfo>
+sort_by_angle_change(const std::vector<std::vector<double>> &center_points,
+                     const std::vector<double> &origin, double original_angle,
+                     double max_angle_change, double max_distance = -1);
 
 double calculate_variance(const std::vector<double> &data);
 double calculate_median(const std::vector<double> &data);

@@ -1,0 +1,19 @@
+<launch>
+  <node name="orion_state" pkg="orion_state" type="orion_state.py" output="screen">
+    <param name="rate" value="20"/>
+
+    <remap from="/aio/in/gearbox_temp_left" to="/ugr/can/lv/processed/state_bpri1"/>
+    <remap from="/aio/in/gearbox_temp_right" to="/ugr/can/lv/processed/state_bpri2"/>
+    <remap from="/aio/in/front_bp" to="/ugr/can/lv/processed/state_bpri3"/>
+    <remap from="/aio/in/rear_bp" to="/ugr/can/lv/processed/state_bpri4"/>
+    <remap from="/aio/in/air_pressure1" to="/ugr/can/lv/processed/state_bpri5"/>
+    <remap from="/aio/in/air_pressure2" to="/ugr/can/lv/processed/state_bpri6"/>
+    <remap from="/input/observations" to="/ugr/car/observations/fused"/>
+    <remap from="/input/map" to="/ugr/car/map/slam/local"/>
+    <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>
+    <remap from="/input/lapComplete" to="/ugr/car/lapComplete"/>
+    <remap from="/input/steering_target" to="/ugr/car/steering_position_controller/command"/>
+    <remap from="/input/steering_actual" to="/ugr/car/servo/position"/>
+    <remap from="/dio/out/arm_service_brake" to="/dio/out/arm_dbs"/>
+  </node>
+</launch>

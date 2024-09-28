@@ -12,8 +12,8 @@
   </include>
   
   <!-- MPC -->
-  <include file="$(find mpc)/launch/mpc.launch" pass_all_args="true">
-  </include>
+  <!-- <include file="$(find mpc)/launch/mpc.launch" pass_all_args="true">
+  </include> -->
 
   <!-- Path_publisher -->
   <include file="$(find path_publisher)/launch/path_publisher.launch" pass_all_args="true" />

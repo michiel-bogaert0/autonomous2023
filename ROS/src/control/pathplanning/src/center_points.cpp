@@ -2,11 +2,14 @@
 
 namespace pathplanning {
 
+double MIN_WIDTH = 2.5;
+
 std::tuple<std::vector<std::vector<double>>, std::vector<std::vector<double>>,
            std::vector<std::vector<double>>>
 get_center_points(const std::vector<std::vector<double>> &position_cones,
                   const std::vector<int> &classes, double triangulation_max_var,
-                  double triangulation_var_threshold, double range_front) {
+                  double triangulation_var_threshold, double range_front,
+                  bool color) {
   // Need 1D array for Delaunay
   std::vector<double> positions;
   positions.reserve(position_cones.size() * 2);
@@ -34,21 +37,25 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
     distances.clear();
 
     size_t index1 = 2 * triangles_indices[i];
-    size_t index2 = 2 * triangles_indices[i+1];
-    size_t index3 = 2 * triangles_indices[i+2];
+    size_t index2 = 2 * triangles_indices[i + 1];
+    size_t index3 = 2 * triangles_indices[i + 2];
 
-    TrianglePoint point1(coords[index1], coords[index1 + 1], classes[index1/2]);
-    TrianglePoint point2(coords[index2], coords[index2 + 1], classes[index2/2]);
-    TrianglePoint point3(coords[index3], coords[index3 + 1], classes[index3/2]);
+    TrianglePoint point1(coords[index1], coords[index1 + 1],
+                         classes[index1 / 2]);
+    TrianglePoint point2(coords[index2], coords[index2 + 1],
+                         classes[index2 / 2]);
+    TrianglePoint point3(coords[index3], coords[index3 + 1],
+                         classes[index3 / 2]);
     Triangle triangle(point1, point2, point3);
 
-    distances.push_back(triangle.side1);
-    distances.push_back(triangle.side2);
-    distances.push_back(triangle.side3);
+    distances.push_back(triangle.sides[0]);
+    distances.push_back(triangle.sides[1]);
+    distances.push_back(triangle.sides[2]);
 
     double variance = calculate_variance(distances);
 
-    double perimeter = triangle.side1 + triangle.side2 + triangle.side3;
+    double perimeter =
+        triangle.sides[0] + triangle.sides[1] + triangle.sides[2];
 
     // Normalize variance by perimeter
     variances.push_back(variance / perimeter);
@@ -60,28 +67,35 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
 
   for (size_t i = 0; i < variances.size(); i++) {
 
-
     for (size_t j = 0; j < 3; j++) {
 
-      double x_coord = (triangles[i].points[j].x + triangles[i].points[(j+1)%3].x) /2;
-      double y_coord = (triangles[i].points[j].y + triangles[i].points[(j+1)%3].y) /2;
+      double x_coord =
+          (triangles[i].points[j].x + triangles[i].points[(j + 1) % 3].x) / 2;
+      double y_coord =
+          (triangles[i].points[j].y + triangles[i].points[(j + 1) % 3].y) / 2;
 
       // If below variance threshold, get center points
       if (variances[i] < triangulation_max_var ||
           variances[i] < triangulation_var_threshold * median_variance) {
+        // if distance between two points is small, we have a bad point
+        if (triangles[i].sides[j] < MIN_WIDTH * MIN_WIDTH) {
+          bad_points.push_back({x_coord, y_coord});
+        }
 
         // Check if the 2 points that make up the centerpoint are not
         // the same color (except for orange cones). If this is false, we
         // have a bad point!
-        int compound_class = triangles[i].points[j].colorIndex + triangles[i].points[(j+1)%3].colorIndex;
+        int compound_class = triangles[i].points[j].colorIndex +
+                             triangles[i].points[(j + 1) % 3].colorIndex;
 
-        if (compound_class == 1 || triangles[i].points[j].colorIndex == 2 || triangles[i].points[(j+1)%3].colorIndex == 2){
-          center_points.push_back({x_coord,y_coord});
+        if (compound_class == 1 || triangles[i].points[j].colorIndex == 2 ||
+            triangles[i].points[(j + 1) % 3].colorIndex == 2) {
+          center_points.push_back({x_coord, y_coord});
         } else {
-          bad_points.push_back({x_coord,y_coord});
+          bad_points.push_back({x_coord, y_coord});
         }
-      }else{
-        bad_points.push_back({x_coord,y_coord});
+      } else {
+        bad_points.push_back({x_coord, y_coord});
       }
     }
   }

@@ -33,6 +33,4 @@
       <remap from="/adjust_finish" to="/ugr/srv/adjust_finish"/>
   </node>
 
-  <!-- SLAM controller -->
-  <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true" />
 </launch>
