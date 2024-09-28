@@ -5,7 +5,6 @@ find_package(catkin REQUIRED genmsg rospy)
 
 catkin_python_setup()
 
-add_service_files(DIRECTORY srv FILES Reset.srv)
 generate_messages()
 catkin_package()
 
