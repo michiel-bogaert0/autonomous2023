@@ -10,7 +10,7 @@ from node_fixture.fixture import (
     create_diagnostic_message,
 )
 from node_fixture.node_manager import NodeManager, load_params
-from std_msgs.msg import Float64, Header, UInt16, Bool
+from std_msgs.msg import Bool, Float64, Header, UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 
@@ -28,12 +28,11 @@ class Controller(NodeManager):
         self.mission = ""
         self.car = rospy.get_param("/car")
 
-
         self.change_mission_thread = Thread(target=self.change_mission)
 
         rospy.Subscriber("/state", State, self.handle_state_change)
         rospy.Subscriber("/input/lapComplete", UInt16, self.lapComplete)
-        rospy.Subscriber("/input/finished",Bool,self.trackFinished)
+        rospy.Subscriber("/input/finished", Bool, self.trackFinished)
         self.diagnostics_publisher = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
@@ -129,7 +128,7 @@ class Controller(NodeManager):
                 DiagnosticStatus.OK, "[GNRL] STATE: SLAM state", str(self.slam_state)
             )
         )
-        
+
         self.diagnostics_publisher.publish(
             create_diagnostic_message(
                 DiagnosticStatus.OK, "[GNRL] MISSION", str(self.mission)
@@ -182,7 +181,6 @@ class Controller(NodeManager):
         rospy.set_param("/speed/target", 0.0)
         self.change_state(new_state)
         return
-    
 
     def lapComplete(self, laps):
         """
@@ -193,7 +191,6 @@ class Controller(NodeManager):
         """
 
         # If we did enough laps, switch to finished
-        
 
         # If we did one lap in trackdrive and exploration, switch to racing
         if (
