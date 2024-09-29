@@ -38,7 +38,7 @@
         <param name= "max_points_per_bucket" value = "200"/>
 
         <!-- lidar upside down -->
-        <param name= "lidar_rotated" value="true"/>
+        <param name= "lidar_rotated" value="false"/>
         <!-- orange cone functionality -->
         <param name= "use_orange_cones" value="false"/>
 

@@ -234,7 +234,7 @@ void MCL::handleMap(
  *
  * Args:
  *  Particle: the particle to move
- *  dDist: relative distance moved (euclidian)
+ *  dDist: relative distance moved (euclidean)
  *  dYaw: relative yaw change
  */
 void MCL::motion_update(Particle &particle, double dDist, double dYaw) {

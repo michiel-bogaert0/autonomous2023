@@ -34,7 +34,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
   if (clustering_method_ == "string") {
     cluster_msg = ConeClustering::stringClustering(cloud, ground);
   } else {
-    cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
+    cluster_msg = ConeClustering::euclideanClustering(cloud, ground);
   }
 
   return cluster_msg;
@@ -46,7 +46,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
  *
  */
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
-ConeClustering::euclidianClustering(
+ConeClustering::euclideanClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
 
@@ -60,7 +60,7 @@ ConeClustering::euclidianClustering(
       new pcl::search::KdTree<pcl::PointXYZINormal>);
   tree->setInputCloud(cloud);
 
-  // Define the parameters for Euclidian clustering
+  // Define the parameters for Euclidean clustering
   std::vector<pcl::PointIndices> cluster_indices;
   std::vector<pcl::PointXYZ> cluster_centroids;
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
@@ -162,7 +162,7 @@ ConeClustering::stringClustering(
                                  atan2(rightmost.x, rightmost.y));
       float dist = hypot3d(point.x - rightmost.x, point.y - rightmost.y, 0);
 
-      if(noisy_environment_){
+      if (noisy_environment_) {
         min_distance_factor_ = min_distance_factor_noisy_environment_;
       }
 
