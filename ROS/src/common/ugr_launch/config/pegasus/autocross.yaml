@@ -22,7 +22,7 @@ lap_counter:
     x: 0
     y: 0
   laps: 1
-  distance_after: 0
+  distance_after: 4
   finishRange: 3
 speed:
   target: 1.0

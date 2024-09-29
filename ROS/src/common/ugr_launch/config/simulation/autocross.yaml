@@ -18,10 +18,10 @@ slam_mcl:
   path_to_map: "/ugr/car/map/slam/global"
 lap_counter:
   finishpoint:
-    x: 75
+    x: 0
     y: 0
   laps: 1
-  distance_after: 0
+  distance_after: 4
   finishRange: 3
 speed:
   target: 2.0
