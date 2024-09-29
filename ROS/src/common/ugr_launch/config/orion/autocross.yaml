@@ -22,7 +22,7 @@ lap_counter:
     y: 0
   distance_after: 4
   laps: 1
-  finishrange: 3
+  finishRange: 3
 speed:
   target: 1.0
   LC_adaptive_velocity: False

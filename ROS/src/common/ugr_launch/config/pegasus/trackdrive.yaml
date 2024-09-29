@@ -26,7 +26,7 @@ lap_counter:
     y: 0
   laps: 10
   distance_after: 4
-  finishrange: 3
+  finishRange: 3
 speed:
   target: 1.0
   target_racing: 2.0

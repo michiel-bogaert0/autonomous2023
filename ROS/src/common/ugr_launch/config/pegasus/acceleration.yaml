@@ -19,7 +19,7 @@ lap_counter:
     y: 0
   distance_after: 0
   laps: 1
-  finishrange: 3
+  finishRange: 3
 map_publisher:
   map_pkg: "slam_simulator"
   map: "/maps/acceleration_75m.yaml"
