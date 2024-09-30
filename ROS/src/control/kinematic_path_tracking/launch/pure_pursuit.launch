@@ -1,5 +1,5 @@
 <launch>
-
+    <arg name="turn_active" default="false" />
     <node pkg="kinematic_path_tracking" type="pure_pursuit.py" name="pure_pursuit" output="screen" respawn="true">
 
         <param name="rate" value="50" />

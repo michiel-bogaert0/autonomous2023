@@ -1,5 +1,5 @@
 <launch>
-
+  <arg name="turn_active" default="false" />
   <node pkg="inspection" name="inspection" type="inspection.py" output="screen">
     <param name="rate" value="20"/> <!-- Hz -->
     <param name="velocity" value="3.5"/> <!-- m/s -->

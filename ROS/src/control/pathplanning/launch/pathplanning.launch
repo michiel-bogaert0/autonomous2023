@@ -1,4 +1,5 @@
 <launch>
+    <arg name="turn_active" default="false" />
     <node pkg="pathplanning" type="pathplanning" name="pathplanning" respawn="true" output="screen">
         <param name="output_frame" value="ugr/car_base_link" />
         <param name="algorithm" value="tri" />

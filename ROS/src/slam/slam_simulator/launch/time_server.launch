@@ -1,6 +1,6 @@
 <launch>
-
   <arg name="time_scaler"/>
+  <arg name="turn_active" default="false" />
 
   <node pkg="slam_simulator" name="time_server" type="time_server.py" output="screen" respawn="False">
     <param name="rate" value="200" />

@@ -1,4 +1,5 @@
 <launch>
+    <arg name="turn_active" default="false" />
     <node pkg="boundary_estimation" type="boundary_estimation.py" name="boundary_estimation" respawn="true" output="screen">
         <remap from="/input/local_map" to="/ugr/car/map/slam/local"/>
         

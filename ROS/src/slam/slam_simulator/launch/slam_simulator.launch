@@ -7,6 +7,7 @@
 
   <arg name="gt_map_topic" default="ugr/car/map/gt" />
   <arg name="filename" />
+  <arg name="turn_active" default="false" />
 
   <!-- Perception simulator -->
 

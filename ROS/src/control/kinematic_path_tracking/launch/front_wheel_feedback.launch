@@ -1,5 +1,5 @@
 <launch>
-
+    <arg name="turn_active" default="false" />
     <node pkg="kinematic_path_tracking" type="front_wheel_feedback.py" name="front_wheel_feedback" output="screen" respawn="true">
 
         <param name="rate" value="50" />

@@ -1,4 +1,5 @@
 <launch>
+  <arg name="turn_active" default="false" />
   <node name="pedal_mapper" pkg="pedal_mapper" type="pedal_mapper.py" output="screen">
     <param name="rate" value="15"/>
 

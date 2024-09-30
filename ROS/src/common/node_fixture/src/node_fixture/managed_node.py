@@ -60,7 +60,7 @@ class ManagedNode:
         # Before going into the loop, set health to OK
         self.set_health(DiagnosticStatus.OK, message="OK")
 
-        if default_state == NodeManagingStatesEnum.ACTIVE:
+        if default_state == NodeManagingStatesEnum.ACTIVE or rospy.get_param("~turn_active", False):
             self.doConfigure()
             self.doActivate()
             self.state = NodeManagingStatesEnum.ACTIVE
