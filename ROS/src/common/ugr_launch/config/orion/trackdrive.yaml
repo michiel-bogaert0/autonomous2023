@@ -40,10 +40,17 @@ speed:
 pure_pursuit:
   change_index: True
   world_frame: "ugr/map"
-  speed_start: 1
-  speed_stop: 7
-  distance_start: 5
-  distance_stop: 5
+  # Lookahead distance tuning parameters
+  # exploration
+  speed_start_explo: 1
+  speed_stop_explo: 7
+  distance_start_explo: 5
+  distance_stop_explo: 5
+  # racing
+  speed_start_racing: 1
+  speed_stop_racing: 7
+  distance_start_racing: 5
+  distance_stop_racing: 5  
 front_wheel_feedback:
   change_index: True
   world_frame: "ugr/map"
