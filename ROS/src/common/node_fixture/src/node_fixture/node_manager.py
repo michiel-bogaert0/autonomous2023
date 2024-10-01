@@ -252,7 +252,7 @@ class NodeManager(ManagedNode):
             # Also list ALL monitored nodes warnings and errors to keyvalues
             if (
                 node in self.health_msgs
-                and self.health_msgs[node].level > DiagnosticStatus.WARN
+                and self.health_msgs[node].level > DiagnosticStatus.OK
             ):
                 keyvalues.append(
                     KeyValue(key=node, value=self.health_msgs[node].message)
