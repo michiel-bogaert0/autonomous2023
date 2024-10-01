@@ -1,5 +1,0 @@
-<launch>
-  <node name="manual_state" pkg="autonomous_state" type="manual_state.py" output="screen">
-    <param name="rate" value="15"/>
-  </node>
-</launch>

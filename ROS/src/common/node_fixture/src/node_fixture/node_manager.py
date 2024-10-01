@@ -322,8 +322,6 @@ class NodeManager(ManagedNode):
         """
         node_management_param = rospy.get_param("~node_management")
 
-        print(f"Old state: {old_state} -> New State: {new_state}")
-
         if "always" not in node_management_param.keys():
             node_management_param["always"] = []
 
@@ -332,8 +330,6 @@ class NodeManager(ManagedNode):
 
         if old_state is not None and old_state not in node_management_param.keys():
             node_management_param[old_state] = []
-
-        print(f"Params: {node_management_param}")
 
         return node_management_param
 
