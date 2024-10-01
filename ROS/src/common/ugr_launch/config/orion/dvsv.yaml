@@ -17,7 +17,12 @@ slam_controller:
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
 lap_counter:
-  finishpoint: [-10, 0, 0] # Should be 2 * turn radius
+  finishpoint:
+    x: -10
+    y: 0
+  distance_after: 0
+  laps: 1 
+  finishRange: 3
 map_publisher:
   map_pkg: "slam_simulator"
   map: "/maps/map_dvsv.yaml"
@@ -27,10 +32,11 @@ speed:
 pure_pursuit:
   change_index: False
   world_frame: "ugr/map"
-  speed_start: 1
-  speed_stop: 2
-  distance_start: 4.8
-  distance_stop: 4.8
+  # Lookahead distance tuning parameters
+  speed_start_racing: 1
+  speed_stop_racing: 2
+  distance_start_racing: 4.8
+  distance_stop_racing: 4.8
 front_wheel_feedback:
   change_index: False
   world_frame: "ugr/map"
