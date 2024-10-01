@@ -3,6 +3,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <tuple>
 
 // Constructor
 namespace ns_lidar {
@@ -122,14 +123,46 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   sensor_msgs::PointCloud cluster;
   sensor_msgs::PointCloud2 clustersColored;
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
+  std::tuple<sensor_msgs::PointCloud,
+             std::vector<pcl::PointCloud<pcl::PointXYZINormal>>>
+      msg_and_coneclusters;
 
   t0 = std::chrono::steady_clock::now();
   clusters = cone_clustering_.cluster(notground_points, ground_points);
-  cluster = cone_clustering_.constructMessage(clusters);
+  msg_and_coneclusters = cone_clustering_.constructMessage(clusters);
+  cluster = std::get<0>(msg_and_coneclusters);
   t1 = std::chrono::steady_clock::now();
   time_round =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0)
           .count();
+
+  std::vector<pcl::PointCloud<pcl::PointXYZINormal>> cone_clusters;
+  cone_clusters = std::get<1>(msg_and_coneclusters);
+
+  if (cone_clusters.size() == cluster.points.size()) {
+    for (int i = 0; i < cone_clusters.size(); ++i) {
+      pcl::PointCloud<pcl::PointXYZINormal> &cone_cluster = cone_clusters[i];
+      auto cone = cluster.points[i];
+      sensor_msgs::PointCloud cone_msg;
+
+      diagnostic_msgs::DiagnosticArray diag_array;
+      diagnostic_msgs::DiagnosticStatus diag_status;
+      diag_status.level = OK;
+      diag_status.name = "[LIDAR] Points per cone";
+
+      diagnostic_msgs::KeyValue distance;
+      diagnostic_msgs::KeyValue numpoints;
+      distance.key = "distance";
+      distance.value = std::to_string(hypot3d(cone.x, cone.y, cone.z));
+      diag_status.values.push_back(distance);
+      numpoints.key = "numpoints";
+      numpoints.value = std::to_string(cone_cluster.size());
+      diag_status.values.push_back(numpoints);
+
+      diag_array.status.push_back(diag_status);
+      diagnosticPublisher_.publish(diag_array);
+    }
+  }
 
   if (publish_clusters_) {
     clustersColored = cone_clustering_.clustersColoredMessage(clusters);
@@ -182,7 +215,7 @@ void Lidar::preprocessing(
 }
 
 /**
- * @brief Publishes the Lidar observations for real
+ * @brief Classifies cone clusters and publishes the Lidar observations
  *
  * @param cones
  */

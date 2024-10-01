@@ -27,7 +27,8 @@ public:
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
   cluster(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
           const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground);
-  sensor_msgs::PointCloud
+  std::tuple<sensor_msgs::PointCloud,
+             std::vector<pcl::PointCloud<pcl::PointXYZINormal>>>
       constructMessage(std::vector<pcl::PointCloud<pcl::PointXYZINormal>>);
   sensor_msgs::PointCloud2 clustersColoredMessage(
       std::vector<pcl::PointCloud<pcl::PointXYZINormal>>);
