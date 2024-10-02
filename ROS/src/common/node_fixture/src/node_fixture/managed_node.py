@@ -116,11 +116,6 @@ class ManagedNode:
         self.health.values = [KeyValue(key="state", value=self.state)]
         self.health.values += values
 
-        if level == 1:
-            rospy.logwarn(f"[WARN]> {message}")
-        elif level == 2:
-            rospy.logerr(f"[ERROR]> {message}")
-
         # Immediately publish health
         if publish:
             self.healthPublisher.publish(self.health)
