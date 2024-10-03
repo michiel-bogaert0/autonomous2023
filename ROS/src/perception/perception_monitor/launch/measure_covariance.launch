@@ -1,0 +1,10 @@
+<launch>
+  <node pkg="perception_monitor" output="screen" type="covariance.py" name="sensor_covariance_node" respawn="False">
+    <param name="measure_lidar" value="true"/>
+    <param name="measure_camera" value="false"/>
+
+    <remap from="/input/lidar_observations" to="/ugr/car/observations/lidar"/>
+    <remap from="/input/camera_observations" to="/ugr/car/observations/camera"/>
+    <remap from="/output/topic" to="/diagnostics_covariances"/>
+  </node>
+</launch>
