@@ -1,4 +1,5 @@
 <launch>
+    <arg name="turn_active" default="false" />
     <node pkg="pathplanning" type="pathplanning" name="pathplanning" respawn="true" output="screen">
         <param name="output_frame" value="ugr/car_base_link" />
         <param name="algorithm" value="tri" />
@@ -28,6 +29,7 @@
         <param name="debug_visualisation" value="true" />
         <param name="vis_namespace" value="pathplanning_vis" />
         <param name="vis_lifetime" value="0.1" />
+        <param name="turn_active" value="$(arg turn_active)"/>
 
         <remap from="/output/debug/markers" to="/pathplanning/debug/markers"/>
         <remap from="/output/debug/poses" to="/pathplanning/debug/poses"/>

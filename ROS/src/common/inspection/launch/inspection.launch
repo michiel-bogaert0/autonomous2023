@@ -1,10 +1,11 @@
 <launch>
-
+  <arg name="turn_active" default="false" />
   <node pkg="inspection" name="inspection" type="inspection.py" output="screen">
     <param name="rate" value="20"/> <!-- Hz -->
     <param name="velocity" value="3.5"/> <!-- m/s -->
     <param name="steering_speed" value="0.1"/>
     <param name="duration" value="26"/> <!-- s -->
+    <param name="turn_active" value="$(arg turn_active)"/>
 
     <remap from="/output/steering" to="/ugr/car/steering_position_controller/command" />
     <remap from="/output/velocity0" to="/ugr/car/axis0_velocity_controller/command" />
