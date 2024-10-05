@@ -12,6 +12,7 @@
     <node pkg="slam_lap_counter" output="screen" respawn="true" type="lap_counter" name="lap_counter">
         <param name="world_frame" value="$(arg world_frame)" />
         <param name="base_link_frame" value="$(arg base_link_frame)" />
+        <param name="turn_active" value="$(arg turn_active)"/>
         <rosparam param="finishpoint">[0,0,0]</rosparam>
         
         <remap from="/output/lapComplete" to="/ugr/car/lapComplete"/>

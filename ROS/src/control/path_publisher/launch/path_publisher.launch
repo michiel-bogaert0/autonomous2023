@@ -2,6 +2,7 @@
 
     <arg name="turn_active" default="false" />
     <node pkg="path_publisher" type="path_publisher.py" name="path_publisher" output="screen" respawn="true">
+        <param name="turn_active" value="$(arg turn_active)"/>
 
         <remap from="/output/path" to="/pathplanning/path" />
 

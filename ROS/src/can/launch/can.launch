@@ -4,5 +4,6 @@
         <param name="can_interface" type="string" value="can0"/>
         <param name="can_baudrate" type="int" value="500000"/>
         <param name="dbc_filename" type="string" value="hv500_can2_map_v24_EID_both.dbc"/>
+        <param name="turn_active" value="$(arg turn_active)"/>
     </node>
 </launch>

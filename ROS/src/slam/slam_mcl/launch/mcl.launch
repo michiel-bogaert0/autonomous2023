@@ -11,6 +11,7 @@
     <param name="world_frame" value="$(arg world_frame)" />
     <param name="base_link_frame" value="$(arg base_link_frame)" />
     <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
+    <param name="turn_active" value="$(arg turn_active)"/>
 
     #Parameters from config yaml file
     <rosparam file="$(find slam_mcl)/config/mcl.yaml" command="load" />
