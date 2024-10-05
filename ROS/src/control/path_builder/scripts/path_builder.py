@@ -20,7 +20,7 @@ class PathBuilder(ManagedNode):
         self.lap_complete_sub = super().AddSubscriber(
             "/ugr/car/lapComplete", UInt16, self.lap_complete_callback
         )
-        self.closed = False
+        self.explo_done = False
         self.global_path_ids = []
 
         self.cones = None
@@ -44,7 +44,7 @@ class PathBuilder(ManagedNode):
 
     def lap_complete_callback(self, msg: UInt16):
         if msg.data >= 1:
-            self.closed = True
+            self.explo_done = True
 
     def receive_new_map(self, map):
         if map is None:
@@ -69,9 +69,15 @@ class PathBuilder(ManagedNode):
 
         # Visualize center between closest points
         for cone in self.cones:
-            if cone[3] == closest_point_ids[0]:
+            if (
+                cone[3] == closest_point_ids[0]
+                or closest_point_ids[0] in self.merges[cone[3]]
+            ):
                 left_cone = cone
-            if cone[3] == closest_point_ids[1]:
+            if (
+                cone[3] == closest_point_ids[1]
+                or closest_point_ids[1] in self.merges[cone[3]]
+            ):
                 right_cone = cone
 
         if left_cone is not None and right_cone is not None:
@@ -79,6 +85,8 @@ class PathBuilder(ManagedNode):
                 (left_cone[0] + right_cone[0]) / 2,
                 (left_cone[1] + right_cone[1]) / 2,
             )
+        else:
+            return
 
         # Publish target point for visualization
         point = PointStamped()
@@ -92,7 +100,7 @@ class PathBuilder(ManagedNode):
         if closest_point_ids not in self.global_path_ids:
             self.global_path_ids.append(closest_point_ids)
 
-        if not self.closed or not self.global_path_enabled:
+        if not self.explo_done or not self.global_path_enabled:
             # Just publish the pathplanning path
             path = Path()
             path.header = msg.header
@@ -118,13 +126,11 @@ class PathBuilder(ManagedNode):
                     )
                     if len(global_path) >= 2:
                         dist_new_to_second_last_point = (
-                            (new_point[0] - global_path[-2][0]) ** 2
-                            + (new_point[1] - global_path[-2][1]) ** 2
-                        ) ** 0.5
+                            new_point[0] - global_path[-2][0]
+                        ) ** 2 + (new_point[1] - global_path[-2][1]) ** 2
                         dist_last_to_second_last_point = (
-                            (global_path[-1][0] - global_path[-2][0]) ** 2
-                            + (global_path[-1][1] - global_path[-2][1]) ** 2
-                        ) ** 0.5
+                            global_path[-1][0] - global_path[-2][0]
+                        ) ** 2 + (global_path[-1][1] - global_path[-2][1]) ** 2
 
                         if (
                             dist_new_to_second_last_point
