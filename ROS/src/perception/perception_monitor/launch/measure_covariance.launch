@@ -2,6 +2,9 @@
   <node pkg="perception_monitor" output="screen" type="covariance.py" name="sensor_covariance_node" respawn="False">
     <param name="measure_lidar" value="true"/>
     <param name="measure_camera" value="false"/>
+    <param name="match_distance" value="0.5"/>
+    <param name="batch_size" value="50"/>
+    <param name="convergence_threshold" value="0.01"/>
 
     <remap from="/input/lidar_observations" to="/ugr/car/observations/lidar"/>
     <remap from="/input/camera_observations" to="/ugr/car/observations/camera"/>
