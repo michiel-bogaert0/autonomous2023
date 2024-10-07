@@ -44,6 +44,8 @@ private:
 
   double min_distance_;
   double max_distance_;
+  double max_height_;
+  double sensor_height_; // height of sensor coordinate frame relative to ground
   double min_angle_;
   double max_angle_;
 

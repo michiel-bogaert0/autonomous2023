@@ -12,6 +12,8 @@ Lidar::Lidar(ros::NodeHandle &n)
   // Set parameters for preprocessing
   n.param<double>("min_distance", min_distance_, 1.0);
   n.param<double>("max_distance", max_distance_, 21.0);
+  n.param<double>("max_height", max_height_, 0.5);
+  n.param<double>("sensor_height", sensor_height_, 0.98);
   n.param<double>("min_angle", min_angle_, 0.3);
   n.param<double>("max_angle", max_angle_, 2.8);
 
@@ -169,7 +171,8 @@ void Lidar::preprocessing(
   for (auto &iter : raw.points) {
     // Remove points closer than 1m, higher than 0.5m or further than 20m
     // and points outside the frame of Pegasus
-    if (std::hypot(iter.x, iter.y) < min_distance_ || iter.z > 0.5 ||
+    if (std::hypot(iter.x, iter.y) < min_distance_ ||
+        iter.z > -sensor_height_ + max_height_ ||
         std::hypot(iter.x, iter.y) > max_distance_ ||
         std::atan2(iter.x, iter.y) < min_angle_ ||
         std::atan2(iter.x, iter.y) > max_angle_)
