@@ -1,6 +1,8 @@
 <launch>
+    <arg name="turn_active" default="false" />
     <node pkg="path_builder" type="path_builder.py" name="path_builder" respawn="true" output="screen">
-        <param name="base_link_frame" value="ugr/car_base_link" />  
+        <param name="base_link_frame" value="ugr/car_base_link" />
+        <param name="turn_active" value="$(arg turn_active)"/>
 
         <remap from="/input/local_map" to="/ugr/car/map/slam/local"/>
 

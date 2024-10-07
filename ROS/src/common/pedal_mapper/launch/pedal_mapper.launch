@@ -1,6 +1,8 @@
 <launch>
+  <arg name="turn_active" default="false" />
   <node name="pedal_mapper" pkg="pedal_mapper" type="pedal_mapper.py" output="screen">
     <param name="rate" value="15"/>
+    <param name="turn_active" value="$(arg turn_active)"/>
 
     <param name="max_effort" value="130"/>
   </node>
