@@ -68,7 +68,7 @@ class PathBuilder(ManagedNode):
         closest_point_ids = (msg.poses[0].left_id, msg.poses[0].right_id)
 
         # Determines the left & right cone of this pose
-        left_cone, right_cone = determine_cones(
+        left_cone, right_cone = self.determine_cones(
             closest_point_ids[0], closest_point_ids[1]
         )
 
@@ -109,7 +109,7 @@ class PathBuilder(ManagedNode):
                 left_cone = None
                 right_cone = None
 
-                left_cone, right_cone = determine_cones(tuple[0], tuple[1])
+                left_cone, right_cone = self.determine_cones(tuple[0], tuple[1])
 
                 if left_cone is not None and right_cone is not None:
                     new_point = (
@@ -127,22 +127,24 @@ class PathBuilder(ManagedNode):
                 path.poses.append(pose)
             self.path_publisher.publish(path)
 
+    def determine_cones(self, arg1, arg2):
+        """
+        Returns the left and right cone of a pose
+        This is by comparing the id's with all the id's in self.cones
 
-def determine_cones(self, arg1, arg2):
-    """
-    Returns the left and right cone of a pose
-    This is by comparing the id's with all the id's in self.cones
+        Args:
+            arg1: id of the left cone
+            arg2: id of the right cone
+        """
+        for cone in self.cones:
+            if cone[3] == arg1 or arg1 in self.merges[cone[3]]:
+                left_cone = cone
+            if cone[3] == arg2 or arg2 in self.merges[cone[3]]:
+                right_cone = cone
+        return left_cone, right_cone
 
-    Args:
-        arg1: id of the left cone
-        arg2: id of the right cone
-    """
-    for cone in self.cones:
-        if cone[3] == arg1 or arg1 in self.merges[cone[3]]:
-            left_cone = cone
-        if cone[3] == arg2 or arg2 in self.merges[cone[3]]:
-            right_cone = cone
-    return left_cone, right_cone
+
+PathBuilder()
 
 
 def check_correct_order(global_path, new_point):
@@ -165,6 +167,3 @@ def check_correct_order(global_path, new_point):
             global_path.append(new_point)
     else:
         global_path.append(new_point)
-
-
-PathBuilder()
