@@ -1,3 +1,5 @@
+observations_topic: "/ugr/car/observations/lidar"
+
 slam_controller:
   node_management:
     exploration:
@@ -14,7 +16,6 @@ slam_controller:
     always:
       # SLAM
       - lap_counter
-      
 
       # Control
       - front_wheel_feedback_control

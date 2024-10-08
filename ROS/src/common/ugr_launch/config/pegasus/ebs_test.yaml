@@ -1,3 +1,5 @@
+observations_topic: "/ugr/car/observations/lidar"
+
 slam_controller:
   node_management:
     always:
@@ -16,7 +18,7 @@ slam_mcl:
 lap_counter:
   finishpoint:
     x: 35
-    y: 0 
+    y: 0
   laps: 1
   distance_after: 0
   finishRange: 3
