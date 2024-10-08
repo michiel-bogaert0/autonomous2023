@@ -6,6 +6,12 @@ namespace ns_lidar {
 GroundRemoval::GroundRemoval(ros::NodeHandle &n) : n_(n) {
   // Get parameters
 
+  // Preprocessing parameters
+  n.param<double>("min_distance", min_distance_, 1.0);
+  n.param<double>("max_distance", max_distance_, 21.0);
+  n.param<double>("min_angle", min_angle_, 0.3);
+  n.param<double>("max_angle", max_angle_, 2.8);
+
   // Ground removal algorithm
   n.param<std::string>("ground_removal_method", ground_removal_method_, "bins");
   n.param<int>("num_iter", num_iter_, 3);
@@ -22,9 +28,9 @@ GroundRemoval::GroundRemoval(ros::NodeHandle &n) : n_(n) {
   n.param<double>("radial_bucket_tipping_point", radial_bucket_tipping_point_,
                   10);
   n.param<bool>("noisy_environment", noisy_environment_, false);
-  n.param<double>("max_bucket_height", max_bucket_height_,0.35);
-  n.param<int>("min_points_per_bucket", min_points_per_bucket_,8);
-  n.param<int>("max_points_per_bucket", max_points_per_bucket_,200);
+  n.param<double>("max_bucket_height", max_bucket_height_, 0.35);
+  n.param<int>("min_points_per_bucket", min_points_per_bucket_, 8);
+  n.param<int>("max_points_per_bucket", max_points_per_bucket_, 200);
   n.param<bool>("use_slope", use_slope_, true);
   n.param<int>("color_factor", factor_color_, 5);
 }
@@ -64,12 +70,14 @@ void GroundRemoval::groundRemovalBins(
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points) {
 
   // Calculate the number of buckets between 1 meter and the tipping point
-  int number_of_small_buckets = std::ceil((radial_bucket_tipping_point_ - 1.0) /
-                                          small_radial_bucket_length_);
+  int number_of_small_buckets =
+      std::ceil((radial_bucket_tipping_point_ - min_distance_) /
+                small_radial_bucket_length_);
   // Calculate the number of big buckets between the tipping point and the max
-  // distance point at 21m.
-  int number_of_big_buckets = std::ceil((21 - radial_bucket_tipping_point_) /
-                                        big_radial_bucket_length_);
+  // distance point.
+  int number_of_big_buckets =
+      std::ceil((max_distance_ - radial_bucket_tipping_point_) /
+                big_radial_bucket_length_);
 
   int radial_buckets_ = number_of_small_buckets + number_of_big_buckets;
   // compute the number of buckets that will be necesarry
@@ -80,21 +88,23 @@ void GroundRemoval::groundRemovalBins(
   for (uint16_t i = 0; i < cloud_in->points.size(); i++) {
     pcl::PointXYZI point = cloud_in->points[i];
 
-    // let hypot and angle start from 0 instead of 1 and 0.3 respectively
-    double hypot = std::hypot(point.x, point.y) - 1;
-    double angle = 2.5 - (std::atan2(point.x, point.y) - 0.3);
+    // let hypot and angle start from 0 instead of 1 and min_angle respectively
+    double hypot = std::hypot(point.x, point.y) - min_distance_;
+    double angle = max_angle_ - std::atan2(point.x, point.y);
 
     // Calculate which bucket the points falls into
-    int angle_bucket = std::floor(angle / (2.5 / double(angular_buckets_)));
+    int angle_bucket = std::floor(
+        angle / ((max_angle_ - min_angle_) / double(angular_buckets_)));
 
     // calculate which bucket a specific points belongs to
     int hypot_bucket = 0;
-    if (hypot < radial_bucket_tipping_point_ - 1) {
+    if (hypot < radial_bucket_tipping_point_ - min_distance_) {
       hypot_bucket = std::floor(hypot / small_radial_bucket_length_);
     } else {
-      hypot_bucket = std::floor((hypot - (radial_bucket_tipping_point_ - 1)) /
-                                big_radial_bucket_length_) +
-                     number_of_small_buckets;
+      hypot_bucket =
+          std::floor((hypot - (radial_bucket_tipping_point_ - min_distance_)) /
+                     big_radial_bucket_length_) +
+          number_of_small_buckets;
     }
 
     // add point to allocated bucket
@@ -110,9 +120,10 @@ void GroundRemoval::groundRemovalBins(
 
     if (bucket.size() != 0) {
 
-      // throw away buckets with not enough or too much points in noisy environment
-      if(noisy_environment_ && ((bucket.size()<min_points_per_bucket_) 
-                            || (bucket.size()>max_points_per_bucket_))){
+      // throw away buckets with not enough or too much points in noisy
+      // environment
+      if (noisy_environment_ && ((bucket.size() < min_points_per_bucket_) ||
+                                 (bucket.size() > max_points_per_bucket_))) {
         continue;
       }
 
@@ -122,11 +133,13 @@ void GroundRemoval::groundRemovalBins(
       // taken the 10% lowest points
       int number_of_points = std::max(int(std::ceil(bucket.size() / 10)), 1);
 
-      // calculate the height difference between the 10% highest and 10% lowest points
-      // throw the bin away if this value is too big, only in noisy environment
-      if(noisy_environment_ && (bucket.points[std::ceil(0.9*bucket.size())].z - 
-                                bucket.points[std::ceil(0.1*bucket.size())].z
-                                >max_bucket_height_)){
+      // calculate the height difference between the 10% highest and 10% lowest
+      // points throw the bin away if this value is too big, only in noisy
+      // environment
+      if (noisy_environment_ &&
+          (bucket.points[std::ceil(0.9 * bucket.size())].z -
+               bucket.points[std::ceil(0.1 * bucket.size())].z >
+           max_bucket_height_)) {
         continue;
       }
       pcl::PointCloud<pcl::PointXYZI> expected_ground_points;
@@ -288,7 +301,7 @@ void GroundRemoval::extractInitialSeeds(
     // We define the outlier threshold -1.5 times the height of the
     // GroundRemoval sensor
     if (cloud_sorted[i].z < -1.5 * sensor_height_) {
-      it++;
+      ++it;
     } else {
       // Points are in incremental order. Therefore, break loop if here
       break;
