@@ -211,7 +211,7 @@ class NodeManager(ManagedNode):
             if node not in self.timers.keys():
                 self.timers[node] = rospy.Time.now().to_sec() + self.startup_timeout
                 new_health_level = max(new_health_level, DiagnosticStatus.WARN)
-                unhealthy_nodes.append(node)
+                unhealthy_nodes.append(self.health_msgs[node])
                 keyvalues.append(
                     KeyValue(key=node, value="No contact. Might still be starting up")
                 )
@@ -225,7 +225,7 @@ class NodeManager(ManagedNode):
                 keyvalues.append(
                     KeyValue(key=node, value="Lost contact. Node not healthy")
                 )
-                unhealthy_nodes.append(node)
+                unhealthy_nodes.append(self.health_msgs[node])
             # This is fine, but check the "state" of the node
             elif node in self.health_msgs.keys():
                 health_msg = self.health_msgs[node]
@@ -234,7 +234,7 @@ class NodeManager(ManagedNode):
                     keyvalues.append(
                         KeyValue(key=node, value="Node not 'active' (yet)")
                     )
-                    unhealthy_nodes.append(node)
+                    unhealthy_nodes.append(self.health_msgs[node])
 
         # Of course the node manager should also act on reported errors and warnings
         # Final self health level is the highest level of all
@@ -248,7 +248,7 @@ class NodeManager(ManagedNode):
                 node in self.health_msgs
                 and self.health_msgs[node].level > DiagnosticStatus.OK
             ):
-                unhealthy_nodes.append(node)
+                unhealthy_nodes.append(self.health_msgs[node])
             # Also list ALL monitored nodes warnings and errors to keyvalues
             if (
                 node in self.health_msgs
@@ -277,10 +277,12 @@ class NodeManager(ManagedNode):
             )
             self.unhealty_status_self_inflicted = False
         else:
+            node_msg = "\n"
+            for node in unhealthy_nodes:
+                node_msg += f"{node.hardware_id}:{node.message}\n"
+            node_msgwithtab = node_msg.replace("\n", "\n\t")
             message = (
-                str(self.name)
-                + ": There is an issue with "
-                + str(list(set(unhealthy_nodes)))
+                node_msgwithtab
                 if self.health.level == DiagnosticStatus.OK
                 else self.health.message
             )
