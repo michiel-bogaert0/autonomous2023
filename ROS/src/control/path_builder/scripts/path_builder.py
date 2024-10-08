@@ -67,6 +67,8 @@ class PathBuilder(ManagedNode):
         # Store IDs of first pose of each pathplanning path
         closest_point_ids = (msg.poses[0].left_id, msg.poses[0].right_id)
 
+        # Visualize center between closest points
+
         # Determines the left & right cone of this pose
         left_cone, right_cone = self.determine_cones(
             closest_point_ids[0], closest_point_ids[1]
@@ -90,7 +92,6 @@ class PathBuilder(ManagedNode):
 
         self.vis_pub.publish(point)
 
-        # Puts every centerpoint in a list
         if closest_point_ids not in self.global_path_ids:
             self.global_path_ids.append(closest_point_ids)
 
@@ -102,13 +103,10 @@ class PathBuilder(ManagedNode):
                 path.poses.append(pose)
 
             self.path_publisher.publish(path)
-        # Build global path based on saved IDs once exploration is done
+        # Build global path based on saved IDs
         else:
             global_path = []
             for tuple in self.global_path_ids:
-                left_cone = None
-                right_cone = None
-
                 left_cone, right_cone = self.determine_cones(tuple[0], tuple[1])
 
                 if left_cone is not None and right_cone is not None:
@@ -116,7 +114,8 @@ class PathBuilder(ManagedNode):
                         (left_cone[0] + right_cone[0]) / 2,
                         (left_cone[1] + right_cone[1]) / 2,
                     )
-                    check_correct_order(global_path, new_point)
+
+                    self.check_correct_order(global_path, new_point)
 
             path = Path()
             path.header = msg.header
@@ -136,34 +135,37 @@ class PathBuilder(ManagedNode):
             arg1: id of the left cone
             arg2: id of the right cone
         """
+        leftcone = None
+        rightcone = None
         for cone in self.cones:
             if cone[3] == arg1 or arg1 in self.merges[cone[3]]:
-                left_cone = cone
+                leftcone = cone
             if cone[3] == arg2 or arg2 in self.merges[cone[3]]:
-                right_cone = cone
-        return left_cone, right_cone
+                rightcone = cone
+        return leftcone, rightcone
+
+    def check_correct_order(self, global_path, new_point):
+        """
+        Checks if the new point is closer to the last point than
+        to the second-to-last point in the global path.
+
+        Args:
+            global_path: the array where all the points of the path are stored
+            new_point: the new point
+        """
+        if len(global_path) >= 2:
+            dist_new_to_second_last_point = (new_point[0] - global_path[-2][0]) ** 2 + (
+                (new_point[1] - global_path[-2][1]) ** 2
+            )
+
+            dist_last_to_second_last_point = (
+                global_path[-1][0] - global_path[-2][0]
+            ) ** 2 + ((global_path[-1][1] - global_path[-2][1]) ** 2)
+
+            if dist_new_to_second_last_point > dist_last_to_second_last_point:
+                global_path.append(new_point)
+        else:
+            global_path.append(new_point)
 
 
 PathBuilder()
-
-
-def check_correct_order(global_path, new_point):
-    """
-    Checks if the new point is closer to the last point than
-    to the second-to-last point in the global path.
-
-    Args:
-        global_path: the array where all the points of the path are stored
-        new_point: the new point
-    """
-    if len(global_path) >= 2:
-        dist_new_to_second_last_point = (new_point[0] - global_path[-2][0]) ** 2
-        +((new_point[1] - global_path[-2][1]) ** 2)
-
-        dist_last_to_second_last_point = (global_path[-1][0] - global_path[-2][0]) ** 2
-        +((global_path[-1][1] - global_path[-2][1]) ** 2)
-
-        if dist_new_to_second_last_point > dist_last_to_second_last_point:
-            global_path.append(new_point)
-    else:
-        global_path.append(new_point)
