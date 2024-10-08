@@ -14,7 +14,12 @@ slam_controller:
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
 lap_counter:
-  finishpoint: [75, 0, 0]
+  finishpoint:
+    x: 75
+    y: 0
+  laps: 1
+  distance_after: 0
+  finishRange: 3
 map_publisher:
   map_pkg: "slam_simulator"
   map: "/maps/acceleration_75m.yaml"
@@ -24,10 +29,11 @@ speed:
 pure_pursuit:
   change_index: False
   world_frame: "ugr/map"
-  speed_start: 3
-  speed_stop: 12
-  distance_start: 3
-  distance_stop: 5
+  # Lookahead distance tuning parameters
+  speed_start_racing: 3
+  speed_stop_racing: 12
+  distance_start_racing: 3
+  distance_stop_racing: 5
 front_wheel_feedback:
   change_index: False
   world_frame: "ugr/map"
