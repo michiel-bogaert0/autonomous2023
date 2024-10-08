@@ -157,7 +157,7 @@ class NodeManager(ManagedNode):
         # Pubs and subs
         rospy.Subscriber("/health/nodes", DiagnosticStatus, self.handle_health)
         self.health_pub = rospy.Publisher(
-            "/health/diagnostics", DiagnosticArray, queue_size=1
+            "/health/diagnostics/{self.name}", DiagnosticArray, queue_size=1
         )
 
         # Set health to warning
