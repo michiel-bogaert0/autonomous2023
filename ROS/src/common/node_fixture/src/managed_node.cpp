@@ -1,10 +1,13 @@
 #include "managed_node.hpp"
-#include <ugr_msgs/State.h>
 #include "diagnostic_msgs/DiagnosticStatus.h"
+#include <ugr_msgs/State.h>
 
 namespace node_fixture {
 
-ManagedNode::ManagedNode(ros::NodeHandle &n, std::string name) : n(n), name(name), healthrate(ros::Rate((double) n.param<float>("healthrate", 3.0))), looprate(ros::Rate((double) n.param<float>("rate", 50.0))) {
+ManagedNode::ManagedNode(ros::NodeHandle &n, std::string name)
+    : n(n), name(name),
+      healthrate(ros::Rate((double)n.param<float>("healthrate", 3.0))),
+      looprate(ros::Rate((double)n.param<float>("rate", 50.0))) {
 
   // Create publisher and service
   this->healthPublisher =
@@ -20,55 +23,56 @@ ManagedNode::ManagedNode(ros::NodeHandle &n, std::string name) : n(n), name(name
   this->state = Unconfigured;
 
   this->setHealthStatus(diagnostic_msgs::DiagnosticStatus::OK, "OK", {});
+
+  n.param<bool>("turn_active", turn_active_, false);
+  if (turn_active_) {
+    this->doConfigure();
+    this->doActivate();
+    this->state = Active;
+  }
 }
 
 void ManagedNode::spinOnce() {
   ros::spinOnce();
 
-  if (state == Active)
-  {
-      active();
-  }
-  else if (state == Inactive)
-  {
-      inactive();
-  }
-  else if (state == Unconfigured)
-  {
-      unconfigured();
-  }
-  else if (state == Finalized)
-  {
-      finalized();
+  if (state == Active) {
+    active();
+  } else if (state == Inactive) {
+    inactive();
+  } else if (state == Unconfigured) {
+    unconfigured();
+  } else if (state == Finalized) {
+    finalized();
   }
 
   // Publish health
-  if ((ros::Time::now() - lastHealthTime).toSec() > healthrate.expectedCycleTime().toSec())
-  {
-      lastHealthTime = ros::Time::now();
-      healthPublisher.publish(this->health);
+  if ((ros::Time::now() - lastHealthTime).toSec() >
+      healthrate.expectedCycleTime().toSec()) {
+    lastHealthTime = ros::Time::now();
+    healthPublisher.publish(this->health);
   }
 
   this->looprate.sleep();
 }
 
-void ManagedNode::setHealthStatus(int level, const std::string &message, const std::vector<diagnostic_msgs::KeyValue> &values) {
-    health.level = level;
-    health.name = "healthchecks";
-    health.hardware_id = name;
-    health.message = message;
+void ManagedNode::setHealthStatus(
+    int level, const std::string &message,
+    const std::vector<diagnostic_msgs::KeyValue> &values) {
+  health.level = level;
+  health.name = "healthchecks";
+  health.hardware_id = name;
+  health.message = message;
 
-    diagnostic_msgs::KeyValue kv;
-    kv.key = "state";
-    kv.value = ManagedNodeStateStrings[this->state];
+  diagnostic_msgs::KeyValue kv;
+  kv.key = "state";
+  kv.value = ManagedNodeStateStrings[this->state];
 
-    health.values.clear();
-    health.values.push_back(kv);
-    health.values.insert(health.values.end(), values.begin(), values.end());
+  health.values.clear();
+  health.values.push_back(kv);
+  health.values.insert(health.values.end(), values.begin(), values.end());
 
-    healthPublisher.publish(health);
+  healthPublisher.publish(health);
 }
-
 
 bool ManagedNode::handleGetStateService(GetNodeStateRequest &req,
                                         GetNodeStateResponse &res) {
@@ -122,7 +126,10 @@ bool ManagedNode::handleSetStateService(SetNodeStateRequest &req,
 
   res.succes = true;
 
-  this->setHealthStatus(diagnostic_msgs::DiagnosticStatus::OK, "State changed from " + stateMsg.prev_state + " to " + stateMsg.cur_state, {});
+  this->setHealthStatus(diagnostic_msgs::DiagnosticStatus::OK,
+                        "State changed from " + stateMsg.prev_state + " to " +
+                            stateMsg.cur_state,
+                        {});
 
   // The finalized state should make the node exit.
   if (this->state == Finalized) {

@@ -14,7 +14,12 @@ slam_controller:
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
 lap_counter:
-  finishpoint: [24, 0, 0]
+  finishpoint:
+    x: 24
+    y: 0
+  laps: 1
+  distance_after: 0
+  finishRange: 3
 map_publisher:
   map_pkg: "slam_simulator"
   map: "/maps/skidpad.yaml"
