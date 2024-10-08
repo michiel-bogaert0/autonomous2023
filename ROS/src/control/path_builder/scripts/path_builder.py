@@ -67,9 +67,7 @@ class PathBuilder(ManagedNode):
         # Store IDs of first pose of each pathplanning path
         closest_point_ids = (msg.poses[0].left_id, msg.poses[0].right_id)
 
-        # Visualize center between closest points
-
-        # Determines the left & right cone of this pose
+        # Determines the left & right cone of this pose once exploration is done
         left_cone, right_cone = self.determine_cones(
             closest_point_ids[0], closest_point_ids[1]
         )
