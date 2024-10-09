@@ -278,7 +278,9 @@ class NodeManager(ManagedNode):
             self.unhealty_status_self_inflicted = False
         else:
             node_msg = "\n"
+
             for node in unhealthy_nodes:
+                print(node.hardware_id)
                 node_msg += f"{node.hardware_id}:{node.message}\n"
             node_msgwithtab = node_msg.replace("\n", "\n\t")
             message = (
