@@ -41,8 +41,6 @@ class lap_counter(ManagedNode):
         )
 
     def active(self):
-        self.set_health(2, "jnfeds", [])
-
         try:
             self.car_pose = self.tfBuffer.lookup_transform(
                 self.world_frame, self.base_link_frame, rospy.Time(0)

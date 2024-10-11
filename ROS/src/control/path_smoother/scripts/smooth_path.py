@@ -38,8 +38,6 @@ class PathSmoother(ManagedNode):
         )
 
     def pose_array_callback(self, msg: Path):
-        self.set_health(2, "jnfeds", [])
-
         """
         Receives pathplanning path and smooths it using a BSpline
         """
