@@ -363,7 +363,7 @@ class OrionState(NodeManager):
 
         # Subscribers for dv data
         self.AddSubscriber(
-            "/input/observations",
+            rospy.get_param("/observations_topic", "ugr/car/observations/lidar"),
             ObservationWithCovarianceArrayStamped,
             self.handle_observations,
         )
