@@ -1,11 +1,13 @@
 <launch>
     <arg name="world_frame" default="ugr/map" />
     <arg name="base_link_frame" default="ugr/car_base_link" />
+    <arg name="turn_active" default="false" />
 
     
     <node pkg="slam_lap_counter" output="screen" respawn="true" type="lap_counter.py" name="lap_counter">
         <param name="world_frame" value="$(arg world_frame)" />
         <param name="base_link_frame" value="$(arg base_link_frame)" />
+        <param name="turn_active" value="$(arg turn_active)"/>
         <remap from="/lap_counter/laps_complete" to="/ugr/car/lapComplete"/>
         <remap from="/lap_counter/finished" to="/ugr/car/finished"/>
         <param name="laps" value="10"/>
