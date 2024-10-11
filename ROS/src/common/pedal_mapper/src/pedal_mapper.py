@@ -74,8 +74,8 @@ class PedalMapper(ManagedNode):
             self.set_health(0, "Received APPS signal")
             self.last_received_hb = rospy.Time.now().to_sec()
 
-            apps1 = max(frame.data[0] * 2, 0)
-            apps2 = max(frame.data[1] * 2, 0)
+            apps1 = max(frame.data[0] * 3 / 2, 0)
+            apps2 = max(frame.data[1] * 3 / 2, 0)
 
             average_apps = max(min((apps1 + apps2) / 2, 100), 0)
 
