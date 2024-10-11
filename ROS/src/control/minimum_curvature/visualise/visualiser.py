@@ -36,8 +36,10 @@ class Visualiser:
         rospy.wait_for_service("/node_managing/minimum_curvature/get", timeout=3.0)
 
         configure_node("pathplanning")
+        configure_node("path_builder")
         configure_node("minimum_curvature")
         set_state_active("pathplanning")
+        set_state_active("path_builder")
         # set_state_active("minimum_curvature")
 
         # Subscriber voor minimum curvature path
