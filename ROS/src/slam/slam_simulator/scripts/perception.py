@@ -38,14 +38,13 @@ class PerceptionSimulator(StageSimulator):
 
         self.datalatch.create("cones", 1)
         self.datalatch.create("odom", 400)
-
+        self.innerrange = 3
         self.started = False
-
+        self.outerrange = 5
         super().__init__("perception")
 
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
-
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.gt_base_link_frame = rospy.get_param(
@@ -99,7 +98,41 @@ class PerceptionSimulator(StageSimulator):
                 )
             )
 
-        cones = np.array(cones)
+        FalsePoscones = []
+        for _ in range(10):
+            ontrack = False
+            surroundedcone = track.observations[
+                np.random.randint(0, len(track.observations))
+            ]
+            new_cone = np.array(
+                [
+                    surroundedcone.observation.location.x
+                    + np.random.randint(1, self.innerrange)
+                    * -(1 ** (np.random.randint(0, 2))),
+                    surroundedcone.observation.location.y
+                    + np.random.randint(1, self.innerrange)
+                    * -(1 ** (np.random.randint(0, 2))),
+                    surroundedcone.observation.location.z,
+                    np.random.randint(0, 2),
+                ],
+                dtype=np.float32,
+            )
+            for cone in track.observations:
+                if (
+                    cone.observation.observation_class
+                    == 1 - surroundedcone.observation.observation_class
+                    and (new_cone[0] - cone.observation.location.x) ** 2
+                    + (new_cone[1] - cone.observation.location.y) ** 2
+                    < self.outerrange**2
+                ):
+                    ontrack = True
+            if not ontrack and (
+                surroundedcone.observation.observation_class == 1
+                or surroundedcone.observation.observation_class == 0
+            ):
+                FalsePoscones.append(new_cone)
+
+        cones = np.array(cones + FalsePoscones)
         self.datalatch.set("cones", cones)
 
         self.started = True
