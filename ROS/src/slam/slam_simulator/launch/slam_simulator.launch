@@ -21,6 +21,13 @@
     <param name="add_noise" value="true" />
     <param name="cone_noise" value="0.02" />
     <param name="color_prob" value="0.0" /> <!-- between 0 and 1-->
+    <param name="amount_of_falsepositives" value="10" />
+    <param name="innerrange" value="15" /> <!-- maximum FP range away from track-->
+    <!-- minumum FP range away from trackcones on other side: should be track width or slightly bigger-->
+    <param name="outerrange" value="4" />   
+    <param name="FP_triggerrate" value="0.5" />
+
+    <param name="cones_on_track" value="False" />
     <param name="turn_active" value="$(arg turn_active)"/>
 
     <remap from="/output/observations" to="/ugr/car/observations/lidar" />
