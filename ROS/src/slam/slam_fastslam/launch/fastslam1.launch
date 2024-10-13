@@ -4,6 +4,7 @@
   <arg name="base_link_frame" default="ugr/car_base_link"/>
   <arg name="slam_base_link_frame" default="ugr/slam_base_link"/>
   <arg name="lidar_frame" default="os_sensor"/>
+  <arg name="turn_active" default="false" />
 
   <node pkg="slam_fastslam" output="screen" type="fastslam1" name="local_fastslam_car" respawn="False">
     # Parameters
@@ -12,6 +13,7 @@
     <param name="slam_base_link_frame" value="$(arg slam_base_link_frame)" />
     <param name="lidar_frame" value="$(arg lidar_frame)" />
     <param name="average_output_pose" value="false" />
+    <param name="turn_active" value="$(arg turn_active)"/>
     
     <param name="publish_rate" value="10"/>
     
@@ -26,8 +28,6 @@
     <param name="localmap_namespace" value="slam/local" />
 
     # Input/output remapping
-    <remap from="/input/observations" to="/ugr/car/observations/lidar" />
-
     <remap from="/output/observations" to="/ugr/car/observations/fastslam" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/slam" />
   </node>

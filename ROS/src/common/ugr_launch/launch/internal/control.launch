@@ -25,6 +25,9 @@
     <!-- Path Smoother -->
   <include file="$(find path_smoother)/launch/path_smoother.launch" pass_all_args="true" />
 
+  <!-- Path Builder -->
+  <include file="$(find path_builder)/launch/path_builder.launch" pass_all_args="true" />
+
   <!-- Pathplanning -->
   <include file="$(find pathplanning)/launch/pathplanning.launch" pass_all_args="true" />
 

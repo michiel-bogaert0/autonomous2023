@@ -32,6 +32,26 @@ LandmarkVertex::LandmarkVertex() : BaseVertex<2, Vector2d>() {
   this->beliefs[0] = 0.0f;
   this->beliefs[1] = 0.0f;
   this->beliefs[2] = 0.0f;
+  this->latestPoseIndex = 0;
+  this->penalty = 0;
+}
+
+int LandmarkVertex::increasePenalty(int pen) {
+  this->penalty += pen;
+  return this->penalty;
+}
+
+void LandmarkVertex::decreasePenalty(int pen) {
+  this->penalty -= pen;
+  if (this->penalty < 0) {
+    this->penalty = 0;
+  }
+}
+
+void LandmarkVertex::setLatestPose(int index) {
+  if (index > this->latestPoseIndex) {
+    this->latestPoseIndex = index;
+  }
 }
 
 void LandmarkVertex::setColor(int c, float b) { this->beliefs[c] += b; }

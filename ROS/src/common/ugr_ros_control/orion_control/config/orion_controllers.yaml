@@ -1,0 +1,69 @@
+# ugr_ros_control Settings -----------------------
+# Settings for ros_control control loop
+generic_hw_control_loop:
+  loop_hz: 300
+  cycle_time_error_threshold: 0.01
+
+# Settings for ros_control hardware interface
+hardware_interface:
+   axis0_joint: axis0
+   axis1_joint: axis1
+   steering_joint: axis_steering
+   joints:
+      - axis0
+      - axis1
+      - axis_steering
+   joints_config:
+      axis0:
+         interfaces:
+            - velocity
+            - effort
+      axis1:
+         interfaces:
+            - velocity
+            - effort
+      axis_steering:
+         interfaces:
+            - position
+
+# Publish all joint states ----------------------------------
+# Creates the /joint_states topic necessary in ROS
+joint_state_controller:
+   type:         joint_state_controller/JointStateController
+   publish_rate: 50
+
+# Joint position controller for steering
+steering_position_controller:
+   type: position_controllers/JointPositionController
+   joint: axis_steering
+
+# controllers for autonomous driving
+axis0_velocity_controller:
+   type: effort_controllers/JointVelocityController
+   joint: axis0
+   pid: {p: 10, i: 2.0, d: 0.0, i_clamp_min: -10.0, i_clamp_max: 10.0, publish_state: True}
+axis1_velocity_controller:
+   type: effort_controllers/JointVelocityController
+   joint: axis1
+   pid: {p: 18, i: 2.0, d: 0.0, i_clamp_min: -10.0, i_clamp_max: 10.0, publish_state: True}
+
+# controllers for manual driving
+axis0_effort_controller:
+   type: effort_controllers/JointEffortController
+   joint: axis0
+axis1_effort_controller:
+   type: effort_controllers/JointEffortController
+   joint: axis1
+
+# Group controllers for ease of use
+drive_effort_controller:
+   type: effort_controllers/JointGroupEffortController
+   joints:
+      - axis1
+      - axis0
+
+drive_velocity_controller:
+   type: velocity_controllers/JointGroupVelocityController
+   joints:
+      - axis1
+      - axis0

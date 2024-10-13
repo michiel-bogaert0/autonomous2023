@@ -12,11 +12,12 @@
     </group>
 
     <group ns="cam" if='$(eval arg("type") =="camera")'>
-        <node pkg="camera" type="camera.py" name="camera_publisher" output="screen">
+        <node pkg="camera" type="cameracpp" name="camera_publisher" output="screen">
             <param name="rate" value="50"/>
             <remap from="/input/image" to="/ugr/car/sensors/cam0/image" />
             <remap from="/input/info" to="/ugr/car/sensors/cam0/camera_info" />
             <param name="use_raw" value="false"/>
+            <param name="cam_rotated" value="true"/>
         </node>
     </group>
 </launch>

@@ -3,32 +3,20 @@
   <name>slam_lap_counter</name>
   <version>0.0.0</version>
   <description>The slam_lap_counter package</description>
-  <maintainer email="jarne.rius@ugentracing.be">jarne</maintainer>
+  <maintainer email="hannes.dewulf@ugentracing.be">hannes</maintainer>
   <license>TODO</license>
-  <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>std_srvs</exec_depend>
   <exec_depend>tf2</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>tf2_ros</build_depend>
-  <build_depend>nav_msgs</build_depend>
 
   <build_depend>geometry_msgs</build_depend>
-  <build_depend>message_generation</build_depend>
-  <build_depend>diagnostic_msgs</build_depend>
-  <build_depend>std_srvs</build_depend>
   <build_depend>tf2_ros</build_depend>
 
-  <build_depend>roscpp</build_depend>
-  <build_export_depend>roscpp</build_export_depend>
+  <build_depend>rospy</build_depend>
+  <build_export_depend>rospy</build_export_depend>
   <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>diagnostic_msgs</exec_depend>
-  <exec_depend>std_srvs</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
-  <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>roscpp</exec_depend>	
-
-  <depend>message_runtime</depend>
-  <depend>node_fixture</depend>
+  <exec_depend>rospy</exec_depend>	
   <export></export>
 </package>

@@ -1,0 +1,51 @@
+observations_topic: "/ugr/car/observations/lidar"
+
+slam_controller:
+  node_management:
+    always:
+      # SLAM
+      - slam_mcl
+      - lap_counter
+      - map_publisher
+
+      # Control
+      - front_wheel_feedback_control
+      - path_publisher
+      - path_smoother
+
+slam_mcl:
+  path_to_map: "/ugr/car/map/global"
+lap_counter:
+  finishpoint:
+    x: 0
+    y: 16 # Should be 2 * turn radius
+  laps: 1
+  distance_after: 0
+  finishRange: 3
+map_publisher:
+  map_pkg: "slam_simulator"
+  map: "/maps/map_dvsv.yaml"
+speed:
+  target: 2.0
+  LC_adaptive_velocity: False
+pure_pursuit:
+  change_index: False
+  world_frame: "ugr/map"
+  # Lookahead distance tuning parameters
+  speed_start_racing: 1
+  speed_stop_racing: 2
+  distance_start_racing: 1.5
+  distance_stop_racing: 3.3
+front_wheel_feedback:
+  change_index: False
+  world_frame: "ugr/map"
+  Kp: 0.8
+  Ki: 0.01
+  Kd: 0.01
+mpc:
+  change_index: False
+  minimal_distance: 3
+  world_frame: "ugr/map"
+path_publisher:
+  package_path: "path_publisher"
+  path: "/paths/centerline_dvsv.yaml"

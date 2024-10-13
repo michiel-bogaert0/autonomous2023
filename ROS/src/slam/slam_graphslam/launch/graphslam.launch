@@ -3,6 +3,7 @@
   <arg name="base_link_frame" default="ugr/car_base_link"/>
   <arg name="slam_base_link_frame" default="ugr/slam_base_link"/>
   <arg name="lidar_frame" default="os_sensor"/>
+  <arg name="turn_active" default="false" />
 
   <node pkg="slam_graphslam" output="screen" type="graphslam" name="graphslam" respawn="False">
     # Frames
@@ -15,14 +16,18 @@
     <param name="rate" value="40"/> <!-- Hz -->
     <param name="publish_rate" value="10"/> <!-- Hz -->
     <param name="synchronous" value="false"/> 
-    <param name="debug" value="false"/> <!-- Publish edges -->
+    <param name="debug" value="true"/> <!-- Publish edges -->
+    <param name="debug_time" value="false"/> <!-- log times -->
 
     <param name="max_iterations" value="5"/>
     <param name="association_threshold" value="1"/>
+    <param name="min_range" value="1.5"/>
     <param name="max_range" value="15"/>
     <param name="max_half_angle" value="1.57"/> <!-- ingesteld voor lidar -->
-
+    <param name="penalty_threshold" value="5000"/> <!-- How long a landmark is not detected while in the field of view before it is deleted in milliseconds-->
+     <param name="landmark_publish_threshold" value="10"/> <!-- How many times does a landmark need to be observed before it is published (based on the number of edges it has) -->
     <rosparam param="covariance_pose">[0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2]</rosparam>
+    <param name="turn_active" value="$(arg turn_active)"/>
 
      # Map service Parameters
     <param name="SetMap_service" value="/ugr/srv/slam_map_server/set" />
@@ -30,7 +35,6 @@
     <param name="localmap_namespace" value="slam/local" />
 
     # Input/output remapping
-    <remap from="/input/observations" to="/ugr/car/observations/lidar" />
     <remap from="/output/odom" to="/ugr/car/odometry/filtered/slam" />
 
     # Input/output remapping debug

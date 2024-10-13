@@ -10,6 +10,7 @@ from nav_msgs.msg import Path
 from node_fixture.managed_node import ManagedNode
 from ugr_msgs.msg import Boundaries
 from utils.utils_mincurv import (
+    boundary_check,
     calc_ax_max_motors,
     calc_ggv,
     check_traj,
@@ -45,7 +46,7 @@ class MinimumCurvature(ManagedNode):
             + 2 * self.cone_width / 2
         )
 
-        self.kappa_max = rospy.get_param("~kappa_max", 0.50)
+        self.kappa_max = rospy.get_param("~kappa_max", 0.275)
         self.curv_error_allowed = rospy.get_param("~curv_error_allowed", 0.05)
 
         self.stepsize_prep_trajectory = rospy.get_param(
@@ -67,6 +68,10 @@ class MinimumCurvature(ManagedNode):
         self.min_iterations_iqp = rospy.get_param("~min_iterations_iqp", 3)
         self.max_iterations_iqp = rospy.get_param("~max_iterations_iqp", 5)
 
+        self.boundary_check = rospy.get_param("~boundary_check", False)
+        self.stepsize_boundary_check = rospy.get_param(
+            "~stepsize_boundary_check", 0.00001
+        )
         self.calc_shortest_path = rospy.get_param("~calc_shortest_path", False)
         self.postprocessing = rospy.get_param("~postprocessing", False)
 
@@ -310,6 +315,24 @@ class MinimumCurvature(ManagedNode):
         )
 
         # ----------------------------------------------------------------------------------------------------------------------
+        # OPTIONAL: BOUNDARY CALCULATION CHECK ---------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------------------------------------------
+        if self.boundary_check:
+            rospy.loginfo("Starting boundary check...")
+            t_start_boundary_check = time.perf_counter()
+            boundary_check(
+                bound_left_=self.bound_left,
+                bound_right_=self.bound_right,
+                cones_left_=self.cones_left,
+                cones_right_=self.cones_right,
+                stepsize=self.stepsize_boundary_check,
+            )
+            rospy.logwarn("Boundary check done!")
+            rospy.logwarn(
+                f"Total time elapsed during boundary check: {time.perf_counter() - t_start_boundary_check}s"
+            )
+
+        # ----------------------------------------------------------------------------------------------------------------------
         # OPTIONAL: SHORTEST PATH OPTIMISATION ---------------------------------------------------------------------------------
         # ----------------------------------------------------------------------------------------------------------------------
         if self.calc_shortest_path:
@@ -361,7 +384,7 @@ class MinimumCurvature(ManagedNode):
         # IQP MINIMUM CURVATURE OPTIMISATION -----------------------------------------------------------------------------------
         # ----------------------------------------------------------------------------------------------------------------------
         rospy.loginfo("Starting iqp minimum curvature optimisation...")
-        t_start_iqp_mincurv_optimization = perf_counter()
+        t_start_iqp_mincurv_optimization = time.perf_counter()
 
         (
             iqp_track,

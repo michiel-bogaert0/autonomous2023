@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package>
+  <name>orion_control</name>
+  <version>0.0.1</version>
+  <description>Simple simulation interface and template for setting up a hardware interface for orion</description>
+
+  <maintainer email="someone@someone.com">Someone</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">https://github.com/davetcoleman/ugr_ros_control</url>
+  <url type="butracker">https://github.com/davetcoleman/ugr_ros_control/issues</url>
+  <url type="repository">https://github.com/davetcoleman/ugr_ros_control/</url>
+
+  <author email="davetcoleman@gmail.com">Dave Coleman</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>ugr_ros_control</build_depend>
+
+  <run_depend>tf2_ros</run_depend>
+  <run_depend>ugr_ros_control</run_depend>
+
+  <export>
+  </export>
+</package>

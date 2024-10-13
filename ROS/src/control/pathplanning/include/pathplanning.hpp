@@ -10,6 +10,8 @@
 #include <std_msgs/Header.h>
 #include <ugr_msgs/ObservationWithCovarianceArrayStamped.h>
 #include <ugr_msgs/PathArray.h>
+#include <ugr_msgs/PathWithIds.h>
+#include <ugr_msgs/PoseStampedWithIds.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -95,6 +97,8 @@ private:
   TransformFrames frametf_;
 
   bool debug_visualisation_;
+
+  bool use_orange_cones_;
 
   // Publishers
   ros::Publisher path_pub_;

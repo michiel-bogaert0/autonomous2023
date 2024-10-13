@@ -3,7 +3,6 @@ import traceback
 
 import rospy
 import tf2_ros as tf
-from controller_manager_msgs.srv import SwitchController, SwitchControllerRequest
 from geometry_msgs.msg import PointStamped
 from nav_msgs.msg import Odometry, Path
 from node_fixture.fixture import DiagnosticArray, ROSNode, StateMachineScopeEnum
@@ -29,6 +28,13 @@ class KinematicTrackingNode(ManagedNode):
 
         self.velocity_pub = super().AddPublisher(
             "/output/drive_velocity_controller/command", Float64, queue_size=10
+        )
+
+        self.axis0_velocity_pub = super().AddPublisher(
+            "/ugr/car/axis0_velocity_controller/command", Float64, queue_size=10
+        )
+        self.axis1_velocity_pub = super().AddPublisher(
+            "/ugr/car/axis1_velocity_controller/command", Float64, queue_size=10
         )
         self.steering_pub = super().AddPublisher(
             "/output/steering_position_controller/command", Float64, queue_size=10
@@ -59,8 +65,9 @@ class KinematicTrackingNode(ManagedNode):
 
     def doConfigure(self):
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
+        self.world_frame = rospy.get_param("~world_frame", "ugr/map")
 
-        self.wheelradius = rospy.get_param("~wheelradius", 0.1)
+        self.wheelradius = rospy.get_param("/ugr/car/wheel/radius", 0.1)
 
         self.velocity_cmd = Float64(0.0)
         self.steering_cmd = Float64(0.0)
@@ -70,38 +77,14 @@ class KinematicTrackingNode(ManagedNode):
 
         self.speed_target = rospy.get_param("/speed/target", 3.0)
         self.steering_transmission = rospy.get_param(
-            "ugr/car/steering/transmission", 0.25
+            "/ugr/car/steering/transmission", 0.25
         )  # Factor from actuator to steering angle
 
         self.slam_state = None
 
     def doActivate(self):
-        rospy.wait_for_service("/ugr/car/controller_manager/switch_controller")
-        try:
-            switch_controller = rospy.ServiceProxy(
-                "/ugr/car/controller_manager/switch_controller", SwitchController
-            )
-
-            req = SwitchControllerRequest()
-            req.start_controllers = [
-                "joint_state_controller",
-                "steering_position_controller",
-                "drive_velocity_controller",
-            ]
-            req.stop_controllers = []
-            req.strictness = SwitchControllerRequest.BEST_EFFORT
-
-            response = switch_controller(req)
-
-            if response.ok:
-                # Do this here because some parameters are set in the mission yaml files
-                self.trajectory = Trajectory(self.tf_buffer)
-
-                self.longitudinal_control = LongitudinalControl(self.publish_rate)
-            else:
-                rospy.logerr("Could not start controllers")
-        except rospy.ServiceException as e:
-            rospy.logerr(f"Service call failed: {e}")
+        self.trajectory = Trajectory(self.tf_buffer)
+        self.longitudinal_control = LongitudinalControl(self.publish_rate)
 
     def get_odom_update(self, msg: Odometry):
         self.actual_speed = msg.twist.twist.linear.x
@@ -126,7 +109,7 @@ class KinematicTrackingNode(ManagedNode):
     def doUpdate(self):
         """
         Actually processes a new path
-        The path should be relative to self.base_link_frame. Otherwise it will transform to it
+        The path should be relative to world frame. Otherwise it will transform to it
         """
 
         if self.received_path is None:
@@ -134,9 +117,9 @@ class KinematicTrackingNode(ManagedNode):
 
         msg = self.received_path
 
-        # Transform received message to self.base_link_frame
+        # Transform received message to world frame
         trans = self.tf_buffer.lookup_transform(
-            self.base_link_frame, msg.header.frame_id, msg.header.stamp
+            self.world_frame, msg.header.frame_id, msg.header.stamp
         )
         transformed_path = ROSNode.do_transform_path(msg, trans)
 
@@ -176,6 +159,8 @@ class KinematicTrackingNode(ManagedNode):
 
             self.velocity_cmd.data /= self.wheelradius  # Velocity to angular velocity
             self.velocity_pub.publish(self.velocity_cmd)
+            self.axis0_velocity_pub.publish(self.velocity_cmd)
+            self.axis1_velocity_pub.publish(self.velocity_cmd)
 
         except Exception as e:
             rospy.logwarn(f"{rospy.get_name()} has caught an exception: {e}")

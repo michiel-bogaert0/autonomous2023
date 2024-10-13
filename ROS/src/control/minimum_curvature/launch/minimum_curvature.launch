@@ -14,15 +14,15 @@
         <param name="cone_width" value="0.24" />
         <param name="min_track_width" value="3.00" />
         
-        <param name="kappa_max" value="0.50" />
+        <param name="kappa_max" value="0.275" />
         <param name="curv_error_allowed" value="0.05" />
 
-        <param name="stepsize_prep_trajectory" value="0.50" />
+        <param name="stepsize_prep_trajectory" value="1.00" />
         <param name="stepsize_prep_boundaries" value="0.10" />
         <param name="smoothing_factor_prep_trajectory" value="2.0" />
         <param name="smoothing_factor_prep_boundaries" value="0.1" />
         
-        <param name="stepsize_opt" value="0.50" />
+        <param name="stepsize_opt" value="1.00" />
         <param name="stepsize_post" value="0.25" />
 
         <param name="min_iterations_iqp" value="3" />
@@ -33,6 +33,10 @@
 
         <!-- Postprocessing check -->
         <param name="postprocessing" value="False" />
+
+        <!-- Boundary check -->
+        <param name="boundary_check" value="False" />
+        <param name="stepsize_boundary_check" value="0.00001" />
 
         <!-- All velocity calculations, plots and print statements -->
         <param name="vel_calc_all" value="False" />
@@ -77,7 +81,7 @@
 
         <!-- Inputs and outputs (Publishers and subscribers) -->
         <remap from="/input/boundaries" to="/boundary_estimation/boundaries" />
-        <remap from="/input/path" to="/pathplanning/poses" />
+        <remap from="/input/path" to="/pathplanning/global_path" />
 
         <remap from="/output/path_mincurv" to="/pathplanning/path" />
         

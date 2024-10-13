@@ -56,11 +56,11 @@ class PegasusState(CarState):
         self.as_ready_time = rospy.Time.now().to_sec()
 
         self.state = {
-            "TS": CarStateEnum.UNKOWN,
-            "ASMS": CarStateEnum.UNKOWN,
-            "R2D": CarStateEnum.UNKOWN,
-            "ASB": CarStateEnum.UNKOWN,
-            "EBS": CarStateEnum.UNKOWN,
+            "TS": CarStateEnum.UNKNOWN,
+            "ASMS": CarStateEnum.UNKNOWN,
+            "R2D": CarStateEnum.UNKNOWN,
+            "ASB": CarStateEnum.UNKNOWN,
+            "EBS": CarStateEnum.UNKNOWN,
         }
 
         self.bus = rospy.Publisher("/ugr/car/can/tx", Frame, queue_size=10)
@@ -216,7 +216,7 @@ class PegasusState(CarState):
         )
 
         if t - self.odrive_hb > 0.2 or t - self.teensy_hb > 0.2:
-            self.state["ASMS"] = CarStateEnum.UNKOWN
+            self.state["ASMS"] = CarStateEnum.UNKNOWN
 
         # EBS
         self.state["EBS"] = (

@@ -1,12 +1,20 @@
 <launch>
     <node pkg="lidar" type="lidar" name="lidar" output="screen">
+        <!-- preprocessing -->
+        <param name="min_distance" value="1"/>
+        <param name="max_distance" value="25"/>
+        <param name="max_height" value="0.5"/> <!-- relative to ground level -->
+        <param name="sensor_height" value="0.98"/> <!-- relative to ground level -->
+        <param name="min_angle" value="0.3"/>
+        <param name="max_angle" value="2.8"/>
+
         <!-- ground removal -->
         <param name="ground_removal_method" value="bins"/>
         <param name="num_iter" value="3"/>
         <param name="num_lpr" value="250"/>
         <param name="th_seeds" value="0.15"/>
         <param name="th_dist" value="0.05"/>
-        <param name="sensor_height" value="0.3"/>
+        <param name="sensor_height" value="1.0"/>
 
         <param name= "th_floor" value = "0.06"/>
         <param name= "angular_buckets" value = "15"/>
@@ -19,7 +27,7 @@
         <param name= "clustering_method" value="string" />
         <param name= "cluster_tolerance" value="1" />
         <param name= "point_count_threshold" value="2"/>
-        <param name= "min_distance_factor" value="2.5"/>
+        <param name= "min_distance_factor" value="1.5"/>
         <param name= "minimal_points_cone" value = "5"/>
         <param name= "threshold_height_big_cone" value ="0.4"/>
         <param name= "minimal_height_cone" value = "0.07"/>
@@ -37,6 +45,8 @@
         <param name= "min_points_per_bucket" value = "8"/>
         <param name= "max_points_per_bucket" value = "200"/>
 
+        <!-- lidar upside down -->
+        <param name= "lidar_rotated" value="true"/>
         <!-- orange cone functionality -->
         <param name= "use_orange_cones" value="false"/>
 
@@ -53,9 +63,9 @@
         <param name="value_second_tipping_distance" value="0.3"/>
 
         <!-- publishing debug pointclouds -->
-        <param name= "publish_preprocessing" value = "false"/>
+        <param name= "publish_preprocessing" value = "true"/>
         <param name= "publish_ground" value = "true"/>
-        <param name= "publish_clusters" value = "false"/>
+        <param name= "publish_clusters" value = "true"/>
         <param name= "color_factor" value = "1"/>
  
         <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
@@ -66,6 +76,5 @@
         <remap from="lidar/perception/cones_lidar" to="ugr/vis/lidar/cones"/>
         <remap from="lidar/perception/clusters_colored" to="ugr/vis/lidar/clusters"/>
         <remap from="lidar/perception/ground_colored" to="ugr/vis/lidar/coloredground"/>
-        <remap from="lidar/perception/motion_compensation" to="ugr/vis/lidar/motion_compensation"/>
     </node>
 </launch>

@@ -1,3 +1,5 @@
+observations_topic: "/ugr/car/observations/lidar"
+
 slam_controller:
   node_management:
     always:
@@ -7,15 +9,19 @@ slam_controller:
       - map_publisher
 
       # Control
-      # - MPC_tracking_control
-      - MPC_tracking_control
-      - path_smoother
+      - front_wheel_feedback_control
+      # - path_smoother
       - path_publisher
 
 slam_mcl:
   path_to_map: "/ugr/car/map/global"
 lap_counter:
-  finishpoint: [0, 0, 0]
+  finishpoint:
+    x: 75
+    y: 0
+  laps: 1
+  distance_after: 0
+  finishRange: 3
 map_publisher:
   map_pkg: "slam_simulator"
   map: "/maps/fssim_fsg.yaml"
@@ -24,11 +30,18 @@ speed:
   LC_adaptive_velocity: False
 pure_pursuit:
   change_index: False
-  minimal_distance: 3
   world_frame: "ugr/map"
+  # Lookahead distance tuning parameters
+  speed_start_racing: 3
+  speed_stop_racing: 12
+  distance_start_racing: 3
+  distance_stop_racing: 5
 front_wheel_feedback:
   change_index: False
   world_frame: "ugr/map"
+  Kp: 1.0
+  Ki: 0.01
+  Kd: 0.01
 mpc:
   change_index: True
   minimal_distance: 3

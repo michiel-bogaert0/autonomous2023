@@ -1,18 +1,25 @@
 #!/bin/bash
 
+arch=$(uname -m)
+
 function build {
     docker build -t ugr-base .
 }
 
 function build-nogpu {
-    docker build -t ugr-base -f Dockerfile.nogpu .
+    # If ARM use Dockerfile.silicon else Dockerfile.nogpu
+    if  [[ $arch == arm* ]]; then
+        docker build -t ugr-base -f Dockerfile.silicon .
+    else
+        docker build -t ugr-base -f Dockerfile.nogpu .
+    fi
 }
 
 function post-install {
 
     # Load submodules
     git submodule init
-	git submodule update
+    git submodule update
 
     # Install pre-commit hook
     sudo apt-get install cppcheck llvm
@@ -148,11 +155,15 @@ function start {
     
     if [ ! -e "$file" ]; then
         echo "Error: File '$file' does not exist. Please run 'post-install' or set a car with 'set-car'";
-        echo "lol"
         exit 324;
     fi
-    
-    docker compose up -d dev roscore rviz
+
+    # If ARM use foxglove-bridge else rviz
+    if  [[ $arch == arm* ]]; then
+        docker compose up -d dev roscore foxglove-bridge
+    else
+        docker compose up -d dev roscore rviz
+    fi
 }
 
 function start-headless {
@@ -260,6 +271,7 @@ function simulation {
       exit 1;
     fi
 
+    echo "Starting simulation with mission: $1 and ground truth map: $2"
     clean ugr
     launch simulation filename:=$2.yaml
     launch run mission:=$1 use_sim_time:=$use_sim_time
@@ -309,8 +321,13 @@ function connect-pegasus {
 }
 
 function record-rosbag {
+    local output_name=""
 
-    docker run --name ugr-rosbag-record-$(date +'%Y%m%d%H%M%S') \
+    if [ -n "$1" ]; then
+        output_name="-O $1.bag"
+    fi
+
+    docker run -d --name ugr-rosbag-record-$1-$(date +'%Y%m%d%H%M%S') \
     --privileged \
     --network host \
     -e DISPLAY=$DISPLAY \
@@ -322,7 +339,7 @@ function record-rosbag {
     -v /dev:/dev \
     -v ./../rosbags:/home/ugr/rosbags/:rw \
     ugr-base \
-    /bin/zsh -c "source ~/.zshrc && cd ~/rosbags && rosbag record -a -b 0 --lz4"
+    /bin/zsh -c "source ~/.zshrc && cd ~/rosbags && rosbag record -a -b 0 --lz4 $output_name"
 }
 
 function help {

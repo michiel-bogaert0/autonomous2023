@@ -1,0 +1,47 @@
+observations_topic: "/ugr/car/observations/lidar"
+
+slam_controller:
+  node_management:
+    exploration:
+      # SLAM
+      - fastslam
+      # - graphslam
+
+    always:
+      # SLAM
+      - lap_counter
+
+      # Control
+      - front_wheel_feedback_control
+      - pathplanning
+      # - path_smoother
+
+slam_mcl:
+  path_to_map: "/ugr/car/map/slam/global"
+lap_counter:
+  finishpoint:
+    x: 0
+    y: 0
+  distance_after: 4
+  laps: 1
+  finishRange: 3
+speed:
+  target: 1.0
+  LC_adaptive_velocity: False
+pure_pursuit:
+  change_index: True
+  world_frame: "ugr/map"
+  # Lookahead distance tuning parameters
+  speed_start_explo: 1
+  speed_stop_explo: 2
+  distance_start_explo: 1.5
+  distance_stop_explo: 3.3
+front_wheel_feedback:
+  change_index: True
+  world_frame: "ugr/map"
+  Kp: 0.8
+  Ki: 0.01
+  Kd: 0.01
+mpc:
+  change_index: True
+  world_frame: "ugr/map"

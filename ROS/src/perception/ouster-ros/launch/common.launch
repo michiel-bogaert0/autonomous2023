@@ -8,8 +8,8 @@
 
   <group ns="$(arg ouster_ns)">
     <node pkg="nodelet" type="nodelet" name="os_cloud_node"
-      output="screen" required="true"
-      launch-prefix="bash -c 'sleep 4; $0 $@' "
+      output="screen" required="false" respawn="true"
+      launch-prefix="bash -c 'sleep 22; $0 $@' "
       args="load nodelets_os/OusterCloud os_nodelet_mgr">
       <param name="~/tf_prefix" type="str" value="$(arg tf_prefix)"/>
       <param name="~/timestamp_mode" type="str" value="$(arg timestamp_mode)"/>
@@ -27,8 +27,8 @@
   <!-- TODO: how can/should we handle the change of default ouster namespace in RVIZ? -->
   <node if="$(arg viz)"
     pkg="rviz" name="rviz" type="rviz"
-    output="screen" required="false"
-    launch-prefix="bash -c 'sleep 5; $0 $@' "
+    output="screen" required="false" respawn="true"
+    launch-prefix="bash -c 'sleep 23; $0 $@' "
     args="-d $(arg rviz_config)"/>
 
   <!-- for compatibility with < 2.0 rosbags -->

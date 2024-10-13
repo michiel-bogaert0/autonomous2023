@@ -404,8 +404,8 @@ class MPC(ManagedNode):
                             # Put target at 2m
                             target = self.trajectory.calculate_target_points([2])[0]
                             # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-                            R = ((target[0] - 0) ** 2 + (target[1] - 0) ** 2) / (
-                                2 * (target[1] - 0)
+                            R = ((target[0]) ** 2 + (target[1]) ** 2) / (
+                                2 * (target[1])
                             )
 
                             self.steering_cmd.data = self.symmetrically_bound_angle(

@@ -272,6 +272,7 @@ class ROSNode:
 class StateMachineScopeEnum(str, enum.Enum):
     AUTONOMOUS = "autonomous"
     SLAM = "slam"
+    CAR = "car"
 
 
 # States of SLAM state machine
@@ -290,7 +291,9 @@ class AutonomousMission(str, enum.Enum):
     TRACKDRIVE = "trackdrive"
     EBSTEST = "emergencybraketest"
     INPSPECTION = "inspection"
+    EBS_TEST = "ebs_test"
     SKIDPAD = "skidpad"
+    DVSV = "dvsv"
 
 
 # States of global state machine
@@ -312,6 +315,24 @@ class NodeManagingStatesEnum(str, enum.Enum):
     FINALIZED = "finalized"
 
 
+# Driving state
+class DrivingModeStatesEnum(str, enum.Enum):
+    MANUAL = "manual"
+    DRIVERLESS = "driverless"
+
+
+# States of orion
+class OrionStateEnum(str, enum.Enum):
+    INIT = "init"
+    TS_READY = "ts_ready"
+    TS_ACTIVATING = "ts_activating"
+    TS_ACTIVE = "ts_active"
+    R2D_READY = "r2d_ready"
+    R2D = "r2d"
+    ERROR = "error"
+    SDC_OPEN = "sdc_open"
+
+
 """
 Helper functions for CAN
 """
@@ -322,10 +343,10 @@ def roscan_to_serialcan(data: Frame) -> can.Message:
         timestamp=data.header.stamp.to_sec(),
         is_error_frame=data.is_error,
         is_remote_frame=data.is_rtr,
-        dlc=len(data.data),
+        dlc=data.dlc,
         arbitration_id=data.id,
         data=list(data.data),
-        is_extended_id=False,
+        is_extended_id=data.is_extended,
     )
     return can_message
 

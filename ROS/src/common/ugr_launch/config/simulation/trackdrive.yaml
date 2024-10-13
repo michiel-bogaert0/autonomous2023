@@ -1,3 +1,5 @@
+observations_topic: "/ugr/car/observations/lidar"
+
 slam_controller:
   node_management:
     exploration:
@@ -21,20 +23,48 @@ slam_controller:
       - MPC_tracking_control
       # - MPC_splines_tracking_control
       - pathplanning
+      - path_builder
       - path_smoother
 
 slam_mcl:
   path_to_map: "/ugr/car/map/slam/global"
 lap_counter:
-  finishpoint: [0, 0, 0]
+  finishpoint:
+    x: 0
+    y: 0
+  laps: 10
+  distance_after: 4
+  finishRange: 3
 speed:
   target: 2.0
   target_racing: 10.0
+  LC_adaptive_velocity: False
+  LC_max_acceleration: 2.0
+  LC_min: 3.0
+  LC_max: 15.0
+front_wheel_feedback:
+  change_index: True
+  world_frame: "ugr/map"
+  Kp: 1.5
+  Ki: 0.01
+  Kd: 0.01
 pure_pursuit:
   change_index: True
-  minimal_distance: 1.2
   world_frame: "ugr/map"
+  # Lookahead distance tuning parameters
+  # exploration
+  speed_start_explo: 3
+  speed_stop_explo: 12
+  distance_start_explo: 3
+  distance_stop_explo: 5
+  # racing
+  speed_start_racing: 3
+  speed_stop_racing: 12
+  distance_start_racing: 3
+  distance_stop_racing: 5
 mpc:
   change_index: True
   minimal_distance: 1.2
   world_frame: "ugr/map"
+path_builder:
+  enable_global_path: True

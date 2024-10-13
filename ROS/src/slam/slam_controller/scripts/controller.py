@@ -5,13 +5,12 @@ import rospy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from node_fixture.fixture import (
     AutonomousMission,
-    AutonomousStatesEnum,
     SLAMStatesEnum,
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
 from node_fixture.node_manager import NodeManager, load_params
-from std_msgs.msg import Header, UInt16
+from std_msgs.msg import Bool, Float64, Header, UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
 
@@ -29,13 +28,11 @@ class Controller(NodeManager):
         self.mission = ""
         self.car = rospy.get_param("/car")
 
-        self.target_lap_count = -1
-
         self.change_mission_thread = Thread(target=self.change_mission)
 
         rospy.Subscriber("/state", State, self.handle_state_change)
-        rospy.Subscriber("/input/lapComplete", UInt16, self.lapFinished)
-
+        rospy.Subscriber("/input/lapComplete", UInt16, self.lapComplete)
+        rospy.Subscriber("/input/finished", Bool, self.trackFinished)
         self.diagnostics_publisher = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
         )
@@ -44,6 +41,10 @@ class Controller(NodeManager):
         )
         self.slam_state_publisher = rospy.Publisher(
             "/state/slam", State, queue_size=10, latch=True
+        )
+
+        self.brake_publisher = rospy.Publisher(
+            "/iologik/output1", Float64, queue_size=10
         )
 
         self.change_state(SLAMStatesEnum.IDLE)
@@ -70,19 +71,20 @@ class Controller(NodeManager):
         rospy.ServiceProxy("/reset_closure", Empty)
 
         if self.mission == AutonomousMission.ACCELERATION:
-            self.target_lap_count = 5
             new_state = SLAMStatesEnum.RACING
         elif self.mission == AutonomousMission.SKIDPAD:
-            self.target_lap_count = 1
             new_state = SLAMStatesEnum.RACING
         elif self.mission == AutonomousMission.AUTOCROSS:
-            self.target_lap_count = 1
             new_state = SLAMStatesEnum.EXPLORATION
         elif self.mission == AutonomousMission.TRACKDRIVE:
-            self.target_lap_count = 10
             new_state = SLAMStatesEnum.EXPLORATION
+        elif self.mission == AutonomousMission.DVSV:
+            new_state = SLAMStatesEnum.RACING
+        elif self.mission == AutonomousMission.INPSPECTION:
+            new_state = SLAMStatesEnum.RACING
+        elif self.mission == AutonomousMission.EBS_TEST:
+            new_state = SLAMStatesEnum.RACING
         else:
-            self.target_lap_count = -1
             new_state = SLAMStatesEnum.EXPLORATION
 
         # Same logic as in configure nodes
@@ -126,11 +128,7 @@ class Controller(NodeManager):
                 DiagnosticStatus.OK, "[GNRL] STATE: SLAM state", str(self.slam_state)
             )
         )
-        self.diagnostics_publisher.publish(
-            create_diagnostic_message(
-                DiagnosticStatus.OK, "[GNRL] Lap target", str(self.target_lap_count)
-            )
-        )
+
         self.diagnostics_publisher.publish(
             create_diagnostic_message(
                 DiagnosticStatus.OK, "[GNRL] MISSION", str(self.mission)
@@ -146,10 +144,6 @@ class Controller(NodeManager):
         """
 
         new_state = self.slam_state
-
-        if state.scope == StateMachineScopeEnum.AUTONOMOUS:
-            if state.cur_state == AutonomousStatesEnum.ASREADY:
-                new_state = SLAMStatesEnum.IDLE
 
         self.change_state(new_state)
 
@@ -182,21 +176,20 @@ class Controller(NodeManager):
         )
         self.slam_state = new_state
 
-    def lapFinished(self, laps):
+    def trackFinished(self, state):
+        new_state = SLAMStatesEnum.FINISHED
+        rospy.set_param("/speed/target", 0.0)
+        self.change_state(new_state)
+        self.brake_publisher.publish(Float64(data=20.0))
+        return
+
+    def lapComplete(self, laps):
         """
         Subscriber callback for the lap counter. Does an internal state transition if required
 
         Args:
             laps: the UInt16 message containing the lap count
         """
-
-        # If we did enough laps, switch to finished
-        if self.target_lap_count <= laps.data:
-            new_state = SLAMStatesEnum.FINISHED
-            rospy.set_param("/speed/target", 0.0)
-            self.change_state(new_state)
-            return
-
         # If we did one lap in trackdrive and exploration, switch to racing
         if (
             self.mission == AutonomousMission.TRACKDRIVE
@@ -204,12 +197,13 @@ class Controller(NodeManager):
         ):
             rospy.loginfo("Exploration finished, switching to racing")
             new_state = SLAMStatesEnum.RACING
-            speed_target = rospy.get_param("/speed/target_racing")
-            rospy.set_param("/speed/target", speed_target)
 
-            self.activate_nodes(new_state, self.slam_state)
+            # Only change if the nodes are activated succesfully
+            if self.activate_nodes(new_state, self.slam_state):
+                speed_target = rospy.get_param("/speed/target_racing")
+                rospy.set_param("/speed/target", speed_target)
 
-            self.change_state(new_state)
+                self.change_state(new_state)
 
 
 node = Controller()

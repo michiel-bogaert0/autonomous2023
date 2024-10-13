@@ -1,0 +1,85 @@
+<launch>
+
+  <arg name="frames" default="orion_frames" />
+
+  <include file="$(find ugr_launch)/launch/frames/$(arg frames).launch" pass_all_args="true" />
+
+  <include file="$(find ugr_launch)/launch/internal/run.launch" pass_all_args="true" />
+
+  <!-- State machine -->
+  <include file="$(find orion_state)/launch/orion_state.launch" pass_all_args="true"/>
+
+  <!-- Load extra car specific parameters or override parameters -->
+  <rosparam command="load" file="$(find ugr_launch)/config/orion.yaml" />
+
+
+  <!-- CAN -->
+
+  <node pkg="can" type="can_converter.py" name="can_cvrt_lv" respawn="false" output="screen">
+    <param name="can_interface" type="string" value="can4_ext" />
+    <param name="can_baudrate" type="int" value="1000000" />
+    <param name="dbc_filename" type="string" value="lv.dbc" />
+
+    <remap from="/ugr/can" to="/ugr/can/lv/rx" />
+    <remap from="/ugr/send_can_raw" to="/ugr/can/lv/tx" />
+
+  </node>
+
+  <node pkg="can" type="can_converter.py" name="can_cvrt_mc_left" respawn="false" output="log">
+    <param name="can_interface" type="string" value="can3_ext" />
+    <param name="can_baudrate" type="int" value="500000" />
+    <param name="dbc_filename" type="string" value="invertor_left.dbc" />
+    <param name="can_name" type="string" value="mc_left" />
+
+
+    <remap from="/ugr/can" to="/ugr/can/mc_left/rx" />
+    <remap from="/ugr/send_can_raw" to="/ugr/can/mc_left/tx" />
+
+  </node>
+
+
+  <node pkg="can" type="can_converter.py" name="can_cvrt_mc_right" respawn="false" output="log">
+    <param name="can_interface" type="string" value="can3_ext" />
+    <param name="can_baudrate" type="int" value="500000" />
+    <param name="dbc_filename" type="string" value="invertor_right.dbc" />
+    <param name="can_name" type="string" value="mc_right" />
+
+
+    <remap from="/ugr/can" to="/ugr/can/mc_right/rx" />
+    <remap from="/ugr/send_can_raw" to="/ugr/can/mc_right/tx" />
+
+  </node>
+
+  
+  <!-- Pedalmapper -->
+  <include file="$(find pedal_mapper)/launch/pedal_mapper.launch"/>
+
+  <!-- IO drivers -->
+  <include file="$(find dio_driver)/launch/dio_driver_can.launch" />
+  <!-- <include file="$(find iologik)/launch/iologik.launch" /> -->
+
+  <!-- Vectornav -->
+  <include file="$(find vectornav)/launch/vectornav.launch"/>
+
+  <!-- Lidar and camera drivers -->
+
+  <!-- <include file="$(find camera)/launch/publisher.launch" pass_all_args="true">
+    <arg name="type" default="camera" />
+  </include> -->
+
+  <include file="$(find ouster_ros)/launch/sensor.launch">
+    <arg name="timestamp_mode" default="TIME_FROM_PTP_1588" />
+  </include>
+
+  <include file="$(find ethercat_cia402)/launch/ethercat_cia402.launch" pass_all_args="true"/>
+
+  <!-- GPS -->
+  <!-- <include file="$(find ublox_gps)/launch/gps.launch" pass_all_args="true" /> -->
+
+
+  <!-- SLAM controller -->
+  <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true" />
+
+  <include file="$(find ugr_ros_control)/orion_control/launch/orion_hardware.launch" />
+
+</launch>

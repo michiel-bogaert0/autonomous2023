@@ -49,11 +49,15 @@ private:
   double publish_rate;
   bool doSynchronous;
   bool debug;
+  bool debug_time;
 
   int max_iterations;
   double association_threshold;
+  double min_range;
   double max_range;
   double max_half_angle;
+  int penalty_threshold;
+  int landmark_publish_threshold;
   Eigen::Matrix3d information_pose;
   Eigen::Matrix2d information_landmark;
 
@@ -65,6 +69,7 @@ private:
   int prevPoseIndex;
   ugr_msgs::ObservationWithCovarianceArrayStamped observations;
   g2o::SparseOptimizer optimizer;
+  ros::Time last_penalty_time;
 
   // Set Map Service Client
   ros::ServiceClient setmap_srv_client;

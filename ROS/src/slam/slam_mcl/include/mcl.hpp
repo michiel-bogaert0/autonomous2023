@@ -48,7 +48,7 @@ public:
   static tf2_ros::TransformBroadcaster br;
 
   void step();
-  void doConfigure() override;
+  void doActivate() override;
   void active() override;
 
 private:
@@ -95,6 +95,7 @@ private:
 
   // Publishers
   ros::Publisher odomPublisher;
+  ros::Publisher particlePosePublisher;
 
   // Diagnostic Publisher
   std::unique_ptr<node_fixture::DiagnosticPublisher> diagPublisher;
@@ -115,7 +116,7 @@ private:
 
   void motion_update(Particle &particle, double dDist, double dYaw);
 
-  void publishOutput();
+  void publishOutput(ros::Time lookupTime);
 
   void resample_particles();
 
