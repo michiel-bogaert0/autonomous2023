@@ -22,7 +22,7 @@ class PathSmoother(ManagedNode):
         self.min_distance_away_from_start = rospy.get_param(
             "~min_distance_away_from_start", 16
         )
-
+        self.received_path = None
         # make one parameter to check if trackdrive or autocross
         self.mission = rospy.get_param("/mission", "")
         self.trackdrive_autocross = (
@@ -53,16 +53,19 @@ class PathSmoother(ManagedNode):
         self.received_path = msg
 
     def process_path(self):
+        """
+        Process the newest path, smooth it and publish it
+        """
         msg = self.received_path
         msg_frame_id = msg.header.frame_id
 
         path = np.array([[p.pose.position.x, p.pose.position.y] for p in msg.poses])
 
         # Check if path is closed to determine if BSpline should be periodic
-        per = self.check_closed_path(path)
+        closed_path = self.check_closed_path(path)
 
-        # shift of path in world frame to avoid jumps in smoothed path, see wiki (Path Smoother)
-        if per and self.trackdrive_autocross:
+        # shift path in world frame to avoid jumps in smoothed path, see wiki (Path Smoother)
+        if closed_path and self.trackdrive_autocross:
             path = self.transform_to_world_frame(msg)
             msg_frame_id = self.world_frame
 
@@ -71,15 +74,15 @@ class PathSmoother(ManagedNode):
             path = np.roll(path, -closest_point - 10, axis=0)
 
         # Add zero pose to path if no closure of path (force path starting from car)
-        if not per and self.trackdrive_autocross:
+        if not closed_path and self.trackdrive_autocross:
             path = np.vstack(([0, 0], path))
 
         # smooth path
-        smoothed_path = self.smooth_path(path, per)
+        smoothed_path = self.smooth_path(path, closed_path)
         vis_path = smoothed_path
 
         # Throw away last point to avoid weird FWF bug, see wiki (Path Smoother)
-        if per and self.trackdrive_autocross:
+        if closed_path and self.trackdrive_autocross:
             smoothed_path = smoothed_path[:-1]
 
         # Publish smoothed path
@@ -115,18 +118,18 @@ class PathSmoother(ManagedNode):
         """
 
         away_from_start = False
-        per = 0  # BSpline periodicity, 0 = not periodic, 1 = periodic
+        closed_path = 0
 
         for node in path:
             distance_lc = (path[0, 0] - node[0]) ** 2 + (path[0, 1] - node[1]) ** 2
             if away_from_start and (distance_lc < self.max_distance_away_from_start):
-                per = 1
+                closed_path = 1
                 break
             if not away_from_start and (
                 distance_lc > self.min_distance_away_from_start
             ):
                 away_from_start = True
-        return per
+        return closed_path
 
     def transform_to_world_frame(self, msg):
         """
@@ -143,7 +146,14 @@ class PathSmoother(ManagedNode):
 
         return path
 
-    def smooth_path(self, path, per):
+    def smooth_path(self, path, closed_path):
+        """
+        Smooth path using BSpline interpolation
+
+        param path: Path to smooth
+        param closed_path: True if path is closed, False otherwise
+        """
+
         # STEP1: Linear interpolation between center points to add more points for BSpline smoothing
         distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
         distance = np.insert(distance, 0, 0) / distance[-1]
@@ -158,13 +168,17 @@ class PathSmoother(ManagedNode):
         # Weights for BSpline
         w = np.ones(len(path[0]))
         # Calculate smoothing Spline
-        tck, u = splprep(path, w=w, s=1, per=per)
+        tck, u = splprep(path, w=w, s=1, per=closed_path)
         # Evaluate BSpline and transpose back to (N, 2)
         smoothed_path = np.array(splev(u, tck)).T
 
         return smoothed_path
 
     def active(self):
+        """
+        Main function, periodically called by spin function.
+        Activates smoothing if a new path is received, otherwise noting.
+        """
         try:
             # Check if new path is received
             if self.received_path is None:
