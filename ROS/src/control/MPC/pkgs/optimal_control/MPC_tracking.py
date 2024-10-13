@@ -179,7 +179,7 @@ class MPC_tracking:
 
     def showConvergence(self):
         """
-        I have neve rused this function
+        I have never used this function
         """
         import matplotlib.pyplot as plt
 

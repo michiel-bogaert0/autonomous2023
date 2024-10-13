@@ -46,6 +46,7 @@ class Ocp:
 
         self.opti = casadi.Opti()
 
+        # Spline
         if curve is not None:
             self.centerline = curve
             self.der_centerline = curve.derivative(o=1)
@@ -53,36 +54,41 @@ class Ocp:
             self.centerline = None
             self.der_centerline = None
 
+        # Input and state sequence
         self.X = self.opti.variable(self.nx, N + 1)
         # self.X = casadi.repmat([1e1, 1e1, 1e-1, 1, 1e2, 1], 1, self.N+1) * self.opti.variable(self.nx, N + 1)
+
         self.U = self.opti.variable(self.nu, N)
+
+        # Initial state
         self.x0 = self.opti.parameter(self.nx)
+
+        # To calculate delta u
         self.u_prev = self.opti.parameter(self.nu)
 
         # Soften constraints
         self.Sc = self.opti.variable(1, N + 1)
         self.sc = casadi.SX.sym("sc", 1)
 
-        self.params = []  # additional parameters
+        # Option to not recalculate boundaries in each step of optimization
+        self.adaptive_boundaries = adaptive_boundaries
+        if not self.adaptive_boundaries:
+            self.center_points = self.opti.parameter(2, N + 1)
+
+        # Parameters to define boundary halfspaces
+        self.slopes_inner = self.opti.parameter(1, N + 1)
+        self.intercepts_inner = self.opti.parameter(1, N + 1)
+        self.slopes_outer = self.opti.parameter(1, N + 1)
+        self.intercepts_outer = self.opti.parameter(1, N + 1)
 
         # symbolic params to define cost functions
         self.x = casadi.SX.sym("symbolic_x", self.nx)
         self.u = casadi.SX.sym("symbolic_u", self.nu)
         self.u_delta = casadi.SX.sym("symbolic_u_prev", self.nu)
-        self.x_reference = casadi.SX.sym("symbolic_x_control_", self.nx)
 
-        # Point on curve
+        # Point on spline
         self.point_curve = casadi.SX.sym("point_curve", 2)
         self.der_curve = casadi.SX.sym("der_curve", 2)
-
-        self.adaptive_boundaries = adaptive_boundaries
-        if not self.adaptive_boundaries:
-            self.center_points = self.opti.parameter(2, N + 1)
-
-        self.slopes_inner = self.opti.parameter(1, N + 1)
-        self.intercepts_inner = self.opti.parameter(1, N + 1)
-        self.slopes_outer = self.opti.parameter(1, N + 1)
-        self.intercepts_outer = self.opti.parameter(1, N + 1)
 
         self._set_continuity(threads)
 
@@ -113,12 +119,10 @@ class Ocp:
     def discretize(self, f, DT, M, integrator="rk4"):
         x = casadi.SX.sym("x", self.nx)
         u = casadi.SX.sym("u", self.nu)
-        # dt = casis..;
 
         if integrator == "rk4":
             x_new = rk4(f, x, u, DT, M)
         elif integrator == "euler":
-            # x_new = x + f(x, u)*DT
             x_new = euler(f, x, u, DT, M)
         else:
             raise Exception("integrator not recognized")
@@ -128,20 +132,19 @@ class Ocp:
         return F
 
     def _set_continuity(self, threads: int):
+        # Important!!!
+        # Depending on generation or tracking, change the constraints here
+
+        # For tracking
         # self.opti.subject_to(self.X[:, 0] == self.x0)
-        # self.opti.subject_to(self.X[2:, 0] == self.x0[2:]) # doing this somehow causes crash issue
-        # self.opti.subject_to(self.X[0, 0] == self.x0[0])
-        # self.opti.subject_to(self.X[1, 0] == self.x0[1])
-        # self.opti.subject_to(self.X[2, 0] == self.x0[2])
-        # # self.opti.subject_to(self.X[3, 0] == 0)
-        # self.opti.subject_to(self.X[3, 0] == self.x0[3])
-        # self.opti.subject_to(self.X[4, 0] == self.x0[4])
+
+        # For generation
         self.opti.subject_to(self.X[5, 0] == self.x0[5])
         self.opti.subject_to(self.X[5, self.N] == 1)
         self.opti.subject_to(self.X[:2, 0] == self.X[:2, self.N])
+
+        # The constraints below are also for generation, but they do not work for some reason
         # self.opti.subject_to(casadi.fabs(casadi.fmod((casadi.pi), self.X[2, self.N]) - casadi.fmod((casadi.pi), self.X[2, 0])) < casadi.pi)
-        # self.opti.subject_to(self.X[0, 0] == self.X[0, self.N])
-        # self.opti.subject_to(self.X[1, 0] == self.X[1, self.N])
 
         if threads == 1:
             for i in range(self.N):
@@ -150,13 +153,6 @@ class Ocp:
                 if isinstance(x_next, np.ndarray):
                     x_next = casadi.vcat(x_next)  # convert numpy array to casadi vector
 
-                # self.opti.subject_to(self.X[0, i + 1] == x_next[0])
-                # self.opti.subject_to(self.X[1, i + 1] == x_next[1])
-                # self.opti.subject_to(casadi.fmod(self.X[2, i + 1], 2*casadi.pi) == casadi.fmod(x_next[2], 2*casadi.pi))
-                # self.opti.subject_to(casadi.fmod(self.X[3, i + 1], 2*casadi.pi) == casadi.fmod(x_next[3], 2*casadi.pi))
-                # self.opti.subject_to((self.X[3, i + 1] % 2*casadi.pi) == (x_next[3]% 2*casadi.pi))
-                # self.opti.subject_to(self.X[4, i + 1] == x_next[4])
-                # self.opti.subject_to(self.X[5, i + 1] == x_next[5])
                 self.opti.subject_to(self.X[:, i + 1] == x_next)
         else:
             X_next = self.F.map(self.N, "thread", threads)(self.X[:, :-1], self.U)
@@ -211,13 +207,6 @@ class Ocp:
             der_points = self.der_centerline(self.X[5, :].T).T
 
             for i in range(self.N + 1):
-                # start_time = perf_counter()
-                # self.centerline(self.X[5, i]).T
-                # temp_time = perf_counter()
-                # print(f"Centerline evaluation time: {temp_time - start_time}")
-                # self.der_centerline(self.X[5, i]).T
-                # temp_time = perf_counter()
-                # print(f"Derivative centerline evaluation time: {temp_time - start_time}")
                 if i == 0:
                     L_run += cost_fun(
                         self.X[:, i],
@@ -245,8 +234,6 @@ class Ocp:
                         der_points[i],
                         self.Sc[i],
                     )
-                # stop_time = perf_counter()
-                # print(f"Cost function evaluation time: {stop_time - start_time}")
 
             self.cost["run"] = L_run
 

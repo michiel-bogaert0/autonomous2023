@@ -109,7 +109,6 @@ class Ocp:
         if integrator == "rk4":
             x_new = rk4(f, x, u, DT, M)
         elif integrator == "euler":
-            # x_new = x + f(x, u)*DT
             x_new = euler(f, x, u, DT, M)
         else:
             raise Exception("integrator not recognized")

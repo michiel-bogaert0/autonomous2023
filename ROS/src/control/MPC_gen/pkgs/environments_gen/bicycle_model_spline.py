@@ -16,27 +16,26 @@ class BicycleModelSpline(Env):
             low=[-np.inf, -np.inf, np.inf], high=[np.inf, np.inf, np.inf]
         )
 
-        high_state_space = np.array([np.inf, np.inf, 2 * np.pi, np.pi, 0, 0])
-        high_state_space = np.array([np.inf, np.inf, 2 * np.pi, np.pi, np.inf, 1])
+        high_state_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf, np.inf])
         self.state_space = Space(low=-high_state_space, high=high_state_space)
 
-        high_state_space = np.array([np.inf, np.inf, 2 * np.pi, np.pi, 0, 0])
-        high_obs_space = np.array([np.inf, np.inf, 2 * np.pi, np.pi, np.inf, 1])
-        # high_obs_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf, np.inf])
+        high_obs_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf, np.inf])
         self.observation_space = Space(low=-high_obs_space, high=high_obs_space)
 
-        self.F = self.discretize(self.dynamics, self.dt, integrator="rk4", M=4)
+        self.F = self.discretize(self.dynamics, self.dt, integrator="rk4", M=1)
 
     def dynamics(self, s, u):
-        # Inputs
+        # State
         # x = s[0]
         # y = s[1]
         theta = s[2]
         zeta = s[3]
         v = s[4]
         # tau = s[5]
-        phi = u[1]
+
+        # Inputs
         alpha = u[0]
+        phi = u[1]
         vk = u[2]
 
         a = alpha * self.R

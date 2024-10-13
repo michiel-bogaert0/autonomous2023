@@ -18,7 +18,7 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
 )
 from node_fixture.managed_node import ManagedNode
-from optimal_control_gen.MPC_generation import MPC_generation
+from optimal_control_gen.MPC_splines import MPC_splines
 from optimal_control_gen.ocp import Ocp
 from sensor_msgs.msg import JointState
 from spline_utils import create_spline  # , get_boundary_constraints_casadi
@@ -29,46 +29,14 @@ from ugr_msgs.msg import State
 
 class MPCSplinesTracking(ManagedNode):
     def __init__(self):
-        print("in init")
         rospy.init_node("MPC_splines_tracking_control")
         super().__init__("MPC_splines_tracking_control")
-
         self.publish_rate = rospy.get_param("~publish_rate", 40)
-
         self.slam_state = SLAMStatesEnum.IDLE
-
+        self.save_solution
         rospy.Subscriber("/state", State, self.handle_state_change)
         self.start_sender()
         rospy.spin()
-
-        # spline_centerline, curve_centerline = create_spline(
-        #     self.GT_centerline, "r", derivative=False, derivative2=False, plot=True
-        # )
-
-        # self.curve_centerline = curve_centerline
-        # self.der_centerline = curve_centerline.derivative(o=1)
-
-        # car_pos = np.squeeze(curve_centerline(0))
-        # self.start_pos = car_pos
-        # taus = np.linspace(0, 1, 10000)
-        # points_on_spline = curve_centerline(taus)
-        # der_points = self.der_centerline(taus)
-
-        # create_spline(self.GT_left_boundary, "b", plot=True)
-        # create_spline(self.GT_right_boundary, "y", plot=True)
-
-        # ax = plt.gca()
-        # ax.set_aspect("equal", "datalim")
-
-        # self.initialize_MPC()
-
-        # # self.analyse_cost()
-
-        # self.run_mpc()
-
-        # # self.save_solution()
-
-        # rospy.spin()
 
     def doConfigure(self):
         self.tf_buffer = tf.Buffer()
@@ -210,7 +178,7 @@ class MPCSplinesTracking(ManagedNode):
             threads=1,
             adaptive_boundaries=False,
         )
-        self.mpc = MPC_generation(self.ocp)
+        self.mpc = MPC_splines(self.ocp)
 
         # State: x, y, heading, steering angle, velocity
         Qn = np.diag([8e-3, 8e-3, 0, 0, 0, 0])
@@ -222,16 +190,12 @@ class MPCSplinesTracking(ManagedNode):
         self.set_costs(Qn, R, R_delta)
 
         # constraints
-        # TODO: get these from urdf model
-        self.max_steering_angle = 5  # same as pegasus.urdf
-        self.set_constraints(5, self.max_steering_angle)
+        self.set_constraints()
 
     def set_constraints(self, velocity_limit, steering_limit):
         """
         Set constraints for the MPC
         """
-        velocity_limit = 10
-        steering_limit = 0.5
         self.wheelradius = 0.1
         self.ocp.subject_to()
         self.ocp.subject_to(
@@ -620,9 +584,9 @@ class MPCSplinesTracking(ManagedNode):
                         self.steering_velocity_pub.publish(self.steering_cmd)
                         self.drive_effort_pub.publish(self.velocity_cmd)
 
-                        # self.save_solution()
+                        # self.save_solution_to_file()
                     else:
-                        self.save_solution()
+                        self.save_solution_to_file()
                         # print(self.ocp.debug.show_infeasibilities())
                         # rospy.signal_shutdown("MPC failed")
                         # print(self.ocp.debug.show_infeasibilities())
@@ -635,7 +599,7 @@ class MPCSplinesTracking(ManagedNode):
 
                     # mpc_time = perf_counter()
 
-                    self.save_solution()
+                    self.save_solution_to_file()
 
                     # stop_time = perf_counter()
 
@@ -757,7 +721,7 @@ class MPCSplinesTracking(ManagedNode):
 
         publisher.publish(path_msg)
 
-    def save_solution(self):
+    def save_solution_to_file_to_file(self):
         # Get convergence information
         inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
         inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]

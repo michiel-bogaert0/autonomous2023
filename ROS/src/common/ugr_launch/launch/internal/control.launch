@@ -16,7 +16,7 @@
   </include>
 
   <!-- MPC splines -->
-  <include file="$(find mpc_gen)/launch/mpc_splines.launch" pass_all_args="true">
+  <include file="$(find mpc_gen)/launch/mpc_tracking.launch" pass_all_args="true">
   </include>
 
   <!-- Path_publisher -->

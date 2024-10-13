@@ -221,7 +221,7 @@ class MPC_gen_ref:
         #     < 0
         # )
 
-        # Again enforce continuity
+        # Enforce continuity again
         self.ocp._set_continuity(1)
 
         print("Constraints set")
@@ -291,7 +291,7 @@ class MPC_gen_ref:
         for x0 in ref_track:
             steering_angle = 0
 
-            # calculate heading based on position
+            # Calculate heading based on position
             if len(X0) > 0:
                 phi = np.arctan2(x0[1] - X0[-1][1], x0[0] - X0[-1][0])
             else:
