@@ -61,8 +61,8 @@ class PathSmoother(ManagedNode):
         # Check if path is closed to determine if BSpline should be periodic
         per = self.check_closed_path(path)
 
+        # shift of path in world frame to avoid jumps in smoothed path, see wiki (Path Smoother)
         if per and self.trackdrive_autocross:
-            # trackdrive and autocross work in world frame
             path = self.transform_to_world_frame(msg)
             msg_frame_id = self.world_frame
 
@@ -70,7 +70,7 @@ class PathSmoother(ManagedNode):
             closest_point = np.argmin(np.sum(path**2, axis=1))
             path = np.roll(path, -closest_point - 10, axis=0)
 
-        # Add zero pose to path if no closure of path
+        # Add zero pose to path if no closure of path (force path starting from car)
         if not per and self.trackdrive_autocross:
             path = np.vstack(([0, 0], path))
 
@@ -78,8 +78,8 @@ class PathSmoother(ManagedNode):
         smoothed_path = self.smooth_path(path, per)
         vis_path = smoothed_path
 
+        # Throw away last point to avoid weird FWF bug, see wiki (Path Smoother)
         if per and self.trackdrive_autocross:
-            # Throw away last point to avoid weird FWF bug (see wiki)
             smoothed_path = smoothed_path[:-1]
 
         # Publish smoothed path
