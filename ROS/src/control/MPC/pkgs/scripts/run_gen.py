@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 from optimal_control.MPC_tracking import MPC_tracking
 from optimal_control.ocp import Ocp
 from scipy.interpolate import interp1d
+
 from scripts.trajectory import Trajectory
 
 # from utils.plotting_mpc import plot_velocity
