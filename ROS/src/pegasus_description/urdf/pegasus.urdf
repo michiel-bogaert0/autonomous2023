@@ -78,7 +78,7 @@
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/axis0" />
 
-    <limit effort="30.0" velocity="200.0" />
+    <limit effort="30.0" velocity="100.0" />
   </joint>
 
   <joint name="axis1" type="continuous">
