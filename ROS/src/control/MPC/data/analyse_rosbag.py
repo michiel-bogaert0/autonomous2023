@@ -11,6 +11,11 @@ from bagpy import bagreader
 # from nav_msgs.msg import Path
 from scipy.interpolate import interp1d
 
+#######################################################
+# This was a file for my thesis,                      #
+# can be useful for plotting so leaving it here       #
+#######################################################
+
 
 def read_yaml(path):
     path = path

@@ -5,6 +5,11 @@ from environments_gen.bicycle_model import BicycleModel
 from environments_gen.bicycle_model_spline import BicycleModelSpline
 from environments_gen.kinematic_car import KinematicCar
 
+###########################################################
+# Useful file for model verification, however some things #
+# in here are thesis-leftovers                            #
+###########################################################
+
 # %%
 
 X0 = np.load(

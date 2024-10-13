@@ -334,10 +334,6 @@ class Ocp:
         self.centerline = curve
         self.der_centerline = curve.derivative(o=1)
 
-        # self.opti.set_initial(self.a, a)
-        # self.opti.set_initial(self.b, b)
-        # self.opti.set_initial(self.c, c)
-        # self.opti.set_initial(self.d, d)
         # self.opti.set_value(self.slopes_inner, a)
         # self.opti.set_value(self.intercepts_inner, b)
         # self.opti.set_value(self.slopes_outer, c)
