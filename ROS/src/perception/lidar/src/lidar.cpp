@@ -1,6 +1,7 @@
 #include "lidar.hpp"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include <chrono>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <tuple>
@@ -206,11 +207,14 @@ void Lidar::preprocessing(
   for (auto &iter : raw.points) {
     // Remove points closer than 1m, higher than 0.5m or further than 20m
     // and points outside the frame of Pegasus
-    if (std::hypot(iter.x, iter.y) < 1 || iter.z > -0.1 ||
+    if (abs(2 * atan(iter.z / std::hypot(iter.x, iter.y))) > max_fov_)
+      max_fov_ = abs(2 * atan(iter.z / std::hypot(iter.x, iter.y)));
+    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
         std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||
         std::atan2(iter.x, iter.y) > 2.8)
       continue;
     preprocessed_pc->points.push_back(iter);
+    ROS_INFO("max FOV: %f", max_fov_);
   }
 }
 
