@@ -73,7 +73,9 @@ void MCL::doActivate() {
   this->particlePosePublisher =
       n.advertise<geometry_msgs::PoseArray>("/output/particles", 5);
 
-  obs_sub.subscribe(n, "/input/observations", 1);
+  obs_sub.subscribe(
+      n, n.param<string>("/observations_topic", "/ugr/car/observations/lidar"),
+      1);
   tf2_filter.registerCallback(boost::bind(&MCL::handleObservations, this, _1));
 
   // "/input/map" --> changed to param to change topic between missions with
@@ -430,9 +432,6 @@ double MCL::sensor_update(Particle &particle, vector<VectorXf> &z,
     if (sigma.determinant() < 0.001)
       sigma = this->R;
 
-    float den = 2 * M_PI * sqrt(sigma.determinant());
-    float num =
-        std::exp(-0.5 * difference.transpose() * sigma.inverse() * difference);
     weight *= 1.0 / sqrt(pow(2 * M_PI, 2) * sigma.determinant()) *
               exp(-0.5 * difference.transpose() * sigma.inverse() * difference);
   }

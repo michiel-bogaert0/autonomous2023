@@ -40,6 +40,7 @@ class ManagedNode:
         self.health = DiagnosticStatus(name="healthchecks", hardware_id=name)
         self.name = name
         self.state = default_state
+        self.terminalpub = False
         self.handlerlist = []
         self.publishers = []
         self.healthrate = rospy.Rate(rospy.get_param("~healthrate", 3))
@@ -118,10 +119,10 @@ class ManagedNode:
         self.health.values = [KeyValue(key="state", value=self.state)]
         self.health.values += values
 
-        if level == 1:
-            rospy.logwarn(f"{self.name}[WARN]> {message}")
-        elif level == 2:
-            rospy.logerr(f"{self.name}[ERROR]> {message}")
+        if level == 1 and self.terminalpub:
+            rospy.logwarn(f"\n{self.name}:{message}")
+        elif level == 2 and self.terminalpub:
+            rospy.logerr(f"\n{self.name}:{message}")
 
         # Immediately publish health
         if publish:

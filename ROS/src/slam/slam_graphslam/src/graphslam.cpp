@@ -129,7 +129,9 @@ void GraphSLAM::doConfigure() {
   }
 
   // Initialize subscribers
-  obs_sub.subscribe(n, "/input/observations", 1);
+  obs_sub.subscribe(
+      n, n.param<string>("/observations_topic", "/ugr/car/observations/lidar"),
+      1);
   tf2_filter.registerCallback(
       boost::bind(&GraphSLAM::handleObservations, this, _1));
 
