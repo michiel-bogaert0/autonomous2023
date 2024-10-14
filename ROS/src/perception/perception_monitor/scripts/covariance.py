@@ -2,8 +2,11 @@
 
 import numpy as np
 import rospy
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
-from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
+from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
+from ugr_msgs.msg import (
+    ObservationWithCovariance,
+    ObservationWithCovarianceArrayStamped,
+)
 
 
 class CovarianceNode:
@@ -26,13 +29,14 @@ class CovarianceNode:
         )
 
         self.result_publisher = rospy.Publisher(
-            "/output/topic", DiagnosticArray, queue_size=1
+            "/output/topic", DiagnosticStatus, queue_size=1
         )
 
         # Initialize variables
         self.use_lidar = rospy.get_param("~measure_lidar", False)
         self.use_camera = rospy.get_param("~measure_camera", False)
         self.match_threshold = rospy.get_param("~match_distance", 0.3)
+        self.fp_threshold = rospy.get_param("~fp_distance", 1.0)
         self.batch_size = rospy.get_param("~batch_size", 10)
         self.convergence_threshold = rospy.get_param("~convergence_threshold", 0.01)
 
@@ -57,12 +61,13 @@ class CovarianceNode:
                 observation.observation.location.y,
                 observation.observation.location.z,
             )
-
+            distance_to_avg = np.linalg.norm(
+                [x - self.lidar_avg_x, y - self.lidar_avg_y, z - self.lidar_avg_z]
+            )
+            if distance_to_avg > self.fp_threshold:
+                self.detect_false_positive(observation)
             if (
-                np.linalg.norm(
-                    [x - self.lidar_avg_x, y - self.lidar_avg_y, z - self.lidar_avg_z]
-                )
-                < self.match_threshold
+                distance_to_avg < self.match_threshold
                 or self.lidar_obs_received <= self.batch_size
             ):
                 self.lidar_obs_received += 1
@@ -78,7 +83,7 @@ class CovarianceNode:
                 ) = self.calculate_average()
                 new_covariance_matrix = self.calculate_covariance()
                 if (
-                    sum(self.covariance_matrix - new_covariance_matrix)
+                    np.min(self.covariance_matrix - new_covariance_matrix)
                     < self.convergence_threshold
                 ):
                     self.converged = True
@@ -119,6 +124,24 @@ class CovarianceNode:
                 self.lidar_observations["z"],
             ]
         )
+
+    def detect_false_positive(self, observation: ObservationWithCovariance):
+        """
+        Detects false positives
+        """
+        diag_msg = DiagnosticStatus()
+        diag_msg.name = "Lidar False Positives"
+        diag_msg.message = "False positive detected"
+
+        distance = np.linalg.norm(
+            [
+                observation.observation.location.x,
+                observation.observation.location.y,
+                observation.observation.location.z,
+            ]
+        )
+        diag_msg.values.append(KeyValue("distance", str(distance)))
+        self.publish(diag_msg)
 
 
 node = CovarianceNode()

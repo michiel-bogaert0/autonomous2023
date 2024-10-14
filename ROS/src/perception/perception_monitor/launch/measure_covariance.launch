@@ -3,6 +3,7 @@
     <param name="measure_lidar" value="true"/>
     <param name="measure_camera" value="false"/>
     <param name="match_distance" value="0.5"/>
+    <param name="fp_distance" value="1.0"/>
     <param name="batch_size" value="50"/>
     <param name="convergence_threshold" value="0.01"/>
 
