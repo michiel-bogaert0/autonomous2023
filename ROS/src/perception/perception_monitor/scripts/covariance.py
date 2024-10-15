@@ -43,6 +43,7 @@ class CovarianceNode:
         self.lidar_obs_received = 0
         self.lidar_observations = {"x": [], "y": [], "z": []}
         self.lidar_avg_x, self.lidar_avg_y, self.lidar_avg_z = 0, 0, 0
+        self.gt_x, self.gt_y, self.gt_z = 0.019323348999023, -0.02572094462811947, -0.860053539276123
         self.covariance_matrix = np.ones((3, 3))
         self.converged = False
 
@@ -56,21 +57,27 @@ class CovarianceNode:
 
     def lidar_callback(self, observations: ObservationWithCovarianceArrayStamped):
         for observation in observations.observations:
+            (
+                    self.lidar_avg_x,
+                    self.lidar_avg_y,
+                    self.lidar_avg_z,
+            ) = self.calculate_average()
             x, y, z = (
                 observation.observation.location.x,
                 observation.observation.location.y,
                 observation.observation.location.z,
             )
-            distance_to_avg = np.linalg.norm(
-                [x - self.lidar_avg_x, y - self.lidar_avg_y, z - self.lidar_avg_z]
+            
+            distance_to_gt = np.linalg.norm(
+                [x - self.gt_x, y - self.gt_y, z - self.gt_z]
             )
             if (
-                distance_to_avg > self.fp_threshold
+                distance_to_gt > self.fp_threshold
                 and self.lidar_obs_received > self.batch_size
             ):
                 self.detect_false_positive(observation)
             if (
-                distance_to_avg < self.match_threshold
+                distance_to_gt < self.match_threshold
                 or self.lidar_obs_received <= self.batch_size
             ):
                 self.lidar_obs_received += 1
@@ -78,12 +85,7 @@ class CovarianceNode:
                 self.lidar_observations["y"].append(y)
                 self.lidar_observations["z"].append(z)
 
-            if self.lidar_obs_received % self.batch_size == 0:
-                (
-                    self.lidar_avg_x,
-                    self.lidar_avg_y,
-                    self.lidar_avg_z,
-                ) = self.calculate_average()
+            if self.lidar_obs_received % self.batch_size == 2:
                 new_covariance_matrix = self.calculate_covariance()
                 if (
                     np.min(self.covariance_matrix - new_covariance_matrix)
@@ -92,6 +94,7 @@ class CovarianceNode:
                     self.converged = True
                 self.covariance_matrix = new_covariance_matrix
 
+                # Create and publish diagnostics
                 diag_msg = DiagnosticStatus()
                 diag_msg.name = "Lidar Covariance"
                 diag_msg.message = f"Converged: {self.converged}"
@@ -99,8 +102,23 @@ class CovarianceNode:
                     KeyValue("num_observations", str(self.lidar_obs_received))
                 )
                 diag_msg.values.append(
+                    KeyValue("cone_distance (2D)", str(np.linalg.norm([self.lidar_avg_x, self.lidar_avg_y])))
+                )
+                diag_msg.values.append(
                     KeyValue("covariance_matrix", str(self.covariance_matrix))
                 )
+                diag_msg.values.append(
+                    KeyValue("varX", str(self.covariance_matrix[0][0]))
+                )
+                diag_msg.values.append(
+                    KeyValue("varY", str(self.covariance_matrix[1][1]))
+                )
+                diag_msg.values.append(
+                    KeyValue("varZ", str(self.covariance_matrix[2][2]))
+                )
+                rospy.loginfo(self.covariance_matrix)
+                rospy.loginfo("\n")
+                rospy.loginfo(self.lidar_obs_received)
                 self.publish(diag_msg)
 
     def camera_callback(self, observations: ObservationWithCovarianceArrayStamped):
@@ -143,7 +161,21 @@ class CovarianceNode:
                 observation.observation.location.z,
             ]
         )
+        (
+            avg_x,
+            avg_y,
+            avg_z,
+        ) = self.calculate_average()
+        avg_distance = np.linalg.norm(
+            [
+                avg_x,
+                avg_y,
+                avg_z,
+            ]
+        )
+
         diag_msg.values.append(KeyValue("distance", str(distance)))
+        diag_msg.values.append(KeyValue("average_distance", str(avg_distance)))
         self.publish(diag_msg)
 
 
