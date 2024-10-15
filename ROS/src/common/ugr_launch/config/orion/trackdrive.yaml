@@ -1,3 +1,5 @@
+observations_topic: "/ugr/car/observations/lidar"
+
 slam_controller:
   node_management:
     exploration:
@@ -11,7 +13,7 @@ slam_controller:
 
     always:
       - ecat_driver
-        
+
       # SLAM
       - lap_counter
 
@@ -23,8 +25,13 @@ slam_controller:
 
 slam_mcl:
   path_to_map: "/ugr/car/map/slam/global"
-loopclosure:
-  finishpoint: [0, 0, 0]
+lap_counter:
+  finishpoint:
+    x: 0
+    y: 0
+  distance_after: 4
+  laps: 10
+  finishRange: 3
 speed:
   target: 3
   target_racing: 6
@@ -35,10 +42,17 @@ speed:
 pure_pursuit:
   change_index: True
   world_frame: "ugr/map"
-  speed_start: 1
-  speed_stop: 7
-  distance_start: 5
-  distance_stop: 5
+  # Lookahead distance tuning parameters
+  # exploration
+  speed_start_explo: 1
+  speed_stop_explo: 7
+  distance_start_explo: 5
+  distance_stop_explo: 5
+  # racing
+  speed_start_racing: 1
+  speed_stop_racing: 7
+  distance_start_racing: 5
+  distance_stop_racing: 5
 front_wheel_feedback:
   change_index: True
   world_frame: "ugr/map"
