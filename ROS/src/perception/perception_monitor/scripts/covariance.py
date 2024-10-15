@@ -64,7 +64,10 @@ class CovarianceNode:
             distance_to_avg = np.linalg.norm(
                 [x - self.lidar_avg_x, y - self.lidar_avg_y, z - self.lidar_avg_z]
             )
-            if distance_to_avg > self.fp_threshold:
+            if (
+                distance_to_avg > self.fp_threshold
+                and self.lidar_obs_received > self.batch_size
+            ):
                 self.detect_false_positive(observation)
             if (
                 distance_to_avg < self.match_threshold
