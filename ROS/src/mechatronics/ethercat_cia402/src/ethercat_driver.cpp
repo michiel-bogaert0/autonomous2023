@@ -87,24 +87,26 @@ int ECatDriver::update_pubs() {
     std_msgs::Float32 velocity_msg;
     velocity_msg.data =
         (static_cast<int32>(inputs.velocity * TIME_CONV_VEL) / RAD_TO_POS) *
-        RAD_PER_S_TO_RPM;
+        RAD_PER_S_TO_RPM * GEARBOX_RATIO;
     this->velocity_pub.publish(velocity_msg);
 
     std_msgs::Float32 torque_msg;
-    torque_msg.data = (static_cast<float>(inputs.torque)) * CUR_CONV_TORQUE;
+    torque_msg.data =
+        (static_cast<float>((int16_t)inputs.torque)) * CUR_CONV_TORQUE;
     this->torque_pub.publish(torque_msg);
 
     std_msgs::Float32 equivalent_driver_torque_msg;
-    equivalent_driver_torque_msg.data = (static_cast<float>(inputs.torque)) *
-                                        CUR_CONV_TORQUE *
-                                        DRIVER_TORQUE_CONSTANT;
+    equivalent_driver_torque_msg.data =
+        (static_cast<float>((int16_t)inputs.torque)) * CUR_CONV_TORQUE *
+        DRIVER_TORQUE_CONSTANT;
     this->driver_equiv_torque_pub.publish(equivalent_driver_torque_msg);
 
     std_msgs::Float32 power_msg;
     // velocity [rad/s] * torque [Nm]
     power_msg.data =
         (static_cast<int32>(inputs.velocity * TIME_CONV_VEL) / RAD_TO_POS) *
-        ((static_cast<float>(inputs.torque)) * CUR_CONV_TORQUE);
+        ((static_cast<float>((int16_t)inputs.torque)) * CUR_CONV_TORQUE) *
+        GEARBOX_RATIO;
     this->power_pub.publish(power_msg);
 
     std_msgs::UInt32 erroract_msg;
@@ -127,24 +129,26 @@ int ECatDriver::update_pubs() {
     std_msgs::Float32 velocity_msg;
     velocity_msg.data =
         (static_cast<int32>(inputs.velocity * TIME_CONV_VEL) / RAD_TO_POS) *
-        RAD_PER_S_TO_RPM;
+        RAD_PER_S_TO_RPM * GEARBOX_RATIO;
     this->velocity_pub.publish(velocity_msg);
 
     std_msgs::Float32 torque_msg;
-    torque_msg.data = (static_cast<float>(inputs.torque)) * CUR_CONV_TORQUE;
+    torque_msg.data =
+        (static_cast<float>((int16_t)inputs.torque)) * CUR_CONV_TORQUE;
     this->torque_pub.publish(torque_msg);
 
     std_msgs::Float32 equivalent_driver_torque_msg;
-    equivalent_driver_torque_msg.data = (static_cast<float>(inputs.torque)) *
-                                        CUR_CONV_TORQUE *
-                                        DRIVER_TORQUE_CONSTANT;
+    equivalent_driver_torque_msg.data =
+        (static_cast<float>((int16_t)inputs.torque)) * CUR_CONV_TORQUE *
+        DRIVER_TORQUE_CONSTANT;
     this->driver_equiv_torque_pub.publish(equivalent_driver_torque_msg);
 
     std_msgs::Float32 power_msg;
     // velocity [rad/s] * torque [Nm]
     power_msg.data =
         (static_cast<int32>(inputs.velocity * TIME_CONV_VEL) / RAD_TO_POS) *
-        ((static_cast<float>(inputs.torque)) * CUR_CONV_TORQUE);
+        ((static_cast<float>((int16_t)inputs.torque)) * CUR_CONV_TORQUE) *
+        GEARBOX_RATIO;
     this->power_pub.publish(power_msg);
 
     std_msgs::Float32 erroract_msg;
