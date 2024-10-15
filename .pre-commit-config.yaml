@@ -33,4 +33,3 @@ repos:
             "--suppress=unusedFunction",
             "--suppress=unusedStructMember",
           ]
-        exclude: ^(?!src/perception/lidar/).*
