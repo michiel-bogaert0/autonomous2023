@@ -116,7 +116,9 @@ void FastSLAM1::doConfigure() {
   this->diagPublisher = std::unique_ptr<node_fixture::DiagnosticPublisher>(
       new node_fixture::DiagnosticPublisher(n, "SLAM FastSLAM1.0"));
 
-  obs_sub.subscribe(n, "/input/observations", 1);
+  obs_sub.subscribe(
+      n, n.param<string>("/observations_topic", "/ugr/car/observations/lidar"),
+      1);
   tf2_filter.registerCallback(
       boost::bind(&FastSLAM1::handleObservations, this, _1));
 

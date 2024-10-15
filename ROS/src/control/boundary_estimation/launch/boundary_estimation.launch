@@ -1,4 +1,5 @@
 <launch>
+    <arg name="turn_active" default="false" />
     <node pkg="boundary_estimation" type="boundary_estimation.py" name="boundary_estimation" respawn="true" output="screen">
         <remap from="/input/local_map" to="/ugr/car/map/slam/local"/>
         
@@ -9,5 +10,6 @@
         <param name="max_distance" value="36" />
         <param name="min_distance" value="1" />
         <param name="max_angle_change" value="1.8" />
+        <param name="turn_active" value="$(arg turn_active)"/>
     </node>
 </launch>
