@@ -86,7 +86,7 @@ def configure_node(name: str):
     return set_state_result
 
 
-def load_params(mission: str) -> None:
+def load_params_from_config_file(mission: str) -> None:
     """
     Load parameters from a YAML file based the mission.
     Also takes the car name from the /car parameter.
