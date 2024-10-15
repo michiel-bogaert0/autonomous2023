@@ -70,7 +70,7 @@ class AutonomousController(NodeManager):
                 return
 
         self.switch_controllers()
-
+        self.terminalpub = True
         self.change_state(AutonomousStatesEnum.ASOFF)
         self.car.update(self.as_state)
 
