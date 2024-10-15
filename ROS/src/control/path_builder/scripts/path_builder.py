@@ -20,7 +20,7 @@ class PathBuilder(ManagedNode):
         self.lap_complete_sub = super().AddSubscriber(
             "/ugr/car/lapComplete", UInt16, self.lap_complete_callback
         )
-        self.closed = False
+        self.explo_done = False
         self.global_path_ids = []
 
         self.cones = None
@@ -44,7 +44,7 @@ class PathBuilder(ManagedNode):
 
     def lap_complete_callback(self, msg: UInt16):
         if msg.data >= 1:
-            self.closed = True
+            self.explo_done = True
 
     def receive_new_map(self, map):
         if map is None:
@@ -67,18 +67,19 @@ class PathBuilder(ManagedNode):
         # Store IDs of first pose of each pathplanning path
         closest_point_ids = (msg.poses[0].left_id, msg.poses[0].right_id)
 
-        # Visualize center between closest points
-        for cone in self.cones:
-            if cone[3] == closest_point_ids[0]:
-                left_cone = cone
-            if cone[3] == closest_point_ids[1]:
-                right_cone = cone
+        # Determines the left & right cone of this pose once exploration is done
+        left_cone, right_cone = self.determine_cones(
+            closest_point_ids[0], closest_point_ids[1]
+        )
 
+        # Calculates centerpoint
         if left_cone is not None and right_cone is not None:
             new_point = (
                 (left_cone[0] + right_cone[0]) / 2,
                 (left_cone[1] + right_cone[1]) / 2,
             )
+        else:
+            return
 
         # Publish target point for visualization
         point = PointStamped()
@@ -92,7 +93,7 @@ class PathBuilder(ManagedNode):
         if closest_point_ids not in self.global_path_ids:
             self.global_path_ids.append(closest_point_ids)
 
-        if not self.closed or not self.global_path_enabled:
+        if not self.explo_done or not self.global_path_enabled:
             # Just publish the pathplanning path
             path = Path()
             path.header = msg.header
@@ -104,35 +105,16 @@ class PathBuilder(ManagedNode):
         else:
             global_path = []
             for tuple in self.global_path_ids:
-                left_cone = None
-                right_cone = None
-                for cone in self.cones:
-                    if cone[3] == tuple[0]:
-                        left_cone = cone
-                    if cone[3] == tuple[1]:
-                        right_cone = cone
+                left_cone, right_cone = self.determine_cones(tuple[0], tuple[1])
+
                 if left_cone is not None and right_cone is not None:
                     new_point = (
                         (left_cone[0] + right_cone[0]) / 2,
                         (left_cone[1] + right_cone[1]) / 2,
                     )
-                    if len(global_path) >= 2:
-                        dist_new_to_second_last_point = (
-                            (new_point[0] - global_path[-2][0]) ** 2
-                            + (new_point[1] - global_path[-2][1]) ** 2
-                        ) ** 0.5
-                        dist_last_to_second_last_point = (
-                            (global_path[-1][0] - global_path[-2][0]) ** 2
-                            + (global_path[-1][1] - global_path[-2][1]) ** 2
-                        ) ** 0.5
 
-                        if (
-                            dist_new_to_second_last_point
-                            > dist_last_to_second_last_point
-                        ):
-                            global_path.append(new_point)
-                    else:
-                        global_path.append(new_point)
+                    self.check_correct_order(global_path, new_point)
+
             path = Path()
             path.header = msg.header
             for point in global_path:
@@ -141,6 +123,47 @@ class PathBuilder(ManagedNode):
                 pose.pose.position.y = point[1]
                 path.poses.append(pose)
             self.path_publisher.publish(path)
+
+    def determine_cones(self, arg1, arg2):
+        """
+        Returns the left and right cone of a pose
+        This is by comparing the id's with all the id's in self.cones
+
+        Args:
+            arg1: id of the left cone
+            arg2: id of the right cone
+        """
+        leftcone = None
+        rightcone = None
+        for cone in self.cones:
+            if cone[3] == arg1 or arg1 in self.merges[cone[3]]:
+                leftcone = cone
+            if cone[3] == arg2 or arg2 in self.merges[cone[3]]:
+                rightcone = cone
+        return leftcone, rightcone
+
+    def check_correct_order(self, global_path, new_point):
+        """
+        Checks if the new point is closer to the last point than
+        to the second-to-last point in the global path.
+
+        Args:
+            global_path: the array where all the points of the path are stored
+            new_point: the new point
+        """
+        if len(global_path) >= 2:
+            dist_new_to_second_last_point = (new_point[0] - global_path[-2][0]) ** 2 + (
+                (new_point[1] - global_path[-2][1]) ** 2
+            )
+
+            dist_last_to_second_last_point = (
+                global_path[-1][0] - global_path[-2][0]
+            ) ** 2 + ((global_path[-1][1] - global_path[-2][1]) ** 2)
+
+            if dist_new_to_second_last_point > dist_last_to_second_last_point:
+                global_path.append(new_point)
+        else:
+            global_path.append(new_point)
 
 
 PathBuilder()

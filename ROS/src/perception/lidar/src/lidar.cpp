@@ -10,6 +10,15 @@
 namespace ns_lidar {
 Lidar::Lidar(ros::NodeHandle &n)
     : n_(n), cone_clustering_(n), ground_removal_(n) {
+
+  // Set parameters for preprocessing
+  n.param<double>("min_distance", min_distance_, 1.0);
+  n.param<double>("max_distance", max_distance_, 21.0);
+  n.param<double>("max_height", max_height_, 0.5);
+  n.param<double>("sensor_height", sensor_height_, 0.98);
+  n.param<double>("min_angle", min_angle_, 0.3);
+  n.param<double>("max_angle", max_angle_, 2.8);
+
   // Subscribe to the raw lidar topic
   // rawLidarSubscriber_ = n.subscribe("perception/raw_pc", 10,
   // &Lidar::rawPcCallback, this);
@@ -19,6 +28,7 @@ Lidar::Lidar(ros::NodeHandle &n)
   n.param<bool>("publish_preprocessing", publish_preprocessing_, false);
   n.param<bool>("publish_ground", publish_ground_, false);
   n.param<bool>("publish_clusters", publish_clusters_, true);
+
   n.param<bool>("lidar_rotated", lidar_rotated_, false);
   // Publish to the filtered and clustered lidar topic
   if (publish_preprocessing_)
@@ -207,12 +217,14 @@ void Lidar::preprocessing(
   for (auto &iter : raw.points) {
     // Remove points closer than 1m, higher than 0.5m or further than 20m
     // and points outside the frame of Pegasus
-    if (abs(2 * atan(iter.z / std::hypot(iter.x, iter.y))) > max_fov_)
-      max_fov_ = abs(2 * atan(iter.z / std::hypot(iter.x, iter.y)));
-    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
-        std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||
-        std::atan2(iter.x, iter.y) > 2.8)
-      continue;
+    if (std::hypot(iter.x, iter.y) < min_distance_ ||
+        iter.z > -sensor_height_ + max_height_ ||
+        std::hypot(iter.x, iter.y) > max_distance_ ||
+        std::atan2(iter.x, iter.y) < min_angle_ ||
+        std::atan2(iter.x, iter.y) > max_angle_)
+      if (abs(2 * atan(iter.z / std::hypot(iter.x, iter.y))) > max_fov_)
+        max_fov_ = abs(2 * atan(iter.z / std::hypot(iter.x, iter.y)));
+    continue;
     preprocessed_pc->points.push_back(iter);
     ROS_INFO("max FOV: %f", max_fov_);
   }
