@@ -149,7 +149,6 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
 
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> cone_clusters;
   cone_clusters = std::get<1>(msg_and_coneclusters);
-
   if (cone_clusters.size() == cluster.points.size()) {
     for (int i = 0; i < cone_clusters.size(); ++i) {
       pcl::PointCloud<pcl::PointXYZINormal> &cone_cluster = cone_clusters[i];
@@ -217,16 +216,17 @@ void Lidar::preprocessing(
   for (auto &iter : raw.points) {
     // Remove points closer than 1m, higher than 0.5m or further than 20m
     // and points outside the frame of Pegasus
-    if (std::hypot(iter.x, iter.y) < min_distance_ ||
-        iter.z > -sensor_height_ + max_height_ ||
+    if (abs(2 * atan(iter.z / std::hypot(iter.x, iter.y))) > max_fov_)
+      max_fov_ = abs(2 * atan(iter.z / std::hypot(iter.x, iter.y)));
+    if (std::hypot(iter.x, iter.y) < min_distance_ || iter.z > -0.1 ||
+        //-sensor_height_ + max_height_ ||
         std::hypot(iter.x, iter.y) > max_distance_ ||
         std::atan2(iter.x, iter.y) < min_angle_ ||
-        std::atan2(iter.x, iter.y) > max_angle_)
-      if (abs(2 * atan(iter.z / std::hypot(iter.x, iter.y))) > max_fov_)
-        max_fov_ = abs(2 * atan(iter.z / std::hypot(iter.x, iter.y)));
-    continue;
+        std::atan2(iter.x, iter.y) > max_angle_) {
+      continue;
+    }
     preprocessed_pc->points.push_back(iter);
-    ROS_INFO("max FOV: %f", max_fov_);
+    ROS_INFO(std::to_string(max_fov_).c_str());
   }
 }
 

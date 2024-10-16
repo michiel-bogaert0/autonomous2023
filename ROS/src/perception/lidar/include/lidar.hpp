@@ -42,7 +42,7 @@ private:
   bool publish_ground_;        // publish the debug ground pointclouds
   bool publish_clusters_;      // color the clusters and publish them
 
-  double max_fov = 0;
+  double max_fov_ = 0;
   double min_distance_;
   double max_distance_;
   double max_height_;
@@ -50,7 +50,6 @@ private:
   double min_angle_;
   double max_angle_;
 
-  double max_fov = 0;
   std::string blue_url_ = "https://storage.googleapis.com/"
                           "learnmakeshare_cdn_public/blue_cone_final.dae";
   std::string yellow_url_ = "https://storage.googleapis.com/"
