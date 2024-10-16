@@ -60,7 +60,7 @@ void OrionHWInterface::init()
   this->axis1_frame = nh.param("axis1/frame", std::string("ugr/car_base_link/axis1"));
   this->wheel_diameter = nh.param("wheel_diameter", 16.0 * 2.54 / 100.0);  // in m
   this->gear_ratio = nh.param("gear_ratio", 3.405);
-  this->n_polepairs = nh.param("n_polepairs", 8);
+  this->n_polepairs = nh.param("n_polepairs", 10);
 
   axis0_joint_id = std::find(joint_names_.begin(), joint_names_.end(), axis0_joint_id_name) - joint_names_.begin();
   axis1_joint_id = std::find(joint_names_.begin(), joint_names_.end(), axis1_joint_id_name) - joint_names_.begin();
