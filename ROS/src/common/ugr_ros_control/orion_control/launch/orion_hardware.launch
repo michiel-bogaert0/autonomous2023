@@ -27,6 +27,7 @@
 
       <param name="wheel_diameter" value="0.4064" />
       <param name="gear_ratio" value="3.405" />
+      <param name="n_polepairs" value="10" />
 
       <!-- Torque vectoring -->
       <param name="use_torque_vectoring" value="false" />
