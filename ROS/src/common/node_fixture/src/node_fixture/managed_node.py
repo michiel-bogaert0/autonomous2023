@@ -211,7 +211,7 @@ class ManagedNode:
         else:
             # invalid state transition
             rospy.loginfo(
-                f"Invalid state transition from {self.state} to {request.state}"
+                f"Invalid state transition in {self.name} from {self.state} to {request.state}"
             )
             # response that the transition is unsuccesful
             return SetNodeStateResponse(succes=False)
