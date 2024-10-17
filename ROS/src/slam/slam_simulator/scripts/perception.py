@@ -58,12 +58,12 @@ class PerceptionSimulator(StageSimulator):
         )  # Noise per meter distance. Gets scaled with range
         self.cones_on_track = rospy.get_param("~cones_on_track", False)
         self.color_prob = rospy.get_param("~color_prob", 0.05)
-        self.amount_of_falsepositives = rospy.get_param("~amount_of_falsepositives", 0)
-        self.outerrange = rospy.get_param(
-            "~outerrange", 5
-        )  # should be about the with of the track or slightly bigger
+        self.amount_of_falsepositives = rospy.get_param("~false_positives", 0)
         self.innerrange = rospy.get_param(
-            "~innerrange", 4
+            "~innerrange"
+        )  # should be about the width of the track or slightly bigger
+        self.outerrange = rospy.get_param(
+            "~outerrange"
         )  # measure for how far false positives away from track
         self.FP_triggerrate = rospy.get_param("~FP_triggerrate", 0.3)
         # Diagnostics Publisher
@@ -114,11 +114,11 @@ class PerceptionSimulator(StageSimulator):
                 [
                     surroundedcone.observation.location.x
                     + np.random.rand()
-                    * self.innerrange
+                    * self.outerrange
                     * ((-1) ** (np.random.randint(0, 2))),
                     surroundedcone.observation.location.y
                     + np.random.rand()
-                    * self.innerrange
+                    * self.outerrange
                     * ((-1) ** (np.random.randint(0, 2))),
                     surroundedcone.observation.location.z,
                     np.random.randint(0, 2),
@@ -131,7 +131,7 @@ class PerceptionSimulator(StageSimulator):
                     == 1 - surroundedcone.observation.observation_class
                     and (new_cone[0] - cone.observation.location.x) ** 2
                     + (new_cone[1] - cone.observation.location.y) ** 2
-                    < self.outerrange**2
+                    < self.innerrange**2
                     and not self.cones_on_track
                 ):
                     ontrack = True
