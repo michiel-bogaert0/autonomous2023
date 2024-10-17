@@ -58,7 +58,7 @@ class PerceptionSimulator(StageSimulator):
         )  # Noise per meter distance. Gets scaled with range
         self.cones_on_track = rospy.get_param("~cones_on_track", False)
         self.color_prob = rospy.get_param("~color_prob", 0.05)
-        self.amount_of_falsepositives = rospy.get_param("~false_positives", 0)
+        self.amount_of_falsepositives = rospy.get_param("~FP", 0)
         self.innerrange = rospy.get_param(
             "~innerrange"
         )  # should be about the width of the track or slightly bigger
