@@ -1,3 +1,5 @@
+observations_topic: "/ugr/car/observations/lidar"
+
 slam_controller:
   node_management:
     exploration:

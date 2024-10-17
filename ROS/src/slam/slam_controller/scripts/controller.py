@@ -9,7 +9,7 @@ from node_fixture.fixture import (
     StateMachineScopeEnum,
     create_diagnostic_message,
 )
-from node_fixture.node_manager import NodeManager, load_params
+from node_fixture.node_manager import NodeManager, load_params_from_config_file
 from std_msgs.msg import Bool, Float64, Header, UInt16
 from std_srvs.srv import Empty
 from ugr_msgs.msg import State
@@ -59,7 +59,7 @@ class Controller(NodeManager):
         self.mission = rospy.get_param("/mission")
 
         # Configure parameters after mission is set. Also loads in the parameter for the node manager
-        load_params(self.mission)
+        load_params_from_config_file(self.mission)
 
         # Configure nodes after mission is set
         # When this doesn't work, the thread joins, so the mission change is not executed
