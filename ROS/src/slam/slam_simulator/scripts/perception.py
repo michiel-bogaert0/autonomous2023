@@ -39,7 +39,7 @@ class PerceptionSimulator(StageSimulator):
         self.datalatch.create("cones", 1)
         self.datalatch.create("odom", 400)
         self.started = False
-        self.FalsePoscones = []
+        self.FP_cones = []
         super().__init__("perception")
 
         self.tf_buffer = tf.Buffer()
@@ -65,7 +65,7 @@ class PerceptionSimulator(StageSimulator):
         self.outerrange = rospy.get_param(
             "~outerrange"
         )  # measure for how far false positives away from track
-        self.FP_triggerrate = rospy.get_param("~FP_triggerrate", 0.3)
+        self.FP_prob = rospy.get_param("~FP_prob", 0.3)
         # Diagnostics Publisher
         self.diagnostics = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
@@ -105,7 +105,7 @@ class PerceptionSimulator(StageSimulator):
             )
 
         count = 0
-        while count < self.amount_of_falsepositives:
+        while count < self.amount_of_falsepositives:  # generating # amount of FP's
             ontrack = False
             surroundedcone = track.observations[
                 np.random.randint(0, len(track.observations))
@@ -139,7 +139,7 @@ class PerceptionSimulator(StageSimulator):
                 surroundedcone.observation.observation_class == 1
                 or surroundedcone.observation.observation_class == 0
             ):
-                self.FalsePoscones.append(new_cone)
+                self.FP_cones.append(new_cone)
                 count += 1
 
         cones = np.array(cones)
@@ -173,8 +173,8 @@ class PerceptionSimulator(StageSimulator):
         )
 
         new_cones = copy.deepcopy(self.datalatch.get("cones"))
-        for cone in self.FalsePoscones:
-            if np.random.rand() < self.FP_triggerrate:
+        for cone in self.FP_cones:  # simulating FP
+            if np.random.rand() < self.FP_prob:
                 new_cones = np.concatenate((new_cones, np.array([cone])))
         new_cones[:, :-2] = PerceptionSimulator.apply_transformation(
             new_cones[:, :-2], [pos.x, pos.y], yaw, True

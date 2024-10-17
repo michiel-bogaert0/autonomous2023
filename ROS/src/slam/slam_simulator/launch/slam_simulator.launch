@@ -9,7 +9,7 @@
   <arg name="filename" />
   <arg name="turn_active" default="false" />
   <arg name="false_positives" default="0" />
-  <arg name="FP_trigger" default="1" />
+  <arg name="FP_prob" default="1" />
 
   <!-- Perception simulator -->
 
@@ -26,7 +26,7 @@
     <param name="false_positives" value="$(arg false_positives)" />
     <param name="innerrange" value="5" />     <!-- minumum FP range away from trackcones on other side: should be track width or slightly bigger-->
     <param name="outerrange" value="15" />  <!-- maximum FP range away from track--> 
-    <param name="FP_triggerrate" value="$(arg FP_trigger)" />
+    <param name="FP_prob" value="$(arg FP_prob)" />
 
     <param name="cones_on_track" value="False" />
     <param name="turn_active" value="$(arg turn_active)"/>
