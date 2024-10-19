@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-import math
 import os
-import sys
 
 import rospy
 import yaml
@@ -13,48 +11,14 @@ from node_fixture.fixture import (
 )
 from ugr_msgs.msg import ObservationWithCovarianceArrayStamped
 
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "trackgen"))
-)
-from track_generator import TrackGenerator  # noqa: E402
-
 
 class MapPublisher:
     def __init__(self):
         rospy.init_node("slam_simulator_map_publisher")
-        # Generate track
-        gen_cfg = {
-            "min_corner_radius": 3,
-            "max_frequency": 7,
-            "amplitude": 1 / 3,
-            "check_self_intersection": True,
-            "starting_amplitude": 0.4,
-            "rel_accuracy": 0.005,
-            "margin": 0,
-            "starting_straight_length": 6,
-            "starting_straight_downsample": 2,
-            "min_cone_spacing": 3 * math.pi / 16,
-            "max_cone_spacing": 5,
-            "track_width": 3,
-            "cone_spacing_bias": 0.5,
-            "starting_cone_spacing": 0.5,
-            "length": 100,  # change length of track
-        }
-        gen = TrackGenerator(gen_cfg)
-        start_cones, left_cones, right_cones = gen()
 
-        # Save track
-        TrackGenerator.write_to_yaml(
-            os.path.join(
-                r"/home/ugr/autonomous2023/ROS/src/slam/slam_simulator/maps",
-                "default_gen_track.yaml",
-            ),
-            start_cones,
-            left_cones,
-            right_cones,
-            overwrite=True,
+        self.map = rospy.get_param(
+            "~map", f"{os.path.dirname(__file__)}/../maps/circle_R15.yaml"
         )
-        self.map = rospy.get_param("~gen_map")
         self.override_time = rospy.get_param("~override_time", True)
 
         self.map_publisher = rospy.Publisher(
