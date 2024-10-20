@@ -4,7 +4,7 @@
     This launch file runs the external parts of the simulation. 
     It requires a filename for the map to use 
   -->
-
+  <arg name="generate_track" default="False"/>
   <arg name="gt_map_topic" default="ugr/car/map/gt" />
   <arg name="filename" />
   <arg name="turn_active" default="false" />
@@ -35,17 +35,11 @@
     <remap from="/input/track" to="$(arg gt_map_topic)" />
   </node>
 
-  <!-- GT map publisher-->
-  <!--
-  <node name="gt_map_publisher" pkg="slam_simulator" output="screen" type="map_publisher.py">
-    <param name="map" value="$(find slam_simulator)/maps/$(arg filename)" />
-
-    <remap from="/output/map" to="$(arg gt_map_topic)" />
-  </node>
-  -->
-  <node name="gt_map_publisher" pkg="slam_simulator" output="screen" type="map_publisher.py">
+  
+  <node name="gt_map_publisher" pkg="slam_simulator" output="screen" type="sim_map_publisher.py">
     <param name="gen_map" value="$(find slam_simulator)/maps/default_gen_track.yaml" />
-
+    <param name="map" value="$(find slam_simulator)/maps/$(arg filename)" />
+    <param name="generate_track" value="$(arg generate_track)"/>
     <remap from="/output/map" to="$(arg gt_map_topic)" />
   </node>
 </launch>
