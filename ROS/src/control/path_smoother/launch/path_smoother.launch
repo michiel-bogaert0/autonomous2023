@@ -1,9 +1,10 @@
 <launch>
+    <arg name="turn_active" default="false" />
     <node pkg="path_smoother" type="smooth_path.py" name="path_smoother" respawn="true" output="screen">
         <param name="world_frame" value="ugr/map" />
         <param name="max_distance_away_from_start" value="9" />
         <param name="min_distance_away_from_start" value="16" />
-
+        <param name="turn_active" value="$(arg turn_active)"/>
         <remap from="/input/path" to="/pathplanning/global_path"/>
         <remap from="/output/path" to="/pathplanning/path"/>
         <remap from="/output/vis_path" to="/pathplanning/vis_path"/>

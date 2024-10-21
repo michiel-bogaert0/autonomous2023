@@ -94,6 +94,7 @@ private:
   ros::Rate healthrate;
   ros::Time lastHealthTime;
   diagnostic_msgs::DiagnosticStatus health;
+  bool turn_active_;
 };
 
 } // namespace node_fixture

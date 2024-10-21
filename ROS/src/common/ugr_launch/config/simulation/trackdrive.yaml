@@ -1,3 +1,5 @@
+observations_topic: "/ugr/car/observations/lidar"
+
 slam_controller:
   node_management:
     exploration:
@@ -24,7 +26,12 @@ slam_controller:
 slam_mcl:
   path_to_map: "/ugr/car/map/slam/global"
 lap_counter:
-  finishpoint: [0, 0, 0]
+  finishpoint:
+    x: 0
+    y: 0
+  laps: 10
+  distance_after: 4
+  finishRange: 3
 speed:
   target: 2.0
   target_racing: 10.0

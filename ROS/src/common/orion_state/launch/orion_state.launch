@@ -8,7 +8,6 @@
     <remap from="/aio/in/rear_bp" to="/ugr/can/lv/processed/state_bpri4"/>
     <remap from="/aio/in/air_pressure1" to="/ugr/can/lv/processed/state_bpri5"/>
     <remap from="/aio/in/air_pressure2" to="/ugr/can/lv/processed/state_bpri6"/>
-    <remap from="/input/observations" to="/ugr/car/observations/fused"/>
     <remap from="/input/map" to="/ugr/car/map/slam/local"/>
     <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>
     <remap from="/input/lapComplete" to="/ugr/car/lapComplete"/>

@@ -8,6 +8,7 @@
   <!-- ? Controller -->
   <node name="slam_controller" pkg="slam_controller" type="controller.py" output="screen">
     <remap from="/input/lapComplete" to="/ugr/car/lapComplete" />
+    <remap from="/input/finished" to="/ugr/car/finished" />
   </node>
 
   <!-- ? Map server -->
