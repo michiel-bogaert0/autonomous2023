@@ -1,10 +1,12 @@
 import copy
+
+# from time import perf_counter
 from typing import Callable
 
 import casadi
 import numpy as np
-from optimal_control.integrator import euler, rk4
-from utils.common_utils import Timer
+from optimal_control_gen.integrator import euler, rk4
+from utils_gen.common_utils import Timer
 
 
 class Ocp:
@@ -13,12 +15,14 @@ class Ocp:
         nx: int,
         nu: int,
         N: int,
+        curve,
         T: float = None,
         F: Callable = None,
         silent=False,
         show_execution_time=True,
         store_intermediate=False,
         threads=1,
+        adaptive_boundaries=True,
     ):
         """optimal control abstraction
 
@@ -38,11 +42,22 @@ class Ocp:
         self.N = N
         self.T = T
         self.F = F
+        self.dt = T / N
 
         self.opti = casadi.Opti()
 
+        # Spline
+        if curve is not None:
+            self.centerline = curve
+            self.der_centerline = curve.derivative(o=1)
+        else:
+            self.centerline = None
+            self.der_centerline = None
+
         # Input and state sequence
         self.X = self.opti.variable(self.nx, N + 1)
+        # self.X = casadi.repmat([1e1, 1e1, 1e-1, 1, 1e2, 1], 1, self.N+1) * self.opti.variable(self.nx, N + 1)
+
         self.U = self.opti.variable(self.nu, N)
 
         # Initial state
@@ -55,8 +70,10 @@ class Ocp:
         self.Sc = self.opti.variable(1, N + 1)
         self.sc = casadi.SX.sym("sc", 1)
 
-        # The reference trajectory
-        self._x_reference = self.opti.parameter(self.nx, self.N + 1)
+        # Option to not recalculate boundaries in each step of optimization
+        self.adaptive_boundaries = adaptive_boundaries
+        if not self.adaptive_boundaries:
+            self.center_points = self.opti.parameter(2, N + 1)
 
         # Parameters to define boundary halfspaces
         self.slopes_inner = self.opti.parameter(1, N + 1)
@@ -68,7 +85,10 @@ class Ocp:
         self.x = casadi.SX.sym("symbolic_x", self.nx)
         self.u = casadi.SX.sym("symbolic_u", self.nu)
         self.u_delta = casadi.SX.sym("symbolic_u_prev", self.nu)
-        self.x_reference = casadi.SX.sym("symbolic_x_control_", self.nx)
+
+        # Point on spline
+        self.point_curve = casadi.SX.sym("point_curve", 2)
+        self.der_curve = casadi.SX.sym("der_curve", 2)
 
         self._set_continuity(threads)
 
@@ -86,9 +106,6 @@ class Ocp:
         self.timer = Timer(verbose=False)
 
     def __deepcopy__(self, memo):
-        """
-        Not used
-        """
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
@@ -100,9 +117,6 @@ class Ocp:
         return getattr(self.opti, name)
 
     def discretize(self, f, DT, M, integrator="rk4"):
-        """
-        Not used in this place
-        """
         x = casadi.SX.sym("x", self.nx)
         u = casadi.SX.sym("u", self.nu)
 
@@ -125,16 +139,16 @@ class Ocp:
         # self.opti.subject_to(self.X[:, 0] == self.x0)
 
         # For generation
+        self.opti.subject_to(self.X[5, 0] == self.x0[5])
+        self.opti.subject_to(self.X[5, self.N] == 1)
         self.opti.subject_to(self.X[:2, 0] == self.X[:2, self.N])
 
         # The constraints below are also for generation, but they do not work for some reason
-        # self.opti.subject_to(self.X[4, 0] == self.X[4, self.N])
-        # self.opti.subject_to(self.X[:, 0] == self.X[:, self.N])
-        # self.opti.subject_to(casadi.fabs(casadi.fmod((2 * casadi.pi), self.X[2, self.N]) - casadi.fmod((2 * casadi.pi), self.X[2, 0])) < casadi.pi)
+        # self.opti.subject_to(casadi.fabs(casadi.fmod((casadi.pi), self.X[2, self.N]) - casadi.fmod((casadi.pi), self.X[2, 0])) < casadi.pi)
 
         if threads == 1:
             for i in range(self.N):
-                x_next = self.F(self.X[:, i], self.U[:, i])
+                x_next = self.F(self.X[:, i], self.U[:, i])  # hier self.DT_sym meegeven
 
                 if isinstance(x_next, np.ndarray):
                     x_next = casadi.vcat(x_next)  # convert numpy array to casadi vector
@@ -144,16 +158,42 @@ class Ocp:
             X_next = self.F.map(self.N, "thread", threads)(self.X[:, :-1], self.U)
             self.opti.subject_to(self.X[:, 1:] == X_next)
 
-    def eval_cost(self, X, U, goal_state):
-        """
-        Not used
-        """
+    def eval_cost(self, X, U, Sc):
+        # Function not tested
         assert X.shape[0] == self.nx
-        N = X.shape[1] - 1
+        # N = X.shape[1] - 1
 
-        cost_accum = self.cost_fun.map(N)(X[:, :-1], U, casadi.repmat(goal_state, 1, N))
+        L_run = 0  # cost over the horizon
+        for i in range(self.N + 1):
+            if i == 0:
+                L_run += self.cost_fun(
+                    X[:, i],
+                    U[:, i],
+                    (U[:, i] - self.u_prev),
+                    self.centerline(X[5, i]).T,
+                    self.der_centerline(X[5, i]).T,
+                    Sc[i],
+                )
+            elif i == self.N:
+                L_run += self.cost_fun(
+                    X[:, i],
+                    0,
+                    0,
+                    self.centerline(X[5, i]).T,
+                    self.der_centerline(X[5, i]).T,
+                    Sc[i],
+                )
+            else:
+                L_run += self.cost_fun(
+                    X[:, i],
+                    U[:, i],
+                    (U[:, i] - U[:, i - 1]),
+                    self.centerline(X[5, i]).T,
+                    self.der_centerline(X[5, i]).T,
+                    Sc[i],
+                )
 
-        return casadi.sum2(cost_accum)
+        return casadi.sum2(L_run)
 
     def set_cost(
         self,
@@ -162,13 +202,18 @@ class Ocp:
         if cost_fun is not None:
             self.cost_fun = cost_fun
             L_run = 0  # cost over the horizon
+
+            center_points = self.centerline(self.X[5, :].T).T
+            der_points = self.der_centerline(self.X[5, :].T).T
+
             for i in range(self.N + 1):
                 if i == 0:
                     L_run += cost_fun(
                         self.X[:, i],
                         self.U[:, i],
-                        1 * (self.U[:, i] - self.u_prev),
-                        self._x_reference[:, i],
+                        (self.U[:, i] - self.u_prev),
+                        center_points[i],
+                        der_points[i],
                         self.Sc[i],
                     )
                 elif i == self.N:
@@ -176,7 +221,8 @@ class Ocp:
                         self.X[:, i],
                         0,
                         0,
-                        self._x_reference[:, i],
+                        center_points[i],
+                        der_points[i],
                         self.Sc[i],
                     )
                 else:
@@ -184,7 +230,8 @@ class Ocp:
                         self.X[:, i],
                         self.U[:, i],
                         (self.U[:, i] - self.U[:, i - 1]),
-                        self._x_reference[:, i],
+                        center_points[i],
+                        der_points[i],
                         self.Sc[i],
                     )
 
@@ -201,7 +248,14 @@ class Ocp:
     def running_cost(self, symbolic_cost):
         cost_fun = casadi.Function(
             "cost_fun",
-            [self.x, self.u, self.u_delta, self.x_reference, self.sc],
+            [
+                self.x,
+                self.u,
+                self.u_delta,
+                self.point_curve,
+                self.der_curve,
+                self.sc,
+            ],
             [symbolic_cost],
         )
         self.set_cost(cost_fun=cost_fun)
@@ -240,6 +294,11 @@ class Ocp:
             "max_iter": 500,
             "print_level": print_level,
             "sb": "yes",
+            # "nlp_scaling_method": "none",
+            "constr_viol_tol": 1e-1,
+            "print_user_options": "yes",
+            # "acceptable_constr_viol_tol": 1e-1,
+            # "bound_relax_factor": 10,
         }
 
         return p_opts, s_opts
@@ -247,7 +306,7 @@ class Ocp:
     def solve(
         self,
         state,
-        reference_track,
+        curve,
         a,
         b,
         c,
@@ -272,18 +331,20 @@ class Ocp:
         """
         self.opti.set_value(self.x0, state)
 
-        for i in range(self.N + 1):
-            self.opti.set_value(self._x_reference[:, i], reference_track[i])
+        self.centerline = curve
+        self.der_centerline = curve.derivative(o=1)
 
-        self.opti.set_value(self.slopes_inner, a)
-        self.opti.set_value(self.intercepts_inner, b)
-        self.opti.set_value(self.slopes_outer, c)
-        self.opti.set_value(self.intercepts_outer, d)
+        # self.opti.set_value(self.slopes_inner, a)
+        # self.opti.set_value(self.intercepts_inner, b)
+        # self.opti.set_value(self.slopes_outer, c)
+        # self.opti.set_value(self.intercepts_outer, d)
+
         self.opti.set_value(self.u_prev, u_prev)
 
         if X0 is not None:
             self.opti.set_initial(self.X, X0)
         else:
+            X0 = np.zeros((self.nx, self.N + 1))
             self.opti.set_initial(self.X, np.zeros((self.nx, self.N + 1)))
 
         if U0 is not None:
@@ -291,7 +352,10 @@ class Ocp:
         else:
             self.opti.set_initial(self.U, np.zeros((self.nu, self.N)))
 
-        self.opti.set_initial(self.Sc, np.ones((1, self.N + 1)) * 1e-2)
+        self.opti.set_initial(self.Sc, np.zeros((1, self.N + 1)) * 1e-1)
+
+        if not self.adaptive_boundaries:
+            self.opti.set_value(self.center_points, self.centerline(X0[5, :].T).T)
 
         try:
             with self.timer:

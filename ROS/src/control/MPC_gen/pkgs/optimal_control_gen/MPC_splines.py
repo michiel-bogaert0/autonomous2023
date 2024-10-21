@@ -1,17 +1,13 @@
 import casadi as cd
 import numpy as np
 from casadi import casadi
-from optimal_control.ocp import Ocp
-from utils.common_utils import Timer
-
-############################################
-# Most of this file is from my supervisors #
-############################################
+from optimal_control_gen.ocp import Ocp
+from utils_gen.common_utils import Timer
 
 
-class MPC_tracking:
+class MPC_splines:
     """
-    Abstraction of MPC, can be called to run trajectory tracking. Uses casadi
+    Abstraction of MPC, can be called to run MPC with splines. Uses casadi
     formulation to run the dynamic optimisation.
 
     Kwargs:
@@ -53,7 +49,7 @@ class MPC_tracking:
     def __call__(
         self,
         state,
-        reference_track,
+        curve,
         a,
         b,
         c,
@@ -62,7 +58,7 @@ class MPC_tracking:
         X0=None,
         U0=None,
         warm_start=True,
-        **solver_kwargs
+        **solver_kwargs,
     ):
         """Solve the optimal control problem for the given initial state and return the first action.
         If an initial guess is provided, the warm start flag is ignored.
@@ -79,6 +75,7 @@ class MPC_tracking:
         Returns:
             array: the first control from the control sequence solution
         """
+
         if warm_start:
             if self.nr_iters == 0:
                 if self.X_init_guess is not None:
@@ -105,16 +102,7 @@ class MPC_tracking:
 
         with self.timer:
             self.U_sol, self.X_sol, info = self.ocp.solve(
-                state,
-                reference_track,
-                a,
-                b,
-                c,
-                d,
-                u_prev,
-                X0=X0,
-                U0=U0,
-                **solver_kwargs
+                state, curve, a, b, c, d, u_prev, X0=X0, U0=U0, **solver_kwargs
             )
 
         self.X_sol_list.append(self.X_sol)
@@ -156,7 +144,7 @@ class MPC_tracking:
         """Show the pattern of the jacobian and hessian of the cost functions and of the jacobian of the constraints.
         If no cost L is supplied, the cost in the opti formulation is used.
 
-        I have never used this function.
+        I have never used this function
         """
 
         import matplotlib.pyplot as plt

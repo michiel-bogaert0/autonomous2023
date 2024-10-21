@@ -21,11 +21,12 @@ import functools
 import hashlib
 from collections import Counter
 
-import casadi as cas
+import casadi as cd
 import cvxopt
 import numpy as np
 import scipy.linalg as la
-from piecewise import PiecewisePolynomial as ppoly
+
+# from piecewise import PiecewisePolynomial as ppoly
 from scipy.sparse import csr_matrix
 
 # from scipy.sparse.linalg import spsolve
@@ -105,11 +106,11 @@ class csr_matrix_alt(csr_matrix):
         csr_matrix.__init__(self, *args, **kwargs)
 
     def dot(self, other):
-        if isinstance(other, (cas.MX, cas.SX)):
+        if isinstance(other, (cd.MX, cd.SX)):
             # compatible with casadi 3.0 -- added by ruben
-            return cas.mtimes(cas.DM(csr_matrix(self)), other)
+            return cd.mtimes(cd.DM(csr_matrix(self)), other)
             # NOT COMPATIBLE WITH CASADI 2.4
-            # return cas.DMatrix(csr_matrix(self)).mul(other)
+            # return cd.DMatrix(csr_matrix(self)).mul(other)
         elif get_module(other) in ["cvxpy", "cvxopt"]:
             return cvxopt.sparse(cvxopt.matrix(self.toarray())) * other
             # A = self.tocoo()
@@ -127,7 +128,7 @@ class csr_matrix_alt(csr_matrix):
 class matrix_alt:
     """Thomas addition 2023"""
 
-    def __init__(self, M: cas.SX) -> None:
+    def __init__(self, M: cd.SX) -> None:
         self._M = M
 
     def __gettattr__(self, attr):
@@ -140,7 +141,7 @@ class matrix_alt:
             setattr(self._M, attr, value)
 
     def dot(self, other):
-        return cas.mtimes(self._M, other)
+        return cd.mtimes(self._M, other)
 
 
 class Basis(object):
@@ -255,9 +256,14 @@ class BSplineBasis(Basis):
 
         This function implements the Cox-de Boor formula for B-splines
         """
-        if not isinstance(x, (cas.SX, cas.MX)):
+        verbose = False
+        if isinstance(x, (cd.SX, cd.MX)):
+            verbose = False
+        if not isinstance(x, (cd.SX, cd.MX)):
             x = np.array(x)
-
+        # if verbose:
+        #     print(x.shape)
+        #     print(x)
         k = self.knots
         basis = [[self._ind(i, x) * 1.0 for i in range(len(k) - 1)]]
         for d in range(1, self.degree + 1):
@@ -271,9 +277,14 @@ class BSplineBasis(Basis):
                 if bottom != 0:
                     b += (k[i + d + 1] - x) * basis[d - 1][i + 1] / bottom
                 basis[-1].append(b)
+        # if verbose:
+        #     print(len(basis[0]))
+        # print(basis)
         # Consider sparse matrices?
-        if isinstance(x, (cas.SX, cas.MX)):
-            return matrix_alt(cas.hcat(basis[-1]))
+        if isinstance(x, (cd.SX, cd.MX)):
+            if verbose:
+                print(cd.hcat(basis[-1]).shape)
+            return matrix_alt(cd.hcat(basis[-1]))
 
         return csr_matrix_alt(np.c_[basis[-1]].T)
 
@@ -351,29 +362,7 @@ class BSplineBasis(Basis):
 
     def as_poly(self):
         """Returns polynomial description of the basis functions"""
-        k = self.knots
-        k_min, k_max = min(self.knots), max(self.knots)
-        basis = [[ppoly([a, b], [[1]]) for (a, b) in zip(k[:-1], k[1:])]]
-        for d in range(1, self.degree + 1):
-            basis.append([])
-            for i in range(len(k) - d - 1):
-                b = ppoly([k_min, k_max], [0])
-                bottom = k[i + d] - k[i]
-                if bottom != 0:
-                    b += (
-                        ppoly([k_min, k_max], [[-k[i], 1]])
-                        * basis[d - 1][i]
-                        * (1.0 / bottom)
-                    )
-                bottom = k[i + d + 1] - k[i + 1]
-                if bottom != 0:
-                    b += (
-                        ppoly([k_min, k_max], [[k[i + d + 1], -1]])
-                        * basis[d - 1][i + 1]
-                        * (1.0 / bottom)
-                    )
-                basis[-1].append(b)
-        return basis[-1]
+        return
 
 
 class NurbsBasis(Basis):
@@ -385,9 +374,9 @@ class NurbsBasis(Basis):
     def eval_basis(self, x):
         B = self.bbasis(x)
         denom = B.dot(self.weights)
-        if isinstance(self.weights, cas.MX):
+        if isinstance(self.weights, cd.MX):
             pass
-            # B.dot(cas.diag(self.weights))
+            # B.dot(cd.diag(self.weights))
         else:
             return ((B.toarray() * self.weights).T / denom).T
 
@@ -420,10 +409,17 @@ class Spline(object):
         # self.coeffs = np.array(coeffs).ravel()
         self.coeffs = coeffs
         self.basis = basis
-        # if isinstance(coeffs, (cas.SXMatrix, cas.SX)):
-        #     self.basis._basis = cas.DMatrix(self.basis._basis)
+        # if isinstance(coeffs, (cd.SXMatrix, cd.SX)):
+        #     self.basis._basis = cd.DMatrix(self.basis._basis)
 
     def __call__(self, x):
+        # verbose = False
+        # if isinstance(x, (cd.SX, cd.MX)):
+        #     verbose = True
+        # if verbose:
+        # print(len((self.basis(x).dot(self.coeffs))[0]))
+        # print(self.basis(x).shape)
+        # print(self.basis(x).dot(self.coeffs).shape)
         return self.basis(x).dot(self.coeffs)
 
     def __len__(self):
@@ -784,3 +780,148 @@ class TensorBSpline(object):
         for ki in K[:-1]:
             i = np.inner(ki, i)
         return i
+
+
+# class Bspline_impl:
+#     def __init__(self, kk, degree, Ts=1, N=100):
+#         knots = np.concatenate([np.ones(degree) * kk[0], kk, np.ones(degree) * kk[-1]])
+#         self.base = BSplineBasis(knots, degree)
+
+#         self.Ts = Ts
+#         self.tau = np.linspace(0, Ts, N)
+
+#         self.degree = degree
+
+#         n = len(kk)  # nr knots, including 2*k duplicate knots at the ends
+#         self.K = n + degree - 1  # nr control points
+
+#         self.N = N
+#         self.arclen_fun = None
+
+#     def plot_basis(self):
+#         plt.plot(cd.densify(self.base(np.linspace(0, 1))))
+
+#     def gen_curve(self, x):
+#         curve = BSpline(self.base, x)
+#         return curve
+
+#     def evaluate_spline(self, x, tau=None):
+#         """evaluate at tau with control points x"""
+#         curve = self.gen_curve(x)
+#         if tau is None:
+#             tau = self.tau
+#         return curve(tau)
+
+#     def get_flat_output(self, coeff, order, N=None, tau=None):
+#         if (tau is None) and (N is not None):
+#             tau = np.linspace(0, self.Ts, int(N))
+#         elif (tau is None) and (N is None):
+#             tau = self.tau
+
+#         curve = self.gen_curve(coeff)
+#         dcurve = [curve.derivative(o=o) for o in range(1, order + 1)]
+
+#         s = curve(tau)
+#         ds = [dcurve_k(tau) for dcurve_k in dcurve]
+#         flat_output = cd.horzcat(s, *ds)
+
+#         return flat_output
+
+#     def compute_control_points(self, X):
+#         """compute the control points of flat trajectory X with shape(nr control points, flat output)"""
+#         assert X.shape == (self.K, 2)
+
+#         A = self.evaluate_base(np.linspace(0, 1, num=self.K))  # shape=(K,K)
+#         return cd.inv(A) @ X
+
+#     def compute_mixed_control_points(self, X, X_dot0, X_dot1, kk, index=0):
+#         """
+#         Compute the control points with constraints to the derivative at the start and end point to result in better fitting
+#         Does not work atm.
+#         """
+#         A = self.evaluate_base(np.linspace(0, 1, num=self.K))  # shape=(K,K)
+#         # X_dot = X[1] - X[0]
+#         # X_dot = X_dot.copy()
+#         if index == 0:
+#             A[1, :] = np.array([-1, 1] + [0]*82) * self.degree / kk
+#             X[1, :] = X_dot1
+
+#             A[0, :] = np.array([0]*82 + [-1, 1]) * self.degree / kk
+#             X[0, :] = X_dot0
+
+#         return cd.inv(A) @ X
+
+#     def evaluate_base(self, tau):
+#         return cd.densify(self.base(tau))
+
+# def read_yaml(pathname):
+#     with open(pathname, "r") as file:
+#         arr = yaml.safe_load(file)
+#     return arr
+
+# def create_spline(arr, color):
+#     distance = np.cumsum(np.sqrt(np.sum(np.diff(arr, axis=0) ** 2, axis=1)))
+#     distance = np.insert(distance, 0, 0) / distance[-1]
+
+#     alpha = np.linspace(0, 1, len(arr) * 3)
+#     interpolator = interp1d(distance, arr, kind="cubic", axis=0)
+#     arr = interpolator(alpha)
+
+#     # arr = np.vstack((arr, arr[:100]))
+
+#     length = len(arr)
+#     degree = 2
+#     kk = np.linspace(0, 1, length - degree + 1)
+
+#     bspline = Bspline_impl(kk, degree)
+#     control_points = bspline.compute_control_points(np.array(arr))
+#     print(control_points.shape)
+
+#     spline_arr = bspline.evaluate_spline(control_points, tau=np.linspace(0, bspline.Ts, 1000))
+
+#     plt.plot(control_points[:,0], control_points[:,1], 'o', c=color)
+#     plt.plot([x[0] for x in arr], [x[1] for x in arr], '--', c=color)
+#     plt.plot(spline_arr[:,0], spline_arr[:,1], c=color)
+
+#     return spline_arr
+
+# if __name__=="__main__":
+#     # get yaml file in this directory
+#     centerline = []
+#     pathname = "/home/zander/Documents/ugent_racing/autonomous2023/ROS/src/control/MPC/pkgs/utils/path_chicane.yaml"
+#     arr = read_yaml(pathname)
+#     for pose in arr["poses"]:
+#         centerline.append([pose["pose"]["position"]["x"], pose["pose"]["position"]["y"]])
+
+#     # append first pose to close the loop
+#     centerline.append(centerline[0])
+
+#     spline_centerline = create_spline(centerline, 'r')
+
+
+#     left_boundary = []
+#     right_boundary = []
+#     pathname = "/home/zander/Documents/ugent_racing/autonomous2023/ROS/src/control/MPC/pkgs/utils/map_chicane.yaml"
+#     arr = read_yaml(pathname)
+#     for obs in arr["observations"]:
+#         if obs["observation"]["observation_class"] == 0:
+#             left_boundary.append([obs["observation"]["location"]["x"], obs["observation"]["location"]["y"]])
+#         elif obs["observation"]["observation_class"] == 1:
+#             right_boundary.append([obs["observation"]["location"]["x"], obs["observation"]["location"]["y"]])
+
+#     # Append first pose to close the loop
+#     left_boundary.append(left_boundary[0])
+#     right_boundary.append(right_boundary[0])
+
+#     # spline_left_boundary = create_spline(left_boundary, 'b')
+#     # spline_right_boundary = create_spline(right_boundary, 'y')
+
+#     # plt.plot([x[0] for x in left_boundary], [x[1] for x in left_boundary], c="b")
+#     # plt.plot(spline_left_boundary[:,0], spline_left_boundary[:,1], c="b")
+
+#     # plt.plot([x[0] for x in right_boundary], [x[1] for x in right_boundary], c="y")
+#     # plt.plot(spline_right_boundary[:,0], spline_right_boundary[:,1], c="y")
+
+#     plt.xlim(-40, 20)
+#     plt.ylim(-10, 20)
+#     plt.show()
