@@ -1,17 +1,18 @@
 import casadi as cd
 import numpy as np
 from matplotlib import pyplot as plt
-
-from utils import spline as spl
+from utils_gen.spline import BSpline, BSplineBasis
 
 
 class Bspline:
     def __init__(self, kk, degree, Ts=1, N=100):
         knots = np.concatenate([np.ones(degree) * kk[0], kk, np.ones(degree) * kk[-1]])
-        self.base = spl.BSplineBasis(knots, degree)
+        self.base = BSplineBasis(knots, degree)
 
         self.Ts = Ts
         self.tau = np.linspace(0, Ts, N)
+
+        self.degree = degree
 
         n = len(kk)  # nr knots, including 2*k duplicate knots at the ends
         self.K = n + degree - 1  # nr control points
@@ -23,7 +24,7 @@ class Bspline:
         plt.plot(cd.densify(self.base(np.linspace(0, 1))))
 
     def gen_curve(self, x):
-        curve = spl.BSpline(self.base, x)
+        curve = BSpline(self.base, x)
         return curve
 
     def evaluate_spline(self, x, tau=None):
@@ -53,7 +54,31 @@ class Bspline:
         assert X.shape == (self.K, 2)
 
         A = self.evaluate_base(np.linspace(0, 1, num=self.K))  # shape=(K,K)
-        return cd.inv(A) @ X
+
+        # Do not use cd.inv for performance reasons
+        # The following makes use of sparse matrices
+        inv_A = cd.solve(A, cd.DM.eye(A.shape[0]), "csparse")
+        return inv_A @ X
+
+    def compute_mixed_control_points(self, X, X_dot0, X_dot1, index=0):
+        """
+        Compute the control points with constraints to the derivative at the start and end point to result in better fitting
+        Does not work atm.
+        """
+        A = cd.densify(self.evaluate_base(np.linspace(0, 1, num=self.K)))  # shape=(K,K)
+        # X_dot = X[1] - X[0]
+        # X_dot = X_dot.copy()
+        if index == 0:
+            A[0, :] = np.array([-1, 1] + [0] * 250) * self.degree
+            X[0, :] = X_dot0
+
+            A[-1, :] = np.array([-1, 1] + [0] * 250) * self.degree
+            X[-1, :] = X_dot1
+
+        # inv_A = cd.solve(A, cd.DM.eye(A.shape[0]), "csparse")
+        inv_A = cd.inv(A)
+        return inv_A @ X
 
     def evaluate_base(self, tau):
-        return cd.densify(self.base(tau))
+        # Sparse matrix!
+        return self.base(tau)

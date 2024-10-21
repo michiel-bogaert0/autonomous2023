@@ -1,9 +1,9 @@
 import numpy as np
-from environments.Env import Env
-from environments.env_utils import Space
+from environments_gen.Env import Env
+from environments_gen.env_utils import Space
 
 
-class BicycleModel(Env):
+class BicycleModelSpline(Env):
     def __init__(self, dt=0.01, R=0.1, L=0.72, Lr=0.5, mu=0.1, DC=0.025):
         self.dt = dt
         self.R = R
@@ -12,31 +12,35 @@ class BicycleModel(Env):
         self.mu = mu
         self.DC = DC
 
-        self.action_space = Space(low=[-np.inf, -np.inf], high=[-np.inf, np.inf])
+        self.action_space = Space(
+            low=[-np.inf, -np.inf, np.inf], high=[np.inf, np.inf, np.inf]
+        )
 
-        high_state_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf])
+        high_state_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf, np.inf])
         self.state_space = Space(low=-high_state_space, high=high_state_space)
 
-        high_obs_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf])
+        high_obs_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf, np.inf])
         self.observation_space = Space(low=-high_obs_space, high=high_obs_space)
 
-        self.F = self.discretize(self.dynamics, self.dt, M=1)
+        self.F = self.discretize(self.dynamics, self.dt, integrator="rk4", M=1)
 
     def dynamics(self, s, u):
-        # States
+        # State
         # x = s[0]
         # y = s[1]
         theta = s[2]
         zeta = s[3]
         v = s[4]
+        # tau = s[5]
 
         # Inputs
         alpha = u[0]
         phi = u[1]
+        vk = u[2]
 
-        # Outputs
         a = alpha * self.R
 
+        # Outputs
         omega = v * np.tan(zeta) / self.L
 
         dx = v * np.cos(theta)
@@ -44,7 +48,9 @@ class BicycleModel(Env):
 
         dv = a
 
-        return np.array([dx, dy, omega, phi, dv])
+        dtau = vk / self.dt  # cancel out dt
+
+        return np.array([dx, dy, omega, phi, dv, dtau])
 
     def reset(self):
         self.a = 0
