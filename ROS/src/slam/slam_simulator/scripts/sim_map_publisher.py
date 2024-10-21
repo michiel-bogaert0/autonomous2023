@@ -22,7 +22,10 @@ from track_generator import TrackGenerator  # noqa: E402
 class MapPublisher:
     def __init__(self):
         rospy.init_node("slam_simulator_map_publisher")
+
         self.generate_track = rospy.get_param("~generate_track")
+        self.length = rospy.get_param("~track_length")
+
         if self.generate_track:
             self.map = rospy.get_param("~gen_map")
             gen_cfg = {
@@ -40,8 +43,9 @@ class MapPublisher:
                 "track_width": 3,
                 "cone_spacing_bias": 0.5,
                 "starting_cone_spacing": 0.5,
+                "length": self.length,
             }
-            gen = TrackGenerator(gen_cfg)
+            gen = TrackGenerator(gen_cfg)  # generate track
             start_cones, left_cones, right_cones = gen()
 
             # Save track

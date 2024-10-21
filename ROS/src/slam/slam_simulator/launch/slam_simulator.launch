@@ -11,6 +11,7 @@
   <arg name="FP" default="0" />
   <arg name="FP_prob" default="1" />
   <arg name="FP_on_track" default="False"/>
+  <arg name="track_length" default="300"/>
   <!-- Perception simulator -->
 
   <node name="perception_simulator" pkg="slam_simulator" output="screen" type="perception.py">
@@ -40,6 +41,7 @@
     <param name="gen_map" value="$(find slam_simulator)/maps/default_gen_track.yaml" />
     <param name="map" value="$(find slam_simulator)/maps/$(arg filename)" />
     <param name="generate_track" value="$(arg generate_track)"/>
+    <param name="track_length" value="$(arg track_length)"/>
     <remap from="/output/map" to="$(arg gt_map_topic)" />
   </node>
 </launch>
