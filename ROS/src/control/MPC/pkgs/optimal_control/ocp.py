@@ -122,10 +122,10 @@ class Ocp:
         # Depending on generation or tracking, change the constraints here
 
         # For tracking
-        # self.opti.subject_to(self.X[:, 0] == self.x0)
+        self.opti.subject_to(self.X[:, 0] == self.x0)
 
         # For generation
-        self.opti.subject_to(self.X[:2, 0] == self.X[:2, self.N])
+        # self.opti.subject_to(self.X[:2, 0] == self.X[:2, self.N])
 
         # The constraints below are also for generation, but they do not work for some reason
         # self.opti.subject_to(self.X[4, 0] == self.X[4, self.N])

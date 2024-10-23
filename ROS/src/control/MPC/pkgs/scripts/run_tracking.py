@@ -128,13 +128,6 @@ class MPC(ManagedNode):
         self.mpc = MPC_tracking(self.ocp)
 
         # State: x, y, heading, steering angle, velocity
-        Qn = np.diag([0.001, 0.001, 0, 0, 0])
-
-        # Input: acceleration, velocity on steering angle
-        R = np.diag([1e-5, 4e-2])
-        R_delta = np.diag([1e-2, 2])
-
-        # State: x, y, heading, steering angle, velocity
         Qn = np.diag([8e-3, 8e-3, 0, 0, 0])
 
         # Input: acceleration, velocity on steering angle
