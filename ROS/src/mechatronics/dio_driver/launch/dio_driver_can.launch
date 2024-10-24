@@ -1,0 +1,37 @@
+<launch>
+
+  <node pkg="dio_driver" output="screen" type="dio_can.py" respawn="true" name="dio_can">
+
+      <param name="" value="true"/>
+
+      <remap from="/can/rx" to="/ugr/can/lv/101" />
+      <remap from="/can/tx" to="/ugr/can/lv/tx" />
+
+      <remap from="/do/1" to="/dio/out/sdc_close" />
+      <remap from="/do/2" to="/dio/out/wd_trigger"/>
+      <remap from="/do/4" to="/dio/out/ts_btn"/>
+      <remap from="/do/5" to="/dio/out/wd_reset"/>
+      <remap from="/do/6" to="/dio/out/arm_ebs"/>
+      <remap from="/do/7" to="/dio/out/arm_dbs"/>
+
+      <remap from="/do/1/feedback" to="/dio/feedback/sdc_close" />
+      <remap from="/do/2/feedback" to="/dio/feedback/wd_trigger"/>
+      <remap from="/do/4/feedback" to="/dio/feedback/ts_btn"/>
+      <remap from="/do/5/feedback" to="/dio/feedback/wd_reset"/>
+      <remap from="/do/6/feedback" to="/dio/feedback/arm_ebs"/>
+      <remap from="/do/7/feedback" to="/dio/feedback/arm_dbs"/>
+
+      <remap from="/di/0" to="/dio/in/ecu_ok"/>
+      <remap from="/di/1" to="/dio/in/asms_status"/>
+      <remap from="/di/2" to="/dio/in/dv_btn"/>
+      <remap from="/di/3" to="/dio/in/wd_assert"/>
+      <remap from="/di/4" to="/dio/in/sdc_out"/>
+      <remap from="/di/5" to="/dio/in/bypass_status"/>
+      <remap from="/di/6" to="/dio/in/imd_ok"/>
+      <remap from="/di/7" to="/dio/in/wd_ok"/>
+      <remap from="/di/9" to="/dio/in/ts_btn_ok"/>
+      
+  </node>
+
+
+</launch>
