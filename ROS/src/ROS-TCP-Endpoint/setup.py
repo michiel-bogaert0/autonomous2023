@@ -1,3 +1,4 @@
+# flake8: noqa
 ## ! DO NOT MANUALLY INVOKE THIS setup.py, USE CATKIN INSTEAD
 
 from catkin_pkg.python_setup import generate_distutils_setup

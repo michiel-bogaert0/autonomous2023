@@ -1,3 +1,4 @@
+# flake8: noqa
 import importlib
 import sys
 from unittest import mock

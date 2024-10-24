@@ -1,3 +1,4 @@
+# flake8: noqa
 import sys
 import threading
 from unittest import mock

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# flake8: noqa
 
 import rospy
 from ros_tcp_endpoint import TcpServer

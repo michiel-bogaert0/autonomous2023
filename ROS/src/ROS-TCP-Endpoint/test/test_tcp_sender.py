@@ -1,3 +1,4 @@
+# flake8: noqa
 import queue
 import socket
 from unittest import mock
