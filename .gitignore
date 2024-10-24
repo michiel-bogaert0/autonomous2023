@@ -34,3 +34,6 @@ calib_images/
 env-vars.sh
 /data-error-correction
 tuner_data/
+
+# Mechatronics (Mac)
+ROS/src/mechatronics
