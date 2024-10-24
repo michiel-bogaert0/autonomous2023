@@ -16,7 +16,7 @@
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>rospy</exec_depend>
   <build_depend>ugr_msgs</build_depend>
+  <build_depend>fs_msgs</build_depend>
   <depend>message_runtime</depend>
-
   <export></export>
 </package>
