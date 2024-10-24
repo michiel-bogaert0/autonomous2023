@@ -8,7 +8,7 @@ Explanation of system states (hierarchical):
 - ON: the system is verified to be on
 - ACTIVATED: the system is verified to be explicitly activated
 
-- UNKNOWN: status unkown
+- UNKNOWN: status unknown
 """
 
 
@@ -16,7 +16,7 @@ class CarStateEnum(Enum):
     OFF = 0
     ON = 1
     ACTIVATED = 2
-    UNKOWN = 3
+    UNKNOWN = 3
 
 
 class CarState(ABC):

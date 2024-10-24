@@ -1,14 +1,17 @@
 <launch>
-
+    <arg name="turn_active" default="false" />
     <node pkg="kinematic_path_tracking" type="front_wheel_feedback.py" name="front_wheel_feedback" output="screen" respawn="true">
 
         <param name="rate" value="50" />
-
         <param name="base_link_frame" value="ugr/car_base_link/front_axle" />
+        <param name="turn_active" value="$(arg turn_active)"/>
 
         <remap from="/input/path" to="/pathplanning/path" />
         <remap from="/input/odom" to="/ugr/car/odometry/filtered/odom"/>
         <remap from="/output/drive_velocity_controller/command" to="/ugr/car/drive_velocity_controller/command" />
+        <remap from="/output/axis0_velocity_controller/command" to="/ugr/car/axis0_velocity_controller/command" />
+        <remap from="/output/axis1_velocity_controller/command" to="/ugr/car/axis1_velocity_controller/command" />
+
         <remap from="/output/steering_position_controller/command" to="/ugr/car/steering_position_controller/command" />
     </node>
 </launch>

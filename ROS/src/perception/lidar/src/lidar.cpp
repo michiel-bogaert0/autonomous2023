@@ -8,6 +8,15 @@
 namespace ns_lidar {
 Lidar::Lidar(ros::NodeHandle &n)
     : n_(n), cone_clustering_(n), ground_removal_(n) {
+
+  // Set parameters for preprocessing
+  n.param<double>("min_distance", min_distance_, 1.0);
+  n.param<double>("max_distance", max_distance_, 21.0);
+  n.param<double>("max_height", max_height_, 0.5);
+  n.param<double>("sensor_height", sensor_height_, 0.98);
+  n.param<double>("min_angle", min_angle_, 0.3);
+  n.param<double>("max_angle", max_angle_, 2.8);
+
   // Subscribe to the raw lidar topic
   // rawLidarSubscriber_ = n.subscribe("perception/raw_pc", 10,
   // &Lidar::rawPcCallback, this);
@@ -17,6 +26,8 @@ Lidar::Lidar(ros::NodeHandle &n)
   n.param<bool>("publish_preprocessing", publish_preprocessing_, false);
   n.param<bool>("publish_ground", publish_ground_, false);
   n.param<bool>("publish_clusters", publish_clusters_, true);
+
+  n.param<bool>("lidar_rotated", lidar_rotated_, false);
   // Publish to the filtered and clustered lidar topic
   if (publish_preprocessing_)
     preprocessedLidarPublisher_ =
@@ -53,7 +64,10 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   pcl::fromROSMsg(msg, raw_pc_);
   publishDiagnostic(OK, "[perception] raw points",
                     "#points: " + std::to_string(raw_pc_.size()));
-
+  // flip pointcloud if the lidar is rotated
+  if (lidar_rotated_) {
+    raw_pc_ = flipPointcloud(raw_pc_);
+  }
   // Preprocessing
   preprocessing(raw_pc_, preprocessed_pc);
   publishDiagnostic(OK, "[perception] preprocessed points",
@@ -89,15 +103,22 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
                     "time needed: " + std::to_string(time_round));
 
   if (publish_ground_) {
+    // Create a copy of notground_points for publishing
+    pcl::PointCloud<pcl::PointXYZINormal>::Ptr notground_points_copy(
+        new pcl::PointCloud<pcl::PointXYZINormal>(*notground_points));
+    if (lidar_rotated_) {
+      *notground_points_copy = flipPointcloud(*notground_points_copy);
+    }
+
     sensor_msgs::PointCloud2 groundremoval_msg;
-    pcl::toROSMsg(*notground_points, groundremoval_msg);
+    pcl::toROSMsg(*notground_points_copy, groundremoval_msg);
     groundremoval_msg.header.frame_id = msg.header.frame_id;
     groundremoval_msg.header.stamp = msg.header.stamp;
     groundRemovalLidarPublisher_.publish(groundremoval_msg);
 
-    // publish colored pointcloud to check order points
+    // Publish colored pointcloud to check order points
     sensor_msgs::PointCloud2 ground_msg =
-        ground_removal_.publishColoredGround(*notground_points, msg);
+        ground_removal_.publishColoredGround(*notground_points_copy, msg);
     groundColoredPublisher_.publish(ground_msg);
   }
 
@@ -150,11 +171,12 @@ void Lidar::preprocessing(
   for (auto &iter : raw.points) {
     // Remove points closer than 1m, higher than 0.5m or further than 20m
     // and points outside the frame of Pegasus
-    if (std::hypot(iter.x, iter.y) < 1 || iter.z > 0.5 ||
-        std::hypot(iter.x, iter.y) > 21 || std::atan2(iter.x, iter.y) < 0.3 ||
-        std::atan2(iter.x, iter.y) > 2.8)
+    if (std::hypot(iter.x, iter.y) < min_distance_ ||
+        iter.z > -sensor_height_ + max_height_ ||
+        std::hypot(iter.x, iter.y) > max_distance_ ||
+        std::atan2(iter.x, iter.y) < min_angle_ ||
+        std::atan2(iter.x, iter.y) > max_angle_)
       continue;
-
     preprocessed_pc->points.push_back(iter);
   }
 }
@@ -166,7 +188,7 @@ void Lidar::preprocessing(
  */
 void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
   ugr_msgs::ObservationWithCovarianceArrayStamped observations;
-  observations.header.frame_id = cones.header.frame_id;
+  observations.header.frame_id = "ugr/car_base_link/os_sensor_normal";
   observations.header.stamp = cones.header.stamp;
 
   int i = 0;
@@ -205,5 +227,19 @@ void Lidar::publishDiagnostic(DiagnosticStatusEnum status, std::string name,
   diag_array.status.push_back(diag_status);
 
   diagnosticPublisher_.publish(diag_array);
+}
+
+template <class PointT>
+pcl::PointCloud<PointT> Lidar::flipPointcloud(pcl::PointCloud<PointT> pc) {
+  pcl::PointCloud<PointT> *new_pc = new pcl::PointCloud<PointT>;
+  for (auto &iter : pc.points) {
+    PointT new_point = *new PointT;
+    new_point.x = iter.x;
+    new_point.y = -iter.y;
+    new_point.z = -iter.z;
+    new_point.intensity = iter.intensity;
+    new_pc->points.push_back(new_point);
+  }
+  return *new_pc;
 }
 } // namespace ns_lidar

@@ -72,7 +72,8 @@ def configure_node(name: str):
 
     set_state_result = True
 
-    rospy.wait_for_service(f"/node_managing/{name}/get", timeout=0.5)
+    timeout = 0.5 if name != "path_smoother" else 3.0
+    rospy.wait_for_service(f"/node_managing/{name}/get", timeout=timeout)
     data = rospy.ServiceProxy(f"/node_managing/{name}/get", GetNodeState)()
     if data.state == NodeManagingStatesEnum.ACTIVE:
         set_state_result = set_state_result and set_state_inactive(name)
@@ -85,7 +86,7 @@ def configure_node(name: str):
     return set_state_result
 
 
-def load_params(mission: str) -> None:
+def load_params_from_config_file(mission: str) -> None:
     """
     Load parameters from a YAML file based the mission.
     Also takes the car name from the /car parameter.
@@ -140,7 +141,7 @@ class NodeManager(ManagedNode):
         """
 
         super().__init__(name, default_state)
-
+        self.name = name
         self.nodes_to_monitor = set([])
         self.timers = {}
         self.health_msgs = {}
@@ -156,7 +157,7 @@ class NodeManager(ManagedNode):
         # Pubs and subs
         rospy.Subscriber("/health/nodes", DiagnosticStatus, self.handle_health)
         self.health_pub = rospy.Publisher(
-            "/health/diagnostics", DiagnosticArray, queue_size=1
+            f"/health/diagnostics/{self.name}", DiagnosticArray, queue_size=1
         )
 
         # Set health to warning
@@ -194,7 +195,7 @@ class NodeManager(ManagedNode):
         # This function should be called in a loop
         # Basically checks health checks of all nodes that should be active
         # If something wrong occurs, this node will go into error or warn itself
-
+        unhealthy_nodes = []
         keyvalues = []
 
         # Add metadata to keyvalues about monitoring
@@ -210,6 +211,7 @@ class NodeManager(ManagedNode):
             if node not in self.timers.keys():
                 self.timers[node] = rospy.Time.now().to_sec() + self.startup_timeout
                 new_health_level = max(new_health_level, DiagnosticStatus.WARN)
+                unhealthy_nodes.append(self.health_msgs[node])
                 keyvalues.append(
                     KeyValue(key=node, value="No contact. Might still be starting up")
                 )
@@ -223,6 +225,7 @@ class NodeManager(ManagedNode):
                 keyvalues.append(
                     KeyValue(key=node, value="Lost contact. Node not healthy")
                 )
+                unhealthy_nodes.append(self.health_msgs[node])
             # This is fine, but check the "state" of the node
             elif node in self.health_msgs.keys():
                 health_msg = self.health_msgs[node]
@@ -231,6 +234,7 @@ class NodeManager(ManagedNode):
                     keyvalues.append(
                         KeyValue(key=node, value="Node not 'active' (yet)")
                     )
+                    unhealthy_nodes.append(self.health_msgs[node])
 
         # Of course the node manager should also act on reported errors and warnings
         # Final self health level is the highest level of all
@@ -240,7 +244,11 @@ class NodeManager(ManagedNode):
                 and self.health_msgs[node].level > new_health_level
             ):
                 new_health_level = self.health_msgs[node].level
-
+            if (
+                node in self.health_msgs
+                and self.health_msgs[node].level > DiagnosticStatus.OK
+            ):
+                unhealthy_nodes.append(self.health_msgs[node])
             # Also list ALL monitored nodes warnings and errors to keyvalues
             if (
                 node in self.health_msgs
@@ -269,8 +277,13 @@ class NodeManager(ManagedNode):
             )
             self.unhealty_status_self_inflicted = False
         else:
+            node_msg = "\n"
+
+            for node in unhealthy_nodes:
+                node_msg += f"{node.hardware_id}:{node.message}\n"
+            node_msgwithtab = node_msg.replace("\n", "\n\t")
             message = (
-                "There is an issue with at least one monitored node"
+                node_msgwithtab
                 if self.health.level == DiagnosticStatus.OK
                 else self.health.message
             )
@@ -291,6 +304,7 @@ class NodeManager(ManagedNode):
         if self.healthdiagrate.remaining() < rospy.Duration(0):
             self.healthdiagrate.sleep()
             self.publish_health_diagnostics()
+        self.unhealthy_nodes = []
 
     def publish_health_diagnostics(self):
         """
@@ -320,8 +334,8 @@ class NodeManager(ManagedNode):
             new_state (str): The new state of the state machine (not nodes)
             old_state (str): The old state of the state machine
         """
-
         node_management_param = rospy.get_param("~node_management")
+
         if "always" not in node_management_param.keys():
             node_management_param["always"] = []
 
@@ -417,20 +431,21 @@ class NodeManager(ManagedNode):
 
                     self.nodes_to_monitor.add(node)
 
-            # Then deactivate nodes (that are not in the new state)
-            for node in node_management_param[old_state]:
-                if (
-                    node
-                    not in node_management_param[new_state]
-                    + node_management_param["always"]
-                ):
-                    self.nodes_to_monitor.remove(node)
-                    self.timers.pop(node, None)
-                    self.health_msgs.pop(node, None)
-                    if not set_state_inactive(node):
-                        raise BaseException(
-                            f"Configure procedure failed for node {node}, raising error..."
-                        )
+            # Then deactivate nodes (that are not in the new state
+            if old_state is not None:
+                for node in node_management_param[old_state]:
+                    if (
+                        node
+                        not in node_management_param[new_state]
+                        + node_management_param["always"]
+                    ):
+                        self.nodes_to_monitor.remove(node)
+                        self.timers.pop(node, None)
+                        self.health_msgs.pop(node, None)
+                        if not set_state_inactive(node):
+                            raise BaseException(
+                                f"Configure procedure failed for node {node}, raising error..."
+                            )
 
             self.set_health(
                 level=DiagnosticStatus.OK, message=f"Activated nodes for {new_state}"

@@ -11,18 +11,23 @@
 
     <!-- Load the hardware interface -->
     <node name="orion_hardware_interface" pkg="ugr_ros_control" type="orion_hw_main"
-      output="screen" launch-prefix="$(arg launch_prefix)">
+      output="log" launch-prefix="$(arg launch_prefix)">
 
-      <remap from="/input/can" to="/ugr/car/can/rx" />
-      <remap from="/output/can" to="/ugr/car/can/tx" />
+      <remap from="/output/axis0" to="/ugr/can/mc_left/tx" />
+      <remap from="/output/axis1" to="/ugr/can/mc_right/tx" />
+
+      <remap from="/output/servo" to="/ugr/car/servo/target" />
+
+      <remap from="/input/servo" to="/ugr/car/servo/position" />
 
       <!-- Encoder 0: right -->
       <!-- Encoder 1: left -->
-      <remap from="/output/vel0" to="/ugr/car/sensors/hwinterface/encoder0" />
-      <remap from="/output/vel1" to="/ugr/car/sensors/hwinterface/encoder1" />
+      <remap from="/output/vel0" to="/ugr/car/sensors/encoder0" />
+      <remap from="/output/vel1" to="/ugr/car/sensors/encoder1" />
 
       <param name="wheel_diameter" value="0.4064" />
       <param name="gear_ratio" value="3.405" />
+      <param name="n_polepairs" value="10" />
 
       <!-- Torque vectoring -->
       <param name="use_torque_vectoring" value="false" />
@@ -48,7 +53,7 @@
     <node name="ros_control_controller_manager" pkg="controller_manager" type="spawner"
       respawn="false"
       output="screen"
-      args="--stopped joint_state_controller drive_effort_controller drive_velocity_controller steering_position_controller" />
+      args="--stopped joint_state_controller drive_velocity_controller drive_effort_controller axis0_velocity_controller axis1_velocity_controller axis0_effort_controller axis1_effort_controller steering_position_controller" />
   </group>
 
 </launch>

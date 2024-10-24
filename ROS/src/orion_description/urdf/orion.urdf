@@ -7,13 +7,17 @@
 
   <link name="ugr/car_base_link/os_sensor" />
 
+  <link name="ugr/car_base_link/os_sensor_normal" />
+
   <link name="ugr/car_base_link/os_imu" />
 
   <link name="ugr/car_base_link/os_lidar" />
 
   <link name="ugr/car_base_link/cam0" />
 
-  <link name="ugr/car_base_link/axis_rear" />
+  <link name="ugr/car_base_link/axis0" />
+
+  <link name="ugr/car_base_link/axis1" />
 
   <link name="ugr/car_base_link/front_axle" />
 
@@ -30,7 +34,7 @@
 
 
   <joint name="lidar0_joint" type="fixed">
-    <origin xyz="0.6765 -0.0022 0.7870" rpy="3.1415 0 0" />
+    <origin xyz="0.6765 -0.0022 0.78" rpy="3.1415 0 0" />
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/lidar0" />
   </joint>
@@ -39,6 +43,12 @@
     <origin xyz="0 0 0" rpy="0 0 0" />
     <parent link="ugr/car_base_link/lidar0" />
     <child link="ugr/car_base_link/os_sensor" />
+  </joint>
+
+  <joint name="os_sensor_turn" type="fixed">
+    <origin xyz="0 0 0" rpy="3.1415 0 0" />
+    <parent link="ugr/car_base_link/os_sensor" />
+    <child link="ugr/car_base_link/os_sensor_normal" />
   </joint>
 
   <joint name="os_imu_joint" type="fixed">
@@ -54,19 +64,22 @@
   </joint>
 
   <joint name="cam0_joint" type="fixed">
-    <origin xyz="0.6814 -0.0824 0.8230" rpy="0 0 3.1415" />
+    <origin xyz="0.6814 -0.0824 0.8230" rpy="0 0 0" />
     <parent link="ugr/car_base_link" />
     <child link="ugr/car_base_link/cam0" />
   </joint>
 
-  <joint name="axis_rear" type="continuous"> 
-    <origin xyz="0.0 0.0 0.0" rpy="0 0 0" /> <!-- <inner side of the tire, outer: 0.74275 -->
+  <joint name="axis0" type="continuous"> 
+    <origin xyz="0.0 -0.64 0.0" rpy="0 0 0" /> <!-- <inner side of the tire, outer: 0.74275 -->
     <parent link="ugr/car_base_link" />
-    <child link="ugr/car_base_link/axis_rear" />
-<!-- !!!!!!!!!!!!!!!!!!!!! set reasonable limits !!!!!!!!!!!!!!!!!!!!! -->
-    <limit effort="30.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
-<!-- !!!!!!!!!!!!!!!!!!!!! set reasonable limits !!!!!!!!!!!!!!!!!!!!! -->
-
+    <child link="ugr/car_base_link/axis0" />
+    <limit effort="240.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
+  </joint>
+  <joint name="axis1" type="continuous"> 
+    <origin xyz="0.0 0.64 0.0" rpy="0 0 0" /> <!-- <inner side of the tire, outer: 0.74275 -->
+    <parent link="ugr/car_base_link" />
+    <child link="ugr/car_base_link/axis1" />
+    <limit effort="240.0" velocity="100.0" />  <!-- < ask electrical for limitations  -->
   </joint>
 
   <joint name="front_axle" type="fixed">

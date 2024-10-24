@@ -30,7 +30,7 @@ joint_state_controller:
 steering_position_controller:
    type: velocity_controllers/JointPositionController
    joint: axis_steering
-   pid: {p: 100.0, i: 0.0, d: 0.0}
+   pid: {p: 100.0, i: 0.0, d: 0.0, publish_state: True}
 
 # Joint velocity controller for steering
 steering_velocity_controller:

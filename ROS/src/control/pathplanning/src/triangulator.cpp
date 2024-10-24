@@ -12,11 +12,13 @@ Triangulator::Triangulator(ros::NodeHandle &n)
       max_path_distance_(n.param<double>("max_path_distance", 6.0)),
       safety_dist_(n.param<double>("safety_dist", 1.0)),
       safety_dist_squared_(safety_dist_ * safety_dist_),
+      stage1_max_angle_change_(n.param<double>("stage1_max_angle_change", 0.5)),
       stage1_rect_width_(n.param<double>("stage1_rect_width", 1.2)),
       stage1_threshold_bad_points_(
           n.param<int>("stage1_threshold_bad_points", 2)),
       stage1_threshold_center_points_(
           n.param<int>("stage1_threshold_center_points", 3)),
+      stage1_dist_window_(n.param<double>("stage1_dist_window", 0.5)),
       stage2_rect_width_(n.param<double>("stage2_rect_width", 1.2)),
       stage2_threshold_bad_points_(
           n.param<int>("stage2_threshold_bad_points", 2)),
@@ -24,20 +26,23 @@ Triangulator::Triangulator(ros::NodeHandle &n)
           n.param<int>("stage2_threshold_center_points", 3)),
       max_depth_(n.param<int>("max_depth", 5)),
       continuous_dist_(n.param<double>("continuous_dist", 4.0)),
+      stage2_max_dist_(n.param<double>("stage2_max_dist", 6.0)),
       close_path_dist_(n.param<double>("close_path_dist", 9.0)),
       range_front_(n.param<double>("range_front", 20.0)),
       range_behind_(n.param<double>("range_behind", 0.0)),
       range_sides_(n.param<double>("range_sides", 3.0)),
+      color_(n.param<bool>("color", false)),
       vis_namespace_(n.param<std::string>("vis_namespace",
                                           std::string("pathplanning_vis"))),
       vis_lifetime_(n.param<double>("vis_lifetime", 0.2)),
       debug_visualisation_(n.param<bool>("debug_visualisation", false)),
       triangulation_paths(
           max_iter_, max_angle_change_, max_path_distance_, safety_dist_,
-          stage1_rect_width_, stage1_threshold_bad_points_,
-          stage1_threshold_center_points_, stage2_rect_width_,
-          stage2_threshold_bad_points_, stage2_threshold_center_points_,
-          max_depth_, continuous_dist_, close_path_dist_) {
+          stage1_max_angle_change_, stage1_rect_width_,
+          stage1_threshold_bad_points_, stage1_threshold_center_points_,
+          stage2_rect_width_, stage2_threshold_bad_points_,
+          stage2_threshold_center_points_, max_depth_, continuous_dist_,
+          stage2_max_dist_, stage1_dist_window_, close_path_dist_) {
   this->vis_points_ = ros::Publisher();
   this->vis_lines_ = ros::Publisher();
 
@@ -99,7 +104,7 @@ Triangulator::get_path(const std::vector<std::vector<double>> &cones,
   // Perform triangulation and get the (useful) center points
   auto result_center_points = get_center_points(
       filtered_cones, cone_classes, this->triangulation_max_var_,
-      this->triangulation_var_threshold_, this->range_front_);
+      this->triangulation_var_threshold_, this->range_front_, this->color_);
   //   auto triangulation_centers = std::get<0>(result_center_points);
   auto center_points = std::get<1>(result_center_points);
   auto bad_points = std::get<2>(result_center_points);
@@ -118,7 +123,7 @@ Triangulator::get_path(const std::vector<std::vector<double>> &cones,
   std::vector<Node *> leaves;
   std::tuple<Node *, std::vector<Node *>> all_paths =
       this->triangulation_paths.get_all_paths(bad_points, center_points,
-                                              position_cones, range_front_);
+                                              position_cones);
   //   root_node = std::get<0>(all_paths);
   leaves = std::get<1>(all_paths);
 
@@ -155,8 +160,7 @@ Triangulator::get_best_path(const std::vector<Node *> &leaves,
     if (!path.empty()) {
       // Calculate the path cost
       std::tuple<double, double> costs_tuple =
-          this->triangulation_paths.get_cost_branch(path, cones,
-                                                    this->range_front_);
+          this->triangulation_paths.get_cost_branch(path, cones);
       double angle_cost = std::get<0>(costs_tuple);
       double length_cost = std::get<1>(costs_tuple);
       costs.push_back({angle_cost, length_cost});
@@ -190,7 +194,7 @@ Triangulator::get_best_path(const std::vector<Node *> &leaves,
   // Calculate total cost for each path
   std::vector<double> total_cost;
   for (const auto &cost : costs) {
-    total_cost.push_back(cost[0] + cost[1]);
+    total_cost.push_back(cost[0] + 100 * cost[1]);
   }
 
   std::vector<std::vector<Node *>> sorted_paths;

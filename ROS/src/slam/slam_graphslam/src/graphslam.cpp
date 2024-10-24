@@ -72,6 +72,7 @@ void GraphSLAM::doConfigure() {
   this->doSynchronous = n.param<bool>("synchronous", true);
   this->publish_rate = n.param<double>("publish_rate", 3.0);
   this->debug = n.param<bool>("debug", false);
+  this->debug_time = n.param<bool>("debug_time", false);
 
   this->max_iterations = n.param<int>("max_iterations", 10);
   this->association_threshold = n.param<double>("association_threshold", 0.5);
@@ -79,6 +80,8 @@ void GraphSLAM::doConfigure() {
   this->max_range = n.param<double>("max_range", 15);
   this->max_half_angle = n.param<double>("max_half_angle", 60 * 0.0174533);
   this->penalty_threshold = n.param<int>("penalty_threshold", 25);
+  this->landmark_publish_threshold =
+      n.param<int>("landmark_publish_threshold", 10);
 
   // Initialize covariance matrices
   vector<double> cov_pose_vector;
@@ -126,7 +129,9 @@ void GraphSLAM::doConfigure() {
   }
 
   // Initialize subscribers
-  obs_sub.subscribe(n, "/input/observations", 1);
+  obs_sub.subscribe(
+      n, n.param<string>("/observations_topic", "/ugr/car/observations/lidar"),
+      1);
   tf2_filter.registerCallback(
       boost::bind(&GraphSLAM::handleObservations, this, _1));
 
@@ -140,6 +145,8 @@ void GraphSLAM::doConfigure() {
   this->vertexCounter = 0;
   // to keep track of the previous pose
   this->prevPoseIndex = -1;
+
+  this->last_penalty_time = ros::Time::now();
 
   //----------------------------------------------------------------------------
   //------------------------------ Set Optimizer -------------------------------
@@ -495,6 +502,12 @@ void GraphSLAM::step() {
   // ------------------------ Penalty -----------------------------------
   // --------------------------------------------------------------------
 
+  ros::Duration time_since_last_penalty =
+      transformed_obs.header.stamp - this->last_penalty_time;
+  this->last_penalty_time = transformed_obs.header.stamp;
+
+  int penalty = time_since_last_penalty.toSec() * 1000; // ms
+
   PoseVertex *pose_vertex =
       dynamic_cast<PoseVertex *>(this->optimizer.vertex(this->prevPoseIndex));
   vector<int> to_remove_indices;
@@ -515,11 +528,12 @@ void GraphSLAM::step() {
       if (obs(0) <= this->max_range && obs(0) >= this->min_range &&
           abs(obs(1)) <= 1) {
         if (landmarkVertex->latestPoseIndex < this->prevPoseIndex) {
-          if (landmarkVertex->increasePenalty() > this->penalty_threshold) {
+          if (landmarkVertex->increasePenalty(penalty) >
+              this->penalty_threshold) {
             to_remove_indices.push_back(pair.first);
           }
         } else {
-          landmarkVertex->decreasePenalty();
+          landmarkVertex->decreasePenalty(penalty * 2);
         }
       }
     }
@@ -554,7 +568,7 @@ void GraphSLAM::step() {
       std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1)
           .count());
 
-  if (this->debug) {
+  if (this->debug_time) {
     double totalTime = std::accumulate(times.begin(), times.end(), 0.0);
     ROS_INFO("Time taken for each step: ");
     ROS_INFO("Transform observations: %f", times[0]);
@@ -650,7 +664,8 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
 
     LandmarkVertex *landmarkVertex =
         dynamic_cast<LandmarkVertex *>(pair.second);
-    if (landmarkVertex) {
+    if (landmarkVertex &&
+        landmarkVertex->edges().size() > this->landmark_publish_threshold) {
 
       ugr_msgs::ObservationWithCovariance global_ob;
       ugr_msgs::ObservationWithCovariance local_ob;

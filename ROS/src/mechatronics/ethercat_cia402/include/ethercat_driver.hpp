@@ -6,6 +6,8 @@
 #include "ethercat_master.hpp"
 #include "managed_node.hpp"
 #include "ros/ros.h"
+#include "std_msgs/Float32.h"
+#include "std_msgs/Int16.h"
 #include "std_msgs/Int32.h"
 #include "std_msgs/Int64.h"
 #include "std_msgs/UInt16.h"
@@ -19,14 +21,16 @@ public:
   void doActivate() override;
   void doDeactivate() override;
   void doShutdown() override;
-  void set_target(std_msgs::Int32 new_target);
+  void set_target(std_msgs::Float32 new_target);
   int update_pubs();
   void active() override;
 
 private:
   ros::NodeHandle n;
-  operational_mode_t mode; // cppcheck-suppress unusedStructMember
-  std::string ifname;      // cppcheck-suppress unusedStructMember
+  // cppcheck-suppress [unusedStructMember, unmatchedSuppression]
+  operational_mode_t mode;
+  // cppcheck-suppress [unusedStructMember, unmatchedSuppression]
+  std::string ifname;
 
   // Subscriber
   ros::Subscriber target_sub;
@@ -38,6 +42,8 @@ private:
   ros::Publisher velocity_pub;
   ros::Publisher torque_pub;
   ros::Publisher erroract_pub;
+  ros::Publisher driver_equiv_torque_pub;
+  ros::Publisher power_pub;
 };
 
 #endif

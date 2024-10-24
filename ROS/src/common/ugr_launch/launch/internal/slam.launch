@@ -22,17 +22,9 @@
   <!-- ? ISE -->
   <include file="$(find slam_controller)/launch/ISE.launch" pass_all_args="true"/>
 
-  <!-- SLAM lap_counter -->
-  <node pkg="slam_lap_counter" output="screen" respawn="true" type="lap_counter" name="lap_counter">
-      <param name="world_frame" value="ugr/map" />
-      <param name="base_link_frame" value="ugr/car_base_link" />
-      <rosparam param="finishpoint">[0,0,0]</rosparam>
-      
-      <remap from="/output/lapComplete" to="/ugr/car/lapComplete"/>
-      <remap from="/reset_closure" to="/ugr/srv/reset_lap_counter"/>
-      <remap from="/adjust_finish" to="/ugr/srv/adjust_finish"/>
-  </node>
+  
+  
+  <include file="$(find slam_lap_counter)/launch/lap_counter.launch" pass_all_args="true"/>
 
-  <!-- SLAM controller -->
-  <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true" />
+  
 </launch>

@@ -17,10 +17,10 @@ class PoseVertex : public BaseVertex<3, SE2> {
 public:
   PoseVertex();
 
-  // cppcheck-suppress unusedFunction
+  // cppcheck-suppress [unusedFunction, unmatchedSuppression]
   virtual void setToOriginImpl() { _estimate = SE2(); }
 
-  // cppcheck-suppress unusedFunction
+  // cppcheck-suppress [unusedFunction, unmatchedSuppression]
   virtual void oplusImpl(const double *update) {
     SE2 up(update[0], update[1], update[2]);
     _estimate *= up;
@@ -42,8 +42,8 @@ public:
   int penalty;
   std::vector<uint32_t> merged_ids;
 
-  int increasePenalty();
-  void decreasePenalty();
+  int increasePenalty(int pen);
+  void decreasePenalty(int pen);
   void setLatestPose(int index);
   void setColor(int c, float b);
   void addBeliefs(float b0, float b1, float b2);

@@ -46,22 +46,19 @@ private:
   double maximum_output_current;
   double minimum_input_current;
   double maximum_input_current;
-  int start_channel = -1;   // lowest input that is enabled
+  int start_channel = -1; // lowest input that is enabled
+  int end_channel = -1;
   int enabled_channels = 0; // number of enabled channels, the enabled channels
                             // ALWAYS have to be grouped
-  bool enable_i0;
-  bool enable_i1;
-  bool enable_i2;
-  bool enable_i3;
-  bool enable_i4;
-  bool enable_i5;
-  bool enable_i6;
-  bool enable_i7;
+  bool enable_inputs[8];
   bool enable_o0;
   bool enable_o1;
   bool o0_changed = false; // so that we don't keep writing the same value but
                            // only when the value is changed
   bool o1_changed = false;
+
+  float scaling_inputs[8];
+
   int iRet;    // return value from the CheckErr function
   int iHandle; // handle
 };

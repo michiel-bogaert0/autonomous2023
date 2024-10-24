@@ -1,9 +1,9 @@
 <launch>
-  <node name="ethercat_cia402" pkg="ethercat_cia402" type="ethercat_cia402" output="screen"
+  <node name="ethercat_cia402" pkg="ethercat_cia402" type="ethercat_cia402" output="log"
     launch-prefix='sudo env "LD_LIBRARY_PATH=/opt/ros/noetic/lib"'>
     <!--! Parameters -->
     <!-- Interface to which servo is connected -->
-    <param name="ifname" value="enx00e04c680d2a"/>
+    <param name="ifname" value="enp6s0"/>
     <!-- Mode of operatiton -->
     <param name="mode" value="1"/> <!-- 0: CSP, 1: CSV, 2: CST, 3: PP -->
     <!-- Interval to update values -->
@@ -19,6 +19,8 @@
     <remap from="/output/velocity" to="/ugr/car/servo/velocity"/>
     <remap from="/output/torque" to="/ugr/car/servo/torque"/>
     <remap from="/output/erroract" to="/ugr/car/servo/erroract"/>
+    <remap from="/output/driver_equivalent_torque" to="/ugr/car/servo/driver_equivalent_torque"/>
+    <remap from="/output/power" to="/ugr/car/servo/power"/>
 
   </node>
 </launch>

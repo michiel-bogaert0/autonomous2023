@@ -41,28 +41,34 @@ class Ocp:
 
         self.opti = casadi.Opti()
 
+        # Input and state sequence
         self.X = self.opti.variable(self.nx, N + 1)
         self.U = self.opti.variable(self.nu, N)
+
+        # Initial state
         self.x0 = self.opti.parameter(self.nx)
+
+        # To calculate delta u
         self.u_prev = self.opti.parameter(self.nu)
 
         # Soften constraints
         self.Sc = self.opti.variable(1, N + 1)
         self.sc = casadi.SX.sym("sc", 1)
 
+        # The reference trajectory
         self._x_reference = self.opti.parameter(self.nx, self.N + 1)
-        self.params = []  # additional parameters
+
+        # Parameters to define boundary halfspaces
+        self.slopes_inner = self.opti.parameter(1, N + 1)
+        self.intercepts_inner = self.opti.parameter(1, N + 1)
+        self.slopes_outer = self.opti.parameter(1, N + 1)
+        self.intercepts_outer = self.opti.parameter(1, N + 1)
 
         # symbolic params to define cost functions
         self.x = casadi.SX.sym("symbolic_x", self.nx)
         self.u = casadi.SX.sym("symbolic_u", self.nu)
         self.u_delta = casadi.SX.sym("symbolic_u_prev", self.nu)
         self.x_reference = casadi.SX.sym("symbolic_x_control_", self.nx)
-
-        self.a = self.opti.variable(1)
-        self.b = self.opti.variable(1)
-        self.c = self.opti.variable(1)
-        self.d = self.opti.variable(1)
 
         self._set_continuity(threads)
 
@@ -80,6 +86,9 @@ class Ocp:
         self.timer = Timer(verbose=False)
 
     def __deepcopy__(self, memo):
+        """
+        Not used
+        """
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
@@ -91,13 +100,15 @@ class Ocp:
         return getattr(self.opti, name)
 
     def discretize(self, f, DT, M, integrator="rk4"):
+        """
+        Not used in this place
+        """
         x = casadi.SX.sym("x", self.nx)
         u = casadi.SX.sym("u", self.nu)
 
         if integrator == "rk4":
             x_new = rk4(f, x, u, DT, M)
         elif integrator == "euler":
-            # x_new = x + f(x, u)*DT
             x_new = euler(f, x, u, DT, M)
         else:
             raise Exception("integrator not recognized")
@@ -107,7 +118,19 @@ class Ocp:
         return F
 
     def _set_continuity(self, threads: int):
+        # Important!!!
+        # Depending on generation or tracking, change the constraints here
+
+        # For tracking
         self.opti.subject_to(self.X[:, 0] == self.x0)
+
+        # For generation
+        # self.opti.subject_to(self.X[:2, 0] == self.X[:2, self.N])
+
+        # The constraints below are also for generation, but they do not work for some reason
+        # self.opti.subject_to(self.X[4, 0] == self.X[4, self.N])
+        # self.opti.subject_to(self.X[:, 0] == self.X[:, self.N])
+        # self.opti.subject_to(casadi.fabs(casadi.fmod((2 * casadi.pi), self.X[2, self.N]) - casadi.fmod((2 * casadi.pi), self.X[2, 0])) < casadi.pi)
 
         if threads == 1:
             for i in range(self.N):
@@ -164,10 +187,6 @@ class Ocp:
                         self._x_reference[:, i],
                         self.Sc[i],
                     )
-                # This constraint works with halspaces (not implemented properly yet)
-                # self.opti.subject_to((self.a * self.X[0, i] + self.b - self.X[1, i]) * (self.c * self.X[0, i] + self.d - self.X[1, i]) < 0)
-
-                # This one works with circles, but causes convergence issues
 
             self.cost["run"] = L_run
 
@@ -252,13 +271,14 @@ class Ocp:
             [tuple]: U_sol [nu, N], X_sol [nx, N], info
         """
         self.opti.set_value(self.x0, state)
+
         for i in range(self.N + 1):
             self.opti.set_value(self._x_reference[:, i], reference_track[i])
 
-        self.opti.set_initial(self.a, a)
-        self.opti.set_initial(self.b, b)
-        self.opti.set_initial(self.c, c)
-        self.opti.set_initial(self.d, d)
+        self.opti.set_value(self.slopes_inner, a)
+        self.opti.set_value(self.intercepts_inner, b)
+        self.opti.set_value(self.slopes_outer, c)
+        self.opti.set_value(self.intercepts_outer, d)
         self.opti.set_value(self.u_prev, u_prev)
 
         if X0 is not None:

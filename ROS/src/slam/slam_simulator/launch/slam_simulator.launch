@@ -7,7 +7,10 @@
 
   <arg name="gt_map_topic" default="ugr/car/map/gt" />
   <arg name="filename" />
-
+  <arg name="turn_active" default="false" />
+  <arg name="FP" default="0" />
+  <arg name="FP_prob" default="1" />
+  <arg name="FP_on_track" default="False"/>
   <!-- Perception simulator -->
 
   <node name="perception_simulator" pkg="slam_simulator" output="screen" type="perception.py">
@@ -20,8 +23,15 @@
     <param name="add_noise" value="true" />
     <param name="cone_noise" value="0.02" />
     <param name="color_prob" value="0.0" /> <!-- between 0 and 1-->
+    <param name="FP" value="$(arg FP)" />
+    <param name="innerrange" value="5" />     <!-- minumum FP range away from trackcones on other side: should be track width or slightly bigger-->
+    <param name="outerrange" value="15" />  <!-- maximum FP range away from track--> 
+    <param name="FP_prob" value="$(arg FP_prob)" />
 
-    <remap from="/output/observations" to="/ugr/car/observations/fused" />
+    <param name="cones_on_track" value="$(arg FP_on_track)" />
+    <param name="turn_active" value="$(arg turn_active)"/>
+
+    <remap from="/output/observations" to="/ugr/car/observations/lidar" />
     <remap from="/input/track" to="$(arg gt_map_topic)" />
   </node>
 

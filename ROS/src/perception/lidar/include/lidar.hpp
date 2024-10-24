@@ -37,9 +37,18 @@ private:
   ConeClustering cone_clustering_;
   GroundRemoval ground_removal_;
 
+  bool lidar_rotated_;
   bool publish_preprocessing_; // publish the preprocessed pointcloud
   bool publish_ground_;        // publish the debug ground pointclouds
   bool publish_clusters_;      // color the clusters and publish them
+
+  double min_distance_;
+  double max_distance_;
+  double max_height_;
+  double sensor_height_; // height of sensor coordinate frame relative to ground
+  double min_angle_;
+  double max_angle_;
+
   std::string blue_url_ = "https://storage.googleapis.com/"
                           "learnmakeshare_cdn_public/blue_cone_final.dae";
   std::string yellow_url_ = "https://storage.googleapis.com/"
@@ -53,6 +62,8 @@ private:
   void publishObservations(const sensor_msgs::PointCloud cones);
   void publishDiagnostic(DiagnosticStatusEnum status, std::string name,
                          std::string message);
+  template <class PointT>
+  pcl::PointCloud<PointT> flipPointcloud(pcl::PointCloud<PointT> pc);
 };
 } // namespace ns_lidar
 

@@ -48,6 +48,8 @@
 #include <geometry_msgs/TwistWithCovariance.h>
 #include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Int64.h>
+#include <std_msgs/Int32.h>
 #include <sensor_msgs/Imu.h>
 #include <can_msgs/Frame.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -79,6 +81,9 @@ public:
   /** \brief Enforce limits for all values before writing */
   virtual void enforceLimits(ros::Duration& period);
 
+  virtual bool canSwitch(const std::list<hardware_interface::ControllerInfo>& start_list,
+                         const std::list<hardware_interface::ControllerInfo>& stop_list);
+
   void state_change(const ugr_msgs::State::ConstPtr& msg);
 
   void handle_vel_msg();
@@ -86,8 +91,8 @@ public:
   void publish_vel_msg(float vel, int axis);
   void publish_torque_msg(float axis);
   void send_torque_on_can(float axis, int id);
-  void can_callback_axis0(const std_msgs::Float32::ConstPtr& msg);
-  void can_callback_axis1(const std_msgs::Float32::ConstPtr& msg);
+  void can_callback_axis0(const std_msgs::Int64::ConstPtr& msg);
+  void can_callback_axis1(const std_msgs::Int64::ConstPtr& msg);
   void can_callback_steering(const std_msgs::Float32::ConstPtr& msg);
 
   void yaw_rate_callback(const sensor_msgs::Imu::ConstPtr& msg);
@@ -95,17 +100,23 @@ public:
   float torque_vectoring();
 
 private:
-  int drive_joint_id;
+  int axis0_joint_id;
+  int axis1_joint_id;
   int steering_joint_id;
 
-  std::string axis_rear_frame;
+  std::string axis0_frame;
+  std::string axis1_frame;
 
   bool is_running = false;
 
   int IMU_ids[2] = { 0xE2, 0xE3 };
 
-  ros::Publisher can_pub;
-  ros::Publisher vel_pub;
+  ros::Publisher can_axis0_pub;
+  ros::Publisher can_axis1_pub;
+  ros::Publisher can_servo_pub;
+
+  ros::Publisher vel_pub0;
+  ros::Publisher vel_pub1;
   ros::Subscriber can_sub;
   ros::Subscriber state_sub;
   ros::Subscriber can_axis0_sub;

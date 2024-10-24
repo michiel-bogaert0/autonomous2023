@@ -18,6 +18,7 @@ public:
 
 private:
   bool use_raw_;
+  bool cam_rotated_;
   std::string camsettings_location_;
   std::string camcal_location_;
   int camera_height_;

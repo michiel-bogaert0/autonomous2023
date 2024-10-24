@@ -4,13 +4,17 @@ from environments.env_utils import Space
 
 g = 9.81
 
+############################################
+#            Not used anymore              #
+############################################
+
 
 class KinematicCar(Env):
     def __init__(
         self,
         dt=0.01,
-        l_r=0.5,
-        L=1.0,
+        l_r=0.7,
+        L=1.6,
     ) -> None:
         self.l_r = l_r
         self.L = L
