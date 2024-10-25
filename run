@@ -52,6 +52,11 @@ function post-install {
         echo "$input_string" >> "$file"
     fi
 
+    # If ARM architecture, ignore mechatronics package
+    if  [[ $arch == arm* ]]; then
+        touch ./ROS/src/mechatronics/CATKIN_IGNORE
+    fi
+
     # Sets the default car to simulation
     set-car simulation
     
