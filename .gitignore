@@ -34,4 +34,4 @@ calib_images/
 env-vars.sh
 /data-error-correction
 tuner_data/
-default_gen_track.yaml
+ROS/src/slam/slam_simulator/maps/default_gen_track.yaml
