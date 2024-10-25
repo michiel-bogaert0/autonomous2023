@@ -38,14 +38,12 @@ class PerceptionSimulator(StageSimulator):
 
         self.datalatch.create("cones", 1)
         self.datalatch.create("odom", 400)
-
         self.started = False
-
+        self.FP_cones = []
         super().__init__("perception")
 
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
-
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.base_link_frame = rospy.get_param("~base_link_frame", "ugr/car_base_link")
         self.gt_base_link_frame = rospy.get_param(
@@ -58,9 +56,16 @@ class PerceptionSimulator(StageSimulator):
         self.cone_noise = rospy.get_param(
             "~cone_noise", 0.0 / 20
         )  # Noise per meter distance. Gets scaled with range
-
+        self.cones_on_track = rospy.get_param("~cones_on_track", False)
         self.color_prob = rospy.get_param("~color_prob", 0.05)
-
+        self.amount_of_falsepositives = rospy.get_param("~FP", 0)
+        self.innerrange = rospy.get_param(
+            "~innerrange"
+        )  # should be about the width of the track or slightly bigger
+        self.outerrange = rospy.get_param(
+            "~outerrange"
+        )  # measure for how far false positives away from track
+        self.FP_prob = rospy.get_param("~FP_prob", 0.3)
         # Diagnostics Publisher
         self.diagnostics = rospy.Publisher(
             "/diagnostics", DiagnosticArray, queue_size=10
@@ -99,6 +104,44 @@ class PerceptionSimulator(StageSimulator):
                 )
             )
 
+        count = 0
+        while count < self.amount_of_falsepositives:  # generating # amount of FP's
+            ontrack = False
+            surroundedcone = track.observations[
+                np.random.randint(0, len(track.observations))
+            ]
+            new_cone = np.array(
+                [
+                    surroundedcone.observation.location.x
+                    + np.random.rand()
+                    * self.outerrange
+                    * ((-1) ** (np.random.randint(0, 2))),
+                    surroundedcone.observation.location.y
+                    + np.random.rand()
+                    * self.outerrange
+                    * ((-1) ** (np.random.randint(0, 2))),
+                    surroundedcone.observation.location.z,
+                    np.random.randint(0, 2),
+                ],
+                dtype=np.float32,
+            )
+            for cone in track.observations:
+                if (
+                    cone.observation.observation_class
+                    == 1 - surroundedcone.observation.observation_class
+                    and (new_cone[0] - cone.observation.location.x) ** 2
+                    + (new_cone[1] - cone.observation.location.y) ** 2
+                    < self.innerrange**2
+                    and not self.cones_on_track
+                ):
+                    ontrack = True
+            if not ontrack and (
+                surroundedcone.observation.observation_class == 1
+                or surroundedcone.observation.observation_class == 0
+            ):
+                self.FP_cones.append(new_cone)
+                count += 1
+
         cones = np.array(cones)
         self.datalatch.set("cones", cones)
 
@@ -130,7 +173,9 @@ class PerceptionSimulator(StageSimulator):
         )
 
         new_cones = copy.deepcopy(self.datalatch.get("cones"))
-
+        for cone in self.FP_cones:  # simulating FP
+            if np.random.rand() < self.FP_prob:
+                new_cones = np.concatenate((new_cones, np.array([cone])))
         new_cones[:, :-2] = PerceptionSimulator.apply_transformation(
             new_cones[:, :-2], [pos.x, pos.y], yaw, True
         )

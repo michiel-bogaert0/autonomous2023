@@ -7,6 +7,7 @@ FROM nvidia/cuda:11.7.1-runtime-ubuntu20.04 AS ugr-base
 # Install torch and torchvision
 #
 RUN apt-get update && apt-get -y install --no-install-recommends python3 python3-pip
+RUN pip install --upgrade pip
 RUN pip install torch==2.0.0
 RUN pip install torchvision==0.15.1
 

@@ -4,6 +4,10 @@ from casadi import casadi
 from optimal_control.ocp import Ocp
 from utils.common_utils import Timer
 
+############################################
+# Most of this file is from my supervisors #
+############################################
+
 
 class MPC_tracking:
     """
@@ -81,19 +85,21 @@ class MPC_tracking:
                     X0 = self.X_init_guess
             else:
                 if (X0 is None) and (self.X_sol is not None):
-                    # Use previous solution as warm up
-                    X0 = self.X_sol
+                    # Some small remark to this code: the commented out code is what I used originally, but I think it is better
+                    # to not shift the previous solution, as we are working in baselink frame. However, I could be wrong in my reasoning.
+
                     # shift previous solution to warm start current optim, use array in slice, i.e. [-1], to preserve dim
                     # X0 = np.concatenate(
                     #     (self.X_sol[:, 1:], self.X_sol[:, [-1]]), axis=1
                     # )
+                    X0 = self.X_sol
 
             if (U0 is None) and (self.U_sol is not None):
                 if len(self.U_sol.shape) > 1:
+                    # U0 = np.concatenate(
+                    #     (self.U_sol[:, 1:], self.U_sol[:, [-1]]), axis=1
+                    # )
                     U0 = self.U_sol
-                #     U0 = np.concatenate(
-                #         (self.U_sol[:, 1:], self.U_sol[:, [-1]]), axis=1
-                #     )
                 # else:
                 #     U0 = np.append(self.U_sol[1:], self.U_sol[-1])
 
@@ -149,6 +155,8 @@ class MPC_tracking:
     def analyseDeriv(self, L=None):
         """Show the pattern of the jacobian and hessian of the cost functions and of the jacobian of the constraints.
         If no cost L is supplied, the cost in the opti formulation is used.
+
+        I have never used this function.
         """
 
         import matplotlib.pyplot as plt
@@ -170,6 +178,9 @@ class MPC_tracking:
         plt.show()
 
     def showConvergence(self):
+        """
+        I have never used this function
+        """
         import matplotlib.pyplot as plt
 
         inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
@@ -186,6 +197,9 @@ class MPC_tracking:
         plt.show()
 
     def evaluate_objective(self, x, x_ref):
+        """
+        I have never used this function
+        """
         H, J = cd.hessian(self.opti.f, self.X)
         jac_fun = cd.Function("jac_fun", [self.X, self.x_ref], [J])
 

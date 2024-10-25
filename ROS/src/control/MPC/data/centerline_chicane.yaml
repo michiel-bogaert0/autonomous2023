@@ -1,0 +1,466 @@
+header: 
+  seq: 1
+  stamp: 
+    secs: 1712132077
+    nsecs: 266173601
+  frame_id: "ugr/car_base_link"
+poses: 
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: 7.721627310323694
+        y: -0.038318403413319935
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: 5.724594910323692
+        y: -0.05442350341331981
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: 1.7350676103236893
+        y: -0.014118403413319713
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -2.2745698896763145
+        y: 0.03428159658668006
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -6.344148570950152
+        y: -0.02055758616168779
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -10.346455416025155
+        y: -0.02055758616168779
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -14.219137110302158
+        y: 0.0036424138383122084
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -18.24911880457916
+        y: -0.05512016156068755
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -22.294675348058163
+        y: -0.04649501076268825
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -26.20191961773417
+        y: -0.00672016156068711
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -29.87417555802118
+        y: 1.075516056656313
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -31.274796486475164
+        y: 2.8133235049233147
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -32.18443400628817
+        y: 5.886136053190317
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -32.28462415549017
+        y: 9.76761444746732
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -30.80619095323317
+        y: 11.531359320335323
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -26.202870542335166
+        y: 12.090457690946325
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -22.299014272659164
+        y: 12.068079815547323
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -18.30480017838216
+        y: 12.148605315547323
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -14.174626185701156
+        y: 12.061807040148324
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -10.818343316025157
+        y: 10.015115208502321
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -6.630868021748146
+        y: 7.89942284746732
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: -2.079248202870147
+        y: 7.983507896669318
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: 1.6823753930028573
+        y: 7.95129769666932
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: 5.7866119610828655
+        y: 7.915527947467319
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: 7.602231683152866
+        y: 7.0855303602353175
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: 9.833198713202865
+        y: 3.935054241357315
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0
+  - 
+    header: 
+      seq: 1
+      stamp: 
+        secs: 1712132077
+        nsecs: 266173601
+      frame_id: "ugr/car_base_link"
+    pose: 
+      position: 
+        x: 9.547887042591864
+        y: 1.963809971681313
+        z: 0.0
+      orientation: 
+        x: 0.0
+        y: 0.0
+        z: 0.0
+        w: 1.0

@@ -7,6 +7,7 @@ FROM ubuntu:20.04 AS ugr-base
 # Install python
 #
 RUN apt-get update && apt-get -y install --no-install-recommends python3 python3-pip
+RUN pip install --upgrade pip
 
 #
 # Initial dependencies

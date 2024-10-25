@@ -20,6 +20,7 @@ xmltodict
 
 # Control
 casadi
+cvxopt
 quadprog
 
 # Jetson CAN

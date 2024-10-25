@@ -22,8 +22,15 @@ function post-install {
     git submodule update
 
     # Install pre-commit hook
-    sudo apt-get install cppcheck llvm
-    pip3 install pre-commit clang-format
+    # If ARM architecture, ignore mechatronics package and don't use apt-get
+    if  [[ $arch == arm* ]]; then
+        touch ./ROS/src/mechatronics/CATKIN_IGNORE
+        brew install cppcheck llvm
+        brew install pre-commit clang-format
+    else
+        sudo apt-get install cppcheck llvm
+        pip3 install pre-commit clang-format
+    fi
     pre-commit install
     
     touch env-vars.sh

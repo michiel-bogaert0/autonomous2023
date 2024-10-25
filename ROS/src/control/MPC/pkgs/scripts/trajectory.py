@@ -68,7 +68,7 @@ class Trajectory:
 
     def calculate_target_points(self, minimal_distances):
         """
-        Calculates a target point by traversing the path
+        Calculates target points for all minimal distances given
         Returns the first points that matches the conditions given by minimal_distance
 
         Args:
@@ -133,6 +133,9 @@ class Trajectory:
         return self.targets
 
     def get_reference_track(self, dt, N, actual_speed, debug=False):
+        """
+        Calculate the reference track based on the current path and the required velocity and maximum acceleration
+        """
         self.path_blf = self.transform_blf()
 
         if len(self.path_blf) == 0:
@@ -140,6 +143,7 @@ class Trajectory:
 
         # Find target points based on required velocity and maximum acceleration
         speed_target = rospy.get_param("/speed/target", 3.0)
+
         max_acceleration = 2.0  # TODO: create param
         # calculate distances based on maximum acceleration and current speed
         distances = [
@@ -205,27 +209,70 @@ class Trajectory:
 
         return reference_path
 
-    def get_tangent_line(self, reference_path):
-        point = reference_path[len(reference_path) // 2]
-        prev_point = reference_path[len(reference_path) // 2 - 1]
-        next_point = reference_path[len(reference_path) // 2 + 1]
+    def get_reference_path_gen(self, GT_centerline, dt, N, target_speed, debug=False):
+        """
+        Calculate the reference track based on the centerline and target speed
+        Different from the above function, as this reference track does not depend on current speed
+        """
+        self.path_blf = GT_centerline
 
-        slope = self.calculate_tangent(prev_point, next_point)
+        if len(self.path_blf) == 0:
+            return []
 
-        b = point[1] - slope * point[0]
-        b_left = b + 10
-        b_right = b - 10
+        # Find target points based on required velocity and maximum acceleration
+        speed_target = target_speed
+        # max_acceleration = 2.0  # TODO: create param
+        # actual_speed = 0
+        # calculate distances based on maximum acceleration and current speed
+        distances = [((speed_target)) * i * dt for i in range(N + 1)]
+        self.closest_index = np.argmin(np.sum((self.path_blf - [0, 0]) ** 2, axis=1))
+        self.closest_index = 0
 
-        return slope, b_left, slope, b_right
+        if debug:
+            current_point = self.path_blf[self.closest_index]
+            print(current_point)
 
-    def calculate_tangent(self, point_prev, point_next):
-        # Calculate the slope using finite differences
-        dx = point_next[0] - point_prev[0]
-        dy = point_next[1] - point_prev[1]
+        # Shift path so that closest point is at index 0
+        shifted_path = np.roll(self.path_blf, -self.closest_index, axis=0)
+        # Compute the distance between consecutive points
+        diff = np.diff(shifted_path, axis=0)
+        distances_cumsum = np.linalg.norm(diff, axis=1)
 
-        # Avoid division by zero
-        if dx == 0:
-            return float("inf")
+        # Append 0 and calculate cummulative sum
+        distances_relative = np.append([0], np.cumsum(distances_cumsum))
 
-        slope = dy / dx
-        return slope
+        # Find points at specified distances
+
+        reference_path = []
+        for i in range(len(distances)):
+            # Find first value in distances_relative that is greater than distance
+            for j in range(len(distances_relative)):
+                if distances_relative[j] < distances[i]:
+                    continue
+                elif distances_relative[j] == distances[i]:
+                    # Just take point on path
+                    scaling = 1
+                elif distances_relative[j] > distances[i]:
+                    # Required distances between two points so scale between them
+                    scaling = 1 - np.abs(
+                        (distances[i] - distances_relative[j])
+                        / (distances_relative[j] - distances_relative[j - 1])
+                    )
+
+                reference_path.append(
+                    shifted_path[j - 1]
+                    + scaling * (shifted_path[j] - shifted_path[j - 1])
+                )
+                if debug:
+                    print(
+                        f"Point {j - 1} and {j} with scaling {scaling} and distance {distances[i]} and relative distance {distances_relative[j]} results in point {reference_path[-1]}"
+                    )
+                break
+        # print(f"ref path 2: {reference_path}")
+
+        # end_time = perf_counter()
+
+        # print(f"Time 1: {mid_time - start_time}")
+        # print(f"Time 2: {end_time - mid_time}")
+
+        return reference_path
