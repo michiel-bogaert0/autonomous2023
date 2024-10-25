@@ -35,4 +35,4 @@ env-vars.sh
 /data-error-correction
 tuner_data/
 
-maps/default_gen_track.yaml
+/maps/default_gen_track.yaml
