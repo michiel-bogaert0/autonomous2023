@@ -33,7 +33,7 @@ class MPCSplinesTracking(ManagedNode):
         super().__init__("MPC_splines_tracking_control")
         self.publish_rate = rospy.get_param("~publish_rate", 40)
         self.slam_state = SLAMStatesEnum.IDLE
-        self.save_solution
+        self.save_solution = False
         rospy.Subscriber("/state", State, self.handle_state_change)
         self.start_sender()
         rospy.spin()
