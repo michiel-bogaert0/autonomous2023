@@ -62,13 +62,15 @@
         <param name="value_first_tipping_distance" value="0.9"/>
         <param name="value_second_tipping_distance" value="0.3"/>
 
-        <!-- publishing debug pointclouds -->
+        <!-- publishing diagnostics and debug pointclouds -->
+        <param name= "publish_diagnostics" value = "true"/>
         <param name= "publish_preprocessing" value = "true"/>
         <param name= "publish_ground" value = "true"/>
         <param name= "publish_clusters" value = "true"/>
         <param name= "color_factor" value = "1"/>
  
         <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
+        <remap from="/diagnostics/lidar" to="/autonomous/perception/diagnostics/lidar"/>
 
         <remap from="lidar/perception/preprocessed_pc" to="ugr/vis/lidar/preprocessed_pc"/>
         <remap from="lidar/perception/groundremoval_pc" to="ugr/vis/lidar/groundremoval_pc"/>

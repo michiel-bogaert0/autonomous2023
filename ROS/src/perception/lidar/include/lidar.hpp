@@ -41,8 +41,13 @@ private:
   bool publish_preprocessing_; // publish the preprocessed pointcloud
   bool publish_ground_;        // publish the debug ground pointclouds
   bool publish_clusters_;      // color the clusters and publish them
+  bool publish_diagnostics_;   // publish diagnostics
 
-  double max_fov_ = 0;
+  double latency_preprocessing_;
+  double latency_ground_removal_;
+  double latency_clustering_;
+  double latency_total_;
+
   double min_distance_;
   double max_distance_;
   double max_height_;
