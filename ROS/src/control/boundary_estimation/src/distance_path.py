@@ -1,12 +1,10 @@
 import numpy as np
-import rospy
 
 
 class DistancePath:
     def __init__(self):
         self.current_left_cone = None
         self.current_right_cone = None
-        self.local = rospy.get_param("~local", True)
 
     def get_path(self, left_bound, right_bound):
         self.left_bound = left_bound[1:]
@@ -37,21 +35,20 @@ class DistancePath:
                 self.current_left_cone = self.left_bound.pop(0)
                 self.add_midpoint_to_path()
 
-        if self.local:
-            middle_line = []
-            for tupel in self.middle_line:
-                id0 = tupel[0]
-                id1 = tupel[1]
-                node0 = next(node for node in self.left_bound_copy if node.id == id0)
-                node1 = next(node for node in self.right_bound_copy if node.id == id1)
-                middle_line.append(
-                    (
-                        (node0.x + node1.x) / 2,
-                        (node0.y + node1.y) / 2,
-                        node0.id,
-                        node1.id,
-                    )
+        middle_line = []
+        for tupel in self.middle_line:
+            id0 = tupel[0]
+            id1 = tupel[1]
+            node0 = next(node for node in self.left_bound_copy if node.id == id0)
+            node1 = next(node for node in self.right_bound_copy if node.id == id1)
+            middle_line.append(
+                (
+                    (node0.x + node1.x) / 2,
+                    (node0.y + node1.y) / 2,
+                    node0.id,
+                    node1.id,
                 )
+            )
             self.middle_line = middle_line
 
         return self.middle_line

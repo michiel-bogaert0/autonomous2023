@@ -2,8 +2,6 @@ from math import copysign
 
 import numpy as np
 import rospy
-
-# import tf2_ros as tf
 from node import Node
 
 
@@ -17,7 +15,6 @@ class LocalBoundaries:
         self.color_indep = rospy.get_param("~use_color", False)
         self.bound_len = rospy.get_param("~local_bound_len", 6)
         self.strategy = rospy.get_param("~middle_line_strategy", "distance")
-        self.local = rospy.get_param("~local", True)
 
     def get_boundaries(self, cones):
         self.cones = cones
@@ -25,11 +22,6 @@ class LocalBoundaries:
         self.right_bound = []
         self.left_forbidden = []
         self.right_forbidden = []
-        if self.strategy == "angle":
-            self.middle_total = []
-            self.middle_line = []
-        else:
-            self.middle_line = None
 
         root_node = Node(0, 0, 2, 0, None, [], 0, 0, 0, None)
         self.left_bound.append(root_node)
@@ -40,7 +32,7 @@ class LocalBoundaries:
         self.right_bound.append(closest_right_node)
 
         if closest_left_node is None or closest_right_node is None:
-            return None, None, None
+            return None, None
         it = 0
 
         while it < self.bound_len and len(self.left_bound) + len(
@@ -71,47 +63,19 @@ class LocalBoundaries:
                 next_left_node = self.get_next_node("left", left_first)
                 if next_left_node is not None:
                     self.left_bound.append(next_left_node)
-                    if self.strategy == "angle":
-                        self.middle_total.append((next_left_node, self.right_bound[-1]))
 
             if cross_angle_right >= cross_angle_left or next_left_node is None:
                 next_right_node = self.get_next_node("right", right_first)
                 if next_right_node is not None:
                     self.right_bound.append(next_right_node)
-                    if self.strategy == "angle":
-                        self.middle_total.append((self.left_bound[-1], next_right_node))
+
                 else:
                     break
             it += 1
 
-        if self.strategy == "angle":
-            for i in range(len(self.middle_total)):
-                if (
-                    self.middle_total[i][0] in self.left_bound
-                    and self.middle_total[i][1] in self.right_bound
-                ):
-                    self.middle_line.append(
-                        (self.middle_total[i][0].id, self.middle_total[i][1].id)
-                    )
-
-        if self.strategy == "angle" and self.local:
-            middle_line = []
-            for tupel in self.middle_line:
-                id0 = tupel[0]
-                id1 = tupel[1]
-                node0 = next(node for node in self.left_bound if node.id == id0)
-                node1 = next(node for node in self.right_bound if node.id == id1)
-                middle_line.append(
-                    (
-                        (node0.x + node1.x) / 2,
-                        (node0.y + node1.y) / 2,
-                        node0.id,
-                        node1.id,
-                    )
-                )
-            self.middle_line = middle_line
-
-        return self.left_bound, self.right_bound, self.middle_line
+        if self.left_bound == [] or self.right_bound == []:
+            return None, None
+        return self.left_bound, self.right_bound
 
     def get_closest_node(self, root_node, side):
         closest_cone = None
@@ -197,14 +161,6 @@ class LocalBoundaries:
                                 other_bound[:] = other_bound[:i]
                                 other_bound[-1].children.pop(0)
                                 other_bound.append(other_bound[-1].children[0])
-                                if side == "left" and self.strategy == "angle":
-                                    self.middle_total.append(
-                                        (best_node, other_bound[-2])
-                                    )
-                                elif side == "right" and self.strategy == "angle":
-                                    self.middle_total.append(
-                                        (other_bound[-2], best_node)
-                                    )
 
                                 forbidden_other.append(node)
                                 # we halen de nodes die al in de andere lijn zitten eruit
@@ -224,10 +180,6 @@ class LocalBoundaries:
                             other_bound[:] = other_bound[:i]
                             other_bound[-1].children.pop(0)
                             other_bound.append(other_bound[-1].children[0])
-                            if side == "left" and self.strategy == "angle":
-                                self.middle_total.append((best_node, other_bound[-2]))
-                            elif side == "right" and self.strategy == "angle":
-                                self.middle_total.append((other_bound[-2], best_node))
                             forbidden_other.append(node)
                             # we halen de nodes die al in de andere lijn zitten eruit
                             children = [
