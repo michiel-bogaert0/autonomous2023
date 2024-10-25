@@ -63,7 +63,7 @@ def interp_trajectory(
     # create closed trajectory
     trajectory_cl = np.vstack((trajectory, trajectory[0]))
 
-    # calculate element lengths (euclidian distance)
+    # calculate element lengths (euclidean distance)
     el_lengths_cl = np.sqrt(
         np.sum(np.power(np.diff(trajectory_cl[:, :2], axis=0), 2), axis=1)
     )
@@ -1125,7 +1125,7 @@ def calc_splines(
     :type path:                 np.ndarray
     :param el_lengths:          distances between path points (closed or unclosed). The input is optional. The distances
                                 are required for the scaling of heading and curvature values. They are calculated using
-                                euclidian distances if required but not supplied.
+                                euclidean distances if required but not supplied.
     :type el_lengths:           np.ndarray
     :param psi_s:               orientation of the {start, end} point.
     :type psi_s:                float
@@ -4550,7 +4550,7 @@ def interp_track_2(reftrack: np.ndarray, stepsize_approx: float = 1.0) -> np.nda
 
     reftrack_cl = np.vstack((reftrack, reftrack[0]))
 
-    # calculate element lengths (euclidian distance)
+    # calculate element lengths (euclidean distance)
     el_lenghts = np.sqrt(
         np.sum(np.power(np.diff(reftrack_cl[:, :2], axis=0), 2), axis=1)
     )

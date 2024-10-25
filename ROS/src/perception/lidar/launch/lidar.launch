@@ -2,7 +2,7 @@
     <node pkg="lidar" type="lidar" name="lidar" output="screen">
         <!-- preprocessing -->
         <param name="min_distance" value="1"/>
-        <param name="max_distance" value="35"/>
+        <param name="max_distance" value="21"/>
         <param name="max_height" value="0.5"/> <!-- relative to ground level -->
         <param name="sensor_height" value="0.98"/> <!-- relative to ground level -->
         <param name="min_angle" value="0.3"/>

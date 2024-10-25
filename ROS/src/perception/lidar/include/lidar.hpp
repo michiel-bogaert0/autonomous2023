@@ -42,6 +42,7 @@ private:
   bool publish_ground_;        // publish the debug ground pointclouds
   bool publish_clusters_;      // color the clusters and publish them
 
+  double max_fov_ = 0;
   double min_distance_;
   double max_distance_;
   double max_height_;
@@ -61,7 +62,8 @@ private:
 
   void publishObservations(const sensor_msgs::PointCloud cones);
   void publishDiagnostic(DiagnosticStatusEnum status, std::string name,
-                         std::string message);
+                         std::string latency, std::string key = "",
+                         std::string value = "");
   template <class PointT>
   pcl::PointCloud<PointT> flipPointcloud(pcl::PointCloud<PointT> pc);
 };
