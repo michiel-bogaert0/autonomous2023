@@ -36,7 +36,7 @@ class MapPublisher:
                 "starting_amplitude": 0.4,
                 "rel_accuracy": 0.005,
                 "margin": 0,
-                "starting_straight_length": 6,
+                "starting_straight_length": 0,
                 "starting_straight_downsample": 2,
                 "min_cone_spacing": 3 * math.pi / 16,
                 "max_cone_spacing": 5,
@@ -50,10 +50,7 @@ class MapPublisher:
 
             # Save track
             TrackGenerator.write_to_yaml(
-                os.path.join(
-                    r"/home/ugr/autonomous2023/ROS/src/slam/slam_simulator/maps",
-                    "default_gen_track.yaml",
-                ),
+                self.map,
                 start_cones,
                 left_cones,
                 right_cones,
