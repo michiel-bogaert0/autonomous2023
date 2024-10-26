@@ -38,8 +38,7 @@ function post-install {
     pre-commit install
     
     touch env-vars.sh
-    sudo chmod +x env-vars.sh
-
+    chmod +x env-vars.sh
 
     # Add aliases to the startup script
     if echo $SHELL | grep -q "zsh"; then
@@ -58,10 +57,15 @@ function post-install {
     fi
 
     if ! grep -q "^# UGent Racing" "$file"; then
+        sed -i.bak '/^alias ugrdev=/d' "$file"
+        sed -i.bak '/^alias ugr=/d' "$file"
         echo "" >> "$file"
         echo "# UGent Racing" >> "$file"
         echo "$ugrdev_input_string" >> "$file"
         echo "$ugr_input_string" >> "$file"
+    else
+        sed -i.bak "s|^alias ugrdev=.*|$ugrdev_input_string|" "$file"
+        sed -i.bak "s|^alias ugr=.*|$(echo $ugr_input_string | sed 's/\\/\\\\/g')|" "$file"
     fi
 
 
