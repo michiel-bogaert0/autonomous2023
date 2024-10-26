@@ -34,3 +34,5 @@ calib_images/
 env-vars.sh
 /data-error-correction
 tuner_data/
+
+default_gen_track.yaml
