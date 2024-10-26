@@ -1,0 +1,9879 @@
+header:
+  frame_id: ugr/map
+  seq: 0
+  stamp:
+    nsecs: 0
+    secs: 0
+poses:
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 3.250804036606569
+      y: -1.171432243217578
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 3.7441953838521944
+      y: -1.1521999362405857
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 4.237514371809111
+      y: -1.1312162575734102
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 4.730754648430008
+      y: -1.108481857732384
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 5.223909892967655
+      y: -1.0839979527318475
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 5.71697383875282
+      y: -1.0577666048914458
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 6.209940301427505
+      y: -1.0297910120658471
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 6.70280321275342
+      y: -1.0000758047790281
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 7.195556660103846
+      y: -0.9686273511316928
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 7.688194931713634
+      y: -0.9354540693595075
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 8.180712567719729
+      y: -0.9005667479144037
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 8.673104416973331
+      y: -0.8639788729373516
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 9.165365699544063
+      y: -0.825706962989013
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 9.657492074765589
+      y: -0.7857709109042744
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 10.149479714590514
+      y: -0.7441943326377383
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 10.641325381929247
+      y: -0.7010049229697832
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 11.133026513542415
+      y: -0.6562348179468319
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 11.624581306938595
+      y: -0.6099209639350763
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 12.115988810598097
+      y: -0.5621054931742094
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 12.607249016698692
+      y: -0.5128361057267553
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 13.09836295535989
+      y: -0.46216645772935255
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 13.589332789248314
+      y: -0.4101565558646966
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 14.0801619071973
+      y: -0.35687315798649505
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 14.570855015288586
+      y: -0.3023901798442914
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 15.061418223622582
+      y: -0.2467891078696557
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 15.551859126765853
+      y: -0.1901594179991044
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 16.042186875609747
+      y: -0.13259900052098414
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 16.53241223810245
+      y: -0.07421459094191993
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 17.022547646028002
+      y: -0.015122206871385586
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 17.512607224699995
+      y: 0.04455240908180227
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 18.002606802114677
+      y: 0.10467334042252577
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 18.492563893768697
+      y: 0.1650940419424641
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 18.9824976589906
+      y: 0.22565687905050877
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 19.47242882426357
+      y: 0.28619266142665534
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 19.96237956863056
+      y: 0.34652017126174767
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 20.452373365872713
+      y: 0.4064456864748672
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 20.942434777740452
+      y: 0.465762499469412
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 21.43258919209483
+      y: 0.5242504322054435
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 21.922862499388284
+      y: 0.5816753486379599
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 22.413280700482208
+      y: 0.6377886659075187
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 22.903869438367614
+      y: 0.692326866081054
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 23.394653445931247
+      y: 0.7450110107376586
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 23.885655901498378
+      y: 0.7955462612881438
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 24.37689768349479
+      y: 0.8436214086206991
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 24.868396515213572
+      y: 0.8889084164909624
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 25.360165990360294
+      y: 0.9310619840367451
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 25.852214469797577
+      y: 0.9697191339094275
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.344543839735348
+      y: 1.0044988337895615
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.837148121536966
+      y: 1.0350016605073864
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.330011923359898
+      y: 1.0608095176333812
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.82310872405131
+      y: 1.0814854192530574
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.316398980109692
+      y: 1.0965733547079874
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.809828047143
+      y: 1.1055982513897067
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 29.303323908150986
+      y: 1.108066055255288
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 29.79679470219766
+      y: 1.1034639518407612
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 30.290126048825847
+      y: 1.0912607577814089
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 30.7831781697092
+      y: 1.0709075941234032
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 31.275782844201977
+      y: 1.0418393211331696
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 31.76774030907015
+      y: 1.003477348777521
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 32.2588161970192
+      y: 0.955233258190861
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 32.74873857244357
+      y: 0.8965128007188335
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 33.237195122843374
+      y: 0.8267202050035842
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 33.72383057093262
+      y: 0.745262797069793
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 34.208244377426745
+      y: 0.6515559364384719
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 34.689988808542616
+      y: 0.5450282636703732
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 35.168567445228604
+      y: 0.4251272453452239
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 35.64343421280582
+      y: 0.29132499167764875
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 36.11399300976713
+      y: 0.14312430993254158
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 36.57959801266457
+      y: -0.01993505625498475
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 37.03955473004472
+      y: -0.19827006534854935
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 37.4931218720187
+      y: -0.3922479720491276
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 37.93951409307399
+      y: -0.602179969132156
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 38.37790565401054
+      y: -0.8283149826205591
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 38.807435034356985
+      y: -1.0708337384366593
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 39.22721050934383
+      y: -1.3298432294651668
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 39.636316685651146
+      y: -1.6053717203895188
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 40.03382196801661
+      y: -1.8973644330875752
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 40.41878690484197
+      y: -2.2056800571694373
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 40.790273335774714
+      y: -2.5300882278514942
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 41.14735423859741
+      y: -2.870268106339794
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 41.489124147244965
+      y: -3.2258081861458097
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 41.81470998306099
+      y: -3.596207436496329
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 42.12328199132685
+      y: -3.980877969723438
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 42.414063798882715
+      y: -4.379149803005895
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 42.6863401868274
+      y: -4.790278172516909
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 42.93946312149954
+      y: -5.2134521830038265
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 43.17285662153373
+      y: -5.647803961535511
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 43.38602054679886
+      y: -6.092418054830069
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 43.57853329949117
+      y: -6.546340920632259
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 43.75005344500219
+      y: -7.008590372234419
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 43.90032028174144
+      y: -7.478164842187178
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.02915340870028
+      y: -7.954052340960229
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.13645135648558
+      y: -8.435238998530755
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.22218936154401
+      y: -8.920717091046507
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.286416374198026
+      y: -9.40949247024355
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.329251398905775
+      y: -9.900591329613691
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.35087926992145
+      y: -10.393066257863968
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.35154596744812
+      y: -10.886001546491569
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.33155357868878
+      y: -11.378517733878123
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.29125500521786
+      y: -11.869775382826678
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.23104851315595
+      y: -12.358978101639813
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.15137221609518
+      y: -12.845374830463973
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 44.052698572958256
+      y: -13.328261424573231
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 43.935528974334865
+      y: -13.80698157447631
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 43.80038848166248
+      y: -14.280927109204907
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 43.647820774208334
+      y: -14.749537733934767
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 43.47838334943805
+      y: -15.21230025630059
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 43.292643013254164
+      y: -15.668747357522756
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 43.09117168794556
+      y: -16.118455964922187
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 42.874542557655246
+      y: -16.56104528172811
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 42.64332656386049
+      y: -16.996174528457576
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 42.39808925683874
+      y: -17.42354044774085
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 42.13938800340744
+      y: -17.842874621452946
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 41.86776954638806
+      y: -18.253940645548603
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 41.58376790724284
+      y: -18.656531204232547
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 41.28790262013646
+      y: -19.050465081160464
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 40.98067728323729
+      y: -19.435584141373724
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 40.662578411336064
+      y: -19.811750313720896
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 40.334074572757814
+      y: -20.17884259969299
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 39.995615793006095
+      y: -20.536754130963093
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 39.64763320753241
+      y: -20.885389294526362
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 39.29053894639822
+      y: -21.224660941221437
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 38.92472623431891
+      y: -21.554487690606056
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 38.55056969058312
+      y: -21.874791342675415
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 38.16842581456164
+      y: -22.185494404760547
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 37.7786336438991
+      y: -22.486517740127482
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 37.38151557396505
+      y: -22.77777834331396
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 36.97737832867804
+      y: -23.05918724608133
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 36.566514074362345
+      y: -23.33064755701545
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 36.14920166981169
+      y: -23.592052637269482
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 35.72570804717925
+      y: -23.843284414690462
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 35.29628971965617
+      y: -24.084211838596385
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 34.86119441310977
+      y: -24.314689477756602
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 34.42066281989896
+      y: -24.534556264661823
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 33.97493047394131
+      y: -24.74363438993623
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 33.524229746747174
+      y: -24.9417283517314
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 33.0687919645379
+      y: -25.12862416614121
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 32.60884964670742
+      y: -25.304088746098596
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 32.14463886582387
+      y: -25.467869458103873
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 31.676401730492184
+      y: -25.619693873173436
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 31.20438902212863
+      y: -25.75926983974274
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 30.72886313394663
+      y: -25.886286542438263
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 30.250101393858323
+      y: -26.000417472903912
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 29.768399316663604
+      y: -26.101324585090165
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 29.28407347163383
+      y: -26.18866294552334
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.79746385992735
+      y: -26.26208569704796
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.308935742769638
+      y: -26.321249290480576
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.81888086408235
+      y: -26.36581894452422
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.32771801198261
+      y: -26.395474286920688
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.83589286618216
+      y: -26.409915120995105
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.34387708318617
+      y: -26.408867252586443
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 25.85216657846055
+      y: -26.392088303401348
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 25.361278974450514
+      y: -26.359373428614862
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 24.871750195442782
+      y: -26.310560849636875
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 24.38413020461856
+      y: -26.245537107951613
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 23.898977894980515
+      y: -26.164241943401613
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 23.416855163777182
+      y: -26.06667270078075
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 22.93832021910195
+      y: -25.952888172619147
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 22.463920186920515
+      y: -25.823011793994908
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 21.99418310620794
+      y: -25.677234117382387
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 21.52960941842985
+      y: -25.515814512087662
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 21.070663074543514
+      y: -25.339082053703297
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 20.617762397317904
+      y: -25.14743559402508
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 20.171270848457212
+      y: -24.941343030610103
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 19.731487858298255
+      y: -24.7213398269986
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 19.29863988074392
+      y: -24.488026868312158
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 18.87287184356243
+      y: -24.24206776165438
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 18.45423930877022
+      y: -23.984185496046155
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 18.042702416782973
+      y: -23.71515734417257
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 17.638123186918722
+      y: -23.43580665074083
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 17.24026548699514
+      y: -23.14699376089586
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 16.848796857898698
+      y: -22.84960773260541
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 16.463291917168082
+      y: -22.544559252990908
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 16.083237185962407
+      y: -22.232774887302487
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 15.708037185138929
+      y: -21.915192727988583
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 15.337021648662116
+      y: -21.592759461893095
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 14.969453711284567
+      y: -21.266428826363548
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 14.604538941062566
+      y: -20.937161380500967
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 14.241435103989309
+      y: -20.6059254767162
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 13.879262565973223
+      y: -20.27369928074718
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 13.517115254728402
+      y: -19.94147365569687
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 13.15407211917806
+      y: -19.61025569768871
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 12.789209035195565
+      y: -19.28107268754505
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 12.421611112670776
+      y: -18.954976204609107
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 12.050385359042675
+      y: -18.633046135640804
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 11.674673647973364
+      y: -18.316394303910744
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 11.29366592851978
+      y: -18.006167441607815
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 10.906613590155755
+      y: -17.703549233005166
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 10.512842872900114
+      y: -17.409761167141152
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 10.11176818064489
+      y: -17.126061957762918
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 9.702905121018242
+      y: -16.853745315622806
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 9.285883058645643
+      y: -16.594135894459853
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 8.86045693275125
+      y: -16.34858327745417
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 8.426518057227337
+      y: -16.11845392557822
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 7.984103594344986
+      y: -15.905121072595529
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 7.533404374998689
+      y: -15.709952622424039
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 7.07477073148752
+      y: -15.53429718150047
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 6.608716015762595
+      y: -15.37946843930076
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 6.135917498748448
+      y: -15.246728191288046
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 5.657214386008662
+      y: -15.137268376704842
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 5.173602742018917
+      y: -15.052192574808764
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 4.686227188936489
+      y: -14.992497463169714
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 4.196369334180146
+      y: -14.959054786354825
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 3.7054329813706635
+      y: -14.952594408940627
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 3.2149262871621853
+      y: -14.973689030203959
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 2.7264411372420088
+      y: -15.022741116931176
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 2.2416301226691373
+      y: -15.099972564673255
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 1.7621815968381027
+      y: -15.20541752702054
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 1.2897933778744834
+      y: -15.338918759156083
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 0.8261457259035462
+      y: -15.500127709643126
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 0.372874265042107
+      y: -15.688508468018192
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -0.06845646688417907
+      y: -15.903345541259636
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -0.4963781734461292
+      y: -16.143755296220462
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -0.9095420360467148
+      y: -16.408700774515466
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -1.3067394785115565
+      y: -16.69700946774745
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -1.6869199995242194
+      y: -17.007393540374014
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -2.049205720020853
+      y: -17.33847191269098
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -2.392902342059064
+      y: -17.688793631476422
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -2.717505956631441
+      y: -18.056862218257617
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -3.0227049795914485
+      y: -18.441160658416955
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -3.3083777182444987
+      y: -18.84017562277769
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -3.5745862811916207
+      y: -19.25241985057023
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -3.8215673715999166
+      y: -19.676452120422248
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.049720493199405
+      y: -20.110894437315125
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.25959411868843
+      y: -20.554446195765504
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.45187036629866
+      y: -21.005895204634957
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.627348702416145
+      y: -21.46412557490018
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.786929140803562
+      y: -21.928122574464645
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.931595347256182
+      y: -22.396974640937234
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.0623979877168
+      y: -22.869872812865736
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.180438583005623
+      y: -23.34610789200841
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.286854058911945
+      y: -23.825065684635703
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.382802110266457
+      y: -24.3062206900572
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.469447434778135
+      y: -24.78912861147431
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.547948839040286
+      y: -25.27341805995284
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.619447176515395
+      y: -25.75878180883666
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.685054046048863
+      y: -26.244967935126226
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.745841159392118
+      y: -26.7317711577445
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.802830276588352
+      y: -27.219024651353134
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.856983607640285
+      y: -27.70659257921804
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.909194585989075
+      y: -28.19436354995439
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.960278932037924
+      y: -28.682245160911236
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.010965941106463
+      y: -29.170159745380133
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.061889947566957
+      y: -29.658041391509283
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.113581933283118
+      y: -30.145834247526285
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.166461261847993
+      y: -30.633492070412895
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.220827529865943
+      y: -31.120978913302725
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.276852555252309
+      y: -31.608270777793418
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.334573084370921
+      y: -32.09535791900611
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.393887497584857
+      y: -32.58224707313278
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.454560808203131
+      y: -33.06896261675723
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.516233541414141
+      y: -33.5555466980244
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.578431138120003
+      y: -34.04205841807067
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.640573253059129
+      y: -34.528571937339414
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.701982896865148
+      y: -35.015173394872456
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.761895418181688
+      y: -35.501956595718106
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.819467347466934
+      y: -35.98901748444115
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.873785150248709
+      y: -36.476447479012485
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.923873963197513
+      y: -36.96432578951584
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.968706409200012
+      y: -37.45271089075858
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.007211605366144
+      y: -37.94163135761018
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.03828448849272
+      y: -38.4310763071657
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.060795584130903
+      y: -38.92098572283477
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.073601336645264
+      y: -39.41124096203114
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.075555097413746
+      y: -39.90165577071412
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.0655188326781735
+      y: -40.391968143485265
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.042375485050195
+      y: -40.88183337086688
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.005041466994437
+      y: -41.3708185644065
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.9524785617061555
+      y: -41.85839881357302
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.883705763327182
+      y: -42.34395511366899
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.79781138500004
+      y: -42.82677425114696
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.693965305888766
+      y: -43.30605081414395
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.571431095304677
+      y: -43.78089144969613
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.429577707567111
+      y: -44.250321433381565
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.267890410585588
+      y: -44.713293552883215
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.085980593278539
+      y: -45.16869923586311
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.883594093926984
+      y: -45.61538177710663
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.660617705030755
+      y: -46.05215144329416
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.417083541006228
+      y: -46.477802159643566
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.153171002977958
+      y: -46.89112941497414
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.869206138748669
+      y: -47.29094896442396
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.565658273487016
+      y: -47.67611586578244
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.243133874463206
+      y: -48.04554335927888
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -3.9023677071784784
+      y: -48.39822109394722
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -3.5442114357911882
+      y: -48.73323221754625
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -3.169619912891782
+      y: -49.049768881415226
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -2.779635487557026
+      y: -49.347145765282974
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -2.375370731790187
+      y: -49.62481129740842
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -1.9579900402541792
+      y: -49.88235632894171
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -1.5286905939720974
+      y: -50.11952011368162
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -1.0886831939408732
+      y: -50.336193540593584
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -0.6391734651855622
+      y: -50.53241966152808
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -0.18134390671945516
+      y: -50.708391645729264
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 0.2836627796764076
+      y: -50.86444837167142
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 0.7547587059308689
+      y: -51.00106793202082
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 1.2309238512481444
+      y: -51.11885937659431
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 1.7112169191147406
+      y: -51.2185530496587
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 2.194783841380679
+      y: -51.30098989146112
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 2.6808638493322854
+      y: -51.367110070198024
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 3.168793103702847
+      y: -51.41794129129213
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 3.6580059407389443
+      y: -51.45458709812094
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 4.148033847907511
+      y: -51.47821543497474
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 4.638502329527703
+      y: -51.49004769203033
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 5.129125859225422
+      y: -51.49134839658731
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 5.619701142978299
+      y: -51.483415657700625
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 6.110098934518066
+      y: -51.46757241538493
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 6.6002546552399295
+      y: -51.44515849315962
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 7.090158075010579
+      y: -51.4175234058503
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 7.579842309909368
+      y: -51.38601983485298
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 8.069372389445904
+      y: -51.351997651681486
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 8.558833640439856
+      y: -51.316798348347966
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 9.048320128503578
+      y: -51.281749720406474
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 9.537923391560891
+      y: -51.24816064542615
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 10.027721693308106
+      y: -51.21731580606076
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 10.517770017835703
+      y: -51.19047022226734
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 11.008091019288434
+      y: -51.168843480845965
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 11.498667131663575
+      y: -51.15361358130132
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 11.989434032638847
+      y: -51.145910353762616
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 12.480275640587594
+      y: -51.14680844576927
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 12.971020804599373
+      y: -51.15731991830154
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 13.461441822441332
+      y: -51.178386535450606
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 13.951254890289682
+      y: -51.21087187442681
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 14.4401225502837
+      y: -51.25555342218427
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 14.927658154200468
+      y: -51.313114884668956
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 15.413432250306341
+      y: -51.384139324635505
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 15.896980404494785
+      y: -51.4691052129154
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 16.37781145897345
+      y: -51.568387733777094
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 16.85541578250547
+      y: -51.68226292781645
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 17.329273343874178
+      y: -51.81091287463518
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 17.798861394848505
+      y: -51.95443157508598
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 18.26366154925812
+      y: -52.11283146806871
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 18.723166076921196
+      y: -52.28605050351246
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 19.17688326613871
+      y: -52.473959671917605
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 19.624341743619873
+      y: -52.67637087494134
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 20.065093674891237
+      y: -52.89304501158978
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 20.49871680046653
+      y: -53.1237001503017
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 20.92481529243941
+      y: -53.3680196579253
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 21.343019442002475
+      y: -53.62566016142741
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 21.752984210186717
+      y: -53.89625922611318
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 22.15438669156611
+      y: -54.17944264406191
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 22.546922553704157
+      y: -54.47483123726806
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 22.930301523855313
+      y: -54.78204709050443
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 23.304241999179
+      y: -55.10071913815296
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 23.668464857938332
+      y: -55.43048803622693
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 24.022686547438223
+      y: -55.77101025469408
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 24.36661152052482
+      y: -56.12196132528451
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 24.699924087148588
+      y: -56.48303817562178
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 25.022279741729008
+      y: -56.85396047125907
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 25.333296021945294
+      y: -57.234470872625
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 25.6325429518228
+      y: -57.62433409335027
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 25.919533133183684
+      y: -58.02333461278318
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.193711800724508
+      y: -58.43127270455757
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.45444854926461
+      y: -58.84795763062709
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.701034074725182
+      y: -59.27319638590691
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.932682233493736
+      y: -59.706778993990895
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.14853503279103
+      y: -60.1484627380217
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.34766937260511
+      y: -60.59795642687585
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.529105435045135
+      y: -61.054905012402166
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.691816809897748
+      y: -61.51887479144766
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.83474243816282
+      y: -61.989339473074686
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.95680042360843
+      y: -62.46566744054702
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.05690371402882
+      y: -62.94711058088349
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.133977589757496
+      y: -63.43279508841869
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.186978818391324
+      y: -63.92171466919121
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.214916243939587
+      y: -64.41272657633948
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.21687247919654
+      y: -64.90455088943862
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.192026266723342
+      y: -65.39577340978772
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.139674972237277
+      y: -65.88485247689346
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 28.059256581231015
+      y: -66.37012991794151
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.9503704927114
+      y: -66.84984622274213
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.812796350664456
+      y: -67.32215989431984
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.646510131421334
+      y: -67.78517076499702
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.45169671964174
+      y: -68.23694689667221
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 27.228758261492285
+      y: -68.67555451112993
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.978317682694332
+      y: -69.09909023223035
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.70121690039627
+      y: -69.50571477807061
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.398509436553294
+      y: -69.89368712856667
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 26.071447340067092
+      y: -70.26139811376518
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 25.721462352778634
+      y: -70.60740212841205
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 25.350140668113617
+      y: -70.93044454548352
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 24.959191130791854
+      y: -71.22948163787876
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 24.550410349873772
+      y: -71.50369336099894
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 24.125647326030705
+      y: -71.75248992222272
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 23.68676892418403
+      y: -71.97551253642648
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 23.235627192166234
+      y: -72.17262878547595
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 22.774029375317532
+      y: -72.34392316066362
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 22.30371130815622
+      y: -72.4896834925387
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 21.82631468088849
+      y: -72.61038405146431
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 21.343368492138907
+      y: -72.70666613498081
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 20.856274820452718
+      y: -72.77931694839903
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 20.366298884432382
+      y: -72.8292475389772
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 19.87456322108631
+      y: -72.85747046898652
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 19.38204569794532
+      y: -72.86507781707104
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 18.889580988341635
+      y: -72.85321998869945
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 18.3978650805862
+      y: -72.8230857027773
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 17.90746235871549
+      y: -72.77588340927929
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 17.41881478200586
+      y: -72.71282428750538
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 16.93225269892364
+      y: -72.63510688038866
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 16.44800685470511
+      y: -72.54390334002372
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 15.966221186533817
+      y: -72.44034719498435
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 15.48696604245073
+      y: -72.32552250331763
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 15.010251497919118
+      y: -72.20045425810481
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 14.536040374026532
+      y: -72.0661002954482
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 14.064260112354678
+      y: -71.92334641224465
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 13.594812446722116
+      y: -71.7730065815068
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 13.127581242792305
+      y: -71.61582557131403
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 12.66243903406973
+      y: -71.4524820369995
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 12.199252471893084
+      y: -71.28359168140989
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 11.73788682142547
+      y: -71.1097104076807
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 11.278209621966237
+      y: -70.93133742237704
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 10.820093619663675
+      y: -70.74891826264563
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 10.363419070763973
+      y: -70.56284773268156
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 9.908075503921685
+      y: -70.37347274355515
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 9.453963020935937
+      y: -70.18109505682233
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 9.000993206631206
+      y: -69.98597393681433
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 8.549089710499373
+      y: -69.7883287194492
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 8.098188555161215
+      y: -69.58834130715415
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 7.6482382196758385
+      y: -69.38615860030725
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 7.199199539201819
+      y: -69.18189487572222
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 6.751045456466617
+      y: -68.97563412229944
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 6.303760654904779
+      y: -68.76743234319629
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 5.857341098155583
+      y: -68.55731983285251
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 5.411793495846882
+      y: -68.34530343603286
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 4.967134711217385
+      y: -68.131368794793
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 4.523391122132639
+      y: -67.91548258798684
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 4.0805979434227115
+      y: -67.69759476665489
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 3.638798515207856
+      y: -67.4776407873892
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 3.1980435589812597
+      y: -67.25554384458036
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 2.758390400686875
+      y: -67.03121710132653
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 2.3199021578688845
+      y: -66.8045659177324
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 1.8826468861829222
+      y: -66.57549007435075
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 1.4466966791549782
+      y: -66.34388598762344
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 1.012126714063826
+      y: -66.10964891335836
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 0.5790142362490768
+      y: -65.87267513347683
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 0.14743747448598624
+      y: -65.63286411965997
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -0.2825255097220653
+      y: -65.39012064945236
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -0.7107979561421393
+      y: -65.14435671421502
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -1.1373052219483857
+      y: -64.89549270389507
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -1.561974999869843
+      y: -64.64345745182979
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -1.984737259474236
+      y: -64.38818777828315
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -2.405524144092565
+      y: -64.12962796451907
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -2.8242698639287216
+      y: -63.867729234242205
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -3.240910586146297
+      y: -63.602449247464634
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -3.655384321032157
+      y: -63.33375160823477
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.067630803466081
+      y: -63.061605387313946
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.477591369140803
+      y: -62.7859846607379
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.8852088251821355
+      y: -62.50686806508557
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.290427315005728
+      y: -62.22423837017752
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.693192177414167
+      y: -61.938082069836135
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.0934498000857245
+      y: -61.64838899125651
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.4911474677352
+      y: -61.35515192346017
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.886233205338988
+      y: -61.05836626523287
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.278655616912345
+      y: -60.75802969288142
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.668363720407986
+      y: -60.45414184808394
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -8.055306779373282
+      y: -60.14670404605134
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -8.439434132059608
+      y: -59.835719004166556
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -8.820695018723654
+      y: -59.52119059122013
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -9.19903840789773
+      y: -59.20312359731802
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -9.57441282243594
+      y: -58.881523524497545
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -9.946766166166693
+      y: -58.556396398051305
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -10.316045552000665
+      y: -58.227748598526034
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -10.682197132358915
+      y: -57.89558671433348
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -11.045165932799314
+      y: -57.55991741488331
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -11.404895689732413
+      y: -57.220747344123836
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -11.761328693131302
+      y: -56.878083034353814
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -12.114405635154442
+      y: -56.53193084014659
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -12.4640654656171
+      y: -56.18229689220725
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -12.810245255266489
+      y: -55.82918707096108
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -13.15288006783879
+      y: -55.47260699964967
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -13.491902841903034
+      y: -55.11256205668501
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -13.827244283526854
+      y: -54.74905740698361
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -14.158832770829143
+      y: -54.38209805196482
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -14.486594271509038
+      y: -54.01168889784752
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -14.810452274452377
+      y: -53.63783484181046
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -15.130327736509697
+      y: -53.2605408754903
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -15.446139045515615
+      y: -52.87981220518366
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -15.757802000588066
+      y: -52.49565438800414
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -16.065229810722435
+      y: -52.108073483136884
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -16.368333112689307
+      y: -51.71707621723717
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -16.667020009255264
+      y: -51.32267016293313
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -16.961196128767465
+      y: -50.92486392930852
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -17.250764707166848
+      y: -50.52366736315403
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -17.535626693516466
+      y: -50.119091759678916
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -17.815680880146544
+      y: -49.711150081269416
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -18.090824058524678
+      y: -49.29985718276493
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -18.36095120195642
+      y: -48.88523004159905
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -18.625955676207212
+      y: -48.46728799102125
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -18.88572947910992
+      y: -48.04605295447765
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -19.140163510182415
+      y: -47.62154967908857
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -19.389147871225376
+      y: -47.1938059660168
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -19.63257219880137
+      y: -46.76285289537829
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -19.87032602941066
+      y: -46.32872504320604
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -20.102299198077212
+      y: -45.8914606878434
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -20.328382270938707
+      y: -45.45110200301587
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -20.548467012297028
+      y: -45.00769523471518
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -20.762446886430517
+      y: -44.5612908589288
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -20.970217594296276
+      y: -44.11194371716566
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -21.171677645060676
+      y: -43.65971312666951
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -21.36672896219014
+      y: -43.20466296217811
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -21.555277523612883
+      y: -42.74686170608471
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -21.73723403522732
+      y: -42.28638246389145
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -21.91251463678482
+      y: -41.82330294191744
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.081041638907532
+      y: -41.35770538433878
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.242744289620877
+      y: -40.88967646676658
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.397559566346125
+      y: -40.41930714310028
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.545432943110455
+      y: -39.94669242872375
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.686318860386628
+      y: -39.471931043242414
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.820180529640886
+      y: -38.995124838818796
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.946989405905065
+      y: -38.51637816606281
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.066724596484896
+      y: -38.035797275557755
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.179372259041894
+      y: -37.553489772325335
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.28492499483041
+      y: -37.069564123967965
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.383381240143848
+      y: -36.58412922194942
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.474744658795768
+      y: -36.09729399507068
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.55902353836667
+      y: -35.60916707389207
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.63623019284755
+      y: -35.11985650459648
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.70638037419569
+      y: -34.62946951057538
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.769492695188422
+      y: -34.13811229984524
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.825588065819787
+      y: -33.6458899162646
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.874689145336724
+      y: -33.15290613241809
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.916819811859867
+      y: -32.65926338196045
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.952004651381348
+      y: -32.165062729168554
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.980268467782402
+      y: -31.670403873428615
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -24.00163581536828
+      y: -31.175385186387054
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -24.016130555279606
+      y: -30.68010377951274
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -24.023775437009263
+      y: -30.184655599853528
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -24.02459170613323
+      y: -29.68913555181705
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -24.018598739253427
+      y: -29.1936376428624
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -24.005813707050912
+      y: -28.698255151052212
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.98625126625882
+      y: -28.20308081248155
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.95992328128611
+      y: -27.708207026667527
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.92683857615503
+      y: -27.213726078050236
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.887002717356786
+      y: -26.719730371818148
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.84041782818003
+      y: -26.226312682328114
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.787082435024807
+      y: -25.733566412439544
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.72699134617911
+      y: -25.241585862121926
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.660135563504888
+      y: -24.750466504724102
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.586502227454048
+      y: -24.260305269309914
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.506074595810546
+      y: -23.771200827468473
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.41883205653102
+      y: -23.28325388299602
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.324750175031404
+      y: -22.79656746282032
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.223800776238882
+      y: -22.31124720749719
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.115952061695456
+      y: -21.827401659551743
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -23.00116876195946
+      y: -21.345142547864228
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.87941232450204
+      y: -20.864585066212697
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.75064113723583
+      y: -20.38584814398223
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.614810787739525
+      y: -19.90905470693436
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.47187435815403
+      y: -19.434331925801498
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.321782755619875
+      y: -18.96181145033157
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -22.16448507800118
+      y: -18.491629626259037
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -21.99992901449546
+      y: -18.023927692522577
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -21.828061280560213
+      y: -17.558851955889175
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -21.64882808639434
+      y: -17.096553939982392
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -21.46217563799382
+      y: -16.63719050555233
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -21.26805066955574
+      y: -16.180923938669487
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -21.066401005731862
+      y: -15.72792200337935
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -20.857176151931732
+      y: -15.27835795522231
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -20.640327910546745
+      y: -14.832410511909954
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -20.415811020610086
+      y: -14.390263777358477
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -20.183583818025657
+      y: -13.95210711521834
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -19.94360891309278
+      y: -13.51813496801151
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -19.695853881626384
+      y: -13.088546617999535
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -19.44029196552751
+      y: -12.663545885962494
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -19.176902778201384
+      y: -12.243340764176574
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -18.90567300975473
+      y: -11.82814298004148
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -18.626597126437616
+      y: -11.418167487034145
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -18.33967805833333
+      y: -11.013631879957323
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -18.044927868849513
+      y: -10.614755731817752
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -17.7423683991257
+      y: -10.221759850119684
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -17.432031880035897
+      y: -9.834865450920372
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -17.11396150399753
+      y: -9.454293249714338
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -16.788211948286765
+      y: -9.080262469144698
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -16.45484984110298
+      y: -8.712989764647698
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -16.113954161310527
+      y: -8.352688070373036
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -15.76561656237579
+      y: -7.999565369337932
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -15.409941609857121
+      y: -7.653823394553917
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -15.04704691594268
+      y: -7.315656276483748
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -14.677063111620518
+      y: -6.985249205306682
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -14.300133450258647
+      y: -6.662777369066399
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -13.916412838762156
+      y: -6.348405501928763
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -13.526066606410112
+      y: -6.042287815509837
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -13.129269256276404
+      y: -5.744568083402608
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -12.726203265602464
+      y: -5.455379812361721
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -12.317057950547975
+      y: -5.174846482894698
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -11.902028401911934
+      y: -4.903081849318518
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -11.481314495415957
+      y: -4.640190291076862
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -11.055119978520402
+      y: -4.386267207703492
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -10.623651634647137
+      y: -4.141399450060278
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -10.187118524818645
+      y: -3.9056657806461836
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -9.74573130599129
+      y: -3.679137355955085
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -9.299701624723037
+      y: -3.4618782240796526
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -8.849241584256557
+      y: -3.2539458310195077
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -8.394563282608594
+      y: -3.0553915294503726
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.935878418829705
+      y: -2.866261084040399
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.473397964229263
+      y: -2.6865951677550175
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -7.007331895043906
+      y: -2.516429843967645
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.537888982759729
+      y: -2.355797029582292
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -6.065276638075768
+      y: -2.2047249347690276
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.589700804313597
+      y: -2.0632384753097024
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -5.111365895930718
+      y: -1.9313596539454794
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.630474777679155
+      y: -1.8091079075065175
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -4.147228779861044
+      y: -1.6965004169852327
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -3.661827745065832
+      y: -1.5935523780861982
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -3.174470101725051
+      y: -1.5002772301472038
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -2.68535295978708
+      y: -1.4166868416777123
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -2.194672223792745
+      y: -1.3427916511031521
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -1.7026227186208707
+      y: -1.2786007616366593
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -1.2093983231688838
+      y: -1.2241219895251367
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -0.7151921072360262
+      y: -1.179361865235238
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: -0.22019646688482777
+      y: -1.1443255874586817
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 0.2753967464298882
+      y: -1.1190169301269117
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 0.7713961076556154
+      y: -1.1034381029342164
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 1.2676105155248694
+      y: -1.0975895661780157
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 1.76384911015497
+      y: -1.1014698010373984
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 2.2599212154470063
+      y: -1.1150750367276614
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 2.7556363108044244
+      y: -1.1383989362957498
+      z: 0
+- header:
+    frame_id: ugr/map
+    seq: 0
+    stamp:
+      nsecs: 0
+      secs: 0
+  pose:
+    orientation:
+      w: 1
+      x: 0
+      y: 0
+      z: 0
+    position:
+      x: 3.250804036606569
+      y: -1.171432243217578
+      z: 0

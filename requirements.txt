@@ -33,6 +33,7 @@ nvidia-tensorrt
 
 # Control
 casadi
+cvxopt
 quadprog
 
 # Jetson CAN

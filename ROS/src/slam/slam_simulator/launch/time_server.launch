@@ -1,5 +1,5 @@
 <launch>
-  <arg name="time_scaler"/>
+  <arg name="time_scaler" default="1"/>
   <arg name="turn_active" default="false" />
 
   <node pkg="slam_simulator" name="time_server" type="time_server.py" output="screen" respawn="False">

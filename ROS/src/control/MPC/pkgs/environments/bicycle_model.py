@@ -4,7 +4,7 @@ from environments.env_utils import Space
 
 
 class BicycleModel(Env):
-    def __init__(self, dt=0.01, R=0.1, L=0.72, Lr=0.5, mu=0.1, DC=0.025):
+    def __init__(self, dt=0.01, R=0.2, L=1.6, Lr=0.7, mu=0.1, DC=0.025):
         self.dt = dt
         self.R = R
         self.L = L
@@ -12,7 +12,7 @@ class BicycleModel(Env):
         self.mu = mu
         self.DC = DC
 
-        self.action_space = Space(low=[-20, -np.pi], high=[20, np.pi])
+        self.action_space = Space(low=[-np.inf, -np.inf], high=[-np.inf, np.inf])
 
         high_state_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf])
         self.state_space = Space(low=-high_state_space, high=high_state_space)
@@ -20,7 +20,7 @@ class BicycleModel(Env):
         high_obs_space = np.array([np.inf, np.inf, np.inf, np.inf, np.inf])
         self.observation_space = Space(low=-high_obs_space, high=high_obs_space)
 
-        self.F = self.discretize(self.dynamics, self.dt)
+        self.F = self.discretize(self.dynamics, self.dt, M=1)
 
     def dynamics(self, s, u):
         # States
