@@ -32,4 +32,5 @@ repos:
             "--suppress=missingIncludeSystem",
             "--suppress=unusedFunction",
             "--suppress=unusedStructMember",
+            "--check-level=exhaustive"
           ]

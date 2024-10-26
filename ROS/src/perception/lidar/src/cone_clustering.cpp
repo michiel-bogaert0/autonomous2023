@@ -81,7 +81,6 @@ ConeClustering::euclideanClustering(
       cone.points.push_back(cloud->points[it]);
     }
     cone.width = cone.points.size();
-    cone.height = 1;
     cone.is_dense = true;
     clusters.push_back(cone);
 
