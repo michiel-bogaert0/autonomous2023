@@ -10,6 +10,7 @@
 
         <param name="max_distance" value="36" />
         <param name="min_distance" value="0.3" />
+        <param name="max_angle" value="90" />
         <param name="dist_factor" value="1.5" />
         <param name="turn_factor" value="15" />
         <param name="turn_change_factor" value="0.75" />
