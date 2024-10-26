@@ -161,7 +161,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
 
   if (publish_diagnostics_) {
     // Raw point cloud diagnostics
-    publishDiagnostic(OK, "[LIDAR] Raw pointcloud", "", "#Points",
+    publishDiagnostic(OK, "[LIDAR] Raw point cloud", "", "#Points",
                       std::to_string(raw_pc_.size()));
 
     // Preprocessing diagnostics
@@ -173,7 +173,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
     // Ground removal diagnostics
     publishDiagnostic(
         latency_ground_removal_ < 1 ? OK : WARN, "[LIDAR] Ground removal",
-        std::to_string(latency_ground_removal_), "#Non-ground points",
+        std::to_string(latency_ground_removal_), "#Points", // Non-ground points
         std::to_string(notground_points->size()));
 
     // Points per cone
@@ -206,8 +206,12 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
 
     // Clustering diagnostics
     publishDiagnostic(latency_clustering_ < 1 ? OK : WARN, "[LIDAR] Clustering",
-                      std::to_string(latency_clustering_), "#Cone clusters",
+                      std::to_string(latency_clustering_), "#All clusters",
                       std::to_string(clusters.size()));
+
+    publishDiagnostic(latency_clustering_ < 1 ? OK : WARN,
+                      "[LIDAR] Classification", "", "#Cone clusters",
+                      std::to_string(cone_clusters.size()));
 
     // Total lidar pipeline latency
     publishDiagnostic(latency_total_ < 1 ? OK : WARN, "[LIDAR] End processing",
