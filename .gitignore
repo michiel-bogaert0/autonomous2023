@@ -37,3 +37,5 @@ tuner_data/
 
 # Mechatronics (Mac)
 ROS/src/mechatronics/CATKIN_IGNORE
+
+default_gen_track.yaml
