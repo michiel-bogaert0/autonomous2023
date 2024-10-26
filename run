@@ -48,7 +48,7 @@ function post-install {
     fi
 
     ugrdev_input_string="alias ugrdev=\"docker exec -it dev zsh\""
-    ugr_input_string="alias ugr=\"cd $(pwd | sed 's/ /\\ /g')\""
+    aut_input_string="alias aut=\"cd $(pwd | sed 's/ /\\ /g')\""
 
     file="$home_dir/$startup_script"
 
@@ -58,14 +58,14 @@ function post-install {
 
     if ! grep -q "^# UGent Racing" "$file"; then
         sed -i.bak '/^alias ugrdev=/d' "$file"
-        sed -i.bak '/^alias ugr=/d' "$file"
+        sed -i.bak '/^alias aut=/d' "$file"
         echo "" >> "$file"
         echo "# UGent Racing" >> "$file"
         echo "$ugrdev_input_string" >> "$file"
-        echo "$ugr_input_string" >> "$file"
+        echo "$aut_input_string" >> "$file"
     else
         sed -i.bak "s|^alias ugrdev=.*|$ugrdev_input_string|" "$file"
-        sed -i.bak "s|^alias ugr=.*|$(echo $ugr_input_string | sed 's/\\/\\\\/g')|" "$file"
+        sed -i.bak "s|^alias aut=.*|$(echo $aut_input_string | sed 's/\\/\\\\/g')|" "$file"
     fi
 
 
