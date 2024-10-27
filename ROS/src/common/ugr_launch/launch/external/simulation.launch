@@ -12,7 +12,7 @@
       track_length: length of the track to generate
    -->
 
-  <arg name="frames" default="pegasus_v2" />
+  <arg name="frames" default="orion_frames" />
   <arg name="filename" default="circle_R15.yaml" />
 
   <arg name="generate_track" default="False"/>
