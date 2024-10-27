@@ -7,10 +7,16 @@
     Args:
       frames: what static frames to use
       filename: name of the map to use during simulation 
+
+      generate_track: whether to generate a track or not
+      track_length: length of the track to generate
    -->
 
   <arg name="frames" default="pegasus_v2" />
   <arg name="filename" default="circle_R15.yaml" />
+
+  <arg name="generate_track" default="False"/>
+  <arg name="track_length" default="100"/>
 
   <include file="$(find ugr_launch)/launch/frames/$(arg frames).launch" pass_all_args="true" />
 
