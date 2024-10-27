@@ -2,7 +2,7 @@
 
 namespace pathplanning {
 
-float MIN_WIDTH = 2.5;
+double MIN_WIDTH = 2.5;
 
 std::tuple<std::vector<std::vector<double>>, std::vector<std::vector<double>>,
            std::vector<std::vector<double>>>
@@ -20,92 +20,80 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
   // Perform delaunay triangulation
   Delaunator d(positions);
 
-  const std::vector<std::size_t> &triangles = d.triangles;
+  const std::vector<std::size_t> &triangles_indices = d.triangles;
   const std::vector<double> &coords = d.coords;
 
   std::vector<std::vector<double>> center_points;
   //   std::vector<int> center_point_classes;
   std::vector<std::vector<double>> bad_points;
 
-  std::vector<size_t> indices;
-  for (size_t i = 0; i < position_cones.size(); ++i) {
-    indices.push_back(i);
-  }
-
-  std::vector<double> filtered_coords;
+  std::vector<Triangle> triangles;
   std::vector<double> distances;
   std::vector<double> variances;
   //   std::vector<double> perimeters;
 
-  for (size_t i = 0; i < triangles.size(); i += 3) {
+  for (size_t i = 0; i < triangles_indices.size(); i += 3) {
 
-    // Variance of lengths within a triangle should be small
     distances.clear();
 
-    for (size_t j = 0; j < 3; j++) {
-      size_t index1 = 2 * triangles[i + j];
-      size_t index2 = 2 * triangles[(i + j + 1) % 3 + i];
-      double distance = std::pow(coords[index1] - coords[index2], 2) +
-                        std::pow(coords[index1 + 1] - coords[index2 + 1], 2);
-      distances.push_back(distance);
-    }
+    size_t index1 = 2 * triangles_indices[i];
+    size_t index2 = 2 * triangles_indices[i + 1];
+    size_t index3 = 2 * triangles_indices[i + 2];
+
+    TrianglePoint point1(coords[index1], coords[index1 + 1],
+                         classes[index1 / 2]);
+    TrianglePoint point2(coords[index2], coords[index2 + 1],
+                         classes[index2 / 2]);
+    TrianglePoint point3(coords[index3], coords[index3 + 1],
+                         classes[index3 / 2]);
+    Triangle triangle(point1, point2, point3);
+
+    distances.insert(distances.end(), std::begin(triangle.sides),
+                     std::end(triangle.sides));
+
     double variance = calculate_variance(distances);
 
-    double perimeter = distances[0] + distances[1] + distances[2];
+    double perimeter = std::accumulate(std::begin(triangle.sides),
+                                       std::end(triangle.sides), 0.0);
 
-    // Normalize variance by perimeter
+    // Normalize variance by perimeter.
     variances.push_back(variance / perimeter);
+
+    triangles.push_back(triangle);
   }
 
   double median_variance = calculate_median(variances);
 
   for (size_t i = 0; i < variances.size(); i++) {
 
-    // If below variance threshold, get center points
-    if (variances[i] < triangulation_max_var ||
-        variances[i] < triangulation_var_threshold * median_variance) {
-      for (size_t j = 0; j < 3; j++) {
+    for (size_t j = 0; j < 3; j++) {
 
-        size_t index1 = 2 * triangles[3 * i + j];
-        size_t index2 = 2 * triangles[(3 * i + j + 1) % 3 + 3 * i];
+      double x_coord =
+          (triangles[i].points[j].x + triangles[i].points[(j + 1) % 3].x) / 2;
+      double y_coord =
+          (triangles[i].points[j].y + triangles[i].points[(j + 1) % 3].y) / 2;
 
-        double x_coord = (coords[index1] + coords[index2]) / 2;
-        double y_coord = (coords[index1 + 1] + coords[index2 + 1]) / 2;
-
-        // If distance between two points is small, we have a bad point
-        if (std::pow(coords[index1] - coords[index2], 2) +
-                std::pow(coords[index1 + 1] - coords[index2 + 1], 2) <
-            MIN_WIDTH * MIN_WIDTH) {
+      // If below variance threshold, get center points
+      if (variances[i] < triangulation_max_var ||
+          variances[i] < triangulation_var_threshold * median_variance) {
+        // if distance between two points is small, we have a bad point
+        if (triangles[i].sides[j] < MIN_WIDTH * MIN_WIDTH) {
           bad_points.push_back({x_coord, y_coord});
-          continue;
         }
 
-        // If this is false, this means that the two points that make up the
-        // centerpoint are the same color (except for orange cones). So then we
+        // Check if the 2 points that make up the centerpoint are not
+        // the same color (except for orange cones). If this is false, we
         // have a bad point!
+        int compound_class = triangles[i].points[j].colorIndex +
+                             triangles[i].points[(j + 1) % 3].colorIndex;
 
-        int class1 = classes[triangles[3 * i + j]];
-        int class2 = classes[triangles[(3 * i + j + 1) % 3 + 3 * i]];
-
-        int compound_class = class1 + class2;
-
-        if (!color || compound_class == 1 || class1 == 2 || class2 == 2) {
-          filtered_coords.push_back(coords[2 * triangles[3 * i]]);
-          filtered_coords.push_back(coords[2 * triangles[3 * i] + 1]);
+        if (compound_class == 1 || triangles[i].points[j].colorIndex == 2 ||
+            triangles[i].points[(j + 1) % 3].colorIndex == 2) {
           center_points.push_back({x_coord, y_coord});
         } else {
           bad_points.push_back({x_coord, y_coord});
         }
-      }
-    } else {
-      for (size_t j = 0; j < 3; j++) {
-        double x_coord = (coords[2 * triangles[3 * i + j]] +
-                          coords[2 * triangles[(3 * i + j + 1) % 3 + 3 * i]]) /
-                         2;
-        double y_coord =
-            (coords[2 * triangles[3 * i + j] + 1] +
-             coords[2 * triangles[(3 * i + j + 1) % 3 + 3 * i] + 1]) /
-            2;
+      } else {
         bad_points.push_back({x_coord, y_coord});
       }
     }
