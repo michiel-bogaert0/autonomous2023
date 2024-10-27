@@ -41,35 +41,6 @@ struct PointInfo {
   double distance_squared;
 };
 
-class TrianglePoint {
-public:
-  double x;
-  double y;
-  uint8_t colorIndex;
-
-  TrianglePoint(double x_val, double y_val, uint8_t colorindex)
-      : x(x_val), y(y_val), colorIndex(colorindex) {}
-};
-
-class Triangle {
-public:
-  std::array<TrianglePoint, 3> points;
-  std::array<double, 3> sides;
-
-  Triangle(const TrianglePoint &point1, const TrianglePoint &point2,
-           const TrianglePoint &point3)
-      : points{point1, point2, point3} {
-    sides[0] = distance(points[0], points[1]);
-    sides[1] = distance(points[1], points[2]);
-    sides[2] = distance(points[2], points[0]);
-  }
-
-private:
-  double distance(const TrianglePoint &pt1, const TrianglePoint &pt2) const {
-    return std::pow(pt2.x - pt1.x, 2) + std::pow(pt2.y - pt1.y, 2);
-  }
-};
-
 // Define a utility function to calculate squared distance between 2 points
 double distance_squared(double x1, double y1, double x2, double y2);
 
