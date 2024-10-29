@@ -841,7 +841,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     poseEdges.ns = "graphslam";
     poseEdges.type = visualization_msgs::Marker::LINE_LIST;
     // how long the marker will be displayed
-    poseEdges.lifetime = ros::Duration(1);
+    poseEdges.lifetime = ros::Duration(0);
     poseEdges.action = visualization_msgs::Marker::ADD;
     poseEdges.id = this->prevPoseIndex;
     poseEdges.color.a = 1.0; // transparantie
@@ -862,7 +862,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     landmarkEdges.header.stamp = lookupTime;
     landmarkEdges.ns = "graphslam";
     landmarkEdges.type = visualization_msgs::Marker::LINE_LIST;
-    landmarkEdges.lifetime = ros::Duration(1);
+    landmarkEdges.lifetime = ros::Duration(0);
     landmarkEdges.action = visualization_msgs::Marker::ADD;
     landmarkEdges.id = this->prevPoseIndex;
     landmarkEdges.color.a = 1.0; // transparantie
@@ -919,8 +919,17 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
       }
     }
 
+    visualization_msgs::Marker deleteMarker;
+    deleteMarker.header.frame_id = this->map_frame;
+    deleteMarker.header.stamp = lookupTime;
+    deleteMarker.ns = "graphslam";
+    deleteMarker.action = visualization_msgs::Marker::DELETEALL;
+
+    this->edgeLandmarksPublisher.publish(deleteMarker);
+
     this->edgeLandmarksPublisher.publish(landmarkEdges);
     if (isPoseEdge) {
+      this->edgePosesPublisher.publish(deleteMarker);
       this->edgePosesPublisher.publish(poseEdges);
     }
   }
