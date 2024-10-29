@@ -24,7 +24,6 @@ Lidar::Lidar(ros::NodeHandle &n)
       n.subscribe("/ugr/car/sensors/lidar", 10, &Lidar::rawPcCallback, this);
 
   n.param<bool>("publish_diagnostics", publish_diagnostics_, true);
-  n.param<bool>("publish_diagnostics", publish_clusters_, true);
   n.param<bool>("publish_preprocessing", publish_preprocessing_, false);
   n.param<bool>("publish_ground", publish_ground_, false);
   n.param<bool>("publish_clusters", publish_clusters_, false);
@@ -82,7 +81,12 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
 
   if (publish_preprocessing_) {
     sensor_msgs::PointCloud2 preprocessed_msg;
-    pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
+    if (lidar_rotated_) {
+      pcl::toROSMsg(flipPointcloud(*preprocessed_pc), preprocessed_msg);
+    } else {
+      pcl::toROSMsg(flipPointcloud(*preprocessed_pc), preprocessed_msg);
+    }
+
     preprocessed_msg.header.stamp = msg.header.stamp;
     preprocessed_msg.header.frame_id = msg.header.frame_id;
     preprocessedLidarPublisher_.publish(preprocessed_msg);
