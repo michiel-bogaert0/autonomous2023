@@ -21,43 +21,53 @@ function post-install {
     git submodule init
     git submodule update
 
-    # Install pre-commit hook
-    # If ARM architecture, ignore mechatronics package and don't use apt-get
+
+    # # Install pre-commit hook
+    # # If ARM architecture, ignore mechatronics package and don't use apt-get
     if  [[ $arch == arm* ]]; then
+        home_dir="/Users/$(whoami)"
         touch ./ROS/src/mechatronics/CATKIN_IGNORE
         brew install cppcheck llvm
         brew install pre-commit clang-format
+        brew install foxglove-studio
     else
+        home_dir="/home/$(whoami)"
         sudo apt-get install cppcheck llvm
         pip3 install pre-commit clang-format
     fi
     pre-commit install
     
     touch env-vars.sh
-    sudo chmod +x env-vars.sh
+    chmod +x env-vars.sh
 
-    # Depends on your terminal
-    input_string="alias ugrdev=\"docker exec -it dev zsh\""
-    file="/home/$(whoami)/.zshrc"
-    
+    # Add aliases to the startup script
+    if echo $SHELL | grep -q "zsh"; then
+        startup_script=".zshrc"
+    else 
+        startup_script=".bashrc"
+    fi
+
+    ugrdev_input_string="alias ugrdev=\"docker exec -it dev zsh\""
+    aut_input_string="alias aut=\"cd $(pwd | sed 's/ /\\ /g')\""
+
+    file="$home_dir/$startup_script"
+
     if [ ! -f "$file" ]; then
         touch "$file"
     fi
-    if grep -q "^alias ugrdev=" "$file"; then
-        sed -i "s#^alias ugrdev=.*#$input_string#" "$file"
+
+    if ! grep -q "^# UGent Racing" "$file"; then
+        sed -i.bak '/^alias ugrdev=/d' "$file"
+        sed -i.bak '/^alias aut=/d' "$file"
+        echo "" >> "$file"
+        echo "# UGent Racing" >> "$file"
+        echo "$ugrdev_input_string" >> "$file"
+        echo "$aut_input_string" >> "$file"
     else
-        echo "$input_string" >> "$file"
+        sed -i.bak "s|^alias ugrdev=.*|$ugrdev_input_string|" "$file"
+        sed -i.bak "s|^alias aut=.*|$(echo $aut_input_string | sed 's/\\/\\\\/g')|" "$file"
     fi
 
-    file="/home/$(whoami)/.bashrc"
-    if [ ! -f "$file" ]; then
-        touch "$file"
-    fi
-    if grep -q "^alias ugrdev=" "$file"; then
-        sed -i "s#^alias ugrdev=.*#$input_string#" "$file"
-    else
-        echo "$input_string" >> "$file"
-    fi
 
     # Sets the default car to simulation
     set-car simulation

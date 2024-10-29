@@ -17,6 +17,7 @@ slam_controller:
       # Control
       - front_wheel_feedback_control
       - pathplanning
+      # - boundary_estimation
       - path_builder
       - path_smoother
 
