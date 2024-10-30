@@ -84,7 +84,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
     if (lidar_rotated_) {
       pcl::toROSMsg(flipPointcloud(*preprocessed_pc), preprocessed_msg);
     } else {
-      pcl::toROSMsg(flipPointcloud(*preprocessed_pc), preprocessed_msg);
+      pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
     }
 
     preprocessed_msg.header.stamp = msg.header.stamp;
@@ -248,8 +248,8 @@ void Lidar::preprocessing(
   for (auto &iter : raw.points) {
     // Remove points closer than 1m, higher than 0.5m or further than 20m
     // and points outside the frame of Pegasus
-    if (std::hypot(iter.x, iter.y) < min_distance_ || iter.z > -0.1 ||
-        //-sensor_height_ + max_height_ ||
+    if (std::hypot(iter.x, iter.y) < min_distance_ ||
+        iter.z > -sensor_height_ + max_height_ ||
         std::hypot(iter.x, iter.y) > max_distance_ ||
         std::atan2(iter.x, iter.y) < min_angle_ ||
         std::atan2(iter.x, iter.y) > max_angle_) {
