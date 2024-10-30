@@ -145,7 +145,16 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
           .count();
 
   if (publish_clusters_) {
-    clustersColored = cone_clustering_.clustersColoredMessage(clusters);
+    if (lidar_rotated_) {
+      std::vector<pcl::PointCloud<pcl::PointXYZINormal>> flipped_clusters;
+      for (pcl::PointCloud<pcl::PointXYZINormal> cluster_to_flip : clusters) {
+        flipped_clusters.push_back(flipPointcloud(cluster_to_flip));
+      }
+      clustersColored =
+          cone_clustering_.clustersColoredMessage(flipped_clusters);
+    } else {
+      clustersColored = cone_clustering_.clustersColoredMessage(clusters);
+    }
     clustersColored.header.frame_id = msg.header.frame_id;
     clustersColored.header.stamp = msg.header.stamp;
     clustersColoredpublisher_.publish(clustersColored);
