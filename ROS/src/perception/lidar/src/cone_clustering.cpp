@@ -2,6 +2,7 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
+#include <tuple>
 #define WIDTH_BIG_CONE 0.285
 
 namespace ns_lidar {
@@ -34,7 +35,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
   if (clustering_method_ == "string") {
     cluster_msg = ConeClustering::stringClustering(cloud, ground);
   } else {
-    cluster_msg = ConeClustering::euclidianClustering(cloud, ground);
+    cluster_msg = ConeClustering::euclideanClustering(cloud, ground);
   }
 
   return cluster_msg;
@@ -46,7 +47,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZINormal>> ConeClustering::cluster(
  *
  */
 std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
-ConeClustering::euclidianClustering(
+ConeClustering::euclideanClustering(
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
     const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground) {
 
@@ -60,7 +61,7 @@ ConeClustering::euclidianClustering(
       new pcl::search::KdTree<pcl::PointXYZINormal>);
   tree->setInputCloud(cloud);
 
-  // Define the parameters for Euclidian clustering
+  // Define the parameters for Euclidean clustering
   std::vector<pcl::PointIndices> cluster_indices;
   std::vector<pcl::PointXYZ> cluster_centroids;
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
@@ -80,7 +81,6 @@ ConeClustering::euclidianClustering(
       cone.points.push_back(cloud->points[it]);
     }
     cone.width = cone.points.size();
-    cone.height = 1;
     cone.is_dense = true;
     clusters.push_back(cone);
 
@@ -162,7 +162,7 @@ ConeClustering::stringClustering(
                                  atan2(rightmost.x, rightmost.y));
       float dist = hypot3d(point.x - rightmost.x, point.y - rightmost.y, 0);
 
-      if(noisy_environment_){
+      if (noisy_environment_) {
         min_distance_factor_ = min_distance_factor_noisy_environment_;
       }
 
@@ -184,7 +184,7 @@ ConeClustering::stringClustering(
       }
       // filter other clusters
       else {
-        // cluster to far to the left to be considered when adding new points
+        // cluster too far to the left to be considered when adding new points
         if (delta_arc > max_arc_cluster_) {
           finished_clusters.push_back(clusters[cluster_id]);
 
@@ -217,13 +217,13 @@ ConeClustering::stringClustering(
     }
   }
 
-  // add the cluster that where put aside because they were located to far to
+  // add the clusters that were put aside because they were located too far to
   // the left
   for (pcl::PointCloud<pcl::PointXYZINormal> cluster : finished_clusters) {
     clusters.push_back(cluster);
   }
 
-  // determine centroid of each cluster to reduced
+  // determine centroid of each cluster to reduce
   // duplicate calculations
   std::vector<pcl::PointXYZ> cluster_centroids;
   for (pcl::PointCloud<pcl::PointXYZINormal> cluster : clusters) {
@@ -307,7 +307,9 @@ sensor_msgs::PointCloud2 ConeClustering::clustersColoredMessage(
  * @returns a sensor_msgs::PointCloud containing the information about all the
  * cones in the current frame.
  */
-sensor_msgs::PointCloud ConeClustering::constructMessage(
+std::tuple<sensor_msgs::PointCloud,
+           std::vector<pcl::PointCloud<pcl::PointXYZINormal>>>
+ConeClustering::constructMessage(
     std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters) {
   // Create a PC and channel for: the cone colour, the (x,y,z) dimensions of the
   // cluster and the cone metric
@@ -326,11 +328,13 @@ sensor_msgs::PointCloud ConeClustering::constructMessage(
   cone_metric_channel.name = "cone_metric";
 
   // iterate over each cluster
+  std::vector<pcl::PointCloud<pcl::PointXYZINormal>> cone_clusters;
   for (pcl::PointCloud<pcl::PointXYZINormal> cluster : clusters) {
     ConeCheck cone_check = coneClassification_.classifyCone(cluster);
 
     // only add clusters that are likely to be cones
     if (cone_check.is_cone) {
+      cone_clusters.push_back(cluster);
       cluster_msg.points.push_back(cone_check.pos);
       cone_channel.values.push_back(cone_check.color);
       x_size_channel.values.push_back(cone_check.bounds[0]);
@@ -346,7 +350,13 @@ sensor_msgs::PointCloud ConeClustering::constructMessage(
   cluster_msg.channels.push_back(y_size_channel);
   cluster_msg.channels.push_back(z_size_channel);
   cluster_msg.channels.push_back(cone_metric_channel);
-  return cluster_msg;
+
+  std::tuple<sensor_msgs::PointCloud,
+             std::vector<pcl::PointCloud<pcl::PointXYZINormal>>>
+      result;
+  result = std::make_tuple(cluster_msg, cone_clusters);
+
+  return result;
 }
 
 } // namespace ns_lidar
