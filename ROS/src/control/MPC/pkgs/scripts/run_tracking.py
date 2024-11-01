@@ -27,7 +27,6 @@ class MPC(ManagedNode):
     def __init__(self):
         rospy.init_node("MPC_tracking_control")
         super().__init__("MPC_tracking_control")
-        self.publish_rate = rospy.get_param("~publish_rate", 10)
         self.slam_state = SLAMStatesEnum.IDLE
         self.save_solution = False
         rospy.Subscriber("/state", State, self.handle_state_change)
