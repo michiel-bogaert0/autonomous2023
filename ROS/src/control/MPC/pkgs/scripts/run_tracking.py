@@ -9,7 +9,6 @@ from nav_msgs.msg import Odometry, Path
 from node_fixture.fixture import (
     DiagnosticArray,
     DiagnosticStatus,
-    NodeManagingStatesEnum,
     ROSNode,
     SLAMStatesEnum,
     StateMachineScopeEnum,
@@ -32,8 +31,7 @@ class MPC(ManagedNode):
         self.slam_state = SLAMStatesEnum.IDLE
         self.save_solution = False
         rospy.Subscriber("/state", State, self.handle_state_change)
-        self.start_sender()
-        rospy.spin()
+        self.spin()
 
     def doConfigure(self):
         self.tf_buffer = tf.Buffer()
@@ -345,191 +343,179 @@ class MPC(ManagedNode):
             self.intercepts_outer,
         )
 
-    def start_sender(self):
+    def active(self):
         """
         Start sending updates. If the data is too old, brake.
         """
-        rate = rospy.Rate(self.publish_rate)
-        while not rospy.is_shutdown():
-            if self.state == NodeManagingStatesEnum.ACTIVE:
-                try:
-                    self.doUpdate()
+        try:
+            self.doUpdate()
 
-                    self.speed_target = rospy.get_param("/speed/target", 3.0)
+            self.speed_target = rospy.get_param("/speed/target", 3.0)
 
-                    # Stop the car
-                    # Do this by switching the controllers and using pure pursuit
-                    # Not sure what to do with concerns
-                    if self.speed_target == 0.0:
-                        if not self.switched_controllers:
-                            rospy.wait_for_service(
-                                "/ugr/car/controller_manager/switch_controller"
-                            )
-                            try:
-                                switch_controller = rospy.ServiceProxy(
-                                    "/ugr/car/controller_manager/switch_controller",
-                                    SwitchController,
-                                )
+            # Stop the car
+            # Do this by switching the controllers and using pure pursuit
+            # Not sure what to do with concerns
+            if self.speed_target == 0.0:
+                if not self.switched_controllers:
+                    rospy.wait_for_service(
+                        "/ugr/car/controller_manager/switch_controller"
+                    )
+                    try:
+                        switch_controller = rospy.ServiceProxy(
+                            "/ugr/car/controller_manager/switch_controller",
+                            SwitchController,
+                        )
 
-                                # Switch to correct controllers for pure pursuit
-                                req = SwitchControllerRequest()
-                                req.start_controllers = [
-                                    "steering_position_controller",
-                                    "drive_velocity_controller",
-                                ]
-                                req.stop_controllers = [
-                                    "steering_velocity_controller",
-                                    "drive_effort_controller",
-                                ]
-                                req.strictness = SwitchControllerRequest.STRICT
+                        # Switch to correct controllers for pure pursuit
+                        req = SwitchControllerRequest()
+                        req.start_controllers = [
+                            "steering_position_controller",
+                            "drive_velocity_controller",
+                        ]
+                        req.stop_controllers = [
+                            "steering_velocity_controller",
+                            "drive_effort_controller",
+                        ]
+                        req.strictness = SwitchControllerRequest.STRICT
 
-                                response = switch_controller(req)
+                        response = switch_controller(req)
 
-                                if response.ok:
-                                    self.switched_controllers = True
-
-                                else:
-                                    rospy.logerr("Could not start controllers")
-                            except rospy.ServiceException as e:
-                                rospy.logerr(f"Service call failed: {e}")
-
-                        if self.switched_controllers:
-                            # Put target at 2m
-                            target = self.trajectory.calculate_target_points([2])[0]
-                            # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-                            R = ((target[0]) ** 2 + (target[1]) ** 2) / (
-                                2 * (target[1])
-                            )
-
-                            self.steering_cmd.data = self.symmetrically_bound_angle(
-                                np.arctan2(1.0, R), np.pi / 2
-                            )
-                            self.steering_cmd.data /= self.steering_transmission
-                            self.steering_position_pub.publish(self.steering_cmd)
-
-                            self.velocity_cmd.data = 0.0
-                            self.drive_velocity_pub.publish(self.velocity_cmd)
-                            rate.sleep()
-                            continue
+                        if response.ok:
+                            self.switched_controllers = True
 
                         else:
-                            # Somehow could not switch controllers, so brake manually
-                            self.velocity_cmd.data = -100.0
-                            self.steering_cmd.data = 0.0
-                            self.drive_effort_pub.publish(self.velocity_cmd)
-                            self.steering_velocity_pub.publish(self.steering_cmd)
-                            rate.sleep()
-                            continue
+                            rospy.logerr("Could not start controllers")
+                    except rospy.ServiceException as e:
+                        rospy.logerr(f"Service call failed: {e}")
 
-                    ref_track = self.trajectory.get_reference_track(
-                        self.car.dt, self.N, self.actual_speed
+                if self.switched_controllers:
+                    # Put target at 2m
+                    target = self.trajectory.calculate_target_points([2])[0]
+                    # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
+                    R = ((target[0]) ** 2 + (target[1]) ** 2) / (2 * (target[1]))
+
+                    self.steering_cmd.data = self.symmetrically_bound_angle(
+                        np.arctan2(1.0, R), np.pi / 2
                     )
+                    self.steering_cmd.data /= self.steering_transmission
+                    self.steering_position_pub.publish(self.steering_cmd)
 
-                    a, b, c, d = self.get_boundary_constraints(ref_track, 1.2)
-                    self.ref_track = ref_track
+                    self.velocity_cmd.data = 0.0
+                    self.drive_velocity_pub.publish(self.velocity_cmd)
+                    return
 
-                    # Stop the car if no path
-                    if len(ref_track) == 0:
-                        self.diagnostics_pub.publish(
-                            create_diagnostic_message(
-                                level=DiagnosticStatus.WARN,
-                                name="[CTRL MPC] Reference Track Status",
-                                message="No reference track found.",
-                            )
-                        )
+                else:
+                    # Somehow could not switch controllers, so brake manually
+                    self.velocity_cmd.data = -100.0
+                    self.steering_cmd.data = 0.0
+                    self.drive_effort_pub.publish(self.velocity_cmd)
+                    self.steering_velocity_pub.publish(self.steering_cmd)
+                    return
 
-                        # TODO: this should probably cause the car to brake
-                        # But doing this causes startup issues when no path is available yet
-                        self.velocity_cmd.data = 0.0
-                        self.steering_cmd.data = 0.0
-                        self.drive_effort_pub.publish(self.velocity_cmd)
-                        self.steering_velocity_pub.publish(self.steering_cmd)
-                        rate.sleep()
-                        continue
+            ref_track = self.trajectory.get_reference_track(
+                self.car.dt, self.N, self.actual_speed
+            )
 
-                    reference_track = []
-                    for ref_point in ref_track:
-                        reference_track.append(
-                            [
-                                ref_point[0],
-                                ref_point[1],
-                                0,
-                                self.steering_joint_angle,
-                                self.speed_target,
-                            ]
-                        )
-                    self.vis_path(reference_track, self.ref_track_pub)
+            a, b, c, d = self.get_boundary_constraints(ref_track, 1.2)
+            self.ref_track = ref_track
 
-                    if self.slam_state == SLAMStatesEnum.RACING:
-                        # Costs below are quite stable for skidpad and trackdrive
-                        Qn = np.diag([5e-3, 5e-3, 0, 0, 0])
-                        Qn = np.diag([1e-1, 1e-1, 0, 0, 0])
-                        # Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
-                        R = np.diag([1e-5, 4e-2])
-                        R_delta = np.diag(
-                            [1e-2, 2e0]  # * self.actual_speed / self.speed_target]
-                        )
+            # Stop the car if no path
+            if len(ref_track) == 0:
+                self.diagnostics_pub.publish(
+                    create_diagnostic_message(
+                        level=DiagnosticStatus.WARN,
+                        name="[CTRL MPC] Reference Track Status",
+                        message="No reference track found.",
+                    )
+                )
 
-                        self.set_costs(Qn, R, R_delta)
+                # TODO: this should probably cause the car to brake
+                # But doing this causes startup issues when no path is available yet
+                self.velocity_cmd.data = 0.0
+                self.steering_cmd.data = 0.0
+                self.drive_effort_pub.publish(self.velocity_cmd)
+                self.steering_velocity_pub.publish(self.steering_cmd)
+                return
 
-                    current_state = [
-                        0,
-                        0,
+            reference_track = []
+            for ref_point in ref_track:
+                reference_track.append(
+                    [
+                        ref_point[0],
+                        ref_point[1],
                         0,
                         self.steering_joint_angle,
-                        self.actual_speed,
+                        self.speed_target,
                     ]
+                )
+            self.vis_path(reference_track, self.ref_track_pub)
 
-                    # Run MPC
-                    u, info = self.mpc(
-                        current_state, reference_track, a, b, c, d, self.u
-                    )
-                    self.u = u
+            if self.slam_state == SLAMStatesEnum.RACING:
+                # Costs below are quite stable for skidpad and trackdrive
+                Qn = np.diag([5e-3, 5e-3, 0, 0, 0])
+                Qn = np.diag([1e-1, 1e-1, 0, 0, 0])
+                # Qn = np.diag([5e-2, 5e-2, 0, 0, 0])
+                R = np.diag([1e-5, 4e-2])
+                R_delta = np.diag(
+                    [1e-2, 2e0]  # * self.actual_speed / self.speed_target]
+                )
 
-                    self.exec_times.append(info["time"])
+                self.set_costs(Qn, R, R_delta)
 
-                    # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
-                    # rospy.loginfo(f"x closed loop: {X_closed_loop}")
-                    # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
-                    # rospy.loginfo(f"u closed loop: {U_closed_loop}")
-                    # rospy.loginfo(f"u return: {u}")
-                    rospy.loginfo(f"actual speed: {self.actual_speed}")
+            current_state = [
+                0,
+                0,
+                0,
+                self.steering_joint_angle,
+                self.actual_speed,
+            ]
 
-                    # Visualise MPC prediction
-                    self.vis_path(
-                        list(zip(info["X_sol"][:][0], info["X_sol"][:][1])),
-                        self.x_vis_pub,
-                    )
+            # Run MPC
+            u, info = self.mpc(current_state, reference_track, a, b, c, d, self.u)
+            self.u = u
 
-                    self.velocity_cmd.data = u[0]
-                    self.steering_cmd.data = u[1]
+            self.exec_times.append(info["time"])
 
-                    # Publish to velocity and position steering controller
-                    self.steering_velocity_pub.publish(self.steering_cmd)
-                    self.drive_effort_pub.publish(self.velocity_cmd)
+            # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
+            # rospy.loginfo(f"x closed loop: {X_closed_loop}")
+            # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
+            # rospy.loginfo(f"u closed loop: {U_closed_loop}")
+            # rospy.loginfo(f"u return: {u}")
+            rospy.loginfo(f"actual speed: {self.actual_speed}")
 
-                    # Store solution in npz file for later analysis
-                    if self.save_solution:
-                        # Get convergence information
-                        inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
-                        inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
+            # Visualise MPC prediction
+            self.vis_path(
+                list(zip(info["X_sol"][:][0], info["X_sol"][:][1])),
+                self.x_vis_pub,
+            )
 
-                        np.savez(
-                            "/home/ugr/autonomous2023/ROS/src/control/MPC/data/solution.npz",
-                            U_sol_intermediate=self.mpc.U_sol_intermediate,
-                            X_sol_intermediate=self.mpc.X_sol_intermediate,
-                            info_pr=inf_pr,
-                            info_du=inf_du,
-                            exec_times=self.exec_times,
-                        )
+            self.velocity_cmd.data = u[0]
+            self.steering_cmd.data = u[1]
 
-                except Exception as e:
-                    rospy.logwarn(f"MPC has caught an exception: {e}")
-                    import traceback
+            # Publish to velocity and position steering controller
+            self.steering_velocity_pub.publish(self.steering_cmd)
+            self.drive_effort_pub.publish(self.velocity_cmd)
 
-                    print(traceback.format_exc())
+            # Store solution in npz file for later analysis
+            if self.save_solution:
+                # Get convergence information
+                inf_pr = self.ocp.debug.stats()["iterations"]["inf_pr"]
+                inf_du = self.ocp.debug.stats()["iterations"]["inf_du"]
 
-            rate.sleep()
+                np.savez(
+                    "/home/ugr/autonomous2023/ROS/src/control/MPC/data/solution.npz",
+                    U_sol_intermediate=self.mpc.U_sol_intermediate,
+                    X_sol_intermediate=self.mpc.X_sol_intermediate,
+                    info_pr=inf_pr,
+                    info_du=inf_du,
+                    exec_times=self.exec_times,
+                )
+
+        except Exception as e:
+            rospy.logwarn(f"MPC has caught an exception: {e}")
+            import traceback
+
+            print(traceback.format_exc())
 
     def vis_path(self, path, publisher, stamp=None, frame_id=None):
         """
