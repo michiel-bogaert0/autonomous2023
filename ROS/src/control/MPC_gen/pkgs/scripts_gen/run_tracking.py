@@ -12,7 +12,6 @@ from geometry_msgs.msg import PointStamped, PoseStamped
 from nav_msgs.msg import Odometry, Path
 from node_fixture.fixture import (
     DiagnosticArray,
-    NodeManagingStatesEnum,
     ROSNode,
     SLAMStatesEnum,
     StateMachineScopeEnum,
@@ -29,14 +28,11 @@ from ugr_msgs.msg import State
 
 class MPCSplinesTracking(ManagedNode):
     def __init__(self):
-        rospy.init_node("MPC_splines_tracking_control")
         super().__init__("MPC_splines_tracking_control")
-        self.publish_rate = rospy.get_param("~publish_rate", 40)
         self.slam_state = SLAMStatesEnum.IDLE
         self.save_solution = False
         rospy.Subscriber("/state", State, self.handle_state_change)
-        self.start_sender()
-        rospy.spin()
+        self.spin()
 
     def doConfigure(self):
         self.tf_buffer = tf.Buffer()
@@ -420,200 +416,192 @@ class MPCSplinesTracking(ManagedNode):
         """
         return (angle + max_angle) % (2 * max_angle) - max_angle
 
-    def start_sender(self):
-        rate = rospy.Rate(self.publish_rate)
-        while not rospy.is_shutdown():
-            if self.state == NodeManagingStatesEnum.ACTIVE:
-                try:
-                    # start_time = perf_counter()
-                    self.doUpdate()
+    def active(self):
+        try:
+            # start_time = perf_counter()
+            self.doUpdate()
 
-                    self.speed_target = rospy.get_param("/speed/target", 3.0)
+            self.speed_target = rospy.get_param("/speed/target", 3.0)
 
-                    # Stop the car
-                    # Do this by switching the controllers and using pure pursuit
-                    if self.speed_target == 0.0:
-                        if not self.switched_controllers:
-                            rospy.wait_for_service(
-                                "/ugr/car/controller_manager/switch_controller"
-                            )
-                            try:
-                                switch_controller = rospy.ServiceProxy(
-                                    "/ugr/car/controller_manager/switch_controller",
-                                    SwitchController,
-                                )
+            # Stop the car
+            # Do this by switching the controllers and using pure pursuit
+            if self.speed_target == 0.0:
+                if not self.switched_controllers:
+                    rospy.wait_for_service(
+                        "/ugr/car/controller_manager/switch_controller"
+                    )
+                    try:
+                        switch_controller = rospy.ServiceProxy(
+                            "/ugr/car/controller_manager/switch_controller",
+                            SwitchController,
+                        )
 
-                                # Switch to correct controllers for pure pursuit
-                                req = SwitchControllerRequest()
-                                req.start_controllers = [
-                                    "steering_position_controller",
-                                    "drive_velocity_controller",
-                                ]
-                                req.stop_controllers = [
-                                    "steering_velocity_controller",
-                                    "drive_effort_controller",
-                                ]
-                                req.strictness = SwitchControllerRequest.STRICT
+                        # Switch to correct controllers for pure pursuit
+                        req = SwitchControllerRequest()
+                        req.start_controllers = [
+                            "steering_position_controller",
+                            "drive_velocity_controller",
+                        ]
+                        req.stop_controllers = [
+                            "steering_velocity_controller",
+                            "drive_effort_controller",
+                        ]
+                        req.strictness = SwitchControllerRequest.STRICT
 
-                                response = switch_controller(req)
+                        response = switch_controller(req)
 
-                                if response.ok:
-                                    self.switched_controllers = True
-
-                                else:
-                                    rospy.logerr("Could not start controllers")
-                            except rospy.ServiceException as e:
-                                rospy.logerr(f"Service call failed: {e}")
-
-                        if self.switched_controllers:
-                            # Put target at 2m
-                            target = self.trajectory.calculate_target_points([2])[0]
-                            # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
-                            R = ((target[0] - 0) ** 2 + (target[1] - 0) ** 2) / (
-                                2 * (target[1] - 0)
-                            )
-
-                            self.steering_cmd.data = self.symmetrically_bound_angle(
-                                np.arctan2(1.0, R), np.pi / 2
-                            )
-                            self.steering_cmd.data /= self.steering_transmission
-                            self.steering_position_pub.publish(self.steering_cmd)
-
-                            self.velocity_cmd.data = 0.0
-                            self.drive_velocity_pub.publish(self.velocity_cmd)
-                            rate.sleep()
-                            continue
+                        if response.ok:
+                            self.switched_controllers = True
 
                         else:
-                            # Somehow could not switch controllers, so brake manually
-                            self.velocity_cmd.data = -100.0
-                            self.steering_cmd.data = 0.0
-                            self.drive_effort_pub.publish(self.velocity_cmd)
-                            self.steering_velocity_pub.publish(self.steering_cmd)
-                            rate.sleep()
-                            continue
+                            rospy.logerr("Could not start controllers")
+                    except rospy.ServiceException as e:
+                        rospy.logerr(f"Service call failed: {e}")
 
-                    (
-                        spline_centerline,
-                        curve_centerline,
-                    ) = self.trajectory.create_spline()
-
-                    # spline_time = perf_counter()
-
-                    if curve_centerline is None:
-                        self.velocity_cmd.data = 0.0
-                        self.steering_cmd.data = 0.0
-                        self.drive_effort_pub.publish(self.velocity_cmd)
-                        self.steering_velocity_pub.publish(self.steering_cmd)
-                        rate.sleep()
-                        continue
-
-                    # print(curve_centerline(0.1))
-
-                    self.curve_centerline = curve_centerline
-
-                    start_point = np.squeeze(curve_centerline(0))
-                    print(f"start point: {start_point}")
-                    # heading = np.arctan2(
-                    #     np.squeeze(curve_centerline.derivative(o=1)(0.000000))[1],
-                    #     np.squeeze(curve_centerline.derivative(o=1)(0.000000))[0],
-                    # )
-                    # current_state = [start_point[0], start_point[1], heading, self.steering_joint_angle, self.actual_speed, 0.0000001]
-                    current_state = [
-                        0,
-                        0,
-                        0,
-                        self.steering_joint_angle,
-                        self.actual_speed,
-                        0.000001,
-                    ]
-                    if self.u[0] == 0 and self.u[1] == 0:
-                        X0, U0 = self.initial_guess()
-
-                        # current_state = [start_point[0], start_point[1], heading, self.steering_joint_angle, self.actual_speed, 0]
-
-                        # print(X0)
-
-                        # Run MPC
-                        u, info = self.mpc(
-                            current_state,
-                            curve_centerline,
-                            None,
-                            None,
-                            None,
-                            None,
-                            self.u,
-                            X0=X0,
-                            U0=U0,
-                        )
-                    else:
-                        u, info = self.mpc(
-                            current_state,
-                            curve_centerline,
-                            None,
-                            None,
-                            None,
-                            None,
-                            self.u,
-                        )
-
-                    self.u = u
-
-                    self.exec_times.append(info["time"])
-                    # print(u)
-
-                    # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
-                    # rospy.loginfo(f"x closed loop: {X_closed_loop}")
-                    # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
-                    # rospy.loginfo(f"u closed loop: {U_closed_loop}")
-                    rospy.loginfo(f"u return: {u}")
-                    rospy.loginfo(f"actual speed: {self.actual_speed}")
-
-                    # Visualise MPC prediction
-                    self.vis_path(
-                        list(zip(info["X_sol"][:][0], info["X_sol"][:][1])),
-                        self.x_vis_pub,
+                if self.switched_controllers:
+                    # Put target at 2m
+                    target = self.trajectory.calculate_target_points([2])[0]
+                    # Calculate required turning radius R and apply inverse bicycle model to get steering angle (approximated)
+                    R = ((target[0] - 0) ** 2 + (target[1] - 0) ** 2) / (
+                        2 * (target[1] - 0)
                     )
 
-                    if info["success"]:
-                        # print("MPC success")
-                        self.velocity_cmd.data = u[0]
-                        self.steering_cmd.data = u[1]
+                    self.steering_cmd.data = self.symmetrically_bound_angle(
+                        np.arctan2(1.0, R), np.pi / 2
+                    )
+                    self.steering_cmd.data /= self.steering_transmission
+                    self.steering_position_pub.publish(self.steering_cmd)
 
-                        # Publish to velocity and position steering controller
-                        self.steering_velocity_pub.publish(self.steering_cmd)
-                        self.drive_effort_pub.publish(self.velocity_cmd)
+                    self.velocity_cmd.data = 0.0
+                    self.drive_velocity_pub.publish(self.velocity_cmd)
+                    return
 
-                        # self.save_solution_to_file()
-                    else:
-                        self.save_solution_to_file()
-                        # print(self.ocp.debug.show_infeasibilities())
-                        # rospy.signal_shutdown("MPC failed")
-                        # print(self.ocp.debug.show_infeasibilities())
-                        self.velocity_cmd.data = u[0]
-                        self.steering_cmd.data = u[1]
+                else:
+                    # Somehow could not switch controllers, so brake manually
+                    self.velocity_cmd.data = -100.0
+                    self.steering_cmd.data = 0.0
+                    self.drive_effort_pub.publish(self.velocity_cmd)
+                    self.steering_velocity_pub.publish(self.steering_cmd)
+                    return
 
-                        # Publish to velocity and position steering controller
-                        self.steering_velocity_pub.publish(self.steering_cmd)
-                        self.drive_effort_pub.publish(self.velocity_cmd)
+            (
+                spline_centerline,
+                curve_centerline,
+            ) = self.trajectory.create_spline()
 
-                    # mpc_time = perf_counter()
+            # spline_time = perf_counter()
 
-                    self.save_solution_to_file()
+            if curve_centerline is None:
+                self.velocity_cmd.data = 0.0
+                self.steering_cmd.data = 0.0
+                self.drive_effort_pub.publish(self.velocity_cmd)
+                self.steering_velocity_pub.publish(self.steering_cmd)
+                return
 
-                    # stop_time = perf_counter()
+            # print(curve_centerline(0.1))
 
-                    # print(f"spline time: {spline_time - start_time}")
-                    # print(f"mpc time: {mpc_time - spline_time}")
-                    # print(f"stop time: {stop_time - mpc_time}")
+            self.curve_centerline = curve_centerline
 
-                except Exception as e:
-                    rospy.logwarn(f"MPC has caught an exception: {e}")
-                    import traceback
+            start_point = np.squeeze(curve_centerline(0))
+            print(f"start point: {start_point}")
+            # heading = np.arctan2(
+            #     np.squeeze(curve_centerline.derivative(o=1)(0.000000))[1],
+            #     np.squeeze(curve_centerline.derivative(o=1)(0.000000))[0],
+            # )
+            # current_state = [start_point[0], start_point[1], heading, self.steering_joint_angle, self.actual_speed, 0.0000001]
+            current_state = [
+                0,
+                0,
+                0,
+                self.steering_joint_angle,
+                self.actual_speed,
+                0.000001,
+            ]
+            if self.u[0] == 0 and self.u[1] == 0:
+                X0, U0 = self.initial_guess()
 
-                    print(traceback.format_exc())
+                # current_state = [start_point[0], start_point[1], heading, self.steering_joint_angle, self.actual_speed, 0]
 
-            rate.sleep()
+                # print(X0)
+
+                # Run MPC
+                u, info = self.mpc(
+                    current_state,
+                    curve_centerline,
+                    None,
+                    None,
+                    None,
+                    None,
+                    self.u,
+                    X0=X0,
+                    U0=U0,
+                )
+            else:
+                u, info = self.mpc(
+                    current_state,
+                    curve_centerline,
+                    None,
+                    None,
+                    None,
+                    None,
+                    self.u,
+                )
+
+            self.u = u
+
+            self.exec_times.append(info["time"])
+            # print(u)
+
+            # rospy.loginfo(f"X_closed_loop: {info['X_sol']}")
+            # rospy.loginfo(f"x closed loop: {X_closed_loop}")
+            # rospy.loginfo(f"U_closed_loop: {info['U_sol']}")
+            # rospy.loginfo(f"u closed loop: {U_closed_loop}")
+            rospy.loginfo(f"u return: {u}")
+            rospy.loginfo(f"actual speed: {self.actual_speed}")
+
+            # Visualise MPC prediction
+            self.vis_path(
+                list(zip(info["X_sol"][:][0], info["X_sol"][:][1])),
+                self.x_vis_pub,
+            )
+
+            if info["success"]:
+                # print("MPC success")
+                self.velocity_cmd.data = u[0]
+                self.steering_cmd.data = u[1]
+
+                # Publish to velocity and position steering controller
+                self.steering_velocity_pub.publish(self.steering_cmd)
+                self.drive_effort_pub.publish(self.velocity_cmd)
+
+                # self.save_solution_to_file()
+            else:
+                self.save_solution_to_file()
+                # print(self.ocp.debug.show_infeasibilities())
+                # rospy.signal_shutdown("MPC failed")
+                # print(self.ocp.debug.show_infeasibilities())
+                self.velocity_cmd.data = u[0]
+                self.steering_cmd.data = u[1]
+
+                # Publish to velocity and position steering controller
+                self.steering_velocity_pub.publish(self.steering_cmd)
+                self.drive_effort_pub.publish(self.velocity_cmd)
+
+            # mpc_time = perf_counter()
+
+            self.save_solution_to_file()
+
+            # stop_time = perf_counter()
+
+            # print(f"spline time: {spline_time - start_time}")
+            # print(f"mpc time: {mpc_time - spline_time}")
+            # print(f"stop time: {stop_time - mpc_time}")
+
+        except Exception as e:
+            rospy.logwarn(f"MPC has caught an exception: {e}")
+            import traceback
+
+            print(traceback.format_exc())
 
     def initial_guess(self):
         Tau0 = np.linspace(0.00001, 0.5, self.N + 1)
