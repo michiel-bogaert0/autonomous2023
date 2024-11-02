@@ -25,7 +25,7 @@ from ugr_msgs.msg import State
 
 class MPC(ManagedNode):
     def __init__(self):
-        rospy.init_node("MPC_tracking_control")
+        # rospy.init_node("MPC_tracking_control")
         super().__init__("MPC_tracking_control")
         self.slam_state = SLAMStatesEnum.IDLE
         self.save_solution = False
