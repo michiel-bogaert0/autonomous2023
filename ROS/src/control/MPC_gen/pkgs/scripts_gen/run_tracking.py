@@ -28,7 +28,6 @@ from ugr_msgs.msg import State
 
 class MPCSplinesTracking(ManagedNode):
     def __init__(self):
-        rospy.init_node("MPC_splines_tracking_control")
         super().__init__("MPC_splines_tracking_control")
         self.slam_state = SLAMStatesEnum.IDLE
         self.save_solution = False
