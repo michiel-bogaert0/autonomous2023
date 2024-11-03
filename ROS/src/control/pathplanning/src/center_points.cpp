@@ -81,13 +81,14 @@ get_center_points(const std::vector<std::vector<double>> &position_cones,
           bad_points.push_back({x_coord, y_coord});
         }
 
-        // Check if the 2 points that make up the centerpoint are not
-        // the same color (except for orange cones). If this is false, we
-        // have a bad point!
+        // if color is false, color is not considered
+        // if color is true, only consider points which cones have different
+        // colors (except for orange cones)
         int compound_class = triangles[i].points[j].colorIndex +
                              triangles[i].points[(j + 1) % 3].colorIndex;
 
-        if (compound_class == 1 || triangles[i].points[j].colorIndex == 2 ||
+        if (!color || compound_class == 1 ||
+            triangles[i].points[j].colorIndex == 2 ||
             triangles[i].points[(j + 1) % 3].colorIndex == 2) {
           center_points.push_back({x_coord, y_coord});
         } else {

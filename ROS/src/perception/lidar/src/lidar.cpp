@@ -1,8 +1,10 @@
 #include "lidar.hpp"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include <chrono>
+#include <cmath>
 #include <fstream>
 #include <iostream>
+#include <tuple>
 
 // Constructor
 namespace ns_lidar {
@@ -18,14 +20,13 @@ Lidar::Lidar(ros::NodeHandle &n)
   n.param<double>("max_angle", max_angle_, 2.8);
 
   // Subscribe to the raw lidar topic
-  // rawLidarSubscriber_ = n.subscribe("perception/raw_pc", 10,
-  // &Lidar::rawPcCallback, this);
   rawLidarSubscriber_ =
       n.subscribe("/ugr/car/sensors/lidar", 10, &Lidar::rawPcCallback, this);
 
+  n.param<bool>("publish_diagnostics", publish_diagnostics_, true);
   n.param<bool>("publish_preprocessing", publish_preprocessing_, false);
   n.param<bool>("publish_ground", publish_ground_, false);
-  n.param<bool>("publish_clusters", publish_clusters_, true);
+  n.param<bool>("publish_clusters", publish_clusters_, false);
 
   n.param<bool>("lidar_rotated", lidar_rotated_, false);
   // Publish to the filtered and clustered lidar topic
@@ -48,7 +49,7 @@ Lidar::Lidar(ros::NodeHandle &n)
   conePublisher_ = n.advertise<ugr_msgs::ObservationWithCovarianceArrayStamped>(
       "perception/observations", 5);
   diagnosticPublisher_ =
-      n.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 5);
+      n.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics/lidar", 5);
 }
 
 /**
@@ -57,25 +58,35 @@ Lidar::Lidar(ros::NodeHandle &n)
  * @arg msg: the PointCloud2 message
  */
 void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
+  std::chrono::steady_clock::time_point t_start =
+      std::chrono::steady_clock::now();
+
   // Create PC objects
   pcl::PointCloud<pcl::PointXYZI> raw_pc_;
   pcl::PointCloud<pcl::PointXYZI>::Ptr preprocessed_pc(
       new pcl::PointCloud<pcl::PointXYZI>);
   pcl::fromROSMsg(msg, raw_pc_);
-  publishDiagnostic(OK, "[perception] raw points",
-                    "#points: " + std::to_string(raw_pc_.size()));
+
   // flip pointcloud if the lidar is rotated
   if (lidar_rotated_) {
     raw_pc_ = flipPointcloud(raw_pc_);
   }
   // Preprocessing
+  std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
   preprocessing(raw_pc_, preprocessed_pc);
-  publishDiagnostic(OK, "[perception] preprocessed points",
-                    "#points: " + std::to_string(preprocessed_pc->size()));
+  std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+  latency_preprocessing_ =
+      std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0)
+          .count();
 
   if (publish_preprocessing_) {
     sensor_msgs::PointCloud2 preprocessed_msg;
-    pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
+    if (lidar_rotated_) {
+      pcl::toROSMsg(flipPointcloud(*preprocessed_pc), preprocessed_msg);
+    } else {
+      pcl::toROSMsg(*preprocessed_pc, preprocessed_msg);
+    }
+
     preprocessed_msg.header.stamp = msg.header.stamp;
     preprocessed_msg.header.frame_id = msg.header.frame_id;
     preprocessedLidarPublisher_.publish(preprocessed_msg);
@@ -87,20 +98,14 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   pcl::PointCloud<pcl::PointXYZINormal>::Ptr ground_points(
       new pcl::PointCloud<pcl::PointXYZINormal>());
 
-  std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+  t0 = std::chrono::steady_clock::now();
   ground_removal_.groundRemoval(preprocessed_pc, notground_points,
                                 ground_points);
-  std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+  t1 = std::chrono::steady_clock::now();
 
-  publishDiagnostic(OK, "[perception] ground removal points",
-                    "#points: " + std::to_string(notground_points->size()));
-
-  double time_round =
-      std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
+  latency_ground_removal_ =
+      std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0)
           .count();
-  publishDiagnostic(time_round < 1 ? OK : WARN,
-                    "[perception] ground removal time",
-                    "time needed: " + std::to_string(time_round));
 
   if (publish_ground_) {
     // Create a copy of notground_points for publishing
@@ -126,19 +131,30 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   sensor_msgs::PointCloud cluster;
   sensor_msgs::PointCloud2 clustersColored;
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
+  std::tuple<sensor_msgs::PointCloud,
+             std::vector<pcl::PointCloud<pcl::PointXYZINormal>>>
+      msg_and_coneclusters;
 
-  t2 = std::chrono::steady_clock::now();
+  t0 = std::chrono::steady_clock::now();
   clusters = cone_clustering_.cluster(notground_points, ground_points);
-  cluster = cone_clustering_.constructMessage(clusters);
+  msg_and_coneclusters = cone_clustering_.constructMessage(clusters);
+  cluster = std::get<0>(msg_and_coneclusters);
   t1 = std::chrono::steady_clock::now();
-  time_round =
-      std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t2)
+  latency_clustering_ =
+      std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0)
           .count();
-  publishDiagnostic(time_round < 1 ? OK : WARN, "[perception] clustering time",
-                    "time needed: " + std::to_string(time_round));
 
   if (publish_clusters_) {
-    clustersColored = cone_clustering_.clustersColoredMessage(clusters);
+    if (lidar_rotated_) {
+      std::vector<pcl::PointCloud<pcl::PointXYZINormal>> flipped_clusters;
+      for (pcl::PointCloud<pcl::PointXYZINormal> cluster_to_flip : clusters) {
+        flipped_clusters.push_back(flipPointcloud(cluster_to_flip));
+      }
+      clustersColored =
+          cone_clustering_.clustersColoredMessage(flipped_clusters);
+    } else {
+      clustersColored = cone_clustering_.clustersColoredMessage(clusters);
+    }
     clustersColored.header.frame_id = msg.header.frame_id;
     clustersColored.header.stamp = msg.header.stamp;
     clustersColoredpublisher_.publish(clustersColored);
@@ -147,12 +163,73 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
   cluster.header.frame_id = msg.header.frame_id;
   cluster.header.stamp = msg.header.stamp;
   clusteredLidarPublisher_.publish(cluster);
-  publishDiagnostic(OK, "[perception] clustering points",
-                    "#points: " + std::to_string(cluster.points.size()));
 
-  // Create an array of markers to display in Foxglove
   publishObservations(cluster);
-  publishDiagnostic(OK, "[perception] end processing", "pointcloud processed");
+
+  std::chrono::steady_clock::time_point t_end =
+      std::chrono::steady_clock::now();
+  latency_total_ =
+      std::chrono::duration_cast<std::chrono::duration<double>>(t_end - t_start)
+          .count();
+
+  if (publish_diagnostics_) {
+    // Raw point cloud diagnostics
+    publishDiagnostic(OK, "[LIDAR] Raw point cloud", "", "#Points",
+                      std::to_string(raw_pc_.size()));
+
+    // Preprocessing diagnostics
+    publishDiagnostic(latency_preprocessing_ < 1 ? OK : WARN,
+                      "[LIDAR] Preprocessing",
+                      std::to_string(latency_preprocessing_), "#Points",
+                      std::to_string(preprocessed_pc->size()));
+
+    // Ground removal diagnostics
+    publishDiagnostic(
+        latency_ground_removal_ < 1 ? OK : WARN, "[LIDAR] Ground removal",
+        std::to_string(latency_ground_removal_), "#Points", // Non-ground points
+        std::to_string(notground_points->size()));
+
+    // Points per cone
+    std::vector<pcl::PointCloud<pcl::PointXYZINormal>> cone_clusters;
+    cone_clusters = std::get<1>(msg_and_coneclusters);
+    if (cone_clusters.size() == cluster.points.size()) {
+      for (int i = 0; i < cone_clusters.size(); ++i) {
+        pcl::PointCloud<pcl::PointXYZINormal> &cone_cluster = cone_clusters[i];
+        auto cone = cluster.points[i];
+        sensor_msgs::PointCloud cone_msg;
+
+        diagnostic_msgs::DiagnosticArray diag_array;
+        diagnostic_msgs::DiagnosticStatus diag_status;
+        diag_status.level = OK;
+        diag_status.name = "[LIDAR] Points per cone";
+
+        diagnostic_msgs::KeyValue distance;
+        diagnostic_msgs::KeyValue numpoints;
+        distance.key = "distance";
+        distance.value = std::to_string(hypot3d(cone.x, cone.y, cone.z));
+        diag_status.values.push_back(distance);
+        numpoints.key = "numpoints";
+        numpoints.value = std::to_string(cone_cluster.size());
+        diag_status.values.push_back(numpoints);
+
+        diag_array.status.push_back(diag_status);
+        diagnosticPublisher_.publish(diag_array);
+      }
+    }
+
+    // Clustering diagnostics
+    publishDiagnostic(latency_clustering_ < 1 ? OK : WARN, "[LIDAR] Clustering",
+                      std::to_string(latency_clustering_), "#All clusters",
+                      std::to_string(clusters.size()));
+
+    publishDiagnostic(latency_clustering_ < 1 ? OK : WARN,
+                      "[LIDAR] Classification", "", "#Cone clusters",
+                      std::to_string(cone_clusters.size()));
+
+    // Total lidar pipeline latency
+    publishDiagnostic(latency_total_ < 1 ? OK : WARN, "[LIDAR] End processing",
+                      std::to_string(latency_total_));
+  }
 }
 
 /**
@@ -175,14 +252,15 @@ void Lidar::preprocessing(
         iter.z > -sensor_height_ + max_height_ ||
         std::hypot(iter.x, iter.y) > max_distance_ ||
         std::atan2(iter.x, iter.y) < min_angle_ ||
-        std::atan2(iter.x, iter.y) > max_angle_)
+        std::atan2(iter.x, iter.y) > max_angle_) {
       continue;
+    }
     preprocessed_pc->points.push_back(iter);
   }
 }
 
 /**
- * @brief Publishes the Lidar observations for real
+ * @brief Classifies cone clusters and publishes the Lidar observations
  *
  * @param cones
  */
@@ -218,12 +296,22 @@ void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
 }
 
 void Lidar::publishDiagnostic(DiagnosticStatusEnum status, std::string name,
-                              std::string message) {
+                              std::string latency, std::string key,
+                              std::string value) {
   diagnostic_msgs::DiagnosticArray diag_array;
   diagnostic_msgs::DiagnosticStatus diag_status;
+  diagnostic_msgs::KeyValue latency_keyval;
+  diagnostic_msgs::KeyValue keyval;
+
+  latency_keyval.key = "latency";
+  latency_keyval.value = latency;
+  keyval.key = key;
+  keyval.value = value;
+
   diag_status.level = status;
   diag_status.name = name;
-  diag_status.message = message;
+  diag_status.values.push_back(latency_keyval);
+  diag_status.values.push_back(keyval);
   diag_array.status.push_back(diag_status);
 
   diagnosticPublisher_.publish(diag_array);
@@ -232,7 +320,7 @@ void Lidar::publishDiagnostic(DiagnosticStatusEnum status, std::string name,
 template <class PointT>
 pcl::PointCloud<PointT> Lidar::flipPointcloud(pcl::PointCloud<PointT> pc) {
   pcl::PointCloud<PointT> *new_pc = new pcl::PointCloud<PointT>;
-  for (auto &iter : pc.points) {
+  for (const auto &iter : pc.points) {
     PointT new_point = *new PointT;
     new_point.x = iter.x;
     new_point.y = -iter.y;
