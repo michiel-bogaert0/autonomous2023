@@ -20,6 +20,7 @@ slam_controller:
       # Control
       - pure_pursuit_control
       - pathplanning
+      # - boundary_estimation
       # - path_smoother
       - path_builder
 

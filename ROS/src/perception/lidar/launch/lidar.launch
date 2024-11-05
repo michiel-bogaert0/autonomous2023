@@ -1,10 +1,9 @@
 <launch>
     <node pkg="lidar" type="lidar" name="lidar" output="screen">
         <!-- preprocessing -->
-        <param name="min_distance" value="1"/>
-        <param name="max_distance" value="25"/>
-        <param name="max_height" value="0.5"/> <!-- relative to ground level -->
-        <param name="sensor_height" value="0.98"/> <!-- relative to ground level -->
+        <param name="min_distance" value="0.75"/>
+        <param name="max_distance" value="21"/>
+        <param name="max_height" value="1"/> <!-- relative to ground level -->
         <param name="min_angle" value="0.3"/>
         <param name="max_angle" value="2.8"/>
 
@@ -45,8 +44,9 @@
         <param name= "min_points_per_bucket" value = "8"/>
         <param name= "max_points_per_bucket" value = "200"/>
 
-        <!-- lidar upside down -->
-        <param name= "lidar_rotated" value="true"/>
+        <!-- lidar configuration -->
+        <param name= "lidar_rotated" value="true"/> <!-- lidar is rotated -->
+        <param name="sensor_height" value="0.98"/> <!-- sensor height relative to ground level (pegasus: 0.40, orion: 0.98) -->
         <!-- orange cone functionality -->
         <param name= "use_orange_cones" value="false"/>
 
@@ -57,18 +57,20 @@
         <!-- parameters for color belief curve -->
         <param name="first_tipping_distance" value="10"/>
         <param name="second_tipping_distance" value="12"/>
-        <param name="zero_value_distance" value="21"/>
+        <param name="zero_value_distance" value="30"/>
         <param name="value_start" value="1"/>
         <param name="value_first_tipping_distance" value="0.9"/>
         <param name="value_second_tipping_distance" value="0.3"/>
 
-        <!-- publishing debug pointclouds -->
-        <param name= "publish_preprocessing" value = "true"/>
-        <param name= "publish_ground" value = "true"/>
-        <param name= "publish_clusters" value = "true"/>
+        <!-- publishing diagnostics and debug pointclouds -->
+        <param name= "publish_diagnostics" value = "false"/>
+        <param name= "publish_preprocessing" value = "false"/>
+        <param name= "publish_ground" value = "false"/>
+        <param name= "publish_clusters" value = "false"/>
         <param name= "color_factor" value = "1"/>
  
         <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>
+        <remap from="/diagnostics/lidar" to="autonomous/perception/diagnostics/lidar"/>
 
         <remap from="lidar/perception/preprocessed_pc" to="ugr/vis/lidar/preprocessed_pc"/>
         <remap from="lidar/perception/groundremoval_pc" to="ugr/vis/lidar/groundremoval_pc"/>

@@ -41,6 +41,12 @@ private:
   bool publish_preprocessing_; // publish the preprocessed pointcloud
   bool publish_ground_;        // publish the debug ground pointclouds
   bool publish_clusters_;      // color the clusters and publish them
+  bool publish_diagnostics_;   // publish diagnostics
+
+  double latency_preprocessing_;
+  double latency_ground_removal_;
+  double latency_clustering_;
+  double latency_total_;
 
   double min_distance_;
   double max_distance_;
@@ -61,7 +67,8 @@ private:
 
   void publishObservations(const sensor_msgs::PointCloud cones);
   void publishDiagnostic(DiagnosticStatusEnum status, std::string name,
-                         std::string message);
+                         std::string latency, std::string key = "",
+                         std::string value = "");
   template <class PointT>
   pcl::PointCloud<PointT> flipPointcloud(pcl::PointCloud<PointT> pc);
 };

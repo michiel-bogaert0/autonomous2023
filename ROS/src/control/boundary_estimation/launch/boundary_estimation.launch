@@ -6,10 +6,16 @@
         <remap from="/output/debug/left_boundary" to="/boundary_estimation/debug/left_boundary"/>
         <remap from="/output/debug/right_boundary" to="/boundary_estimation/debug/right_boundary"/>
         <remap from="/output/boundaries" to="/boundary_estimation/boundaries"/>
+        <remap from="/output/path" to="/pathplanning/poses"/>
 
         <param name="max_distance" value="36" />
-        <param name="min_distance" value="1" />
-        <param name="max_angle_change" value="1.8" />
+        <param name="min_distance" value="0.3" />
+        <param name="max_angle" value="90" />
+        <param name="dist_factor" value="1.5" />
+        <param name="turn_factor" value="15" />
+        <param name="turn_change_factor" value="0.75" />
+        <param name="use_color" value="false" />
+        <param name="local_bound_len" value="8" />
         <param name="turn_active" value="$(arg turn_active)"/>
     </node>
 </launch>

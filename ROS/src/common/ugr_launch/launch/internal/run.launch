@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="frames" default="orion"/>
+  <arg name="frames" default="orion_frames"/>
 
   <arg name="mission" default=""/>
   <arg name="use_sim_time" default="false"/>

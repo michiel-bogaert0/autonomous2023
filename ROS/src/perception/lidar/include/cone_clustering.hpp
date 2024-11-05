@@ -27,7 +27,8 @@ public:
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
   cluster(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
           const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground);
-  sensor_msgs::PointCloud
+  std::tuple<sensor_msgs::PointCloud,
+             std::vector<pcl::PointCloud<pcl::PointXYZINormal>>>
       constructMessage(std::vector<pcl::PointCloud<pcl::PointXYZINormal>>);
   sensor_msgs::PointCloud2 clustersColoredMessage(
       std::vector<pcl::PointCloud<pcl::PointXYZINormal>>);
@@ -37,7 +38,7 @@ private:
 
   ConeClassification coneClassification_;
 
-  std::string clustering_method_; // Default: euclidian, others: string
+  std::string clustering_method_; // Default: euclidean, others: string
   double cluster_tolerance_;      // The cone clustering tolerance (m)
   double max_arc_cluster_; // maximal arc between current point and cluster
                            // before the cluster becomes archived
@@ -52,7 +53,7 @@ private:
                            // (more points)
 
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
-  euclidianClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
+  euclideanClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
                       const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &ground);
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>>
   stringClustering(const pcl::PointCloud<pcl::PointXYZINormal>::Ptr &cloud,
