@@ -36,13 +36,13 @@ class MapPublisher:
                 "starting_amplitude": 0.4,
                 "rel_accuracy": 0.005,
                 "margin": 0,
-                "starting_straight_length": 0,
+                "starting_straight_length": 6,
                 "starting_straight_downsample": 2,
                 "min_cone_spacing": 3 * math.pi / 16,
                 "max_cone_spacing": 5,
                 "track_width": 3,
                 "cone_spacing_bias": 0.5,
-                "starting_cone_spacing": 0.5,
+                "starting_cone_spacing": 0.3,
                 "length": self.length,
             }
             gen = TrackGenerator(gen_cfg)  # generate track
