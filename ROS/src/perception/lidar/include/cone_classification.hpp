@@ -47,9 +47,12 @@ private:
   int minimal_points_cone_;
   float minimal_height_cone_; // minimal height of cone above the floor
                               // threshold
-  float
-      threshold_height_big_cone_; // minimal height of cone above the floor
-                                  // threshold to be classified as a orange cone
+  float min_threshold_height_big_cone_; // minimal height of cone above the
+                                        // floor threshold to be classified as a
+                                        // orange cone
+  float max_threshold_height_big_cone_; // maximal height of cone above the
+                                        // floor threshold to be classified as a
+                                        // orange cone
   double cone_shape_factor_; // how similar should a pointcloud be to the cone
                              // model
                              // 0 -> the pointcloud can have any shape

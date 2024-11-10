@@ -13,7 +13,10 @@ ConeClassification::ConeClassification(ros::NodeHandle &n) : n_(n) {
   n.param<double>("point_count_threshold", point_count_threshold_, 0.5);
   n.param<int>("minimal_points_cone", minimal_points_cone_, 0);
   n.param<float>("minimal_height_cone", minimal_height_cone_, 0.05);
-  n.param<float>("threshold_height_big_cone", threshold_height_big_cone_, 0.40);
+  n.param<float>("min_threshold_height_big_cone",
+                 min_threshold_height_big_cone_, 0.40);
+  n.param<float>("max_threshold_height_big_cone",
+                 max_threshold_height_big_cone_, 0.60);
   n.param<double>("cone_shape_factor", cone_shape_factor_, 0.3);
   n.param<double>("cone_height_width_factor", height_width_factor_, 0.9);
   n.param<double>("threshold_white_cone", threshold_white_cones_, 10);
@@ -57,15 +60,15 @@ ConeCheck ConeClassification::classifyCone(
       bound_z > bound_x * height_width_factor_ &&
       bound_z > bound_y * height_width_factor_) {
     float dist = hypot3d(centroid[0], centroid[1], centroid[2]);
-    float num_points = 0.0;
     bool is_orange = false;
 
     // check size cloud for orange cone
-    if (bound_z > threshold_height_big_cone_) {
-      
-      // If we do not use orange cones, we can throw away this cloud because 
+    if (bound_z > min_threshold_height_big_cone_ &&
+        bound_z < max_threshold_height_big_cone_) {
+
+      // If we do not use orange cones, we can throw away this cloud because
       // it is too tall
-      if(!use_orange_cones_){
+      if (!use_orange_cones_) {
         cone_check.is_cone = false;
         return cone_check;
       }
