@@ -40,6 +40,7 @@ class ManagedNode:
         self.health = DiagnosticStatus(name="healthchecks", hardware_id=name)
         self.name = name
         self.state = default_state
+        self.terminalpub = False
         self.handlerlist = []
         self.publishers = []
         self.healthrate = rospy.Rate(rospy.get_param("~healthrate", 3))
@@ -63,12 +64,23 @@ class ManagedNode:
         if default_state == NodeManagingStatesEnum.ACTIVE or rospy.get_param(
             "~turn_active", False
         ):
-            self.doConfigure()
-            self.doActivate()
-            self.state = NodeManagingStatesEnum.ACTIVE
+            # serice call to set the state to inactive
+            rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.5)
+            rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(
+                NodeManagingStatesEnum.INACTIVE
+            )
+            # service call to set the state to active
+            rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.5)
+            rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(
+                NodeManagingStatesEnum.ACTIVE
+            )
+
         elif default_state == NodeManagingStatesEnum.INACTIVE:
-            self.doConfigure()
-            self.state = NodeManagingStatesEnum.INACTIVE
+            # serice call to set the state to inactive
+            rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.5)
+            rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(
+                NodeManagingStatesEnum.INACTIVE
+            )
 
     def spin(self):
         """
@@ -118,10 +130,10 @@ class ManagedNode:
         self.health.values = [KeyValue(key="state", value=self.state)]
         self.health.values += values
 
-        if level == 1:
-            rospy.logwarn(f"[WARN]> {message}")
-        elif level == 2:
-            rospy.logerr(f"[ERROR]> {message}")
+        if level == 1 and self.terminalpub:
+            rospy.logwarn(f"\n{self.name}:{message}")
+        elif level == 2 and self.terminalpub:
+            rospy.logerr(f"\n{self.name}:{message}")
 
         # Immediately publish health
         if publish:
@@ -210,7 +222,7 @@ class ManagedNode:
         else:
             # invalid state transition
             rospy.loginfo(
-                f"Invalid state transition from {self.state} to {request.state}"
+                f"Invalid state transition in {self.name} from {self.state} to {request.state}"
             )
             # response that the transition is unsuccesful
             return SetNodeStateResponse(succes=False)

@@ -1,4 +1,7 @@
 <launch>
+    <arg name="generate_track" default="False"/>
+    <arg name="track_length" default="100"/>
+
     <arg name="mission" default="trackdrive"/>
     <arg name="filename" default="chicane.yaml"/>
 

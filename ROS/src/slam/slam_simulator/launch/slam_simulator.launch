@@ -4,11 +4,14 @@
     This launch file runs the external parts of the simulation. 
     It requires a filename for the map to use 
   -->
-
+  <arg name="generate_track" default="False"/>
   <arg name="gt_map_topic" default="ugr/car/map/gt" />
   <arg name="filename" />
   <arg name="turn_active" default="false" />
-
+  <arg name="FP" default="0" />
+  <arg name="FP_prob" default="1" />
+  <arg name="FP_on_track" default="False"/>
+  <arg name="track_length" default="300"/>
   <!-- Perception simulator -->
 
   <node name="perception_simulator" pkg="slam_simulator" output="screen" type="perception.py">
@@ -21,18 +24,24 @@
     <param name="add_noise" value="true" />
     <param name="cone_noise" value="0.02" />
     <param name="color_prob" value="0.0" /> <!-- between 0 and 1-->
+    <param name="FP" value="$(arg FP)" />
+    <param name="innerrange" value="5" />     <!-- minumum FP range away from trackcones on other side: should be track width or slightly bigger-->
+    <param name="outerrange" value="15" />  <!-- maximum FP range away from track--> 
+    <param name="FP_prob" value="$(arg FP_prob)" />
+
+    <param name="cones_on_track" value="$(arg FP_on_track)" />
     <param name="turn_active" value="$(arg turn_active)"/>
 
     <remap from="/output/observations" to="/ugr/car/observations/lidar" />
     <remap from="/input/track" to="$(arg gt_map_topic)" />
   </node>
 
-  <!-- GT map publisher-->
-
-  <node name="gt_map_publisher" pkg="slam_simulator" output="screen" type="map_publisher.py">
+    <!-- GT map publisher-->
+  <node name="gt_map_publisher" pkg="slam_simulator" output="screen" type="sim_map_publisher.py">
+    <param name="gen_map" value="$(find slam_simulator)/maps/default_gen_track.yaml" />
     <param name="map" value="$(find slam_simulator)/maps/$(arg filename)" />
-
+    <param name="generate_track" value="$(arg generate_track)"/>
+    <param name="track_length" value="$(arg track_length)"/>
     <remap from="/output/map" to="$(arg gt_map_topic)" />
   </node>
-
 </launch>

@@ -19,7 +19,11 @@ slam_controller:
 
       # Control
       - front_wheel_feedback_control
+      # - pure_pursuit_control
+      # - MPC_tracking_control
+      # - MPC_splines_tracking_control
       - pathplanning
+      # - boundary_estimation
       - path_builder
       - path_smoother
 

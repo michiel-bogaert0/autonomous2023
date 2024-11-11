@@ -12,7 +12,11 @@
   </include>
   
   <!-- MPC -->
-  <!-- <include file="$(find mpc)/launch/mpc.launch" pass_all_args="true">
+  <!-- <include file="$(find mpc)/launch/mpc_tracking.launch" pass_all_args="true">
+  </include> -->
+
+  <!-- MPC splines -->
+  <!-- <include file="$(find mpc_gen)/launch/mpc_tracking.launch" pass_all_args="true">
   </include> -->
 
   <!-- Path_publisher -->
