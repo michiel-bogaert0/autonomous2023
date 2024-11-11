@@ -480,7 +480,11 @@ class TrackGenerator:
         r_cones *= rotation
         start_cones *= rotation
 
-        return start_cones, l_cones[1:], r_cones[1:]
+        return (
+            [],
+            np.concatenate((l_cones[1:], np.array([start_cones[0]]))),
+            np.concatenate((r_cones[1:], np.array([start_cones[1]]))),
+        )
 
     @staticmethod
     # Not yet used by Ugent Racing, will not work as default format is yaml in trackgen.py
