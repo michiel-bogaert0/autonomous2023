@@ -64,12 +64,23 @@ class ManagedNode:
         if default_state == NodeManagingStatesEnum.ACTIVE or rospy.get_param(
             "~turn_active", False
         ):
-            self.doConfigure()
-            self.doActivate()
-            self.state = NodeManagingStatesEnum.ACTIVE
+            # serice call to set the state to inactive
+            rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.5)
+            rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(
+                NodeManagingStatesEnum.INACTIVE
+            )
+            # service call to set the state to active
+            rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.5)
+            rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(
+                NodeManagingStatesEnum.ACTIVE
+            )
+
         elif default_state == NodeManagingStatesEnum.INACTIVE:
-            self.doConfigure()
-            self.state = NodeManagingStatesEnum.INACTIVE
+            # serice call to set the state to inactive
+            rospy.wait_for_service(f"/node_managing/{name}/set", timeout=0.5)
+            rospy.ServiceProxy(f"/node_managing/{name}/set", SetNodeState)(
+                NodeManagingStatesEnum.INACTIVE
+            )
 
     def spin(self):
         """
