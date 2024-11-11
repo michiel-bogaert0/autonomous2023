@@ -28,6 +28,7 @@ class PathSmoother(ManagedNode):
             self.mission == AutonomousMission.TRACKDRIVE
             or self.mission == AutonomousMission.AUTOCROSS
         )
+        self.spline_step_size = rospy.get_param("~spline_step_size", 0.2)
 
         self.tf_buffer = tf.Buffer()
         self.tf_listener = tf.TransformListener(self.tf_buffer)
@@ -85,10 +86,6 @@ class PathSmoother(ManagedNode):
         # smooth path
         smoothed_path = self.smooth_path(path, closed_path)
         vis_path = smoothed_path
-
-        # Throw away last point to avoid weird FWF bug, see wiki (Path Smoother)
-        if closed_path and self.trackdrive_autocross:
-            smoothed_path = smoothed_path[:-1]
 
         # Publish smoothed path
         smoothed_msg = msg
@@ -158,9 +155,9 @@ class PathSmoother(ManagedNode):
         param path: Path to smooth
         param closed_path: True if path is closed, False otherwise
         """
-
         # STEP1: Linear interpolation between center points to add more points for BSpline smoothing
         distance = np.cumsum(np.sqrt(np.sum(np.diff(path, axis=0) ** 2, axis=1)))
+        path_length = distance[-1]
         distance = np.insert(distance, 0, 0) / distance[-1]
 
         alpha = np.linspace(0, 1, len(path) * 3)
@@ -168,6 +165,10 @@ class PathSmoother(ManagedNode):
         path = interpolator(alpha)
 
         # STEP2: Smooth path with BSpline interpolation
+        # calculate the evaluation points for the BSpline
+        u_eval = np.linspace(0, 1, int(path_length // self.spline_step_size))
+        # avoid evaluating in 0 and 1 when periodic because these points are the same
+        u_eval = u_eval[:-1] if closed_path else u_eval
         # Transpose to get correct shape for BSpline, splprep expects (2, N)
         path = path.T
         # Weights for BSpline
@@ -175,7 +176,7 @@ class PathSmoother(ManagedNode):
         # Calculate smoothing Spline
         tck, u = splprep(path, w=w, s=1, per=closed_path)
         # Evaluate BSpline and transpose back to (N, 2)
-        smoothed_path = np.array(splev(u, tck)).T
+        smoothed_path = np.array(splev(u_eval, tck)).T
 
         return smoothed_path
 
