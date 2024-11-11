@@ -22,7 +22,6 @@ class PathSmoother(ManagedNode):
         self.min_distance_away_from_start = rospy.get_param(
             "~min_distance_away_from_start", 16
         )
-        self.received_path = None
         # make one parameter to check if trackdrive or autocross
         self.mission = rospy.get_param("/mission", "")
         self.trackdrive_autocross = (
@@ -50,13 +49,16 @@ class PathSmoother(ManagedNode):
         """
         if msg is None:
             return
-        self.received_path = msg
+        try:
+            self.process_path(msg)
+        except Exception as e:
+            rospy.logerr(f"Error in path smoother: {e}")
+            self.publisher.publish(msg)
 
-    def process_path(self):
+    def process_path(self, msg):
         """
         Process the newest path, smooth it and publish it
         """
-        msg = self.received_path
         msg_frame_id = msg.header.frame_id
 
         path = np.array([[p.pose.position.x, p.pose.position.y] for p in msg.poses])
@@ -72,6 +74,9 @@ class PathSmoother(ManagedNode):
             # Shift start of path to origin - 10 points so that car never reachs start/stop of path
             closest_point = np.argmin(np.sum(path**2, axis=1))
             path = np.roll(path, -closest_point - 10, axis=0)
+
+            # add last point to path to have also interpolation between last and first point
+            path = np.vstack((path, path[0]))
 
         # Add zero pose to path if no closure of path (force path starting from car)
         if not closed_path and self.trackdrive_autocross:
@@ -173,22 +178,6 @@ class PathSmoother(ManagedNode):
         smoothed_path = np.array(splev(u, tck)).T
 
         return smoothed_path
-
-    def active(self):
-        """
-        Main function, periodically called by spin function.
-        Activates smoothing if a new path is received, otherwise noting.
-        """
-        try:
-            # Check if new path is received
-            if self.received_path is None:
-                return
-            # process and smooth path
-            self.process_path()
-            self.received_path = None
-
-        except Exception as e:
-            rospy.logerr("Error occurred while smoothing PoseArray: {}".format(e))
 
 
 PathSmoother()
