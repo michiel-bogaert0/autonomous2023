@@ -704,7 +704,42 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
       local.observations.push_back(local_ob);
     }
   }
+  // double hardcode_x[2]={0.0,0.0}; //FIRST INDEX IS YELLOW CONE
+  // double hardcode_y[2]={3.0,-3.0}; //SECOND IS BLUE CONE
+  // for (int i=0;i<2;i++){
+  //   ugr_msgs::ObservationWithCovariance global_ob;
+  //   ugr_msgs::ObservationWithCovariance local_ob;
 
+  //   global_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  //   local_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  //   global_ob.observation.observation_class = i;
+  //   local_ob.observation.observation_class = i;
+  //   global_ob.observation.belief = 0; // mss aantal edges
+  //   local_ob.observation.belief = 0;
+
+  //   global_ob.observation.id = 0;
+  //   local_ob.observation.id = 0;
+
+  //   global_ob.observation.location.x = hardcode_x[i];
+  //   global_ob.observation.location.y = hardcode_y[i];
+
+  //   global.observations.push_back(global_ob);
+
+  //   // landmark to observation
+  //   // calculate the location of the landmark in the base_link frame
+  //   VectorXf obs(2);
+  //   float dx = hardcode_x[i] -
+  //               pose_vertex->estimate().translation().x();
+  //   float dy = hardcode_y[i] -
+  //               pose_vertex->estimate().translation().y();
+
+  //   obs(0) = pow(pow(dx, 2) + pow(dy, 2), 0.5);
+  //   obs(1) = atan2(dy, dx) - pose_vertex->estimate().rotation().angle();
+
+  //   local_ob.observation.location.x = obs(0) * cos(obs(1));
+  //   local_ob.observation.location.y = obs(0) * sin(obs(1));
+  //   local.observations.push_back(local_ob);
+  // }
   // publish the observations to the map server
   if (this->setmap_srv_client.exists()) {
     this->diagPublisher->publishDiagnostic(
