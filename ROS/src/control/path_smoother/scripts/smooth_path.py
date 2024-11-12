@@ -3,6 +3,7 @@
 import numpy as np
 import rospy
 import tf2_ros as tf
+from diagnostic_msgs.msg import DiagnosticStatus
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from node_fixture import AutonomousMission, ROSNode
@@ -52,7 +53,10 @@ class PathSmoother(ManagedNode):
         try:
             self.process_path(msg)
         except Exception as e:
-            rospy.logerr(f"Error in path smoother: {e}")
+            self.set_health(
+                DiagnosticStatus.WARN,
+                message=f"Path smoother failed with error: '{e}' -> unsmoothed path is send!",
+            )
             self.publisher.publish(msg)
 
     def process_path(self, msg):
