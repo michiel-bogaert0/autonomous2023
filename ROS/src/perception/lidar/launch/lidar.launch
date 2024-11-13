@@ -67,7 +67,7 @@
         <param name= "publish_diagnostics" value = "false"/>
         <param name= "publish_preprocessing" value = "false"/>
         <param name= "publish_ground" value = "false"/>
-        <param name= "publish_clusters" value = "true"/>
+        <param name= "publish_clusters" value = "false"/>
         <param name= "color_factor" value = "1"/>
  
         <remap from="lidar/perception/observations/" to="ugr/car/observations/lidar"/>

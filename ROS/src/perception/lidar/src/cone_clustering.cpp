@@ -318,14 +318,14 @@ ConeClustering::constructMessage(
   sensor_msgs::ChannelFloat32 x_size_channel;
   sensor_msgs::ChannelFloat32 y_size_channel;
   sensor_msgs::ChannelFloat32 z_size_channel;
-  sensor_msgs::ChannelFloat32 cone_metric_channel;
+  sensor_msgs::ChannelFloat32 cone_belief_channel;
 
   // name channels
   cone_channel.name = "cone_type";
   x_size_channel.name = "x_width";
   y_size_channel.name = "y_width";
   z_size_channel.name = "z_width";
-  cone_metric_channel.name = "cone_metric";
+  cone_belief_channel.name = "cone_belief";
 
   // iterate over each cluster
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> cone_clusters;
@@ -340,7 +340,7 @@ ConeClustering::constructMessage(
       x_size_channel.values.push_back(cone_check.bounds[0]);
       y_size_channel.values.push_back(cone_check.bounds[1]);
       z_size_channel.values.push_back(cone_check.bounds[2]);
-      cone_metric_channel.values.push_back(cone_check.cone_metric);
+      cone_belief_channel.values.push_back(cone_check.cone_belief);
     }
   }
 
@@ -349,7 +349,7 @@ ConeClustering::constructMessage(
   cluster_msg.channels.push_back(x_size_channel);
   cluster_msg.channels.push_back(y_size_channel);
   cluster_msg.channels.push_back(z_size_channel);
-  cluster_msg.channels.push_back(cone_metric_channel);
+  cluster_msg.channels.push_back(cone_belief_channel);
 
   std::tuple<sensor_msgs::PointCloud,
              std::vector<pcl::PointCloud<pcl::PointXYZINormal>>>

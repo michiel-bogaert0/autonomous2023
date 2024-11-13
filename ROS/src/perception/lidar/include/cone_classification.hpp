@@ -16,7 +16,7 @@ typedef struct {
   // cppcheck-suppress unusedStructMember
   double bounds[3];
   // cppcheck-suppress unusedStructMember
-  double cone_metric;
+  double cone_belief;
 } ConeCheck;
 
 typedef struct {
@@ -74,9 +74,10 @@ private:
   double value_first_tipping_distance_;  // belief at start non-linear region
   double value_second_tipping_distance_; // belief at end non-linear region
 
+  float colorClassification(pcl::PointCloud<pcl::PointXYZINormal> cone,
+                            float dist, bool potential_orange);
   double checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
                     Eigen::Vector4f centroid, bool orange);
-
   double calculateBelief(float dist);
 };
 } // namespace ns_lidar
