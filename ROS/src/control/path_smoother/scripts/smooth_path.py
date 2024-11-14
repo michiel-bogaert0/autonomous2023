@@ -35,9 +35,6 @@ class PathSmoother(ManagedNode):
 
         self.world_frame = rospy.get_param("~world_frame", "ugr/map")
         self.publisher = super().AddPublisher("/output/path", Path, queue_size=10)
-        self.publisher_vis_path = super().AddPublisher(
-            "/output/vis_path", Path, queue_size=10
-        )
 
     def doActivate(self):
         self.subscriber = super().AddSubscriber(
@@ -79,16 +76,12 @@ class PathSmoother(ManagedNode):
             closest_point = np.argmin(np.sum(path**2, axis=1))
             path = np.roll(path, -closest_point - 10, axis=0)
 
-            # add last point to path to have also interpolation between last and first point
-            path = np.vstack((path, path[0]))
-
         # Add zero pose to path if no closure of path (force path starting from car)
         if not closed_path and self.trackdrive_autocross:
             path = np.vstack(([0, 0], path))
 
         # smooth path
         smoothed_path = self.smooth_path(path, closed_path)
-        vis_path = smoothed_path
 
         # Throw away last point to avoid weird FWF bug, see wiki (Path Smoother)
         if closed_path and self.trackdrive_autocross:
@@ -105,18 +98,6 @@ class PathSmoother(ManagedNode):
             smoothed_msg.poses.append(pose)
 
         self.publisher.publish(smoothed_msg)
-
-        # Publish smoothed path for visualization
-        vis_msg = msg
-        vis_msg.header.frame_id = msg_frame_id
-        vis_msg.poses = []
-        for point in vis_path:
-            pose = PoseStamped()
-            pose.pose.position.x = point[0]
-            pose.pose.position.y = point[1]
-            vis_msg.poses.append(pose)
-
-        self.publisher_vis_path.publish(vis_msg)
 
     def check_closed_path(self, path):
         """
