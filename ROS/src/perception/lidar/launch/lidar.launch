@@ -63,9 +63,6 @@
         <param name="value_first_tipping_distance" value="0.9"/>
         <param name="value_second_tipping_distance" value="0.3"/>
 
-        <!-- load covariance matrices -->
-        <!-- <rosparam file="$(find lidar)/covariance_data/os128.yaml" command="load" /> -->
-
         <!-- publishing diagnostics and debug pointclouds -->
         <param name= "publish_diagnostics" value = "false"/>
         <param name= "publish_preprocessing" value = "false"/>
