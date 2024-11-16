@@ -128,7 +128,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
     groundColoredPublisher_.publish(ground_msg);
   }
 
-  // Cone clustering
+  // Clustering
   sensor_msgs::PointCloud cluster;
   sensor_msgs::PointCloud2 clustersColored;
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
@@ -138,12 +138,19 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
 
   t0 = std::chrono::steady_clock::now();
   clusters = cone_clustering_.cluster(notground_points, ground_points);
-  msg_and_coneclusters = cone_clustering_.classifiedConesPC(clusters);
-  cluster = std::get<0>(msg_and_coneclusters);
   t1 = std::chrono::steady_clock::now();
   latency_clustering_ =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0)
           .count();
+
+  // Cluster classification
+  t0 = std::chrono::steady_clock::now();
+  msg_and_coneclusters = cone_clustering_.classifiedConesPC(clusters);
+  t1 = std::chrono::steady_clock::now();
+  latency_classification_ =
+      std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0)
+          .count();
+  cluster = std::get<0>(msg_and_coneclusters);
 
   if (publish_clusters_) {
     if (lidar_rotated_) {
@@ -223,8 +230,9 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
                       std::to_string(latency_clustering_), "#All clusters",
                       std::to_string(clusters.size()));
 
-    publishDiagnostic(latency_clustering_ < 1 ? OK : WARN,
-                      "[LIDAR] Classification", "", "#Cone clusters",
+    publishDiagnostic(latency_classification_ < 1 ? OK : WARN,
+                      "[LIDAR] Classification",
+                      std::to_string(latency_classification_), "#Cone clusters",
                       std::to_string(cone_clusters.size()));
 
     // Total lidar pipeline latency
