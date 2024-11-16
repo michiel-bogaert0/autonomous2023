@@ -309,10 +309,10 @@ sensor_msgs::PointCloud2 ConeClustering::clustersColoredMessage(
  */
 std::tuple<sensor_msgs::PointCloud,
            std::vector<pcl::PointCloud<pcl::PointXYZINormal>>>
-ConeClustering::constructMessage(
+ConeClustering::classifiedConesPC(
     std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters) {
   // Create a PC and channel for: the cone colour, the (x,y,z) dimensions of the
-  // cluster and the cone metric
+  // cluster and the cone belief
   sensor_msgs::PointCloud cluster_msg;
   sensor_msgs::ChannelFloat32 cone_channel;
   sensor_msgs::ChannelFloat32 x_size_channel;

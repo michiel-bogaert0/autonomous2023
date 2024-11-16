@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <tuple>
+#include <yaml-cpp/yaml.h>
 
 // Constructor
 namespace ns_lidar {
@@ -137,7 +138,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
 
   t0 = std::chrono::steady_clock::now();
   clusters = cone_clustering_.cluster(notground_points, ground_points);
-  msg_and_coneclusters = cone_clustering_.constructMessage(clusters);
+  msg_and_coneclusters = cone_clustering_.classifiedConesPC(clusters);
   cluster = std::get<0>(msg_and_coneclusters);
   t1 = std::chrono::steady_clock::now();
   latency_clustering_ =
@@ -273,8 +274,11 @@ void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
   for (auto cone : cones.points) {
     ugr_msgs::ObservationWithCovariance observationWithCovariance;
 
-    // If color == 0, then it is a BLUE cone, and Cones.BLUE in fs_msgs/Cone is
-    // 0 color == 1 is yellow
+    // BLUE=0
+    // YELLOW=1
+    // ORANGE_BIG=2
+    // ORANGE_SMALL=3
+    // UNKNOWN=4
     float color = cones.channels[0].values[i];
     observationWithCovariance.observation.observation_class = color;
 
