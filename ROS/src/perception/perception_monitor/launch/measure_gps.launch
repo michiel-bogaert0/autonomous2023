@@ -1,0 +1,8 @@
+<launch>
+  <node pkg="perception_monitor" output="screen" type="save_cone.py" name="gps_cone_saver" respawn="False">
+    <param name="" value=""/>
+
+    <remap from="/input/topic" to="/autonomous/gps/cone_saver/"/>
+    <remap from="/output/topic" to="/autonomous/gps/cone_save_confirm/"/>
+  </node>
+</launch>
