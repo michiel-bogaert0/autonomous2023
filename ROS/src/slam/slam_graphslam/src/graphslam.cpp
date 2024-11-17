@@ -704,7 +704,52 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
       local.observations.push_back(local_ob);
     }
   }
+  std::vector<double> hardcode_yellow = {0.0, 3.0};
+  std::vector<double> hardcode_blue = {0.0, -3.0};
+  n.getParam("hardcode_yellow", hardcode_yellow);
+  n.getParam("hardcode_blue", hardcode_blue);
 
+  bool hardcode_orange = n.param<bool>(
+      "hardcode_orange", false); // Last resort on competition for if we need to
+                                 // hardcode orange starting cones
+  if (hardcode_orange) {
+    double hardcode_x[2] = {hardcode_yellow[0],
+                            hardcode_blue[0]}; // FIRST INDEX IS YELLOW CONE
+    double hardcode_y[2] = {hardcode_yellow[1],
+                            hardcode_blue[1]}; // SECOND IS BLUE CONE
+    for (int i = 0; i < 2; i++) {
+      ugr_msgs::ObservationWithCovariance global_ob;
+      ugr_msgs::ObservationWithCovariance local_ob;
+
+      global_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+      local_ob.covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+      global_ob.observation.observation_class = i;
+      local_ob.observation.observation_class = i;
+      global_ob.observation.belief = 0; // mss aantal edges
+      local_ob.observation.belief = 0;
+
+      global_ob.observation.id = 0;
+      local_ob.observation.id = 0;
+
+      global_ob.observation.location.x = hardcode_x[i];
+      global_ob.observation.location.y = hardcode_y[i];
+
+      global.observations.push_back(global_ob);
+
+      // landmark to observation
+      // calculate the location of the landmark in the base_link frame
+      VectorXf obs(2);
+      float dx = hardcode_x[i] - pose_vertex->estimate().translation().x();
+      float dy = hardcode_y[i] - pose_vertex->estimate().translation().y();
+
+      obs(0) = pow(pow(dx, 2) + pow(dy, 2), 0.5);
+      obs(1) = atan2(dy, dx) - pose_vertex->estimate().rotation().angle();
+
+      local_ob.observation.location.x = obs(0) * cos(obs(1));
+      local_ob.observation.location.y = obs(0) * sin(obs(1));
+      local.observations.push_back(local_ob);
+    }
+  }
   // publish the observations to the map server
   if (this->setmap_srv_client.exists()) {
     this->diagPublisher->publishDiagnostic(
@@ -796,7 +841,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     poseEdges.ns = "graphslam";
     poseEdges.type = visualization_msgs::Marker::LINE_LIST;
     // how long the marker will be displayed
-    poseEdges.lifetime = ros::Duration(1);
+    poseEdges.lifetime = ros::Duration(0);
     poseEdges.action = visualization_msgs::Marker::ADD;
     poseEdges.id = this->prevPoseIndex;
     poseEdges.color.a = 1.0; // transparantie
@@ -817,7 +862,7 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
     landmarkEdges.header.stamp = lookupTime;
     landmarkEdges.ns = "graphslam";
     landmarkEdges.type = visualization_msgs::Marker::LINE_LIST;
-    landmarkEdges.lifetime = ros::Duration(1);
+    landmarkEdges.lifetime = ros::Duration(0);
     landmarkEdges.action = visualization_msgs::Marker::ADD;
     landmarkEdges.id = this->prevPoseIndex;
     landmarkEdges.color.a = 1.0; // transparantie
@@ -874,8 +919,17 @@ void GraphSLAM::publishOutput(ros::Time lookupTime) {
       }
     }
 
+    visualization_msgs::Marker deleteMarker;
+    deleteMarker.header.frame_id = this->map_frame;
+    deleteMarker.header.stamp = lookupTime;
+    deleteMarker.ns = "graphslam";
+    deleteMarker.action = visualization_msgs::Marker::DELETEALL;
+
+    this->edgeLandmarksPublisher.publish(deleteMarker);
+
     this->edgeLandmarksPublisher.publish(landmarkEdges);
     if (isPoseEdge) {
+      this->edgePosesPublisher.publish(deleteMarker);
       this->edgePosesPublisher.publish(poseEdges);
     }
   }
