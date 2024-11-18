@@ -14,6 +14,13 @@
 
   <!-- Run on a rosbag -->
   <group if="$(arg use_rosbag)">
+
+    <!-- SLAM controller - temp-->
+    <include file="$(find slam_controller)/launch/controller.launch" pass_all_args="true">
+      <arg name="turn_slam_controller_active" value="true" />
+    </include>
+
+
     <include file="$(find ugr_launch)/launch/frames/$(arg frames).launch" pass_all_args="true" />
 
     <node pkg="tf" type="static_transform_publisher" name="ugr_axis0" args="-0.36 0.34 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis0 10" />
