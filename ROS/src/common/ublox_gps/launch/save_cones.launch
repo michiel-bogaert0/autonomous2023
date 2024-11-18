@@ -1,0 +1,10 @@
+<launch>
+  <node pkg="ublox_gps" output="screen" type="save_cone.py" name="gps_cone_saver" respawn="False">
+    <param name="" value=""/>
+
+    <remap from="/input/save_cone_color" to="/autonomous/ublox_gps/cone_saver/"/>
+    <remap from="/input/gps_locations" to="/ugr/car/sensors/gps1/pvt/fix"/> <!-- fix or odom? -->
+    <remap from="/input/gps_locations_odom" to="/ugr/car/sensors/gps1/pvt/odom"/>
+    <remap from="/output/topic" to="/autonomous/ublox_gps/cone_save_confirm/"/>
+  </node>
+</launch>
