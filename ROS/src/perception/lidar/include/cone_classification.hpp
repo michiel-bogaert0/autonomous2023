@@ -9,22 +9,15 @@
 namespace ns_lidar {
 typedef struct {
   geometry_msgs::Point32 pos;
-  // cppcheck-suppress unusedStructMember
   bool is_cone;
-  // cppcheck-suppress unusedStructMember
   float color;
-  // cppcheck-suppress unusedStructMember
   double bounds[3];
-  // cppcheck-suppress unusedStructMember
   double cone_belief;
 } ConeCheck;
 
 typedef struct {
-  // cppcheck-suppress unusedStructMember
   double x;
-  // cppcheck-suppress unusedStructMember
   double y;
-  // cppcheck-suppress unusedStructMember
   double floor;
   double height_cone = 0.325;
   double half_width_cone = 0.114;
