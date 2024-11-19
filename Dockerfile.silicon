@@ -80,9 +80,16 @@ RUN apt-get update && apt-get install -y ros-noetic-tf2-geometry-msgs \
     python3-pcl \
     pcl-tools
 
+# install acados
+RUN git clone https://github.com/acados/acados.git --branch v0.4.0 /home/ugr/acados
+RUN cd /home/ugr/acados && git submodule update --recursive --init
+RUN mkdir -p /home/ugr/acados/build && cd /home/ugr/acados/build && cmake -DACADOS_WITH_QPOASES=ON .. && make install -j4
+RUN pip install --upgrade -e /home/ugr/acados/interfaces/acados_template
+
 # UGR user
 RUN useradd ugr -s /bin/zsh && echo "ugr:ugr" | chpasswd && adduser ugr sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+RUN chown -R ugr:ugr /home/ugr
 USER ugr
 
 WORKDIR /home/ugr
@@ -113,5 +120,8 @@ RUN echo 'export PATH="'"/home/$(id -un)/.local/bin"':$PATH''"' >> ~/.zshrc && \
     echo "source /opt/ros/noetic/setup.zsh" >> ~/.zshrc && \
     echo "source ~/autonomous2023/ROS/devel/setup.zsh" >> ~/.zshrc && \
     echo "source /home/ugr/autonomous2023/env-vars.sh" >> ~/.zshrc
+# set environment variables for acados
+RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"/home/ugr/acados/lib"' >> ~/.zshrc && \
+    echo 'export ACADOS_SOURCE_DIR="/home/ugr/acados"' >> ~/.zshrc
 
 CMD /bin/zsh
