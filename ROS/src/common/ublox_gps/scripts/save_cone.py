@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-
-# from nav_msgs.msg import Odometry (If Odometry)
 from datetime import datetime
 
 import rospy
@@ -29,12 +27,6 @@ class CovarianceNode:
             NavSatFix,
             self.get_cone_location,
         )
-        # If Odometry
-        # rospy.Subscriber(
-        #     "/input/gps_locations_odom",
-        #     Odometry,
-        #     self.get_cone_location,
-        # )
 
         self.confirmation_publisher = rospy.Publisher(
             "/output/topic", DiagnosticStatus, queue_size=1
@@ -43,7 +35,7 @@ class CovarianceNode:
         # Initialize variables
         self.yaml_file = f"{os.path.dirname(__file__)}/../../../slam/slam_simulator/maps/gps_maps/{datetime.now().strftime('%d-%m-%Y')}(1).yaml"
         self.cones = list()
-        self.gps_location = NavSatFix()  # Odometry() (If Odometry)
+        self.gps_location = NavSatFix()
 
     def get_cone_location(self, msg):
         """
@@ -57,7 +49,7 @@ class CovarianceNode:
         Add cone to the list of cones
         """
         color_class = int(msg.values[0].value)
-        if color_class == -5:
+        if color_class == -1:
             self.save_cones()
             return
 
@@ -70,15 +62,6 @@ class CovarianceNode:
             },
             "color": color_class,
         }
-        # If Odometry
-        # cone_dict = {
-        #     "location": {
-        #         "x": self.gps_location.pose.pose.position.x,
-        #         "y": self.gps_location.pose.pose.position.y,
-        #         "z": self.gps_location.pose.pose.position.z,
-        #     },
-        #     "color": color_class,
-        # }
         self.cones.append(cone_dict)
         confirmation_msg = DiagnosticStatus()
         confirmation_msg.level = 0
