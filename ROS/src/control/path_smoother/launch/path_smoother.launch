@@ -8,6 +8,5 @@
         <param name="turn_active" value="$(arg turn_active)"/>
         <remap from="/input/path" to="/pathplanning/global_path"/>
         <remap from="/output/path" to="/pathplanning/path"/>
-        <remap from="/output/vis_path" to="/pathplanning/vis_path"/>
     </node>
 </launch>

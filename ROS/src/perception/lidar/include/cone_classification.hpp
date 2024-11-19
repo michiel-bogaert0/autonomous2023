@@ -9,22 +9,15 @@
 namespace ns_lidar {
 typedef struct {
   geometry_msgs::Point32 pos;
-  // cppcheck-suppress unusedStructMember
   bool is_cone;
-  // cppcheck-suppress unusedStructMember
   float color;
-  // cppcheck-suppress unusedStructMember
   double bounds[3];
-  // cppcheck-suppress unusedStructMember
-  double cone_metric;
+  double cone_belief;
 } ConeCheck;
 
 typedef struct {
-  // cppcheck-suppress unusedStructMember
   double x;
-  // cppcheck-suppress unusedStructMember
   double y;
-  // cppcheck-suppress unusedStructMember
   double floor;
   double height_cone = 0.325;
   double half_width_cone = 0.114;
@@ -47,9 +40,12 @@ private:
   int minimal_points_cone_;
   float minimal_height_cone_; // minimal height of cone above the floor
                               // threshold
-  float
-      threshold_height_big_cone_; // minimal height of cone above the floor
-                                  // threshold to be classified as a orange cone
+  float min_threshold_height_big_cone_; // minimal height of cone above the
+                                        // floor threshold to be classified as a
+                                        // orange cone
+  float max_threshold_height_big_cone_; // maximal height of cone above the
+                                        // floor threshold to be classified as a
+                                        // orange cone
   double cone_shape_factor_; // how similar should a pointcloud be to the cone
                              // model
                              // 0 -> the pointcloud can have any shape
@@ -71,9 +67,10 @@ private:
   double value_first_tipping_distance_;  // belief at start non-linear region
   double value_second_tipping_distance_; // belief at end non-linear region
 
+  float colorClassification(pcl::PointCloud<pcl::PointXYZINormal> cone,
+                            float dist, bool potential_orange);
   double checkShape(pcl::PointCloud<pcl::PointXYZINormal> cone,
                     Eigen::Vector4f centroid, bool orange);
-
   double calculateBelief(float dist);
 };
 } // namespace ns_lidar
