@@ -23,6 +23,7 @@ int main(int argc, char **argv) {
   diagPublisher.publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                   "Status", "running");
 
+  fastslam.initialize();
   fastslam.spin();
 
   return 0;

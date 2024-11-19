@@ -8,6 +8,7 @@ int main(int argc, char **argv) {
 
   // Create a pathplanning class object
   pathplanning::Pathplanning pathplanning(n);
+  pathplanning.initialize();
   pathplanning.spin();
 
   return 0;

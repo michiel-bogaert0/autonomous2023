@@ -23,7 +23,9 @@ ManagedNode::ManagedNode(ros::NodeHandle &n, std::string name)
   this->state = Unconfigured;
 
   this->setHealthStatus(diagnostic_msgs::DiagnosticStatus::OK, "OK", {});
+}
 
+void ManagedNode::initialize() {
   n.param<bool>("turn_active", turn_active_, false);
   if (turn_active_) {
     this->doConfigure();
