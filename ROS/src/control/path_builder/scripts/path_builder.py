@@ -160,7 +160,10 @@ class PathBuilder(ManagedNode):
                 global_path[-1][0] - global_path[-2][0]
             ) ** 2 + ((global_path[-1][1] - global_path[-2][1]) ** 2)
 
-            if dist_new_to_second_last_point > dist_last_to_second_last_point:
+            if (
+                dist_new_to_second_last_point > dist_last_to_second_last_point
+                and new_point not in global_path
+            ):
                 global_path.append(new_point)
         else:
             global_path.append(new_point)
