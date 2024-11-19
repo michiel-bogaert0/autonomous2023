@@ -77,6 +77,9 @@ class PathSmoother(ManagedNode):
             closest_point = np.argmin(np.sum(path**2, axis=1))
             path = np.roll(path, -closest_point - 10, axis=0)
 
+            # add last point to path to have also interpolation between last and first point
+            path = np.vstack((path, path[0]))
+
         # Add zero pose to path if no closure of path (force path starting from car)
         if not closed_path and self.trackdrive_autocross:
             path = np.vstack(([0, 0], path))
