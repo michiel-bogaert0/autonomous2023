@@ -38,6 +38,9 @@
     <!-- Load controller settings -->
     <rosparam file="$(find ugr_ros_control)/sim_control/config/sim_controllers.yaml" command="load" />
 
+    <!-- Transformation for axis1: the simulation only uses axis0, but axis1 also requires a transformation -->
+    <node pkg="tf" type="static_transform_publisher" name="ugr_axis1" args="0 0.64 0 0 0 0 1 ugr/car_base_link ugr/car_base_link/axis1 10" />
+
     <node name="ros_control_controller_manager" pkg="controller_manager" type="spawner"
             respawn="false"
             output="screen"
