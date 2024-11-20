@@ -28,7 +28,8 @@
         <param name= "point_count_threshold" value="2"/>
         <param name= "min_distance_factor" value="1.5"/>
         <param name= "minimal_points_cone" value = "5"/>
-        <param name= "threshold_height_big_cone" value ="0.4"/>
+        <param name= "min_threshold_height_big_cone" value ="0.4"/>
+        <param name= "max_threshold_height_big_cone" value ="0.4"/>
         <param name= "minimal_height_cone" value = "0.07"/>
         <param name= "maximal_delta_arc_cluster" value = "0.3" />
 
@@ -48,7 +49,7 @@
         <param name= "lidar_rotated" value="true"/> <!-- lidar is rotated -->
         <param name="sensor_height" value="0.98"/> <!-- sensor height relative to ground level (pegasus: 0.40, orion: 0.98) -->
         <!-- orange cone functionality -->
-        <param name= "use_orange_cones" value="false"/>
+        <param name= "use_orange_cones" value="true"/>
 
         <!-- white cone functionality -->
         <param name= "use_white_cones" value="false"/>
