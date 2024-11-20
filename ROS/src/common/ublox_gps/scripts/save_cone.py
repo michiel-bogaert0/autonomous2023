@@ -9,10 +9,11 @@ from diagnostic_msgs.msg import DiagnosticStatus
 from sensor_msgs.msg import NavSatFix
 
 
-class CovarianceNode:
+class SaveGPSConesNode:
     def __init__(self):
         """
-        Subscribes to two Observation topics, sets up a publisher and initializes parameters and variables
+        Subscribes to topic on which cones are published by Foxglove when clicking the 'publish' button and saves them to a yaml file
+        BLUE=0 YELLOW=1 ORANGE_BIG=2 ORANGE_SMALL=3 UNKNOWN=4
         """
         rospy.init_node("gps_cone_saver", anonymous=True)
 
@@ -85,5 +86,5 @@ class CovarianceNode:
         self.confirmation_publisher.publish(confirmation_msg)
 
 
-node = CovarianceNode()
+node = SaveGPSConesNode()
 rospy.spin()
