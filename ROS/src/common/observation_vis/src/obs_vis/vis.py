@@ -179,6 +179,7 @@ class ObsVis:
             marker.pose.orientation.w = 1.0
             marker.pose.position.x = obs.location.x
             marker.pose.position.y = obs.location.y
+            marker.pose.position.z = obs.location.z
 
             marker.lifetime = rospy.Duration(lifetime)
 

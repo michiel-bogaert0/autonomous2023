@@ -46,6 +46,7 @@ private:
   double latency_preprocessing_;
   double latency_ground_removal_;
   double latency_clustering_;
+  double latency_classification_;
   double latency_total_;
 
   double min_distance_;
