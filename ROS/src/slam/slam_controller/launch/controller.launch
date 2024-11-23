@@ -1,12 +1,14 @@
 <launch>
 
   <arg name="mission" default="" />
+  <arg name="turn_slam_controller_active" default="false" />
 
   <param name="/mission" value="$(arg mission)" />
   <param name="/car" value="$(env UGR_CAR)" />
 
   <!-- ? Controller -->
   <node name="slam_controller" pkg="slam_controller" type="controller.py" output="screen">
+    <param name="turn_active" value="$(arg turn_slam_controller_active)"/>
     <remap from="/input/lapComplete" to="/ugr/car/lapComplete" />
     <remap from="/input/finished" to="/ugr/car/finished" />
   </node>
