@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <tuple>
+#include <yaml-cpp/yaml.h>
 
 // Constructor
 namespace ns_lidar {
@@ -127,7 +128,7 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
     groundColoredPublisher_.publish(ground_msg);
   }
 
-  // Cone clustering
+  // Clustering
   sensor_msgs::PointCloud cluster;
   sensor_msgs::PointCloud2 clustersColored;
   std::vector<pcl::PointCloud<pcl::PointXYZINormal>> clusters;
@@ -137,12 +138,19 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
 
   t0 = std::chrono::steady_clock::now();
   clusters = cone_clustering_.cluster(notground_points, ground_points);
-  msg_and_coneclusters = cone_clustering_.constructMessage(clusters);
-  cluster = std::get<0>(msg_and_coneclusters);
   t1 = std::chrono::steady_clock::now();
   latency_clustering_ =
       std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0)
           .count();
+
+  // Cluster classification
+  t0 = std::chrono::steady_clock::now();
+  msg_and_coneclusters = cone_clustering_.classifiedConesPC(clusters);
+  t1 = std::chrono::steady_clock::now();
+  latency_classification_ =
+      std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0)
+          .count();
+  cluster = std::get<0>(msg_and_coneclusters);
 
   if (publish_clusters_) {
     if (lidar_rotated_) {
@@ -222,8 +230,9 @@ void Lidar::rawPcCallback(const sensor_msgs::PointCloud2 &msg) {
                       std::to_string(latency_clustering_), "#All clusters",
                       std::to_string(clusters.size()));
 
-    publishDiagnostic(latency_clustering_ < 1 ? OK : WARN,
-                      "[LIDAR] Classification", "", "#Cone clusters",
+    publishDiagnostic(latency_classification_ < 1 ? OK : WARN,
+                      "[LIDAR] Classification",
+                      std::to_string(latency_classification_), "#Cone clusters",
                       std::to_string(cone_clusters.size()));
 
     // Total lidar pipeline latency
@@ -273,8 +282,11 @@ void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
   for (auto cone : cones.points) {
     ugr_msgs::ObservationWithCovariance observationWithCovariance;
 
-    // If color == 0, then it is a BLUE cone, and Cones.BLUE in fs_msgs/Cone is
-    // 0 color == 1 is yellow
+    // BLUE=0
+    // YELLOW=1
+    // ORANGE_BIG=2
+    // ORANGE_SMALL=3
+    // UNKNOWN=4
     float color = cones.channels[0].values[i];
     observationWithCovariance.observation.observation_class = color;
 
@@ -284,8 +296,8 @@ void Lidar::publishObservations(const sensor_msgs::PointCloud cones) {
     observationWithCovariance.covariance =
         boost::array<double, 9>({0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.8});
 
-    double cone_metric = cones.channels[4].values[i];
-    observationWithCovariance.observation.belief = cone_metric;
+    double cone_belief = cones.channels[4].values[i];
+    observationWithCovariance.observation.belief = cone_belief;
 
     observations.observations.push_back(observationWithCovariance);
 
