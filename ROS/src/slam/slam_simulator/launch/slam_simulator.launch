@@ -22,7 +22,7 @@
     <param name="viewing_distance" value="15" />
     <param name="fov" value="90" />
     <param name="add_noise" value="true" />
-    <param name="cone_noise" value="0.02" />
+    <param name="cone_noise" value="0.00333" />
     <param name="color_prob" value="0.0" /> <!-- between 0 and 1-->
     <param name="FP" value="$(arg FP)" />
     <param name="innerrange" value="5" />     <!-- minumum FP range away from trackcones on other side: should be track width or slightly bigger-->
