@@ -191,8 +191,8 @@ class PerceptionSimulator(StageSimulator):
 
             range = (cone[0] ** 2 + cone[1] ** 2) ** (1 / 2)
             if self.add_noise:
-                cone[0] += np.random.randn() * self.cone_noise * range
-                cone[1] += np.random.randn() * self.cone_noise * range
+                cone[0] += np.random.randn() * (self.cone_noise * range + 1 / 30)
+                cone[1] += np.random.randn() * (self.cone_noise * range + 1 / 30)
 
             cov = [
                 (self.cone_noise * range) ** 2,
