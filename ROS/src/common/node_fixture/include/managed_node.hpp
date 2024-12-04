@@ -69,6 +69,8 @@ public:
     }
   }
 
+  void initialize();
+
   ManagedNodeState state;
 
 private:

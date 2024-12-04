@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
   diagPublisher.publishDiagnostic(node_fixture::DiagnosticStatusEnum::OK,
                                   "Status", "running");
 
+  graphslam.initialize();
   graphslam.spin();
 
   return 0;
