@@ -4,6 +4,7 @@
         <param name="world_frame" value="ugr/map" />
         <param name="max_distance_away_from_start" value="9" />
         <param name="min_distance_away_from_start" value="16" />
+        <param name="spline_step_size" value="0.5" />
         <param name="turn_active" value="$(arg turn_active)"/>
         <remap from="/input/path" to="/pathplanning/global_path"/>
         <remap from="/output/path" to="/pathplanning/path"/>
