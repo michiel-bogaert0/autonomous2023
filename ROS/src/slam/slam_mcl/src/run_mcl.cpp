@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
                                   "Status", "running");
 
   slam::MCL mcl(n);
+  mcl.initialize();
   mcl.spin();
 
   return 0;
