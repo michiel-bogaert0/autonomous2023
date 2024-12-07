@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="camera" type="video_analyser.py" name="video_analyser" output="screen">
+        <!-- <param name="video_path" value="/home/ugr/autonomous2023/screenRecording.mov" /> -->
+        <param name="output_topic" value="/ugr/car/video_frames" />
+        <param name="frame_rate" value="1" />
+    </node>
+</launch>
