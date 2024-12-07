@@ -29,40 +29,41 @@ class VideoNode:
         self.process_video()
 
     def process_video(self):
-        # Open the video file
-        cap = cv2.VideoCapture(self.video_path)
-        if not cap.isOpened():
-            rospy.logerr(f"Cannot open video file {self.video_path}")
-            return
-
-        rate = rospy.Rate(self.frame_rate)
-
         while not rospy.is_shutdown():
-            ret, frame = cap.read()
-            if not ret:
-                rospy.loginfo("End of video stream or error reading the video")
-                break
+            # Open the video file
+            cap = cv2.VideoCapture(self.video_path)
+            if not cap.isOpened():
+                rospy.logerr(f"Cannot open video file {self.video_path}")
+                return
 
-            try:
-                # Compress the frame to JPEG format
-                msg = CompressedImage()
-                msg.header = Header(stamp=rospy.Time.now())
-                msg.format = "jpeg"  # Format can be "jpeg" or "png"
+            rospy.loginfo(f"Playing video {self.video_path}...")
+            while not rospy.is_shutdown():
+                ret, frame = cap.read()
+                if not ret:
+                    rospy.loginfo("Reached end of video. Restarting...")
+                    break  # Restart the video
 
-                # Encode the frame as JPEG with quality 80 (adjustable)
-                _, encoded_frame = cv2.imencode(
-                    ".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80]
-                )
-                msg.data = encoded_frame.tobytes()
+                try:
+                    # Compress the frame to JPEG format
+                    msg = CompressedImage()
+                    msg.header = Header(stamp=rospy.Time.now())
+                    msg.format = "jpeg"  # Format can be "jpeg" or "png"
 
-                # Publish the compressed message
-                self.image_pub.publish(msg)
-            except Exception as e:
-                rospy.logerr(f"Error converting/publishing compressed frame: {e}")
+                    # Encode the frame as JPEG with quality 80 (adjustable)
+                    _, encoded_frame = cv2.imencode(
+                        ".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80]
+                    )
+                    msg.data = encoded_frame.tobytes()
 
-            rate.sleep()
+                    # Publish the compressed message
+                    self.image_pub.publish(msg)
+                except Exception as e:
+                    rospy.logerr(f"Error converting/publishing compressed frame: {e}")
 
-        cap.release()
+                rospy.Rate(self.frame_rate).sleep()
+
+            # Release the video capture before restarting
+            cap.release()
 
 
 if __name__ == "__main__":

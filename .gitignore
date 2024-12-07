@@ -40,4 +40,3 @@ ROS/src/mechatronics/CATKIN_IGNORE
 
 default_gen_track.yaml
 ROS/src/perception/camera/video.mov
-screenRecording.mov
