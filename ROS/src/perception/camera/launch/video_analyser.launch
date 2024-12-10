@@ -2,6 +2,6 @@
     <node pkg="camera" type="video_analyser.py" name="video_analyser" output="screen">
         <param name="video_path" value="/home/ugr/autonomous2023/ROS/src/perception/camera/video.mov" />
         <param name="output_topic" value="/video_frames" />
-        <param name="frame_rate" value="1" />
+        <param name="frame_rate" value="20" />
     </node>
 </launch>

@@ -12,6 +12,7 @@
         <remap from="/output/image_annotated" to="/ugr/car/perception/camera/image_annotated" />
         <remap from="/output/update" to="/ugr/car/observations/camera" />
         <remap from="/output/bounding_boxes" to="/ugr/car/observations/camera/bounding_boxes" />
-        <remap from="/input/image" to="/ugr/car/sensors/cam0/image" />
+        <remap from="/output/image" to="/video_frames" />
+        <!-- <remap from="/input/image" to="/ugr/car/sensors/cam0/image" /> -->
     </node>
 </launch>
