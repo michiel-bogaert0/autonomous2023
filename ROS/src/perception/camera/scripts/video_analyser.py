@@ -4,7 +4,8 @@ import os
 
 import cv2
 import rospy
-from sensor_msgs.msg import CompressedImage
+from cv_bridge import CvBridge
+from sensor_msgs.msg import CompressedImage, Image
 from std_msgs.msg import Header
 
 
@@ -15,17 +16,22 @@ class VideoNode:
 
         # Parameters
         self.video_path = rospy.get_param(
-            "~video_path", f"{os.path.dirname(__file__)}/../scripts/video.mov"
+            "~video_path", f"{os.path.dirname(__file__)}/../video.mov"
         )
-        self.topic_name = rospy.get_param("~output_topic", "/video_frames/compressed")
+        self.compressed_topic = rospy.get_param(
+            "~compressed_topic", "/video_frames/compressed"
+        )
+        self.normal_topic = rospy.get_param("~normal_topic", "/video_frames/normal")
         self.frame_rate = rospy.get_param("~frame_rate", 30)
 
-        # Publisher for CompressedImage
-        self.image_pub = rospy.Publisher(
-            self.topic_name, CompressedImage, queue_size=10
+        # Publishers
+        self.compressed_pub = rospy.Publisher(
+            self.compressed_topic, CompressedImage, queue_size=10
         )
+        self.normal_pub = rospy.Publisher(self.normal_topic, Image, queue_size=10)
 
         # Video processing
+        self.bridge = CvBridge()  # OpenCV to ROS bridge
         self.process_video()
 
     def process_video(self):
@@ -44,21 +50,27 @@ class VideoNode:
                     break  # Restart the video
 
                 try:
-                    # Compress the frame to JPEG format
-                    msg = CompressedImage()
-                    msg.header = Header(stamp=rospy.Time.now())
-                    msg.format = "jpeg"  # Format can be "jpeg" or "png"
-
-                    # Encode the frame as JPEG with quality 80 (adjustable)
+                    # Publish compressed frame
+                    compressed_msg = CompressedImage()
+                    compressed_msg.header = Header(stamp=rospy.Time.now())
+                    compressed_msg.format = "jpeg"
                     _, encoded_frame = cv2.imencode(
                         ".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80]
                     )
-                    msg.data = encoded_frame.tobytes()
+                    compressed_msg.data = encoded_frame.tobytes()
+                    self.compressed_pub.publish(compressed_msg)
 
-                    # Publish the compressed message
-                    self.image_pub.publish(msg)
+                    # Convert to RGB for the normal Image message
+                    rgb_frame = cv2.cvtColor(
+                        frame, cv2.COLOR_BGR2RGB
+                    )  # Convert BGR to RGB
+                    normal_msg = self.bridge.cv2_to_imgmsg(
+                        rgb_frame, encoding="rgb8"
+                    )  # Specify rgb8 encoding
+                    normal_msg.header = Header(stamp=rospy.Time.now())
+                    self.normal_pub.publish(normal_msg)
                 except Exception as e:
-                    rospy.logerr(f"Error converting/publishing compressed frame: {e}")
+                    rospy.logerr(f"Error converting/publishing frames: {e}")
 
                 rospy.Rate(self.frame_rate).sleep()
 
