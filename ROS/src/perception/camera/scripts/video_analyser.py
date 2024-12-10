@@ -15,7 +15,7 @@ class VideoNode:
 
         # Parameters
         self.video_path = rospy.get_param(
-            "~video_path", f"{os.path.dirname(__file__)}/../video.mov"
+            "~video_path", f"{os.path.dirname(__file__)}/../scripts/video.mov"
         )
         self.topic_name = rospy.get_param("~output_topic", "/video_frames/compressed")
         self.frame_rate = rospy.get_param("~frame_rate", 30)
